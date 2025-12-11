@@ -1,0 +1,65 @@
+site_name: The Hexanomicon
+
+theme:
+  name: material
+  logo: assets/hexanomicon.png
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  favicon: assets/hexanomicon.png
+  custom_dir: docs/overrides
+  palette: 
+    - scheme: slate 
+      primary: black
+      accent: cyan
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+copyright: Copyright &copy; 2025 Hexanomicon &ndash;
+
+nav:
+  - The Prophecy: index.md
+
+extra_css:
+  - stylesheets/frostmourne.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  
+  - attr_list
+
+repo_name: hexanomicon/lychd
+repo_url: https://github.com/hexanomicon/lychd
+
+edit_uri: edit/main/docs/
+
+extra:
+  generator: false
+  
+  social:
+    # GitHub (The Castle)
+    - icon: fontawesome/brands/github
+      link: https://github.com/hexanomicon
+      name: hexanomicon on GitHub
+
+    # Python Package Index (The Artifact)
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/lychd/
+      name: lychd on PyPI
+
+    # Email (The Void) 
+    - icon: fontawesome/solid/envelope
+      link: mailto:hexanomicon@proton.me
+      name: Contact the Magus

@@ -1,0 +1,50 @@
+{
+    // --- 🐍 Python & Ruff Standards ---
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "notebook.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+
+    // --- 🧹 General Formatting ---
+    "editor.formatOnPaste": true,
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[dockercompose]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "advanced",
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+
+    // --- 🔮 MkDocs & YAML Magic ---
+    "yaml.customTags": [
+        "tag:yaml.org,2002:python/name:material.extensions.emoji.twemoji",
+        "tag:yaml.org,2002:python/name:material.extensions.emoji.to_svg"
+    ],
+
+    // --- 🗑️ File Visibility ---
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.git": true,
+        "**/.pytest_cache": true,
+        "**/.venv": true,
+        "**/.uv_cache": true,
+        "**/.ruff_cache": true
+    },
+    "markdownlint.config": {
+    "MD013": false, // Ignore line length
+    "MD033": false, // Allow inline HTML
+    "MD041": false,  // Allow first line to not be a heading
+    "MD001": false, // Ignore Header cascading
+  }
+}

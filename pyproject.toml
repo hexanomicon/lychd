@@ -1,0 +1,97 @@
+[project]
+name = "lychd"
+version = "0.0.1"
+description = "Systemd-native daemon for local agentic orchestration"
+readme = "README.md"
+authors = [
+    { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
+]
+requires-python = ">=3.13"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: System :: Systems Administration",
+    "Framework :: Pydantic",
+]
+dependencies = [
+    "jinja2>=3.1.6",
+    "pydantic-settings>=2.10.1",
+]
+
+[project.optional-dependencies]
+
+server = [
+    "litestar[sqlalchemy,structlog,jinja,pydantic]>=2.18.0",
+    "litestar-granian>=0.14.2",
+    "litestar-saq[psycopg]>=0.5.3",
+    "pydantic-ai-slim[openai, logfire]>=1.25.1",
+]
+
+docs = [
+    "mkdocs-material>=9.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    # "basedpyright>=1.1.0",        # used in VSCodium, conflicts
+]
+
+[project.scripts]
+lychd = "lychd.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lychd"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--maxfail=10 -l -v"
+log_cli = "True"
+testpaths = ["tests"]
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli_format = "%(asctime)s %(levelname)s %(message)s"
+log_cli_level = "INFO"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+# The recommended strict rule set
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear (finds likely bugs)
+    "C90",# flake8-mccabe (checks for complexity)
+    "SIM",# flake8-simplify (suggests code simplifications)
+    "TID",# flake8-tidy-imports (stricter import rules)
+]
+
+ignore = ["UP004"] # import from object
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.pyright]
+# This enforces the strictness you were seeing before
+reportMissingImports = true
+reportMissingTypeStubs = false # Often noisy for libs without stubs
+reportGeneralTypeIssues = true
+reportPrivateUsage = true
+
+# Sets the strictness level to catch everything
+typeCheckingMode = "strict"
+
+# Tell pyright where your source code is
+include = ["src"]
