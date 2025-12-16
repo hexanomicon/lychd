@@ -15,7 +15,7 @@ Summon **The Lich** 💀, a **Phylactery**-bound, LLM-animated daemon.
 
 > 📖 Consult **[The Hexanomicon](https://hexanomicon.github.io/lychd/)** for documentation.
 
-⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code) are still being inscribed. Expect instability, missing components, and the occasional rogue spirit. Proceed with caution.
+⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LMM generated texts (not curated yet), and the occasional rogue spirit. Proceed with caution.
 
 ## 🕯️ The Ritual
 

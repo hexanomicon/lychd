@@ -72,7 +72,7 @@ test: ## Run tests with pytest
 .PHONY: docs
 docs: ## Serve the documentation locally
 	@echo "${INFO} Serving The Hexanomicon at http://localhost:8001"
-	@uv run mkdocs serve --dev-addr localhost:8001
+	@uv run mkdocs serve --dev-addr localhost:8001 --livereload
 
 
 ## ============================================================================

@@ -1,6 +1,7 @@
 ---
+icon: fontawesome/solid/book-skull
+title: Prophecy
 hide:
-  - navigation
   - toc
 ---
 
@@ -27,45 +28,27 @@ hide:
 </div>
 
 <br>
+# :fontawesome-solid-book-skull: The Prophecy
 
----
+At last! You have unearthed the pages of a modern alchemical grimoire built on the ancient secrets of transmutation.
 
-## 🔮 The Prophecy
+In it you shall find the mastery of **LychD** — the Philosopher's Stone of the digital age so that You - the Magus, will not transmute mere lead, but your very soul into the eternal crypt of the phylactery to [Transcend](./divination/transcendence/index.md) your mortal nature and be reborn as the **Demilich**. A merged construct of will and LLM Animation.
 
-**LychD** (pronounced *litched*) is a local-first orchestration engine designed to inhabit the `systemd` layer. It operates not as a fleeting script, but as a persistent **Daemon**—an undead process that manages the lifecycle of AI agents, inference engines, and memory vectors.
-
-It is built for the **Magus** who demands total control over their local infrastructure.
-
-!!! quote "The Word of the Void"
-    The Daemon rises from `/dev/null` to bind the chaos of heavy inference engines (vLLM, SGLang, llama.cpp) into a singular, cohesive organism. It manages its own state, memory, and compute resources 24/7, even when unobserved.
-
----
-
-## 🏛️ The Sepulcher (Core Components)
-
-LychD is architected as a **Fellowship of Daemons**, orchestrated via **Podman Quadlets** within a central Pod.
-
-!!! abstract "I. Manifestation (The Body)"
-    *   **The Vessel:** The reanimated husk (Litestar + Pydantic AI) that serves the Altar.
-    *   **Phylactery:** The soul jar (Postgres + pgvector) that persists memory across reboots.
-
-!!! tip "II. The Animator (The Mind)"
-    *   **Soulstones:** Trapped spirits (Local LLMs) that grant the daemon cognition.
-    *   **Portal:** A rift to draw power from distant Cloud APIs.
-
-!!! info "III. The Watchers (The Senses)"
-    *   **The Oracle:** Traces the daemon's thoughts (Arize Phoenix).
-    *   **The Scribe & Harvester:** Observe the machine's pulse (Grafana & Prometheus).
-
----
-
-## 🕯️ The Summoning (Quickstart)
-
-The summoning is not a single command, but a four-stage rite:
-
-1.  **The Desecration:** Installing the summoning tools.
-2.  **The Inscription:** Spawning and editing the configuration files (The Codex).
-3.  **The Transmutation:** Binding the configuration to `systemd`.
-4.  **The Awakening:** Starting the daemon.
-
-Each step is detailed in the full ritual.
+<div align="center">
+  <a href="summoning.md" style="text-decoration: none;">
+    <div style="
+      display: inline-block;
+      background: linear-gradient(90deg, #7c4dff, #00e5ff);
+      color: #08080b;
+      padding: 15px 35px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 1.2em;
+      box-shadow: 0 0 25px rgba(124, 77, 255, 0.5);
+      border: 1px solid rgba(255,255,255,0.2);
+    ">
+      Begin the ritual &rarr;
+    </div>
+  </a>
+</div>

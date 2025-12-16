@@ -1,47 +1,80 @@
 [project]
 name = "lychd"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Systemd-native daemon for local agentic orchestration"
 readme = "README.md"
 authors = [
     { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12, <3.14"
 license = { text = "MIT" }
+keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: No Input/Output (Daemon)",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: System :: Systems Administration",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Framework :: Pydantic",
+    "Typing :: Typed",
 ]
+
+
 dependencies = [
     "jinja2>=3.1.6",
-    "pydantic-settings>=2.10.1",
+    "pydantic-settings[toml]>=2.10.1",
+    "litestar>=2.18.0",
 ]
 
-[project.optional-dependencies]
+[project.urls]
+Homepage = "https://github.com/hexanomicon/lychd"
+Issues = "https://github.com/hexanomicon/lychd/issues"
 
+[dependency-groups]
 server = [
     "litestar[sqlalchemy,structlog,jinja,pydantic]>=2.18.0",
     "litestar-granian>=0.14.2",
+    "litestar-vite",
     "litestar-saq[psycopg]>=0.5.3",
     "pydantic-ai-slim[openai, logfire]>=1.25.1",
+    "asyncpg>=0.29.0",
 ]
-
 docs = [
     "mkdocs-material>=9.7.0",
 ]
-
-[dependency-groups]
-dev = [
-    "ruff>=0.1.0",
+test = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    # "basedpyright>=1.1.0",        # used in VSCodium, conflicts
+    "pytest-cov",
+]
+lint = [
+    "ruff>=0.1.0",
 ]
 
+typing = [
+    "basedpyright>=1.1.0"
+]
+
+dev = [
+    { include-group = "server" },
+    { include-group = "docs" },
+    { include-group = "test" },
+    { include-group = "lint" },
+    # no typing or we get errors with pyright stub
+]
+
+
+
 [project.scripts]
-lychd = "lychd.main:main"
+lychd = "lychd.__main__:run_cli"
+
+[tool.hatch.version]
+path = "src/lychd/__about__.py"
 
 [build-system]
 requires = ["hatchling"]
@@ -63,21 +96,27 @@ log_cli_level = "INFO"
 line-length = 120
 target-version = "py313"
 
+[tool.codespell]
+ignore-words-list = "tread,wither"
+
 [tool.ruff.lint]
-# The recommended strict rule set
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # Pyflakes
-    "I",  # isort
-    "UP", # pyupgrade
-    "B",  # flake8-bugbear (finds likely bugs)
-    "C90",# flake8-mccabe (checks for complexity)
-    "SIM",# flake8-simplify (suggests code simplifications)
-    "TID",# flake8-tidy-imports (stricter import rules)
+select = ["ALL"]  # Zapne VŠETKY pravidlá
+
+# Tu explicitne vypneš len tie, ktoré sú otravné alebo riešené inak
+ignore = [
+    "E501",    # Line length done by formatter
+    "D",       # Missing docstrings
+    "ANN",     # Missing annotations
+    "FIX002",  # TODO comments
+    "PLC0415"  # Allow imports in functions
 ]
 
-ignore = ["UP004"] # import from object
+[tool.ruff.lint.isort]
+known-first-party = ["lychd", "tests"] # tell isortu, these are our modules
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"] # in tests allow `assert`
+"src/lychd/__init__.py" = ["F401"] # In __init__ allow unused imports
 
 [tool.ruff.format]
 quote-style = "double"
@@ -95,3 +134,16 @@ typeCheckingMode = "strict"
 
 # Tell pyright where your source code is
 include = ["src"]
+
+
+[tool.coverage.report]
+exclude_lines = [
+  'if TYPE_CHECKING:',
+  'pragma: no cover',
+  "if __name__ == .__main__.:",
+  'def __repr__',
+  'raise NotImplementedError',
+  'if 0:',
+  'class .*\bProtocol\):',
+  '@(abc\.)?abstractmethod',
+]

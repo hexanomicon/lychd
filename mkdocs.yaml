@@ -9,13 +9,14 @@ theme:
     view: material/eye
   favicon: assets/hexanomicon.png
   custom_dir: docs/overrides
-  palette: 
-    - scheme: slate 
+  palette:
+    - scheme: slate
       primary: black
       accent: cyan
   features:
     - navigation.instant
-    - navigation.tabs
+    #- navigation.tabs
+    - navigation.indexes
     - navigation.footer
     - content.code.copy
     - content.action.edit
@@ -24,7 +25,39 @@ theme:
 copyright: Copyright &copy; 2025 Hexanomicon &ndash;
 
 nav:
-  - The Prophecy: index.md
+  - "Prophecy": index.md
+  - "Summoning": summoning.md
+  - "Sepulcher":
+      - sepulcher/index.md
+      - "Lich": sepulcher/lich.md
+      - "Codex": sepulcher/codex.md
+      - "Animator":
+          - sepulcher/animator/index.md
+          - "Portal": sepulcher/animator/portal.md
+          - "Soulstone": sepulcher/animator/soulstone.md
+      - "Phylactery":
+          - sepulcher/phylactery/index.md
+          - "Reanimation": sepulcher/phylactery/reanimation.md
+          - "Soulforge": sepulcher/phylactery/soulforge.md
+      - "Vessel":
+          - sepulcher/vessel/index.md
+          - "Ghouls": sepulcher/vessel/ghouls.md
+          - "Shadow Realm": sepulcher/vessel/shadow_realm.md
+
+      - "Watchers":
+          - sepulcher/watchers/index.md
+          - "Harvester": sepulcher/watchers/harvester.md
+          - "Oracle": sepulcher/watchers/oracle.md
+          - "Scribe": sepulcher/watchers/scribe.md
+  - "Divination":
+      - divination/index.md
+      - "Altar": divination/altar.md
+      - "Transcendence":
+          - divination/transcendence/index.md
+          - "Incantation": divination/transcendence/incantation.md
+          - "Invocation": divination/transcendence/invocation.md
+          - "Immortality": divination/transcendence/immortality.md
+  - "Lexicon": lexicon.md
 
 extra_css:
   - stylesheets/frostmourne.css
@@ -33,11 +66,11 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
-  
+
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  
+
   - attr_list
 
 repo_name: hexanomicon/lychd
@@ -47,19 +80,19 @@ edit_uri: edit/main/docs/
 
 extra:
   generator: false
-  
+
   social:
-    # GitHub (The Castle)
+    # GitHub (divinationCastle)
     - icon: fontawesome/brands/github
       link: https://github.com/hexanomicon
       name: hexanomicon on GitHub
 
-    # Python Package Index (The Artifact)
+    # Python Package Index (divinationArtifact)
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/lychd/
       name: lychd on PyPI
 
-    # Email (The Void) 
+    # Email (divinationVoid)
     - icon: fontawesome/solid/envelope
       link: mailto:hexanomicon@proton.me
       name: Contact the Magus
