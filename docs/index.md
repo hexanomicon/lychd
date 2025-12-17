@@ -33,22 +33,3 @@ hide:
 At last! You have unearthed the pages of a modern alchemical grimoire built on the ancient secrets of transmutation.
 
 In it you shall find the mastery of **LychD** — the Philosopher's Stone of the digital age so that You - the Magus, will not transmute mere lead, but your very soul into the eternal crypt of the phylactery to [Transcend](./divination/transcendence/index.md) your mortal nature and be reborn as the **Demilich**. A merged construct of will and LLM Animation.
-
-<div align="center">
-  <a href="summoning.md" style="text-decoration: none;">
-    <div style="
-      display: inline-block;
-      background: linear-gradient(90deg, #7c4dff, #00e5ff);
-      color: #08080b;
-      padding: 15px 35px;
-      border-radius: 10px;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
-      font-size: 1.2em;
-      box-shadow: 0 0 25px rgba(124, 77, 255, 0.5);
-      border: 1px solid rgba(255,255,255,0.2);
-    ">
-      Begin the ritual &rarr;
-    </div>
-  </a>
-</div>
