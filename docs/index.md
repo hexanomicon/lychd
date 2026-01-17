@@ -44,8 +44,6 @@ A modern alchemical grimoire built on the ancient secrets of transmutation.
 
 > _While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
-**Proposed Structure:**
-
 ## The Four Gates
 
 To master the LychD, you must pass through four gates of knowledge.
