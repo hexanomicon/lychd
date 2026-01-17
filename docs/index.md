@@ -35,7 +35,7 @@ hide:
 
 A modern alchemical grimoire built on the ancient secrets of transmutation.
 
-**LychD** is the **Philosopher's Stone of the Digital Age**—an autonomous, self-hosted daemon designed for **[Autopoiesis](./adr/0011-spheres-of-creation.md)** (Self-Creation).
+**LychD** is the **Philosopher's Stone of the Digital Age**—an autonomous, self-hosted daemon designed for **[Autopoiesis](./adr/11-spheres-of-creation.md)** (Self-Creation).
 
 !!! quote "The Great Work"
     You, the **Magus**, will not transmute mere lead. You will transmute your very soul into the eternal crypt of the **[Phylactery](./sepulcher/phylactery/index.md)**.
