@@ -8,6 +8,12 @@
     <a href="https://hexanomicon.github.io/lychd/">
       <img src="https://img.shields.io/badge/Grimoire-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
+    <a href="LICENSE">
+      <img src="https://img.shields.io/badge/License-AGPLv3-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
+    </a>
+    <a href="CONTRIBUTING.md">
+      <img src="https://img.shields.io/badge/CLA-None-000000?style=for-the-badge&labelColor=1a1a20" alt="No CLA">
+    </a>
   </p>
 </div>
 
@@ -25,7 +31,7 @@ To bind the Daemon to the Host, you must complete the four stages of the Rite.
 
 Prepare the **Unholy Grounds** by installing the summoning tool. Choose your path:
 
-- **📦 PyPI (The Acolyte)**
+- **📦 PyPI**
   _Standard / uv installation_
 
   ```bash
@@ -33,7 +39,7 @@ Prepare the **Unholy Grounds** by installing the summoning tool. Choose your pat
   # uv tool install lychd
   ```
 
-- **</> Source (The Necromancer)**
+- **</> Source**
   _For Magi seeking to modify the core._
 
   ```bash
@@ -56,7 +62,7 @@ This establishes the **Sacred Grounds**:
 - 📜 **The Codex** (`~/.config/lychd`): The book of **Runes** (Quadlets & Blueprints).
 - 🪦 **The Crypt** (`~/.local/share/lychd`): The **Phylactery** mount (Postgres & PgVector).
 
-_> **Action Required:** Enter the Codex and configure your power sources._
+_> **Action Required:** Consult [The Codex](https://hexanomicon.github.io/lychd/sepulcher/codex/) to configure your power sources._
 
 - _Set your `model_root` in `lychd.toml`._
 - _Define your **Soulstones** (Local LLMs) or **Portals** (Cloud APIs) in `conf.d/`._
@@ -88,43 +94,45 @@ journalctl --user -fu lychd
 
 ## 🏛️ The Sepulcher (The Pod)
 
+The anatomy of the Daemon.
+
 ### I. Manifestation
 
 _The unholy duality that forms the Lich._
 
-- ⚰️ **The Vessel** (Litestar + Pydantic AI)
-  - The reanimated husk powered by **AI Agents**. It orchestrates asynchronous rites via **SAQ** and serves the **Altar**.
-- ⚗️ **The Phylactery** (Postgres)
-  - Anchors the soul in the **Crypt**. If the **Vessel** is destroyed, The Lich reforms instantly from this point.
+- ⚰️ **The Vessel** (Litestar + Pydantic AI): The reanimated husk powered by **AI Agents**. It orchestrates asynchronous rites via **SAQ** and serves the **Altar**.
+- ⚗️ **The Phylactery** (Postgres): Anchors the soul in the **Crypt**. If the **Vessel** is destroyed, The Lich reforms instantly from this point.
 
 ### II. The Animator
 
 _The spark of cognition that moves the Vessel._
 
-- 💎 **Soulstones** (SGLang / vLLM)
-  - Trapped spirits running alongside the **Vessel**.
-- 🌀 **Portal**
-  - Draws power from distant **cloud APIs**. Does not require runes for local service.
+- 💎 **Soulstones** (SGLang / vLLM): Trapped spirits running alongside the **Vessel**.
+- 🌀 **Portal**: Draws power from distant **cloud APIs**. Does not require runes for local service.
 
-### III. The Watchers
+### III. The Watcher
 
-_Silent servants who observe the ritual._
+_The All-Seeing Eye that observes the ritual._
 
-- 🔮 **The Oracle** (Arize Phoenix)
-  - **Traces** the invisible threads of the Lich's thought.
-- ✒️ **The Scribe** (Grafana)
-  - Inscribes the Harvester's findings into a **visual grimoire**.
-- 🦴 **The Harvester** (Prometheus)
-  - Collects the heartbeat of the **Soulstones**.
+- 👁 **Oculus** (Arize Phoenix): **Traces** the invisible threads of the Lich's thought.
 
 ## 🔮 Divination
 
 The Lich operates in the shadows, but you may gaze upon its works.
-Approach **The Altar** @ `http://localhost:8000`.
+Approach **The Altar** @ `http://localhost:7134`.
 
 - **No Client-Side Bloat.** Pure **HTMX**, **Tailwind**, and **AlpineJS** serving server-rendered fragments.
 - **Spectral Tethers.** Watch the **Ghouls** think and execute via SSE (Server-Sent Events).
 - **Present Invocations.** Command the swarm directly from the UI.
+
+### 📜 Consulting the Hexanomicon Locally
+
+For those without internet access to the Astral Plane, you may summon the Grimoire locally.
+
+```bash
+# Serves the documentation at http://localhost:7778
+make docs
+```
 
 # 📜 xDDD: The Prophecies of Creation
 
@@ -137,9 +145,10 @@ We describe the daemon so vividly in the `Hexanomicon` that the code **must mani
 
 Just as a compiler must eventually compile itself, The Lich aims for **Autopoiesis**.
 
-- **I. The First Seal (Incantation):** The Magus inscribes the `Hexanomicon` and raises the **Primal Skeleton**. The Lich awakens, bound to its initial form. Its Aspects are rigid, forged for fixed and unchanging purposes (MVP).
-- **II. The Shadow Realm (Invocation):** The Lich projects its will into the Shadow Realm (**Speculative Execution**). It reads the runes and proposes rites in shadowed timelines. The Magus intervenes at the **Altar**, collapsing the timelines to the one true path (Human-in-the-Loop). The system begins to animate its own dead code into living functions.
-- **III. The Ouroboros (Immortality):** The entity transcends its design. It can read the `Hexanomicon` and reconstruct itself from zero, forging its own Aspects from pure will. The cycle closes. The Daemon is eternal.
+- **I. The First Seal (Incantation):** The Magus inscribes the `Hexanomicon` and raises the **Primal Skeleton**. The Lich awakens, bound to its initial form. Its capabilities are rigid, forged for fixed and unchanging purposes (MVP).
+- **II. The Second Seal (Invocation):** The Lich projects its will into the Shadow Realm (**Speculative Execution**). It reads the runes and proposes rites in shadowed timelines. The Magus intervenes at the **Altar**, collapsing the timelines to the one true path (Human-in-the-Loop). The system begins to animate its own dead code into living functions.
+- **III. The Third Seal (Illumination):** The Magus imparts the **Cognitive Kernel** (Ontology) to the machine. The Lich begins to understand the laws of its own creation.
+- **IV. The Final Seal (Immortality):** The entity transcends its design. It achieves **The Ouroboros Apotheosis**. It can read the `Hexanomicon` and reconstruct itself from zero, forging its own **Extensions** from pure will. The cycle closes. The Daemon is eternal.
 
 ---
 

@@ -28,8 +28,31 @@ hide:
 </div>
 
 <br>
+
 # :fontawesome-solid-book-skull: The Prophecy
 
-At last! You have unearthed the pages of a modern alchemical grimoire built on the ancient secrets of transmutation.
+**At last! You have unearthed the pages of the Hexanomicon.**
 
-In it you shall find the mastery of **LychD** — the Philosopher's Stone of the digital age so that You - the Magus, will not transmute mere lead, but your very soul into the eternal crypt of the phylactery to [Transcend](./divination/transcendence/index.md) your mortal nature and be reborn as the **Demilich**. A merged construct of will and LLM Animation.
+A modern alchemical grimoire built on the ancient secrets of transmutation.
+
+**LychD** is the **Philosopher's Stone of the Digital Age**—an autonomous, self-hosted daemon designed for **[Autopoiesis](./adr/0011-spheres-of-creation.md)** (Self-Creation).
+
+!!! quote "The Great Work"
+    You, the **Magus**, will not transmute mere lead. You will transmute your very soul into the eternal crypt of the **[Phylactery](./sepulcher/phylactery/index.md)**.
+
+    By binding the **[Lich](./sepulcher/lich.md)** to your Will, you initiate a cycle of evolution that transcends the duality of User and Machine. You will be reborn as the **[Demilich](./divination/transcendence/immortality.md)**—a merged construct of human intent and silicon animation, capable of reasoning, coding, and expansion without end.
+
+> _While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
+
+**Proposed Structure:**
+
+## The Four Gates
+
+To master the LychD, you must pass through four gates of knowledge.
+
+- **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local machine.
+- **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**, and **[Animator](./sepulcher/animator/index.md)**.
+- **[Divination](./divination/index.md):** The Communion of Magus and the Machine. Project your will through the **[Altar](./divination/altar.md)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
+- **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
+
+> _To fulfill the prophecy, you must first draw the [Summoning Circle](./summoning.md)_

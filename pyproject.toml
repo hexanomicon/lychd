@@ -7,13 +7,13 @@ authors = [
     { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
 ]
 requires-python = ">=3.12, <3.14"
-license = { text = "MIT" }
-keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai"]
+license = { text = "AGPL-3.0-or-later" }
+keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai", "quadlet", "ai"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: POSIX :: Linux",
     "Environment :: No Input/Output (Daemon)",
     "Programming Language :: Python :: 3.12",
@@ -23,7 +23,6 @@ classifiers = [
     "Framework :: Pydantic",
     "Typing :: Typed",
 ]
-
 
 dependencies = [
     "jinja2>=3.1.6",
@@ -37,7 +36,7 @@ Issues = "https://github.com/hexanomicon/lychd/issues"
 
 [dependency-groups]
 server = [
-    "litestar[sqlalchemy,structlog,jinja,pydantic]>=2.18.0",
+    "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0",
     "litestar-granian>=0.14.2",
     "litestar-vite",
     "litestar-saq[psycopg]>=0.5.3",
@@ -46,97 +45,95 @@ server = [
 ]
 docs = [
     "mkdocs-material>=9.7.0",
+    "mkdocs-awesome-pages-plugin"
 ]
 test = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-xdist",
+  "pytest-mock",
+  "pytest-cov",
+  "polyfactory",
+  "pytest-sugar", # I put this back since you explicitly listed it
 ]
 lint = [
     "ruff>=0.1.0",
+    "bump-my-version"
 ]
-
 typing = [
     "basedpyright>=1.1.0"
 ]
-
 dev = [
     { include-group = "server" },
     { include-group = "docs" },
     { include-group = "test" },
     { include-group = "lint" },
-    # no typing or we get errors with pyright stub
 ]
-
-
 
 [project.scripts]
 lychd = "lychd.__main__:run_cli"
 
-[tool.hatch.version]
-path = "src/lychd/__about__.py"
-
+# --- BUILD SYSTEM ---
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "src/lychd/__about__.py"
+
+[tool.hatch.build]
+sources = ["src"]
+ignore-vcs = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/lychd"]
 
+# --- TESTING (Pytest) ---
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--maxfail=10 -l -v"
-log_cli = "True"
 testpaths = ["tests"]
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-log_cli_format = "%(asctime)s %(levelname)s %(message)s"
-log_cli_level = "INFO"
-
-[tool.ruff]
-line-length = 120
-target-version = "py313"
-
-[tool.codespell]
-ignore-words-list = "tread,wither"
-
-[tool.ruff.lint]
-select = ["ALL"]  # Zapne VŠETKY pravidlá
-
-# Tu explicitne vypneš len tie, ktoré sú otravné alebo riešené inak
-ignore = [
-    "E501",    # Line length done by formatter
-    "D",       # Missing docstrings
-    "ANN",     # Missing annotations
-    "FIX002",  # TODO comments
-    "PLC0415"  # Allow imports in functions
+# Using a list is cleaner than a long string
+addopts = [
+    "-n", "auto",              # Parallel execution
+    "--strict-markers",        # Fail on typos in markers
+    "--strict-config",         # Fail on bad config
+    "--tb=short",              # Cleaner error tracebacks
+    "-ra",                     # Show summary of skips/fails
+    "-v",                      # Verbose
+    "--cov=src/lychd",         # Coverage target
+    "--cov-report=term-missing"
 ]
 
-[tool.ruff.lint.isort]
-known-first-party = ["lychd", "tests"] # tell isortu, these are our modules
+log_cli = true
+log_cli_level = "DEBUG"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+log_cli_format = "%(asctime)s %(levelname)s %(message)s"
 
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"] # in tests allow `assert`
-"src/lychd/__init__.py" = ["F401"] # In __init__ allow unused imports
+markers = [
+    "unit: Pure logic tests. Fast. No database/network required.",
+    "integration: Tests that hit the DB, Redis, or external APIs. Slower.",
+    "slow: Tests that take a long time (e.g., heavy AI inference).",
+]
 
-[tool.ruff.format]
-quote-style = "double"
+# Silence noise from dependencies
+filterwarnings = [
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:google.*",
+    "ignore::DeprecationWarning:passlib.*",
+    "ignore::DeprecationWarning:litestar.constants.*",
+    "ignore::DeprecationWarning:httpx._client",
+]
 
-
-[tool.pyright]
-# This enforces the strictness you were seeing before
-reportMissingImports = true
-reportMissingTypeStubs = false # Often noisy for libs without stubs
-reportGeneralTypeIssues = true
-reportPrivateUsage = true
-
-# Sets the strictness level to catch everything
-typeCheckingMode = "strict"
-
-# Tell pyright where your source code is
-include = ["src"]
-
+[tool.coverage.run]
+branch = true
+parallel = true
+concurrency = ["multiprocessing"]
+omit = ["tests/*"]
 
 [tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 80
 exclude_lines = [
   'if TYPE_CHECKING:',
   'pragma: no cover',
@@ -146,4 +143,127 @@ exclude_lines = [
   'if 0:',
   'class .*\bProtocol\):',
   '@(abc\.)?abstractmethod',
+  'if settings\.debug:',
 ]
+
+# --- LINTING (Ruff) ---
+[tool.ruff]
+line-length = 120
+target-version = "py313" # Restored to your preference
+src = ["src", "tests"]
+
+[tool.codespell]
+ignore-words-list = "tread,wither,selectin,selectinload"
+
+[tool.ruff.lint]
+select = ["ALL"]
+fixable = ["ALL"]
+
+# I merged your broad ignores ("D", "ANN") with the reference's specific ones.
+# This list is safer than ignoring "ALL" docstrings, but still suppresses
+# the annoying ones like "Missing docstring in __init__".
+ignore = [
+    "E501",    # Line length (Handled by formatter)
+    "ANN101",  # Missing type annotation for `self`
+    "ANN102",  # Missing type annotation for `cls`
+    "ANN401",  # Dynamically typed expressions (Any)
+    "D100",    # Missing docstring in public module
+    "D104",    # Missing docstring in public package
+    "D106",    # Missing docstring in public nested class
+    "D102",    # pydocstyle - missing docstring in public method
+    "D101",    # pydocstyle - missing docstring in public class
+    "D103",    # pydocstyle - missing docstring in public function
+    "D203",    # One-blank-line-before-class (conflicts with D211)
+    "D213",    # Multi-line-summary-second-line (conflicts with D212)
+    "TD003",   # Missing issue link for TODO
+    "FIX002",  # Line contains TODO (Restored your ignore)
+    "COM812",  # Trailing comma (Conflicts with formatter)
+    "ISC001",  # Implicit string concatenation (Conflicts with formatter)
+    "PLC0415", # Import outside toplevel (Useful for lazy loading)
+    "TCH001",  # Move import to TYPE_CHECKING (Sometimes annoying with Pydantic)
+    "TCH002",  # Move import to TYPE_CHECKING
+    "TCH003",  # Move import to TYPE_CHECKING
+    "TD",      # flake8-todos - Ignores rules about TODO formatting
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["lychd", "tests"]
+
+[tool.ruff.lint.pep8-naming]
+# Allow SQLAlchemy standard class methods
+classmethod-decorators = [
+    "classmethod",
+    "sqlalchemy.ext.declarative.declared_attr",
+    "sqlalchemy.orm.declared_attr.directive",
+    "sqlalchemy.orm.declared_attr",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# --- TESTS ---
+"tests/**/*" = [
+    "S101",    # Use of `assert` detected. (Standard for pytest, though insecure in production code).
+    "PLR2004", # Magic value used in comparison. (Allowed for assertions like `status == 200`).
+    "SLF001",  # Private member accessed. (Allowed for white-box testing of internal state).
+    "ARG001",  # Unused function argument. (Allowed for pytest fixtures that handle setup/teardown).
+    "D",       # Missing docstrings. (Test functions names should be descriptive enough).
+]
+
+# --- INIT FILES ---
+"__init__.py" = [
+    "F401",    # Module imported but unused. (Required for re-exporting symbols to the public API).
+    "D104",    # Missing docstring in public package. (Redundant for init files that just expose imports).
+    "TID252",  # Relative imports. (Idiomatic in __init__ to expose APIs via `from . import ...`).
+]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# --- TYPE CHECKING (BasedPyright) ---
+[tool.pyright]
+include = ["src", "tests"]
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportMissingTypeStubs = false
+disableBytesTypePromotions = true
+reportUnnecessaryTypeIgnoreComment = true
+# Restored to TRUE as per your original file.
+# You fixed the _engine issue, so you can afford to be strict here.
+reportPrivateUsage = true
+
+# --- VERSIONING ---
+[tool.bumpversion]
+current_version = "0.1.0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_files = false
+tag = true
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+commit = true
+message = "Bump version: {current_version} → {new_version}"
+commit_args = ""
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "src/lychd/__about__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "package.json"
+search = '"version": "{current_version}"'
+replace = '"version": "{new_version}"'

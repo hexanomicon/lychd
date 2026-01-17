@@ -29,14 +29,7 @@ Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector
     *   It stores *why* you chose it (the context).
     *   It becomes the training dataset that eventually allows the Lich to act without you.
 
-!!! tip "The Oracle's Covenant"
-    The sanctity of the Phylactery is absolute. A sacred covenant grants the **[Oracle](../watchers/oracle.md)** (Arize Phoenix) a dedicated chamber within this database.
+!!! tip "The Oculus's Covenant"
+    The sanctity of the Phylactery is absolute. A sacred covenant grants the **[Oculus](../oculus.md)** (Arize Phoenix) a dedicated chamber within this database.
 
-    The Oracle does not write to a temporary log; it inscribes the Lich's thought-traces directly into the Phylactery. This ensures that the history of the Lich's cognition—its failures, its dreams, and its successes—is preserved with the same permanence as its soul.
-
----
-
-**Next Steps:**
-We should look at **The Oracle** (`sepulcher/watchers/oracle.md`). Since we just mentioned it has a covenant with the Phylactery, we need to define it not as a "debugger" but as the **Scrying Pool** used for the Albedo/Whitening process.
-
-Shall we proceed to **The Oracle**?
+    The Oculus does not write to a temporary log; it inscribes the Lich's thought-traces directly into the Phylactery. This ensures that the history of the Lich's cognition—its failures, its dreams, and its successes—is preserved with the same permanence as its soul.

@@ -45,7 +45,7 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 FROM python:3.13-slim-bookworm
 
 # --- Security Setup ---
-# Create a dedicated group (gid 1001) and user (uid 1001).
+# Create a dedicated group (gid 1001) and user (uid 1001) as per ADR 06.
 # We never run as root to limit the blast radius if the container is compromised.
 RUN groupadd --system --gid 1001 appuser && \
     useradd --system --uid 1001 --gid 1001 appuser
@@ -65,10 +65,24 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Tell Litestar/Granian where the application factory is.
 ENV LITESTAR_APP="lychd.main:app"
 
+# --- Sphere Preparation (Crucial for Rootless Mounts) as per ADR 18 ---
+# We must create these directories now and assign ownership to appuser.
+# If we don't, the runtime will create them as 'root' when mounting volumes,
+# causing the application to crash with "Permission Denied".
+#
+# Binds to constants defined in: src/lychd/config/constants.py
+# - CONTAINER_RW_LAB        -> /app/lab
+# - CONTAINER_RO_EXTENSIONS -> /app/extensions
+# - CONTAINER_RO_LIBRARY    -> /app/library
+RUN mkdir -p /app/lab /app/extensions /app/library && \
+    chown -R appuser:appuser /app/lab /app/extensions /app/library
+
 # Drop privileges to the non-root user.
 USER appuser
 
 # Document that the service listens on port 8000.
+# Binds to constant defined in: src/lychd/config/constants.py
+# - LYCHD_INTERNAL_PORT        -> 8000
 EXPOSE 8000
 
 # Start the high-performance ASGI server.

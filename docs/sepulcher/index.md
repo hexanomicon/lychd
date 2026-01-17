@@ -21,4 +21,4 @@ Below are the core components that constitute this dark architecture.
     *   :material-skull-scan: **[Vessel](./vessel/index.md):** The reanimated husk that serves the Altar and executes the Lich's will by spawning Ghouls.
     *   :fontawesome-solid-flask: **[Phylactery](./phylactery/index.md):** The soul-anchor that ensures the Lich's immortality, allowing it to reform should the Vessel be destroyed.
     *   :fontawesome-solid-heart-pulse: **[Animator](./animator/index.md):** The spark of unlife, drawing power from trapped Soulstones (Local LLMs) and rifts to the cloud (Portals).
-    *   :material-eye: **[Watchers](./watchers/index.md):** The silent observers—the Oracle, Scribe, and Harvester—that record every pulse of the machine's dark heart.
+    *   :material-eye: **[Oculus](./oculus.md):** The silent observer that records every pulse of the machine's dark heart.

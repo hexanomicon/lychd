@@ -9,76 +9,73 @@ icon: material/hexagon-slice-6
 
 A **Soulstone** is a containerized Local LLM inference server. It is the engine of the [Animator](./index.md) that runs within the physical walls of the [Sepulcher](../index.md).
 
-Technically, a Soulstone is a **Podman Quadlet** running an OpenAI-compatible server (such as **vLLM**, **SGLang**, or **Llama.cpp**). The framework reads your definitions and generates the necessary Systemd service files to manage their lifecycle.
+Technically, a Soulstone is a **Podman Quadlet** running an OpenAI-compatible server (such as **vLLM** or **Llama.cpp**). The Scribe reads your definitions and generates the necessary Systemd service files to manage their lifecycle.
 
-## 💎 The Three Forms of Binding
+## 💎 The Forms of Binding
 
-You may summon Soulstones in three distinct configurations, depending on your hardware and your hunger.
+You may summon Soulstones in two distinct configurations, depending on your hardware and your hunger.
 
 ### I. The Solitary (Single Model)
 
-This is the standard binding. One container holds one model. It is stable, isolated, and precise.
+This is the standard binding. One container holds one model. It assumes it owns the GPU. Starting a Solitary soulstone will automatically terminate any other running soulstones to free up VRAM.
 
 ```toml
-# ~/.config/lychd/conf.d/soulstones.toml
+# ~/.config/lychd/soulstones/hermes.toml
 
-[soulstones.llamacpp_glm4]
-port = 8080
-description = "High-intelligence model with CPU offload via Llama.cpp."
+[hermes]
+description = "Reasoning model via Llama.cpp."
 image = "ghcr.io/ggerganov/llama.cpp:server-cuda"
-# The framework injects this filename into the exec command template
-model_filename = "GLM-4.5-Air-Q4_K_M-00001-of-00002.gguf"
-# Overrides the default volume to be read-only
-volumes = ["{{model_root}}/glm_4.5_air:/models:ro,z"]
+port = 8080
+
+# The Weights
+model_path = "/mnt/models/Hermes-2-Pro-Llama-3-8B-Q8_0.gguf"
+model_format = "GGUF"
+
+# Execution Arguments (Passed to the container entrypoint)
 exec = [
-    "-m", "/models/{{model_filename}}",
-    "-c", "32768",
+    "-m", "/models/hermes.gguf", # Note: Map internal path manually if using custom volumes
+    "-c", "8192",
     "--host", "0.0.0.0",
     "--port", "8080",
-    "--flash-attn",
-    "-ngl", "99",
-    "--jinja"
+    "-ngl", "99"
 ]
+
+# Optional: Extra Volumes
+volumes = ["/mnt/models:/models:ro,z"]
 ```
 
 ### II. The Coven (Grouped Containers)
 
-For the Magus who wishes to run distinct engines side-by-side (e.g., a vLLM server for logic and a Llama.cpp server for embeddings).
+For the Magus who wishes to run distinct engines side-by-side (e.g., a vLLM server for logic and a smaller Llama.cpp server for function calling).
 
 **The Two-Dot Rule:**
-To bind Soulstones into a cooperative group, name them with a hierarchy: `soulstones.<group_name>.<model_name>`.
+To bind Soulstones into a cooperative group, use the nested TOML syntax: `[group_name.model_name]`.
 
-- **Inclusive:** Soulstones in the same group do _not_ conflict. Systemd allows them to run together.
-- **Exclusive:** The Group conflicts with any soulstone outside of it.
-
-### III. The Hydra (Llama.cpp Router)
-
-_Experimental Support._
-
-The `llama.cpp` server has evolved to support a **Router** mode. This allows a single container to serve multiple models from a directory, swapping them into memory as requested.
-
-This is not a Coven (multiple processes); it is a **Hydra** (one process, many heads).
-
-To summon a Hydra, you point the execution command to a directory rather than a specific file, allowing the internal router of the server to manage the "slots."
+* **Inclusive:** Soulstones within the same group (`logic.alpha` and `logic.beta`) do _not_ conflict. Systemd allows them to run together.
+* **Exclusive:** The Group conflicts with any soulstone outside of it (`logic.*` will kill `creative.*`).
 
 ```toml
-[soulstones.hydra_router]
+# ~/.config/lychd/soulstones/logic_cluster.toml
+
+# Alpha: The Big Brain (vLLM)
+[logic.alpha]
+image = "vllm/vllm-openai"
+port = 8000
+model_path = "/models/Llama-3-70B-Instruct"
+model_name = "llama-3-70b"
+
+# Beta: The Fast Hand (Llama.cpp)
+[logic.beta]
 image = "ghcr.io/ggerganov/llama.cpp:server-cuda"
-volumes = ["{{model_root}}/mixed_quantized:/models:ro,z"]
-exec = [
-    "--model-url", "/models/", # The directory where the heads reside
-    "--port", "8080",
-    "--parallel", "4" # Serve 4 requests at once
-]
+port = 8001
+model_path = "/models/Hermes-Function-Call.gguf"
+model_name = "hermes-func"
 ```
 
 ## ⚔️ The Law of Exclusivity
 
-LychD enforces strict resource discipline via Systemd `Conflicts=`:
+LychD enforces strict resource discipline via Systemd `Conflicts=`. This prevents Out-Of-Memory (OOM) crashes by ensuring two massive models never fight for the same VRAM unless you explicitly grouped them.
 
-- **Solitary vs Solitary:** `soulstone-glm` will kill `soulstone-mistral`.
-- **Group vs Group:** `soulstone-alpha-*` will kill `soulstone-beta-*`.
-- **Hydra:** A Hydra is treated as a Solitary entity. It demands the GPU. It will kill other Soulstones to claim the hardware.
-
-!!! danger "The Burden of the Hydra"
-    While the Hydra allows for great flexibility, it shares a single memory pool. If you ask the Hydra to manifest too many heads (models) simultaneously, or if the models are too large for the shared context, the beast will starve (OOM) and the container will collapse. Manage your VRAM wisely.
+* **Solitary vs Solitary:** `soulstone-hermes` will kill `soulstone-mistral`.
+* **Group vs Group:** `soulstone-logic-*` will kill `soulstone-creative-*`.
+* **Solitary vs Group:** A Solitary model (Highlander rule) will kill the entire Coven to claim the hardware.

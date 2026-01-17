@@ -15,7 +15,7 @@ theme:
       accent: cyan
   features:
     - navigation.instant
-    #- navigation.tabs
+    # - navigation.tabs
     - navigation.indexes
     - navigation.footer
     - content.code.copy
@@ -24,40 +24,12 @@ theme:
 
 copyright: Copyright &copy; 2025 Hexanomicon &ndash;
 
-nav:
-  - "Prophecy": index.md
-  - "Summoning": summoning.md
-  - "Sepulcher":
-      - sepulcher/index.md
-      - "Lich": sepulcher/lich.md
-      - "Codex": sepulcher/codex.md
-      - "Animator":
-          - sepulcher/animator/index.md
-          - "Portal": sepulcher/animator/portal.md
-          - "Soulstone": sepulcher/animator/soulstone.md
-      - "Phylactery":
-          - sepulcher/phylactery/index.md
-          - "Reanimation": sepulcher/phylactery/reanimation.md
-          - "Soulforge": sepulcher/phylactery/soulforge.md
-      - "Vessel":
-          - sepulcher/vessel/index.md
-          - "Ghouls": sepulcher/vessel/ghouls.md
-          - "Shadow Realm": sepulcher/vessel/shadow_realm.md
+# NOTE: Navigation is handled by the filesystem and the 'awesome-pages' plugin.
+# See .pages files in the docs/ directory for structure.
 
-      - "Watchers":
-          - sepulcher/watchers/index.md
-          - "Harvester": sepulcher/watchers/harvester.md
-          - "Oracle": sepulcher/watchers/oracle.md
-          - "Scribe": sepulcher/watchers/scribe.md
-  - "Divination":
-      - divination/index.md
-      - "Altar": divination/altar.md
-      - "Transcendence":
-          - divination/transcendence/index.md
-          - "Incantation": divination/transcendence/incantation.md
-          - "Invocation": divination/transcendence/invocation.md
-          - "Immortality": divination/transcendence/immortality.md
-  - "Lexicon": lexicon.md
+plugins:
+  - search
+  - awesome-pages
 
 extra_css:
   - stylesheets/frostmourne.css
@@ -66,12 +38,11 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+  - attr_list
 
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-
-  - attr_list
 
 repo_name: hexanomicon/lychd
 repo_url: https://github.com/hexanomicon/lychd

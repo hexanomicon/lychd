@@ -17,10 +17,12 @@
     "eamodio.gitlens",                // See history
     "usernamehw.errorlens",           // See errors inline (Highly recommended)
     "esbenp.prettier-vscode",         // Keeps JSON/Markdown tidy
+    "odolphebarbanneau.python-docstring-highlighter",
 
     // --- ⚙️ The Infrastructure (CRITICAL ADDITION) ---
-    "hangxingliu.vscode-systemd",     // You NEED this for .service/.quadlet files
-    "davidanson.vscode-markdownlint", // Markdown linting with special rules in settings
-
+    "hangxingliu.vscode-systemd-support",     // You NEED this for .service/.quadlet files
+    "davidanson.vscode-markdownlint",         // Markdown linting with special rules in settings
+    "csstools.postcss",
+    "bradlc.vscode-tailwindcss"
   ]
 }
