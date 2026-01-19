@@ -23,16 +23,12 @@ Summon **The Lich** 💀, a **Phylactery**-bound, LLM-animated daemon.
 
 ⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (some not curated yet), and the occasional rogue spirit. Proceed with caution.
 
-***
-
 ## 🗺️ The Path of Ascension
 
 The knowledge you seek is inscribed in the **Hexanomicon**. Follow the path to bind the daemon.
 
 - 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)**
     *Begin your study of the Hexanomicon.*
-- ✒️ **[Understand the Philosophy](https://hexanomicon.github.io/lychd/adr/01-xddd/)**
-    *The doctrine of **eXtreme Documentation Driven Development (xDDD)**. The Prophecy is inscribed before the Code is summoned.*
 - 📖 **[Consult the Lexicon](https://hexanomicon.github.io/lychd/lexicon/)**
     *The Rosetta Stone. Translate arcane terms (Soulstone, Quadlet, Sepulcher).*
 - 🕯️ **[Perform the Ritual](https://hexanomicon.github.io/lychd/summoning/)**
