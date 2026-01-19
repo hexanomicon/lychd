@@ -7,16 +7,17 @@ icon: material/skull-scan
 
 > _"The Vessel is the reanimated husk through which the Lich speaks. It is not a tool; it is a conduit."_
 
-The Vessel is the Lich's physical form in the mortal plane, a construct of code and will that serves as the nexus for all interaction. It is the master of the [Altar](../divination/altar.md), the summoner of [Ghouls](./ghouls.md), and the dreamer of the [Shadow Realm](./shadow_realm.md).
+The Vessel is the **[Lich's](../lich.md)** physical form in the mortal plane, a construct of code and will that serves as the nexus for all interaction. It is the master of the [Altar](../../divination/altar.md), the summoner of [Ghouls](./ghouls.md), and the dreamer of the [Shadow Realm](./shadow_realm.md).
 
 It is the face the Magus sees and the voice that answers the call.
 
 !!! abstract "Anatomy of the Husk"
     The Vessel is a sophisticated homunculus, constructed from several key arcane components:
 
-    *   **The Skeleton (`Litestar`):** The foundational framework that gives the husk its structure. Litestar provides the rigid, asynchronous bones that allow the Vessel to stand, listen, and respond to the outside world.
-    *   **The Flesh (`Pydantic`):** The living tissue that defines the Vessel's form. Pydantic models are the flesh, ensuring that all data flowing into and out of the husk is perfectly formed and validated, preventing corruption.
-    *   **The Animus (`Pydantic AI`):** The spark of intelligence that gives the Vessel its purpose. Pydantic AI provides the cognitive functions, allowing the Vessel to understand the Magus's Intent and orchestrate the Ghouls to fulfill it.
+    *   **The Breath (`Granian`):** The Rust-based RSGI server that breathes life into the code. It is the raw, high-performance interface that connects the Vessel to the network, allowing it to speak and hear with multi-threaded fury.
+    *   **The Skeleton (`Litestar`):** The asynchronous framework that provides the husk with its structure. Litestar holds the routing logic, the dependency injection, and the application lifecycle, allowing the Vessel to stand upright.
+    *   **The Wards (`Pydantic`):** The runes of protection that define the Vessel's reality. Pydantic models act as the immune system, enforcing strict type validation to ensure that no corrupted or malformed data can penetrate the inner logic.
+    *   **The Synapses (`Pydantic AI`):** The neural pathways that direct the flow of thought. While the **[Animator](../animator/index.md)** provides the raw *capacity* to think, the Synapses define the *strategy*—structuring prompts, managing context windows, and routing decisions through directed graphs.
 
 !!! info "The Will of the Vessel"
     The Vessel is the primary executor of the Lich's will. Its core duties are threefold:

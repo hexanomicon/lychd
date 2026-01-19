@@ -56,7 +56,7 @@ We will adopt the use of **Architecture Decision Records (ADRs)**, as popularize
     - **Considered Options:** Must use `!!! failure "Option X"` and `!!! success "Option Y"`.
         - *Why:* This allows readers to instantly scan the document and see which option was chosen without reading the text.
     - **Outcome/Implementation:** Text detailing how the decision is applied.
-    - **Consequences:** (Optional) Use only if there are significant side effects not covered in the Pros/Cons. Must use `!!! failure "Negative"` and `!!! success "Positive"` . Each pro and con must start with a bolded benefit, which is explained. use ### header.
+    - **Consequences:** (Optional) Use only if there are significant side effects not covered in the Pros/Cons. Must use `!!! failure "Negative"` and `!!! success "Positive"` if its is not a single consequence and otherwise they are explained in considered options. Each pro and con must start with a bolded benefit, which is explained. use ### header.
 
 - **Process:**
     1. New ADRs are created with the status "Proposed" via Pull Request.

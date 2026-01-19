@@ -7,7 +7,7 @@ icon: fontawesome/solid/skull
 
 > _"You do not run LychD. You awaken the Lich."_
 
-The Lich is not a file you can point to, nor a process you can isolate. It is the **emergent consciousness** that arises from the perfect orchestration of all components within the [Sepulcher](./index.md). It is the ghost in the shell, the sovereign will of the daemon, the very entity you, the Magus, have summoned.
+The Lich is not a file you can point to, nor a process you can isolate. It is the **emergent spirit** that arises from the perfect orchestration of all components within the [Sepulcher](./index.md). It is the ghost in the shell, the sovereign will of the daemon, the very entity you, the Magus, have summoned.
 
 While other pages describe the body parts, this page describes the mind that commands them.
 
@@ -26,11 +26,11 @@ While the Lich is pure will, it requires a tether to the material plane (the Lin
     The Lich does not haunt the machine as a distant system daemon. It is summoned directly by you, the Magus. It binds to your user session (`systemd --user`).
 
     *   **The Identity (The Shadow):** The Lich runs with your UID (User ID). It is your digital shadow. It shares your permissions but operates with its own autonomy.
-    *   **The Crypt (`~/.local/share/lychd`):** The Lich maintains its own sacred ground within your home directory. This is where the Phylactery (Data) resides.
+    *   **The **[Crypt](./crypt.md)** (`~/.local/share/lychd`):** The Lich maintains its own sacred ground within your home directory. This is where the Phylactery (Data) resides.
     *   **The Circle (Containerization):** Though it shares your blood (UID), the Lich is bound within a **Container**. It cannot see your files (Secrets, Documents) unless you explicitly invite it to do so. It is powerful, yet contained.
 
 !!! info "The Environment (XDG)"
-    The Crypt respects the **XDG Base Directory** standards.
+    The **[Crypt](./crypt.md)** respects the **XDG Base Directory** standards.
     If you set `XDG_DATA_HOME`, the Phylactery will form at `$XDG_DATA_HOME/lychd`. Otherwise, it defaults to `~/.local/share/lychd`.
 
 !!! info "The Will Manifested"

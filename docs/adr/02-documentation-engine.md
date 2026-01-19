@@ -6,9 +6,9 @@ icon: material/book-cog-outline
 # :material-book-cog-outline: 2. Documentation Engine: MkDocs and Material
 
 !!! abstract "Context and Problem Statement"
-    LychD is a complex system combining ancient lore (The Hexanomicon) with modern engineering (Python, Podman, Systemd). The documentation must be as immersive as it is technical.
+    LychD is a complex system combining ancient lore with modern engineering. The documentation must be as immersive as it is technical.
 
-    Furthermore, a core tenet of LychD is **xDDD (eXtreme Documentation Driven Development)**, where the documentation serves as the "Incantation" that the code must fulfill. Eventually, the Agent itself (Autopoiesis) will be tasked with reading, writing, and maintaining its own documentation.
+    Furthermore, a core tenet of LychD is **xDDD ([eXtreme Documentation Driven Development](01-xddd.md))**, where the documentation serves as the "[Incantation](../divination/transcendence/incantation.md)" that the code must fulfill. Eventually, the Agent itself will be tasked with reading, writing, and maintaining its own documentation.
 
     We need a documentation engine that:
 
@@ -41,18 +41,18 @@ icon: material/book-cog-outline
     A static site generator using Markdown.
 
     - **Pros:**
-        - **Markdown Native:** LLMs speak Markdown fluently. This is critical for future Autopoiesis.
+        - **Markdown Native:** LLMs speak Markdown fluently. This is critical for future [Autopoiesis](../divination/transcendence/immortality.md).
         - **Material Theme:** Providing a polished, modern, and responsive UI out of the box.
         - **Extensibility:** `pymdownx` extensions allow for rich content (admonitions, code blocks) without breaking standard Markdown compatibility.
     - **Cons:** Less "automatic" API documentation generation compared to Sphinx (though `mkdocstrings` mitigates this). We accept this trade-off for superior narrative capabilities.
 
 ## Decision Outcome
 
-We will use **MkDocs with Material Theme** as the engine for "The Hexanomicon."
+**MkDocs with Material Theme** is selectedas the engine for "The Hexanomicon."
 
 ### Implementation Details
 
 - **Theme:** `material` (Scheme: Slate/Dark Mode) to match the "Lich" aesthetic.
 - **Structure:** Documentation lives in `docs/` and is deployed to GitHub Pages.
-- **Extensions:** We enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
+- **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
 - **CSS:** A custom stylesheet (`stylesheets/frostmourne.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.

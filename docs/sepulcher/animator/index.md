@@ -24,8 +24,8 @@ The Vessel does not care _where_ the intelligence comes from—only that it answ
 
     The Animator standardizes all sources of power into a single interface compliant with the **OpenAI API Standard**. This creates a powerful abstraction:
 
-    *   **Hot-Swappable Souls:** You can banish a local Llama-3 model and summon a GPT-4 Portal without changing a single line of the application code.
-    *   **Unified Personality:** Every Animator inherits standard [Generation Parameters](#the-intelligence-profile), ensuring that even cloud models respect your preferred "Temperature" and "Creativity."
+    - **Hot-Swappable Souls:** You can banish a local Llama-3 model and summon a GPT-4 Portal without changing a single line of the application code.
+    - **Unified Personality:** Every Animator inherits standard [Generation Parameters](#the-intelligence-profile), ensuring that even cloud models respect your preferred "Temperature" and "Creativity."
 
 ## ⚡ The Sources of Power
 
@@ -33,19 +33,24 @@ The Animator draws its energy from two distinct types of sources, inscribed in y
 
 ### :material-hexagon-slice-6: [Soulstones](./soulstone.md)
 
-## "The Trapped Spirit."
+#### "The Trapped Spirit."
 
-* **Location:** `~/.config/lychd/soulstones/*.toml`
-* **Nature:** Local, Containerized, Owned.
+- **Location:** `~/.config/lychd/soulstones/*.toml`
+- **Nature:** Local, Containerized, Owned.
 
-These are the engines running within the Sepulcher itself, bound to your physical hardware (GPUs). They are defined as Quadlet containers (like `vLLM` or `Llama.cpp`). The Animator knows how to check their pulse and ensure they are alive.
+These are the engines running within the Sepulcher itself, bound to your physical hardware (GPUs). They are defined as Quadlet containers. The Animator supports any OpenAI-compatible runner, but favors:
+
+- **vLLM:** For high-throughput serving.
+- **SGLang:** For structured decoding speed.
+- **ExLlamaV2:** For maximum tokens-per-second on consumer cards.
+- **Llama.cpp:** For CPU offloading and widespread compatibility.
 
 ### :material-weather-hurricane: [Portals](./portal.md)
 
-## "The Rift to the Void."
+#### "The Rift to the Void."
 
-* **Location:** `~/.config/lychd/portals/*.toml`
-* **Nature:** Remote, Ephemeral, Rented.
+- **Location:** `~/.config/lychd/portals/*.toml`
+- **Nature:** Remote, Ephemeral, Rented.
 
 These are connections to alien intelligences dwelling in the cloud (OpenAI, Anthropic, Groq). They do not run on your hardware; the Animator merely opens a gateway to send the prompt and receive the completion.
 
@@ -68,4 +73,4 @@ The Animator is not a biological organ; it is a **circuit**. It governs the cycl
 3. **The Stream:** The tokens flow back in real-time via Server-Sent Events (SSE).
 
 !!! tip "The Rite of the Swap"
-    Because the Animator relies on standard protocols, your "
+    Because the Animator relies on standard protocols, your "Logic Model" can be swapped instantaneously. If `soulstone-flash` crashes, the system can be configured to failover to `portal-gpt4` automatically (Feature in Roadmap).

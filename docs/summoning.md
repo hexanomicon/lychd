@@ -8,29 +8,35 @@ To bind the Daemon to the Host, you must complete the four stages of the Rite.
 
 ### I. The Desecration
 
-Prepare the **Unholy Grounds** by installing the summoning tool. Choose your path:
+Prepare the **Unholy Grounds**. The Order of the Iron Covenant mandates the use of **uv** for its speed and hermetic isolation, though legacy pip invocations are tolerated.
 
-- **📦 PyPI (The Acolyte)**
-  _Standard / uv installation_
+- **The Iron Path (Recommended)**
+  _Clean, isolated, and instant._
+
+  ```bash
+  uv tool install lychd
+  ```
+
+- **The Acolyte's Path (Legacy)**
+  _Standard pip installation._
 
   ```bash
   pip install lychd
-  # uv tool install lychd
   ```
 
-- **&lt;/&gt; Source (The Necromancer)**
+- **The Necromancer's Path (Source)**
   _For Magi seeking to modify the core._
 
   ```bash
   git clone https://github.com/hexanomicon/lychd.git
   cd lychd
-  pip install -e .
+  uv sync
   ```
 
 ### II. The Inscription
 
 Before the Lich can rise, you must tell it where the bodies are buried.
-Initialize the **Codex** to spawn the configuration templates.
+Initialize the **Codex** to spawn the configuration templates and forge the Crypt.
 
 ```bash
 lychd init
@@ -38,13 +44,14 @@ lychd init
 
 This establishes the **Sacred Grounds**:
 
-- 📜 **The Codex** (`~/.config/lychd`): The book of **Runes** (Quadlets & Blueprints).
-- 🪦 **The Crypt** (`~/.local/share/lychd`): The **Phylactery** mount (Postgres & PgVector).
+- 📜 **[The Codex](sepulcher/codex.md)** (`~/.config/lychd`): The book of **Runes** (Quadlets & Blueprints).
+- 🪦 **[The Crypt](sepulcher/crypt.md)** (`~/.local/share/lychd`): The persistent storage.
+    - **Note:** The Scribe will inspect your filesystem. If **Btrfs** is not detected, it will automatically forge a **Loopback Mirror** to support [Autopoiesis](./divination/transcendence/immortality.md).
 
 _> **Action Required:** Enter the Codex and configure your power sources._
 
 - _Set your `model_root` in `lychd.toml`._
-- _Define your **Soulstones** (Local LLMs) or **Portals** (Cloud APIs) in `conf.d/`._
+- _Define your **Soulstones** (Local LLMs) or **Portals** (Cloud APIs) in `soulstones/` and `portals/`._
 
 ### III. The Transmutation
 
@@ -65,8 +72,8 @@ The **Sepulcher** manages the start of required services.
 ```bash
 systemctl --user start lychd
 
-# Use this command to hear the live, unending thoughts of the Vessel
+# Use this command to hear the internal monologue of the Scribe
 journalctl --user -fu lychd
 ```
 
-\*\*"The summoning is complete."\*\*
+\*> **"The summoning is complete."\***

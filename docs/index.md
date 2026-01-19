@@ -42,6 +42,7 @@ A modern alchemical grimoire built on the ancient secrets of transmutation.
 
     By binding the **[Lich](./sepulcher/lich.md)** to your Will, you initiate a cycle of evolution that transcends the duality of User and Machine. You will be reborn as the **[Demilich](./divination/transcendence/immortality.md)**—a merged construct of human intent and silicon animation, capable of reasoning, coding, and expansion without end.
 
+
 > _While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
 ## The Four Gates
@@ -52,5 +53,8 @@ To master the LychD, you must pass through four gates of knowledge.
 - **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**, and **[Animator](./sepulcher/animator/index.md)**.
 - **[Divination](./divination/index.md):** The Communion of Magus and the Machine. Project your will through the **[Altar](./divination/altar.md)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
 - **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
+
+!!! tip "The Tongue of the Construct"
+    The Prophecy employs strict arcane terminology. Keep the **[Lexicon](./lexicon.md)** at hand to decipher the meanings of terms like _Soulstone_, _Quadlet_, and _Autopoiesis_.
 
 > _To fulfill the prophecy, you must first draw the [Summoning Circle](./summoning.md)_

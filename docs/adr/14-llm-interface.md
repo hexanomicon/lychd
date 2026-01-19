@@ -3,57 +3,66 @@ title: 14. LLM Interface
 icon: material/robot-outline
 ---
 
-# :material-robot-outline: 14. Unified LLM Provider Interface
+# :material-robot-outline: 14. Unified LLM Provider Interface ("The Animator")
 
 !!! abstract "Context and Problem Statement"
-    The LychD agent must be able to leverage a variety of Large Language Models to perform its tasks. These models exist in two fundamentally different forms: self-hosted, containerized inference servers running on local hardware ("Soulstones"), and third-party, cloud-based APIs ("Portals").
-
-    Without a unifying abstraction, the application's core logic would become a brittle and complex series of conditional checks. This would tightly couple the agent's reasoning capabilities to specific implementations, making it difficult to swap models, test new configurations, or extend the system with new providers.
+    The LychD agents must leverage a variety of Large Language Models to perform its tasks. These models exist in two fundamentally different forms: self-hosted, containerized inference servers running on local hardware ("[Soulstones](../sepulcher/animator/soulstone.md)"), and third-party, cloud-based APIs ("[Portals](../sepulcher/animator/portal.md)").
 
 ## Decision Drivers
 
-- **Interchangeability:** The system must allow a user to switch between a local Llama 3 model and a remote GPT-4o model purely through configuration, with zero changes to the application's business logic.
-- **Simplicity of Abstraction:** The core application should interact with a single, simple interface for all LLM-related tasks, ignorant of the underlying provider's location or type.
-- **Standardization:** All communication with any LLM provider must use a single, well-defined API schema to ensure consistency.
+- **Unified Abstraction:** The core application must interact with a single interface ("[The Animator](../sepulcher/animator/index.md)") to prevent brittle coupling between reasoning logic and specific provider implementations.
+- **Interchangeability:** The system must allow a user to switch between local and remote models (e.g., Llama 3 vs. GPT-4o) purely through configuration, facilitating rapid testing and extension.
+- **Standardization:** All communication with any LLM provider must utilize a single, well-defined API schema (OpenAI Standard).
+- **Resource Exclusivity:** The system must strictly manage the lifecycle of local inference servers to prevent GPU VRAM contention (OOM crashes).
 
 ## Considered Options
 
 !!! failure "Option 1: Ad-Hoc Provider Logic"
-    Implement provider-specific connection and data-handling logic directly within the application's service layer.
+    Implement provider-specific connection libraries (e.g., `openai-python`, `anthropic-python`) directly within the application's service layer.
 
-    - **Pros:** Initially fast to implement for a single provider.
-    - **Cons:** Leads to an unmaintainable, tightly-coupled system that violates the DRY and Single Responsibility principles.
+    - **Pros:** Fast to implement for a single provider.
+    - **Cons:** **Unmaintainable.** Leads to a tightly-coupled system where switching providers requires code changes. It violates the DRY principle and makes adding new providers (e.g., `vLLM`) a complex refactoring task.
 
 !!! success "Option 2: Unified Interface with a Standardized Protocol"
-    Define an abstract interface (the "Animator") that represents a generic LLM provider. Mandate that all providers expose or are adapted to a single, common API protocol.
+    Define an abstract interface, **The Animator**, that represents generic "Intelligence." Mandate that all providers conform to a single API protocol.
 
-    - **Pros:** Decouples the application logic from the specific LLM providers. Makes providers hot-swappable via configuration. Greatly simplifies the core codebase.
-    - **Cons:** Requires all providers to conform to a single standard.
+    - **Pros:**
+        - **Decoupling:** Application logic deals only with abstract "Prompts" and "Responses," not with "OpenAI" or "Anthropic" SDKs.
+        - **Hot-Swapping:** Providers become configuration artifacts.
+        - **Lifecycle Management:** Allows the system to treat local models as managed system services while treating cloud models as simple endpoints.
+    - **Cons:** Requires enforcing the OpenAI API standard across all local and remote providers.
 
 ## Decision Outcome
 
-We will implement a unified "Animator" interface that abstracts the source of intelligence. The core technical decision that enables this abstraction is to **standardize all LLM communication on the OpenAI-compatible API schema.**
+We will implement the **[Animator](../sepulcher/animator/index.md)** subsystem as the unified abstraction for all intelligence. The core technical decision is to **standardize all LLM communication on the OpenAI-compatible API schema.**
 
-This interface will have two primary concrete implementations, reflecting the lore:
+The Animator interface supports two distinct implementations:
 
-1. **Local Providers ("Soulstones"):**
-    - These represent self-hosted, containerized inference servers (e.g., vLLM, Llama.cpp).
-    - The system will configure them with a local URI (e.g., `http://localhost:8080/v1`).
-    - The implementation will also be responsible for managing their lifecycle and resource exclusivity through the generation of `systemd` Quadlet files.
+### 1. Soulstones (Local Containers)
 
-2. **Remote Providers ("Portals"):**
-    - These represent third-party cloud APIs (e.g., OpenAI, Anthropic, Groq).
-    - The system will configure them with a remote URI and the necessary API key.
-    - They are pure configuration and generate no local services.
+**"The Trapped Spirit."** ([Documentation](../sepulcher/animator/soulstone.md))
 
-By mandating that all local servers expose an OpenAI-compatible endpoint, we ensure that the application can treat a local 8-billion parameter model and a remote frontier model as identical, interchangeable components.
+- **Definition:** Self-hosted inference servers (e.g., `vLLM`, `Llama.cpp`) running as Podman Quadlets.
+- **Lifecycle:** Managed via Systemd. The system generates `.container` files that enforce strict **Resource Exclusivity**.
+    - **The Law of Exclusivity:** Utilizing Systemd's `Conflicts=` directive, the system ensures that starting one large model automatically terminates conflicting models to free GPU VRAM.
+- **Communication:** Configured with a local URI (e.g., `http://localhost:8080/v1`).
+
+### 2. Portals (Remote APIs)
+
+**"The Rift to the Void."** ([Documentation](../sepulcher/animator/portal.md))
+
+- **Definition:** Connections to third-party cloud APIs (e.g., OpenAI, Anthropic, Groq).
+- **Lifecycle:** Pure configuration; no local resources are managed.
+- **Communication:** Configured with a remote URI and an API key.
+
+By mandating that all local servers expose an OpenAI-compatible endpoint, the application treats a local 8B model and a remote frontier model as identical, interchangeable components.
 
 ### Consequences
 
 !!! success "Positive"
-    - **Decoupling:** The application's core logic is radically simplified and completely decoupled from the source of LLM inference.
-    - **Flexibility:** The system allows users to easily switch between local and cloud models to balance cost, performance, and privacy.
-    - **Extensibility:** Adding new providers is straightforward, requiring only a new configuration file.
+    - **Total Decoupling:** The Agent's reasoning logic is completely isolated from the inference source. Switching from GPT-4 to Llama-3 requires changing one line in a TOML file.
+    - **Hardware Safety:** The "Law of Exclusivity" prevents the most common failure mode in local AI (OOM crashes) by leveraging Systemd to manage VRAM contention automatically.
+    - **Ecosystem Compatibility:** By standardizing on the OpenAI schema, LychD is instantly compatible with the vast majority of modern inference tools (vLLM, Ollama, Llama.cpp) which all support this standard.
 
 !!! failure "Negative"
-    - **Ecosystem Requirement:** This decision imposes a strict requirement on the provider ecosystem. Any chosen inference server *must* be compliant with the OpenAI API standard.
+    - **The Port Singularity:** Because Systemd holds TCP ports in `TIME_WAIT` after a service stops, switching between local models on the same port (e.g., 8080) can cause temporary binding errors. Unique ports must be assigned to each Soulstone definition.

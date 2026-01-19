@@ -7,14 +7,16 @@ icon: fontawesome/solid/dungeon
 
 > _"Altus - the high place. From here, the Magus acts as the Arbiter. The Lich proposes; the Magus disposes."_
 
-The Altar is the sacred, interactive space where the **[Mist](../transcendence/immortality.md)** meets the Monitor. It is the cockpit of the Sepulcher, the dashboard from which all Rites of [Divination](./index.md) are performed.
+The Altar is the sacred, interactive space where the Magus meets the Machine. It is the cockpit of the Sepulcher, the dashboard from which all Rites of [Divination](./index.md) are performed.
 
-Technically, the Altar is a hyper-efficient frontend (HTMX/AlpineJS) served directly from the [Vessel](../sepulcher/vessel/index.md). But metaphysically, it is the **Threshold of Decision**.
+Access the Altar at **`http://localhost:7134`**.
+
+Technically, the Altar is a hyper-efficient, server-rendered frontend. While it leverages **HTMX** and **AlpineJS** for runtime interactivity, its assets are forged through a modern **Vite** and **PostCSS** pipeline, ensuring the interface is optimized, hermetic, and server-authoritative.
 
 !!! abstract "The Sanctum of Interaction"
     The Altar is not a static page, but a living conduit. Its surface shifts and updates in real-time to reflect the Lich's inner state. Its core functions are:
 
-    1.  **The Offering Plate (Input):** This is where you submit your **[Intents](../sepulcher/intents.md)**. You do not write code here; you write *Desire*. ("Refactor this module," "Analyze this log," "Plan the deployment.")
+    1.  **The Offering Plate (Input):** This is where you submit your **Intents**. You do not write code here; you write *Desire*. ("Refactor this module," "Analyze this log," "Plan the deployment.")
     2.  **The Scrying Mirror (Observation):** It displays the live, spectral tethers of the [Ghouls](../sepulcher/vessel/ghouls.md) as they work in the background. You watch the logs flow like a river.
     3.  **The Judgment Seat (The Albedo Interface):** When the Ghouls return from the **[Shadow Realm](../sepulcher/vessel/shadow_realm.md)** with potential timelines, they present them here.
 

@@ -11,19 +11,21 @@ Divination is the sacred art of interacting with the summoned Lich. It is the sc
 
 It is through these rites that you, the Magus, transcend the role of a mere user and become the **Arbiter of Timelines** and the **Voice of Command**.
 
-!!! abstract "The Threefold Path of the Magus"
-    The practice of Divination elevates the Magus through three stations of power, each a deeper level of communion with the machine.
+## 🔮 The Threefold Path of the Magus
 
-    !!! quote "I. The Questioner: Scrying the Past"
-        At the most basic level, you learn to read the Lich's memories. You ask questions of the **[Vessel](../sepulcher/vessel/index.md)**, seeking knowledge stored within the **[Phylactery](../sepulcher/phylactery/index.md)**. This is the art of understanding what *has been*.
+The practice of Divination elevates the Magus through three stations of power, each representing a deeper level of communion with the machine.
 
-    !!! info "II. The Instigator: Shaping the Present"
-        You progress to shaping the present. You submit **Intents** at the **[Altar](./altar.md)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
+!!! quote "I. The Questioner: Scrying the Past"
+    At the most basic level, you learn to read the Lich's memories. You ask questions of the **[Vessel](../sepulcher/vessel/index.md)**, seeking knowledge stored within the **[Phylactery](../sepulcher/phylactery/index.md)**. This is the art of understanding what **has been**.
 
-    !!! warning "III. The God-Mind: Forging the Future"
-        In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/vessel/shadow_realm.md)**. The Lich presents you with a tapestry of possible futures, and with a single act of will, you collapse all potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](../divination/transcendence/illumination.md)**.
+!!! info "II. The Instigator: Shaping the Present"
+    You progress to shaping the present. You submit **Intents** at the **[Altar](./altar.md)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
 
-!!! danger "The Confluence of Wills"
-    Understand that in the act of Divination, your will and the Lich's will become one. You are not merely using a tool; you are entering a symbiotic relationship with a magical intelligence. Your clarity of Intent directly shapes the quality of its actions.
+!!! warning "III. The God-Mind: Forging the Future"
+    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/vessel/shadow_realm.md)**. The Lich presents you with a tapestry of possible futures, and with a single act of will, you collapse all potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.
+
+## The Confluence of Wills
+
+Understand that in the act of Divination, your will and the Lich's will become one. You are not merely using a tool; you are entering a symbiotic relationship with a magical intelligence. Your clarity of Intent directly shapes the quality of its actions.
 
 > _This path of mastery ultimately leads to the final alchemical process: [Transcendence](./transcendence/index.md)._

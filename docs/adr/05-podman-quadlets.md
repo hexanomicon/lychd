@@ -5,45 +5,65 @@ icon: material/cube-outline
 
 # :material-cube-outline: 5. Podman Quadlets for Service Orchestration
 
-The LychD architecture is a "Sepulcher"—a pod of interconnected, containerized services including The Vessel (application), The Phylactery (database), The Oculus (tracing), and various Soulstones (LLM runtimes). We require an orchestration system to manage the lifecycle of these services on a single host.
+!!! abstract "Context and Problem Statement"
+    The LychD architecture is a "Sepulcher"—a pod of interconnected, containerized services including The Vessel (application), The Phylactery (database), The Oculus (tracing), and various Soulstones (LLM runtimes). These components require a robust orchestration system to manage their lifecycle on a single host.
 
-This system must be declarative, reliable, secure, and integrate natively with the host environment. It needs to handle complex dependencies, ensure services are automatically restarted on failure, and provide unified logging and management without introducing unnecessary complexity or external daemons.
+    The system must be declarative, reliable, secure, and integrate natively with the host environment. It must enforce exclusive access to hardware resources (GPUs) and provide unified logging without introducing the overhead of a distributed orchestrator.
 
 ## Decision Drivers
 
-- **Advanced Lifecycle Management:** The system must support robust restart policies (`Restart=always`, `on-failure`) and sophisticated dependency definitions, including service conflicts (`Conflicts=`) to ensure singleton behavior.
-- **Native Host Integration:** Service management (`start`, `stop`, `status`) and log inspection must be handled by standard, battle-tested system tools, not a proprietary CLI.
-- **Security by Default:** The chosen method must be designed for and default to rootless containers, adhering to the principle of least privilege.
-- **Simplicity and Declarative Syntax:** Service definitions should be simple, human-readable text files that can be version-controlled.
-- **Daemonless Architecture:** The solution should not rely on a monolithic, privileged daemon running on the host.
+- **Resource Exclusivity:** The system must strictly enforce singleton behavior via `Conflicts=` logic. Two Soulstones cannot attempt to claim the same GPU VRAM simultaneously; one must yield (die) for the other to live.
+- **Native Host Integration:** Service management (`start`, `stop`, `status`) and log inspection must be handled by standard system tools (`systemctl`, `journalctl`), avoiding proprietary CLIs.
+- **Daemonless Architecture:** The solution should utilize the existing OS supervisor (PID 1) rather than running a secondary, monolithic daemon (like Docker).
+- **Security by Default:** The method must be optimized for Rootless Containers to minimize the blast radius of a compromised LLM runtime.
 
 ## Considered Options
 
-1. **Docker Compose:** A popular tool for defining and running multi-container applications.
-    - Pros: Widely adopted and familiar YAML syntax.
-    - Cons: Critically lacks support for advanced dependency management like `Conflicts=`, making it impossible to enforce certain service states. Its restart policies are less nuanced than systemd's. It operates as a separate ecosystem with its own CLI (`docker-compose`), leading to fragmented management and logging (`docker logs` vs. `journalctl`).
-2. **Kubernetes (K3s/Minikube):** The industry standard for large-scale container orchestration, available in smaller distributions for local use.
-    - Pros: Incredibly powerful, declarative, and resilient.
-    - Cons: Drastic overkill for LychD's single-host deployment model. It introduces an enormous layer of complexity (CNI networking, storage classes, controllers) that is entirely unnecessary and violates the principle of simplicity.
-3. **Podman Quadlets:** A modern Podman feature that translates `.container` files into native `systemd` service units.
-    - Pros: Directly leverages the full power and maturity of `systemd`, inheriting its advanced dependency management (`Wants=`, `After=`, `Conflicts=`), robust restart policies, and socket activation features. Integrates seamlessly with the host's `systemctl` for management and `journalctl` for unified logging. It is inherently daemonless and designed for rootless containers.
-    - Cons: Tightly couples the application to the `systemd` init system.
+!!! failure "Option 1: Docker Compose"
+    The industry standard for multi-container definitions.
+
+    - **Pros:** Familiar YAML syntax and massive adoption.
+    - **Cons:** **Insufficient Control.** It lacks native support for `Conflicts=` logic, making it impossible to guarantee that "Soulstone A" is terminated before "Soulstone B" starts. This risks VRAM contention and OOM crashes. It also fragments the management experience (`docker logs` vs `journalctl`).
+
+!!! failure "Option 2: Kubernetes (K3s/Minikube)"
+    The standard for distributed orchestration.
+
+    - **Pros:** Extremely powerful and resilient.
+    - **Cons:** **Architecture Mismatch.** Kubernetes abstracts the hardware away, whereas LychD requires direct, high-performance access to host hardware (GPU/NPU). Running a K8s control plane for a single-node daemon is an unacceptable violation of the Simplicity principle.
+
+!!! success "Option 3: Podman Quadlets"
+    A Podman feature that compiles `.container` definitions directly into native `systemd` service units.
+
+    - **Pros:** **Systemd Native.** It inherits the full power of the init system, including `Conflicts=` (for resource safety), `OnFailure=` (for resilience), and socket activation.
+    - **Generated Runes:** It aligns perfectly with the architecture: The Application generates ephemeral config files, and the OS executes them.
+    - **Rootless:** Designed from the ground up to run without root privileges.
 
 ## Decision Outcome
 
-**Chosen Option:** "Podman Quadlets".
+**Podman Quadlets** are adopted as the exclusive orchestration mechanism. This choice elevates `systemd` from a mere init system to the primary, low-level supervisor of the Sepulcher.
 
-We will use Podman Quadlets to define and manage all services within the LychD Sepulcher. This decision elevates `systemd` from a mere init system to our primary, low-level service orchestrator.
+### The Mechanism of Binding
 
-This choice directly aligns with our lore: the `lychd bind` command transmutes abstract `TOML` configurations into `.container` files (the "Runes"), which `systemd` then materializes into active services (the "Binding").
+The workflow is strictly defined as **Generation**, not manual authoring:
 
-We explicitly reject Docker Compose because its feature set is insufficient for our reliability and integration needs. The inability to define service conflicts and the reliance on a separate, non-native toolchain are unacceptable compromises. Kubernetes is rejected due to its excessive complexity for our use case.
+1. **Source:** The User defines intent in abstract `TOML` (The Codex).
+2. **Compilation:** The `lychd bind` command transmutes the Codex into ephemeral `.container` files (Runes) in `~/.config/containers/systemd/`.
+3. **Execution:** Systemd generates the service units and enforces the state.
 
-## Consequences
+### Hardware Access via CDI
 
-- **Positive:**
-    - We gain access to the entire, battle-hardened `systemd` feature set for free, including robust lifecycle management, dependency control, and unified logging via `journalctl`.
-    - The security posture is significantly improved by a rootless-by-default design.
-    - The user experience is simplified to a single, consistent management interface (`systemctl`) for all system and application services.
-- **Negative:**
-    - This decision irrevocably binds LychD to the Linux ecosystem, specifically distributions utilizing `systemd`. This is an accepted and deliberate trade-off. LychD is an opinionated tool for serious practitioners on Linux systems; support for other operating systems is a non-goal.
+To strictly maintain the rootless security boundary while ensuring high-performance access to GPU hardware, the **Container Device Interface (CDI)** specification is utilized in lieu of legacy runtime hooks.
+
+- **Abstraction:** Generated Quadlets must not rely on hardcoded device paths (e.g., `/dev/nvidia0`). Instead, they must request resources via the stable CDI syntax (e.g., `Device=nvidia.com/gpu=all` or specific UUIDs).
+- **Stability:** This approach decouples the container orchestration from the host's driver updates, provided the host maintains an up-to-date CDI specification at `/etc/cdi/nvidia.yaml`.
+
+
+### Consequences
+
+!!! success "Positive"
+    - **Hardware Safety:** The usage of `Conflicts=` ensures that GPU resources are never accidentally oversubscribed by competing models.
+    - **Unified Interface:** Users manage LychD services exactly like they manage Apache or SSH: via `systemctl`.
+    - **Security:** Services run as user processes, drastically reducing the attack surface compared to a root-owned Docker daemon.
+
+!!! failure "Negative"
+    - **Linux Lock-in:** This decision irrevocably binds LychD to the Linux ecosystem and the `systemd` init system. This is a deliberate trade-off; portability to Windows/MacOS is explicitly rejected in favor of deep system integration.
