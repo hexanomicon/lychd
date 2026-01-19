@@ -19,13 +19,11 @@
 
 Summon **The Lich** 💀, a **Phylactery**-bound, LLM-animated daemon.
 
-> 📖 Consult **[The Hexanomicon](https://hexanomicon.github.io/lychd/)** for documentation.
-
-⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (some not curated yet), and the occasional rogue spirit. Proceed with caution.
+>⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (some not curated yet), and the occasional rogue spirit. Proceed with caution.
 
 ## 🗺️ The Path of Ascension
 
-The knowledge you seek is inscribed in the **Hexanomicon**. Follow the path to bind the daemon.
+The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.github.io/lychd/)**. Follow the path to bind the daemon.
 
 - 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)**
     *Begin your study of the Hexanomicon.*
@@ -36,7 +34,7 @@ The knowledge you seek is inscribed in the **Hexanomicon**. Follow the path to b
 - 🏛️ **[Construct the Sepulcher](https://hexanomicon.github.io/lychd/sepulcher/)**
     *Understand the anatomy: The Vessel, The Phylactery, and The Animator.*
 - 🔮 **[Access the Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
-    *Control the daemon via the Web Interface (Port 7134).*
+    *Control the daemon via the Web Interface*
 - ⚖️ **[Study the Covenants](https://hexanomicon.github.io/lychd/adr/)**
     *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-xddd/) philosophy.*
 - ♾️ **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
