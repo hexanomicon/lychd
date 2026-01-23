@@ -9,23 +9,20 @@ icon: fontawesome/solid/heart-pulse
 
 The Animator is the subsystem responsible for **Inference Abstraction**. It is the unified definition of an "Intelligence" within the LychD ecosystem.
 
-In the code, the Animator is the **Base Class** from which all cognition descends. Whether the mind is a massive 70B parameter model running on your local GPU, or a distant API endpoint in a datacenter, they are all **Animators**. They all obey the same laws.
+In the code, the Animator is the **Base Specification** from which all cognition descends. Whether the mind is a massive local model occupying your GPU's VRAM, or a distant API endpoint in a datacenter, they are all **Animators**. They all obey the same laws of identity and behavior.
 
 ## 📜 The Holy Contract
 
-The Vessel does not care _where_ the intelligence comes from—only that it answers the summons. To enforce this, the Animator defines a strict **Contract of Existence**. Any entity that wishes to speak through the Lich must possess:
-
-1. **Identity (Name):** A unique designation in the system (e.g., `hermes`, `logic-alpha`).
-2. **Manifestation (URI):** A valid endpoint where the electrical signals are received (e.g., `http://localhost:8080/v1` or `https://api.openai.com/v1`).
-3. **The Secret (API Key):** An optional key to unlock the gate.
+The Vessel does not care _where_ the intelligence comes from—only that it answers the summons. To enforce this, the Animator defines a strict **Contract of Existence**. Any entity that wishes to speak through the Lich must possess a set of **Capabilities**.
 
 !!! abstract "The Universal Tongue"
     The Lich speaks only one language: **Strict, Typed JSON**.
 
     The Animator standardizes all sources of power into a single interface compliant with the **OpenAI API Standard**. This creates a powerful abstraction:
 
-    - **Hot-Swappable Souls:** You can banish a local Llama-3 model and summon a GPT-4 Portal without changing a single line of the application code.
-    - **Unified Personality:** Every Animator inherits standard [Generation Parameters](#the-intelligence-profile), ensuring that even cloud models respect your preferred "Temperature" and "Creativity."
+    - **Capability-Based Routing:** You no longer request a "Model." You request a **[Capability Set](../../adr/08-containers.md)** (e.g., `{"text-generation", "vision"}`). The system identifies the best Animator to fulfill the intent.
+    - **Hot-Swappable Souls:** You can banish a local model and summon a Cloud Portal without changing a single line of Agentic logic.
+    - **Unified Personality:** Every Animator inherits standard [Generation Parameters](#the-intelligence-profile), ensuring even alien cloud models respect your preferred "Temperature."
 
 ## ⚡ The Sources of Power
 
@@ -35,42 +32,32 @@ The Animator draws its energy from two distinct types of sources, inscribed in y
 
 #### "The Trapped Spirit."
 
-- **Location:** `~/.config/lychd/soulstones/*.toml`
-- **Nature:** Local, Containerized, Owned.
-
-These are the engines running within the Sepulcher itself, bound to your physical hardware (GPUs). They are defined as Quadlet containers. The Animator supports any OpenAI-compatible runner, but favors:
-
-- **vLLM:** For high-throughput serving.
-- **SGLang:** For structured decoding speed.
-- **ExLlamaV2:** For maximum tokens-per-second on consumer cards.
-- **Llama.cpp:** For CPU offloading and widespread compatibility.
+- **Nature:** Local, Containerized, Stateful.
+These are the engines running within the Sepulcher itself. A Soulstone definition is the "Scroll" used by the system to forge a physical **[Systemd Rune](../../adr/08-containers.md)**. They belong to **Covens** and are subject to the **[Orchestrator's](../../adr/21-orchestrator.md)** law of exclusivity.
 
 ### :material-weather-hurricane: [Portals](./portal.md)
 
 #### "The Rift to the Void."
 
-- **Location:** `~/.config/lychd/portals/*.toml`
 - **Nature:** Remote, Ephemeral, Rented.
-
-These are connections to alien intelligences dwelling in the cloud (OpenAI, Anthropic, Groq). They do not run on your hardware; the Animator merely opens a gateway to send the prompt and receive the completion.
+These are connections to alien intelligences dwelling in the cloud. They generate no Runes and consume no VRAM. They represent "Burst" capacity or frontier reasoning, gated by the **[Sovereignty Wall](../../adr/21-orchestrator.md)**.
 
 ## 🧠 The Intelligence Profile
 
-Every Animator possesses a default "Personality" defined in its schema. If a user does not specify parameters during a request, the Animator enforces its own nature.
+Every Animator possesses a default "Personality" defined in its schema. These parameters govern the stochastic nature of the "Word."
 
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
+| `max_context` | `4096` | The total window of the entity's working memory. |
 | `temperature` | `0.7` | The chaos factor. Higher values breed creativity; lower values breed logic. |
 | `top_p` | `0.9` | The nucleus sampling threshold. |
 | `max_tokens` | `4096` | The limit of the entity's breath before it must stop speaking. |
 
 ## 🫀 The Galvanic Arc
 
-The Animator is not a biological organ; it is a **circuit**. It governs the cycle of Request and Response.
+The Animator is the circuit that governs the cycle of Request and Response.
 
-1. **The Impulse:** The Vessel sends a structured Pydantic object (the Prompt) to the Animator.
-2. **The Routing:** The Animator resolves the target URI. If it is a **Soulstone**, it verifies the local port is active. If it is a **Portal**, it injects the API Key.
-3. **The Stream:** The tokens flow back in real-time via Server-Sent Events (SSE).
-
-!!! tip "The Rite of the Swap"
-    Because the Animator relies on standard protocols, your "Logic Model" can be swapped instantaneously. If `soulstone-flash` crashes, the system can be configured to failover to `portal-gpt4` automatically (Feature in Roadmap).
+1. **The Impulse:** An Agent requires a capability. It submits an **Intent** to the **[Orchestrator](../../adr/21-orchestrator.md)**.
+2. **The Manifestation:** If the Animator is a **Soulstone**, the system ensures its **Coven** is active. If it is a **Portal**, it prepares the Rift.
+3. **The Dispatch:** The **[Dispatcher](../../adr/20-dispatcher.md)** transmutes the Animator into a live `pydantic_ai.Model`.
+4. **The Stream:** Tokens flow back in real-time to the **[Altar](../../divination/altar.md)**.

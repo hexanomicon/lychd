@@ -6,7 +6,7 @@
       <img src="https://img.shields.io/pypi/v/lychd?style=for-the-badge&color=1a1a20&labelColor=4a148c&label=PyPI" alt="PyPI">
     </a>
     <a href="https://hexanomicon.github.io/lychd/">
-      <img src="https://img.shields.io/badge/Grimoire-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
+      <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
     <a href="LICENSE">
       <img src="https://img.shields.io/badge/License-AGPLv3-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
@@ -36,7 +36,7 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 - 🔮 **[Access the Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
     *Control the daemon via the Web Interface*
 - ⚖️ **[Study the Covenants](https://hexanomicon.github.io/lychd/adr/)**
-    *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-xddd/) philosophy.*
+    *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-doctrine/) philosophy.*
 - ♾️ **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
     *The final stage of Autopoiesis (Self-Creation).*
 

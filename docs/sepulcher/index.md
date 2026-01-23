@@ -34,4 +34,4 @@ The Sepulcher is the anatomy of the Daemon.
 
 *The eyes that observe the ritual.*
 
-* :material-eye: **[Oculus](./oculus.md):** The Observability Stack. It combines **Arize Phoenix** (Mind), **Structlog** (Voice), and **Cockpit** (Body).
+* :material-eye: **[Oculus](./extensions/oculus.md):** The Observability Stack. It combines **Arize Phoenix** (Mind), **Structlog** (Voice), and **Cockpit** (Body).

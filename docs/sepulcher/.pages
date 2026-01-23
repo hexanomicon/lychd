@@ -1,0 +1,9 @@
+nav:
+    - index.md
+    - Lich: lich.md
+    - Codex: codex.md
+    - Crypt: crypt.md
+    - Vessel: vessel
+    - Phylactery: phylactery
+    - Animator: animator
+    - Extensions: extensions
