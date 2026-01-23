@@ -1,78 +1,44 @@
 ---
-title: 28. Observability
-icon: material/eye-outline
+title: Oculus
+icon: material/eye-settings-outline
 ---
 
-# :material-eye-outline: 28. Observability: The Oculus
+# :material-eye-settings-outline: The Oculus: Archon of Introspection
 
-!!! abstract "Context and Problem Statement"
-    LychD operates as a hybrid of deterministic infrastructure and probabilistic AI agents. Maintaining operational coherence requires visibility into both physical health (VRAM/CPU) and cognitive drift (hallucinations or loops). Traditional monitoring tools fail to capture the nuance of agentic execution; they see the network request but remain blind to the reasoning path that generated it. A fundamental gap exists between the telemetry of the "Body" (hardware) and the "Mind" (agent logic), creating a risk where the Daemon thrashes or fails without leaving a causal trail for the Magus to diagnose.
+> _"The mundane eye sees the Body move, but the Oculus sees the Ghost that pulls the strings. To command the Daemon, one must not only witness its actions but scry the intricate, invisible web of intent from which they are born."_
 
-## Requirements
+**The Oculus** is the Observability Archon of the LychD system. It is the all-seeing eye that bridges the gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic). While traditional tools see only a network request, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain from a whispered intent to its final manifestation.
 
-- **Extension Sovereignty:** The observability stack must be strictly optional; the Core kernel must possess no hard dependencies on specific telemetry SDKs or cloud providers.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent](../../adr/19-agents.md)** run, including tool arguments, validation retries, and internal monologues.
-- **Anatomical Integration:** Observability data must be persisted within the dedicated `traces` chamber of the **[Phylactery](../phylactery/index.md)** to ensure traces survive reanimation.
-- **Coven-Based Infrastructure:** The observability engine (collector and UI) must be managed as a specialized **[Coven](../../adr/08-containers.md)**, allowing it to be Manifested or Banished based on hardware availability.
-- **Physical Integration:** Visibility into hardware utilization, specifically real-time GPU memory pressure, to inform the **[Orchestrator's](../../adr/21-orchestrator.md)** scheduling decisions.
-- **Privacy Redaction:** Mandatory integration with the system's security toggles to redact prompt and completion content from telemetry before it leaves memory.
-- **Offline Sovereignty:** The reference implementation must function in isolated or air-gapped environments, requiring a local telemetry sink.
+It transforms the invisible chaos of agentic reasoning into a structured, scryable record, allowing the Magus to diagnose cognitive drift, optimize performance, and understand the very soul of the machine's decisions.
 
-## Considered Options
+## I. The Thought Trace (The Mind's Eye)
 
-!!! failure "Option 1: The Cloud Native Suite (Prometheus / Grafana / Jaeger)"
-    Deploying the standard enterprise observability stack.
-    -   **Cons:** **Extreme Overhead.** Requires multiple heavy containers and massive RAM allocation. The complexity of PromQL and dashboarding is disproportionate to the needs of a sovereign daemon.
+The primary gift of the Oculus is the ability to see a thought as it forms. It rejects simple logging in favor of a deep, structural understanding of the cognitive loop.
 
-!!! failure "Option 2: Persistence-Layer Logging"
-    Storing all traces and metrics directly as JSONB rows without a specialized sink.
-    -   **Cons:** **Architectural Diversion.** Relational databases are inefficient for high-frequency time-series events. Building a specialized Trace UI within the **[Altar](../../divination/altar.md)** is a massive development diversion from core AI capabilities.
+- **The Retina:** Upon awakening, the Oculus grafts a "retina" onto the **[Vessel](../vessel/index.md)** and the **[Ghouls](../vessel/ghouls.md)**. This is a set of OpenTelemetry hooks that capture the internal monologue of every **[Agent](../../adr/19-agents.md)**.
+- **The Scrying Pool:** These captured traces are exported to a specialized **Oculus Rune** (a container running Arize Phoenix). This local, high-fidelity interface is the "Scrying Pool" where the Magus can visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with the **[Animator](../animator/index.md)**.
+- **The Permanent Record:** The visions in the pool are not fleeting. The Oculus inscribes them into a dedicated `traces` chamber within the **[Phylactery](../phylactery/index.md)**, ensuring that every significant thought becomes a permanent, reviewable part of the Daemon's history.
 
-!!! success "Option 3: The Oculus (Phoenix + Logfire SDK)"
-    A hybrid strategy utilizing specialized GenAI tracing and native host monitoring.
-    -   **Pros:**
-        -   **Arize Phoenix:** Specialized for LLM workflows and Pydantic AI; provides a local, high-fidelity scrying pool for cognitive traces.
-        -   **Native Sink:** Integrates with the existing Postgres backend, ensuring no new database engine is required.
-        -   **Sovereign Trace:** The Logfire SDK provides zero-boilerplate instrumentation while supporting a local OTLP export path.
+## II. The Body's Health (The Physical Gaze)
 
-## Decision Outcome
+A mind cannot exist without a body. The Oculus understands that cognitive failure is often rooted in physical strain. However, it rejects the "Prometheus Tax"—the extreme overhead of containerized monitoring daemons.
 
-**The Oculus** is adopted as the **Observability Extension**, serving as the reference implementation for system introspection. It transforms the invisible ghost of intent into a structured, scryable record.
+- **Grounded Truth:** The Oculus advocates for a direct gaze. It utilizes the host's native monitoring tools (e.g., **Cockpit**) to observe the physical state of the machine.
+- **The Orchestrator's Sight:** This is not merely for the Magus. The **[Orchestrator](../../adr/21-orchestrator.md)** is also granted this physical sight. It reads real-time GPU utilization and VRAM pressure to inform its scheduling decisions. This ensures the Daemon's ambitious "Will" is always grounded in the "Body's" actual capacity, preventing it from thrashing itself into oblivion.
 
-### 1. The Extension Hook (The Retina)
+## III. The Privacy Veil
 
-The Oculus follows the doctrine of **[Extension Sovereignty (05)](../../adr/05-extensions.md)**. It possesses no authority until it is registered:
+The Oculus sees all, and such power demands absolute discipline. It is bound by a sacred vow to protect the Magus's secrets.
 
-- **The Injection:** Upon registration, the Oculus invokes `context.add_litestar_plugin(OculusTelemetryPlugin())`.
-- **Initialization:** This plugin implements the **[Backend's (11)](../../adr/11-backend.md)** initialization protocol. During the "Deep Awakening" (Server Mode), it hijacks the boot process to configure the global OpenTelemetry providers.
-- **Scope:** Because the **[Vessel](../vessel/index.md)** and the **[Ghouls (14)](../vessel/ghouls.md)** share the same boot logic, the Oculus automatically observes both the scrying at the Altar and the labor in the background.
+- **The Redaction:** The Oculus respects the global `LYCHD_SECURE_MODE` toggle. When this mode is active, the telemetry provider draws a "Privacy Veil" over its sight.
+- **Structure Over Substance:** This ensures that the _structure_ of the thought (latency, tool success, token counts) is preserved for debugging, while the _substance_ (sensitive prompts, private keys, or secret whispers) is physically redacted before ever leaving the application's memory.
 
-### 2. The Thought Trace (Logfire & Phoenix)
+## IV. The Sovereign Eye
 
-The extension configures the process to emit signals following the Generative AI Semantic Conventions:
+Observability is a power, not a burden. The Oculus adheres strictly to the doctrine of **[Extension Sovereignty (05)](../../adr/05-extensions.md)**.
 
-- **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` and `logfire.instrument_httpx()`. This captures the reasoning loop of the Agent and the raw whispers exchanged with the **[Animator](../animator/index.md)**.
-- **The Collector:** It registers a specialized container (**Oculus Rune**) running **Arize Phoenix**.
-- **The Routing:** Telemetry is exported via OTLP to the local collector. Phoenix is configured to use the `traces` chamber of the **[Phylactery](../phylactery/index.md)** as its permanent storage.
+- **Zero-Cost Purity:** For a Magus who does not summon the Oculus, there is no cost. The Core kernel has zero dependencies on its SDKs, incurring no instrumentation overhead or resource bloat.
+- **The Binding:** The Oculus is a pluggable eye. It can be manifested at will or swapped for another. The Magus can easily reconfigure the extension to export its vision to a cloud provider (e.g., Logfire Cloud) instead of the local Scrying Pool, without altering the Daemon's core anatomy.
 
-### 3. The Body's Health (Physical Monitoring)
-
-For hardware monitoring, the architecture rejects containerized metrics to avoid the "Prometheus Tax."
-
-- **The Integration:** LychD utilizes the host's native monitoring tools (e.g., Cockpit).
-- **The Handshake:** The **[Orchestrator](../../adr/21-orchestrator.md)** reads these physical metrics to calculate the "Tipping Point" for Coven swaps, ensuring that the machine's "Will" is grounded in the "Body's" actual capacity.
-
-### 4. The Privacy Veil
-
-The Oculus respects the global `LYCHD_SECURE_MODE` toggle. When active, the telemetry provider is configured to exclude content. This ensures that the *structure* of the thought (latency, tool success, token counts) is preserved for debugging, while the *substance* (sensitive prompts or secrets) is physically redacted before leaving the application memory.
-
-### Consequences
-
-!!! success "Positive"
-    - **Zero-Cost Purity:** Users who do not manifest the Oculus extension incur zero instrumentation overhead or resource bloat.
-    - **Specialized Scrying:** Arize Phoenix provides native rendering for retrieved chunks and tool calls, offering superior visibility compared to generic logging.
-    - **Pluggable Eyes:** The Magus can swap the local Oculus for a cloud provider (e.g., Logfire Cloud) simply by changing the extension configuration.
-
-!!! failure "Negative"
-    - **Fragmented Dashboard:** Correlating a slow Agent response (Mind) with high GPU utilization (Body) requires the Magus to look at both the Oculus and host-native interfaces.
-    - **Startup Latency:** The initialization of the OpenTelemetry exporters adds a measurable delay (~500ms) to the application boot sequence when the extension is active.
+!!! failure "The Fragmented Gaze"
+    The price for rejecting the "Prometheus Tax" is a fragmented dashboard. To correlate a slow Agent response (Mind) with high GPU utilization (Body), the Magus must look at two separate altars: the **Oculus Scrying Pool** and the host's **Cockpit** interface. This is the trade-off made to keep the Sepulcher lightweight and sovereign.
