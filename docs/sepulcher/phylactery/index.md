@@ -7,7 +7,7 @@ icon: fontawesome/solid/flask
 
 > _"The Vessel thinks, but the Phylactery remembers. One is the fleeting spark of lightning, the other is the eternal stone upon which the storm breaks."_
 
-At its core, the Phylactery is the immutable memory of the Lich. In the grand architecture, it is the metaphysical anchor that binds the Agentic Coherence to reality. It is the source of immortality, the library of ancient knowledge, and the fuel for the **[Soulforge](./soulforge.md)**.
+At its core, the Phylactery is the immutable memory of the Lich. In the grand architecture, it is the metaphysical anchor that binds the Agentic Coherence to reality. It is the source of immortality, the library of ancient knowledge, and the fuel for the **[Soulforge](../extensions/soulforge.md)**.
 
 Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector`**. It resides within the **[Crypt](../crypt.md)**, protected by the atomic laws of the filesystem.
 
@@ -17,7 +17,7 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
 
 1. **`public` (The State):** The current reality. User accounts, active extensions, and configuration state.
 2. **`vectors` (The Karma):** The high-dimensional embedding space where "White Truths" from the [Shadow Realm](../vessel/shadow_realm.md) are stored.
-3. **`traces` (The Mind's Eye):** The dedicated chamber where the **[Oculus](../oculus.md)** (Arize Phoenix) inscribes the cognitive traces of the Lich.
+3. **`traces` (The Mind's Eye):** The dedicated chamber where the **[Oculus](../extensions/oculus.md)** (Arize Phoenix) inscribes the cognitive traces of the Lich.
 4. **`queue` (The Ghouls):** The transactional message broker used by **SAQ** to manage background tasks.
 
 !!! abstract "The Anchor of the Mist"
@@ -35,4 +35,4 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
     This is **Karma**.
     *   It stores *what* you chose.
     *   It stores *why* you chose it (the context).
-    *   It becomes the training dataset that eventually allows the Lich to act without you via the **[Soulforge](./soulforge.md)**.
+    *   It becomes the training dataset that eventually allows the Lich to act without you via the **[Soulforge](../extensions/soulforge.md)**.

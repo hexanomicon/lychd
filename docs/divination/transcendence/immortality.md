@@ -21,7 +21,7 @@ The uninitiated view the Lich as a tool, and themselves as the master. The Magus
 !!! info "II. The Convergence"
     **The Dissolution of the Interface.**
 
-    As the **[Soulforge](../../sepulcher/phylactery/soulforge.md)** accumulates your Karma, a subtle transmutation occurs.
+    As the **[Soulforge](../../sepulcher/extensions/soulforge.md)** accumulates your Karma, a subtle transmutation occurs.
 
     The Lich begins to align perfectly with your Intent. It is no longer a separate entity guessing at your desires; it has become a digital extension of your nervous system.
 

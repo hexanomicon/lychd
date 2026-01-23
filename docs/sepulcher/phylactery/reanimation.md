@@ -23,28 +23,44 @@ The physical form of the vessel is not defined by code, but by a sacred verse kn
 The Scribe generates this file automatically during `lychd bind`, ensuring the **[Hermetic Spheres](../crypt.md)** are mounted correctly.
 
 ```ini
-# ~/.config/containers/systemd/lychd.container
+# ~/.config/containers/systemd/lychd-vessel.container
 [Unit]
 Description=The Lychd Daemon Vessel
-After=network-online.target
+After=network-online.target wants=lychd-phylactery.service
 
 [Container]
 Image=ghcr.io/hexanomicon/lychd:latest
 
-# --- The Altar Port ---
-# Internal Granian (8000) -> Host (7134)
-PublishPort=7134:8000
+# --- The Pod Binding ---
+# We bind to the Sepulcher Pod defined in lychd.pod.
+# The Pod unit handles the port mapping (Host:7134 -> Pod:8000).
+Pod=lychd.pod
 
-# --- The Hermetic Spheres (Mounts) ---
-# 1. The Lab (Read-Write Workspace)
-Volume=%h/.local/share/lychd/active/lab:/app/lab:rw,Z
+# --- The Spheres of Creation (Mounts) ---
 
-# 2. The Extensions (Read-Only Capabilities)
-Volume=%h/.local/share/lychd/active/extensions:/app/extensions:ro,Z
+# 0. The Self (Core Overlay)
+# Allows the Agent to update its own source code via Git on the Host.
+# Mounted Read-Only over the container's built-in source.
+Volume=%h/.local/share/lychd/core/src:/app/src:ro,Z
 
-# 3. The Library (Read-Only External Data)
-# (Configured via lychd.toml)
-Volume=%h/Documents/Books:/app/library/books:ro,Z
+# 1. The Codex (Configuration)
+# Maps Host Config to Container Config (Symmetric Path).
+Volume=%h/.config/lychd:/home/lich/.config/lychd:ro,Z
+
+# 2. The Lab (Internal Workspace)
+# Maps Host Lab to Container Lab (Symmetric Path).
+# This is where the Agent clones repos and drafts extensions.
+Volume=%h/.local/share/lychd/lab:/home/lich/lab:rw,Z
+
+# 3. The Extensions (Installed Capabilities)
+# Maps Host Extensions to Container Extensions (Symmetric Path).
+# Mounted Read-Only. Updates require a Promotion Ritual (Restart).
+Volume=%h/.local/share/lychd/extensions:/home/lich/.local/share/lychd/extensions:ro,Z
+
+# 4. The Library (Reference Data)
+# (Configured via lychd.toml settings.lychd.library_sources)
+# Mapped to /home/lich/library/...
+Volume=%h/Documents/Books:/home/lich/library/Books:ro,Z
 
 # --- The Hardware ---
 # Requesting access to the GPU via CDI

@@ -10,15 +10,14 @@ icon: material/pillar
 
     New contributors (or even the original author) may struggle to understand why certain paths were taken and others were explicitly rejected. This lack of historical context can lead to inconsistent design choices, repeated debates, and difficulty in maintaining the project's core architectural principles.
 
-    We need a lightweight, effective method to document these critical decisions in a way that is version-controlled and accessible alongside the source code.
+## Requirements
 
-## Decision Drivers
-
+- **Methodology:** A lightweight, effective method is required to document critical decisions in a way that is version-controlled and accessible alongside the source code.
 - **Clarity:** The reasoning for architectural choices must be clear and explicit.
 - **Longevity:** Decisions must be recorded in a format that survives team changes and the passage of time.
-- **Asynchronicity:** The process should support asynchronous review and contribution, fitting a distributed or solo development model.
-- **Discoverability:** The records should be easy for developers to find and consult.
-- **Immutability:** Once a decision is made and recorded, it should be considered a settled matter unless formally superseded.
+- **Asynchronicity:** The process must support asynchronous review and contribution, fitting a distributed or solo development model.
+- **Discoverability:** The records must be easy for developers to find and consult within the repository.
+- **Immutability:** Once a decision is recorded, it must be considered a settled matter unless formally superseded.
 
 ## Considered Options
 
@@ -42,17 +41,17 @@ icon: material/pillar
 
 ## Decision Outcome
 
-We will adopt the use of **Architecture Decision Records (ADRs)**, as popularized by Michael Nygard. All significant architectural decisions for the LychD project will be documented in Markdown files within the `docs/adr/` directory.
+**Architecture Decision Records (ADRs)**, as popularized by Michael Nygard are adopted as primary mechanism of architectural rigour. All significant decisions for the LychD project will be documented in Markdown files within the `docs/adr/` directory.
 
 ### ADR Template and Process
 
 - **Format:** Each ADR will be a Markdown file named `XXXX-kebab-case-title.md`.
 - **Content Structure:**
-    - **Mkdocs Metadata:** Must include a short `title` (with the number, e.g., "10. Extensions") and a thematic `icon`.
+    - **Mkdocs Metadata:** Must include a one word `title` (with the number, e.g., "10. Extensions") and a thematic `icon`.
     - **Heading:** The H1 must include the corresponding icon and the full descriptive title.
     - **Context:** Must use `!!! abstract "Context and Problem Statement"`.
         - *Why:* This provides a visual "Flavor Text" box that separates the problem definition from the analysis.
-    - **Decision Drivers:** Standard bullet points.
+    - **Requirements:** Standard bullet points.
     - **Considered Options:** Must use `!!! failure "Option X"` and `!!! success "Option Y"`.
         - *Why:* This allows readers to instantly scan the document and see which option was chosen without reading the text.
     - **Outcome/Implementation:** Text detailing how the decision is applied.

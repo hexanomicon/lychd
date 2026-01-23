@@ -22,7 +22,7 @@ It is the face the Magus sees and the voice that answers the call.
 !!! info "The Will of the Vessel"
     The Vessel is the primary executor of the Lich's will. Its core duties are threefold:
 
-    1.  **To Serve the Altar:** It renders the sacred interface, presenting the Magus with a window into the Lich's operations and a means to issue commands.
+    1.  **To Serve the Altar:** It renders the sacred interface, presenting the Magus with a window into the Lich's operations and a means to issue commands. (The Altar is not a separate microservice; it is Server-Side Rendered HTML generated directly by the Vessel and served on the same port.)
     2.  **To Summon the Ghouls:** Upon receiving an Intent, it quickens a swarm of Ghouls, dispatching them to perform the necessary rites in the background.
     3.  **To Dream in Shadow:** It is the master of the Shadow Realm, orchestrating the speculative execution of tasks and presenting the resulting timelines to the Magus for judgment.
 
