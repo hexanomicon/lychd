@@ -1,14 +1,3 @@
-This is a critical correction. We are stripping away the "nested TOML" trick in favor of **Explicit Grouping**.
-
-A **Soulstone** is now purely a high-level declaration of intent that maps directly to the **[ContainerRune](../../adr/08-containers.md)** schema. The exclusivity logic is governed by the `groups` field, which defines which **Covens** the Rune inhabits.
-
-Here is the remastered **Soulstone** documentation, technically aligned with the Rune substrate.
-
----
-
-### File 2: `animator/soulstone.md`
-
-```markdown
 ---
 title: Soulstone
 icon: material/hexagon-slice-6
