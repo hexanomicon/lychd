@@ -1,0 +1,208 @@
+/*
+   -------------------------------------------------------------------------
+   FROSTMOURNE.CSS
+   Theme: The Void (Deep Dark)
+   Palette: Arcane Purple (Magic), Frost Blue (Ice), Necro Green (Life/Code)
+   -------------------------------------------------------------------------
+*/
+
+:root {
+  /* --- The Void (Backgrounds) --- */
+  --md-hue: 260;
+  --md-default-bg-color: #08080b; /* Deep Void Black */
+  --md-default-bg-color--light: #12121a; /* Slightly lighter for cards/code */
+
+  /* --- The Tri-Color Palette --- */
+  --arcane-purple: #7c4dff;  /* Deep Magic */
+  --frost-blue: #00e5ff;     /* Ice Chill */
+  --necro-green: #00ff9d;    /* The "Sprinkle" of Matrix Code */
+
+  /* --- Material Overrides --- */
+  --md-primary-fg-color: #000000; /* Header background (Black) */
+  --md-accent-fg-color: var(--frost-blue); /* Accent Links are Ice Blue */
+
+  /* Sidebar/Drawer Background (Critical for Left-Tree Layout) */
+  --md-drawer-bg-color: var(--md-default-bg-color);
+
+  /* Text */
+  --md-text-color: #d0d0e0;
+
+  /* --- Code Blocks (The Green Sprinkle) --- */
+  --md-code-bg-color: #1a1a20;
+  --md-code-fg-color: var(--necro-green); /* Code text is Green */
+}
+
+/*
+   ==========================================================================
+   1. THE HEADER (Glassy & Glowing)
+   ==========================================================================
+*/
+.md-header {
+  background-color: rgba(8, 8, 11, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--arcane-purple); /* Purple line anchor */
+  box-shadow: 0 4px 20px rgba(124, 77, 255, 0.2); /* Purple Glow */
+}
+
+/* Site Title: Gradient Text */
+.md-header__title, .md-header__button.md-logo {
+  font-weight: bold;
+}
+
+/* The Logo Image (Book) */
+.md-header__button.md-logo img {
+  border-radius: 5px;
+  box-shadow: 0 0 15px var(--frost-blue); /* The book glows with Ice */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.md-header__button.md-logo img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 25px var(--necro-green); /* Turns green on interaction */
+}
+
+/*
+   ==========================================================================
+   2. THE NAVIGATION SIDEBAR (The Tree on the Left)
+   ==========================================================================
+*/
+
+/* Ensure the sidebar blends into the void */
+.md-sidebar {
+  background-color: transparent !important;
+}
+
+/* Default Links in the Tree */
+.md-nav__link {
+  color: #777; /* Dim by default so they recede */
+  transition: all 0.2s ease;
+}
+
+/* Hovering a link in the tree */
+.md-nav__link:hover {
+  color: var(--frost-blue) !important;
+  text-shadow: 0 0 5px rgba(0, 229, 255, 0.3);
+}
+
+/* The Active Link (Where you are right now) */
+.md-nav__item--active > .md-nav__link {
+  color: var(--necro-green) !important; /* Matrix Green */
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(0, 255, 157, 0.2);
+}
+
+/* Section Headers in the Tree (e.g. "The Sepulcher") */
+.md-nav__item .md-nav__link--active {
+   color: #fff; /* White when expanded */
+}
+
+/*
+   ==========================================================================
+   3. CONTENT & TYPOGRAPHY
+   ==========================================================================
+*/
+
+/* General Links in Text */
+a {
+  color: var(--frost-blue);
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--necro-green);
+  text-decoration: none;
+}
+
+/* Headers (H1, H2, etc) - Subtle Purple Glow */
+h1, h2, h3 {
+  color: #fff;
+  text-shadow: 0 0 20px rgba(124, 77, 255, 0.3);
+}
+
+/* Code Blocks */
+.md-typeset pre > code {
+  background-color: var(--md-code-bg-color);
+  color: var(--necro-green);
+  border: 1px solid #333;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* Inline Code */
+.md-typeset code {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--necro-green);
+}
+
+/*
+   ==========================================================================
+   4. INTERACTIVE ELEMENTS (Buttons & Icons)
+   ==========================================================================
+*/
+
+/* Ghostly Ice Buttons */
+.md-button.md-button--primary {
+  border: 1px solid var(--frost-blue);
+  color: var(--frost-blue);
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.md-button.md-button--primary:hover {
+  background: var(--frost-blue);
+  color: black;
+  box-shadow: 0 0 20px var(--frost-blue);
+}
+
+/* Edit (Pencil) & View (Eye) Buttons */
+.md-content__button {
+  color: #555;
+  transition: all 0.3s ease;
+}
+
+.md-content__button[title*="Edit"]:hover {
+  color: var(--necro-green);
+  transform: scale(1.1);
+  text-shadow: 0 0 10px var(--necro-green);
+}
+
+.md-content__button[title*="View"]:hover {
+  color: var(--frost-blue);
+  transform: scale(1.1);
+  text-shadow: 0 0 10px var(--frost-blue);
+}
+
+/*
+   ==========================================================================
+   5. THE FOOTER (Abyssal)
+   ==========================================================================
+*/
+.md-footer {
+  background-color: #000000 !important;
+  border-top: 1px solid #1a1a20;
+}
+
+/* Prev/Next Navigation Links */
+.md-footer__link {
+  transition: opacity 0.2s;
+}
+
+.md-footer__link:hover .md-footer__title {
+  color: var(--frost-blue);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+/* Social Icons */
+.md-footer-meta a {
+  color: #555;
+}
+.md-footer-meta a:hover {
+  color: var(--necro-green) !important;
+}
+
+/* Scroll to top button */
+.md-top {
+    color: var(--frost-blue);
+    background-color: rgba(8, 8, 11, 0.8);
+}
+.md-top:hover {
+    color: var(--necro-green);
+}
