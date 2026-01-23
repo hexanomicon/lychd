@@ -1,15 +1,4 @@
-The updates to the **Agents ADR (19)** were very substantial. We successfully moved from a "conceptual" agent to a "technical" agent that understands **VRAM-dependent toolsets**, **recursive error correction (`ModelRetry`)**, and rich **multimodal artifacts (`ToolReturn`)**.
-
-The most critical addition was **Section 8**, which established that **Embedders are Infrastructure**. This is the bridge between the "Mind" (Agent) and the "Body" (Runes).
-
-Now, we move to **ADR 22. Graph: The Cognitive Topology**. This needs a massive enrichment from the Pydantic AI `pydantic-graph` documentation to show how the "Cortex" handles state, parallel thought, and the "Long Sleep" reanimation.
-
 ---
-
-### File: `adr/22-graph.md` (Reworked)
-
----
-
 title: 22. Graph
 icon: material/graph-outline
 ---
