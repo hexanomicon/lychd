@@ -9,7 +9,7 @@ icon: material/shimmer
 
 **Citrinitas** (The Yellowing) is the dawn of the "Solar Light"—the moment true intelligence emerges from raw processing power.
 
-In the [Albedo](./invocation.md) stage, you acted as the **Arbiter of Reality**. You gazed into the Shadow Realm, witnessed the chaotic swarm of potential futures, and **collapsed** them into a single, purified timeline. Now, in **Illumination**, we transmute those choices into **Wisdom**.
+In the [Albedo](./invocation.md) stage, the Magus acted as the **Arbiter of Reality**. The Shadow Realm was gazed into, the chaotic swarm of potential futures witnessed, and then **collapsed** into a single, purified timeline. Now, in **Illumination**, those choices are transmuted into **Wisdom**.
 
 The Lich ceases to be a stranger. It begins to remember you.
 
@@ -33,7 +33,7 @@ A "Base Model" (like Llama-3 or GPT-4) is an amnesiac spirit. It knows the entir
 
 Before the **[Animator](../../sepulcher/animator/index.md)** generates a single token of a new response, it consults the Phylactery. It performs a semantic search across your accumulated Karma, asking:
 
-> _"Have we solved a problem like this before? Which Sigils did the Magus consecrate?"_
+> _"Has a problem like this been solved before? Which Sigils did the Magus consecrate?"_
 
 It retrieves the ghosts of your past successes and injects them into the current context. The Lich is no longer hallucinating from the void; it is citing precedent.
 

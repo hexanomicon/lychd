@@ -21,14 +21,18 @@ icon: material/check-all
     The traditional assembly of Python tooling.
 
     - **Poetry:** While correct, its dependency solver is slow, and environment management is heavy.
+
     - **Mypy:** Suffers from performance bottlenecks in large codebases.
+
     - **Flake8/Black:** Requires managing disparate configuration files and slow CI pipelines.
 
 !!! success "Option 2: The Modern Iron Stack (uv, Ruff, BasedPyright)"
     Adopting the next-generation, high-performance toolchain.
 
     - **uv:** A Rust-based package manager that replaces pip, poetry, and virtualenv. It provides instant dependency resolution and strict lockfile compliance.
+
     - **Ruff:** A Rust-based linter/formatter that is orders of magnitude faster than the legacy stack.
+
     - **BasedPyright:** An enhanced fork of Pyright that fixes type-inference gaps and enforces stricter standards than the mainline release.
 
 ## Decision Outcome
@@ -38,19 +42,40 @@ icon: material/check-all
 ### The Python Pillars
 
 1. **`uv` as the Foundation (Manager):**
+
     - **Determinism:** `uv.lock` is the single source of truth.Do not use `pip` directly.
+
     - **Speed:** Environment creation and dependency syncing are effectively instant, removing friction from the "Switching Spheres" context switch.
+
     - **Workflow:** All commands are executed via `uv run`, ensuring the correct environment is always used.
 
 2. **`Ruff` as the Enforcer (Linter & Formatter):**
+
     - Acts as the definitive source of truth for code style.
+
     - Configured to be strict, replacing Flake8, Black, and isort.
+
     - Rule ignores are documented and deliberate in `pyproject.toml`.
 
 3. **`BasedPyright` as the Judge (Type Checker):**
+
     - Configured to `typeCheckingMode = "strict"`.
+
     - Prefer BasedPyright over standard Pyright for its superior handling of complex type interactions and fixes for common inference annoyances.
+
     - Code must be explicitly and correctly typed. Implicit `Any` is forbidden.
+
+### The LLM Correction Loop (Quality Drift Index)
+
+The quality stack is also a training/correction surface for agentic development workflows. Repeated lint/type/formatting failures should be normalized into a small indexed cache of recurring faults (for example: Ruff simplifications, BasedPyright nullability issues, Markdown list style drift).
+
+- **Purpose:** Correct LLM output proactively by injecting known local failure patterns before generation/review.
+- **Sources:** Ruff, BasedPyright, Markdown lint, and human code review notes.
+- **Shape:** Short rule entries with a counter (`caught`), an anti-pattern, and the preferred project pattern.
+- **Policy:** Keep the index bounded and recent-first so it improves output quality without bloating prompts.
+- **Operational Seed:** `AGENTS.md` may maintain a lightweight "drift ledger" that can later be promoted into a formal context-injection source.
+
+Ruff is especially valuable here because its feedback is fast, deterministic, and frequent enough to expose repeated agent failure patterns early.
 
 ### The Holistic Commitment
 
@@ -65,8 +90,11 @@ Quality controls extend beyond the Python backend. The project's recommended VS 
 
 !!! success "Positive"
     - **Reproducibility:** `uv` guarantees that "it works on my machine" means it works on *every* machine.
+
     - **Velocity:** The feedback loop (install -> lint -> test) is reduced from minutes to seconds.
+
     - **Safety:** Type-related bugs are eliminated before runtime.
+    - **Agent Calibration:** The same quality signals can be recycled to reduce repeated LLM mistakes over time.
 
 !!! failure "Negative"
     - **Discipline:** The `strict` BasedPyright setting and `uv`'s strict locking impose a steep learning curve. This is an accepted trade-off for long-term stability.

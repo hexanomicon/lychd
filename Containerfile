@@ -22,8 +22,6 @@ ENV UV_LINK_MODE=copy \
 WORKDIR /app
 
 # --- 1. Install Dependencies (Cached Layer) ---
-# We mount the 'uv' binary and cache directories to install libs without copying source files yet.
-# This layer is reused unless uv.lock or pyproject.toml changes.
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -31,7 +29,6 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
     /bin/uv sync --frozen --no-install-project --extra server
 
 # --- 2. Install Project (Frequent Change Layer) ---
-# Copy the actual source code. This breaks cache whenever you change code.
 COPY . .
 
 # Install the project package itself into the environment with server dependencies.
@@ -44,46 +41,63 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 # ==============================================================================
 FROM python:3.13-slim-bookworm
 
-# --- Security Setup ---
-# Create a dedicated group (gid 1001) and user (uid 1001) as per ADR 06.
-# We never run as root to limit the blast radius if the container is compromised.
-RUN groupadd --system --gid 1001 appuser && \
-    useradd --system --uid 1001 --gid 1001 appuser
+# --- Layer 1: The Prisoner (Identity Setup) ---
+# We create a dedicated, unprivileged system user.
+# Reference: ADR 09 [Security] - Layer 1.
+RUN groupadd --system --gid 1001 lich && \
+    useradd --system --uid 1001 --gid 1001 --create-home --home-dir /home/lich lich
+
+# --- Geography (XDG Standards) ---
+# We establish Path Symmetry (ADR 13). Regardless of the UID running the process,
+# the application logic always looks for its soul in /home/lich.
+ENV HOME=/home/lich \
+    XDG_CONFIG_HOME=/home/lich/.config \
+    XDG_DATA_HOME=/home/lich/.local/share \
+    PATH="/app/.venv/bin:$PATH" \
+    LITESTAR_APP="lychd.app:create_app" \
+    PYTHONPATH="/app/src:$PYTHONPATH"
 
 WORKDIR /app
 
 # --- The Transplant ---
-# Copy the Virtual Environment (libraries + app) from the builder stage.
-# We change ownership to appuser immediately.
-COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appuser /app/src /app/src
+COPY --from=builder --chown=lich:lich /app/.venv /app/.venv
+COPY --from=builder --chown=lich:lich /app/src /app/src
 
-# --- Environment Activation ---
-# Add the venv/bin to PATH. This means typing 'granian' works automatically
-# without needing to source anything or type absolute paths.
-ENV PATH="/app/.venv/bin:$PATH"
-# Tell Litestar/Granian where the application factory is.
-ENV LITESTAR_APP="lychd.main:app"
+# --- Layer 4: THE GREAT SEAL (Immutability) ---
+# We strip write access (-w) from the entire /app directory.
+# Reference: ADR 09 [Security] - Layer 4.
+# This ensures that even the 'Magus' (User 1000) cannot modify the Vessel's brain at runtime.
+RUN chmod -R a-w /app
 
-# --- Sphere Preparation (Crucial for Rootless Mounts) as per ADR 18 ---
-# We must create these directories now and assign ownership to appuser.
-# If we don't, the runtime will create them as 'root' when mounting volumes,
-# causing the application to crash with "Permission Denied".
+# --- Domain and Sphere Preparation ---
+# We create the skeletal structure of the Crypt and Codex.
+RUN mkdir -p /home/lich/.config/lychd \
+             /home/lich/.local/share/lychd/lab \
+             /home/lich/.local/share/lychd/extensions \
+             /home/lich/library \
+             /home/lich/work
+
+# --- THE PERMISSION BRIDGE (Agnosticism) ---
+# We make the internal home directory world-writable (777).
 #
-# Binds to constants defined in: src/lychd/config/constants.py
-# - CONTAINER_RW_LAB        -> /app/lab
-# - CONTAINER_RO_EXTENSIONS -> /app/extensions
-# - CONTAINER_RO_LIBRARY    -> /app/library
-RUN mkdir -p /app/lab /app/extensions /app/library && \
-    chown -R appuser:appuser /app/lab /app/extensions /app/library
+# WHY? Identity Symmetry (ADR 08/09). 
+# At runtime, the Rune Scribe overrides the user to match the host Magus (UID 1000).
+# If this directory were hard-owned by 'lich' (1001), the Magus (1000) would be 
+# locked out of the internal skeleton before host volumes are mounted. 
+# 777 ensures the "Suit of Armor" fits any UID that steps into it.
+RUN chmod -R 777 /home/lich && \
+    chown -R lich:lich /home/lich
 
-# Drop privileges to the non-root user.
-USER appuser
+# --- Layer 1: The Fail-Secure Default ---
+# Reference: ADR 09 [Security].
+# By default, we run as 'lich' (1001). 
+# 1. If run manually (GHCR): Runs as 1001. Non-root, but "Unbound" from host files.
+# 2. If run via LychD Rune: The Quadlet 'User=%U' overrides this to UID 1000.
+#    Combined with 'keep-id', we achieve the "Double Non-Root Bridge."
+USER lich
 
-# Document that the service listens on port 8000.
-# Binds to constant defined in: src/lychd/config/constants.py
-# - LYCHD_INTERNAL_PORT        -> 8000
+# The threshold of the Sepulcher.
 EXPOSE 8000
 
-# Start the high-performance ASGI server.
-CMD ["granian", "--host", "0.0.0.0", "--port", "8000", "lychd.main:app"]
+# The Final Awakening.
+CMD ["granian", "--interface", "asgi", "--host", "0.0.0.0", "--port", "8000", "lychd.app:create_app"]

@@ -1,0 +1,6 @@
+[Unit]
+Description={{ description }}
+PartOf={{ part_of }}
+
+[Install]
+{% if wanted_by %}WantedBy={{ wanted_by | join(' ') }}{% endif %}

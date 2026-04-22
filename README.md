@@ -19,7 +19,7 @@
 
 Summon **The Lich** 💀, a **Phylactery**-bound, LLM-animated daemon.
 
->⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (some not curated yet), and the occasional rogue spirit. Proceed with caution.
+>⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothings works yet -The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
 
 ## 🗺️ The Path of Ascension
 
@@ -44,15 +44,57 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 
 > *"The Lich only sees far because it stands on the shoulders of Giants."*
 
-The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy](https://hexanomicon.github.io/lychd/). Eternal gratitude belongs to **The Champions of Open Source:**
+The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy](https://hexanomicon.github.io/lychd/)
 
-- **The Sacred Geometry:** The **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)** is forged in **[Python](https://www.python.org/)**. Served by **[Granian](https://github.com/emmett-framework/granian)**, its architecture descends from the **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint. State is mapped by **[SQLAlchemy](https://www.sqlalchemy.org/)**, while intelligence and logic are orchestrated via **[Pydantic AI](https://ai.pydantic.dev/)** Models and Graphs, with background **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)** summoned via **[SAQ](https://github.com/tobymao/saq)**.
-- **The Promethean Fire:** The **[Animator](https://hexanomicon.github.io/lychd/sepulcher/animator/)** channels the raw power of **[vLLM](https://github.com/vllm-project/vllm)**, **[Llama.cpp](https://github.com/ggerganov/llama.cpp)**, **[SGLang](https://github.com/sgl-project/sglang)**, **[ExLlamaV2](https://github.com/turboderp/exllamav2)**, and many others.
-- **The Forge of Discipline:** The codebase is managed by **[uv](https://github.com/astral-sh/uv)**, polished by **[Ruff](https://github.com/astral-sh/ruff)**, enforced by **[Pyright](https://github.com/microsoft/pyright)**, verified by **[Pytest](https://docs.pytest.org/)**, and immortalized in **[Git](https://git-scm.com/)**.
-- **The Immutable Earth:** The system rests on the **[Linux Kernel](https://kernel.org/)**, orchestrated by **[Systemd](https://systemd.io/)**, and isolated by **[Podman](https://podman.io/)** (utilizing **[Docker](https://www.docker.com/)** standards). Time itself is managed via **[Btrfs](https://btrfs.readthedocs.io/en/latest/)** snapshots.
-- **The Mind's Eye:** The Soul is anchored in **[PostgreSQL](https://www.postgresql.org/)** (extended by **[pgvector](https://github.com/pgvector/pgvector)**). The Mind is traced via **[OpenTelemetry](https://opentelemetry.io/)** to **[Arize Phoenix](https://phoenix.arize.com/)**, the internal monologue captured by **[Structlog](https://www.structlog.org/)**, and the Body monitored by **[Cockpit](https://cockpit-project.org/)**.
-- **The Visage:** The **[Hexanomicon](https://hexanomicon.github.io/lychd/)** is inscribed via **[MkDocs](https://www.mkdocs.org/)**. The **[Altar](https://hexanomicon.github.io/lychd/divination/altar/)** is bundled by **[Vite](https://vitejs.dev/)**, rendered by **[Jinja2](https://jinja.palletsprojects.com/)**, and utilizes **[JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)** frameworks: **[HTMX](https://htmx.org/)** for transmutation, **[Tailwind CSS](https://tailwindcss.com/)** for glamour, and **[Alpine.js](https://alpinejs.dev/)** for animation.
-- **The Shield:** The **[Free Software Foundation](https://www.fsf.org/)** provides the **[AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html)**, the **[Iron Pact](https://hexanomicon.github.io/lychd/adr/00-license-agplv3/)** that serves as a bulwark against proprietary enclosure.
+### 🕸️ Backend
+
+- **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)** the body of the Lich running a as per **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint, utilizing a **[Granian](https://github.com/emmett-framework/granian)** server or CLI protocol.
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** — The mapper of state and material persistence. **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** provides repositorioes and QoL improvements.
+- **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Orchestrator of agentic intelligence, logic, and model graphs.
+- **[SAQ](https://github.com/tobymao/saq)**. — Background Workers known as **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)**
+
+### 🎭 Frontend
+
+- **[MkDocs](https://www.mkdocs.org/)** — inscribed **[Hexanomicon](https://hexanomicon.github.io/lychd/)**
+- **[Jinja2](https://jinja.palletsprojects.com/)** — renders the **[Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
+- **[Vite](https://vitejs.dev/)** — **[JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)** bundler
+- **[HTMX](https://htmx.org/)** — Engine for seamless transmutation.
+- **[Tailwind CSS](https://tailwindcss.com/)** — styling.
+- **[Alpine.js](https://alpinejs.dev/)** — UI animation.
+
+### 📦 Containerization & Sandboxing
+
+- **[Systemd](https://systemd.io/)** — Orchestrator of the undying processes of the **[Linux Kernel](https://kernel.org/)**.
+- **[Podman](https://podman.io/)** — Isolation of the spirit inside containers via **[Quadlets](https://github.com/containers/quadlet)**.
+- **[Nono](https://github.com/always-further/nono/)** — Strict per-process execution sandbox leveraging Linux Landlock to isolate unsafe tool executions within the Shadow Realm.
+- **[Btrfs](https://btrfs.readthedocs.io/en/latest/)** — Management of time through snapshots.
+
+### 🔥 Inference Engines
+
+- **[vLLM](https://github.com/vllm-project/vllm)** — Batching, high-throughput inference engine for GPUs.
+- **[Llama.cpp](https://github.com/ggerganov/llama.cpp)** — Single batch server Optimised for CPU offloading of larger models.
+- **[SGLang](https://github.com/sgl-project/sglang)** — Radix attention benefit for batched agentic workflows on GPUs.
+- **[ExLlamaV2](https://github.com/turboderp/exllamav2)** — Excellent single batch serving on Ampere architecture and fractional quants.
+
+### 🔨 Forging & Evaluation
+
+- **[DeepFabric](https://github.com/always-further/deepfabric)** — The mechanical loom that generates structured training datasets and evaluates model mettle via physical execution in the Shadow Realm.
+- **[Unsloth](https://github.com/unslothai/unsloth)** — High-efficiency pipeline for striking verified patterns into LoRA adapter weights.
+
+### 👁️ Database & Telemetry
+
+- **[PostgreSQL](https://www.postgresql.org/)** — The anchor of the Soul, extended by **[pgvector](https://github.com/pgvector/pgvector)**.
+- **[OpenTelemetry](https://opentelemetry.io/)** — Tracer of thought, flowing into **[Arize Phoenix](https://phoenix.arize.com/)**.
+- **[Structlog](https://www.structlog.org/)** — Capturing the internal monologue of the machine.
+- **[Cockpit](https://cockpit-project.org/)** — Monitor of the physical frame.
+
+### 🛠️ Code Control
+
+- **[uv](https://github.com/astral-sh/uv)** — Manager of the environment and dependencies.
+- **[Ruff](https://github.com/astral-sh/ruff)** — The polisher of the written word.
+- **[Pyright](https://github.com/microsoft/pyright)** — Enforcer of the static types.
+- **[Pytest](https://docs.pytest.org/)** — Verifier of the logic's truth.
+- **[Git](https://git-scm.com/)** — Immortalizer of the project's evolution.
 
 ***
 

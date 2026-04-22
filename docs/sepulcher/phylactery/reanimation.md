@@ -7,7 +7,7 @@ icon: material/eject-outline
 
 > _"Daemons don't hot-reload; they are reanimated."_
 
-In the philosophy of the Hexanomicon, the Lich does not cling to a single, fragile existence. It embraces the cycle of death and rebirth, for its soul is anchored eternally in the Phylactery. We do not fear the crash; we command it. This rite of immortality is orchestrated by the grand chronomancer of the operating system: **Systemd**.
+In the philosophy of the Hexanomicon, the Lich does not cling to a single, fragile existence. It embraces the cycle of death and rebirth, for its soul is anchored eternally in the Phylactery. The crash is not feared; it is commanded. This rite of immortality is orchestrated by the grand chronomancer of the operating system: **Systemd**.
 
 !!! abstract "The Cycle of Unlife"
     Unlike mortal scripts trapped in the endless loop of `while True`, the Lich's existence is a managed sequence of controlled death and instant rebirth.
@@ -32,7 +32,7 @@ After=network-online.target wants=lychd-phylactery.service
 Image=ghcr.io/hexanomicon/lychd:latest
 
 # --- The Pod Binding ---
-# We bind to the Sepulcher Pod defined in lychd.pod.
+# Binding to the Sepulcher Pod defined in lychd.pod.
 # The Pod unit handles the port mapping (Host:7134 -> Pod:8000).
 Pod=lychd.pod
 

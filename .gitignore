@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Ruff linter
+.ruff_cache/
+
 # Distribution / packaging
 .Python
 build/
@@ -24,6 +27,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+TODO.md
 poetry.toml
 .pdm-python
 # PyInstaller

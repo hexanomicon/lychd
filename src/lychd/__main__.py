@@ -15,7 +15,7 @@ def run_cli() -> None:
     variable to discover and initialize the application, triggering the
     `on_cli_init` hook within the `AppInit` protocol implementation.
     """
-    from lychd.config import get_settings
+    from lychd.config.settings import get_settings
 
     settings = get_settings()
 

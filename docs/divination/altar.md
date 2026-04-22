@@ -18,7 +18,7 @@ Technically, the Altar is a hyper-efficient, server-rendered frontend. While it 
 
     1.  **The Offering Plate (Input):** This is where you submit your **Intents**. You do not write code here; you write *Desire*. ("Refactor this module," "Analyze this log," "Plan the deployment.")
     2.  **The Scrying Mirror (Observation):** It displays the live, spectral tethers of the [Ghouls](../sepulcher/vessel/ghouls.md) as they work in the background. You watch the logs flow like a river.
-    3.  **The Judgment Seat (The Albedo Interface):** When the Ghouls return from the **[Shadow Realm](../sepulcher/vessel/shadow_realm.md)** with potential timelines, they present them here.
+    3.  **The Judgment Seat (The Albedo Interface):** When the Ghouls return from the **[Shadow Realm](../sepulcher/extensions/shadow.md)** with potential timelines, they present them here.
 
 !!! info "The Collapse of the Wavefunction"
     This is the Altar's most critical purpose.

@@ -6,6 +6,13 @@
       "source.organizeImports": "explicit"
     }
   },
+  "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+        "editor.codeActionsOnSave": {
+            // This fixes MD022 (headers) and other structure rules
+            "source.fixAll.markdownlint": "explicit"
+        }
+    },
   // tag:yaml.org,2002: is required or it lint warns in mkdocs.yaml
   "yaml.customTags": [
     "tag:yaml.org,2002:python/name:material.extensions.emoji.twemoji",

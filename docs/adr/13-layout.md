@@ -18,6 +18,20 @@ icon: material/file-tree
 - **Anatomical Persistence:** A dedicated region for the **[Phylactery's (06)](06-persistence.md)** chambers, optimized for Copy-on-Write snapshots.
 - **Cartographic Rigidity:** Hardcoded locations for all critical domains to prevent fragmentation of the system's body.
 
+## Considered Options
+
+!!! failure "Option 1: Static Absolute Paths"
+    Defining hardcoded paths (e.g., `/app/data` and `/home/user/lychd`).
+    - **Cons:** **Path Dissonance.** This breaks when running on the host vs. the container. It requires the logic to constantly ask "Where am I?" and translate strings, leading to "Blindness" when an Agent tries to find a file.
+
+!!! failure "Option 2: Environment-Variable Overload"
+    Relying on dozens of `LYCHD_DATA_PATH`, `LYCHD_CONFIG_DIR` variables.
+    - **Cons:** **Configuration Fragility.** It makes the system impossible to debug. A single missing variable in a `docker-compose` or `systemd` file bricks the Daemon. It lacks "Geographic Determinism."
+
+!!! success "Option 3: Symmetric XDG Parity"
+    Adhering to XDG standards and mapping them 1:1 into the container.
+    - **Pros:** **Total Symmetry.** `~/.config/lychd` is the same string on the Host and the Vessel. This allows the machine to reason about its own body without a translation layer. It enforces the "Three Domains" (Law, Life, Industry) naturally.
+
 ## Decision Outcome
 
 The filesystem is organized into **Three Domains** that govern the existence of the Daemon.
@@ -27,14 +41,31 @@ The filesystem is organized into **Three Domains** that govern the existence of 
 **"The Law."**
 This Domain contains immutable configuration files and user-defined intents. It is mounted **Read-Only** into the container. The Agent cannot change the Law; only the Magus can modify these scrolls.
 
+This ADR defines where the Codex lives and how it is mounted. The Codex contract (global `lychd.toml`, `runes/` ownership, anchor rules, singleton behavior, and loader validation) is governed by [Configuration (12)](12-configuration.md).
+
 - **Host Path:** `~/.config/lychd/`
 - **Internal Path:** `~/.config/lychd/` (Symmetric)
 
-**Contents:**
+**Contents (Codex Taxonomy):**
 
-- `lychd.toml`: The Prime Directive (Global settings).
-- `soulstones/`: TOML definitions for local infrastructure.
-- `portals/`: TOML definitions for remote API connections.
+- `lychd.toml`: Global settings
+
+- **Rune Schemas (Anchored Instances):**
+    - `animator/`: Animation root defaults and child anchors.
+        - `soulstones/`: Local infrastructure intent (container-backed providers).
+            - `llamacpp/`: Instances of llama.cpp providers (TOML files).
+            - `vllm/`: Instances of vLLM providers.
+            - `sglang/`: Instances of SGLang providers.
+        - `portals/`: Remote API intent (network-backed providers).
+            - `openai/`: Instances of OpenAI portals.
+            - `anthropic/`: Instances of Anthropic portals.
+            - *(future anchors live here as additional subdirectories)*
+
+**Layout Notes:**
+
+- The taxonomy above shows common built-in anchors for operator orientation.
+- Installed extensions may add additional rune anchors under `runes/` while preserving the same directory-based ownership model.
+- Loader rules, identity derivation, singleton behavior, and validation doctrine are specified in [Configuration (12)](12-configuration.md).
 
 ### 2. The Crypt (`XDG_DATA_HOME`)
 
@@ -83,6 +114,29 @@ Inside the container, the layout mirrors the Host Domains via volume mounts. By 
 | `~/.local/share/lychd/extensions/` | Crypt | **RO** | Extension Logic |
 | `~/work/` | Outlands | **RW** | External Workspace |
 
+### 4. Dual-Plane Trust Delta
+
+The layout now separates trusted and untrusted execution geography.
+
+- Vessel mounts trusted codex and durable control-plane regions.
+- Shadow mounts only task/workspace/artifact regions with minimal write scope.
+- Suggested Shadow regions:
+    - `~/.local/share/lychd/shadow/jobs/`
+    - `~/.local/share/lychd/shadow/workspaces/`
+    - `~/.local/share/lychd/shadow/artifacts/`
+    - `~/.local/share/lychd/shadow/cache/`
+- Shadow must not mount full Codex or host trigger/signaling paths.
+
+### Policy Table
+
+| Dimension | Vessel (Trusted Control Plane) | Shadow (Untrusted Execution Plane) |
+| :--- | :--- | :--- |
+| Secrets | Secret-bearing codex paths under `0600` ownership. | No secret-bearing codex paths. |
+| Mounts | Codex plus required durable crypt regions. | Task-scoped workspace/artifact/cache mounts. |
+| Network | Internal control-plane connectivity. | Minimal connectivity with deny-by-default egress. |
+| Queue Ownership | Queue state mapped through trusted persistence paths. | No queue state mounts. |
+| Authority Boundaries | Trigger/intent geography available. | No trigger/intent mount access. |
+
 ### Consequences
 
 !!! success "Positive"
@@ -92,4 +146,4 @@ Inside the container, the layout mirrors the Host Domains via volume mounts. By 
 
 !!! failure "Negative"
     - **Path Rigidity:** Users must adhere to the XDG structure; non-standard layouts require manual environment variable overrides.
-    - **Mount Discipline:** The system relies on the **[CLI (18)](18-cli.md)** Hand to correctly map these domains during the binding ritual; an incorrect mount leads to immediate systemic blindness.
+    - **Mount Discipline:** The system relies on the **[CLI (19)](19-cli.md)** Hand to correctly map these domains during the binding ritual; an incorrect mount leads to immediate systemic blindness.

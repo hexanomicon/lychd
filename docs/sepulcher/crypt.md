@@ -13,7 +13,7 @@ It is physically located at **`~/.local/share/lychd`** (respecting `XDG_DATA_HOM
 
 ## 🧱 The Physical Foundation (Persistence)
 
-The Crypt employs a **Decoupled Strategy** for persistence. We treat **Code** (Files) and **Data** (Database) as separate organs with different preservation needs.
+The Crypt employs a **Decoupled Strategy** for persistence. The architecture treats **Code** (Files) and **Data** (Database) as separate organs with different preservation needs.
 
 ### 1. Code Persistence (The Body)
 

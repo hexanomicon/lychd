@@ -46,7 +46,7 @@ This establishes the **Sacred Grounds**:
 
 - 📜 **[The Codex](sepulcher/codex.md)** (`~/.config/lychd`): The book of **Runes** (Quadlets & Blueprints).
 - 🪦 **[The Crypt](sepulcher/crypt.md)** (`~/.local/share/lychd`): The persistent storage.
-    - **Note:** The Scribe will inspect your filesystem. If **Btrfs** is not detected, it will automatically forge a **Loopback Mirror** to support [Autopoiesis](./divination/transcendence/immortality.md).
+    - **Note:** The Scribe inspects the filesystem. If **Btrfs** is not detected, it automatically forges a **Loopback Mirror** to support [Autopoiesis](./divination/transcendence/immortality.md).
 
 _> **Action Required:** Enter the Codex and configure your power sources._
 

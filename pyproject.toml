@@ -54,15 +54,22 @@ test = [
   "pytest-mock",
   "pytest-cov",
   "polyfactory",
-  "pytest-sugar", # I put this back since you explicitly listed it
+  "pytest-sugar",
 ]
 lint = [
     "ruff>=0.1.0",
+    "codespell>=2.4.1",
     "bump-my-version"
 ]
 typing = [
     "basedpyright>=1.1.0"
 ]
+# NOTE:
+# `typing` is intentionally NOT included in `dev`.
+# Reason: some contributor setups (notably VSCodium + Pyright integration)
+# can degrade when basedpyright is always installed in the default dev env.
+# Use `make type-check` (which runs via `uv`) or sync the group explicitly
+# when strict type analysis is needed.
 dev = [
     { include-group = "server" },
     { include-group = "docs" },
@@ -92,16 +99,14 @@ packages = ["src/lychd"]
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["tests"]
-# Using a list is cleaner than a long string
+# Keep core pytest defaults here. Parallelism and coverage mode are controlled
+# by Makefile targets (`make test`, `make coverage`) to avoid duplicated flags.
 addopts = [
-    "-n", "auto",              # Parallel execution
     "--strict-markers",        # Fail on typos in markers
     "--strict-config",         # Fail on bad config
     "--tb=short",              # Cleaner error tracebacks
     "-ra",                     # Show summary of skips/fails
     "-v",                      # Verbose
-    "--cov=src/lychd",         # Coverage target
-    "--cov-report=term-missing"
 ]
 
 log_cli = true
@@ -180,10 +185,11 @@ ignore = [
     "COM812",  # Trailing comma (Conflicts with formatter)
     "ISC001",  # Implicit string concatenation (Conflicts with formatter)
     "PLC0415", # Import outside toplevel (Useful for lazy loading)
-    "TCH001",  # Move import to TYPE_CHECKING (Sometimes annoying with Pydantic)
-    "TCH002",  # Move import to TYPE_CHECKING
-    "TCH003",  # Move import to TYPE_CHECKING
+    "TC001",  # Move import to TYPE_CHECKING (Sometimes annoying with Pydantic)
+    "TC002",  # Move import to TYPE_CHECKING
+    "TC003",  # Move import to TYPE_CHECKING
     "TD",      # flake8-todos - Ignores rules about TODO formatting
+    "PLR0913", # Too many arguments
 ]
 
 [tool.ruff.lint.isort]

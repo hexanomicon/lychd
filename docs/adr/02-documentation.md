@@ -8,7 +8,7 @@ icon: material/book-cog-outline
 !!! abstract "Context and Problem Statement"
     LychD is a complex system combining ancient lore with modern engineering. The documentation must be as immersive as it is technical.
 
-    Furthermore, a core tenet of LychD is **[eXtreme Documentation Driven Development](01-doctrine.md)**, where the documentation serves as the "[Incantation](../divination/transcendence/incantation.md)" that the code must fulfill. Eventually, the Agent itself will be tasked with reading, writing, and maintaining its own documentation.
+    Furthermore, a core tenet of LychD is **[eXtreme Documentation Driven Development](01-doctrine.md)**, where the documentation serves as the "[Incantation](../divination/transcendence/incantation.md)" that the code must fulfill. The doctrine also leaves room for later stages in which the Agent reads, writes, and maintains documentation as part of the same disciplined loop.
 
 ## Requirements
 
@@ -39,7 +39,7 @@ icon: material/book-cog-outline
         - **Markdown Native:** LLMs speak Markdown fluently. This is critical for future [Autopoiesis](../divination/transcendence/immortality.md).
         - **Material Theme:** Providing a polished, modern, and responsive UI out of the box.
         - **Extensibility:** `pymdownx` extensions allow for rich content (admonitions, code blocks) without breaking standard Markdown compatibility.
-    - **Cons:** Less "automatic" API documentation generation compared to Sphinx (though `mkdocstrings` mitigates this). We accept this trade-off for superior narrative capabilities.
+    - **Cons:** Less "automatic" API documentation generation compared to Sphinx (though `mkdocstrings` mitigates this). This trade-off for superior narrative capabilities is accepted.
 
 ## Decision Outcome
 

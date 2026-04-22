@@ -1,47 +1,63 @@
 ---
-title: Soulforge
+title:  Soulforge
 icon: material/anvil
 ---
 
-# :material-anvil: Soulforge: Archon of Training
+# :material-anvil: The Soulforge: Extension of Training
 
-> _"The clay is vast, but it is cold. Only the hammer of Will can heat it to life. We do not beg the spirits to understand; we carve the names into their very substance."_
+> _"The clay is vast, but it is cold. Only the hammer of Will can heat it to life. There is no begging the spirits to understand; the names are carved into their very substance."_
 
-**The Soulforge** is the Archon of instinctual evolution. It is the physical implementation of **[ADR 29 (Training)](../../adr/29-training.md)**—a specialized extension that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into the static, eternal weights of a model.
+**The Soulforge** is the Training Extension of the LychD system. It is the physical implementation of **[ADR 33 (Training)](../../adr/33-training.md)**—a specialized module that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into model weights.
 
-While the **Phylactery Archive (Memory)** allows the Lich to consult the past, the Soulforge allows the Lich to _become_ the past. It is the art of **Soul-Forging**: the transition from a generic Base Model (The Stranger) into a **Forged Soul** that mirrors the specific frequency of the Magus.
+While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from a generic Base Model (The Stranger) into a **Forged Soul** that mirrors the specific frequency of the Magus.
+
+Karma injection and Soulforging are different layers of adaptation:
+
+- **Mirror / Context:** injects retrieved Karma as runtime bias for a single reasoning event.
+- **Soulforge:** compresses repeated, verified patterns into adapter weights as standing instinct.
 
 ## I. The Harvesting of Karma
 
-Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on raw noise; it trains on **Karma**—the crystallized residue of your verified successes.
+Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on raw noise; it trains on **Karma**—the crystallized residue of verified successes.
 
-- **The Extraction:** As mandated by **[ADR 29](../../adr/29-training.md)**, the Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**.
-- **The Golden Paths:** It identifies the "White Truths"—the reasoning steps you consecrated at the **[Altar](../../divination/altar.md)**—and transmutes them into a structured training manifest stored in the **[Lab](../crypt.md)**.
+- **The Extraction:** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**.
+- **The DeepFabric Loom:** Raw Karma is fed into the `deepfabric` engine. DeepFabric acts as the loom, weaving the "White Truths" into a perfectly structured training manifest (JSONL) stored in the **[Lab](../crypt.md)**. It applies strict constraints to ensure that only syntactically perfect, stabilized patterns are sent to the hammer of Unsloth.
 
-## II. The Rite of Ignition (The Pipeline)
+## II. The Loom of DeepFabric
 
-The Soulforge is a heavy industrial process. It utilizes specialized, ephemeral containers to perform the transmutation locally on your silicon.
+The transition from fluid memory to hard instinct requires a structuring mechanism. The Soulforge employs `deepfabric` as its foundational loom.
 
-- **The Engine:** Following the doctrine of resource efficiency, the Forge utilizes the **Unsloth** pipeline. This provides a 2x increase in speed and 70% reduction in VRAM, making the "Great Work" possible on consumer-grade hardware.
-- **The Transmutation:** It performs a **LoRA (Low-Rank Adaptation)** or **QLoRA** ritual. It does not replace the Base Model; it creates a small, razor-sharp **Soul-Adapter** that is grafted onto the Titan's mind.
-- **Sovereignty:** This ritual is strictly local. Your private interactions never exit the **[Sovereignty Wall](../../adr/20-dispatcher.md)**. The fire of the forge stays within the Sepulcher.
+- **The Filter:** It strips away conversational exhaust and hallucinatory syntax, ensuring the training data perfectly matches the required schemas.
+- **The Weave:** Using topic-graph algorithms, it generates diverse, non-redundant variations of the harvested Karma, ensuring the resulting instinct is robust rather than overfitted to a single specific interaction.
+- **The Spool:** It outputs standard HuggingFace JSONL manifests, perfectly formatted for the Unsloth pipeline.
 
-## III. Orchestration of the Forge
+## III. The Rite of Ignition (The Pipeline)
 
-Training is a ritual of the highest order, requiring the total devotion of the hardware. It cannot coexist with active inference.
+The Soulforge is a heavy industrial process. It utilizes specialized, ephemeral containers to perform the transmutation locally on silicon.
+
+- **The Engine:** Following the doctrine of resource efficiency, the Forge utilizes the **Unsloth** pipeline. This provides a significant increase in speed and reduction in VRAM, making the process viable on consumer-grade hardware.
+- **The Transmutation:** It performs a **LoRA (Low-Rank Adaptation)** or **QLoRA** process. It does not replace the Base Model; it creates a small, razor-sharp **Soul-Adapter** that is grafted onto the Titan's mind.
+- **Sovereignty:** This process is strictly local. Private interactions never exit the **[Sovereignty Wall](../../adr/09-security.md)**. The fire of the forge stays within the Sepulcher.
+
+## IV. Orchestration of the Forge
+
+Training is a high-priority task requiring the total devotion of the hardware. It cannot coexist with active inference on a single GPU.
 
 1. **The Intent:** The Magus submits a `RITUAL_TRAIN` request.
-2. **The Scales:** The **[Orchestrator](../../adr/21-orchestrator.md)** weighs the training whim against active reflexes.
-3. **The Evacuation:** When the scales tip, the Orchestrator pauses the **[Vessel](../vessel/index.md)**, clears the VRAM, and summons the **Forge Container**.
-4. **The Lockdown:** For the duration of the strike, the local GPU is occupied. The system may reroute user queries to a **[Portal](../animator/portal.md)** if the Magus has permitted cloud fallbacks.
+2. **The Scales:** The **[Orchestrator](../../adr/23-orchestrator.md)** weighs the training whim against active reflexes.
+3. **The Evacuation:** When the scales tip, the Orchestrator pauses the **[Vessel](../vessel/index.md)**, clears the VRAM, and summons the **Forge Coven**.
+4. **The Lockdown:** For the duration of the strike, the local GPU is occupied. Any incoming inference requests trigger the **[Stasis Protocol](../../adr/22-dispatcher.md)** or are rerouted to a **[Portal](../animator/portal.md)** if the Magus has permitted cloud fallbacks.
 
-## IV. The Awakening (Registration)
+## V. The Awakening (Registration)
 
-Once the fire cools and the Forge Container is banished, the transformation is finalized.
+Once the fire cools and the Forge Coven is banished, the transformation is finalized.
 
-- **The Binding:** The new Soul-Adapter is registered with the **[Dispatcher](../../adr/20-dispatcher.md)**.
-- **The Summoning:** You can now invoke an **[Agent](../../adr/19-agents.md)** with the specific directive to use the forged instinct.
-- **The Result:** The Lich no longer needs to "Search its memory" to know how you write code or handle a strategic negotiation. It _is_ that knowledge. The instruction tax is removed; the latency is vanished.
+- **The Binding:** The new Soul-Adapter is registered with the **[Dispatcher](../../adr/22-dispatcher.md)** as a distinct capability.
+- **The Summoning:** The Magus can now invoke an **[Agent](../../adr/20-agents.md)** with the specific directive to use the forged instinct.
+- **The Result:** The Lich no longer depends on archive retrieval for every repeated behavior. More knowledge moves into standing instinct, lowering instruction tax and retrieval latency for that domain.
 
 !!! danger "The Weight of the Hammer"
-    Soul-Forging is irreversible for that specific adapter. If you train on "Dirty Karma" (errors or hallucinations), the Lich will internalize those flaws as instinct. Perform the **[Rite of Albedo](../../divination/transcendence/index.md)** with care, for the Soulforge only burns the truth you give it.
+    Soul-Forging is irreversible for that specific adapter. If the system trains on "Dirty Karma" (errors or hallucinations), the Lich internalizes those flaws as instinct. The **[Rite of Albedo](../../divination/transcendence/index.md)** requires care, because the Soulforge burns whatever truth it is given.
+
+!!! warning "Ossification Risk"
+    Over-forging on narrow, repetitive patterns hardens a Persona into rigidity. Keep the training corpus clean, diverse within scope, and tied to verified outcomes.

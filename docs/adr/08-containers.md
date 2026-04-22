@@ -3,95 +3,136 @@ title: 8. Containers
 icon: material/cube-outline
 ---
 
-# :material-cube-outline: 8. Containers: Systemd Runes
+# :material-cube-outline: 8. Containers: Systemd Quadlets
 
 !!! abstract "Context and Problem Statement"
-    The LychD architecture functions as a "Sepulcher"—a unified pod of interconnected services including the primary Vessel, the persistent Phylactery, and a dynamic federation of extensions. Orchestrating this complex environment on a single Linux host requires a system that is declarative, resilient, and natively integrated with the operating system's lifecycle. A primary challenge involves the management of finite hardware resources, specifically GPU VRAM; the system must group inference containers into atomic, mutually exclusive **Operational States** to prevent hardware contention and Out-of-Memory (OOM) failures. Furthermore, as AI services are often multi-faceted (e.g., providing both Vision and OCR), the infrastructure definition must be capable of expressing nuanced, overlapping capabilities while maintaining deterministic deployment and transactional safety.
+    The LychD architecture functions as a unified **pod** of interconnected **services** including the primary **Vessel**, the **Phylactery**, and a dynamic federation of **extensions**.
+
+    It operates on a single sovereign Linux host where hardware resources—particularly GPU VRAM—are finite and contention-prone. Inference services may be multi-faceted (e.g., Vision + OCR), and multiple containers may compete for exclusive hardware domains. Without deterministic grouping, lifecycle authority, and transactional updates, resource contention can result in Out-of-Memory (OOM) failures or unstable boot states.
 
 ## Requirements
 
-- **Host-Native Orchestration:** Mandatory integration with the operating system's init system (Systemd) to manage service lifecycles and recovery.
-- **Atomic Resource States:** Capability to group container definitions into **Covens**—mutually exclusive operational states managed as single units.
-- **Semantic Capability Tagging:** Support for assigning multiple functional tags (e.g., `vision`, `reasoning`, `stt`) to a single container for intelligent discovery.
-- **The Law of Exclusivity:** Physical enforcement of container conflicts at the kernel/init level to ensure deterministic resource allocation.
-- **Declarative Blueprinting:** Automated generation of immutable infrastructure definitions (**Runes**) from the user's central configuration.
-- **Identity Symmetry:** Native resolution of the host/container UID permission mismatch to allow seamless interaction with persistent volumes.
-- **Transactional Inscription:** Infrastructure updates must be atomic; a failed configuration ritual must not leave the host in a non-bootable or inconsistent state.
+- **Host-Native Orchestration:** Integration with the operating system’s init system (Systemd) to manage lifecycle, recovery, and boot-time determinism.
+
+- **Declarative Infrastructure Model:** Infrastructure must be expressed declaratively and manifested reproducibly from defined intent.
+
+- **Finite Hardware Governance:** Scarce hardware domains (e.g., GPU VRAM) must be explicitly managed to prevent contention and undefined behavior.
+
+- **Atomic Operational States:** Containers must be grouped into mutually exclusive **Covens** that activate and deactivate as indivisible states.
+
+- **Kernel-Enforced Exclusivity:** Hardware conflicts must be enforced at the init/kernel level rather than through cooperative runtime behavior.
+
+- **Semantic Capability Expression:** Infrastructure definitions must support overlapping and composable capability tags (e.g., `vision`, `reasoning`, `stt`) without introducing deployment ambiguity.
+
+- **Identity Symmetry:** The host/container UID boundary must be resolved without privilege escalation, enabling native interaction with persistent volumes.
+
+- **Transactional Inscription:** Infrastructure updates must be atomic; a failed configuration ritual must never leave the system in a partial or non-bootable state.
+
+
+## Considered Options
+
+!!! failure "Rejected: K3s (Kubernetes)"
+    A lightweight Kubernetes distribution was considered for its robust, declarative orchestration.
+
+    -   **Cons:** **Excessive Complexity.** Introduces a massive architectural overhead for a single-host system. Runs parallel to the host's init system, creating two separate sources of truth for service management.
+
+!!! failure "Rejected: Docker Compose"
+    The most common tool for defining multi-container applications.
+
+    -   **Cons:** **No Native Exclusivity.** Lacks any mechanism to enforce the **Law of Exclusivity** at the kernel level. Operates outside the host's init system, complicating recovery and boot-time management.
+
+!!! success "Chosen: Podman Quadlets (Systemd)"
+    Leveraging Podman's ability to generate Systemd unit files from a simple definition.
+
+    -   **Pros:** **Deep OS Integration.** Treats containers as first-class Systemd services. **Kernel-Enforced Exclusivity** via `Conflicts=`. Supports `UserNS=keep-id` for **Identity Symmetry**.
 
 ## Decision Outcome
 
-**Podman Quadlets** are adopted as the exclusive orchestration mechanism. These definitions, referred to as **Runes**, serve as the physical blueprint of the Daemon. They are organized into **Covens** for state management and tagged with **Capabilities** for semantic discovery by the internal dispatcher.
+Podman Quadlets are adopted as the exclusive orchestration mechanism. These unit definitions serve as the physical blueprint of the Daemon. They are organized into **Covens** for state management and tagged with **Capabilities** for semantic discovery.
 
-### 1. The Runic Hierarchy
+Terminology boundary: configuration **runes** are TOML declarations in the Codex (see **[Configuration (12)](12-configuration.md)**). This ADR governs the generated **Quadlet manifests** and their Systemd lifecycle.
+
+### 1. The Quadlet Hierarchy
 
 The Sepulcher is organized into a strict hierarchy managed by the host's init system:
 
-1. **The Pod (`lychd.pod`):** A shared network and resource namespace that forms the physical boundary of the Sepulcher. It encapsulates all core and extension services.
-2. **The Core Runes:** Persistent services essential for the system's existence:
-    - `vessel.container`: The primary application kernel.
-    - `phylactery.container`: The persistent PostgreSQL/PgVector engine.
-    - `oculus.container`: The observability and tracing stack (Arize Phoenix).
-3. **The Extension Runes:** Dynamic services defined by installed organs. Each Rune declares a set of functional `Capabilities` and belongs to one or more `Covens`.
+1. **The Pod (`lychd.pod`):** A shared network and resource namespace forming the physical boundary of the Sepulcher.
+2. **The Coven Target (`lychd-coven-*.target`):** A meta-unit generated for multi-member Covens, providing a "master switch" for the Orchestrator.
+3. **The Core Units:** Persistent services essential for the system (`vessel`, `phylactery`).
+4. **The Extension Units:** Dynamic services defined by installed organs.
+5. **The Portals:** Logical bridges to remote APIs (no physical containers).
 
-### 2. Capabilities: The Soul of the Rune
+### 2. Capabilities: The Soul of the Animator
 
-A Rune is defined not merely by its image, but by the abstract services it provides to the agentic cortex. The `ContainerRune` schema includes a `Capabilities` list (e.g., `["vision-analysis", "ocr", "text-generation"]`).
+Metadata for routing lives with logical animator rune schemas/runtime animators, not in the generated Quadlet manifests. The **[Dispatcher (22)](22-dispatcher.md)** consumes that logical layer while this ADR governs the physical container topology.
 
-- **Discovery:** This metadata is the primary data source used by the **[Dispatcher (20)](20-dispatcher.md)** to map an Agent's abstract intent to a physical provider.
-- **Nuanced Provisioning:** This allows the cortex to identify when a single, powerful Rune (like a multimodal VLM) can satisfy multiple requirements simultaneously, minimizing unnecessary container startup overhead.
+Capabilities define what a Coven can do (e.g., `TTS`, `reasoning`), and are tracked with two critical state attributes:
+
+- **`is_static: bool`**: Indicates if the capability is permanently baked into the container. If static, it is always available as soon as the container boots.
+- **`is_active: bool`**: Indicates if the capability is currently ready to receive requests. For dynamic containers (like `llama.cpp` or vLLM) that can swap models internally without restarting, a capability might not be static—meaning the Orchestrator must invoke a model load before that specific capability flips to `is_active`.
 
 ### 3. Covens: The Law of Exclusivity
 
-To manage finite hardware, Runes are organized into **Covens**, representing mutually exclusive operational states.
+To manage finite hardware, containers are organized into **Covens** (groups). The system operates under **"Implicit Exclusivity, Explicit Alliances"**: every Coven is hostile to every other Coven by default.
 
-- **The Mapping ("The Law"):** Operational States are referred to as **Covens** in Lore and are defined via the `groups` key in the **[Codex (12)](12-configuration.md)**.
-- **The Coven Tag:** A Rune belongs to a Coven if it shares a group name (e.g., `groups=["reasoning"]`). A Rune may belong to multiple non-conflicting Covens.
-- **Automated Conflict Resolution:** The **Rune Scribe** (`lychd bind`) generates Systemd `Conflicts=` directives between Runes that do not share at least one group. This ensures that only one resource-heavy Coven occupies the GPU VRAM at a time.
-- **State Transition:** When a service from the `vision` coven is summoned, `systemd` automatically and gracefully terminates all running services from the `reasoning` coven before the new state is manifested.
+- **The Coven (`groups`):** A container belongs to one or more Covens.
+- **The Alliance (`alliances`):** Only Covens listed together are permitted to run concurrently.
+- **Automated Conflict Resolution:** The transmutation + inscription pipeline calculates enemies and forges explicit `Conflicts=` directives in each `.container` file, listing enemy `.target` or `.service` units to prevent GPU over-allocation.
 
-### 4. Federated Rune Registration
+### 4. Intra-Coven Dependencies (The Chain of Command)
 
-The Runic Hierarchy is not limited to the Core kernel. The system supports **Inversion of Control** for infrastructure:
+The Magus can specify standard Systemd ordering and dependency directives directly within a Soulstone's definition.
 
-- **Registration Hook:** Extensions provide their own infrastructure blueprints by invoking `context.add_rune(RuneDefinition)` during the assimilation phase.
-- **Unified Scribing:** The **[Rune Scribe (18)](18-cli.md)** treats core runes and extension runes as a single, flattened manifest, ensuring that the **Law of Exclusivity** and **Port Arbitration** are enforced across the entire organism.
+- **Direct Translation:** The transmutation pipeline carries keys like `after`, `wants`, and `requires` into the generated Quadlet manifest.
+- **Target Interaction:** When starting a Coven Target, Systemd resolves the internal dependency graph, ensuring services start in the correct order (e.g., pre-processors before models).
 
-### 5. Networking and Port Arbitration
+### 5. Federated Quadlet Registration
 
-Network management is arbitrated by the Pod unit to ensure collision-free internal and external communication.
+Extensions provide generated container blueprints via `context.add_container()`. Rune config ownership/discovery remains governed by **[Configuration (12)](12-configuration.md)**. The CLI treats all Quadlet manifests as a single inscription set so the **Law of Exclusivity** and port arbitration are enforced across the entire organism.
 
-- **Shared Namespace:** All containers within `lychd.pod` share the `localhost` interface, enabling high-performance internal communication via standard ports.
-- **Dynamic Exposure:** The `ContainerRune` schema includes an `ExposePort` flag. When enabled, the Scribe adds the Rune's port mapping to the `PublishPort` directive of the main `lychd.pod`, granting it visibility to the host or the **[Proxy (30)](30-proxy.md)**.
+**Initial Phase vs Future Refinements:**
+For the Initial Phase (V1), all extensions (including Webcrawlers) are configured to join the single `lychd.pod` by default. This simplifies networking and allows Layer 7 authentication to manage internal boundaries. However, the Quadlet generation architecture inherently supports standalone execution, meaning future versions can deploy extensions to isolated network namespaces outside the Pod.
 
-### 6. Identity Symmetry
+### 6. Networking and Port Arbitration
 
-To solve the "Permission Paradox," all generated Runes utilize the `UserNS=keep-id` mapping.
+Arbitrated by the Pod unit. All containers share the `localhost` interface. Host visibility is expressed through Pod `PublishPort` mappings generated from validated port declarations in the runtime manifest pipeline.
 
-- **Mechanism:** This instructs Podman to map the host user's UID/GID directly to the same ID inside the container.
-- **Result:** The process inside the container runs with the exact identity of the Magus. This ensures that mounted volumes in the **[Crypt (13)](13-layout.md)**—including source code and database files—are accessible without permission errors or insecure host-side permission overrides.
+### 7. Identity Symmetry (The Double Non-Root Bridge)
 
-### 7. The Rite of Atomic Inscription
+To resolve the UID permission gap without granting privileged access, the Quadlet generation pipeline binds the container process to the host user's numerical identity.
 
-To prevent systemic corruption—where a crash during configuration leaves the host in an unbootable state—the **Scribe** implements a transactional update ritual.
+- **Mechanism:** Every generated Quadlet must include the following directives:
+    1. **`User=%U`**: A Systemd specifier that forces the process to start with the UID of the Magus who invoked the service, overriding the Image's internal default.
+    2. **`UserNS=keep-id`**: Instructs Podman to map that host UID directly into the container without translation.
+- **Effect:** The process runs as a "nameless" UID matching the host identity (e.g., UID 1000). Because it is not UID 0 (Root), it has no administrative power inside the container, yet it gains native access to the **[Crypt (13)](13-layout.md)** volumes.
+- **Cross-Reference:** The "Fail-Secure" logic and the detailed security theory behind this "Double Non-Root" posture are addressed in **[Security (09)](09-security.md)**.
 
-- **The Shadow Phase:** All new Runes are first inscribed into a temporary "Shadow" directory.
-- **The Atomic Swap:** Only upon the successful generation of the entire manifest does the Scribe perform a rapid cleanup and move the new files to the active **Binding Site** (`~/.config/containers/systemd/`). This ensures the system always transitions between two valid, bootable states.
+### 8. The Rite of Atomic Inscription
 
-### 8. Runes as Capability Providers
+The inscription pipeline (via the Scribe service) implements a transactional update ritual to prevent systemic corruption:
 
-Runes are the physical manifestation of the abstract capabilities defined in **[Extensions (05)](05-extensions.md)**.
+- **Shadow Phase:** Quadlets are inscribed into a temporary directory.
+- **Atomic Swap:** Upon successful generation, the Writer performs a rapid cleanup and moves the new files to the active **Binding Site** (`~/.config/containers/systemd/`).
 
-- **Semantic Tagging:** Every Rune is tagged with one or more functional capabilities.
-- **Late Discovery:** The system remains blind to the specific contents of a container; it only identifies the capability tag (e.g., `vision`, `stt`), allowing for model-agnostic infrastructure.
+This atomicity covers generated unit manifests only. Durable state snapshots and Btrfs/COW recovery semantics are handled by **[Snapshots (07)](07-snapshots.md)** over the **[Layout (13)](13-layout.md)** persistence regions.
+
+### 9. Quadlets as Manifestations of Animators
+
+Physical Quadlets are transmuted from logical **Soulstone rune configs** and paired by stable service identity. Metadata is decoupled: the physical unit file contains infrastructure logic, while the Animator layer handles provider/model/tool discovery for the Dispatcher.
+
+### 10. Security and Trust Boundaries
+
+The container topology acts as the foundational layer for the system's defense-in-depth model. While Quadlets govern the physical resource boundaries (VRAM, CPUs, and mount propagation), the logical authority boundaries—such as the split between the trusted **Vessel** and the semi-trusted **Shadow** execution plane—are governed by strict security policy.
+
+For the full definition of the Dual-Plane Trust Delta, secret distribution, and the internal `nono` subprocess sandboxing, refer to **[Security (09)](09-security.md)**.
 
 ### Consequences
 
 !!! success "Positive"
-    - **Intelligent Resource Scaling:** Multi-capability tagging allows the system to satisfy complex intents with the minimum number of active containers.
-    - **Hardware Determinism:** GPU VRAM is strictly managed by the host init system, preventing resource contention and unrecoverable OOM crashes.
-    - **Sovereign Security:** The `keep-id` mapping provides a seamless security bridge, maintaining the rootless posture while enabling effortless filesystem interaction.
-    - **Operational Reliability:** The Atomic Inscription ritual guarantees system integrity, even if the binding process is interrupted by power loss or failure.
+    - **Hardware Determinism:** GPU VRAM is strictly managed via kernel-level conflicts.
+    - **Operational Reliability:** Atomic updates guarantee a bootable state at all times.
+    - **Identity Fluidity:** Technical UID mapping enables native, non-root filesystem interaction.
 
 !!! failure "Negative"
-    - **Linux Ecology Lock-in:** This architecture binds LychD irrevocably to Linux distributions utilizing Systemd and Podman.
-    - **Orchestration Overhead:** The interplay between semantic Capabilities and physical Covens requires a sophisticated Orchestrator to mitigate state-swap latency.
+    - **Linux Ecology Lock-in:** Binds LychD irrevocably to Systemd and Podman.
+    - **Orchestration Overhead:** State transitions require deterministic startup/shutdown latency.

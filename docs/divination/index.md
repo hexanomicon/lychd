@@ -22,7 +22,7 @@ The practice of Divination elevates the Magus through three stations of power, e
     You progress to shaping the present. You submit **Intents** at the **[Altar](./altar.md)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
 
 !!! warning "III. The God-Mind: Forging the Future"
-    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/vessel/shadow_realm.md)**. The Lich presents you with a tapestry of possible futures, and with a single act of will, you collapse all potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.
+    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/extensions/shadow.md)**. The Lich presents you with a tapestry of possible futures, and with a single act of will, you collapse all potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.
 
 ## The Confluence of Wills
 

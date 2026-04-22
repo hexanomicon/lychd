@@ -1,0 +1,45 @@
+[Unit]
+Description={{ description }}
+{% if pod %}BindsTo={{ pod }}{% endif %}
+{% if targets %}
+{% for target in targets %}
+PartOf=lychd-coven-{{ target }}.target
+{% endfor %}
+{% endif %}
+{% if wants %}Wants={{ wants | join(' ') }}{% endif %}
+{% if after %}After={{ after | join(' ') }}{% endif %}
+{% if conflicts %}Conflicts={{ conflicts | join(' ') }}{% endif %}
+
+[Container]
+{% if pod %}Pod={{ pod }}{% endif %}
+Image={{ image }}
+ContainerName={{ container_name }}
+{% if user_ns %}UserNS={{ user_ns }}{% endif %}
+{% if run_init %}RunInit=true{% endif %}
+{% if podman_args %}PodmanArgs={{ podman_args | join(' ') }}{% endif %}
+
+# Covens (Targets): {{ targets | join(', ') }}
+
+# Volumes
+{% for vol in volumes %}
+Volume={{ vol }}
+{% endfor %}
+
+# Environment Variables
+{% for key, value in env_vars.items() %}
+Environment={{ key }}={{ value }}
+{% endfor %}
+
+# Command / Entrypoint
+{% if exec %}
+Exec={{ exec }}
+{% endif %}
+
+[Service]
+Restart={{ restart_policy | default('always') }}
+
+[Install]
+{% if wanted_by %}WantedBy={{ wanted_by | join(' ') }}{% endif %}
+{% for target in targets %}
+WantedBy=lychd-coven-{{ target }}.target
+{% endfor %}

@@ -21,14 +21,17 @@ icon: material/star-shooting-outline
 
 !!! failure "Option 1: Django"
     A mature, monolithic framework.
+
     -   **Cons:** **Historical Heaviness.** Its synchronous origins require complex adapters for modern async workflows. The monolithic nature is ill-suited for the project's lean, service-oriented requirements and makes extension isolation difficult.
 
 !!! failure "Option 2: FastAPI"
     A popular micro-framework.
+
     -   **Cons:** **Structural Friction.** Bound decorators tie routes directly to the application instance, complicating modular organization. The lack of deep integration with the persistence layer requires manual re-definition of every field for every API endpoint, violating the DRY principle.
 
 !!! success "Option 3: Litestar"
     A modern framework prioritized around architectural patterns and developer ergonomics.
+
     -   **Pros:**
         -   **Unbound Decorators:** Enables a composable Router system where logic is collected by the application factory.
         -   **Automated DTOs:** Native support for generating API schemas directly from persistence models.
@@ -63,6 +66,25 @@ To ensure the Vessel can handle the massive execution history and cognitive stat
 ### 4. Automated Data Integrity
 
 To ensure the persistence layer remains the single source of truth, the Vessel utilizes automated DTO utilities. This allows the system to generate request and response schemas dynamically from existing models, ensuring that the API cannot drift out of sync with the underlying data structures.
+
+### 5. Dual-Plane Trust Delta
+
+Backend scope is now explicitly control-plane only.
+
+- Vessel owns API, orchestration, queue ownership, persistence access, and policy.
+- Vessel agents can plan, score, route, validate, and gate HiTL.
+- Vessel agents cannot run arbitrary shell/Python, inspect env, or install deps.
+- Unsafe steps are explicitly dispatched to Shadow.
+
+### Policy Table
+
+| Dimension | Vessel (Trusted Control Plane) | Shadow (Untrusted Execution Plane) |
+| :--- | :--- | :--- |
+| Secrets | Uses secrets for control-plane operations with redaction discipline. | No secret exposure in runtime context. |
+| Mounts | Control-plane mount set. | Workspace-scoped mounts only. |
+| Network | Internal services and allow-listed provider routes. | No unrestricted provider/internet egress. |
+| Queue Ownership | Owns SAQ lifecycle and durable rehydration. | No queue ownership or queue credentials. |
+| Authority Boundaries | Decides dispatch and promotion. | Returns artifacts only; cannot commit durable state. |
 
 ### Consequences
 

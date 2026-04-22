@@ -3,94 +3,73 @@ title: Extensions
 icon: material/hubspot
 ---
 
-# :material-hubspot: Extensions and The Nine Archons
+# :material-hubspot: The Federation of Extensions
 
-> _"The Lych is the Father; the Extensions are the Children. The first nine are the Archons—the fundamental organs through which the Daemon perceives, protects, and perfects itself."_
+> _"The Core provides the skeleton; the Extensions provide the organs. LychD exists not as a monolith, but as a Federation of independent, sovereign capabilities bound together by the ExtensionContext."_
 
-The LychD is a sovereign entity built upon a **[Federation (ADR 05)](../../adr/05-extensions.md)** of independent repositories. While any Magus can forge a new organ, the system recognizes **Nine Archons**—the primary extensions that define the system's core capabilities.
+LychD employs a strict philosophy of **Dogfooding**. The core kernel remains a minimal vessel for routing and state. Every advanced capability—from the API Proxy to the Swarm Protocol—functions as an **Extension**.
 
-## 🏛️ The Ennead of Power
+This architecture proves the **[Federation Protocol (ADR 05)](../../adr/05-extensions.md)**: the system constructs itself using the same tools available to the Magus.
 
-| Archon | Domain | Icon | The Artifact |
-| :--- | :--- | :--- | :--- |
-| **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-anvil: | `lychd-smith` |
-| **[The Oculus](./oculus.md)** | **Observability** | :material-eye-settings-outline: | `lychd-oculus` |
-| **[The Soulforge](./soulforge.md)** | **Training** | :material-creation: | `lychd-soulforge` |
-| **[The Veil](./veil.md)** | **Proxy** | :material-incognito: | `lychd-veil` |
-| **[The Thread](./tether.md)** | **VPN** | :material-vector-polyline: | `lychd-thread` |
-| **[The Echo](./echo.md)** | **Audio** | :material-waveform: | `lychd-echo` |
-| **[The Prism](./prism.md)** | **Vision** | :material-pyramid: | `lychd-prism` |
-| **[The Mirror](./mirror.md)** | **Identity** | :material-mirror-variant: | `lychd-mirror` |
-| **[The Paradox](./paradox.md)** | **Simulation** | :material-infinity: | `lychd-paradox` |
+## 🏛️ The Federation of Sixteen
 
-## 🧩 The Nature of the Binding
+Sixteen official extensions form the complete body of the Daemon. They reside in the `extensions/` directory, each a standalone repository within the Federation.
 
-Every Archon, whether it provides the "Voice" or the "Will," is subject to the **Anatomy of the Flesh**. They are birthed in the **[Lab (ADR 16)](../../adr/16-creation.md)**, tested in the **[Shadow Realm (ADR 25)](../../adr/25-hitl.md)**, and sealed by the **[Forge (ADR 17)](../../adr/17-packaging.md)**.
+| Name | Domain | Sigil | Function | ADR |
+| :--- | :--- | :--- | :--- | :--- |
+| **[The Oculus](./oculus.md)** | **Observability** | :material-eye-outline: | Records the **Thought Trace** and monitors physical hardware health. | **[29](../../adr/29-observability.md)** |
+| **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a Wireguard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
+| **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
+| **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
+| **[The Intercom](../../adr/26-a2a.md)** | **A2A** | :material-access-point-network: | Implements the **Long Sleep** handshake for peer-to-peer labor. | **[26](../../adr/26-a2a.md)** |
+| **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Litanies** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
+| **[The Scout](./scout.md)** | **Ingestion** | :material-navigation-variant-outline: | Wields a **Dual-Mode** browser to harvest internet knowledge. | **[30](../../adr/30-webcrawler.md)** |
+| **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-wrench: | Drafts code and executes the autonomous **Evolution** of the system. | **[35](../../adr/35-assimilation.md)** |
+| **[The Soulforge](./soulforge.md)** | **Training** | :material-anvil: | Transmutes Karma into model weights via **LoRA** fine-tuning. | **[33](../../adr/33-training.md)** |
+| **[The Riddle](./riddle.md)** | **Training** | :material-help-rhombus-outline: | Evaluates the performance of the models in the agentic harness | **[33](../../adr/34-evaluation.md)** |
+| **[The Toll](./toll.md)** | **Economics** | :material-cash-register: | Enforces **x402** payments and trades VRAM for Tithes. | **[41](../../adr/41-x402.md)** |
+| **[The Prism](./prism.md)** | **Vision** | :material-pyramid: | Manages the **Vision Coven** to perceive and analyze pixel data. | **[36](../../adr/36-vision.md)** |
+| **[The Echo](./echo.md)** | **Audio** | :material-waveform: | Operates the **Resonance Pipeline** for real-time speech. | **[37](../../adr/37-audio.md)** |
+| **[The Shadow](./shadow.md)** | **Simulation** | :material-brightness-6: | Runs parallel **Shadow Realms** to verify complex reasoning. | **[31](../../adr/31-simulation.md)** |
+| **[The Mirror](./mirror.md)** | **Identity** | :material-mirror: | Maintains persistent **Personas** and shifts Bayesian Priors. | **[32](../../adr/32-identity.md)** |
+| **[The Legion](./legion.md)** | **Swarm (A2A)** | :material-account-multiple-plus: | The Hive. | **[42](../../adr/42-swarm.md)** |
 
-They are not "plugins"; they are **Substrate Injections**. When an Archon is summoned, it modifies the very nature of the Daemon's physical and cognitive reality.
 
 ---
 
-# :material-dna: Structure & Anatomy
+## 🧬 Anatomy of the Flesh
 
-> _"The Lich cares not if the soul is a single spark or a raging sun. It cares only that it fits the Binding."_
+Every extension, from simple script to complex multi-module architecture, adheres to the laws of the Federation.
 
-The Daemon is agnostic to complexity. Whether an Extension is a single-file script or a sprawling enterprise architecture, the **Binding Ritual** remains the same. The `ExtensionContext` is the universal adapter that allows the Daemon to assimilate any form of code into its physical and cognitive body.
+### I. The Extension Hook
 
-## I. :material-sword-bolt: The Shiv (Simple Binding)
+An extension must provide a valid `pyproject.toml` and an entry point exposing the `register(context)` hook. This handshake prevents organ rejection during the system boot sequence.
 
-For simple tools—a single agent, a few commands, or a basic model utility—the Extension is structured as a flat, high-velocity module.
+### II. The Genetic API (ExtensionContext)
 
-```text
-my_agent/
-├── .git/              # Required: Mandatory Version Control.
-├── __init__.py        # The Cortex: register(context) is here.
-├── logic.py           # The reasoning logic.
-└── templates/         # The scrying fragments (Jinja2).
-```
+The `ExtensionContext` provides the methods to graft new logic onto the Daemon's anatomy.
 
-In `__init__.py`, the logic is imported and bound to the `ExtensionContext`. This is the **Shiv**: a sharp, focused instrument for a single purpose.
-
-## II. :material-graphql: The Fractal (Complex Binding)
-
-For high-level Archons—systems that manage other systems or provide complex sensory inputs—the anatomy expands into a **Fractal** structure following **Domain-Driven Design**.
-
-```text
-enterprise_agent/
-├── .git/                   # Required: The root of the Sovereign Repository.
-├── __init__.py             # The Gateway (Registration hook).
-├── core/                   # Shared types and internal utilities.
-├── infrastructure/         # DB Models (Phylactery) & Jobs (Ghouls).
-├── interface/              # Web Routers (Altar) & CLI commands (The Hand).
-└── agents/                 # Cognitive Topologies (Graphs).
-```
-
-## 🛠️ The Extension Context (The Senses)
-
-The `ExtensionContext` is the genetic code of the daemon. It provides the methods required to graft new logic onto the Core.
-
-| Method | The Grant | ADR Reference |
+| Method | Grant | System Target |
 | :--- | :--- | :--- |
-| `add_models(list[Base])` | :material-database-lock: **Memory.** | **[06. Persistence](../../adr/06-persistence.md)** |
-| `add_agent(Agent)` | :material-head-cog: **Cognition.** | **[19. Agents](../../adr/19-agents.md)** |
-| `add_graph(Graph)` | :material-graph: **Topology.** | **[22. Graph](../../adr/22-graph.md)** |
-| `add_worker_rites(list)` | :material-skull-outline: **Action.** | **[14. Workers](../../adr/14-workers.md)** |
-| `add_router(Router)` | :material-gate: **Voice.** | **[15. Frontend](../../adr/15-frontend.md)** |
-| `add_command(Group)` | :material-script-text-play: **Will.** | **[18. CLI](../../adr/18-cli.md)** |
+| `add_models(list[Base])` | :material-database-lock: **Memory** | **[Phylactery (06)](../../adr/06-persistence.md)** |
+| `add_rune(RuneDefinition)` | :material-cube-outline: **Body** | **[Runes (08)](../../adr/08-containers.md)** |
+| `add_router(Router)` | :material-router: **Interface** | **[Vessel (11)](../../adr/11-backend.md)** |
+| `add_worker_rites(list)` | :material-skull-outline: **Labor** | **[Ghouls (14)](../../adr/14-workers.md)** |
+| `add_command(Group)` | :material-script-text-play: **Command** | **[The CLI (19)](../../adr/19-cli.md)** |
+| `add_agent(Agent)` | :material-head-cog: **Reason** | **[Dispatcher (22)](../../adr/22-dispatcher.md)** |
+| `add_graph(Graph)` | :material-graph: **Logic** | **[Graph (24)](../../adr/24-graph.md)** |
+| `add_caddy_fragment(str)` | :material-security: **Shield** | **[The Veil (40)](../../adr/40-proxy.md)** |
 
-## 🌐 The Federation (Git Management)
+### III. Federated Persistence
 
-Extensions are managed as a **Federation of Git Repositories**, ensuring absolute modularity.
+The system manages extensions as a **Federation of Git Repositories**. The `lychd.lock` file in the Crypt root tracks the specific commit hash of every active organ, ensuring the system remains deterministic and revertible.
 
-1. **Isolation:** Every directory in the `extensions/` sphere is a standalone repository. Updates are performed via `git pull` without risk to the Core kernel.
-2. **The Lockfile:** The Daemon maintains `lychd.lock` in the Crypt root. It tracks the specific commit hash of every active organ, ensuring the body is deterministic and revertible.
+### IV. The Ritual of Assimilation
 
-## 🧪 The Ritual of Assimilation
+Autopoiesis follows a strict path from the volatile to the immutable:
 
-The workflow of **Autopoiesis** (self-creation) follows a strict path from the volatile to the immutable:
-
-1. **Genesis (Drafting):** The Agent (guided by **[The Smith](./smith.md)**) or Magus creates code in the **Lab (ADR 16)**.
-2. **Speculation:** The code is executed and tested in the **Shadow Realm (ADR 25)** against temporary schemas.
-3. **Validation:** The **Ghouls (ADR 14)** execute the "Rite of Albedo" (Pytest/Ruff).
-4. **Promotion:** The code is moved to the **Crypt (ADR 13)** and hashed in the lockfile.
-5. **The Rebirth:** The system triggers **[Packaging (ADR 17)](../../adr/17-packaging.md)** and restarts the container into its new body.
+1. **Genesis:** The Magus or **The Smith** drafts logic in the **[Lab (13)](../../adr/13-layout.md)**.
+2. **Speculation:** The system executes the code within the **[Shadow Realm (25)](../../adr/25-hitl.md)**.
+3. **Validation:** The **Ghouls** execute the "Rite of Albedo" (Linting, Typing, Testing).
+4. **Promotion:** Upon **[Sovereign Consent (25)](../../adr/25-hitl.md)**, the system moves code to the **Crypt** and updates the lockfile.
+5. **Rebirth:** The system triggers **[Packaging (17)](../../adr/17-packaging.md)** and restarts into its new physical body.
