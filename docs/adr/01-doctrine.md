@@ -7,13 +7,18 @@ icon: material/feather
 # :material-feather: 1. eXtreme Documentation Driven Development (xDDD)
 
 !!! abstract "Context and Problem Statement"
-    Absorb the useful, discard the useless, and add what is unique. Reject the dogma of the Alphabet Soup (TDD, BDD, XP). Instead forge a "Middle Path" — one that respects the narrative density of **Lore** while demanding the rigorous purity of **Code**.
+    Absorb the useful, discard the useless and add what is unique. Reject the dogma and instead forge a middle path — one that respects the narrative density of **Lore** while demanding the rigorous purity of **Code**.
 
 ## Requirements
 
-- **Narrative Cognitive Mapping:** The raising of the undead (GPUs/Metal) requires a strong Lore to guide the summoning. Technical jargon is mapped to Lore concepts (e.g., *Phylactery* -> *Stateful Persistence*), reducing cognitive load by creating high-level "mental chunks" that define the system's identity.
-- **LLM Optimization:** Lore is confined to the Prophecy (Docs). Code remains pure (Engineering) to prevent hallucination and preserve context tokens.
-- **Pragmatism:** Methodologies are treated as tools, not chains. Only necessary elements are imported into the workflow.
+- **Lore as a Mnemotechnic technique:** The raising of the undead (GPUs/Metal) calls for a powerful narrative to guide the summoning. Mapping tech jargon to code, e.g:
+    - *Phylactery* -> *Stateful Persistence*.
+    - *Vessel* -> *Litestar WebApp Container*.
+
+    Creating mental connections that reduce cognitive load.
+
+- **LLM Optimization:** Lore is confined to the Documentation (Hexanomicon, docstrings, CLI messages). Code and logs remain pure (Engineering) to prevent hallucination and preserve context tokens.
+- **Pragmatism:** Methodologies are treated as **tools, not chains**. Only necessary elements are imported into the workflow.
 
 ## Considered Options & Selections
 
@@ -23,39 +28,42 @@ icon: material/feather
 
     "Take valid practices and turn the knobs to 10." —Kent Beck
 
-XP focuses on technical excellence and communication. The power of these values is acknowledged, but the "Extreme" of the 1990s is viewed merely as the baseline for modern development.
+XP focuses on technical excellence and communication.
 
 !!! success "Simplicity"
-    **Open-Closed Principle.** Simple is brilliance. Open for Grandeur, Closed for Stability. Over-engineering is avoided; the system is instead prepared for inevitable extension.
+    **Open-Closed Principle.** Simplicity is brilliance - Open for Grandeur, Closed for Stability.
+
+    - avoid over-engineering.
+    - prepare for inevitable extension.
 
 !!! success "Courage"
-    **The `'del'ete` Spell.** Dead code and failed prototypes are trimmed. The Sunk Cost Fallacy is rejected. If a component does not serve the Prophecy, it is vanished.
+    **The `'del'ete` Spell.** Reject The Sunk Cost Fallacy and do not be afraid to change course.
 
 !!! success "Respect"
-    **There is one obvious way to do it**. Frameworks are not fought; they are respected.
+    **There is one obvious way to do it**. Frameworks are followed, not fought.
 
 !!! warning "Reworked: Pair Programming"
-    - **The Shift:** The "Navigator" is now an LLM.
-    - **The Result:** Massive velocity and continuous feedback are achieved without the logistical drag of human scheduling. Human interaction is reserved strictly for high-level architectural syncing.
+    - **The Shift:** The Navigator is now an LLM resulting in a massive development velocity boost.
 
 !!! warning "Reworked: Documentation"
-    - **The Abstract Spec (Lore) is written first**. The vision must be solidified in text to guide the summoning before a single line of code is manifested.
+    - **Abstract Spec is written first**. The vision must be solidified in text to guide the summoning before a single line of code is manifested.
     - **Code is the Documentation** regarding implementation details. Low-level mechanics are not documented in the prose.
 
     >_Travel light, but prepared._
 
 ### 2. Domain-Driven Design (DDD)
 
-DDD aligns software structure with business concepts. It is utilized to ensure code reflects the Vision, but Lore (Map) is strictly separated from Code (Territory) as defined in the [Lexicon](../lexicon.md).
+- Aligns software structure with business concepts.
+- Utilized to ensure code reflects the Vision, but Lore (Map) is strictly separated from Code (Territory) as defined in the [Lexicon](../lexicon.md).
 
 !!! success "Domain Isolation:"
     Separation of concerns is mandatory. The Domain is isolated from the Infrastructure.
 
 **Ubiquitous Language:**
 !!! success "Pro (High Level)"
-    **Lore** is welcomed in Docstrings and Documentation to provide flavor and context. Immersion in CLI messages is favored.
+    **Lore** is welcome in Docstrings, CLI messages and Documentation to provide flavor and context.
 !!! failure "Con (Low Level)"
-    **Context Purity** is required in operational logs and low-level code. Naming a class `SoulJar` breaks LLM pattern recognition. Standard naming (e.g., `PostgresConnection`) is used because that is what the AI understands best.
+    **Context Purity** is required in logs and code. Naming a class `SoulJar` breaks LLM pattern recognition. Standard naming (e.g., `PostgresConnection`) is used because that is what the AI understands best. However there are cases where Lore naming fits better.
 
 ### 3. Test-Driven Development (TDD)
 
@@ -88,7 +96,7 @@ Agile promotes iterative progress. The speed and adaptability are accepted, but 
 ### 6. Waterfall Model
 
 !!! quote "The Art of War"
-    "Planning is everything, the plan is nothing. — Dwight D. Eisenhower
+    "No plan survives the first contact with the enemy" — Field Marshal Helmuth von Moltke
 
 Waterfall demands upfront planning. The need for foresight in architecture and documentation prior to implementation is respected.
 

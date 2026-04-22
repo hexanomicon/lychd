@@ -23,7 +23,7 @@ icon: material/shield-check-outline
     Python's built-in, xUnit-style testing framework.
 
     - **Pros:** Zero external dependencies; guaranteed stability across Python versions.
-    - **Cons:** **Boilerplate Heavy. ** - Lacks native support for dependency injection (fixtures). Class-based structures are required for every test. The lack of a robust dependency injection system (fixtures) necessitates complex `setUp`/`tearDown` chains. Assertion output lacks the granular introspection of modern tools.
+    - **Cons:** Boilerplate Heavy - Lacks native support for dependency injection (fixtures). Class-based structures are required for every test. The lack of a robust dependency injection system (fixtures) necessitates complex `setUp`/`tearDown` chains. Assertion output lacks the granular introspection of modern tools.
 
 !!! failure "Option 2: BDD / Keyword Frameworks (Robot Framework, Behave)"
     "Given-When-Then" style syntax or keyword-driven testing to separate test logic from implementation.
@@ -37,7 +37,7 @@ icon: material/shield-check-outline
     - **Pros:**
         - **Fixtures:** Modular, reusable setup code is achieved via dependency injection without inheritance hierarchies.
         - **Ecosystem:** Native support exists for parallel execution (`xdist`), async loops (`pytest-asyncio`), and deep introspection of failures.
-        - **Velocity:** Simple `assert` statements reduce code volume and allow developers to remain in the "Flow."
+        - **Velocity:** Simple `assert` statements reduce code volume.
 
 ## Decision Outcome
 

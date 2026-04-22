@@ -6,7 +6,7 @@ icon: material/creation
 # :material-creation: 16. Creation: The Workflow of Autopoiesis
 
 !!! abstract "Context and Problem Statement"
-    The LychD architecture is designed for Autopoiesis (self-creation)—the capability for the system to autonomously expand its own logic and manifest new capabilities. However, allowing a probabilistic process to modify its own live source code presents a fundamental stability paradox. A single syntax error or logical loop introduced during self-modification results in an immediate system lobotomy, causing a crash that prevents self-recovery and violates the doctrine of immutability. A formal ritual is required to govern the transition from "Idea" to "Reality."
+    The LychD architecture is designed for Autopoiesis (self-creation)—the capability for the system to autonomously expand its own logic and manifest new capabilities. However, allowing a probabilistic process to modify its own live source code presents a fundamental stability dilemma. A single syntax error or logical loop introduced during self-modification results in an immediate system lobotomy, causing a crash that prevents self-recovery and violates the doctrine of immutability. A formal ritual is required to govern the transition from "Idea" to "Reality."
 
 ## Requirements
 
@@ -14,8 +14,22 @@ icon: material/creation
 - **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the production substrate but lacks the authority to impact Primary Reality.
 - **The Verification Ritual:** Mandatory success of a formal verification suite (e.g., Unit Testing, Linting, Type Checking) before logic transitions from experiment to reality.
 - **Atomic Promotion:** Transactional migration of code; broken or untested artifacts must be discarded rather than merged.
-- **History Sovereignty:** Mandatory Git version control from the moment of inception to ensure a permanent audit trail of the system's evolution.
-- **Magus Oversight:** Integration with the **[HitL (25)](25-hitl.md)** protocol to ensure that no structural change occurs without the Magus's subjective verification.
+- **History Preservation:** Mandatory Git version control from the moment of inception to ensure a permanent audit trail of the system's evolution.
+- **Magus Oversight:** Integration with the **Human-in-the-Loop** protocol to ensure that no structural change occurs without the Magus's subjective verification.
+
+## Considered Options
+
+!!! failure "Option 1: Live Hot-Reloading"
+    Allowing the Agent to modify the `.py` files currently being executed by the Vessel.
+    - **Cons:** **Systemic Lobotomy.** A single syntax error or indentation mistake by a probabilistic model results in an immediate, unrecoverable crash. The machine kills itself before it can finish the change.
+
+!!! failure "Option 2: Manual Pull-Request Workflow"
+    Forcing the Agent to submit a Git PR that a human must manually merge on the host.
+    - **Cons:** **Operational Stagnation.** It destroys the "Autonomous" nature of the Daemon. The Lych becomes a glorified "Code Assistant" rather than a sovereign entity capable of self-directed growth.
+
+!!! success "Option 3: The Shadow Realm (Lab -> Test -> Promote)"
+    Modifying code in an isolated `lab/` directory, verifying it with Ghouls, and only promoting it to the Crypt upon success.
+    - **Pros:** **Crash Immunity.** The "Primary Reality" (The Crypt) is Read-Only. Evolution happens in the "Shadow Realm" (The Lab). The machine handles the "Nigredo" (Darkness/Errors) internally, only presenting the "Albedo" (Whitened Truth) for promotion.
 
 ## Decision Outcome
 
@@ -43,7 +57,7 @@ Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 
 ### 4. Promotion (The Rite of Passage)
 
-Once a creation is deemed "Stable" (passes all verification) and is consecrated by the Magus via **[Sovereign Consent (25)](25-hitl.md)**, it undergoes **Assimilation**.
+Once a creation is deemed "Stable" (passes all verification) and is consecrated by the Magus via **[Consent](25-hitl.md)**, it undergoes **[Assimilation](./35-assimilation.md)**.
 
 1. **The Lock:** The new logic is formally added to the system's federated lockfile.
 2. **The Move:** The directory is moved from the **Lab** (Read-Write) to the **Crypt** (Read-Only).

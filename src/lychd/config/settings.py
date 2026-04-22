@@ -3,26 +3,28 @@ from __future__ import annotations
 import secrets
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
-from litestar.serialization import decode_json, encode_json  # msgspec
-from pydantic import Field, PrivateAttr, SecretStr, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
-from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from lychd.config.constants import BASE_DIR, HOST_LYCHD_TOML
+from lychd.config.utils import (
+    codex_permission_issues,
+    needs_generated_secret_fallback,
+    read_secret_from_env_or_file,
+)
+from lychd.system.constants import PATH_LYCHD_TOML
 
 
 # --- 2. The Infrastructure (Server) ---
 class ServerSettings(BaseSettings):
-    """Configuration for Granian/Litestar."""
+    """Configuration for the Bone-Sustenance (Granian/Litestar)."""
 
     model_config = SettingsConfigDict(env_prefix="SERVER_")
 
@@ -31,26 +33,6 @@ class ServerSettings(BaseSettings):
     reload: bool = False
     workers: int = 1
     keep_alive: int = 65
-
-
-class PhoenixSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="PHOENIX_")
-
-    # Port for the Web Interface (e.g. http://localhost:6006)
-    ui_port: int = 6006
-
-    # Port for receiving data via HTTP (Standard OTel port)
-    otlp_port: int = 4318
-    image: str = "docker.io/arizephoenix/phoenix:12"
-    host: str = "localhost"
-    admin_user: str = "admin"
-    admin_password: SecretStr = Field(
-        default_factory=lambda: SecretStr(secrets.token_urlsafe(16)),
-    )
-
-    @property
-    def url(self) -> str:
-        return f"http://{self.host}:{self.otlp_port}"
 
 
 class DatabaseSettings(BaseSettings):
@@ -66,9 +48,7 @@ class DatabaseSettings(BaseSettings):
     user: str = "lich"
     database: str = "lychd"
     image: str = "docker.io/pgvector/pgvector:pg18-trixie"
-    password: SecretStr = Field(
-        default_factory=lambda: SecretStr(secrets.token_urlsafe(16)),
-    )
+    password_secret: str = "lychd_db_password"  # noqa: S105 - Podman secret name, not secret value.
 
     # --- Logging ---
     echo: bool = False
@@ -82,107 +62,39 @@ class DatabaseSettings(BaseSettings):
     pool_pre_ping: bool = True
     pool_use_lifo: bool = True  # TCP should be still open
 
-    # --- Evolution (Migrations) ---
-    migration_config: str = f"{BASE_DIR}/db/migrations/alembic.ini"
-    migration_path: str = f"{BASE_DIR}/db/migrations"
-    migration_ddl_version_table: str = "lychd_db_version"
+    _runtime_password_override: str | None = PrivateAttr(default=None)
 
-    # cached optimized engine retrieved by get_engine()
-    _engine_instance: AsyncEngine | None = PrivateAttr(default=None)
+    @property
+    def password(self) -> str:
+        """Resolve DB password from env override or mounted Podman secret file."""
+        if self._runtime_password_override is not None:
+            return self._runtime_password_override
+        return read_secret_from_env_or_file(
+            value_env_keys=("DB__PASSWORD", "DB_PASSWORD"),
+            file_env_keys=("DB__PASSWORD_FILE", "DB_PASSWORD_FILE"),
+            default_file=Path("/run/secrets") / self.password_secret,
+            secret_label=self.password_secret,
+        )
+
+    def set_runtime_password_override(self, value: str) -> None:
+        """Set an in-memory password fallback used when no configured source exists."""
+        self._runtime_password_override = value
 
     @property
     def url(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.user}:{self.password.get_secret_value()}"
-            f"@{self.host}:{self.port}/{self.database}"
-        )
-
-    def get_engine(self, *, force_new: bool = False) -> AsyncEngine:
-        """Create and cache a SQLAlchemy AsyncEngine instance."""
-        if self._engine_instance is None or force_new:
-            engine = create_async_engine(
-                url=self.url,
-                echo=self.echo,
-                echo_pool=self.echo_pool,
-                # --- POOLING OPTIMIZATIONS ---
-                max_overflow=self.max_overflow,
-                pool_size=self.pool_size,
-                pool_timeout=self.pool_timeout,
-                pool_recycle=self.pool_recycle,
-                pool_pre_ping=self.pool_pre_ping,
-                # LIFO: Better for performance (reuses hot connections)
-                pool_use_lifo=True,
-                # --- SERIALIZATION via litestars msgspec ---
-                json_serializer=encode_json,
-                json_deserializer=decode_json,
-            )
-
-            @event.listens_for(engine.sync_engine, "connect")
-            def _sqla_on_connect(dbapi_connection: Any, _: Any) -> Any:  # pyright: ignore [reportUnusedFunction]
-                r"""Hooks into the DBAPI connection to enable direct binary JSON serialization.
-
-                Standard SQLAlchemy dialects expect JSON serializers to return `str`.
-                Since LychD uses `msgspec` for high-performance binary serialization (`bytes`),
-                this hook configures `asyncpg` to bypass the standard string-conversion overhead.
-
-                It injects a custom codec that:
-                1. Accepts already-serialized `bytes` from msgspec (Zero-Copy).
-                2. Prepends the PostgreSQL `\x01` version prefix for JSONB.
-                3. Decodes raw binary responses directly via `msgspec`.
-
-                Optimization:
-                    Avoids the double-encoding redundancy (`bytes` -> `str` -> `bytes`)
-                    found in standard implementations.
-
-                Ref:
-                    Adapted from connection hooks in `litestar-fullstack` (MIT). https://github.com/litestar-org/litestar-fullstack/blob/main/src/py/app/utils/engine_factory.py#L43
-                    See Also https://github.com/sqlalchemy/sqlalchemy/blob/14bfbadfdf9260a1c40f63b31641b27fe9de12a0/lib/sqlalchemy/dialects/postgresql/asyncpg.py#L934
-                """
-
-                # The encoder receives the data that is ALREADY serialized to bytes.
-                def encoder(already_serialized_bytes: bytes) -> bytes:
-                    # Add the required binary prefix. DO NOT call encode_json again.
-                    return b"\x01" + already_serialized_bytes
-
-                def decoder(bytes_to_decode: bytes) -> Any:
-                    # Strip the prefix and decode using msgspec.
-                    return decode_json(bytes_to_decode[1:])
-
-                # Register for both jsonb and json types for robustness.
-                dbapi_connection.await_(
-                    dbapi_connection.driver_connection.set_type_codec(
-                        "jsonb",
-                        encoder=encoder,
-                        decoder=decoder,
-                        schema="pg_catalog",
-                        format="binary",
-                    ),
-                )
-
-                dbapi_connection.await_(
-                    dbapi_connection.driver_connection.set_type_codec(
-                        "json",
-                        encoder=encoder,
-                        decoder=decoder,
-                        schema="pg_catalog",
-                        format="binary",
-                    ),
-                )
-
-            self._engine_instance = engine
-        return self._engine_instance
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 class LogSettings(BaseSettings):
-    """Configuration for Structlog, giving fine-grained control over logging."""
+    """The Scrying Mirror: Configuration for Structlog and observability."""
 
     model_config = SettingsConfigDict(env_prefix="LOG_")
 
     # --- General ---
     # The minimum level for lychd's own logs.
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    # Set to True in production for structured, machine-readable JSON logs.
-    json_format: bool = True
+    # Force JSON output (True) or Console output (False). If None (default), auto-detects based on TTY.
+    json_format: bool | None = None
 
     # --- HTTP Middleware Logging ---
     # Which parts of the incoming request to include in logs.
@@ -199,8 +111,20 @@ class LogSettings(BaseSettings):
     pydantic_ai_level: int = 10  # DEBUG
 
 
+class PhoenixSettings(BaseSettings):
+    """Configuration for Arize Phoenix (The Oculus)."""
+
+    model_config = SettingsConfigDict(env_prefix="PHOENIX_")
+
+    image: str = "docker.io/arize-ai/phoenix:latest"
+    ui_port: int = 6006
+    otlp_port: int = 4317
+
+
 # --- 6. The Worker ---
 class SaqSettings(BaseSettings):
+    """The Ghoul Labor: Configuration for the SAQ background worker swarm."""
+
     model_config = SettingsConfigDict(env_prefix="SAQ_")
     processes: int = 4
     web_enabled: bool = True
@@ -208,39 +132,62 @@ class SaqSettings(BaseSettings):
     use_server_lifespan: bool = True
 
 
-# This class will hold general app info.
 class LychdSettings(BaseSettings):
-    """Application configuration using Pydantic for robust validation."""
+    """The Soulstone Protocols: Bindings for local and remote manifestations."""
 
     model_config = SettingsConfigDict(env_prefix="LYCHD_")
 
+    # --- 1. Soulstone Defaults (Wild Bindings) ---
+    # These containers are alien (vLLM, Llama.cpp). We must provide raw bind strings
+    # because we cannot assume their internal directory structure.
     models_dir: Path = Field(
         default=Path.home() / "models",
-        description="The default directory where the models directories are located.",
+        description="A helper path. Referenced by default_soulstone_mounts.",
     )
 
-    mount_read_only_volumes: list[str] = Field(
+    default_soulstone_mounts: list[str] = Field(
+        default_factory=lambda: [f"{Path.home()}/models:/models:ro,Z"],
+        description="Volumes mounted into EVERY Soulstone. Format: host:container:opts",
+    )
+
+    # --- 2. Sphere IV: The Library (Read-Only Reference) ---
+    # User provides: [Path("/home/lucy/books"), Path("/mnt/data/wiki")]
+    # Binder maps to:
+    #   - /home/lich/library/books (RO)
+    #   - /home/lich/library/wiki  (RO)
+    library_sources: list[Path] = Field(
         default_factory=list,
-        description="The additional mounts to give to lych vessel for READ ONLY",
+        description="Host directories to mount Read-Only (RO) for the Agent to read.",
+    )
+
+    # --- 3. Sphere II: The Outlands (Read-Write Labor) ---
+    # User provides: [Path("/home/lucy/Projects/MyStartup")]
+    # Binder maps to:
+    #   - /home/lich/work/MyStartup (RW)
+    #
+    # WARNING: The Agent has Write Access here. Safety is guaranteed via Git only, no btrfs.
+    work_sources: list[Path] = Field(
+        default_factory=list,
+        description="Host directories to mount Read-Write (RW) for the Agent to edit.",
     )
 
 
 # This class will hold general app info.
 class AppSettings(BaseSettings):
-    """Application configuration using Pydantic for robust validation."""
+    """The Inscription Registry: Global identity and security markings."""
 
     model_config = SettingsConfigDict(env_prefix="APP_")
 
     # --- Core App Settings ---
-    # A random key for signing cookies and other secrets.
-    # Set APP__SECRET_KEY in your .env for production.
-    secret_key: SecretStr = Field(default_factory=lambda: SecretStr(secrets.token_hex(32)))
+    # Podman secret reference for the Litestar/CSRF signing key.
+    secret_key_secret: str = "lychd_app_secret_key"  # noqa: S105 - Podman secret name, not secret value.
 
     # Enable/disable Litestar's debug mode.
     debug: bool = False
 
     # Application name.
     name: str = "lychd"
+    image: str = "ghcr.io/hexanomicon/lychd:latest"
 
     # Frontend URL, useful for generating absolute links.
     url: str = "http://localhost:8000"
@@ -255,10 +202,27 @@ class AppSettings(BaseSettings):
 
     # Set to True in production if you're using HTTPS.
     csrf_cookie_secure: bool = False
+    _runtime_secret_key_override: str | None = PrivateAttr(default=None)
+
+    @property
+    def secret_key(self) -> str:
+        """Resolve app signing key from env override or mounted Podman secret file."""
+        if self._runtime_secret_key_override is not None:
+            return self._runtime_secret_key_override
+        return read_secret_from_env_or_file(
+            value_env_keys=("APP__SECRET_KEY", "APP_SECRET_KEY"),
+            file_env_keys=("APP__SECRET_KEY_FILE", "APP_SECRET_KEY_FILE"),
+            default_file=Path("/run/secrets") / self.secret_key_secret,
+            secret_label=self.secret_key_secret,
+        )
+
+    def set_runtime_secret_key_override(self, value: str) -> None:
+        """Set an in-memory signing-key fallback when no configured source exists."""
+        self._runtime_secret_key_override = value
 
 
 class ViteSettings(BaseSettings):
-    """Configuration for the Vite plugin."""
+    """The Altar Manifest: Configuration for the Vite frontend vessel."""
 
     model_config = SettingsConfigDict(env_prefix="VITE_")
 
@@ -278,23 +242,6 @@ class ViteSettings(BaseSettings):
 
     hot_reload: bool = Field(default=True, description="Enable Hot Module Replacement (HMR).")
 
-    # --- Paths ---
-
-    bundle_dir: Path = Field(
-        default=BASE_DIR / "public",
-        description="Output directory for built assets (matches vite.config.ts: bundleDirectory).",
-    )
-
-    resource_dir: Path = Field(
-        default=Path("resources"),
-        description="Source directory for JS/CSS (matches vite.config.ts: resourceDirectory).",
-    )
-
-    html_template_dir: Path = Field(
-        default=BASE_DIR / "templates" / "html",
-        description="Directory with Jinja templates. Vite watches this for HMR triggers.",
-    )
-
     asset_url: str = Field(default="/static/", description="Base URL for serving assets.")
 
     @property
@@ -305,7 +252,7 @@ class ViteSettings(BaseSettings):
 
 # --- ROOT CONTAINER ---
 class Settings(BaseSettings):
-    """The Master Configuration.
+    """The Great Codex: The unified manifestation of all configuration layers.
 
     Loads from .env and maps nested environment variables.
     Example: SERVER__PORT=9000 overrides server.port
@@ -317,6 +264,7 @@ class Settings(BaseSettings):
         extra="ignore",
         # 2. Load Logic from the user's TOML
     )
+    lychd: LychdSettings = Field(default_factory=LychdSettings)
     app: AppSettings = Field(default_factory=AppSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
@@ -339,7 +287,7 @@ class Settings(BaseSettings):
             env_settings,
             dotenv_settings,
             # Load from the TOML file specified in constants.py
-            TomlConfigSettingsSource(settings_cls, toml_file=HOST_LYCHD_TOML),
+            TomlConfigSettingsSource(settings_cls, toml_file=PATH_LYCHD_TOML),
             file_secret_settings,
         )
 
@@ -349,9 +297,8 @@ class Settings(BaseSettings):
         return {
             "LychD Server": self.server.port,
             "Phylactery (Postgres)": self.db.port,
-            "Oculus (Phoenix UI)": self.phoenix.ui_port,
-            "Oculus (Phoenix OTLP)": self.phoenix.otlp_port,
             "Vite (Frontend)": self.vite.port,
+            "Oculus (Phoenix)": self.phoenix.ui_port,
         }
 
     @model_validator(mode="after")
@@ -372,9 +319,48 @@ class Settings(BaseSettings):
             _msg = f"Configuration Error: {'; '.join(errors)}"
             raise ValueError(_msg)
 
+        codex_issues = codex_permission_issues(PATH_LYCHD_TOML)
+        if codex_issues:
+            import warnings
+            warnings.warn(
+                f"codex_permissions_policy_violation: path={PATH_LYCHD_TOML} issues={codex_issues}",
+                UserWarning,
+                stacklevel=2,
+            )
+
         return self
+
+
+def ensure_internal_secret_fallbacks(settings: Settings) -> list[str]:
+    """Ensure app/db runtime secrets exist even before Podman bind.
+
+    This is a startup safety-net for direct process execution (development,
+    tests, or any flow that boots without mounted Podman secrets). It does not
+    replace bind-time Podman secret provisioning.
+    """
+    created: list[str] = []
+
+    if needs_generated_secret_fallback(
+        value_env_keys=("APP__SECRET_KEY", "APP_SECRET_KEY"),
+        file_env_keys=("APP__SECRET_KEY_FILE", "APP_SECRET_KEY_FILE"),
+        default_file=Path("/run/secrets") / settings.app.secret_key_secret,
+    ):
+        settings.app.set_runtime_secret_key_override(secrets.token_hex(32))
+        created.append(settings.app.secret_key_secret)
+
+    if needs_generated_secret_fallback(
+        value_env_keys=("DB__PASSWORD", "DB_PASSWORD"),
+        file_env_keys=("DB__PASSWORD_FILE", "DB_PASSWORD_FILE"),
+        default_file=Path("/run/secrets") / settings.db.password_secret,
+    ):
+        settings.db.set_runtime_password_override(secrets.token_urlsafe(16))
+        created.append(settings.db.password_secret)
+
+    return created
 
 
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    ensure_internal_secret_fallbacks(settings)
+    return settings

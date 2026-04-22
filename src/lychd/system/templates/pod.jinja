@@ -1,0 +1,13 @@
+[Unit]
+Description={{ description }}
+
+[Pod]
+PodName={{ pod_name }}
+
+# Network exposure
+{% for port_mapping in publish_ports %}
+PublishPort={{ port_mapping }}
+{% endfor %}
+
+[Install]
+{% if wanted_by %}WantedBy={{ wanted_by | join(' ') }}{% endif %}

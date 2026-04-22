@@ -20,14 +20,17 @@ icon: material/database
 
 !!! failure "Option 1: Polyglot Stack"
     Deploying Postgres (Relational), Mongo (Document), and Redis (Queue).
+
     -   **Cons:** **Operational Complexity.** Managing three separate services contradicts the goal of a simple, self-contained daemon. Coordinating atomic transactions across disparate services is mathematically difficult.
 
 !!! failure "Option 2: Static Schema Definition"
     Requiring all database models to be defined in the Core codebase.
+
     -   **Cons:** **Extensibility Blocker.** Extensions would be unable to store their own persistent data without modifying the Core source code, violating the principle of deep modularity.
 
 !!! success "Option 3: Dynamic Unified Postgres"
     Leveraging Postgres for all data types—Relational and Document (via `JSONB`)—governed by a strict binary serialization protocol and organized into logical chambers.
+
     -   **Pros:**
         -   **Transactional Integrity:** Guaranteed atomicity across all data types in a single commit.
         -   **Minimalism:** Reduces the infrastructure footprint to a single robust engine.
@@ -35,7 +38,7 @@ icon: material/database
 
 ## Decision Outcome
 
-**Postgres** is selected as the unified backend, equipment with the capability to handle relational, vector, and document data. The persistence logic is orchestrated via **SQLAlchemy (Async)**.
+**Postgres** is selected as the unified backend, equipped with the capability to handle relational, vector, and document data. The persistence logic is orchestrated via **SQLAlchemy (Async)**.
 
 ### 1. The Dynamic Registry (Federation)
 
@@ -71,9 +74,12 @@ The database is configured to support atomic task distribution. By utilizing `SK
 
 !!! success "Positive"
     - **Atomic Reliability:** A single transaction can commit a user action and save a complex state snapshot simultaneously.
+
     - **Performance:** Binary Transmutation reduces the latency of saving large state objects by orders of magnitude compared to standard handling.
+
     - **Extension Sovereignty:** An extension author defines a standard Python class, and the system automatically handles the table creation and evolution within the unified body.
 
 !!! failure "Negative"
-    - **Migration Complexity:** If two extensions define models with conflicting table names, the migration will fail. The system relies on strict namespace conventions to prevent collisions.
+    - **Migration Complexity:** If two extensions define models with conflicting table names, the migration fails. The system relies on strict namespace conventions to prevent collisions.
+
     - **Vacuum Tuning:** High-volume chambers (like the task queue) require aggressive autovacuum tuning to prevent database bloat.

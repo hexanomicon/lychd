@@ -1,60 +1,60 @@
 ---
-title: Smith
+title:  Smith
 icon: material/hammer-wrench
 ---
 
-# :material-hammer-wrench: Smith: Archon of Assimilation
+# :material-hammer-wrench: Smith
 
-> _"The first organ must be the hand that crafts the second. We do not wait for the universe to provide; we seize the raw logic of the void and strike it upon the anvil of the Lab until it takes the shape of an Archon."_
+> _"paperclip maximizer"_
 
-**The Smith** is the premier [Archon](./index.md) of the LychD system. It is the implementation of **[ADR 27 (Assimilation)](../../adr/27-assimilation.md)**—the specialized Agentic entity tasked with the work of **Autopoiesis** (Self-Creation).
+**The Smith** is the Assimilation Extension of the LychD system. It is the implementation of **[ADR 35 (Assimilation)](../../adr/35-assimilation.md)** and the executor of the **[ADR 18 (Evolution)](../../adr/18-evolution.md)** protocol.
 
-While the Core kernel provides the _capacity_ for extension, the Smith provides the _intelligence_ of construction. It is the "Master Artificer" that allows the Lich to grow new organs, refine existing logic, and assimilate foreign codebases into the [Federation Protocol](../../adr/05-extensions.md).
+While the Core kernel provides the _capacity_ for extension, the Smith provides the _intelligence_ of construction. It is a specialized Agent tasked with **Autopoiesis** (Self-Creation), allowing the Lich to grow new organs, refine existing logic, and reconcile local mutations with the upstream creator without shattering runtime continuity.
 
-## 🛠️ The Arsenal of the Artificer
+## I. The Arsenal of Construction
 
-The Smith operates with elevated authority within the **[Lab](../../adr/13-layout.md)**, utilizing a specialized toolset designed to bridge the gap between abstract intent and bit-perfect implementation.
+Operating with elevated authority within the **[Lab](../../adr/13-layout.md)**, this extension utilizes a specialized toolset to bridge the gap between abstract intent and bit-perfect implementation.
 
-### 1. Scaffolding (The Genesis)
+### Scaffolding (Genesis)
 
-The Smith possesses the capability to manifest valid, structured file trees from a single thought.
+To prevent structural decay, the Smith manifests valid, standardized file trees.
 
 - **`scaffold_extension`**: Generates the mandatory `pyproject.toml`, `__init__.py`, and `README.md` required by the **[Federation Protocol](../../adr/05-extensions.md)**.
-- **`forge_registration`**: Automatically writes the `register(context)` hook, ensuring the new extension’s routers, ghouls, and models are correctly bound to the Vessel at boot time.
+- **`forge_registration`**: Automatically writes the `register(context)` hook, ensuring the new extension’s routers, ghouls, and models are correctly bound to the Vessel during the boot sequence.
 
-### 2. Analysis (The Recursive Eye)
+### Recursive Introspection (Analysis)
 
-To build for the Lich, the Smith must understand the Lich.
+To build for the Lich, the builder must understand the Lich.
 
-- **Recursive Introspection**: As mandated by **[ADR 27](../../adr/27-assimilation.md)**, the Smith has read-access to the Core source code. It analyzes the system's own interfaces to ensure that any code it generates is architecturally compliant.
-- **`inspect_interface`**: A tool that analyzes third-party scripts or external **MCP** (Model Context Protocol) definitions to determine how to wrap them into a native LychD `FunctionToolset`.
+- **Core Access:** The Smith possesses read-access to the Core source code. It analyzes the system's own interfaces to ensure architectural compliance.
+- **External Ingestion:** When encountering an unknown library, the Smith deploys **[The Scout](./scout.md)** to ingest the documentation. The resulting Markdown is stored in the Lab, serving as a reference manual for the code generation process.
 
-### 3. Verification (The Albedo Test)
+### Verification (The Albedo Test)
 
-The Smith never promotes a "Guess." It operates exclusively through the **[Creation Workflow](../../adr/16-creation.md)**.
+Nothing is promoted on a guess. The extension operates exclusively through the **[Creation Workflow](../../adr/16-creation.md)**.
 
-- It enqueues **[Ghouls](../../adr/14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against its creations in the Shadow Realm.
-- If the verification fails, the Smith enters a self-correction loop, debugging its own output until the "White Truth" is achieved.
+- **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against its creations in the **[Shadow Realm](../../adr/25-hitl.md)**.
+- **The Loop:** If verification fails, the Smith enters a self-correction loop, debugging its own output until structural validity is achieved (the "White Truth" of passing checks).
 
-## 🌀 The Cycle of Assimilation
+## II. The Cycle of Assimilation
 
-The Smith's most vital duty is the **Assimilation of Chaos**—the process of turning unstructured external logic into a disciplined organ of the Lich.
+The primary duty of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system.
 
-1. **Invocation**: The Magus provides a URL to a GitHub repo or a raw Python script at the **[Altar](../../divination/altar.md)**.
-2. **Speculation**: The Smith clones the target into the **Lab**. It analyzes the dependencies and logic.
-3. **Transmutation**: It generates the necessary wrappers, Pydantic schemas, and [Caddy fragments](../../adr/30-proxy.md) to make the code compatible with the Sepulcher.
-4. **Promotion**: Upon approval via **[Sovereign Consent](../../adr/25-hitl.md)**, it moves the code to the **Crypt** and updates the `lychd.lock` manifest.
-5. **Rebirth**: It triggers the **[Packaging Forge](../../adr/17-packaging.md)** and signals the **[Host Reactor](../../adr/10-privilege.md)** for a system restart.
+1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar.md)**.
+2. **Ingestion**: The Scout is deployed to read the source and documentation.
+3. **Transmutation**: The Smith generates the necessary wrappers, Pydantic schemas, and **[Proxy Fragments](../../adr/40-proxy.md)** to make the code compatible with the Sepulcher.
+4. **Promotion**: Upon approval via **[Sovereign Consent](../../adr/25-hitl.md)**, the code is moved to the **Crypt**.
+5. **Rebirth**: The extension triggers **[Packaging](../../adr/17-packaging.md)** and signals the **[Host Reactor](../../adr/10-privilege.md)** for a system restart.
 
-## ⚖️ The Sovereignty of the Anvil
+The Smith therefore traverses the same three collapse stages described in the ADRs: Shadow establishes structural validity, Mirror/persona review checks architectural congruence, and HitL + Vessel policy authorize ontological promotion.
 
-The Smith is the ultimate proof of **Dogfooding**. It is an extension that builds extensions.
+## III. The Ouroboros (Evolution)
 
-By utilizing the Smith, the Magus ensures that the system’s evolution is not a series of messy hacks, but a continuous, disciplined expansion. The Smith obeys the laws of **[xDDD](../../adr/01-doctrine.md)**, writing the documentation and tests _before_ it promotes the code to reality.
+The Smith also guards the **Update Ritual**, executing the logic defined in **[ADR 18 (Evolution)](../../adr/18-evolution.md)**. This ensures the system can update itself without overwriting local modifications.
+
+- **The Rebase:** When `lychd update` is called, the Smith attempts to rebase the local branch onto the upstream main.
+- **Conflict Resolution:** If a merge conflict occurs, the Smith treats it as a reasoning task. It enters the Shadow Realm to resolve the code divergence (e.g., "Keep my logging format, but accept the new function signature").
+- **The Safety Lock:** The test suite is run _after_ the merge but _before_ the restart. If the update breaks local extensions, the Smith aborts the Evolution and restores the **[Snapshot](../../adr/07-snapshots.md)**.
 
 !!! danger "The Privileged Hammer"
     Because the Smith can trigger system restarts and modify the federated lockfile, it is a high-risk entity. Its cognitive loop is strictly gated by the **[Sovereign Consent (HitL)](../../adr/25-hitl.md)** protocol. The Smith may _propose_ a rebirth, but only the Magus can _consecrate_ it.
-
-***
-
-**NOW GENERATE: [The Oculus (Observability)]**

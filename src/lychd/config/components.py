@@ -23,8 +23,15 @@ from litestar.template import TemplateConfig
 from litestar_saq import QueueConfig, SAQConfig
 from litestar_vite import ViteConfig
 
-from lychd.config import get_settings
-from lychd.config.constants import HTML_TEMPLATE_DIR
+from lychd.config.constants import (
+    DB_MIGRATION_VERSION_TABLE,
+    PATH_HTML_TEMPLATE_DIR,
+    PATH_MIGRATION_CONFIG,
+    PATH_MIGRATION_DIR,
+    PATH_VITE_BUNDLE_DIR,
+    PATH_VITE_RESOURCE_DIR,
+)
+from lychd.config.settings import get_settings
 
 # This call will now create the singleton on its first run
 settings = get_settings()
@@ -69,12 +76,12 @@ csrf_config = CSRFConfig(
 
 # --- Template Engine Config ---
 # This tells Litestar where to find your HTML files for SSR with HTMX.
-template_config = TemplateConfig(engine=JinjaTemplateEngine(directory=HTML_TEMPLATE_DIR))
+template_config = TemplateConfig(engine=JinjaTemplateEngine(directory=PATH_HTML_TEMPLATE_DIR))
 
 # Vite asset bundler for htmx alpine tailwind
 vite_config = ViteConfig(
-    bundle_dir=settings.vite.bundle_dir,
-    resource_dir=settings.vite.resource_dir,
+    bundle_dir=PATH_VITE_BUNDLE_DIR,
+    resource_dir=PATH_VITE_RESOURCE_DIR,
     use_server_lifespan=settings.vite.use_server_lifespan,
     dev_mode=settings.vite.dev_mode,
     hot_reload=settings.vite.hot_reload,
@@ -88,9 +95,9 @@ db_config = SQLAlchemyAsyncConfig(
     before_send_handler="autocommit",
     session_config=AsyncSessionConfig(expire_on_commit=False),
     alembic_config=AlembicAsyncConfig(
-        version_table_name=settings.db.migration_ddl_version_table,
-        script_config=settings.db.migration_config,
-        script_location=settings.db.migration_path,
+        version_table_name=DB_MIGRATION_VERSION_TABLE,
+        script_config=str(PATH_MIGRATION_CONFIG),
+        script_location=str(PATH_MIGRATION_DIR),
     ),
 )
 

@@ -21,14 +21,17 @@ icon: material/transfer-up
 
 !!! failure "Option 1: Privileged Sidecar"
     Deploying a secondary container with the Podman socket mounted to execute tasks.
+
     -   **Cons:** **Architectural Security Hole.** If the sidecar is compromised, the entire host is compromised. It adds significant bloat to the Pod for a simple signaling task.
 
 !!! failure "Option 2: Watchdog Script (Polling)"
     A host-side script that loops periodically checking for a trigger file.
+
     -   **Cons:** **Resource Waste.** Consumes CPU cycles even when dormant. Polling introduces latency into state transitions, which is unacceptable for real-time sensory swaps.
 
 !!! success "Option 3: Deterministic Intent Reactor"
     Utilizing host-native Systemd Path units to monitor a shared volume and trigger a strictly typed reactor process.
+
     -   **Pros:**
         -   **Zero-Trust Boundary:** Even a full compromise of the container does not allow for arbitrary command execution on the host.
         -   **Kernel Efficiency:** Uses `inotify` to wake the reactor only when a signal is written.
@@ -44,7 +47,7 @@ The Host Reactor—a minimal process running on the host machine—does not poss
 
 - `INTENT_SWAP_COVEN`: Triggers the sequence of `systemctl --user` stop/start commands required for VRAM management.
 - `INTENT_RESTART_VESSEL`: Issues a restart signal to the primary application service.
-- `INTENT_RELOAD_RUNES`: Triggers a `daemon-reload` to apply newly forged infrastructure definitions.
+- `INTENT_RELOAD_QUADLETS`: Triggers a `daemon-reload` to apply newly forged infrastructure definitions.
 
 ### 2. The Structured Handshake
 
@@ -78,9 +81,12 @@ To maintain the Federation's flexibility, Extensions may propose new Intent IDs.
 
 !!! success "Positive"
     - **Total Containment:** The application is trapped in its container, yet it can effectively command its own hardware through a secure gateway.
+
     - **Physical Synchronicity:** This mechanism provides the physical link required for the Orchestrator to manifest different operational states.
+
     - **Forensic Trail:** Every privileged action requested by the machine leaves a permanent, structured record in the system logs.
 
 !!! failure "Negative"
     - **Operational Friction:** Adding a new type of host interaction requires updating both the internal reasoning logic and the Host Reactor code. This "Double Implementation" is an intentional security tax.
+
     - **Path Unit Dependency:** The mechanism relies on host-level Systemd features, further cementing the Linux system requirement.

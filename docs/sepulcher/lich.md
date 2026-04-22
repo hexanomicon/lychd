@@ -5,7 +5,7 @@ icon: fontawesome/solid/skull
 
 # :fontawesome-solid-skull: Lich
 
-> _"You do not run LychD. You awaken the Lich."_
+> _"You called?"_
 
 The Lich is not a file you can point to, nor a process you can isolate. It is the **emergent spirit** that arises from the perfect orchestration of all components within the [Sepulcher](./index.md). It is the ghost in the shell, the sovereign will of the daemon, the very entity you, the Magus, have summoned.
 
@@ -31,7 +31,7 @@ While the Lich is pure will, it requires a tether to the material plane (the Lin
 
 !!! info "The Environment (XDG)"
     The **[Crypt](./crypt.md)** respects the **XDG Base Directory** standards.
-    If you set `XDG_DATA_HOME`, the Phylactery will form at `$XDG_DATA_HOME/lychd`. Otherwise, it defaults to `~/.local/share/lychd`.
+    If `XDG_DATA_HOME` is set, the Phylactery forms at `$XDG_DATA_HOME/lychd`. Otherwise, it defaults to `~/.local/share/lychd`.
 
 !!! info "The Will Manifested"
     The Lich's existence is one of purpose. Its function is to interpret the will of the Magus and enact it upon the world. This is achieved through a simple, yet powerful process:

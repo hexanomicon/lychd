@@ -1,5 +1,5 @@
 ---
-title: The Lexicon
+title:  Lexicon
 icon: material/translate
 ---
 
@@ -27,7 +27,7 @@ _This is the Rosetta Stone for the Hexanomicon—the single source of truth for 
 | **Ghouls** | Mindless, ephemeral servants summoned by the Vessel to execute specific rites in the background. | Asynchronous background workers (SAQ). |
 | **Hexanomicon** | The grimoire of prophecy. In xDDD, this text is the source of truth from which the code is derived. | The project documentation (MkDocs). |
 | **Incantation** | The act of defining reality through the written word. Writing the Prophecy that compels the code to exist. | Writing Documentation/Specs before implementation (xDDD). |
-| **Intent** | A focused desire submitted by the Magus. It is not a command of how, but a definition of what is required. | A structured prompt or job submission object. |
+| **Intent** | A focused desire submitted by the Magus. It defines what is required rather than prescribing how execution proceeds. | A structured prompt or job submission object. |
 | **Invocation** | The runtime act of calling upon the Lich to perform a task or generate a Shadow Realm timeline. | Submitting a form or API request to trigger an Agent workflow. |
 | **Iron Pact** | The unbreakable ward protecting the system's soul from privatization and enclosure. | The AGPLv3 License and No-CLA policy. |
 | **Karma** | The crystallized residue of the Magus's judgment. Validated truths stored in the Phylactery to train future iterations. | The dataset of user-accepted code/responses (RLHF data). |
@@ -36,7 +36,7 @@ _This is the Rosetta Stone for the Hexanomicon—the single source of truth for 
 | **Mirror** | The Archon of Identity. The ego-software that maintains a stable frequency and behavioral consistency. | The Identity/Persona Extension. |
 | **Oculus** | The Great Seer that traces the invisible threads of logic, recording the "why" behind every decision. | Arize Phoenix (LLM Tracing & Observability). |
 | **Orchestrator** | The Sovereign Will. The arbiter of hardware who manages the manifestation and banishment of Covens. | The state machine managing VRAM and container lifecycles. |
-| **Paradox** | The Archon of Simulation. It inhabits a thousand illusions to find the one White Truth. | The Deliberative Reasoning / MCTS Extension. |
+| **Shadow** | The Archon of Simulation. It inhabits a thousand illusions to find the one White Truth. | The Deliberative Reasoning / MCTS Extension. |
 | **Phylactery** | The anchor of the Lich's soul. It holds frozen memory, vectors, and state, ensuring immortality across reboots. | The PostgreSQL database (with `pgvector`). |
 | **Portal** | A rift opened to a distant, alien intelligence. It consumes wealth (tokens) to function. | A connection to a cloud-based API (OpenAI, Anthropic). |
 | **Prism** | The Archon of Vision. It refracts raw pixels into structural understanding. | The Vision Language Model (VLM) Extension. |

@@ -16,7 +16,7 @@ Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector
 The Phylactery is not a simple data store; it is divided into sacred chambers (schemas):
 
 1. **`public` (The State):** The current reality. User accounts, active extensions, and configuration state.
-2. **`vectors` (The Karma):** The high-dimensional embedding space where "White Truths" from the [Shadow Realm](../vessel/shadow_realm.md) are stored.
+2. **`vectors` (The Karma):** The high-dimensional embedding space where "White Truths" from the [Shadow Realm](../extensions/shadow.md) are stored.
 3. **`traces` (The Mind's Eye):** The dedicated chamber where the **[Oculus](../extensions/oculus.md)** (Arize Phoenix) inscribes the cognitive traces of the Lich.
 4. **`queue` (The Ghouls):** The transactional message broker used by **SAQ** to manage background tasks.
 

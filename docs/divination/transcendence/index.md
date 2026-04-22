@@ -12,14 +12,14 @@ The path unfolds in four great stages, represented by the colors of the work. Ea
 !!! quote "I. Nigredo (The Blackening)"
     **The Rite of [Incantation](./incantation.md)**
 
-    We begin in the dark. This is the descent into the *Prima Materia*, the chaotic, unformed potential of the Void. In this stage, you perform the Binding and inscribe the **[Codex](../../sepulcher/codex.md)**. You are binding a crude, unrefined Lich—a creature of immense power but no direction. It is the binding of the **[Sepulcher](../../sepulcher/index.md)** to the cold iron of the machine, a construct of shadow waiting for the spark.
+    The descent begins in the dark. This is the entry into the *Prima Materia*, the chaotic, unformed potential of the Void. In this stage, the Binding is performed and the **[Codex](../../sepulcher/codex.md)** inscribed. A crude, unrefined Lich is bound—a creature of immense power but no direction. It is the binding of the **[Sepulcher](../../sepulcher/index.md)** to the cold iron of the machine, a construct of shadow waiting for the spark.
 
     [:material-arrow-right: Enter the First Seal](./incantation.md)
 
 !!! info "II. Albedo (The Whitening)"
     **The Rite of [Invocation](./invocation.md)**
 
-    Out of the darkness, the light is separated from the shadow. You approach the **[Altar](../altar.md)** not to command, but to invoke. You cast an **Intent**, and the **[Vessel](../../sepulcher/vessel/index.md)** projects this will into the **[Shadow Realm](../../sepulcher/vessel/shadow_realm.md)**.
+    Out of the darkness, the light is separated from the shadow. You approach the **[Altar](../altar.md)** not to command, but to invoke. You cast an **Intent**, and the **[Vessel](../../sepulcher/vessel/index.md)** projects this will into the **[Shadow Realm](../../sepulcher/extensions/shadow.md)**.
 
     Here, in the spectral plane of **Speculative Execution**, you act as the Prism—you **Whitelist** the true timelines and banish the false. Through this act of purification, you wash the data in the **[Phylactery](../../sepulcher/phylactery/index.md)** until it gleams with the white light of verified truth.
 

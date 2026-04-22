@@ -62,7 +62,6 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
             vite_config,
         )
         from lychd.config.constants import CACHE_EXPIRATION
-        from lychd.config.telemetry import TelemetryPlugin
         from lychd.lib.exceptions import ApplicationError
 
         settings = get_settings()
@@ -84,7 +83,6 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
                 SAQPlugin(config=saq_config),
                 StructlogPlugin(config=log_config),
                 ProblemDetailsPlugin(config=problem_details_config),
-                TelemetryPlugin(otel_endpoint=f"{settings.phoenix.url}/v1/traces"),
             ],
         )
 

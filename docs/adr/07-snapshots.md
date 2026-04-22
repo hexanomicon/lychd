@@ -6,7 +6,7 @@ icon: material/camera-timer
 # :material-camera-timer: 7. Snapshots: Atomic State Synchronization
 
 !!! abstract "Context and Problem Statement"
-    The LychD system possesses the capability for self-directed evolution—altering its own source code and persistent memory simultaneously. This dual evolution introduces a critical synchronization risk: if the logic of the machine (the code) is reverted to a previous version but the memory (the database) remains in a future state, the Daemon will encounter schema mismatches and catastrophic logic failures upon awakening. A mechanism is required to ensure that every capture of the system's state represents a mathematically exact, synchronized union of both the logic and the data, preventing the "drift" between the body and the soul.
+    The LychD system possesses the capability for self-directed evolution—altering its own source code and persistent memory simultaneously. This dual evolution introduces a critical synchronization risk: if the logic of the machine (the code) is reverted to a previous version while the memory (the database) remains in a later state, the Daemon encounters schema mismatches and catastrophic logic failures upon awakening. A mechanism is required to ensure that every capture of the system's state represents a mathematically exact, synchronized union of both the logic and the data, preventing the "drift" between the body and the soul.
 
 ## Requirements
 
@@ -20,15 +20,19 @@ icon: material/camera-timer
 
 !!! failure "Option 1: Unsynchronized Backups"
     Running periodic Git commits and independent database dumps.
+
     -   **Cons:** **Race Conditions.** There is no guarantee that the code commit matches the database state at that exact second. Restoring a future schema to an older code version leads to immediate systemic failure.
 
 !!! failure "Option 2: Database-Only Storage"
     Storing code extensions inside the database as binary objects (BLOBs).
+
     -   **Pros:** Simplifies snapshots to a single database operation.
+
     -   **Cons:** **Tooling Breakage.** This removes the ability to use standard Git tools, linters, and IDEs on extension code, violating the principle of deep integration with the developer's lineage and engineering rigor.
 
 !!! success "Option 3: The Checkpoint Protocol"
     A coordinated signal that freezes execution, locks the code state via a federated manifest, and snapshots the data via an abstracted storage driver.
+
     -   **Pros:**
         -   **Total Recall:** Guarantees that code and data are always bit-perfectly in sync.
         -   **Performance:** Leverages kernel-level features like Btrfs subvolumes for O(1) snapshot speed.
@@ -57,6 +61,7 @@ The system abstracts data backup through a Storage Driver Interface, allowing th
 
 - **The Btrfs Strategy (Accelerated):** If the host filesystem is detected as Btrfs, the database directory is mounted as a subvolume. Snapshots are instant and atomic at the kernel level. The active subvolume is configured with `chattr +C` (No_COW) to prevent fragmentation during runtime, while the snapshot action utilizes COW for its atomic "blink."
 - **The Universal Strategy (Fallback):** On standard filesystems (Ext4/XFS), the system falls back to standard export mechanisms. While reliable, this method incurs a performance penalty proportional to the size of the memory.
+- **The ZFS Contingency (Future Evolution):** While Btrfs serves as the primary native accelerator, the system recognizes the merit of the Zettabyte File System (ZFS) for high-availability environments. The Storage Driver Interface is architected to eventually embrace ZFS dataset snapshots. This "future-gate" allows the Daemon to leverage ZFS's superior self-healing and "send/receive" capabilities. Because the Checkpoint Protocol is agnostic to the underlying shell commands, adding ZFS support is a matter of logical mapping, not a core re-write.
 
 ### 4. The Rehydration Gate
 
@@ -64,14 +69,19 @@ When a snapshot is restored, the system enforces a strict alignment check before
 
 - **Body-Soul Verification:** The system compares the captured `lychd.lock` hashes with the currently forged physical body.
 - **Mandatory Rebirth:** If the Cognitive State preserved in the memory belongs to a version of logic newer than the current physical body, the system refuses to reanimate the mind. This triggers a mandatory rebuild/restart to bring the physical substrate into alignment with the restored soul, preventing schema mismatches and cognitive corruption.
+- **Rehydration Ritual**:  Restoring a snapshot is the Reanimation of the machine. To ensure bit-perfect alignment, the system performs an Atomic Reversion of the physical substrate. It does not rely on the instability of logical "migrations" (Alembic) to move backward. Instead, the storage driver physically resets the database directory using the Btrfs or Postgres snapshot. This ensures the Soul (Data) is physically identical to the moment the Body (Code) was captured, bypassing the risk of schema drift entirely.
+
 
 ### Consequences
 
 !!! success "Positive"
     - **Indestructible Continuity:** The system can revert to a mathematically exact previous state where the Logic matches the Data.
+
     - **Infrastructure Intelligence:** By detecting Btrfs and configuring No_COW (`+C`), the system optimizes performance without sacrificing safety.
+
     - **Verifiable Provenance:** The `lychd.lock` provides a human-readable and machine-verifiable history of the exact composition of the Daemon.
 
 !!! failure "Negative"
     - **Workflow Latency:** The Checkpoint Protocol requires a temporary halt of background labor, which may be noticeable during high-throughput rituals.
-    - **Performance Tiering:** Users on non-COW filesystems will experience significantly slower snapshots, potentially discouraging frequent state captures.
+
+    - **Performance Tiering:** Users on non-COW filesystems experience significantly slower snapshots, potentially discouraging frequent state captures.

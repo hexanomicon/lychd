@@ -1,0 +1,42 @@
+[{{ name }}]
+# --- Identity ---
+{% if description %}
+description = "{{ description }}"
+{% endif %}
+{% if group %}
+groups = {{ groups or [] }}
+{% endif %}
+
+# --- Infrastructure ---
+image = "{{ image }}"
+port = {{ port }}
+# uri = "http://localhost:{{ port }}/v1" (Auto-generated. Cannot be overridden.)
+
+
+# --- The Weights ---
+# If this path is relative (does not start with /), it is resolved
+# relative to 'model_root' defined in lychd.toml.
+model_path = "{{ model_path }}"
+model_name = "{{ model_name }}"
+model_format = "{{ model_format }}"
+
+# --- Runtime Configuration ---
+exec = {{ exec or [] }}
+volumes = {{ volumes or [] }}
+env_vars = {{ env_vars or {} }}
+
+# --- Inference Defaults ---
+max_context = {{ max_context }}
+temperature = {{ temperature }}
+top_p = {{ top_p }}
+top_k = {{ top_k }}
+repetition_penalty = {{ repetition_penalty }}
+
+# --- Security ---
+# 'api_key_env' (Environment Variable) takes precedence over 'api_key' (Direct String) if both are defined.
+{% if api_key %}
+api_key = "{{ api_key }}"
+{% endif %}
+{% if api_key_env %}
+api_key_env = "{{ api_key_env }}"
+{% endif %}

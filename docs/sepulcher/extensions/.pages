@@ -1,11 +1,16 @@
 nav:
   - index.md
   - smith.md
+  - weaver.md
   - oculus.md
   - soulforge.md
-  - veil.md
+  - riddle.md
+  - scout.md
   - tether.md
-  - echo.md
+  - veil.md
+  - ward.md
   - prism.md
+  - echo.md
+  - shadow.md
   - mirror.md
-  - paradox.md
+  - legion.md
