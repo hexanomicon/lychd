@@ -69,7 +69,7 @@ For technical riddles, the system rejects textual evaluation in favor of **Execu
 To standardize the measurement of physical truth, the Riddle integrates the `deepfabric` evaluation engine.
 
 - **ReAct Interception:** The Evaluator intercepts the model's Chain-of-Thought (ReAct) loop. When the model requests a tool call, DeepFabric parses the request and acts as the broker.
-- **Shadow Routing:** Instead of using default WebAssembly sandboxes (Spin), DeepFabric is configured with a custom endpoint, routing the tool execution directly into LychD's native, heavy **Shadow Realm** containers.
+- **Tomb Routing:** Instead of using default WebAssembly sandboxes (Spin), DeepFabric is configured with a custom endpoint, routing the tool execution directly into LychD's native, heavy **Tomb** containers.
 - **Standardized Metrics:** DeepFabric automatically calculates the definitive scores: `tool_selection_accuracy`, `parameter_accuracy`, and `execution_success_rate`. These metrics are serialized directly into the Dispatcher's Capability Matrix.
 
 ### V. Economic Arbitration (Tithe Tuning)

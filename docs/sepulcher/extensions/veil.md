@@ -36,7 +36,7 @@ The Veil is a memory-safe entity written in Go, chosen specifically for its abil
 
 ## IV. The Shield of the Swarm
 
-The Veil is the physical substrate upon which the **[Legion Protocol (A2A)](../../adr/42-swarm.md)** is built. It ensures that when two Liches communicate, the exchange is encrypted and authenticated.
+The Veil is the physical substrate upon which the **[Necropolis (A2A)](../../adr/26-a2a.md)** is built. It ensures that when two sovereign Liches communicate across the public internet, the exchange is encrypted and authenticated.
 
 - **Peer Verification:** It can be configured to require Mutual TLS (mTLS) for high-security A2A links, ensuring that only trusted peers can even initiate a handshake.
 - **Rate Limiting:** It acts as a shield against "Exhaustion Attacks," preventing remote agents from flooding the **[Orchestrator](../../adr/23-orchestrator.md)** with malicious intents.

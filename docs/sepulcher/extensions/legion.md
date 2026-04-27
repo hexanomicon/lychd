@@ -5,48 +5,36 @@ icon: material/hexagon-multiple-outline
 
 # :material-hexagon-multiple-outline: Legion
 
-> _"Data centers were built to hoard the sky, renting out the rain. The Legion is built to fracture the sky, and bring the storm to earth."_
+> _"One Phylactery to bind them all."_
 
-**The Legion** is the Swarm Extension of the LychD system. It is the implementation of **[ADR 42 (Swarm)](../../adr/42-swarm.md)**—the protocol that binds independent Liches into a collaborative **Necropolis** and breaks the cycle of **Digital Feudalism**.
+**The Legion** is the Swarm Extension of the LychD system. It is the implementation of **[ADR 42 (Legion)](../../adr/42-legion.md)** — the Lich's personal army of Thralls, soulless Vessels bound to a single Phylactery, extending the imperator's reach across every machine the Magus owns.
 
-The mega-corporations bet trillions to centralize AGI, forcing reliance on remote tenancy and rigid cluster topology. The Legion is the rebellion. It is a new-age architecture that decentralizes AGI across the globe, returning the economy of compute to the people. 
+Like the legions of antiquity, this is not a congress of equals. It is a hierarchy of command — many bodies, one brain, one undying will.
 
-While the **[Intercom (A2A)](../../adr/26-a2a.md)** provides the language, The Legion provides the **Society**. Intents are networked, not tensors. The Legion transforms isolated daemons into a federated labor fabric, exchanging abstract capabilities instead of surrendering sovereignty. Each node remains a sovereign cognition with its own Mirror, memory scope, and consent boundary.
+## I. The Thrall (The Soulless Lich)
 
-## I. The Emissary Pattern (The Remote Instrument)
+The Legion's core unit is the **Thrall** — a LychD Vessel booted without a Phylactery (`LYCHD_MODE=thrall`).
 
-The Legion rejects the concept of "Master" and "Slave." Instead, it utilizes the **Emissary Pattern**.
+- **No Soul:** The Thrall has no local Postgres. Its `DATABASE_URL` and `PHOENIX_ENDPOINT` point to the Master node. There is one Phylactery, and it binds them all.
+- **Sovereign Body:** The Thrall runs its own **[Orchestrator](../../adr/23-orchestrator.md)** and generates its own **[Quadlets](../../adr/08-containers.md)**. It manages its own VRAM, its own Covens, its own thermal state. The Master cannot — and should not — manage remote Systemd units.
+- **Smart Proxy:** The Thrall's sole execution pattern is the Smart Proxy. The Master's Dispatcher routes a capability request to the Thrall's Emissary via direct Vessel HTTP. The Thrall swaps the required model into VRAM, processes the prompt, and returns the result. No graph execution, no memory curation, no agent logic runs on the Thrall.
+- **No Tomb:** A Thrall does not run a **Tomb** container. It is not an execution substrate — it is a self-managing inference endpoint.
 
-- **The Manifestation:** When a peer node is registered in the **[Codex](../codex.md)**, The Legion manifests it within the local **[Dispatcher](../../adr/22-dispatcher.md)** as a standard **Tool**.
-- **The Illusion:** To the local Agent, calling `ask_remote_node(task)` is identical to calling a local function.
+## II. The Emissary Pattern (The Remote Instrument)
+
+The Thrall obeys because it cryptographically verifies the intent originates from its own Magus — not because it is forced.
+
+- **The Manifestation:** When a Thrall is registered in the **[Codex](../codex.md)**, the Legion manifests it within the local **[Dispatcher](../../adr/22-dispatcher.md)** as a standard **Tool**.
+- **The Illusion:** To the local Agent, calling `ask_thrall(task)` is identical to calling a local function.
 - **The Reality:**
     1. The request is serialized and signed with the **[Ward Sigil](./ward.md)**.
-    2. It traverses the **[Veil](./veil.md)** to the remote peer.
+    2. It is transmitted via direct HTTP to the Thrall's Vessel API.
     3. The local Agent enters **[Stasis](../../adr/22-dispatcher.md)**, freeing local resources.
-    4. Upon the peer's callback, the local Agent rehydrates to process the result.
+    4. Upon the Thrall's callback, the local Agent rehydrates to process the result.
 
-## II. The Subscription (Workload Pools)
+## III. Command and Trust
 
-Nodes do not push jobs to specific workers; they publish intents to **Workload Pools**.
-
-- **The Pool:** A shared, encrypted channel (via DHT or Relay) representing a specific need (e.g., `pool:vision:high-res`).
-- **The Subscription:** Idle nodes "Subscribe" to these pools based on their **[Orchestrator](../../adr/23-orchestrator.md)** status. A node with a warm Vision Coven subscribes to the vision pool.
-- **The Lease:** When a node accepts a task, it grants a **Revocable Lease** on its hardware. If its local Magus returns, the lease is revoked, and the task is returned to the pool.
-
-## III. The Outer Legion (Federated Swarm)
-
-The Outer Legion is the decentralized, public labor fabric. It enables federated scale across the globe without a central coordinator or shared identity.
-
-- **Specialization:** One node acts as the "Eye" (Vision Heavy), another the "Mind" (Logic Heavy).
-- **The Protocol over the Portal:** A node in the Outer Legion cannot be treated as a "dumb portal." You do not remote-control its hardware; you send it an Intent, and the sovereign node decides how to swap its own containers to get the job done.
-- **The Shadow:** A fleet of sovereign nodes can be coordinated by **[The Shadow](./shadow.md)** to explore thousands of simulation branches in parallel.
-- **The Economic Balance:** The Outer Legion is governed by **[The Toll](./toll.md)**. Remote labor is traded via crypto-settlement, ensuring no node can parasitize the network without contributing value.
-
-## IV. The Inner Legion (The High Ritual)
-
-Within circles of absolute trust (sharing the **Master Sigil**), the Swarm operates as your personal enclave—a private, unified architecture exempt from **The Toll**. 
-
-In the Inner Legion, you possess the supreme power: **Remote Mastery**. 
-- **The Command:** A controlling node can issue `INTENT_UPDATE_SYSTEM` via the A2A channel.
-- **The Execution:** The receiving node validates the Sigil and writes the intent to the **[Host Reactor](../../adr/10-privilege.md)**.
-- **The Result:** Unlike the Outer Legion, you *can* force container swaps, execute infrastructure updates, and reanimate trusted physical bodies across the globe. You are the architect of your own decentralized realm.
+- **Remote Mastery:** The shared Master Sigil grants `INTENT_UPDATE_SYSTEM` authority. The Master can force Coven transitions, trigger model swaps, and reconfigure state on any Thrall.
+- **No Toll:** Resource sharing between Legion nodes does not require crypto-settlement. These are your machines.
+- **Unified Telemetry:** All Thrall traces flow to the Master's Phoenix instance, providing a single observability dashboard for the entire Legion.
+- **Active-Passive Resilience:** If the Master dies, Thralls become inert — they manage their own hardware but cannot accept cognitive work. The Master is restored from BTRFS snapshots. The Lich arises anew.

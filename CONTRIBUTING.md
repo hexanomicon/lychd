@@ -1,59 +1,51 @@
 # Joining the Cult: Contributing to LychD
 
-LychD is a systemd-native daemon for agentic orchestration. Contributions must favor correctness, traceability, and explicit architecture.
+Read **[AGENTS.md](AGENTS.md)** first — concepts defined there are not repeated here. This file covers the practical rituals: setup commands, implementation conventions, and the authorities that govern specific implementation decisions. Agents and humans alike are expected to internalize both.
 
 ## The Iron Pact (No CLA)
 
 By submitting code, you license your contribution under **AGPL-3.0-or-later** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
 
-## Local Setup
+## Local Rituals (Setup & Commands)
+
+### Initialization
 
 ```bash
-make install             # Python dependencies (Syncs all extras + dev)
-uv sync --group dev      # Manual sync of the dev dependency group
+make install             # Python dependencies (.venv)
 make init                # Initialize local Codex (~/.config/lychd)
-make frontend-install    # Altar frontend dependencies (npm)
+make frontend-install    # Altar frontend dependencies (node_modules)
 make help                # View all available rituals
 ```
 
-## Quality & Testing
+### Purification (Quality Control)
 
-### Purification Commands
 ```bash
-make lint [RUFF_TARGETS="path/to/file.py"]   # Targeted or repo-wide lint
-make format [RUFF_TARGETS="path/to/file.py"] # Targeted or repo-wide format
-make type-check [TYPECHECK_TARGETS="path"]   # Targeted or repo-wide BasedPyright
-make check                                   # Full purification (Lint -> Format -> Type -> Test)
+make lint [RUFF_TARGETS="..."]   # Targeted or repo-wide lint
+make type-check [TYPECHECK_TARGETS="..."] # Targeted or repo-wide BasedPyright
+make check                       # Full purification (Lint -> Type -> Test)
 ```
 
 ### The Ritual of Testing
+
 ```bash
-make test                                    # Run all tests (Parallel)
-make test N=0                                # Run tests Serially (Better for debugging)
-make test K="keyword"                        # Filter by test name
-make test M="unit"                           # Filter by marker
-make test PYTEST_TARGETS="path/to/test.py"   # Targeted file/directory
-make test ARGS="-vv --pdb"                   # Pass raw pytest arguments
+make test                        # Run all tests (Parallel)
+make test N=0                    # Run tests Serially (Better for debugging)
+make test PYTEST_TARGETS="..."   # Targeted file/directory
 ```
 
 ## Implementation Conventions
 
-### Python Style
-- **Modern Syntax**: Target Python 3.12+. Use PEP 695 generics (`class Runic[T](...)`).
-- **Imports**: Use lazy imports in `on_app_init` / `on_cli_init` hooks to keep boot times fast.
+- **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.
 - **Paths**: Never hardcode `~/.config/...`. Use `PATH_*` constants from `src/lychd/system/constants.py`.
+- **Boundaries**: Domain computes intent (pure); System performs mutations (filesystem, systemd).
+- **Logging**: Use `structlog` with semantic event IDs. Use `logger.exception(...)` for active exceptions.
+- **Dependencies**: Use `uv add` or `uv remove`. Do not hand-edit `pyproject.toml`.
 
-### Architecture Boundaries
-- **Domain vs System**: Domain computes intent (no side effects); System performs mutations (filesystem, systemd).
-- **Settings**: Access via `get_settings()`. Follow precedence: `init -> env -> dotenv -> lychd.toml`.
-- **Runes**: Inheriting `RuneConfig` auto-registers schemas and owns a directory in `~/.config/lychd/runes/`.
-- **Logging**: Use `structlog` with semantic event IDs and machine-parseable fields. Use `logger.exception(...)` for active exceptions.
+## Critical Authorities
 
-### Dependency Policy
-Do not hand-edit `pyproject.toml` or `uv.lock`. Use `uv add`, `uv add --dev`, or `uv remove`.
+For implementation-level guidance, consult the relevant **[Architecture Decision Records](docs/adr/)**.
 
-## Critical References
-- **[ADR 01: Doctrine](docs/adr/01-doctrine.md)**: Workflow principles.
+- **[ADR 01: Doctrine](docs/adr/01-doctrine.md)**: The xDDD workflow.
 - **[ADR 11: Backend](docs/adr/11-backend.md)**: Service architecture.
 - **[ADR 12: Configuration](docs/adr/12-configuration.md)**: Settings and Runes.
 - **[ADR 13: Layout](docs/adr/13-layout.md)**: Filesystem geography.

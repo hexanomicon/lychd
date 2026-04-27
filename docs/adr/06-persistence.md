@@ -70,6 +70,14 @@ To maintain organizational purity, the Phylactery is divided into logical chambe
 
 The database is configured to support atomic task distribution. By utilizing `SKIP LOCKED`, the system can manifest background ghouls that claim and execute pending labor without the risk of duplicate work or the need for an external broker.
 
+### 5. Schema-Level Privatization Tainting (The Radioactive Tag)
+
+To support the system's strict egress policies (foreshadowing **[The Dispatcher (22)](22-dispatcher.md)**), the persistence layer mandates explicit data classification at the schema level.
+
+- **The Mechanism:** Sensitive data is explicitly tagged utilizing SQLAlchemy's column metadata (e.g., `mapped_column(String, info={"privatization_weight": 1.0})`).
+- **The Application:** When the database is queried to construct an Agent's context window, these `info` dictionaries are evaluated. The resulting context window inherits the highest `privatization_weight` of the aggregated data.
+- **The Guarantee:** If a new table containing private user keys or internal system state is defined by an extension, its weight must be declared within the ORM. This ensures such data can be deterministically blocked from leaving the local host.
+
 ### Consequences
 
 !!! success "Positive"

@@ -32,7 +32,7 @@ The Riddle transforms the **[Dispatcher](../../adr/22-dispatcher.md)** from a st
 For all technical capabilities, the Riddle rejects textual evaluation (e.g., BLEU or ROGUE scores) in favor of **Outcome-Based Verification**, driven by the `deepfabric` evaluation core.
 
 - **The Interception:** The model’s response to a riddle is captured by the DeepFabric Evaluator.
-- **The Shadow Routing:** DeepFabric routes the proposed tool calls or code changes into the heavy, isolated containers of **[The Shadow](./shadow.md)**, bypassing lightweight constraints in favor of native LychD execution.
+- **The Shadow Routing:** DeepFabric routes the proposed code changes and tool invocations as raw execution payloads to the sandboxed containers of **[The Shadow](./shadow.md)** via SAQ. The evaluation agent itself remains in the Vessel; Shadow executes the scripts and returns `stdout`.
 - **The Verdict:** The capability score (`execution_success_rate`) is derived from the _physical side effects_ of the answer in the Shadow Realm. A model that produces elegant but non-functional code is penalized; a model that produces concise, functional code is promoted to a higher tier.
 
 ## IV. The DeepFabric Engine

@@ -65,7 +65,19 @@ For hardware monitoring, the architecture rejects containerized metrics to avoid
 - **Metric Mirroring:** Critical hardware metrics (OOM events, thermal throttling) are mirrored from the host into the **[Orchestrator (ADR 23)](./23-orchestrator.md)**.
 - **Grounded Logic:** These metrics inform the "Tipping Point" algorithms, ensuring that the Daemon's "Will" is always grounded in the "Body's" actual physical capacity.
 
-### 4. Privacy Control
+### 4. Inference Performance Metrics (The Pulse)
+
+The third observability layer captures the **inference engine's own vital signs** — the data that Prometheus traditionally collects, harvested without the Prometheus Tax.
+
+- **Per-Request Metrics:** The **[Animator](../sepulcher/animator/index.md)** piggybacks performance data on every inference response: `tokens_generated`, `tokens_per_second`, `time_to_first_token`, `prompt_processing_time`. OpenAI-compatible APIs (vLLM, llama.cpp) already include `usage` fields and timing headers — the Animator extracts and normalizes them.
+- **Engine System Metrics:** The **[Orchestrator (ADR 23)](./23-orchestrator.md)** periodically polls each active Soulstone's `/metrics` endpoint for system-level data: KV cache utilization, request queue depth, active batch size, and GPU memory pressure. These are standard Prometheus exposition format — trivially parseable without requiring a Prometheus server.
+- **Phylactery Storage:** All metrics are written to a dedicated `metrics` schema in the **[Phylactery (ADR 06)](./06-persistence.md)**. PostgreSQL handles single-node time-series scale effortlessly. This eliminates the need for a dedicated time-series database.
+- **Scheduling Fuel:** The Orchestrator consumes these metrics directly from Postgres to inform the **Whim** algorithm — routing decisions, model tiering, Thrall delegation, and thermal throttling are all driven by real tok/s and cache pressure, not heuristics.
+- **Legion Scaling:** Each Thrall's Orchestrator scrapes its own local Soulstones and writes to the Master's Phylactery. The Master sees all nodes' performance in one query — no federation, no aggregation layer.
+- **Agent-Consumed Analysis:** Rather than dashboards, trends and anomalies are surfaced by agents querying the metrics table directly. The Magus asks "how's the GPU doing?" and gets a reasoned answer, not a graph.
+
+
+### 5. Privacy Control
 
 The Oculus respects the global `LYCHD_SECURE_MODE` toggle:
 

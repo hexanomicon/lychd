@@ -76,4 +76,4 @@ systemctl --user start lychd
 journalctl --user -fu lychd
 ```
 
-\*> **"The summoning is complete."\***
+> **"The summoning is complete."**

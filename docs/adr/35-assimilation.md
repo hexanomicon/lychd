@@ -72,7 +72,7 @@ The Smith workflow therefore spans all three collapse stages: structural validit
 
 ### 4. The Primordial Pattern
 
-The Smith acts as the archetype for a category of reference implementations known as Archons.
+The Smith acts as the archetype for a category of reference implementations known as Extensions.
 
 - **Substrate Replication:** Utilizing the **[Intercom (ADR 26)](./26-a2a.md)** protocols, the Smith can scry the Legion for patterns to replicate.
 - **Autonomous Expansion:** This establishes the Lych as a growing organism rather than a finite tool. The Smith provides the initial spark of construction, allowing the machine to multiply its own capabilities and manifest a complete, sovereign body of organs through self-directed fabrication.

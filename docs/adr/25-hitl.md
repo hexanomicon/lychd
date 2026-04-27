@@ -85,4 +85,4 @@ Every instance of Consent provides high-quality data for the machine's evolution
 
 !!! failure "Negative"
     - **Operational Latency:** High-stakes self-modification is strictly bound by human reaction time, slowing the pace of Autopoiesis.
-    - **Shadow Management:** Maintaining multiple "Shadow Realities" in the lab requires automated pruning to prevent storage accumulation.
+    - **Tomb Management:** Maintaining multiple "Shadow Realities" in the lab requires automated pruning to prevent storage accumulation.

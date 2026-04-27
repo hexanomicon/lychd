@@ -34,5 +34,7 @@
     "**/.uv_cache": true,
     "**/.ruff_cache": true,
     "**/*.egg-info": true
-  }
+  },
+  "markdown.extension.completion.enabled": false,
+  "markdown.extension.tableFormatter.enabled": false
 }

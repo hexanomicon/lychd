@@ -95,24 +95,22 @@ This allows a single Soulstone to expose a model catalog while still presenting 
 
 Mode/argument precedence is deterministic:
 
-1. `exec` set explicitly in TOML -> runtime adapter does not synthesize flags.
-2. `startup_mode` set to `single`/`router` -> forced mode.
-3. `startup_mode = "auto"` -> infer from `model_path` (`single` if set, else `router`).
-4. `extra_args` -> appended last, so users can override defaults without forking schema.
+1. `exec` set explicitly in TOML → runtime adapter does not synthesize flags.
+2. `startup_mode` set to `single`/`router` → forced mode.
+3. `startup_mode = "auto"` → infer from `model_path` (`single` if set, else `router`).
+4. `extra_args` → appended last, so users can override defaults without forking schema.
 
-### IV. The Flash (ExLlamaV2)
+#### Capability State During Model Swaps
 
-#### "The Speed of Light."
+In router mode, a single llama.cpp Soulstone can serve different models over its lifetime without the container restarting. Each model load/unload transitions the Animator's capability state:
 
-!!! note "Extension-Owned Discipline (Current Phase)"
-    ExLlamaV2 is described here as a valid discipline pattern, but it is not a built-in core Soulstone profile in the current codebase. Treat it as an extension-owned runtime family unless/until a builtin rune schema and runtime adapter are added.
+- Container boots → `is_static=True` for all capabilities the current model supports.
+- Model swap triggered (via llama.cpp API) → old model's capabilities flip `is_active=False`.
+- New model loads and warms → new model's capabilities flip `is_active=True`.
+- The **[Orchestrator](../../adr/23-orchestrator.md)** manages these transitions; no coven swap (Systemd restart) is required.
 
-* **Best For:** Single-user throughput and "Fractional" Quantization (e.g., 4.65bpw) to squeeze the absolute maximum model size into VRAM.
-* **The Architecture:** This engine uses the **ExLlamaV2** kernel.
-    * _Warning:_ There is a "V3" kernel designed for Hopper (H100) architecture. For your RTX 3090s (Ampere), **ExLlamaV2** is still the superior choice. Do not be seduced by the higher number; architecture compatibility matters more.
-* **The Format:** Requires models converted to `.exl2`. This format allows for "measurement files" that calibrate the quantization specifically to minimize perplexity loss on critical layers.
+This means a single llama.cpp Soulstone can dynamically expose `ChatCompletion`, `VisionCompletion`, or `Embedding` capabilities as different models are loaded. The **[Dispatcher](../../adr/22-dispatcher.md)** tracks `is_active` state and routes accordingly.
 
----
 
 ## :material-scale-balance: The Ritual of Compression (Quantization)
 
@@ -122,7 +120,6 @@ Do not run models in FP16 (Raw weight) unless you possess H100s. The degradation
 | :--- | :--- | :--- | :--- |
 | **Kinetic / Weaver** | **AWQ** | 4-bit | The gold standard for vLLM/SGLang. Faster decoding than GPTQ on Ampere. Compatible with the **Marlin** kernel for extreme speed. |
 | **Titan** | **GGUF** | **Q4_K_M** | The "Balanced" quant. Offers the best ratio of perplexity (intelligence) to size. Avoid Q2/Q3 unless strictly necessary for 405B models. |
-| **Flash** | **EXL2** | **4.0 - 6.0 bpw** | Fractional bit-per-weight. Allows you to fill your VRAM to the exact megabyte. |
 
 ---
 

@@ -9,10 +9,8 @@ icon: material/brightness-6
 
 The Shadow Realm is not just a metaphor. It is both:
 
-1. A cognitive state of speculative execution.
-2. A concrete extension and execution substrate (`lychd-shadow`) for simulation.
-
-LychD commits no code directly to the master branch of reality. It is dreamed first.
+1. A concept of speculative branching and MCTS-guided search.
+2. A concrete application of the **[Tomb](../vessel/index.md)** execution substrate for simulation.
 
 **The Shadow** is the Deliberative Extension of the system. It implements **[ADR 31 (Simulation)](../../adr/31-simulation.md)** and moves the machine from reflexive "System 1" output to deliberative "System 2" reasoning.
 It is the mechanism of internal doubt: fail in shadow, succeed in light.
@@ -27,8 +25,8 @@ It is the mechanism of internal doubt: fail in shadow, succeed in light.
 The process is a dance between intent, simulation, and judgment:
 
 1. **Intent:** The Magus submits an invocation at the **[Altar](../../divination/altar.md)**.
-2. **Dispatch:** The **[Vessel](../vessel/index.md)** routes unsafe work into Shadow.
-3. **Dreaming:** The Shadow executes timelines in isolated branches/workspaces.
+2. **Dispatch:** The **[Vessel](../vessel/index.md)** routes unsafe work into **The Tomb**.
+3. **Dreaming:** The Ghouls execute timelines in isolated branches/workspaces within the Tomb.
 4. **Vision:** Candidate futures are returned as artifacts for review.
 
 Nothing in this stage is primary reality. Destructive failures in Shadow remain confined to simulation branches and do not alter durable state.
@@ -48,15 +46,16 @@ While a standard **[Agent](../../adr/20-agents.md)** produces one linear answer,
 
 - The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread).
 - It spawns $N$ branch timelines for complex intents.
-- Each branch runs in isolated Git/workspace context inside the **[Lab](../crypt.md)**.
-- Branch execution is physically performed in the `lychd-shadow` container.
+- The Branch execution is physically performed in the `lychd-tomb` container.
+- Each branch is a Git Worktree isolated in the `shadow/` region of the **[Lab (13)](../../adr/13-layout.md)**.
+- Each execution step utilizes a job-scoped temporary directory to prevent file collisions.
 
 ### B. Scrying (Evaluation)
 
 Shadow uses a dual gate:
 
-1. **Deterministic Gate:** compile/lint/test must pass.
-2. **Agentic Gate:** **[Mirror](./mirror.md)** critiques quality/style fit.
+1. **Structural Gate (The Tomb):** Deterministic tests and linters verify the code is valid.
+2. **Cognitive Gate (The Shadow):** The extension scores the candidates using MCTS and persona congruence.
 
 These gates reduce the candidate space. **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** performs the final promotion decision.
 
@@ -81,12 +80,16 @@ The machine simulates candidate value; the Magus defines promotable value.
 
 Shadow is now a first-class extension and execution boundary.
 
-- **Runtime:** `lychd-shadow` (untrusted execution plane).
-- **Role:** unsafe execution, simulation labor, artifact production.
-- **Boundary:** no durable authority, no secret ownership, no host infrastructure control.
-- **Contract:** structured artifacts out; promotion decisions remain in Vessel.
+- **Extension:** The Shadow (deliberative logic).
+- **Runtime:** `lychd-tomb` (untrusted execution plane).
 
-This section describes the concrete implementation boundary of the Shadow Realm concept.
+### III. The Doctrine: Brain in the Vessel, Hands in the Tomb
+
+The Shadow is a **brainless handle** when referring to the container, but a **deliberative mind** when referring to the extension. To clarify: **The Tomb is a brainless executor.** It does not run agent logic, graph state machines, or LLM provider calls. It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them in the `nono` sandbox, and returns `stdout`. All cognitive labor — graph orchestration, LLM inference, Dispatcher resolution, memory curation — remains in the **[Vessel](../vessel/index.md)**.
+
+If code executing in the Tomb needs LLM reasoning, it routes back through the Vessel via the "Ask the Brain" protocol defined in **[Security (09)](../../adr/09-security.md)**. The Tomb never holds LLM credentials or communicates directly with providers.
+
+This section describes the concrete implementation boundary of the Shadow Realm concept. The full doctrine is defined in **[Workers (14)](../../adr/14-workers.md)**.
 
 ## V. Orchestration and Cost
 
@@ -111,7 +114,7 @@ Shadow Simulation requires a first-class policy/strategy component in the domain
 - Makes workload-specific simulation behavior configurable and testable.
 - Aligns with extension-first architecture and future workflow growth.
 
-This treats policy as selection/planning logic (high-level handles/specifications) rather than direct container imperative code, cleanly keeping Shadow as the execution substrate and Vessel/Orchestrator as authority boundaries.
+This treats policy as selection/planning logic (high-level handles/specifications) rather than direct container imperative code, cleanly keeping the Tomb as the execution substrate and Vessel/Orchestrator as authority boundaries.
 
 !!! warning "Temporal Latency"
     Shadow is not for sub-second reflexes. It is deliberative construction labor and may run for minutes or hours.

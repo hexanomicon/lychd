@@ -52,8 +52,8 @@ Shadow is the cognitive fluctuation engine, not the identity authority. It gener
 The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
 - **The Seed:** The intent is processed into $N$ divergent strategies.
-- **The Branching:** For each strategy, the system creates a **Git Worktree** in a dedicated `shadow/` region of the **[Lab (13)](13-layout.md)**. Unlike simple directory copies, Worktrees share the same `.git` metadata but allow parallel, independent file states on the same physical disk.
-- **The Labor:** **[Ghouls (14)](14-workers.md)** execute the task in each branch. They edit files, install temporary dependencies, and run compilers.
+- **The Branching:** For each strategy, the system creates a **Git Worktree** in a dedicated `shadow/` region of the **[Lab (13)](13-layout.md)**. Unlike simple directory copies, Worktrees share the same `.git` metadata but allow parallel, independent file states on the same physical disk. Each branch workspace is isolated in its own subdirectory to prevent file collisions between concurrent Ghouls.
+- **The Labor:** **[Ghouls (14)](14-workers.md)** dispatch execution payloads (code, tests, linters) to the Shadow via SAQ. The Vessel agent orchestrating the simulation retains the graph state; only raw scripts are sent to Shadow for execution.
 - **The Observation:** The Agent observes the *physical outcome* of its dream (e.g., "The test failed in Branch B"). It can then decide to "Prune" the branch or "Backtrack" to a previous node in the tree.
 
 Each branch is an active task modification (a candidate timeline) that exists long enough to be tested, scored, and dissolved if needed. In cognitive terms, branches are the live modifications under comparison. Shadow is therefore fluctuation-first: it maintains possibility space without claiming ownership of results.
@@ -132,14 +132,14 @@ Simulation is the most resource-intensive ritual in the Sepulcher. It is the "Ri
 - **Preemptive Evacuation:** Before a large-scale simulation begins, the **[Orchestrator (23)](23-orchestrator.md)** may "evacuate" lesser background tasks to **[Portals (22)](22-dispatcher.md)** or pause them entirely to provide Shadow Simulation with maximum VRAM for parallel branches.
 - **Budgeting:** Shadow Simulation respects the **[Toll (41)](41-x402.md)**. If the cost of a simulation branch exceeds the ritual's budget, the Reaper banishes it immediately, regardless of its logic.
 
-### 8. Dual-Plane Trust Delta
+### 8. Authority and Trust Boundaries
 
 The Shadow Realm is infrastructural, not just conceptual.
 
-- The **Shadow extension** runs speculative timelines in the `lychd-shadow` container.
-- Graph steps declare execution mode (`vessel` or `shadow`); unsafe steps dispatch to Shadow.
-- Shadow returns structured artifacts/traces only.
-- Durable writes, policy adjudication, and promotion decisions remain in Vessel.
+- The **Shadow extension** runs speculative timelines in the `lychd-tomb` container.
+- The graph runner and agent logic stay in the **Vessel**. **The Tomb** receives only serialized execution payloads (scripts, test suites, linter invocations) via SAQ. It does not run agent logic, graph state machines, or make LLM calls.
+- Graph steps declare execution mode (`vessel` or `tomb`); unsafe steps serialize their payload and dispatch to **The Tomb**, then await the `stdout` result.
+- **The Tomb** returns structured artifacts/traces only.
 
 Operational summary: Shadow produces possible futures, Mirror filters for congruence, and Vessel authorizes what becomes real.
 
@@ -147,7 +147,7 @@ This stack models cognitive mechanics and control boundaries, not subjective awa
 
 ### Policy Table
 
-| Dimension | Vessel (Trusted Simulation Control) | Shadow (Untrusted Simulation Substrate) |
+| Dimension | Vessel (Trusted Simulation Control) | The Tomb (Untrusted Simulation Substrate) |
 | :--- | :--- | :--- |
 | Secrets | Holds scoring/policy/provider credentials for adjudication. | No DB/provider/signing secrets. |
 | Mounts | Persistent state and decision metadata mounts. | Simulation workspace and artifact mounts only. |
