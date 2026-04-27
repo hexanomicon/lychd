@@ -62,6 +62,11 @@ To ensure the Vessel can handle the massive execution history and cognitive stat
 
 - **msgspec Integration:** The framework utilizes `msgspec` as its primary serialization engine.
 - **Binary Hooks:** The Vessel leverages the custom codec hooks defined in the persistence layer. This allows the backend to receive raw binary JSONB from the database and pass it directly to the interface without intermediate string encoding, bypassing the "Double Encoding" CPU tax.
+- **The Tomb** config is a generated runtime envelope with only task-safe fields.
+- **The Tomb** config is derived data, never an alternate source of truth.
+- **The Tomb** schema forbids secret fields and infrastructure authority fields.
+- Provider/API keys are never serialized into **Tomb** payloads.
+- **The Tomb** cannot override queue, network, or authority policy.
 
 ### 4. Automated Data Integrity
 
@@ -73,12 +78,18 @@ Backend scope is now explicitly control-plane only.
 
 - Vessel owns API, orchestration, queue ownership, persistence access, and policy.
 - Vessel agents can plan, score, route, validate, and gate HiTL.
-- Vessel agents cannot run arbitrary shell/Python, inspect env, or install deps.
-- Unsafe steps are explicitly dispatched to Shadow.
+- **The Tomb** mounts only task/workspace/artifact regions with minimal write scope.
+- Suggested **Tomb** regions:
+    - `~/.local/share/lychd/tomb/jobs/` — one subdirectory per SAQ job to prevent file collisions between concurrent Ghouls
+    - `~/.local/share/lychd/tomb/workspaces/`
+    - `~/.local/share/lychd/tomb/artifacts/`
+    - `~/.local/share/lychd/tomb/cache/`
+- **The Tomb** must not mount full Codex or host trigger/signaling paths.
+- **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)** for the full doctrine.
 
 ### Policy Table
 
-| Dimension | Vessel (Trusted Control Plane) | Shadow (Untrusted Execution Plane) |
+| Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Uses secrets for control-plane operations with redaction discipline. | No secret exposure in runtime context. |
 | Mounts | Control-plane mount set. | Workspace-scoped mounts only. |

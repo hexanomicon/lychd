@@ -50,15 +50,49 @@ The Worker (Ghoul) is executed as a separate operating system process from the W
 - **The Engine:** The worker utilizes the `SAQPlugin` provided by the **[Backend (11)](11-backend.md)** to ensure identical configuration and dependency injection.
 - **The `queue` Chamber:** Jobs are serialized into the dedicated `queue` schema within the **[Phylactery (06)](06-persistence.md)**. This ensures that background labor is subject to the same **[Snapshot (07)](07-snapshots.md)** and persistence laws as the rest of the system.
 - **Async Efficiency:** Because the Ghouls run on an asynchronous event loop, a single process can manage thousands of concurrent tasks (e.g., awaiting a response from a remote A2A peer or a slow local model) without exhausting system threads.
+      - - **Worker Profile Binding (Topology Split):** To enforce the Dual-Plane Trust Delta, queue *definitions* are maintained globally, but worker *execution loops* are conditionally bound.
+            - Utilizing environment variables (e.g., `LYCHD_WORKER_PROFILE`), the binding of specific queues to specific processes is dictated at boot time.
+            - The Vessel container boots under the `core` profile, spawning background loops that exclusively claim trusted orchestration tasks.
+            - The Tomb container boots under the `tomb` profile, spawning loops that exclusively claim untrusted code-execution tasks.
+            - This separation ensures a malicious payload cannot jump execution queues by overwhelming a worker situated in the trusted plane.
 
-### 2. Orchestrated Labor (The Command)
+### 2. The Doctrine: Brain in the Vessel, Hands in the Tomb
+
+All cognitive labor—agent graph runners, LLM inference orchestration, Dispatcher resolution, memory curation—executes exclusively in the Vessel. The Tomb is a **brainless executor**. It receives serialized script payloads (Python code, CLI commands) via SAQ, runs them inside the `nono` sandbox, and returns `stdout`. It does not run agent logic, graph state machines, or make LLM provider calls.
+
+This doctrine exists because:
+
+- **State locality:** Agent graph state lives in Vessel process memory. Keeping it there eliminates the need to serialize complex graph state across process boundaries.
+- **Security:** The Tomb never needs LLM provider credentials, Dispatcher access, or graph runner dependencies. Its attack surface is minimal.
+- **Routing simplicity:** The Vessel's Dispatcher and Orchestrator have instant visibility into all agent state because it never leaves Vessel memory. Tomb returns are just strings.
+- **Latency irrelevance:** The SAQ queue hop (~50ms DB read) is negligible compared to multi-second LLM inference times.
+
+#### Tomb Execution Flow
+
+1. A Vessel Ghoul (running a graph step) needs code executed.
+2. It serializes the payload (script text, environment, dependency list) and enqueues it to the `tomb` SAQ queue.
+3. A Tomb Ghoul claims the job.
+4. The Tomb Ghoul uses `uv` to fast-install any required dependencies into a **job-scoped temporary workspace**.
+5. The Tomb Ghoul spawns `nono` with the enriched workspace. `nono` has zero network access and cannot read the container's environment variables.
+6. `nono` executes the script, captures `stdout`/`stderr`.
+7. The Tomb Ghoul writes the result back to SAQ.
+8. The Vessel Ghoul receives the result string and continues the graph step.
+
+!!! warning "Untrusted Returns"
+    Tomb `stdout` is **untrusted**. If the executed code fetched data from the internet (via the Ghoul's pre-fetch, not `nono` itself), the output may contain adversarial content including prompt injection attempts. Tool outputs returning from the Tomb must be treated as untrusted when injected into agent context.
+
+#### Per-Job Workspace Isolation
+
+Multiple Tomb Ghouls may operate concurrently on the same mounted host directory. To prevent file collisions, every SAQ job must create a unique, isolated subdirectory inside the lab mount (e.g., `tomb/jobs/<job_id>/`). The spawning Ghoul is responsible for cleanup after result collection.
+
+### 3. Orchestrated Labor (The Command)
 
 The Ghouls operate under the strict discipline of the **[Orchestrator (23)](23-orchestrator.md)**.
 
 - **The Pause:** When the Orchestrator initiates a **[Coven (08)](08-containers.md)** swap, it issues a signal to the Ghoul process to pause the claiming of new jobs from the queue. This ensures that no tasks are dispatched to container services that are about to be banished.
 - **The Drain:** Once a new Coven is manifested, the Orchestrator unpauses the Ghouls, allowing them to resume their labor with the newly available hardware capabilities.
 
-### 3. The Reflex Arc and Memory Rituals
+### 4. The Reflex Arc and Memory Rituals
 
 The Ghouls are the primary drivers of the Daemon's long-term cognitive processes.
 
@@ -83,28 +117,28 @@ Memory curation runs as a separate periodic Ghoul specialization:
 - Preserves anchored identity facts regardless of decay score.
 - Emits audit traces for every destructive prune action to support rollback and policy tuning.
 
-### 4. Extension Rites
+### 5. Extension Rites
 
 The architecture allows extensions to register their own background functions (Rites). This ensures that heavy logic added by extensions (e.g., document processing or code compilation) does not degrade the performance of the core Vessel.
 
-### 5. Dual-Plane Trust Delta
+### 6. Dual-Plane Trust Delta
 
 Worker ownership spans both the Trusted and Semi-Trusted planes.
 
 - Vessel workers remain fully trusted for control-plane tasks.
-- Shadow workers are **Semi-Trusted**. The main Python loop in the Shadow container claims, acks, and retries jobs from the SAQ queue.
-- **Untrusted Sub-steps:** Real unsafe labor (executing AI code) is spawned inside the `nono` sandbox by the Shadow worker loop. The sandbox has zero network access.
-- If a `nono` sandbox escapes, the attacker is trapped in the Shadow container. They may steal the SAQ database password from the environment, but Layer 7 Auth prevents them from accessing Vessel's master tables or secrets.
+- Tomb workers are **Semi-Trusted**. The main Python loop in the Tomb container claims, acks, and retries jobs from the SAQ queue.
+- **Untrusted Sub-steps:** Real unsafe labor (executing AI code) is spawned inside the `nono` sandbox by the Tomb worker loop. The sandbox has zero network access.
+- If a `nono` sandbox escapes, the attacker is trapped in the Tomb container. They may steal the SAQ database password from the environment, but Layer 7 Auth prevents them from accessing Vessel's master tables or secrets.
 
 ### Policy Table
 
-| Dimension | Vessel Workers (Trusted Control Plane) | Shadow Executors (Semi-Trusted Execution Plane) |
+| Dimension | Vessel Workers (Trusted Control Plane) | Tomb Executors (Semi-Trusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Accesses queue/database credentials and high-value API keys. | Accesses queue/database credentials only (Least Privilege Role). No high-value keys. |
 | Mounts | Trusted mounts for queue processing and persistence orchestration. | Task workspace and temporary execution mounts only. |
 | Network | Shared Pod network (Internet + Localhost). | Shared Pod network. (Sandboxed `nono` subprocesses have zero network). |
 | Queue Ownership | Owns enqueue/dequeue/retry lifecycle for core tasks. | Owns enqueue/dequeue/retry for untrusted tasks via the Semi-Trusted loop. |
-| Authority Boundaries | Commits durable outcomes and controls retries. | Commits durable task outcomes. Cannot mutate core infrastructure state. |
+| Authority Boundaries | Commits durable outcomes and controls retries. All agent/graph/LLM logic runs here. | Executes raw scripts/commands only. No agent logic, no graph runners, no LLM calls. Cannot mutate core infrastructure state. |
 
 ### Consequences
 

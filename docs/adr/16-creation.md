@@ -46,6 +46,8 @@ When a Magus or an authorized process initiates a change, the system creates a n
 
 The creation labor is performed using a divergent Git branch. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
 
+The agent graph orchestrating the speculation runs in the **Vessel**. Raw execution payloads (code edits, test suites, linter invocations) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
+
 ### 3. Verification (The Rite of Albedo)
 
 Before leaving the Lab, every creation must undergo the **Verification Ritual**.

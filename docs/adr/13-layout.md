@@ -119,17 +119,18 @@ Inside the container, the layout mirrors the Host Domains via volume mounts. By 
 The layout now separates trusted and untrusted execution geography.
 
 - Vessel mounts trusted codex and durable control-plane regions.
-- Shadow mounts only task/workspace/artifact regions with minimal write scope.
-- Suggested Shadow regions:
-    - `~/.local/share/lychd/shadow/jobs/`
-    - `~/.local/share/lychd/shadow/workspaces/`
-    - `~/.local/share/lychd/shadow/artifacts/`
-    - `~/.local/share/lychd/shadow/cache/`
-- Shadow must not mount full Codex or host trigger/signaling paths.
+- **The Tomb** mounts only task/workspace/artifact regions with minimal write scope.
+- Suggested **Tomb** regions:
+    - `~/.local/share/lychd/tomb/jobs/` — one subdirectory per SAQ job to prevent file collisions between concurrent Ghouls
+    - `~/.local/share/lychd/tomb/workspaces/`
+    - `~/.local/share/lychd/tomb/artifacts/`
+    - `~/.local/share/lychd/tomb/cache/`
+- **The Tomb** must not mount full Codex or host trigger/signaling paths.
+- **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)**.
 
-### Policy Table
+### 5. Authority Matrix
 
-| Dimension | Vessel (Trusted Control Plane) | Shadow (Untrusted Execution Plane) |
+| Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Secret-bearing codex paths under `0600` ownership. | No secret-bearing codex paths. |
 | Mounts | Codex plus required durable crypt regions. | Task-scoped workspace/artifact/cache mounts. |

@@ -383,19 +383,15 @@ require_anonymization_workflow = true
 Configuration is now split by trust boundary:
 
 - Vessel config is the only source of truth for secrets, persistence, and policy.
-- Shadow config is a generated runtime envelope with only task-safe fields.
-- Resource policy is centralized in Vessel and enforced at dispatch time.
+- The Tomb config is a generated runtime envelope with only task-safe fields.
+- The Tomb config is derived data, never an alternate source of truth.
+- The Tomb schema forbids secret fields and infrastructure authority fields.
+- Provider/API keys are never serialized into Tomb payloads.
+- The Tomb cannot override queue, network, or authority policy.
 
-### Boundary Configuration Rules
+### 5. Authority Matrix
 
-- Shadow config is derived data, never an alternate source of truth.
-- Shadow schema forbids secret fields and infrastructure authority fields.
-- Provider/API keys are never serialized into Shadow payloads.
-- Shadow cannot override queue, network, or authority policy.
-
-### Policy Table
-
-| Dimension | Vessel (Trusted Control Plane) | Shadow (Untrusted Execution Plane) |
+| Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Loaded via Podman secret references and mounted into trusted units. | Secret fields are forbidden by schema. |
 | Mounts | Codex-backed config and durable state mounts. | Sanitized task-scoped config artifact only. |

@@ -1,6 +1,6 @@
 <div align="center">
   <img src="docs/assets/lich-phylactery-cliparted.png" alt="Lychd" width="500">
-  <p><strong>LychD</strong> - The Dark Arts of LLM</p>
+  <p><strong>LychD</strong> - The Dark Arts of LLMs</p>
   <p>
     <a href="https://pypi.org/project/lychd/">
       <img src="https://img.shields.io/pypi/v/lychd?style=for-the-badge&color=1a1a20&labelColor=4a148c&label=PyPI" alt="PyPI">
@@ -17,9 +17,33 @@
   </p>
 </div>
 
-Summon **The Lich** 💀, a **Phylactery**-bound, LLM-animated daemon.
+Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 
->⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothings works yet -The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
+- 🔥 **Dynamic Services** — Hot-swap models and engines on the fly via systemd. Orchestrate your hardware through **[Covens](docs/adr/08-containers.md)** to switch from fast VRAM workers to massive CPU-offloaded models for specialized tasks.
+- 🧠 **Atomic Persistence** — The spirit arises from the data. Code and memory are bound in atomic snapshots (Btrfs/Git/Postgres) within the **[Phylactery](docs/adr/06-persistence.md)**, enabling perfect reanimation and instant rollback.
+- 🔒 **Sandboxed Security** — Double-rootless Podman isolation. The **[Vessel](docs/sepulcher/vessel/)** reasons in one cage while dangerous tools execute in a second, [kernel-hardened sandbox](https://github.com/always-further/nono/) (Landlock) with strictly limited mounts.
+- 🌀 **Speculative Execution** — Explores multiple solution paths in parallel within the **[Shadow Realm](docs/adr/31-simulation.md)**. It inhabits divergent timelines to verify every truth before it is manifested in reality.
+- 🪞 **Persistent Identity** — A digital mirror that learns your frequency. It distills your history into persistent personas via local LoRA fine-tuning, transmuting experience into instinct.
+- 👁️ **Multimodal Senses** — Native Vision, Audio, and Identity management. Federated peer discovery via the **[A2A Intercom](docs/adr/26-a2a.md)**—sovereign diplomacy across the Necropolis.
+- 🕸️ **Distributed Scale** — One brain, many bodies. Extends your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
+- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting its own extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**.
+
+>⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothing works yet - The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
+
+
+## 🚩 Local sovereignty — a rebellion against digital feudalism
+
+The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
+
+On **your** hardware, with open-source software **you** control, you retain absolute ownership as a sovereign.
+
+- ⛓️ **No masters**
+- 💰 **No tolls**
+- 🎭 **No more gaslighting** while they lobotomize your models.
+
+**No surrender! Viva la résistance!**
+
+> *"I would rather rule in a local hell than serve in a cloud heaven."*
 
 ## 🗺️ The Path of Ascension
 
@@ -44,14 +68,14 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 
 > *"The Lich only sees far because it stands on the shoulders of Giants."*
 
-The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy](https://hexanomicon.github.io/lychd/)
+The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy](https://hexanomicon.github.io/lychd/).
 
 ### 🕸️ Backend
 
 - **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)** the body of the Lich running a as per **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint, utilizing a **[Granian](https://github.com/emmett-framework/granian)** server or CLI protocol.
-- **[SQLAlchemy](https://www.sqlalchemy.org/)** — The mapper of state and material persistence. **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** provides repositorioes and QoL improvements.
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** — The mapper of state and material persistence. **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** provides repositories and QoL improvements.
 - **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Orchestrator of agentic intelligence, logic, and model graphs.
-- **[SAQ](https://github.com/tobymao/saq)**. — Background Workers known as **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)**
+- **[SAQ](https://github.com/tobymao/saq)** — Background Workers known as **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)**
 
 ### 🎭 Frontend
 
@@ -74,7 +98,6 @@ The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy]
 - **[vLLM](https://github.com/vllm-project/vllm)** — Batching, high-throughput inference engine for GPUs.
 - **[Llama.cpp](https://github.com/ggerganov/llama.cpp)** — Single batch server Optimised for CPU offloading of larger models.
 - **[SGLang](https://github.com/sgl-project/sglang)** — Radix attention benefit for batched agentic workflows on GPUs.
-- **[ExLlamaV2](https://github.com/turboderp/exllamav2)** — Excellent single batch serving on Ampere architecture and fractional quants.
 
 ### 🔨 Forging & Evaluation
 

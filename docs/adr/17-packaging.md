@@ -83,14 +83,12 @@ The resulting image is loaded into the local registry as `lychd:custom`. To ensu
 Packaging now emits two runtime classes:
 
 - Vessel image: trusted control plane.
-- Shadow image: untrusted execution runtime.
-- No runtime secrets are baked into either image layer.
-- Shadow dependency expansion uses curated cache/broker channels by default.
-- Promotion and restart authority stays in Vessel lifecycle paths.
+- **The Tomb** image: untrusted execution runtime. Carries Python, `uv`, `nono`, and common CLI tools only. No agent framework, no LLM client libraries, no graph runner dependencies.
+- **Tomb** dependency expansion uses curated cache/broker channels by default.
 
-### Policy Table
+### 5. Authority Matrix
 
-| Dimension | Vessel Artifact (Trusted Control Plane) | Shadow Artifact (Untrusted Execution Plane) |
+| Dimension | Vessel Artifact (Trusted Control Plane) | The Tomb Artifact (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Runtime secret injection for control-plane duties only. | No runtime secret injection in base mode. |
 | Mounts | Trusted codex/persistence mount contract. | Minimal execution mounts; no codex-wide privileged mounts. |

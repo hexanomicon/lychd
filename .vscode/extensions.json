@@ -1,26 +1,26 @@
 {
   "recommendations": [
-    // --- 🐍 The Serpent (Python Core) ---
+    // --- 🐍 Python Core ---
     "ms-python.python",
     "charliermarsh.ruff",             // The Speed Linter
     "detachhead.basedpyright",        // Superior typing (better than standard Pyright)
     "njpwerner.autodocstring",        // For generating the Grimoire's docstrings
     "ms-toolsai.jupyter",             // For testing agents in notebooks
 
-    // --- 📜 The Scribe (Documentation & config) ---
+    // --- 📜 Documentation & confi ---
     "bungcip.better-toml",            // Essential for pyproject.toml
     "redhat.vscode-yaml",             // Essential for mkdocs.yml & GitHub Actions
     "yzhang.markdown-all-in-one",     // Essential for writing docs
     "samuelcolvin.jinjahtml",         // For Litestar/HTML templates
 
-    // --- 👁️ The Sight (Visual Aids) ---
+    // --- 👁️Visual Aids ---
     "eamodio.gitlens",                // See history
     "usernamehw.errorlens",           // See errors inline (Highly recommended)
     "esbenp.prettier-vscode",         // Keeps JSON/Markdown tidy
     "odolphebarbanneau.python-docstring-highlighter",
 
-    // --- ⚙️ The Infrastructure (CRITICAL ADDITION) ---
-    "hangxingliu.vscode-systemd-support",     // You NEED this for .service/.quadlet files
+    // --- ⚙️ The Infrastructure---
+    "hangxingliu.vscode-systemd-support",     // For .service/.quadlet files
     "davidanson.vscode-markdownlint",         // Markdown linting with special rules in settings
     "csstools.postcss",
     "bradlc.vscode-tailwindcss"

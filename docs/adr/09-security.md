@@ -72,15 +72,16 @@ icon: material/shield-lock-outline
 LychD adopts a layered **Defense in Depth** model built around a hard trust split:
 
 - **Vessel** is the trusted control plane.
-- **Shadow** is the **Semi-Trusted** execution plane.
+- **The Tomb** is the **Semi-Trusted** execution plane.
 
 The architecture relies on the **"Golden Mean"** for its Initial Phase (V1):
-All containers (`vessel`, `shadow`, `phylactery`) share a single Pod and therefore share a `localhost` network namespace. Because they share a network, they all have internet access and can "see" each other's ports.
+All containers (`vessel`, `lychd-tomb`, `phylactery`) share a single Pod and therefore share a `localhost` network namespace. Because they share a network, they all have internet access and can "see" each other's ports.
 Security is guaranteed by two independent layers:
-1. **Layer 7 Authentication:** Containers can see the Database and Phoenix, but they cannot access them without the proper passwords. Shadow is given only a strictly-scoped least-privilege role.
-2. **The Nono Sandbox:** Untrusted execution never runs directly in the Shadow container. It is spawned inside `nono`, which uses Linux Landlock to enforce **zero network access** and strict file isolation.
 
-If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escapes into the Shadow container. They gain internet access and the queue password, but they hit the titanium wall of the container boundary. They cannot steal the Vessel's master DB passwords, API keys, or signing keys.
+1. **Layer 7 Authentication:** Containers can see the Database and Phoenix, but they cannot access them without the proper passwords. The Tomb is given only a strictly-scoped least-privilege role.
+2. **The Nono Sandbox:** Untrusted execution never runs directly in the Tomb container. It is spawned inside `nono`, which uses Linux Landlock to enforce **zero network access** and strict file isolation.
+
+If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escapes into the Tomb container. They gain internet access and the queue password, but they hit the titanium wall of the container boundary. They cannot steal the Vessel's master DB passwords, API keys, or signing keys.
 
 ### 1. Threat Model
 
@@ -102,7 +103,7 @@ The security posture is designed around the following assumptions:
 - Browser and crawler payloads
 - Remote peer inputs
 - Tool outputs from untrusted sources
-- Shadow/worker execution by default
+- Tomb/worker execution by default
 
 #### Defended Against
 
@@ -235,25 +236,37 @@ If a unit can use a secret, that unit must be assumed capable of reading it.
 Security is built around a hard split between trusted and untrusted roles:
 
 - **Vessel**: trusted control plane, durable authority, queue ownership, secret-bearing provider operations
-- **Shadow**: untrusted execution plane, arbitrary code, risky tools, disposable workspaces, constrained output return
+- **The Tomb**: untrusted execution plane, arbitrary code, risky tools, disposable workspaces, constrained output return
 
 Invariant:
 
 > Arbitrary execution and high-value secrets do not coexist in the same unit.
 
-This is the central law of the security model.
+#### The "Ask the Brain" Protocol (LLM Proxying)
+
+To enforce the central law, the Tomb execution plane (and its internal `nono` sandboxes) is strictly forbidden from communicating directly with any LLM provider, including local instances.
+
+- If AI reasoning is required by untrusted code executing within the Tomb plane (e.g., to debug a generated script), a structured intent must be emitted to the Tomb proxy loop.
+- This request is then routed back to the Vessel via an internal HTTP endpoint or a fast-lane queue.
+- The intent is received by the **[Dispatcher (22)](22-dispatcher.md)**, where Ward policies and the Privatization Gate are applied. The provider call is then executed by the Vessel utilizing its secured secrets.
+- Only the resulting string is returned to the Tomb plane.
+
+This mechanism ensures that while cognitive labor can be requested by the execution plane, the system's economic limits cannot be bypassed, API keys cannot be stolen, and the underlying model hardware cannot be accessed directly.
 
 #### Layer 8: Worker Process Sandboxing (`nono`)
 
-Inside the Shadow plane, LychD enforces strict per-process sandboxing using **`nono`**. This is not an optional layer; it is the fundamental mechanism that enables the shared Pod architecture.
+Inside the Tomb plane, LychD enforces strict per-process sandboxing using **`nono`**. This is not an optional layer; it is the fundamental mechanism that enables the shared Pod architecture.
 
-- The `Shadow` container itself has internet access and holds the DB queue credentials.
-- The `Shadow` Python worker loop is **Semi-Trusted**.
-- When the loop executes an AI agent or risky tool, it wraps the call in `nono`.
-- `nono` uses Landlock to restrict the process to a specific workspace directory and completely **drops its network interface**.
-- If the untrusted script needs to fetch a URL, it cannot do so directly. It must ask the Semi-Trusted Shadow loop (the proxy) to fetch the URL on its behalf.
+- The `lychd-tomb` container itself has internet access and holds the DB queue credentials.
+- The `lychd-tomb` Python worker loop (the Ghoul) is **Semi-Trusted**.
+- When the Ghoul picks up a code-execution job from SAQ, it uses `uv` to fast-install any required dependencies into a **job-scoped temporary workspace** before handing it to `nono`. The Ghoul has internet access for this step; `nono` does not.
+- The Ghoul then wraps the actual untrusted execution in `nono`.
+- `nono` uses Landlock to restrict the process to the job workspace directory and completely **drops its network interface**.
+- If the untrusted script needs to fetch a URL, it cannot do so directly. It must ask the Semi-Trusted Tomb loop (the proxy) to fetch the URL on its behalf.
 
 This ensures **zero exfiltration** of mounted user files and prevents the untrusted script from reading the DB credentials stored in the container's environment variables.
+
+The Tomb does not run agent logic, graph runners, or LLM provider calls. It is a brainless executor. The full doctrine is defined in **[Workers (14)](14-workers.md)**.
 
 ### 3. Egress Posture (Network Is Authority)
 
@@ -262,9 +275,9 @@ Outbound network is treated as authority, not convenience.
 #### Core Rules
 
 - The `lychd.pod` shares a network namespace, meaning containers inherently possess the Pod's internet route.
-- The Vessel and Semi-Trusted Shadow loop utilize this native egress.
+- The Vessel and Semi-Trusted Tomb loop utilize this native egress.
 - **Untrusted execution (inside `nono`) defaults to ZERO egress.**
-- Wide-open outbound access from a sandbox is forbidden. Any sandbox requiring external data must route requests through the Shadow loop acting as its proxy.
+- Wide-open outbound access from a sandbox is forbidden. Any sandbox requiring external data must route requests through the Tomb loop acting as its proxy.
 
     - no secrets
     - no broad durable mounts
@@ -302,7 +315,7 @@ The worker boundary is only meaningful if its database authority is narrow.
 
 Rules:
 
-- Shadow/worker units do not receive broad database credentials
+- Tomb/worker units do not receive broad database credentials
 - no superuser
 - no migration authority
 - no schema ownership outside explicitly assigned surfaces
@@ -327,35 +340,39 @@ Unsafe execution is permitted only under bounded conditions.
 - no runtime package installation
 - no mutation of trusted runtime body
 
-#### Shadow
+#### Tomb
 
 - may execute arbitrary code only in scoped workspaces
 - may run risky tools only under constrained mount/network policy
+- does not run agent logic, graph runners, or LLM calls — it is a brainless executor
 - runtime package installs should prefer:
 
   1. build-time inclusion
-  2. disposable execution-local workspace installs
+  2. disposable execution-local workspace installs (via `uv` into job-scoped directories)
   3. never mutation of the trusted control-plane environment
 
 This keeps experimentation and codegen possible without normalizing mutation of trusted infrastructure.
 
+!!! warning "Untrusted Returns"
+    The Tomb `stdout` returned to the Vessel is **untrusted**. If the executed code processed data fetched from the internet, the output may contain adversarial content including indirect prompt injection attempts. Tool outputs returning from the Tomb must be treated as untrusted when injected into agent context.
+
 ### 6. Authority Matrix
 
-| Dimension        | Vessel (Trusted Control Plane)                                 | Shadow (Untrusted Execution Plane)                                  |
+| Dimension        | Vessel (Trusted Control Plane)                                 | The Tomb (Un-trusted Execution Plane)                                  |
 | :--------------- | :------------------------------------------------------------- | :------------------------------------------------------------------ |
-| Secrets          | Holds control-plane and required provider secrets.             | No secrets by default.                                              |
-| Mounts           | Codex and durable state mounts as required.                    | Task-scoped workspaces and artifacts only.                          |
-| Network          | Unrestricted native egress (Pod internet access).              | Unrestricted for container; Allowlisted network for untrusted execution (`nono`) by the proxy. |
-| Database         | Owns durable queue and state transitions.                      | No broad DB ownership; narrow scoped role only if unavoidable.      |
-| Queue Ownership  | Full durable lifecycle ownership.                              | No claim/ack/retry authority for durable queue by default.          |
+| Secrets          | Accesses queue/database credentials and high-value API keys.   | Accesses queue/database credentials only (Least Privilege Role).    |
+| Mounts           | Mounts both trusted and semi-trusted volumes.                  | Task workspace and temporary execution mounts only.                 |
+| Network          | Shared Pod network (Internet + Localhost).                     | Shared Pod network. (Sandboxed `nono` subprocesses have zero network). |
+| Queue Ownership  | Owns enqueue/dequeue/retry lifecycle for core tasks.           | Owns enqueue/dequeue/retry for untrusted tasks via the worker loop. |
+| Agent/Graph/LLM  | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                        |
 | Context Egress   | Applies privatization and anonymization gates.                 | Cannot bypass egress policy.                                        |
 | Host Authority   | May emit validated host intents via the Host Reactor contract. | Cannot emit host intents or mutate infrastructure.                  |
-| Arbitrary Code   | Forbidden.                                                     | Allowed only in constrained execution contexts.                     |
+| Arbitrary Code   | Forbidden.                                                     | Allowed only in constrained execution contexts (`nono` sandbox).    |
 | Runtime Mutation | Forbidden.                                                     | Allowed only in disposable/task-scoped areas.                       |
 
 ### 7. Compromise Response
 
-Detection of a Shadow or worker compromise triggers deterministic containment.
+Detection of a Tomb or worker compromise triggers deterministic containment.
 
 Minimum expected actions:
 
@@ -389,8 +406,8 @@ The V1 "Golden Mean" (Shared Pod + Nono + Layer 7 Auth) is deliberately pragmati
 
 However, LychD explicitly acknowledges possible future sovereign security milestones for later versions (V2+):
 
-- **Total Network Separation:** Abandoning the shared `lychd.pod` in favor of strict, isolated Podman networks (`lychd-core`, `lychd-shadow`).
-- **Dedicated Worker API Plane:** Shadow workers communicating with the Vessel purely over a restricted internal API, removing direct database access from the worker completely.
+- **Total Network Separation:** Abandoning the shared `lychd.pod` in favor of strict, isolated Podman networks (`lychd-core`, `lychd-tomb`).
+- **Dedicated Worker API Plane:** Tomb workers communicating with the Vessel purely over a restricted internal API, removing direct database access from the worker completely.
 - **Sovereign Egress Proxy:** Moving the egress routing into a dedicated Vessel service, potentially dropping the reliance on `nono`'s internal Rust proxy in favor of a pure-Python boundary.
 
 These are valid long-term directions. They are **not** immediate prerequisites. The current container boundary combined with `nono` provides sufficient blast-radius containment while the system matures.

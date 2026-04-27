@@ -67,6 +67,9 @@ The **Animator** serves as the metaphysical bridge between the Code and the Mode
     - Time effectively stops for the Agent while the **Orchestrator** performs the heavy lifting of swapping VRAM contents.
 - **The Reanimation:** Once the Orchestrator confirms the new Coven is "Warm," the Dispatcher releases the lock, and the Agent resumes execution as if no time had passed.
 
+!!! note "Agent State vs. VRAM Swap"
+    The Agent's cognitive state (Pydantic AI graph runner, in-flight tool calls) lives in **Vessel process memory**, not inside the VLLM/llama.cpp container. When VLLM restarts, the Vessel continues running and the Agent simply waits for the next LLM response. No serialization to the Phylactery is required for VRAM swaps. Phylactery serialization serves a different concern — **Long Sleep** durability (surviving reboots, multi-day waits for human approval, or deferred A2A results).
+
 The handshake is implemented as a strict adapter contract:
 
 1. **`resolve(animator_name)`** -> resolve provider pair and runtime mode (`single`, `router`, or OpenAI-compatible).
@@ -79,16 +82,16 @@ This keeps Orchestrator, Dispatcher, and Animator code decoupled while preservin
 
 #### Execution Plane Scope (Current Phase)
 
-- **Now (trusted execution):** Model/tool binding and provider calls run in the Vessel control plane.
+- **Now (trusted execution):** Model/tool binding and provider calls run in the Vessel control plane. All agent graph runners, LLM orchestration, and Dispatcher resolution execute exclusively in the Vessel.
 - **Secrets:** Secret-bearing provider credentials remain in trusted units only, per **[Security (09)](09-security.md)**.
-- **Planned Shadow phase:** Untrusted arbitrary execution is delegated to Shadow with no secret mounts and sanitized inputs/outputs only.
+- **The Tomb phase:** Untrusted arbitrary execution is delegated to **The Tomb** via SAQ. The Tomb receives only serialized script payloads (Python code, CLI commands) — never graph state, agent definitions, or LLM credentials. It returns `stdout` only. The full doctrine is defined in **[Workers (14)](14-workers.md)**.
 - **Layout dependency:** This split follows the trust geography in **[Layout (13)](13-layout.md)** and is intentionally phased to avoid partial trust assumptions.
 
 ### 3. The Resolution Algorithm (Matchmaking)
 
 When a reasoning step submits a requirement, the Dispatcher executes a multi-stage resolution:
 
-1. **Candidate Selection:** All physical (Soulstone) and logical (Portal) entities matching the requested provider route are identified.
+1. **Candidate Selection:** All physical (Soulstone) and logical (Portal) Animators declaring an active `Capability` matching the requested type are identified. The canonical capability taxonomy is defined in the **[Animator index](../sepulcher/animator/index.md)**.
 2. **Context Filtering:** **[The Ward (38)](38-iam.md)** verifies the Sigil's scopes. Providers not visible to the user are pruned.
 3. **Privatization Gate:** The context envelope is scored. If target is a Portal and the payload exceeds configured thresholds, raw routing is blocked and anonymization workflow is required.
 4. **Economic Arbitration:** If multiple candidates exist, **[The Toll (41)](41-x402.md)** calculates the cost. It prefers "Free" (Local) over "Paid" (Cloud) unless the ritual is marked `high_fidelity`.
@@ -124,8 +127,10 @@ The Dispatcher rejects intermediate translation protocols (UTCP). It adopts **Py
 The Dispatcher functions as the sole keeper of the **Agent Registry**—a system-wide directory of all manifest minds.
 
 - **The Registry:** An in-memory index mapping agent intents to provider-route policy (`model_provider` and `tool_provider`). Extensions register their agents here during the boot sequence.
-- **The Emissary Pattern:** Remote agents are represented in the registry as **Emissaries**.
-- **The Handover:** When the Dispatcher resolves an intent to an Emissary, it does not execute code. It serializes the Pydantic intent and hands it to the **A2A Intercom (ADR 26)** for external transport. This triggers the **Stasis Protocol**, allowing the local mind to sleep while the remote iron labors.
+- **The Emissary Pattern:** Remote agents are represented in the registry as **Emissaries**. To the local Agent, invoking a remote node is identical to calling a local tool—the domain boundary is invisible at the reasoning layer.
+- **Legion Routing:** If the target node shares the **Master Sigil** (a Thrall), the Dispatcher signs the intent with `INTENT_UPDATE_SYSTEM` authority and transmits it via direct Vessel HTTP. The receiving Thrall validates the Sigil and willingly executes infrastructure-level commands.
+- **Necropolis Routing:** If the target node is a foreign Sovereign, the Dispatcher routes through the **[A2A Intercom (26)](26-a2a.md)** and the **Workload Pool** path, attaching a **[Toll (41)](41-x402.md)** bounty. No infrastructure authority is granted — only the declared task intent.
+- **The Handover:** When the Dispatcher resolves an intent to an Emissary, it does not execute code locally. It serializes the Pydantic intent and manages the transport — direct HTTP for **[Legion (42)](42-legion.md)** Thralls, A2A for Necropolis peers. This triggers the **Stasis Protocol**: the local Agent freezes, VRAM is freed, and the Agent rehydrates when the peer returns the result.
 
 ### 8. Health and Pulse
 
@@ -134,14 +139,14 @@ It pings the assigned provider endpoint (for OpenAI-compatible connectors, typic
 
 ### 9. Portal Egress Gate (Privatization Enforcement)
 
-Before any Portal call:
+Before any intent is dispatched to a Cloud Portal, the volatility of the context payload is evaluated based on the explicit schema-level classification established by the **[Phylactery (06)](06-persistence.md)**.
 
-- Dispatcher evaluates the maximum privatization weight present in outbound context.
-- If weight is below `portal_threshold`, dispatch proceeds.
-- If weight is between `portal_threshold` and `forbidden_threshold`, dispatch requires anonymization and uses only sanitized output.
-- If weight is at or above `forbidden_threshold`, portal dispatch is denied.
-
-Denials are explicit and structured so workflows can fall back to local Soulstones or request Magus approval for sanitization.
+- **Context Weighting:** As data is extracted from the persistence layer, the SQLAlchemy `info={"privatization_weight": X}` tags attached to the ORM models are read. The entire prompt inherits the highest weight present within the payload.
+- **The Egress Policy:**
+    - If the weight is below `portal_threshold` (e.g., public documentation): Dispatch to Cloud Portals is permitted.
+    - If the weight is between `portal_threshold` and `forbidden_threshold`: An Anonymization Ritual (local scrubbing) is required, and only sanitized output is used for the dispatch.
+    - If the weight is at or above `forbidden_threshold` (e.g., internal system passwords, private memory): **Raw portal egress is strictly forbidden.**
+- **The Fallback:** If a Portal route is forbidden, routing is forced to a Local Soulstone (e.g., vLLM), or the request is failed closed. This ensures the Dispatcher acts as an unbypassable firewall against prompt injection exfiltration.
 
 ## Consequences
 

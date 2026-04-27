@@ -11,6 +11,7 @@ icon: material/scale-balance
 ## Requirements
 
 * **The Law of Exclusivity:** Mandatory physical enforcement of the constraint that only one resource-intensive operational state (Coven) may occupy a specific hardware coordinate at any given time.
+* **Exclusive vs Shared Authority:** The Orchestrator must distinguish between **exclusive** Soulstones (fully owned — may kill, swap, restart) and **shared** Soulstones (read-only — may route to, but cannot manage lifecycle). A shared Soulstone is one the Magus also exposes to external services outside LychD.
 * **The Stasis Receiver:** Capability to interpret the `HardwareTransitionRequired` signal from the **[Dispatcher (22)](22-dispatcher.md)** and convert it into a scheduled priority event.
 * **The Tipping Point Algorithm:** Implementation of a weight-based scheduling logic to determine if a requested state change is worth the momentum cost of the current state.
 * **The Graceful Drain:** Mandatory signaling to active **[Ghouls (14)](14-workers.md)** to finish their current atomic step and persist state to the **[Phylactery (06)](06-persistence.md)** before a container is banished.
@@ -70,7 +71,7 @@ When the Tipping Point is reached, the Orchestrator executes a coordinated ritua
 4. **The Transmutation:** The Host Reactor executes `systemctl start [Target Coven]`. Because of the `Conflicts=` directives in the **[Quadlets (08)](08-containers.md)**, Systemd automatically and cleanly kills the old coven before starting the new one.
 5. **The Awakening:** The Orchestrator polls the **[Dispatcher (22)](22-dispatcher.md)** until the new endpoint pulses "Warm." It then unpauses the Ghouls, allowing the "Stasis" tasks to rehydrate on the new hardware.
 
-Snapshot note: this drain/swap ritual protects live work during transitions. Durable state capture and Btrfs/COW snapshot strategy are governed separately by **[Snapshots (07)](07-snapshots.md)**.
+Snapshot note: this drain/swap ritual protects live work during transitions. "Drain" means Ghouls finish their current atomic inference step and stop claiming new jobs — the Agent's cognitive state remains alive in Vessel process memory throughout. Phylactery serialization is reserved for **Long Sleep** scenarios (human approval pending, multi-day waits, or full system reboots). Durable state capture and Btrfs/COW snapshot strategy are governed separately by **[Snapshots (07)](07-snapshots.md)**.
 
 ### 2. Model Tiering and Reservation
 
@@ -82,10 +83,15 @@ To maximize hardware utility, the Orchestrator manages a fluid manifest:
 
 ### 3. Swarm Lease Management
 
-To protect the local Magus from resource exhaustion by the **[Legion (42)](42-swarm.md)**, the Orchestrator implements **Workload Tiering**:
+To protect the local Magus from resource exhaustion by the **[Legion (42)](42-legion.md)**, the Orchestrator implements **Workload Tiering**:
 
-* **The Lease:** Incoming peer requests are granted a temporary hardware lease.
-* **Preemption:** If a local user "Reflex" arrives, the Orchestrator revokes the lease, pauses the associated background worker, and reclaims the GPU. The swarm task is persisted until the local priority subsides.
+- **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
+- **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
+    1. The swarm Ghoul receives `SIG_SOFT_STOP`.
+    2. It completes its current atomic inference step, serializes its `GraphState` to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
+    3. The GPU is reclaimed for the local reflex.
+    4. When the local user is satisfied and the GPU is free, the Orchestrator restores the lease and the swarm Ghoul rehydrates from the serialized state.
+- **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
 
 ### 4. Watchdog and Recovery
 

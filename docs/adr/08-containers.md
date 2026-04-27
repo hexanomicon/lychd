@@ -111,7 +111,7 @@ To resolve the UID permission gap without granting privileged access, the Quadle
 
 The inscription pipeline (via the Scribe service) implements a transactional update ritual to prevent systemic corruption:
 
-- **Shadow Phase:** Quadlets are inscribed into a temporary directory.
+- **Staging Phase:** Quadlets are inscribed into a temporary directory.
 - **Atomic Swap:** Upon successful generation, the Writer performs a rapid cleanup and moves the new files to the active **Binding Site** (`~/.config/containers/systemd/`).
 
 This atomicity covers generated unit manifests only. Durable state snapshots and Btrfs/COW recovery semantics are handled by **[Snapshots (07)](07-snapshots.md)** over the **[Layout (13)](13-layout.md)** persistence regions.
@@ -122,7 +122,9 @@ Physical Quadlets are transmuted from logical **Soulstone rune configs** and pai
 
 ### 10. Security and Trust Boundaries
 
-The container topology acts as the foundational layer for the system's defense-in-depth model. While Quadlets govern the physical resource boundaries (VRAM, CPUs, and mount propagation), the logical authority boundaries—such as the split between the trusted **Vessel** and the semi-trusted **Shadow** execution plane—are governed by strict security policy.
+The container topology acts as the foundational layer for the system's defense-in-depth model. While Quadlets govern the physical resource boundaries (VRAM, CPUs, and mount propagation), the logical authority boundaries—such as the split between the trusted **Vessel** and the semi-trusted **Tomb** execution plane—are governed by strict security policy.
+
+The Tomb container is a **brainless executor**. It runs no agent logic, graph runners, or LLM provider calls. It receives serialized script payloads via SAQ, executes them in the `nono` sandbox, and returns `stdout`. All cognitive labor remains in the Vessel. See **[Workers (14)](14-workers.md)** for the full doctrine.
 
 For the full definition of the Dual-Plane Trust Delta, secret distribution, and the internal `nono` subprocess sandboxing, refer to **[Security (09)](09-security.md)**.
 

@@ -33,7 +33,7 @@ To build for the Lich, the builder must understand the Lich.
 
 Nothing is promoted on a guess. The extension operates exclusively through the **[Creation Workflow](../../adr/16-creation.md)**.
 
-- **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against its creations in the **[Shadow Realm](../../adr/25-hitl.md)**.
+- **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to dispatch verification payloads (`ruff`, `basedpyright`, `pytest`) to the **[Shadow Realm](../../adr/25-hitl.md)** via SAQ for sandboxed execution. The Smith agent itself remains in the Vessel; only raw scripts reach Shadow.
 - **The Loop:** If verification fails, the Smith enters a self-correction loop, debugging its own output until structural validity is achieved (the "White Truth" of passing checks).
 
 ## II. The Cycle of Assimilation

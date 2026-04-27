@@ -99,7 +99,7 @@ The result is a workflow that survives delay, reconfiguration, and interruption 
 
 ## 🕵️ The Censor (Data Hygiene)
 
-When a workflow involves external **[Legion Nodes](../../adr/42-swarm.md)** or **[Portals](../../adr/22-dispatcher.md)**, the Weaver activates the **Censor**.
+When a workflow involves external **[Legion Nodes](../../adr/42-legion.md)** or **[Portals](../../adr/22-dispatcher.md)**, the Weaver activates the **Censor**.
 
 * **Scrubbing:** It scans outgoing artifacts for sensitive patterns defined by the system's security and identity posture.
 * **Anonymization:** It replaces sensitive entities with safe placeholders before they leave the Sepulcher.

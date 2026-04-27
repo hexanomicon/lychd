@@ -92,13 +92,12 @@ If the system *cannot* fix the breakage after ($N$) attempts:
 Evolution follows the same control/unsafe split:
 
 - Vessel owns update orchestration, snapshot gates, migration decisions, and restart intents.
-- Shadow may run unsafe build/test/repair work on speculative branches.
-- Shadow cannot trigger host intents, activate rebuilds, or promote durable state.
-- Only Vessel can consecrate outcomes into system state.
+- **The Tomb** may run unsafe build/test/repair work on speculative branches.
+- **The Tomb** cannot trigger host intents, activate rebuilds, or promote durable state.
 
-### Policy Table
+### 5. Authority Matrix
 
-| Dimension | Vessel (Trusted Evolution Control) | Shadow (Untrusted Evolution Labor) |
+| Dimension | Vessel (Trusted Evolution Control) | The Tomb (Untrusted Evolution Labor) |
 | :--- | :--- | :--- |
 | Secrets | Accesses credentials for fetch, package, and migration workflows. | No long-lived credentials or signing material. |
 | Mounts | Trusted code, lock, and persistence coordination mounts. | Branch/worktree mounts for speculative repair only. |
