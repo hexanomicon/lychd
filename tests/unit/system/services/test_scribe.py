@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lychd.system.schemas import ContainerRune, PodRune, TargetRune
+from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget
 from lychd.system.services.scribe import ScribeService
 
 
@@ -42,9 +42,9 @@ def test_scribe_atomic_inscription(
     mock_which.return_value = "/usr/bin/git"
 
     # Define some runes
-    pod = PodRune(pod_name="lychd")
-    container = ContainerRune(container_name="hermes", image="ollama/ollama", description="desc")
-    target = TargetRune(name="logic", description="Logic Coven")
+    pod = QuadletPod(pod_name="lychd")
+    container = QuadletContainer(container_name="hermes", image="ollama/ollama", description="desc")
+    target = QuadletTarget(name="logic", description="Logic Coven")
 
     # Perform inscription
     scribe.generate_all([pod, container, target])

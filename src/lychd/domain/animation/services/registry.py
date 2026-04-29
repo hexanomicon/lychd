@@ -1,76 +1,119 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
 import structlog
 
-from lychd.domain.animation.schemas import Animator, Portal, Soulstone
+from lychd.config.runes import RuneConfig
+from lychd.domain.animation.animators import Animator
+from lychd.domain.animation.connectors import Connector, ModelConnector
+from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
+from lychd.domain.animation.services.binder import AnimatorBinder
 from lychd.domain.animation.services.loader import AnimatorLoader
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from pydantic_ai.models import Model
+    from pydantic_ai.toolsets import AbstractToolset
+
+    from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
+
+
+type RuntimeAnimator = Animator[Connector, RuneConfig]
+type AnimatorRune = SoulstoneConfig | PortalConfig
+type AnimatorFactory = Callable[[AnimatorRune], RuntimeAnimator | None]
 
 logger = structlog.get_logger()
 
 
 class AnimatorRegistry:
-    """The Memory Bank.
+    """Registry for animation rune configs and resolved runtime animators.
 
-    Holds the live state of all discovered inhabitants (Soulstones and Portals).
-    Acts as the source of truth for the Dispatcher.
+    Stores two distinct layers:
+    - rune declarations (``SoulstoneConfig`` / ``PortalConfig``)
+    - resolved runtime animators (``Animator`` handles with connectors/links)
 
-    Architecture Note:
-    This class employs "Atomic Reference Swapping" for reloading.
-    Reads are lock-free. Writes replace the entire dictionary reference,
-    ensuring that a 'get' operation never sees an empty or partial state.
+    Runtime animator creation is delegated to factories. By default, the registry
+    wires in ``RuntimeAdapterRegistry.runtime_factory`` so built-in Soulstone and
+    portal runtimes resolve without extra setup.
     """
 
-    def __init__(self, loader: AnimatorLoader | None = None) -> None:
-        """Initialize the Registry.
-
-        Args:
-            loader: The Librarian instance. If None, a default one is created.
-
-        """
+    def __init__(
+        self,
+        loader: AnimatorLoader | None = None,
+        *,
+        binder: AnimatorBinder | None = None,
+        runtime_factories: Sequence[AnimatorFactory] | None = None,
+        runtime_adapters: RuntimeAdapterRegistry | None = None,
+        llamacpp_control: LlamaCppControlPlane | None = None,
+    ) -> None:
+        """Initialize loader/binder plus runtime factories and optional llama.cpp control."""
         self._loader = loader or AnimatorLoader()
+        self._binder = binder or AnimatorBinder()
 
-        # Primary Indices (Name -> Entity)
-        self._soulstones: dict[str, Soulstone] = {}
-        self._portals: dict[str, Portal] = {}
+        if runtime_adapters is None:
+            from lychd.domain.animation.services.adapters.registry import (
+                RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
+            )
 
-        # Secondary Indices (Group -> List[Entity])
-        self._groups: dict[str, list[Soulstone]] = {}
+            runtime_adapters = _RuntimeAdapterRegistry()
+        self._runtime_adapters = runtime_adapters
 
-        self._loaded: bool = False
+        if runtime_factories is None:
+            self._runtime_factories: list[AnimatorFactory] = [self._runtime_adapters.runtime_factory]
+        else:
+            self._runtime_factories = list(runtime_factories)
+
+        self._llamacpp_control = llamacpp_control
+
+        self._soulstones: dict[str, SoulstoneConfig] = {}
+        self._portals: dict[str, PortalConfig] = {}
+        self._groups: dict[str, list[SoulstoneConfig]] = {}
+        self._animators: dict[str, RuntimeAnimator] = {}
+        self._loaded = False
+
+    def register_runtime_factory(self, factory: AnimatorFactory) -> None:
+        """Register a runtime animator factory used during `load()`."""
+        self._runtime_factories.append(factory)
+
+    def register_runtime(self, animator: RuntimeAnimator) -> None:
+        """Register/replace a runtime animator handle directly by id."""
+        self._animators[animator.id] = animator
 
     def load(self) -> None:
-        """Perform the Awakening Ritual.
-
-        Reads the Codex via the Loader and populates the in-memory registry.
-        Can be called repeatedly to Hot-Reload configurations safely.
-        """
-        # 1. Load fresh data into isolated scope
-        # (This is the slow IO part, done before touching live state)
+        """Load rune configs and build runtime animators via registered factories."""
         raw_soulstones, raw_portals = self._loader.load_all()
 
-        # 2. Build new indices
-        new_soulstones: dict[str, Soulstone] = {s.name: s for s in raw_soulstones}
-        new_portals: dict[str, Portal] = {p.name: p for p in raw_portals}
-        new_groups: dict[str, list[Soulstone]] = {}
+        new_soulstones = {stone.name: stone for stone in raw_soulstones}
+        new_portals = {portal.name: portal for portal in raw_portals}
+        new_groups: dict[str, list[SoulstoneConfig]] = {}
+        for stone in raw_soulstones:
+            for group in stone.groups:
+                new_groups.setdefault(group, []).append(stone)
 
-        # Build Group Index
-        for s in raw_soulstones:
-            for group in s.groups:
-                if group not in new_groups:
-                    new_groups[group] = []
-                new_groups[group].append(s)
+        new_animators: dict[str, RuntimeAnimator] = {}
+        for rune in [*raw_soulstones, *raw_portals]:
+            resolved = False
+            for factory in self._runtime_factories:
+                runtime = factory(rune)
+                if runtime is None:
+                    continue
+                new_animators[runtime.id] = runtime
+                resolved = True
+                break
+            if not resolved:
+                logger.warning(
+                    "runtime_unresolved",
+                    rune_name=rune.name,
+                    rune_type=type(rune).__name__,
+                )
 
-        # 3. Atomic Swap (The "Gil" Switch)
-        # Replacing the dict reference is atomic in Python.
-        # Readers will either see the old world or the new world, never a partial world.
         self._soulstones = new_soulstones
         self._portals = new_portals
         self._groups = new_groups
+        self._animators = new_animators
         self._loaded = True
 
         logger.info(
@@ -78,41 +121,99 @@ class AnimatorRegistry:
             soulstones=len(self._soulstones),
             portals=len(self._portals),
             groups=list(self._groups.keys()),
+            runtime_animators=len(self._animators),
         )
 
-    def get(self, name: str) -> Animator | None:
-        """Find any inhabitant by name (Polymorphic)."""
+    def ensure_loaded(self) -> None:
         if not self._loaded:
             self.load()
-        # Check Soulstones first (Local power is preferred), then Portals
-        return self._soulstones.get(name) or self._portals.get(name)
-
-    def get_soulstone(self, name: str) -> Soulstone | None:
-        """Find a local Soulstone by name."""
-        if not self._loaded:
-            self.load()
-        return self._soulstones.get(name)
-
-    def get_portal(self, name: str) -> Portal | None:
-        """Find a cloud Portal by name."""
-        if not self._loaded:
-            self.load()
-        return self._portals.get(name)
-
-    def get_group(self, group_name: str) -> Sequence[Soulstone]:
-        """Find all Soulstones belonging to a specific Coven (Group)."""
-        if not self._loaded:
-            self.load()
-        return self._groups.get(group_name, [])
-
-    def list_all(self) -> list[Animator]:
-        """Return all inhabitants."""
-        if not self._loaded:
-            self.load()
-        # Create a new list to avoid leaking internal mutable state
-        return [*self._soulstones.values(), *self._portals.values()]
 
     @property
     def is_loaded(self) -> bool:
-        """Check if the registry has been initialized."""
         return self._loaded
+
+    def get_runtime(self, name: str) -> RuntimeAnimator | None:
+        self.ensure_loaded()
+        return self._animators.get(name)
+
+    def get(self, name: str) -> RuntimeAnimator | None:
+        return self.get_runtime(name)
+
+    def get_soulstone_rune(self, name: str) -> SoulstoneConfig | None:
+        self.ensure_loaded()
+        return self._soulstones.get(name)
+
+    def get_portal_rune(self, name: str) -> PortalConfig | None:
+        self.ensure_loaded()
+        return self._portals.get(name)
+
+    def get_group(self, group_name: str) -> Sequence[SoulstoneConfig]:
+        self.ensure_loaded()
+        return self._groups.get(group_name, [])
+
+    def list_runtime_animators(self) -> list[RuntimeAnimator]:
+        self.ensure_loaded()
+        return list(self._animators.values())
+
+    def list_runes(self) -> list[AnimatorRune]:
+        self.ensure_loaded()
+        return [*self._soulstones.values(), *self._portals.values()]
+
+    def list_models(self, name: str) -> Sequence[ModelInfo]:
+        animator = self.get_runtime(name)
+        if animator is None:
+            return ()
+        connector = animator.connector
+        if not isinstance(connector, ModelConnector):
+            return ()
+        return tuple(connector.list_models())
+
+    def is_ready(self, name: str) -> bool:
+        animator = self.get_runtime(name)
+        if animator is None:
+            return False
+        return animator.connector.link.up
+
+    def bind_model(self, name: str, *, model_id: str | None = None) -> Model | None:
+        animator = self.get_runtime(name)
+        if animator is None:
+            return None
+        return self._binder.bind_model(animator, model_id=model_id)
+
+    def bind_toolsets(self, name: str) -> Sequence[AbstractToolset]:
+        animator = self.get_runtime(name)
+        if animator is None:
+            return ()
+        return self._binder.bind_toolsets(animator)
+
+    def bind_toolset(self, name: str) -> AbstractToolset | None:
+        animator = self.get_runtime(name)
+        if animator is None:
+            return None
+        return self._binder.bind_toolset(animator)
+
+    def prepare(self, name: str) -> RuntimePlan | None:
+        """Return a container runtime plan for a Soulstone rune, if present."""
+        soulstone = self.get_soulstone_rune(name)
+        if soulstone is None:
+            return None
+        return self._runtime_adapters.plan(soulstone)
+
+    def inspect_lifecycle(self, name: str) -> LlamaCppLifecycle | None:
+        """Inspect llama.cpp lifecycle for a runtime animator when applicable."""
+        animator = self.get_runtime(name)
+        if animator is None:
+            return None
+
+        if getattr(animator.connector, "kind", None) != "llamacpp":
+            return None
+
+        control = self._get_llamacpp_control()
+        return control.inspect_animator(animator)
+
+    def _get_llamacpp_control(self) -> LlamaCppControlPlane:
+        if self._llamacpp_control is None:
+            from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
+
+            self._llamacpp_control = LlamaCppControlPlane()
+        return self._llamacpp_control

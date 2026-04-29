@@ -14,7 +14,7 @@ icon: material/creation
 - **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the production substrate but lacks the authority to impact Primary Reality.
 - **The Verification Ritual:** Mandatory success of a formal verification suite (e.g., Unit Testing, Linting, Type Checking) before logic transitions from experiment to reality.
 - **Atomic Promotion:** Transactional migration of code; broken or untested artifacts must be discarded rather than merged.
-- **History Preservation:** Mandatory Git version control from the moment of inception to ensure a permanent audit trail of the system's evolution.
+- **History Preservation:** Mandatory VCS version control (Git/JJ) from the moment of inception to ensure a permanent audit trail of the system's evolution.
 - **Magus Oversight:** Integration with the **Human-in-the-Loop** protocol to ensure that no structural change occurs without the Magus's subjective verification.
 
 ## Considered Options
@@ -24,7 +24,7 @@ icon: material/creation
     - **Cons:** **Systemic Lobotomy.** A single syntax error or indentation mistake by a probabilistic model results in an immediate, unrecoverable crash. The machine kills itself before it can finish the change.
 
 !!! failure "Option 2: Manual Pull-Request Workflow"
-    Forcing the Agent to submit a Git PR that a human must manually merge on the host.
+    Forcing the Agent to submit a VCS PR/Change that a human must manually merge on the host.
     - **Cons:** **Operational Stagnation.** It destroys the "Autonomous" nature of the Daemon. The Lych becomes a glorified "Code Assistant" rather than a sovereign entity capable of self-directed growth.
 
 !!! success "Option 3: The Shadow Realm (Lab -> Test -> Promote)"
@@ -44,7 +44,9 @@ When a Magus or an authorized process initiates a change, the system creates a n
 
 ### 2. Speculation (The Shadow Realm)
 
-The creation labor is performed using a divergent Git branch. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
+The creation labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
+
+Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 
 The agent graph orchestrating the speculation runs in the **Vessel**. Raw execution payloads (code edits, test suites, linter invocations) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
 
@@ -69,7 +71,7 @@ Once a creation is deemed "Stable" (passes all verification) and is consecrated 
 
 In the event of a "Temporal Collision"—where a file in Primary Reality has been modified by the Magus while an Agent was speculating on a change in the **Shadow Realm**:
 
-- **Banishment of the Dream:** The system enforces a "Fail-Fast" merge policy. If a Git merge conflict is detected during the **Promotion Ritual**, the Shadow Timeline is immediately banished.
+- **Banishment of the Dream:** The system enforces a "Fail-Fast" merge policy. If a VCS merge conflict is detected during the **Promotion Ritual**, the Shadow Timeline is immediately banished.
 - **Sovereign Authority:** The machine possesses no authority to overwrite manual changes made by the Magus.
 - **Resynchronization:** The Agent must be re-awakened to the new reality, internalizing the Magus's changes before it is permitted to initiate a new cycle of creation.
 
@@ -77,7 +79,7 @@ In the event of a "Temporal Collision"—where a file in Primary Reality has bee
 
 !!! success "Positive"
     - **Crash Immunity:** Syntax errors are trapped in the Lab, making it physically impossible for an autonomous process to lobotomize the running Daemon.
-    - **Auditability:** Every evolution of the system is a Git commit, allowing the Magus to trace the "Chain of Thought" that led to a specific code change.
+    - **Auditability:** Every evolution of the system is a VCS revision (commit/change), allowing the Magus to trace the "Chain of Thought" that led to a specific code change.
     - **Disciplined Autonomy:** The system handles the labor of debugging and testing, only presenting the Magus with a "Verified Truth."
 
 !!! failure "Negative"

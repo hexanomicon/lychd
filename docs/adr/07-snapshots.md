@@ -10,7 +10,7 @@ icon: material/camera-timer
 
 ## Requirements
 
-- **Atomic Consistency:** A snapshot must represent a synchronized state of the filesystem (Git/Lockfile) and the database (Postgres). Restoring one without the other is strictly forbidden.
+- **Atomic Consistency:** A snapshot must represent a synchronized state of the filesystem (VCS/Lockfile) and the database (Postgres). Restoring one without the other is strictly forbidden.
 - **Federated Coherence:** The strategy must account for the distributed nature of extensions, capturing the exact versions of the Core and all installed organs as a single, unified signature.
 - **Performance and Immediacy:** State capture must be near-instantaneous to minimize system suspension during autonomous creation rituals.
 - **Hybrid Infrastructure Support:** Mandatory utilization of accelerated snapshots on Copy-on-Write (COW) filesystems (e.g., Btrfs) for maximum performance, while maintaining functional fallback compatibility with standard filesystems.
@@ -19,16 +19,16 @@ icon: material/camera-timer
 ## Considered Options
 
 !!! failure "Option 1: Unsynchronized Backups"
-    Running periodic Git commits and independent database dumps.
+    Running periodic VCS snapshots (Git/JJ) and independent database dumps.
 
-    -   **Cons:** **Race Conditions.** There is no guarantee that the code commit matches the database state at that exact second. Restoring a future schema to an older code version leads to immediate systemic failure.
+    -   **Cons:** **Race Conditions.** There is no guarantee that the code state matches the database state at that exact second. Restoring a future schema to an older code version leads to immediate systemic failure.
 
 !!! failure "Option 2: Database-Only Storage"
     Storing code extensions inside the database as binary objects (BLOBs).
 
     -   **Pros:** Simplifies snapshots to a single database operation.
 
-    -   **Cons:** **Tooling Breakage.** This removes the ability to use standard Git tools, linters, and IDEs on extension code, violating the principle of deep integration with the developer's lineage and engineering rigor.
+    -   **Cons:** **Tooling Breakage.** This removes the ability to use standard VCS tools (Git/JJ), linters, and IDEs on extension code, violating the principle of deep integration with the developer's lineage and engineering rigor.
 
 !!! success "Option 3: The Checkpoint Protocol"
     A coordinated signal that freezes execution, locks the code state via a federated manifest, and snapshots the data via an abstracted storage driver.
@@ -47,13 +47,13 @@ A **Hybrid Snapshot Strategy** governed by a **Checkpoint Protocol** is adopted.
 To guarantee consistency during self-modification, the system defines an atomic "Freeze" ritual that must occur before any destructive operation or state capture.
 
 1. **Suspend:** The machine's active task queues are paused, ensuring the database is quiet and no new writes are in flight.
-2. **Lock (The Body Signature):** The system scans the Core and all Extensions. It generates a `lychd.lock` file recording the current **Git Commit Hash** of every active repository within the Federation.
+2. **Lock (The Body Signature):** The system scans the Core and all Extensions. It generates a `lychd.lock` file recording the current **VCS Revision Hash** of every active repository within the Federation.
 3. **Snapshot (The Soul):** The persistent storage driver executes a data backup synchronized with the generation of the lockfile.
 4. **Resume:** Normal operation continues.
 
 ### 2. Logic Persistence: The Federated Manifest
 
-Git is the exclusive mechanism for versioning the Daemon's logic. The `lychd.lock` file acts as the anchor, storing the pointers (hashes) to the specific state of every organ. To restore a snapshot is to read this lockfile and execute a coordinated `git checkout` across the entire Federation to restore the "Body" to its captured state.
+VCS (Git/Jujutsu) is the exclusive mechanism for versioning the Daemon's logic. The `lychd.lock` file acts as the anchor, storing the pointers (hashes) to the specific state of every organ. To restore a snapshot is to read this lockfile and execute a coordinated restoration (e.g., `git checkout` or `jj restore`) across the entire Federation to restore the "Body" to its captured state.
 
 ### 3. Data Persistence: The Storage Interface
 
@@ -79,7 +79,7 @@ When a snapshot is restored, the system enforces a strict alignment check before
 
     - **Infrastructure Intelligence:** By detecting Btrfs and configuring No_COW (`+C`), the system optimizes performance without sacrificing safety.
 
-    - **Verifiable Provenance:** The `lychd.lock` provides a human-readable and machine-verifiable history of the exact composition of the Daemon.
+    -   **Verifiable Provenance:** The `lychd.lock` provides a human-readable and machine-verifiable history of the exact composition of the Daemon, captured via VCS.
 
 !!! failure "Negative"
     - **Workflow Latency:** The Checkpoint Protocol requires a temporary halt of background labor, which may be noticeable during high-throughput rituals.

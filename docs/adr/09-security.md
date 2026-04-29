@@ -268,6 +268,13 @@ This ensures **zero exfiltration** of mounted user files and prevents the untrus
 
 The Tomb does not run agent logic, graph runners, or LLM provider calls. It is a brainless executor. The full doctrine is defined in **[Workers (14)](14-workers.md)**.
 
+!!! warning "The Law of Mounts vs. Identity"
+    Do not confuse Directory Mounts with Process Identity.
+    1. **Mounts (The Wall):** Define *what* folders the container can see. A Read-Write mount allows writing, but a Read-Only mount cannot protect a Writeable workspace from the AI deleting its own temporary files.
+    2. **Identity (The Badge):** The Linux Kernel overrides internal container permissions (`777`) with the Host's permissions the moment a volume is mounted.
+
+    **The Rule:** The **Vessel** runs as Host UID (`keep-id`) to act as the Magus and manage the Crypt. The **Tomb** runs as a lowered UID (`keep-id:uid=1001`) so that even if a host folder is mounted Read-Write, the Kernel will actively block the Tomb from modifying files owned by the Magus. The ID is the failsafe against permissive mounts.
+
 ### 3. Egress Posture (Network Is Authority)
 
 Outbound network is treated as authority, not convenience.

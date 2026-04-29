@@ -60,7 +60,10 @@ def test_initialize_layout_btrfs(
     postgres_dir = crypt_root / "postgres"
     layout = [crypt_root, postgres_dir]
 
-    mock_which.side_effect = lambda x: f"/usr/bin/{x}"
+    def _which(binary: str) -> str:
+        return f"/usr/bin/{binary}"
+
+    mock_which.side_effect = _which
     mock_check_output.return_value = "Filesystem      Type\n/dev/sda1       btrfs"
 
     # We need to mock lychd.system.services.layout.PATH_CRYPT_ROOT and PATH_POSTGRES_DIR

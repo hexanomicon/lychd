@@ -33,6 +33,22 @@ make test N=0                    # Run tests Serially (Better for debugging)
 make test PYTEST_TARGETS="..."   # Targeted file/directory
 ```
 
+### The Ritual of Jujutsu (JJ)
+
+LychD embraces **Jujutsu (jj)** as a first-class alternative to Git. Its "working-copy-as-a-commit" model aligns perfectly with our autopoietic nature, providing implicit checkpointing for both the Magus and the Agents.
+
+```bash
+jj st               # Check the state of the current change
+jj log              # Visualize the revision graph
+jj describe         # Add a name (commit message) to the current intent
+jj new              # Begin a new speculative timeline (branch)
+jj diff             # Inspect the current manifestations
+jj git push         # Synchronize with the external world (Git remotes)
+```
+
+> [!TIP]
+> Conflicts in `jj` are first-class citizens. They do not block your workflow; they are captured as part of the revision graph until you are ready to resolve them. This is the preferred way to handle temporal collisions in the Shadow Realm.
+
 ## Implementation Conventions
 
 - **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.

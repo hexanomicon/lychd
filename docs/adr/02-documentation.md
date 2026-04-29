@@ -3,10 +3,12 @@ title: 2. Documentation
 icon: material/book-cog-outline
 ---
 
-# :material-book-cog-outline: 2. Documentation Engine: MkDocs and Material
+# :material-book-cog-outline: 2. Documentation Engine: Zensical
 
 !!! abstract "Context and Problem Statement"
     LychD is a complex system combining ancient lore with modern engineering. The documentation must be as immersive as it is technical.
+
+    Initially, MkDocs with the Material theme was chosen. However, due to ecosystem instability and leadership challenges in the MkDocs project, the decision was made to migrate to **Zensical**, the high-performance successor developed by the Material for MkDocs team.
 
     Furthermore, a core tenet of LychD is **[eXtreme Documentation Driven Development](01-doctrine.md)**, where the documentation serves as the "[Incantation](../divination/transcendence/incantation.md)" that the code must fulfill. The doctrine also leaves room for later stages in which the Agent reads, writes, and maintains documentation as part of the same disciplined loop.
 
@@ -32,21 +34,24 @@ icon: material/book-cog-outline
     - **Pros:** Zero setup.
     - **Cons:** No version control alongside code. Hard to theme.
 
-!!! success "Option 3: MkDocs with Material Theme"
-    A static site generator using Markdown.
+!!! success "Option 3: Zensical"
+    A modern, high-performance static site generator designed as the successor to MkDocs/Material.
 
     - **Pros:**
-        - **Markdown Native:** LLMs speak Markdown fluently. This is critical for future [Autopoiesis](../divination/transcendence/immortality.md).
-        - **Material Theme:** Providing a polished, modern, and responsive UI out of the box.
-        - **Extensibility:** `pymdownx` extensions allow for rich content (admonitions, code blocks) without breaking standard Markdown compatibility.
-    - **Cons:** Less "automatic" API documentation generation compared to Sphinx (though `mkdocstrings` mitigates this). This trade-off for superior narrative capabilities is accepted.
+        - **Successor Doctrine:** Built by the Material for MkDocs team to address the long-term sustainability of the ecosystem.
+        - **Rust Core:** Extreme build speeds and scalability.
+        - **Native Material support:** Built-in high-fidelity theme features.
+        - **Markdown Native:** Maintains the [Autopoiesis](../divination/transcendence/immortality.md) compatibility.
+    - **Cons:** Younger ecosystem compared to MkDocs, but backed by the same core maintainers.
 
 ## Decision Outcome
 
-**MkDocs with Material Theme** is selected as the engine for **[The Hexanomicon](https://hexanomicon.github.io/lychd/).**
+**Zensical** is selected as the engine for **[The Hexanomicon](https://hexanomicon.github.io/lychd/).**
 
 ### Implementation Details
 
+- **Engine:** `zensical` (replacing `mkdocs`).
+- **Configuration:** Managed via `zensical.toml`.
 - **Theme:** `material` (Scheme: Slate/Dark Mode) to match the "Lich" aesthetic.
 - **Structure:** Documentation lives in `docs/` and is deployed to GitHub Pages.
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").

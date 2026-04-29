@@ -71,9 +71,6 @@ class MissingDependencyError(ApplicationError, ImportError): ...
 class HealthCheckConfigurationError(ApplicationError): ...
 
 
-# PRUNED: Removed AuthorizationError and ApplicationClientError as they are user-centric.
-
-
 class _HTTPConflictException(HTTPException):
     """Request conflict with the current state of the target resource."""
 
@@ -99,11 +96,9 @@ def exception_to_http_response(
         http_exc = NotFoundException
     elif isinstance(exc, ConflictError | RepositoryError | IntegrityError):
         http_exc = _HTTPConflictException
-    # PRUNED: The check for AuthorizationError has been removed.
     else:
         http_exc = InternalServerException
 
-    # PRUNED: AuthorizationError removed from the debug check.
     if request.app.debug and http_exc not in (NotFoundException,):
         return cast("Response[Any]", create_debug_response(request, exc))
 

@@ -30,6 +30,11 @@ Volume={{ vol }}
 Environment={{ key }}={{ value }}
 {% endfor %}
 
+# Podman Secrets
+{% for secret in secrets %}
+Secret={{ secret }}
+{% endfor %}
+
 # Command / Entrypoint
 {% if exec %}
 Exec={{ exec }}

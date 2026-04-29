@@ -34,6 +34,10 @@ dependencies = [
 Homepage = "https://github.com/hexanomicon/lychd"
 Issues = "https://github.com/hexanomicon/lychd/issues"
 
+[tool.uv.sources]
+httpx = { url = "https://codeberg.org/httpxyz/httpxyz/archive/main.tar.gz" }
+# HTTPX maintainer is unstable
+
 [dependency-groups]
 server = [
     "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0",
@@ -44,8 +48,7 @@ server = [
     "asyncpg>=0.29.0",
 ]
 docs = [
-    "mkdocs-material>=9.7.0",
-    "mkdocs-awesome-pages-plugin"
+    "zensical"
 ]
 test = [
   "pytest",
