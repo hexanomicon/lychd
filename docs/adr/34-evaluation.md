@@ -62,7 +62,7 @@ For technical riddles, the system rejects textual evaluation in favor of **Execu
 
 - **The Simulation:** The model’s response is intercepted by the DeepFabric execution harness. Instead of using default lightweight sandboxes (e.g., Spin), DeepFabric is configured to route physical tool execution trials directly into the **[Shadow Realm (31)](31-simulation.md)** containers.
 - **The Outcome:** The model’s score is derived from actual execution metrics (`execution_success_rate`, `tool_selection_accuracy`) gathered from the Shadow Realm's unit tests and environment stability after the change.
-- **Truth over Monologue:** A model that produces beautiful but broken code is penalized by the Evaluator; a model that produces concise, functional code is rewarded.
+- **Truth over Monologue:** A model that produces beautiful but broken code is penalized by the Evaluator; a model that produces concise, functional code is rewarded. This is the endgame of optimization: **Stillness**. An enlightened network makes a targeted, clean cut (Buddhi) without wandering into an "LSD-brain" of endless Vrittis.
 
 ### IV. The Evaluator Harness (DeepFabric)
 

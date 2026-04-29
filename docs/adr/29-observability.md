@@ -11,7 +11,7 @@ icon: material/telescope
 ## Requirements
 
 - **Extension Sovereignty:** Implementation as a pluggable module; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run, capturing tool arguments, validation retries, and the raw "Whispers" exchanged with providers.
+- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture the active fluctuations (**Vrittis**) of the network, including tool arguments, validation retries, and the raw "Whispers" exchanged with providers.
 - **Dual-Layer Scrying:** Separation of concerns into the "Mind" (Agent reasoning traces) and the "Body" (Host hardware and container status).
 - **Physical Integration:** Mirroring of critical hardware metrics (GPU memory pressure) into the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to inform scheduling decisions.
 - **Privacy Enforcement:** Integration with the global `LYCHD_SECURE_MODE` to redact sensitive prompt and completion content from telemetry before it leaves the application memory.

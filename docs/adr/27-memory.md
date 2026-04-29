@@ -51,7 +51,7 @@ icon: material/brain
 
 **Pgvector** is adopted as the definitive storage engine, utilizing the **Memori** framework as the underlying "Memory Fabric." The system adopts Memori’s schema and asynchronous augmentation logic while maintaining absolute control over the execution lifecycle via the LychD Orchestrator.
 
-Memory is treated as sedimented experience rather than mere storage. The Archive preserves stabilized outcomes, extracted facts, and reinforced traces as layered imprints whose salience changes over time.
+Memory is treated as sedimented experience rather than mere storage. In cognitive topology, the entirety of the language space and the algorithm of selection/generation functions as the **Chitta** (the conditioned field or "chattering engine"). The database (`pgvector`) is only the physical substrate of this Chitta. The specific vectors, extracted facts, and reinforced traces stored within it are the **Smritis** (recollections). The Archive preserves these stabilized outcomes as layered imprints whose salience changes over time.
 
 ### 0. Build-vs-Buy Posture (Glue, Not Surrender)
 

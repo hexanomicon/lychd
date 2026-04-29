@@ -9,7 +9,7 @@ icon: material/state-machine
 
 **The Weaver** is the Workflow Extension of the LychD system. It is the implementation of **[ADR 28 (Workflow)](../../adr/28-workflow.md)**—the executive function that governs stateful, multi-step reasoning.
 
-While the **[Graph](../../adr/24-graph.md)** provides topology (nodes and edges), the Weaver provides **tempo, sequencing, preparation, and execution planning**. It governs movement between steps, coordinates the **[Long Sleep](../../adr/22-dispatcher.md)** during hardware or execution-plane transitions, and ensures each step is hydrated with the correct context and constraints.
+While the **[Graph](../../adr/24-graph.md)** provides topology (nodes and edges), the Weaver provides **Dianoia** (logical structure) alongside **tempo, sequencing, preparation, and execution planning**. Because of **Computational Irreducibility** (the Halting Problem), an agent cannot predict the outcome of an infinite loop; it must step through the logic sequentially using "LLM as a judge." The Weaver orchestrates this rhythm, governing movement between steps, coordinating the **[Long Sleep](../../adr/22-dispatcher.md)** during hardware or execution-plane transitions, and ensuring each step is hydrated with the correct context and constraints.
 
 The Weaver prepares and synchronizes the field of cognition. It does not determine truth, identity, or final promotion. Evaluation, consent, and durable authority remain separate responsibilities.
 

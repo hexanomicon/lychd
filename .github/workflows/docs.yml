@@ -6,13 +6,19 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/checkout@v5
 
       # 1. Install uv (The Tool Manager)
       - name: Install uv
@@ -26,6 +32,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --only-group docs
 
-      # 4. Deploy using uv to run mkdocs
+      # 4. Build site using uv to run zensical
+      - name: Build site
+        run: uv run zensical build --clean
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
       - name: Deploy to GitHub Pages
-        run: uv run mkdocs gh-deploy --force
+        id: deployment
+        uses: actions/deploy-pages@v4

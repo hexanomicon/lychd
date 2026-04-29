@@ -52,6 +52,29 @@ This Covenant is absolute and eternal.
 - **Dual-licensing is explicitly rejected.** LychD is not a commodity for sale.
 - **Contributor License Agreements (CLAs) are forbidden.** The work of contributors remains their own.
 
+## The Boundary of the Pact: Soul vs. Mind
+
+To prevent "Licensing Fright" among practitioners and to ensure the Necropolis (A2A network) remains a space of trust, the following boundaries are explicitly defined:
+
+!!! tip "The Poison Pill and the Gift"
+    The AGPLv3 is a **poison pill for the corporate overlords** who would seek to strip-mine the project for proprietary gain. For the **common practitioner**, it is a gift—a guarantee that the engine they rely on will never be taken from them.
+
+### 1. The Program vs. The Data (Mind vs. Soul)
+
+- **The Mind (AGPLv3):** The logic of the Vessel, the Ghouls, and the Animators. If you modify this code and provide it over a network, you must share the source.
+- **The Soul (Private):** The contents of your **Phylactery** (Postgres data, RAG documents, memories), your **LoRA weights**, your **Secrets** (API keys), and your **System Prompts** (when stored as data) are NOT "derivative works" of the program. They are your sovereign property.
+
+### 2. Interface vs. Modification (Protocol Sovereignty)
+
+The **A2A Intercom** is a protocol boundary.
+
+- **The Covenant:** Interacting with a LychD node via A2A or its REST API does not trigger the "copyleft" requirement for the caller.
+- **Proprietary Agents:** If you wish to maintain a proprietary "Secret Sauce" agent, do not graft it into the core LychD source code. Instead, build it as a separate process (a **Thrall**) that interfaces with LychD via the API. This preserves your intellectual property while allowing you to benefit from the open engine.
+
+### 3. Network Safety
+
+The "Iron Pact" is the **Institutional Trust** of the Necropolis. By requiring that all modified nodes share their source, we ensure that no peer can run a "Dark Lich"—a modified, malicious version of the intelligence that remains hidden from the community. Transparency is the only way to build a decentralized network of strangers.
+
 ### Consequences
 
 !!! success "Positive"
@@ -61,3 +84,5 @@ This Covenant is absolute and eternal.
 
 !!! failure "Negative"
     - **Exclusion of the Uninitiated:** Large organizations, driven by legal uncertainty regarding the AGPL, forbid its use. This exclusion is accepted as a necessary sacrifice to preserve the project's integrity.
+
+***

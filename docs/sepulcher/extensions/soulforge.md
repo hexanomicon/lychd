@@ -20,7 +20,7 @@ Karma injection and Soulforging are different layers of adaptation:
 
 Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on raw noise; it trains on **Karma**—the crystallized residue of verified successes.
 
-- **The Extraction:** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**.
+- **The Extraction (The Crucible):** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**. This extraction process acts as a **Crucible**, taking human feedback from **[HitL](../../adr/25-hitl.md)** that validated **Shadow** simulations, and forging it into permanent biases for the **Mirror** (Identity).
 - **The DeepFabric Loom:** Raw Karma is fed into the `deepfabric` engine. DeepFabric acts as the loom, weaving the "White Truths" into a perfectly structured training manifest (JSONL) stored in the **[Lab](../crypt.md)**. It applies strict constraints to ensure that only syntactically perfect, stabilized patterns are sent to the hammer of Unsloth.
 
 ## II. The Loom of DeepFabric

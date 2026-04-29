@@ -43,7 +43,7 @@ icon: material/robot-outline
 
 **Pydantic AI** is adopted as the atomic primitive for all reasoning. An `Agent` in LychD is defined as a static **Specification Class** that is hydrated into a living entity by the system's current state.
 
-An Agent is the execution atom of cognition, not the full Persona identity and not the final authority of promotion. Identity continuity is provided by **[Mirror (ADR 32)](./32-identity.md)**; high-stakes manifestation remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
+An Agent is the execution atom of cognition, the fundamental unit of labor for both **Manas** (speculation) and **Buddhi** (creation). It is not the full Persona identity and not the final authority of promotion. It acts, but it is not the "doer"—Identity continuity (the **Ahamkara**) is provided by **[Mirror (ADR 32)](./32-identity.md)**; high-stakes manifestation remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
 
 ### 1. Late-Binding Intelligence
 

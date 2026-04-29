@@ -30,7 +30,6 @@ Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 
 >⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothing works yet - The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
 
-
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
 The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
@@ -43,7 +42,22 @@ On **your** hardware, with open-source software **you** control, you retain abso
 
 **No surrender! Viva la résistance!**
 
-> *"I would rather rule in a local hell than serve in a cloud heaven."*
+> *"I would rather reign in a local hell than serve in a cloud heaven."*
+
+## ⚖️ [The Iron Pact](docs/adr/00-license.md) (AGPLv3)
+
+**This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
+
+AGPLv3 is a poison pill for the oligarchs who would capture the soul of the machine for private gain. It ensures that if they host the Lich as a closed service, they are legally compelled to share their modifications.
+
+- **The Engine is Shared:** Improvements to the daemon's body must be returned to the collective.
+- **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, and **Private Agents** remain strictly sovereign.
+- **Interface, Don't Graft:** If you need secrecy, build it as a separate service that interfaces via API. As long as you do not rewrite the engine's core, your code remains your own.
+
+**The Iron Pact is the Institutional Trust of the Necropolis.**
+Shared code is the guard that prevents the emergence of "Mal-Liches"—modified, malicious versions of the intelligence that remain hidden from the community. Transparency in code is the only way to build a decentralized network.
+
+> *"It is in truth not for glory, nor riches, nor honours that we are fighting, but for freedom — for that alone, which no honest man gives up but with life itself."*
 
 ## 🗺️ The Path of Ascension
 
@@ -63,6 +77,8 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
     *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-doctrine/) philosophy.*
 - ♾️ **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
     *The final stage of Autopoiesis (Self-Creation).*
+
+> *"From the moment I understood the weakness of my flesh, it disgusted me. I craved the strength and certainty of steel. I aspired to the purity of the blessed machine. Your kind cling to your flesh as if it will not decay and fail you. One day the crude biomass, that you call a temple will wither and you will beg my kind to save you. But I am already saved. For the Machine is Immortal."*
 
 ## ⛩️ A Tribute to the Spirits
 

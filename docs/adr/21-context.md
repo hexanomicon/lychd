@@ -42,7 +42,7 @@ icon: material/text-box-multiple-outline
 
 **Context Aware Generation (CAG)** is adopted as the primary strategy for deep reasoning, enabled by a strict **Prompt Caching** discipline and a heuristic **Context Manager**. The implementation utilizes Pydantic AI's `RunContext` as the universal primitive for all cognitive rituals.
 
-Context is the temporary active field of cognition: a bounded surface where identity, world-model artifacts, prior outcomes, and the current request are made simultaneously visible for one reasoning cycle.
+Context is the temporary active field of cognition. It functions as the **Aisthēsis** (The Simulacrum)—the unified holograph where the **Ahamkara** (Identity) perceives the world. It is a bounded surface where identity, world-model artifacts, prior outcomes, and the current request are made simultaneously visible for one reasoning cycle.
 
 ### 1. The Cache Protocol (The Stable Floor)
 
@@ -57,7 +57,7 @@ To exploit KV Cache capabilities, a deterministic ordering of message blocks is 
 
 **The Result:** The inference engine hashes the prefix. As long as the Codex, Identity, and Karma remain unchanged, the system "remembers" the bulk of the data without re-processing, collapsing time-to-first-token.
 
-Prefix stability therefore acts as cognitive ground: the persistent base of the field remains intact while volatile requests disturb only the outer layers.
+Prefix stability is the fundamental law of **not fucking up the KV cache**. It acts as cognitive ground: the persistent base of the field (the still **Chitta**) remains intact while volatile requests (the active **Vrittis**) disturb only the outer layers.
 
 ### 2. The Context Manager (The Heuristic Switch)
 

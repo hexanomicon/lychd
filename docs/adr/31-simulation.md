@@ -49,7 +49,7 @@ Shadow is the cognitive fluctuation engine, not the identity authority. It gener
 
 ### 1. The Phantasma Expansion (MCTS Topology)
 
-The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
+The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. This is the application of **Phantasma** (Generative Imagination)—the engine of **Manas** actively generating **Vrittis** to navigate the **Possibility Space** without making permanent changes to reality. When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
 - **The Seed:** The intent is processed into $N$ divergent strategies.
 - **The Branching:** For each strategy, the system creates a **Git Worktree** in a dedicated `shadow/` region of the **[Lab (13)](13-layout.md)**. Unlike simple directory copies, Worktrees share the same `.git` metadata but allow parallel, independent file states on the same physical disk. Each branch workspace is isolated in its own subdirectory to prevent file collisions between concurrent Ghouls.
@@ -104,7 +104,7 @@ $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 
 ### 5. Transactional Convergence (The Collapse)
 
-Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality:
+Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** (the convergent blade):
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
 - **The Consecration:** Upon approval, the "Wavefunction Collapses." The Shadow Realm is merged into the Primary Reality of the **[Crypt (13)](13-layout.md)**.

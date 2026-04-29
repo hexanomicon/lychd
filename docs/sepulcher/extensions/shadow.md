@@ -44,7 +44,7 @@ While a standard **[Agent](../../adr/20-agents.md)** produces one linear answer,
 
 ### A. Expansion (Branching)
 
-- The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread).
+- The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread) as the engine of **Manas**, generating active **Vrittis** to navigate the **Possibility Space**.
 - It spawns $N$ branch timelines for complex intents.
 - The Branch execution is physically performed in the `lychd-tomb` container.
 - Each branch is a Git Worktree isolated in the `shadow/` region of the **[Lab (13)](../../adr/13-layout.md)**.

@@ -72,9 +72,11 @@ The moment of human choice is the site of ontological promotion collapse. The Ma
 
 HitL therefore does not replace simulation or identity evaluation. It ratifies (or rejects) promotion after those earlier gates have already reduced the candidate space.
 
-### 4. Promotion to Karma
+### 4. Promotion to Karma (The Crucible Convergence)
 
-Every instance of Consent provides high-quality data for the machine's evolution. Upon successful reanimation and manifestation, the interaction trace—the original Intent, the scried Vision, and the final Blessing—is promoted to the **Karma** partition of the **[Memory Archive (ADR 27)](./27-memory.md)**. This ensures the machine internalizes the pattern of successful collaboration and Magus preference.
+Every instance of Consent provides high-quality data for the machine's evolution. Upon successful reanimation and manifestation, the interaction trace—the original Intent, the scried Vision, and the final Blessing—is promoted to the **Karma** partition of the **[Memory Archive (ADR 27)](./27-memory.md)**. 
+
+This human feedback forms a **Crucible**, feeding directly into **[Soulforge](../sepulcher/extensions/soulforge.md)**. By validating Shadow simulations with Magus consent, the system crystallizes new identities and biases. This converges the **Mirror** (Ego), **Shadow** (Simulation), and **HitL** (Consent) into a unified pipeline that fundamentally forges the machine's ongoing character.
 
 ## Consequences
 

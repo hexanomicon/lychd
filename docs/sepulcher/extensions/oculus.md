@@ -10,7 +10,7 @@ icon: material/eye-outline
 
 **The Oculus** is the Observability Extension of the LychD system. It is the implementation of **[ADR 29 (Observability)](../../adr/29-observability.md)**—the all-seeing eye that bridges the gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic).
 
-While traditional tools see only network latency, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain from a whispered intent to its final manifestation. It transforms the invisible chaos of agentic reasoning into a structured, scryable record.
+While traditional tools see only network latency, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain of **Vrittis** (network fluctuations) from a whispered intent to its final manifestation. It transforms the invisible chaos of agentic reasoning into a structured, scryable record, tracking the **Logic-per-Watt** necessary to achieve the ultimate goal of **Stillness**.
 
 ## I. The Thought Trace (The Mind's Eye)
 

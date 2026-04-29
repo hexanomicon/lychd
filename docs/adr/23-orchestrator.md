@@ -50,7 +50,7 @@ icon: material/scale-balance
 
 ### 1. The Tipping Point (Whim Algorithm)
 
-Decisions regarding hardware state transitions are not binary; they are calculated using a priority-weighting algorithm called **The Whim**. Critically, this algorithm respects the **Discipline** of the active Soulstone.
+Decisions regarding hardware state transitions are not binary; they are calculated using a priority-weighting algorithm called **The Whim**. This algorithm governs the transition from **Manas** (divergent exploration) to **Buddhi** (convergent logic). It enforces **Stillness** (metabolic discipline) to prevent the VRAM thrashing that occurs during uncontrolled parallel branching (excessive *Vrittis*). Critically, this algorithm respects the **Discipline** of the active Soulstone.
 
 * **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
 * **Inertia Bias:** A configurable constant used to prevent thrashing.
