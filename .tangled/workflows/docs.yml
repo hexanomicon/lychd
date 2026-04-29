@@ -13,5 +13,26 @@ steps:
   - name: "Build Zensical Site"
     command: "zensical build"
 
-  - name: "Deploy to Pages"
-    command: "tangled-deploy --dir ./site --branch pages"
+  - name: deploy to tangled
+    command: |
+      # 1. Setup Git Identity for the Spindle
+      git config --global user.name "Spindle Builder"
+      git config --global user.email "spindle@tangled.sh"
+
+      # 2. Extract the build (Zensical usually outputs to 'site' or 'public')
+      # We move it to a safe place before switching branches
+      mkdir -p /tmp/site_build
+      cp -r ./site/* /tmp/site_build/
+
+      # 3. Force-switch to the pages branch (creating it if necessary)
+      git checkout -B pages
+
+      # 4. Replace everything in the branch with the new build
+      rm -rf ./*
+      cp -r /tmp/site_build/* ./
+
+      # 5. Manifest and Push
+      git add .
+      git commit -m "ritual: automatic manifest of hexanomicon"
+      # 'origin' inside a Spindle usually points back to your repo
+      git push origin pages --force
