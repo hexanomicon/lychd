@@ -12,7 +12,7 @@ hide:
     The Hexanomicon
   </h1>
   <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.1em; color: #a0a0b0; letter-spacing: 1px;">
-    Chronicles of the Lich
+    The Voidwalker’s Guide Across the Infinite Naught
   </p>
   <p style="margin-top: 20px;">
     <em>無限の彼方、虚無の深淵</em>

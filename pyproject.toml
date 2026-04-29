@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
 ]
-requires-python = ">=3.12, <3.14"
+requires-python = ">=3.12, <3.15"
 license = { text = "AGPL-3.0-or-later" }
 keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai", "quadlet", "ai"]
 classifiers = [
@@ -36,7 +36,7 @@ Issues = "https://github.com/hexanomicon/lychd/issues"
 
 [tool.uv.sources]
 httpx = { url = "https://codeberg.org/httpxyz/httpxyz/archive/main.tar.gz" }
-# HTTPX maintainer is unstable
+# HTTPX maintainer is unstable and a supply chain risk
 
 [dependency-groups]
 server = [

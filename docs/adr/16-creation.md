@@ -42,15 +42,21 @@ When a Magus or an authorized process initiates a change, the system creates a n
 - **Freedom:** This directory is the site of conception. The process can break things here, install experimental dependencies, and generate files without affecting the active Daemon.
 - **Context:** The process is provided with the current state of the Core and the **[lychd.lock (07)](07-snapshots.md)** to ensure the new creation is compliant with the system's existing laws.
 
-### 2. Speculation (The Shadow Realm)
+### 2. Speculation (The Shadow Realm / Manas)
 
-The creation labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
+The initial labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. It is the domain of **Manas** (the divergent router), where the machine is permitted to generate "Vrittis" (fluctuations and parallel branches) to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
 
 Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 
 The agent graph orchestrating the speculation runs in the **Vessel**. Raw execution payloads (code edits, test suites, linter invocations) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
 
-### 3. Verification (The Rite of Albedo)
+### 3. Creation (The Sequential Deep-Dive / Buddhi)
+
+Once a valid path is found in the Shadow Realm, the machine must transition from exploration to execution. This is the domain of **Buddhi** (the convergent intelligence). 
+
+When writing core logic with causal dependencies, the agent must operate in a **Single-Threaded, Deep Sequential** mode. Massive parallelism here is a "hallucination trap." Because of **Computational Irreducibility**, the agent cannot predict the end state of a complex logical loop; it must walk the path step-by-step. By enforcing **Stillness** (Metabolic Discipline) during the actual creation phase, the system maximizes logic-per-watt and prevents the introduction of recursive errors.
+
+### 4. Verification (The Rite of Albedo)
 
 Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 
@@ -59,7 +65,7 @@ Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 - **The Verdict:** If the tests fail, the process must iterate within the Lab. No human intervention is requested for technical errors; the machine must solve its own syntax.
 - **Migration Isolation:** Verification rituals must utilize a transient, ephemeral database instance. The creator of the new logic must prove that all new relational models and migrations are valid against this empty shell before the logic is ever promoted to the Primary **[Phylactery](../sepulcher/phylactery/index.md)**.
 
-### 4. Promotion (The Rite of Passage)
+### 5. Promotion (The Rite of Passage)
 
 Once a creation is deemed "Stable" (passes all verification) and is consecrated by the Magus via **[Consent](25-hitl.md)**, it undergoes **[Assimilation](./35-assimilation.md)**.
 
@@ -67,7 +73,7 @@ Once a creation is deemed "Stable" (passes all verification) and is consecrated 
 2. **The Move:** The directory is moved from the **Lab** (Read-Write) to the **Crypt** (Read-Only).
 3. **The Rebirth:** The system signals a **[Packaging (17)](17-packaging.md)** ritual to forge the new physical body.
 
-### 5. Conflict Sovereignty (The Magus Always Wins)
+### 6. Conflict Sovereignty (The Magus Always Wins)
 
 In the event of a "Temporal Collision"—where a file in Primary Reality has been modified by the Magus while an Agent was speculating on a change in the **Shadow Realm**:
 

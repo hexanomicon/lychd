@@ -41,9 +41,9 @@ icon: material/drama-masks
 
 ## Decision Outcome
 
-**The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
+**The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" (**Ahamkara**) that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
 
-Mirror is not the primary thinking engine. It is the identity coherence layer that preserves continuity, binds outputs into a consistent narrative, tags ownership, injects priors, and stabilizes character across time.
+In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this "I-Maker" (Ahamkara). It is not the primary thinking engine, but the identity coherence layer that binds actions to an actor, preserving continuity, tagging ownership, and stabilizing character across time so the system does not dissolve into the infinite Possibility Space.
 
 What operators may poetically call a "machine-spirit" is, in LychD, this engineered continuity layer plus Sigil-scoped memory and prior hydration. It is deliberate software architecture, not mystified agency.
 

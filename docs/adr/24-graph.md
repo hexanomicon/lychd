@@ -62,19 +62,20 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 
-The architecture treats the mind as a multi-threaded organism:
+The architecture treats the mind as a multi-threaded organism, where graph traversals represent active fluctuations (**Vrittis**):
 
 - **Broadcasting:** Identical data is sent to multiple steps simultaneously (e.g., requesting three different **[Personas (ADR 32)](./32-identity.md)** to critique a single plan).
-- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing modifications of the task state.
+- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing Vrittis traversing the state space.
 - **Joins and Reducers:** Parallel results are synchronized using `g.join` nodes and `ReducerFunctions` to synthesize a single "White Truth." Join points perform determinative synthesis over competing paths.
-- **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the cortex utilizes **`ReduceFirstValue`**. Upon the discovery of a "White Truth" by the first successful parallel branch, the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning ritual ensures that VRAM is reclaimed and cognitive energy is focused exclusively on the winning timeline, preventing the machine from lingering on redundant solutions. In practice, `ReduceFirstValue` is decisive cognition expressed as graph topology.
+- **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the cortex utilizes **`ReduceFirstValue`**. This mechanism acts as the trigger for **Buddhi** taking over from **Manas**. Upon the discovery of a "White Truth" by the first successful parallel branch, the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning ritual ensures that VRAM is reclaimed and cognitive energy is focused exclusively on the winning timeline, preventing the machine from lingering on redundant solutions. In practice, `ReduceFirstValue` is the decisive convergent cut expressed as graph topology.
 
-### 4. Deterministic Routing
+### 4. Deterministic Routing & The Halting Problem
 
 Routing through the cortex is type-safe and non-probabilistic:
 
 - **`g.decision()`:** Specialized nodes evaluate data against a set of branches.
 - **Pattern Matching:** Branches utilize `g.match()` to route intent based on Type, Literal values, or custom predicates.
+- **The Halting Problem:** An agent trapped in an unguided `while True` loop cannot predict its own outcome. To prevent infinite cognitive loops (Samsara), routing decisions frequently employ an "LLM as a judge." This ensures that a convergent, qualitative evaluation breaks the cycle, forcing the process toward resolution.
 
 Topology is cognition without ownership: the graph determines process flow, while identity and promotion authority are handled elsewhere.
 

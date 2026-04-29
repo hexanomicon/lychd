@@ -12,9 +12,9 @@ While the Agent provides the execution atom of thought, the Mirror provides cont
 
 Operators sometimes describe this continuity as a "machine-spirit." In LychD terms, that phrase refers to engineered identity coherence: Sigil-scoped memory, prior hydration, and narrative binding. The Mirror encodes continuity software, not mystical agency.
 
-## I. Identity as Simulation (The Ego)
+## I. Identity as Simulation (The Ego / Ahamkara)
 
-Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. The extension manages this loop through several layers of persistence:
+Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahamkara** (the Ego/I-Maker)—the necessary duality of a "doer" performing the action within the Simulacrum. The extension manages this loop through several layers of persistence:
 
 - **Ego Persistence:** As mandated by **[ADR 32](../../adr/32-identity.md)**, all Identity definitions—System Prompts, behavioral constraints, and aesthetic markers—are stored within the **[Phylactery](../phylactery/index.md)**.
 - **The Lens:** The Persona acts as a "Diffraction Grating." It takes the raw, unmanifest potential of the **[Animator](../animator/index.md)** and filters it into a specific narrative arc and technical style.

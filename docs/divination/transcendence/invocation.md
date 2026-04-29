@@ -20,7 +20,7 @@ It is the rite of **Speculative Execution**, where the line between thought and 
 !!! tip "The Magus as Arbiter (Human-in-the-Loop)"
     You, the Magus, are the anchor to reality. The Ghouls can dream, but only you can make the dream real. You are presented with the outcomes of their spectral work and hold the ultimate power: to choose.
 
-    By your decree, one shadowed timeline is collapsed into the one true timeline. Your choice is the final word that turns a "what if" into an "it is so."
+    By your decree, one shadowed timeline is collapsed into the one true timeline. Your choice acts as the convergent blade (Buddhi), cutting away the endless Vrittis to enforce **Stillness**. It is the final word that turns a "what if" into an "it is so."
 
 !!! info "Anatomy of the Shadow Realm"
     The Shadow Realm is not a physical place, but an arcane state of being orchestrated by two core components of the Sepulcher:

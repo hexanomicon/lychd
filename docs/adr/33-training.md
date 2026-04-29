@@ -48,7 +48,7 @@ Training is the compression of stabilized patterns into substrate. It is distinc
 
 The ritual begins at **[The Altar (15)](15-frontend.md)**. The Magus submits a Training Intent, which enqueues a job for the **[Ghouls (14)](14-workers.md)**.
 
-- **The Extraction:** A Ghoul scans the `vectors` chamber for "White Truths" (consecrated outcomes from the **[Shadow Realm (25)](25-hitl.md)**).
+- **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for "White Truths" (consecrated outcomes from the **[Shadow Realm (25)](25-hitl.md)**). This acts as a **Crucible**, extracting the precise human feedback from HitL and identity congruence from the Mirror to forge permanent instinctual biases in the weights.
 - **The DeepFabric Loom:** The system utilizes the `deepfabric` library as the foundational dataset generation engine. It consumes the raw traces and applies constrained decoding and strict schema adherence to transmute them into a highly structured training manifest (HuggingFace JSONL) stored in the **[Lab (13)](13-layout.md)**.
 
 This preparation phase ensures that only structurally perfect, stabilized patterns are selected for compression, avoiding the ingestion of conversational exhaust or hallucinated syntax.
