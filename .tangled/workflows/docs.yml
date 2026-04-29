@@ -1,0 +1,17 @@
+when:
+  - event: [ "push" ]
+    branch: [ "main" ]
+
+engine: "nixery"
+
+dependencies:
+  nixpkgs:
+    - zensical
+    - git
+
+steps:
+  - name: "Build Zensical Site"
+    command: "zensical build"
+
+  - name: "Deploy to Pages"
+    command: "tangled-deploy --dir ./site --branch pages"
