@@ -1,20 +1,3 @@
-"""Defines the application's *Source Code Blueprint*.
-
-This module contains constants that describe the internal structure, identity,
-and build-time contracts of the LychD application itself. These values are
-static, checked into the repository, and are not meant to be changed by the
-end-user.
-
-Think of this as the application's "Birth Certificate":
-- It knows its own name (`DEFAULT_MODULE_NAME`).
-- It knows where its source code lives (`BASE_DIR`).
-- It knows where its internal tools are located (e.g., `PATH_MIGRATION_DIR`).
-- It defines internal contracts (e.g., `DB_MIGRATION_VERSION_TABLE`).
-
-This file provides the foundational constants that other parts of the system,
-like the runtime path generator, will consume.
-"""
-
 from __future__ import annotations
 
 from pathlib import Path

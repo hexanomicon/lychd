@@ -1,0 +1,173 @@
+[project]
+site_name = "The Hexanomicon"
+site_author = "The Hexanomicon"
+site_description = "Systemd-native daemon for local agentic orchestration"
+site_url = "https://hexanomicon.tngl.sh/lychd/"
+docs_dir = "docs"
+repo_name = "hexanomicon/lychd"
+repo_url = "https://tangled.org/@hexanomicon/lychd"
+edit_uri = "edit/main/docs/"
+copyright = "Copyright &copy; 2026 Hexanomicon &ndash;"
+
+extra_css = ["stylesheets/frostmourne.css"]
+extra_javascript = [
+    "javascripts/mathjax.js",
+    "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
+]
+
+# Awesome nav in progress https://lukasgeiter.github.io/mkdocs-awesome-nav/
+# Until then have to do it like this
+nav = [
+    { "Prophecy" = "index.md" },
+    { "Summoning" = "summoning.md" },
+    { "Sepulcher" = [
+        "sepulcher/index.md",
+        { "Lich" = "sepulcher/lich.md" },
+        { "Codex" = "sepulcher/codex.md" },
+        { "Crypt" = "sepulcher/crypt.md" },
+        { "Vessel" = [
+            "sepulcher/vessel/index.md",
+            "sepulcher/vessel/ghouls.md"
+        ]},
+        { "Phylactery" = [
+            "sepulcher/phylactery/index.md",
+            "sepulcher/phylactery/reanimation.md"
+        ]},
+        { "Animator" = [
+            "sepulcher/animator/index.md",
+            "sepulcher/animator/portal.md",
+            "sepulcher/animator/soulstone.md"
+        ]},
+        { "Extensions" = [
+            "sepulcher/extensions/index.md",
+            "sepulcher/extensions/smith.md",
+            "sepulcher/extensions/weaver.md",
+            "sepulcher/extensions/oculus.md",
+            "sepulcher/extensions/soulforge.md",
+            "sepulcher/extensions/riddle.md",
+            "sepulcher/extensions/scout.md",
+            "sepulcher/extensions/tether.md",
+            "sepulcher/extensions/veil.md",
+            "sepulcher/extensions/ward.md",
+            "sepulcher/extensions/prism.md",
+            "sepulcher/extensions/echo.md",
+            "sepulcher/extensions/shadow.md",
+            "sepulcher/extensions/mirror.md",
+            "sepulcher/extensions/toll.md",
+            "sepulcher/extensions/legion.md"
+        ]}
+    ]},
+    { "Divination" = [
+        "divination/index.md",
+        "divination/altar.md",
+        { "Transcendence" = [
+            "divination/transcendence/index.md",
+            "divination/transcendence/incantation.md",
+            "divination/transcendence/invocation.md",
+            "divination/transcendence/illumination.md",
+            "divination/transcendence/immortality.md"
+        ]}
+    ]},
+    { "Covenants" = [
+        "adr/index.md",
+        "adr/00-license.md",
+        "adr/01-doctrine.md",
+        "adr/02-documentation.md",
+        "adr/03-quality.md",
+        "adr/04-testing.md",
+        "adr/05-extensions.md",
+        "adr/06-persistence.md",
+        "adr/07-snapshots.md",
+        "adr/08-containers.md",
+        "adr/09-security.md",
+        "adr/10-privilege.md",
+        "adr/11-backend.md",
+        "adr/12-configuration.md",
+        "adr/13-layout.md",
+        "adr/14-workers.md",
+        "adr/15-frontend.md",
+        "adr/16-creation.md",
+        "adr/17-packaging.md",
+        "adr/18-evolution.md",
+        "adr/19-cli.md",
+        "adr/20-agents.md",
+        "adr/21-context.md",
+        "adr/22-dispatcher.md",
+        "adr/23-orchestrator.md",
+        "adr/24-graph.md",
+        "adr/25-hitl.md",
+        "adr/26-a2a.md",
+        "adr/27-memory.md",
+        "adr/28-workflow.md",
+        "adr/29-observability.md",
+        "adr/30-webcrawler.md",
+        "adr/31-simulation.md",
+        "adr/32-identity.md",
+        "adr/33-training.md",
+        "adr/34-evaluation.md",
+        "adr/35-assimilation.md",
+        "adr/36-vision.md",
+        "adr/37-audio.md",
+        "adr/38-iam.md",
+        "adr/39-vpn.md",
+        "adr/40-proxy.md",
+        "adr/41-x402.md",
+        "adr/42-legion.md"
+    ]},
+    { "Lexicon" = "lexicon.md" }
+]
+
+[project.theme]
+name = "material"
+logo = "assets/hexanomicon.png"
+favicon = "assets/hexanomicon.png"
+custom_dir = "docs/overrides"
+features = [
+    "navigation.instant",
+    "navigation.indexes",
+    "navigation.footer",
+    "navigation.tracking",
+    "navigation.top",
+    "content.code.copy",
+    "content.action.edit",
+    "content.action.view"
+]
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "black"
+accent = "cyan"
+
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.pymdownx.details]
+[project.markdown_extensions.pymdownx.snippets]
+check_paths = true
+base_path = ["."]
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" }
+]
+[project.markdown_extensions.pymdownx.emoji]
+emoji_index = "zensical.extensions.emoji.twemoji"
+emoji_generator = "zensical.extensions.emoji.to_svg"
+
+[project.extra]
+generator = false
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/hexanomicon"
+name = "hexanomicon on GitHub"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/lychd/"
+name = "lychd on PyPI"
+
+[[project.extra.social]]
+icon = "fontawesome/solid/envelope"
+link = "mailto:hexanomicon@proton.me"
+name = "Contact the Magus"

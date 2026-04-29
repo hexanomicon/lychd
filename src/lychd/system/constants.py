@@ -62,10 +62,13 @@ PATH_LYCHD_TOML: Final[Path] = PATH_CODEX_ROOT / "lychd.toml"  # ~/.config/lychd
 PATH_RUNES_DIR: Final[Path] = PATH_CODEX_ROOT / "runes"  # ~/.config/lychd/runes
 """The Runic Manifest (Service definitions)."""
 
-PATH_SOULSTONES_DIR: Final[Path] = PATH_RUNES_DIR / "soulstones"  # ~/.config/lychd/runes/soulstones
+PATH_ANIMATOR_DIR: Final[Path] = PATH_RUNES_DIR / "animator"  # ~/.config/lychd/runes/animator
+"""Animator configuration root."""
+
+PATH_SOULSTONES_DIR: Final[Path] = PATH_ANIMATOR_DIR / "soulstones"  # ~/.config/lychd/runes/animator/soulstones
 """Local Soulstone definitions."""
 
-PATH_PORTALS_DIR: Final[Path] = PATH_CODEX_ROOT / "portals"  # ~/.config/lychd/portals
+PATH_PORTALS_DIR: Final[Path] = PATH_ANIMATOR_DIR / "portals"  # ~/.config/lychd/runes/animator/portals
 """Network Portal definitions."""
 
 
@@ -122,9 +125,10 @@ HOST_LAYOUT: Final[list[Path]] = [
     # --- The Mind ---
     PATH_CODEX_ROOT,           # ~/.config/lychd/
     PATH_LYCHD_TOML,           # ├── lychd.toml
-    PATH_PORTALS_DIR,          # ├── portals/
     PATH_RUNES_DIR,            # └── runes/
-    PATH_SOULSTONES_DIR,       #     └── soulstones/
+    PATH_ANIMATOR_DIR,         #     └── animator/
+    PATH_SOULSTONES_DIR,       #         ├── soulstones/
+    PATH_PORTALS_DIR,          #         └── portals/
 
     # --- The Binding ---
     PATH_SYSTEMD_UNITS_DIR,    # ~/.config/containers/systemd/ (The Anchor)

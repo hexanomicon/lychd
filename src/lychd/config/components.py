@@ -1,21 +1,12 @@
-import sys
-from functools import lru_cache
+"""App config objects assembled from settings."""
+
 from typing import Any
 
-import structlog
 from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.contrib.sqlalchemy.plugins import AsyncSessionConfig, SQLAlchemyAsyncConfig
-from litestar.logging.config import (
-    LoggingConfig,
-    StructLoggingConfig,
-    default_logger_factory,
-    default_structlog_processors,
-    default_structlog_standard_lib_processors,
-)
-from litestar.middleware.logging import LoggingMiddlewareConfig
 from litestar.plugins.problem_details import ProblemDetailsConfig
 from litestar.plugins.sqlalchemy import AlembicAsyncConfig
 from litestar.plugins.structlog import StructlogConfig
@@ -31,10 +22,23 @@ from lychd.config.constants import (
     PATH_VITE_BUNDLE_DIR,
     PATH_VITE_RESOURCE_DIR,
 )
-from lychd.config.settings import get_settings
+from lychd.config.logging import build_log_config, should_render_as_json
+from lychd.config.settings import Settings, get_settings
+from lychd.db.factory import create_db_engine
 
-# This call will now create the singleton on its first run
-settings = get_settings()
+settings: Settings = get_settings()
+_db_engine_instance: Any = None
+
+
+def get_db_engine(*, force_new: bool = False) -> Any:
+    """Get or create the global database engine instance."""
+    global _db_engine_instance
+    if _db_engine_instance is None or force_new:
+        _db_engine_instance = create_db_engine(settings.db)
+    return _db_engine_instance
+
+
+structlog_config: StructlogConfig = build_log_config(render_as_json=should_render_as_json())
 
 
 async def worker_startup(ctx: dict[str, Any]) -> None:
@@ -43,8 +47,8 @@ async def worker_startup(ctx: dict[str, Any]) -> None:
     This function is called when a worker starts. It initializes the DB engine
     and session factory for tasks.
     """
-    # Use the factory from settings to ensure identical DB config (JSONB optimization) but get new engine due to process forking via multiprocessing
-    engine = settings.db.get_engine(force_new=True)
+    # Use the factory to get a fresh engine due to process forking via multiprocessing
+    engine = create_db_engine(settings.db)
 
     # Create the session factory
     session_factory = SQLAlchemyAsyncConfig(engine_instance=engine).create_session_maker()
@@ -69,7 +73,7 @@ compression_config = CompressionConfig(backend="gzip")
 cors_config = CORSConfig(allow_origins=settings.app.allowed_cors_origins)
 
 csrf_config = CSRFConfig(
-    secret=settings.app.secret_key.get_secret_value(),
+    secret=settings.app.secret_key,
     cookie_name=settings.app.csrf_cookie_name,
     cookie_secure=settings.app.csrf_cookie_secure,
 )
@@ -91,7 +95,7 @@ vite_config = ViteConfig(
 
 # --- The Phylactery (Database) Config ---
 db_config = SQLAlchemyAsyncConfig(
-    engine_instance=settings.db.get_engine(),
+    engine_instance=get_db_engine(),
     before_send_handler="autocommit",
     session_config=AsyncSessionConfig(expire_on_commit=False),
     alembic_config=AlembicAsyncConfig(
@@ -118,78 +122,4 @@ saq_config = SAQConfig(
             shutdown=worker_shutdown,
         ),
     ],
-)
-
-# --- Advanced Structlog Configuration (Corrected) ---
-
-
-@lru_cache
-def _is_tty() -> bool:
-    # The more robust check from the reference project
-    return bool(sys.stderr.isatty() or sys.stdout.isatty())
-
-
-# Determine if logs should be rendered as JSON
-_render_as_json = settings.log.json_format or not _is_tty()
-
-# 1. Processors for logs created directly with structlog
-_structlog_default_processors = default_structlog_processors(as_json=_render_as_json)
-_structlog_default_processors.insert(1, structlog.processors.EventRenamer("message"))
-
-# 2. Processors for logs captured from the standard library (e.g., SQLAlchemy)
-_structlog_standard_lib_processors = default_structlog_standard_lib_processors(as_json=_render_as_json)
-_structlog_standard_lib_processors.insert(1, structlog.processors.EventRenamer("message"))
-
-log_config = StructlogConfig(
-    # THIS IS THE MIDDLEWARE YOU CORRECTLY IDENTIFIED WAS MISSING
-    middleware_logging_config=LoggingMiddlewareConfig(
-        request_log_fields=settings.log.request_fields,
-        response_log_fields=settings.log.response_fields,
-    ),
-    structlog_logging_config=StructLoggingConfig(
-        log_exceptions="always",
-        processors=_structlog_default_processors,  # Use the first processor list
-        logger_factory=default_logger_factory(as_json=_render_as_json),
-        standard_lib_logging_config=LoggingConfig(
-            root={"level": settings.log.level.upper(), "handlers": ["console"]},
-            formatters={
-                "standard": {
-                    "()": "structlog.stdlib.ProcessorFormatter",
-                    "processors": _structlog_standard_lib_processors,  # Use the second list here
-                },
-            },
-            # We now use 'console' as the handler name, but the reference
-            # uses 'queue_listener'. This is just a name, but we will
-            # stick to 'console' for clarity as we are logging to the terminal.
-            handlers={
-                "console": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "standard",
-                },
-            },
-            loggers={
-                "granian.access": {
-                    "propagate": False,
-                    "level": settings.log.granian_level,
-                    "handlers": ["console"],
-                },
-                "saq": {
-                    "propagate": False,
-                    "level": settings.log.saq_level,
-                    "handlers": ["console"],
-                },
-                "sqlalchemy.engine": {
-                    "propagate": False,
-                    "level": settings.log.sqlalchemy_level,
-                    "handlers": ["console"],
-                },
-                # You can add your pydantic_ai logger here as well
-                "pydantic_ai": {
-                    "propagate": False,
-                    "level": settings.log.pydantic_ai_level,
-                    "handlers": ["console"],
-                },
-            },
-        ),
-    ),
 )

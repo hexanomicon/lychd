@@ -68,8 +68,6 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 
 > *"The Lich only sees far because it stands on the shoulders of Giants."*
 
-The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy](https://hexanomicon.github.io/lychd/).
-
 ### 🕸️ Backend
 
 - **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)** the body of the Lich running a as per **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint, utilizing a **[Granian](https://github.com/emmett-framework/granian)** server or CLI protocol.
@@ -119,7 +117,8 @@ The Daemon utilizes the finest instruments of this age to fulfill its [Prophecy]
 - **[Pytest](https://docs.pytest.org/)** — Verifier of the logic's truth.
 - **[Git](https://git-scm.com/)** — Immortalizer of the project's evolution.
 
-***
+
+---
 
 > *"The Flesh is temporary. The Word is eternal."*
 

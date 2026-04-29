@@ -6,7 +6,7 @@ The path of [transcendence](docs/divination/transcendence/index.md) charts the l
 
 ## State Management
 
-Store state within the [gitignored](.gitignore) [.agents directory](.agents/), which allows for internal evolution and consists of following subdirectories:
+Store state within the [VCS-ignored](.gitignore) [.agents directory](.agents/), which allows for internal evolution and consists of following subdirectories:
 
 - [.agents/drift/](.agents/drift/), a ledger of violated rules, mistakes and wrong patterns is maintained.
     - It must be consulted before every write operation to ensure consistency and that you do not repeat your mistakes.
@@ -57,7 +57,7 @@ Follow this chain to enrich your context. Load only what you cannot infer. If `g
 
 1. **Innate Knowledge**: Your model's training data.
 2. **Internal Archeology**: Consult project source code and `src/lychd/system/constants.py`. For dependency API questions, inspect installed packages directly in `.venv/lib/` via `grep` or `view_file` — the source is authoritative.
-3. **The Castle Archives**: Use the [refctx script](scripts/refctx.py) to search `~/Documents/References/`. This directory holds git-cloned repos (docs, examples, full source) for key dependencies and reference projects. To populate it: `git clone <repo> ~/Documents/References/<name>`. Sparse checkouts (docs-only) are preferred when full source is unnecessary.
+3. **The Castle Archives**: Use the [refctx script](scripts/refctx.py) to search `~/Documents/References/`. This directory holds cloned repos (docs, examples, full source) for key dependencies and reference projects. To populate it: `git clone <repo> ~/Documents/References/<name>`. Sparse checkouts (docs-only) are preferred when full source is unnecessary.
 4. **Project Progress**: Consult `.agents/work/`, the journal, and the `.agents/drift/` ledger.
 5. **The Shell**: Probe the environment via commands.
 6. **The Magus**: Ask for clarification or external references. If the Magus indicates they are **AFK**, prioritize internal archaeology and shell probing before requesting further input.

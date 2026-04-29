@@ -14,43 +14,43 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def codex_paths(tmp_path: Path) -> dict[str, Path]:
-    """Define the Codex structure in a temp directory."""
+    """Define a temporary Codex structure."""
     root = tmp_path / "config"
-    souls = root / "soulstones"
-    portals = root / "portals"
+    runes = root / "runes"
 
-    # Create them to simulate LayoutService results
-    souls.mkdir(parents=True, exist_ok=True)
-    portals.mkdir(parents=True, exist_ok=True)
+    runes.mkdir(parents=True, exist_ok=True)
 
     return {
         "root": root,
         "toml": root / "lychd.toml",
-        "soulstones": souls,
-        "portals": portals,
+        "runes": runes,
+        "postgres": tmp_path / "postgres",
     }
 
 
 @pytest.fixture
-def codex_service(codex_paths: dict[str, Path]) -> CodexService:
-    """Instantiate the Codex Scribe."""
+def codex_service(codex_paths: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> CodexService:
+    """Instantiate CodexService with isolated paths."""
+    monkeypatch.setattr("lychd.system.services.codex.PATH_POSTGRES_DIR", codex_paths["postgres"])
+
     return CodexService(
         toml_path=codex_paths["toml"],
-        soulstones_path=codex_paths["soulstones"],
-        portals_path=codex_paths["portals"],
+        runes_path=codex_paths["runes"],
     )
 
 
 def test_inscribe_structure(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:
-    """Verify that directories and files are created."""
+    """Verify codex initialization creates primary files and configurable samples."""
     codex_service.inscribe()
 
     assert codex_paths["root"].exists()
-    assert codex_paths["soulstones"].exists()
-    assert codex_paths["portals"].exists()
+    assert codex_paths["runes"].exists()
     assert codex_paths["toml"].exists()
-    assert (codex_paths["soulstones"] / "hermes.toml").exists()
-    assert (codex_paths["portals"] / "openai.toml").exists()
+    assert (codex_paths["postgres"] / "init_db.sh").exists()
+    assert codex_paths["toml"].stat().st_mode & 0o777 == 0o600
+
+    # Built-in extension configurable sample should exist after discovery/import.
+    assert (codex_paths["runes"] / "simulation" / "shadowsimulationconfig.toml").exists()
 
 
 def test_lychd_toml_validity(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:
@@ -60,24 +60,18 @@ def test_lychd_toml_validity(codex_service: CodexService, codex_paths: dict[str,
     content = tomllib.loads(codex_paths["toml"].read_text(encoding="utf-8"))
     settings = get_settings()
 
-    # Check sections
     assert "server" in content
     assert "db" in content
-
-    # Check values
     assert content["server"]["port"] == settings.server.port
     assert content["app"]["name"] == "lychd"
 
 
 def test_idempotency(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:
-    """Ensure running inscribe twice doesn't overwrite existing configs."""
+    """Ensure running inscribe twice does not overwrite existing global config."""
     codex_service.inscribe()
 
-    # Modify the file
     codex_paths["toml"].write_text("modified = true", encoding="utf-8")
 
-    # Run again
     codex_service.inscribe()
 
-    # Should still be modified
-    assert codex_paths["toml"].read_text() == "modified = true"
+    assert codex_paths["toml"].read_text(encoding="utf-8") == "modified = true"

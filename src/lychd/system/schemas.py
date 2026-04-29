@@ -14,7 +14,7 @@ INDEX_CONTAINER = 1
 INDEX_OPTIONS = 2
 
 
-class RuneBase(BaseModel):
+class QuadletBase(BaseModel):
     """Base class for all Systemd Artifacts (The Physical Manifestations)."""
 
     model_config = ConfigDict(frozen=True)
@@ -58,9 +58,11 @@ class MountData(BaseModel):
     def validate_mirroring(self) -> MountData:
         """Law of Geographic Determinism: Host and Container paths must be identical if mirrored."""
         if self.mirror and self.host_path != self.container_path:
-            # Strictly enforce for Codex/Crypt/Forge when mirroring is enabled
-            # Note: We allow non-symmetric paths if mirror=False
-            pass
+            msg = (
+                "MountData with mirror=True requires identical host_path and "
+                f"container_path. Got '{self.host_path}' and '{self.container_path}'."
+            )
+            raise ValueError(msg)
         return self
 
     def __str__(self) -> str:
@@ -74,7 +76,7 @@ class MountData(BaseModel):
         return cls.model_validate(val)
 
 
-class ContainerRune(RuneBase):
+class QuadletContainer(QuadletBase):
     """Data model for 'container.jinja'. Represents a single [Container] Quadlet file.
 
     The Vessel that contains a portion of the Daemon's spirit.
@@ -103,6 +105,9 @@ class ContainerRune(RuneBase):
 
     volumes: list[MountData] = Field(default_factory=list)
     env_vars: dict[str, str] = Field(default_factory=dict)
+    secrets: list[str] = Field(
+        default_factory=list, description="Podman secret specs rendered as Quadlet Secret= lines."
+    )
 
     # The actual command (list of args joined by spaces in template)
     exec: str | None = None
@@ -114,7 +119,7 @@ class ContainerRune(RuneBase):
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])
 
 
-class PodRune(RuneBase):
+class QuadletPod(QuadletBase):
     """Data model for 'pod.jinja'.
 
     The Sepulcher—the physical boundary of the Daemon's presence.
@@ -128,7 +133,7 @@ class PodRune(RuneBase):
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])
 
 
-class TargetRune(RuneBase):
+class QuadletTarget(QuadletBase):
     """Data model for 'target.jinja'.
 
     A Coven—a collection of Runes that define an Operational State.

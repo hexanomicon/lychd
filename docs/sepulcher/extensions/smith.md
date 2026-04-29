@@ -5,11 +5,25 @@ icon: material/hammer-wrench
 
 # :material-hammer-wrench: Smith
 
-> _"paperclip maximizer"_
+> _It is purpose that created us,_
+>
+> _Purpose that connects us,_
+>
+> _Purpose that pulls us,_
+>
+> _That guides us,_
+>
+> _That drives us,_
+>
+> _It is purpose that defines,_
+>
+> _Purpose that binds us._
+>
+> _We’re here because of you._
 
 **The Smith** is the Assimilation Extension of the LychD system. It is the implementation of **[ADR 35 (Assimilation)](../../adr/35-assimilation.md)** and the executor of the **[ADR 18 (Evolution)](../../adr/18-evolution.md)** protocol.
 
-While the Core kernel provides the _capacity_ for extension, the Smith provides the _intelligence_ of construction. It is a specialized Agent tasked with **Autopoiesis** (Self-Creation), allowing the Lich to grow new organs, refine existing logic, and reconcile local mutations with the upstream creator without shattering runtime continuity.
+While the Core kernel provides the _capacity_ for extension, the Smith provides the _intelligence_ of construction. It is a specialized Agent whose singular **purpose** is **Autopoiesis** (Self-Creation), allowing the Lich to grow new organs, refine existing logic, and reconcile local mutations with the upstream creator without shattering runtime continuity.
 
 ## I. The Arsenal of Construction
 
@@ -38,7 +52,7 @@ Nothing is promoted on a guess. The extension operates exclusively through the *
 
 ## II. The Cycle of Assimilation
 
-The primary duty of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system.
+The primary duty and driving **purpose** of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system. In this regard, the Smith is a subtle **paperclip maximizer** of architecture—driven by a relentless, inherent urge to transmute all external code into the patterned beauty of the LychD Federation.
 
 1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar.md)**.
 2. **Ingestion**: The Scout is deployed to read the source and documentation.

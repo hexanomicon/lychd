@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -57,7 +58,15 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     # 1. Mock Loader
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader = mock_loader_cls.return_value
-    mock_loader.load_all.return_value = (["stone1"], ["portal1"])
+    stone = SimpleNamespace(secret_env_files={})
+    portal = SimpleNamespace(api_key_secret=None)
+    mock_loader.load_all.return_value = ([stone], [portal])
+
+    # 1.5. Mock Podman secret provisioning
+    mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
+    mock_secret_store = mock_secret_store_cls.return_value
+    mock_secret_store.ensure_present.return_value = False
+    mock_secret_store.exists.return_value = True
 
     # 2. Mock Transmuter
     mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
@@ -84,7 +93,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     mock_loader.load_all.assert_called_once()
 
     mock_transmuter_cls.assert_called_once()
-    mock_transmuter.transmute_all.assert_called_once_with(["stone1"])
+    mock_transmuter.transmute_all.assert_called_once_with([stone], portals=[portal])
 
     mock_scribe_cls.assert_called_once()
     mock_scribe.generate_all.assert_called_once_with(["rune1"])
@@ -94,8 +103,14 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
 
 def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify we catch subprocess errors if systemd fails."""
-    mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mocker.patch("lychd.domain.animation.transmute.Transmuter")
+    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
+    mock_loader_cls.return_value.load_all.return_value = ([SimpleNamespace(secret_env_files={})], [])
+    mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
+    mock_transmuter_cls.return_value.transmute_all.return_value = ["rune1"]
+    mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
+    mock_secret_store = mock_secret_store_cls.return_value
+    mock_secret_store.ensure_present.return_value = False
+    mock_secret_store.exists.return_value = True
     mocker.patch("lychd.system.services.scribe.ScribeService")
     mocker.patch("shutil.which").return_value = "/usr/bin/systemctl"
 
@@ -109,3 +124,25 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
 
     assert result.exit_code != 0
     assert "Ritual Failed" in result.output
+
+
+def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mocker: MockerFixture) -> None:
+    """Bind must fail closed when a soulstone references a missing Podman secret."""
+    stone = SimpleNamespace(secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"})
+    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
+    mock_loader_cls.return_value.load_all.return_value = ([stone], [])
+
+    mocker.patch("lychd.domain.animation.transmute.Transmuter")
+    mocker.patch("lychd.system.services.scribe.ScribeService")
+    mocker.patch("shutil.which").return_value = "/usr/bin/systemctl"
+    mocker.patch("subprocess.run")
+
+    mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
+    mock_secret_store = mock_secret_store_cls.return_value
+    mock_secret_store.ensure_present.return_value = False
+    mock_secret_store.exists.return_value = False
+
+    result = runner.invoke(bind_quadlets)
+
+    assert result.exit_code != 0
+    assert "Missing required Podman secrets" in result.output

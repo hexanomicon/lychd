@@ -15,9 +15,11 @@ def run_cli() -> None:
     variable to discover and initialize the application, triggering the
     `on_cli_init` hook within the `AppInit` protocol implementation.
     """
+    from lychd.config.logging import apply_logging
     from lychd.config.settings import get_settings
 
     settings = get_settings()
+    apply_logging()
 
     os.environ.setdefault("LITESTAR_APP", "lychd.app:create_app")
     os.environ.setdefault("LITESTAR_APP_NAME", settings.app.name)

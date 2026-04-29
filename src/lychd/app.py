@@ -55,9 +55,9 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
             cors_config,
             csrf_config,
             db_config,
-            log_config,
             problem_details_config,
             saq_config,
+            structlog_config,
             template_config,
             vite_config,
         )
@@ -81,7 +81,7 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
                 VitePlugin(config=vite_config),
                 SQLAlchemyPlugin(config=db_config),
                 SAQPlugin(config=saq_config),
-                StructlogPlugin(config=log_config),
+                StructlogPlugin(config=structlog_config),
                 ProblemDetailsPlugin(config=problem_details_config),
             ],
         )
@@ -142,6 +142,10 @@ def create_app() -> Litestar:
         Litestar: CLI or fully configured web application
 
     """
+    # Get Arize Phoenix Plugin for Tracing
+    # Better yet, create a function gathering plugins - in plugin - base.py
+    # Call it here and insert into Litestar app
+
     return Litestar(
         plugins=[AppInit()],
     )

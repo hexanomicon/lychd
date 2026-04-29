@@ -163,7 +163,7 @@ check: lint format type-check test ## Run ALL quality checks (The "CI" command)
 .PHONY: docs
 docs: ## Serve the documentation locally
 	@echo "${INFO} Serving The Hexanomicon at http://localhost:7778"
-	@uv run mkdocs serve --dev-addr localhost:7778 --livereload
+	@uv run zensical serve --dev-addr localhost:7778
 
 
 .PHONY: kill-docs

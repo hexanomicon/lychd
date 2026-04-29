@@ -81,29 +81,25 @@ class ScribeService:
         self._output_dir.mkdir(parents=True, exist_ok=True)
         self.initialize_git_sentinel()
 
-        with tempfile.TemporaryDirectory(prefix="lychd-shadow-") as shadow_dir:
-            shadow_path = Path(shadow_dir)
-
-            # Inscribe all runes into the shadow directory
+        with tempfile.TemporaryDirectory(prefix="lychd-scribe-") as staging_dir:
+            staging_path = Path(staging_dir)
+            # Inscribe all runes into the staging directory
             for rune in runes:
-                self._write_rune(rune, target_dir=shadow_path)
-
-            # ATOMIC SWAP
-            self._atomic_swap(shadow_path)
+                self._write_rune(rune, target_dir=staging_path)
+            self._atomic_swap(staging_path)
             self._sentinel_commit()
 
         logger.info("inscription_complete")
 
-    def _atomic_swap(self, shadow_path: Path) -> None:
-        """Move files from Shadow directory to the Binding Site."""
-        # Clean current site
+    def _atomic_swap(self, staging_path: Path) -> None:
+        """Move files from staging directory to the Binding Site."""
         if self._output_dir.exists():
             for item in self._output_dir.iterdir():
                 if item.is_file() and item.suffix in [".container", ".pod", ".target", ".volume"]:
                     item.unlink()
 
         # Move new ones
-        for rune in shadow_path.iterdir():
+        for rune in staging_path.iterdir():
             shutil.move(str(rune), str(self._output_dir / rune.name))
 
     def _sentinel_commit(self) -> None:
