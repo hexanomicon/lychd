@@ -37,7 +37,7 @@ For all technical capabilities, the Riddle rejects textual evaluation (e.g., BLE
 
 ## IV. The DeepFabric Engine
 
-To orchestrate these trials, the Riddle relies on the `deepfabric` Evaluator library. 
+To orchestrate these trials, the Riddle relies on the `deepfabric` Evaluator library.
 
 - **The Broker:** DeepFabric sits between the model being tested and the Shadow Realm. It parses the model's intended actions (ReAct loops) and routes them to the physical execution sandboxes.
 - **The Scorekeeper:** It replaces subjective grading with hard metrics, automatically calculating `execution_success_rate` and `tool_selection_accuracy` based on the physical outcomes of the Shadow Realm's labor.

@@ -74,7 +74,7 @@ HitL therefore does not replace simulation or identity evaluation. It ratifies (
 
 ### 4. Promotion to Karma (The Crucible Convergence)
 
-Every instance of Consent provides high-quality data for the machine's evolution. Upon successful reanimation and manifestation, the interaction trace—the original Intent, the scried Vision, and the final Blessing—is promoted to the **Karma** partition of the **[Memory Archive (ADR 27)](./27-memory.md)**. 
+Every instance of Consent provides high-quality data for the machine's evolution. Upon successful reanimation and manifestation, the interaction trace—the original Intent, the scried Vision, and the final Blessing—is promoted to the **Karma** partition of the **[Memory Archive (ADR 27)](./27-memory.md)**.
 
 This human feedback forms a **Crucible**, feeding directly into **[Soulforge](../sepulcher/extensions/soulforge.md)**. By validating Shadow simulations with Magus consent, the system crystallizes new identities and biases. This converges the **Mirror** (Ego), **Shadow** (Simulation), and **HitL** (Consent) into a unified pipeline that fundamentally forges the machine's ongoing character.
 

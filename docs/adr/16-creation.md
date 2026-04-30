@@ -52,7 +52,7 @@ The agent graph orchestrating the speculation runs in the **Vessel**. Raw execut
 
 ### 3. Creation (The Sequential Deep-Dive / Buddhi)
 
-Once a valid path is found in the Shadow Realm, the machine must transition from exploration to execution. This is the domain of **Buddhi** (the convergent intelligence). 
+Once a valid path is found in the Shadow Realm, the machine must transition from exploration to execution. This is the domain of **Buddhi** (the convergent intelligence).
 
 When writing core logic with causal dependencies, the agent must operate in a **Single-Threaded, Deep Sequential** mode. Massive parallelism here is a "hallucination trap." Because of **Computational Irreducibility**, the agent cannot predict the end state of a complex logical loop; it must walk the path step-by-step. By enforcing **Stillness** (Metabolic Discipline) during the actual creation phase, the system maximizes logic-per-watt and prevents the introduction of recursive errors.
 

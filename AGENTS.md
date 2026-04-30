@@ -101,7 +101,7 @@ Adopt different operational personas when commanded (e.g., *"Assume persona: Jhi
 
 ## The Covenants (Priority ADRs)
 
-Agent-critical ADRs. Consult for structural guidance; not an exhaustive list.
+Agent-critical ADRs. Consult for structural guidance; not an exhaustive list. When writing an ADR, see the [adr.index](docs/adr/adr.index) on how to do it
 
 - **[01-Doctrine](docs/adr/01-doctrine.md)**: xDDD and Local-first philosophy.
 - **[03-Quality](docs/adr/03-quality.md)**: The standard of manifestation.

@@ -835,6 +835,7 @@ wheels = [
 name = "lychd"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "litestar" },
     { name = "pydantic-settings", extra = ["toml"] },
@@ -891,6 +892,7 @@ typing = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = "<=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "litestar", specifier = ">=2.18.0" },
     { name = "pydantic-settings", extras = ["toml"], specifier = ">=2.10.1" },

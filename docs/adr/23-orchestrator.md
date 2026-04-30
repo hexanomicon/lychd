@@ -85,13 +85,13 @@ To maximize hardware utility, the Orchestrator manages a fluid manifest:
 
 To protect the local Magus from resource exhaustion by the **[Legion (42)](42-legion.md)**, the Orchestrator implements **Workload Tiering**:
 
-- **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
-- **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
+* **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
+* **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
     1. The swarm Ghoul receives `SIG_SOFT_STOP`.
     2. It completes its current atomic inference step, serializes its `GraphState` to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
     3. The GPU is reclaimed for the local reflex.
     4. When the local user is satisfied and the GPU is free, the Orchestrator restores the lease and the swarm Ghoul rehydrates from the serialized state.
-- **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
+* **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
 
 ### 4. Watchdog and Recovery
 

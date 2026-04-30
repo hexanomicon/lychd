@@ -177,7 +177,7 @@ Because the UID matches the invoking host user, the process can interact with us
 
 #### Layer 4: The Mount-Defined Boundary (The "Wall")
 
-The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined. 
+The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined.
 
 - **The Vessel:** High-trust plane. Granted Read-Write (RW) mounts to the Codex, Crypt, and Projects.
 - **The Tomb:** Low-trust plane. Restricted by Read-Only (RO) mounts for system files and the Codex. It receives RW access only to disposable Workspaces (The Lab).
@@ -360,18 +360,18 @@ This keeps experimentation and codegen possible without normalizing mutation of 
 
 ### 5. Authority Matrix
 
-| Dimension        | Vessel (Trusted Control Plane)                                 | The Tomb (Un-trusted Execution Plane)                                  |
-| :--------------- | :------------------------------------------------------------- | :------------------------------------------------------------------ |
-| **Identity**     | UID 1000 (Symmetric Identity).                                 | UID 1000 (Symmetric Identity).                                      |
-| **Secrets**      | Accesses queue/database credentials and high-value API keys.   | Accesses queue/database credentials only (Least Privilege Role).    |
-| **Mounts**       | Read-Write access to Codex, Crypt, and Projects.               | Read-Only access to Codex; Read-Write access to disposable Workspaces. |
-| **Network**      | Shared Pod network (Internet + Localhost).                     | Shared Pod network. (Sandboxed `nono` subprocesses have zero network). |
-| **Queue Control**| Owns enqueue/dequeue/retry lifecycle for core tasks.           | Owns enqueue/dequeue/retry for untrusted tasks via the worker loop. |
-| **Agent / LLM**  | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                        |
-| **Context Egress**| Applies privatization and anonymization gates.                | Cannot bypass egress policy.                                        |
-| **Host Authority**| May emit validated host intents via the Host Reactor contract.| Cannot emit host intents or mutate infrastructure.                  |
-| **Arbitrary Code**| Forbidden.                                                     | Allowed only in constrained execution contexts (`nono` sandbox).    |
-| **Mutation**     | Forbidden. Protected by Git Branching and RO Mounts.           | Allowed only in disposable/task-scoped areas.                       |
+| Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Un-trusted Execution Plane)                                  |
+| :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
+| **Identity**       | UID 1000 (Symmetric Identity).                                 | UID 1000 (Symmetric Identity).                                         |
+| **Secrets**        | Accesses queue/database credentials and high-value API keys.   | Accesses queue/database credentials only (Least Privilege Role).       |
+| **Mounts**         | Read-Write access to Codex, Crypt, and Projects.               | Read-Only access to Codex; Read-Write access to disposable Workspaces. |
+| **Network**        | Shared Pod network (Internet + Localhost).                     | Shared Pod network. (Sandboxed `nono` subprocesses have zero network). |
+| **Queue Control**  | Owns enqueue/dequeue/retry lifecycle for core tasks.           | Owns enqueue/dequeue/retry for untrusted tasks via the worker loop.    |
+| **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |
+| **Context Egress** | Applies privatization and anonymization gates.                 | Cannot bypass egress policy.                                           |
+| **Host Authority** | May emit validated host intents via the Host Reactor contract. | Cannot emit host intents or mutate infrastructure.                     |
+| **Arbitrary Code** | Forbidden.                                                     | Allowed only in constrained execution contexts (`nono` sandbox).       |
+| **Mutation**       | Forbidden. Protected by Git Branching and RO Mounts.           | Allowed only in disposable/task-scoped areas.                          |
 
 ### 6. Compromise Response
 
