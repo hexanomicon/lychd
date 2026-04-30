@@ -37,8 +37,8 @@ def ritual_command(
     """
 
     def decorator[**P, R](func: Callable[P, R]) -> click.Command:
-        # `**P` (inside `[]`) declares a type-level parameter pack (PEP 695), not runtime kwargs unpacking.
-        # `Callable[P, R]` then uses that pack as "all params of func", while `R` is the return type.
+        # `**P` (inside `[]`) declares a type-level parameter pack (PEP 695)
+        # `Callable[P, R]` then uses that pack as "all params of func", while `R` is the return type
         # More: https://docs.python.org/3/library/typing.html#typing.ParamSpec
 
         @click.command(name=name, help=help_text)
@@ -46,8 +46,11 @@ def ritual_command(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Lazy creation keeps command registration/help path lightweight.
             console = get_console()
+
+            # Print we are beginning the command
             console.print(start_message)
 
+            # Try it
             try:
                 # Forward the same args/kwargs we received to the original callback.
                 return func(*args, **kwargs)

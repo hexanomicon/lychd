@@ -34,6 +34,7 @@ Nothing in this stage is primary reality. Destructive failures in Shadow remain 
 Shadow produces candidate futures and structural evidence. Identity congruence and final promotion remain downstream gates.
 
 Typical outcomes:
+
 - Timeline A: passes partially, poor quality.
 - Timeline B: fast but structurally wrong.
 - Timeline C: verified and promotable.
@@ -110,6 +111,7 @@ Shadow Simulation requires a first-class policy/strategy component in the domain
 - How to map workload class to resource budgets and branch counts.
 
 **Why this matters:**
+
 - Prevents orchestration logic from being scattered across simulation/runtime code.
 - Makes workload-specific simulation behavior configurable and testable.
 - Aligns with extension-first architecture and future workflow growth.

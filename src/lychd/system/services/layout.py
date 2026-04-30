@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import structlog
@@ -12,38 +13,52 @@ logger = structlog.get_logger()
 
 
 class LayoutService:
-    """The Architect of the Physical Body.
+    """Directory management.
 
-    Responsible for:
-    - Establishing the XDG directory structure (The Trinity).
-    - Optimistic Btrfs subvolume and No-COW optimizations.
+    Responsibilities:
+    - Initialize the XDG directory structure (The Trinity CONFIG, DATA, CACHE encoded in ../constants).
+    - Optimistic Btrfs subvolume and No-COW optimizatio TODO
     """
 
     def __init__(self, layout: list[Path] | None = None) -> None:
-        """Initialize the Layout Service."""
-        self._layout = layout or HOST_LAYOUT
+        """If Linux and Btrfs present, Initialize the Layout Service, otherwise fail."""
+        # Perform checks
+        _error_linux_absent = "The operating system is not linux. layout service is not implemented,"
+        _error_btrfs_root_absent = "The file system is not btrfs. layout service is not implemented,"
 
-    def initialize(self) -> None:
-        """Establish the Physical Body.
+        # TODO: Support other systems as part of Thralls in ADR42 or as native Vessels perhaps?
+        # Confirm we are on linux Just In case
+        self.is_linux: bool = sys.platform == "linux"
+        if not self.is_linux:
+            logger.error("linux_not_detected", skipping="speculative_genesis")
+            raise NotImplementedError(_error_linux_absent)
 
-        Rite of Folder Genesis and Speculative Btrfs optimization.
-        """
-        is_btrfs = self._is_btrfs(PATH_CRYPT_ROOT)
+        # TODO: Make special implementation for other filesystems later and allow going further here
+        self.is_root_btrfs: bool = self._is_btrfs(Path("/"))
+        if not self.is_root_btrfs:
+            logger.error("btrfs_not_detected", skipping="speculative_genesis")
 
-        # 1. Folder Genesis
-        for path in self._layout:
-            # Skip postgres dir if we are going to handle it via btrfs ritual
-            if is_btrfs and path == PATH_POSTGRES_DIR:
-                continue
+            raise NotImplementedError(_error_btrfs_root_absent)
 
-            # We only mkdir for directories (paths without a suffix)
-            if not path.exists() and not path.suffix:
+        # Create dirs:
+
+        _layout_cow_mod: list[Path] = layout or HOST_LAYOUT
+
+        # Remove the btrfs CoW sensitive directory for pg db from the list of dirs to be created
+        _layout_cow_mod.remove(PATH_POSTGRES_DIR)
+
+        # Create all the dirs just normally
+        for path in _layout_cow_mod:
+            if not path.exists():
                 logger.info("creating_directory", path=str(path))
-                path.mkdir(parents=True, exist_ok=True)
-            elif not path.exists():
-                logger.debug("skipping_file_creation", path=str(path))
+
+                if path != PATH_POSTGRES_DIR:
+                    path.mkdir(parents=True, exist_ok=False)
+                else:
+                    path.mkdir(parents=True, exist_ok=False)
+
             else:
-                logger.debug("directory_exists", path=str(path))
+                logger.debug("directory_exists_skipping_creation_check", path=str(path))
 
         # 2. Speculative Genesis (Btrfs)
         self._apply_btrfs_rituals(is_btrfs=is_btrfs)
@@ -90,11 +105,16 @@ class LayoutService:
 
     def _is_btrfs(self, path: Path) -> bool:
         """Check if path is on a Btrfs filesystem."""
+        _error_path_doesnt_exist = "Entered path doesnt exist on the system"
+        if not path.exists():
+            raise ValueError(_error_path_doesnt_exist)
+
         df_path = shutil.which("df")
         if not df_path:
             return False
 
         # Walk up to find an existing parent
+        # So pointing even to ~/anything will give us ~ what is
         check_path = path
         while not check_path.exists() and check_path != check_path.parent:
             check_path = check_path.parent
