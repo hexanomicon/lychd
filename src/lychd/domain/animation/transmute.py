@@ -20,7 +20,7 @@ from lychd.system.constants import (
     PATH_CORE_DIR,
     PATH_CRYPT_ROOT,
     PATH_EXTENSIONS_DIR,
-    PATH_POSTGRES_DIR,
+    PATH_POSTGRES_ROOT_DIR,
 )
 from lychd.system.schemas import MountData, QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
 
@@ -125,7 +125,7 @@ class Transmuter:
         )
 
         # 2. The Phylactery (Postgres)
-        data_mount = f"{PATH_POSTGRES_DIR}:/var/lib/postgresql/data:Z"
+        data_mount = f"{PATH_POSTGRES_ROOT_DIR}:/var/lib/postgresql/data:Z"
         phylactery = QuadletContainer(
             description="The Phylactery (Postgres & PgVector)",
             image=settings.db.image,

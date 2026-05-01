@@ -106,13 +106,13 @@ Beyond the Three Domains lies **The Outlands**—the User's own filesystem. To i
 
 Inside the container, the layout mirrors the Host Domains via volume mounts. By utilizing identity mapping, the container user accesses the Read-Write paths natively without permission mismatches.
 
-| Path | Domain | Permission | Purpose |
-| :--- | :--- | :--- | :--- |
-| `~/.config/lychd/` | Codex | **RO** | Configuration |
-| `~/.local/share/lychd/` | Crypt | **RW** | Lockfile & Persistence |
-| `~/.local/share/lychd/core/` | Crypt | **RO** | Core Logic |
-| `~/.local/share/lychd/extensions/` | Crypt | **RO** | Extension Logic |
-| `~/work/` | Outlands | **RW** | External Workspace |
+| Path                               | Domain   | Permission | Purpose                |
+| :-----------------------------------| :---------| :-----------| :-----------------------|
+| `~/.config/lychd/`                 | Codex    | **RO**     | Configuration          |
+| `~/.local/share/lychd/`            | Crypt    | **RW**     | Lockfile & Persistence |
+| `~/.local/share/lychd/core/`       | Crypt    | **RO**     | Core Logic             |
+| `~/.local/share/lychd/extensions/` | Crypt    | **RO**     | Extension Logic        |
+| `~/work/`                          | Outlands | **RW**     | External Workspace     |
 
 ### 4. Dual-Plane Trust Delta
 

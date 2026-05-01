@@ -93,7 +93,7 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 
 ### 🎭 Frontend
 
-- **[MkDocs](https://www.mkdocs.org/)** — inscribed **[Hexanomicon](https://hexanomicon.github.io/lychd/)**
+- **[Zensical](https://github.com/zensical/zensical)** — inscribed **[Hexanomicon](https://hexanomicon.github.io/lychd/)**
 - **[Jinja2](https://jinja.palletsprojects.com/)** — renders the **[Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
 - **[Vite](https://vitejs.dev/)** — **[JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)** bundler
 - **[HTMX](https://htmx.org/)** — Engine for seamless transmutation.
