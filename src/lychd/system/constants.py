@@ -80,10 +80,13 @@ PATH_CRYPT_ROOT: Final[Path] = _data_root / DEFAULT_MODULE_NAME  # ~/.local/shar
 PATH_TRIGGERS_DIR: Final[Path] = PATH_CRYPT_ROOT / "triggers"  # ~/.local/share/lychd/triggers
 """The Nervous System. Host-watched folder for privilege escalation (ADR 10)."""
 
-PATH_POSTGRES_DIR: Final[Path] = PATH_CRYPT_ROOT / "postgres"  # ~/.local/share/lychd/postgres
+PATH_POSTGRES_ROOT_DIR: Final[Path] = PATH_CRYPT_ROOT / "postgres"  # ~/.local/share/lychd/postgres
 """Live Database Storage."""
 
-PATH_SNAPSHOTS_DIR: Final[Path] = PATH_CRYPT_ROOT / "snapshots"  # ~/.local/share/lychd/snapshots
+PATH_POSTGRESS_DATA_DIR: Final[Path] = PATH_POSTGRES_ROOT_DIR / "data"
+"""Live Database Storage. Optimized with No-COW."""
+
+PATH_POSTGRESS_SNAPSHOTS_DIR: Final[Path] = PATH_CRYPT_ROOT / "snapshots"  # ~/.local/share/lychd/snapshots
 """Database Btrfs snapshots."""
 
 PATH_LAB_DIR: Final[Path] = PATH_CRYPT_ROOT / "lab"  # ~/.local/share/lychd/lab
@@ -121,10 +124,10 @@ PATH_RUNE_TEMPLATES_DIR: Final[Path] = BASE_DIR / "system" / "templates"
 # from destroying the visual layout of the comments below.
 
 # fmt: off
-HOST_LAYOUT: Final[list[Path]] = [
+HOST_LAYOUT: Final[tuple[Path,...]] = (
     # --- The Mind ---
     PATH_CODEX_ROOT,           # ~/.config/lychd/
-    PATH_LYCHD_TOML,           # ├── lychd.toml
+    # PATH_LYCHD_TOML,           |         # ── lychd.toml - DIRS ONLY this is handled by CODEX
     PATH_RUNES_DIR,            # └── runes/
     PATH_ANIMATOR_DIR,         #     └── animator/
     PATH_SOULSTONES_DIR,       #         ├── soulstones/
@@ -136,16 +139,17 @@ HOST_LAYOUT: Final[list[Path]] = [
     # --- The Body ---
     PATH_CRYPT_ROOT,           # ~/.local/share/lychd/
     PATH_TRIGGERS_DIR,         # ├── triggers/        <-- The Signal (Nervous System)
-    PATH_POSTGRES_DIR,         # ├── postgres/        <-- The Memory
-    PATH_SNAPSHOTS_DIR,        # ├── snapshots/
     PATH_LAB_DIR,              # ├── lab/             <-- The Workspace
     PATH_EXTENSIONS_DIR,       # ├── extensions/      <-- The Tissue
-    PATH_CORE_DIR,             # └── core/            <-- The Self
+    PATH_CORE_DIR,             # ├── core/            <-- The lychd source dir
+    PATH_POSTGRES_ROOT_DIR,    # └── postgres/        <-- The Memory
+    PATH_POSTGRESS_DATA_DIR,   #     ├── /data/       <-- Live DB Data
+    PATH_POSTGRESS_SNAPSHOTS_DIR, #  └── /snapshots/  <-- btrfs snapshots of /data
 
     # --- The Forge ---
     PATH_CACHE_ROOT,           # ~/.cache/lychd/
     PATH_ASSEMBLY_DIR,         # └── assembly/
-]
+)
 # fmt: on
 
 # ==============================================================================

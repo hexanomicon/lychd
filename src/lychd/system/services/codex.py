@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from lychd.config.runes import ConfigWriter, RuneSchemaDiscovery
 from lychd.config.settings import get_settings
-from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
+from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -71,7 +71,7 @@ class CodexService:
 
     def _inscribe_init_db(self) -> None:
         """Inscribe the dynamic DB initialization script."""
-        init_sh_path = PATH_POSTGRES_DIR / "init_db.sh"
+        init_sh_path = PATH_POSTGRES_ROOT_DIR / "init_db.sh"
         if init_sh_path.exists():
             return
 

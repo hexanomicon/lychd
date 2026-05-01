@@ -54,8 +54,10 @@ jj git push         # Synchronize with the external world (Git remotes)
 - **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.
 - **Paths**: Never hardcode `~/.config/...`. Use `PATH_*` constants from `src/lychd/system/constants.py`.
 - **Boundaries**: Domain computes intent (pure); System performs mutations (filesystem, systemd).
-- **Logging**: Use `structlog` with semantic event IDs. Use `logger.exception(...)` for active exceptions.
-- **Dependencies**: Use `uv add` or `uv remove`. Do not hand-edit `pyproject.toml`.
+- **Dependencies**: Use `uv add` or `uv remove` with proper groups. Ideally do not hand-edit `pyproject.toml`.
+- **Logging**: Use `structlog` with semantic event IDs.
+    - Our global config uses `log_exceptions="always"` and an `EventRenamer`.
+    - **Convention**: For fatal initialization errors, simply `raise` the exception with a descriptive message. The logger will automatically capture the message and the traceback. Manual `logger.critical()` calls are only needed if you must log an event *without* stopping execution.
 
 ## Critical Authorities
 

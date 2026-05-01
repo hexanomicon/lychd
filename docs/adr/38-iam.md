@@ -44,8 +44,16 @@ icon: material/account-check-outline
 
 Identities are stored in a `cabal.identities` table.
 
-- **Master Sigil:** The primary key created at Initialization via **[(CLI ADR 19)](./19-cli.md)**. Possesses the `*` (Universal) scope.
-- **Guest Sigils:** Created by the Master for external entities. Each is bound to a specific list of **Scopes** (e.g., `echo.read`, `altar.interact`, `a2a.execute`).
+- **Master Sigil:** The primary key created at Initialization via **[(CLI ADR 19)](./19-cli.md)**. Possesses the `*` (Universal) scope. Can be bound to a **Nostr Keypair** for global identity.
+- **Guest Sigils:** Created by the Master for external entities. Each is bound to a specific list of **Scopes** (e.g., `echo.read`, `altar.interact`, `a2a.execute`). Can be represented by a **Nostr npub**.
+
+### 1.1 The Nostr Identity Graft
+
+The Ward integrates with the Nostr network to provide decentralized identity:
+- **Cryptographic Auth:** The Proxy and Backend support Nostr-signed authentication, allowing the Magus to authenticate using their keys without traditional passwords.
+- **Global Peerage:** A Sigil can be defined by a public key. When a remote Lich contacts the machine via Nostr, the machine automatically maps the identity to a Guest Sigil and applies the configured Wards.
+
+
 
 ### 2. Scoped Enforcement (The Ward)
 
