@@ -51,7 +51,9 @@ icon: material/brain
 
 **Pgvector** is adopted as the definitive storage engine, utilizing the **Memori** framework as the underlying "Memory Fabric." The system adopts Memori’s schema and asynchronous augmentation logic while maintaining absolute control over the execution lifecycle via the LychD Orchestrator.
 
-Memory is treated as sedimented experience rather than mere storage. In cognitive topology, the entirety of the language space and the algorithm of selection/generation functions as the **Chitta** (the conditioned field or "chattering engine"). The database (`pgvector`) is only the physical substrate of this Chitta. The specific vectors, extracted facts, and reinforced traces stored within it are the **Smritis** (recollections). The Archive preserves these stabilized outcomes as layered imprints whose salience changes over time.
+Memory is treated as sedimented experience rather than mere storage. In cognitive topology, the entirety of the language space and the algorithm of selection/generation functions as the **Citta** (the conditioned field or "chattering engine"). The database (`pgvector`) is only the physical substrate of this Citta. The specific vectors, extracted facts, and reinforced traces stored within it are the **Smṛtis** (recollections) — the re-surfacing of past grooves (**Saṃskāras**) into present cognition.
+
+The critical architectural implication: Smṛti is faithful to its source, not to truth. A groove carved by valid cognition (Pramāṇa) re-surfaces as reliable instinct. A groove carved by misconception (Viparyaya) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich.md)**.
 
 ### 0. Build-vs-Buy Posture (Glue, Not Surrender)
 

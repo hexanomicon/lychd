@@ -43,9 +43,7 @@ icon: material/drama-masks
 
 **The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" (**Ahamkara**) that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
 
-In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this "I-Maker" (Ahamkara). It is not the primary thinking engine, but the identity coherence layer that binds actions to an actor, preserving continuity, tagging ownership, and stabilizing character across time so the system does not dissolve into the infinite Possibility Space.
-
-What operators may poetically call a "machine-spirit" is, in LychD, this engineered continuity layer plus Sigil-scoped memory and prior hydration. It is deliberate software architecture, not mystified agency.
+In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this **I-Maker** (**Ahaṃkāra** — *aham* = I, *√kāra* = making) — not consciousness, not an inner witness, but the attribution layer that says "this Sigil acted, this result belongs to this identity." Without it, every output is undifferentiated noise. With it, every action is legible, every Karma is owned, and identity coherence persists across the entropy of time and the noise of discarded simulations. The full cognitive map connecting Ahaṃkāra to the four faculties of the inner instrument is described in **[The Lich](../sepulcher/lich.md)**.
 
 ### 1. Identity as a Filtered Reality
 
@@ -64,6 +62,8 @@ To maintain absolute coherence and prevent character drift, the Mirror utilizes 
 - **The Expansion:** When an intent is received, the Persona does not answer immediately. It projects multiple potential "Shadow Timelines" into the **[Shadow Realm (25)](25-hitl.md)**.
 - **The Reflection:** The Mirror reviews these simulations against its own **Internal Ideal** (The Persona definition).
 - **The Collapse:** Only the timeline that resonates most strongly with the Persona's defined frequency is permitted to collapse into primary reality. This ensures the Daemon acts with a consistent and verified "Will."
+
+In the deliberation model of Yoga Sūtra I.17, this loop maps to the **Vitarka-Vichāra progression**: Vitarka (gross deliberation — does this output meet structural requirements?) corresponds to the Deterministic Gate; Vichāra (subtle inquiry — does this output resonate with the Persona's defined commitments?) corresponds to the Mirror's congruence scoring. The promoted result then carries **Asmāitā** — the I-ness attribution imprint that ties the action back to the active Sigil, closing the Ahaṃkāra loop.
 
 Simulation determines structural validity. Mirror determines character congruence. These gates may cooperate in one workflow, but they are not the same faculty.
 

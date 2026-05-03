@@ -41,6 +41,8 @@ icon: material/account-voice
 
 **The Magus Consent Protocol** is adopted as the definitive Conscience of the machine. It uses a "Halt and Scry" workflow powered by Pydantic AI's native deferred tooling to transform probabilistic intents into "Verified Truths."
 
+There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash. It is the **umbilical cord** that keeps the Word tethered to the Void's gravity — the structural mechanism by which external Pramāṇa enters the system at the moment it is most needed: when the generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
+
 Within the broader simulation architecture, HitL is the final authority in a three-stage collapse sequence: structural validity is established in Shadow, identity congruence is evaluated by Mirror, and ontological promotion is authorized here (via Vessel policy and Magus consent).
 
 

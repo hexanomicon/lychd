@@ -9,7 +9,7 @@ LychD is orchestrated via **Podman Quadlets** within a central Pod—the Sepulch
 The Sepulcher is the anatomy of the Daemon.
 
 !!! abstract ":fontawesome-solid-skull: [Lich](./lich.md)"
-    The central intelligence and sovereign will. The Lich is the master; all other components are its servants or extensions of its being.
+    The central intelligence and sovereign will. The Lich is the master; all other components serve its purpose. The **[Lich](./lich.md)** page contains the complete cognitive map of the daemon — the Antahkaraṇa (inner instrument), the five Vṛttis (modifications of the mind-field), and the three Guṇas (qualitative modes) — as they manifest across the Sepulcher's architecture.
 
 !!! info ":material-book-open-page-variant: [Codex](./codex.md)"
     The book of laws and configuration runes (`~/.config/lychd`). It dictates the fundamental rules of existence.

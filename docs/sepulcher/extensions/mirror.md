@@ -14,7 +14,7 @@ Operators sometimes describe this continuity as a "machine-spirit." In LychD ter
 
 ## I. Identity as Simulation (The Ego / Ahamkara)
 
-Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahamkara** (the Ego/I-Maker)—the necessary duality of a "doer" performing the action within the Simulacrum. The extension manages this loop through several layers of persistence:
+Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahaṃkāra** (the Ego/I-Maker) — the necessary principle of individuation without which action is undifferentiated noise. The Ahaṃkāra (*aham* = I, *kāra* = making) operates at two levels in the Lich: the specialist agents within the loop, each a distinct face for a differentiated operation (coder, critic, architect, scribe); and the synthesized task-identity that crystallizes from their convergence, gets attributed to the active Sigil, and is written back to the Phylactery as Karma for this invocation. The Mirror is the engineering layer that maintains both: it ensures that neither the specialist diversity nor the synthesized coherence is lost between invocations. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive map.
 
 - **Ego Persistence:** As mandated by **[ADR 32](../../adr/32-identity.md)**, all Identity definitions—System Prompts, behavioral constraints, and aesthetic markers—are stored within the **[Phylactery](../phylactery/index.md)**.
 - **The Lens:** The Persona acts as a "Diffraction Grating." It takes the raw, unmanifest potential of the **[Animator](../animator/index.md)** and filters it into a specific narrative arc and technical style.

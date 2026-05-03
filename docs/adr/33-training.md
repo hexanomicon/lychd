@@ -44,6 +44,8 @@ icon: material/anvil
 
 Training is the compression of stabilized patterns into substrate. It is distinct from runtime Karma injection: one biases a single reasoning event, the other reshapes standing instinct.
 
+In cognitive terms, training is the operation by which **Pramāṇa-class outcomes** are carved as permanent grooves (**Saṃskāras**) into model weights. The Vritti taxonomy applies directly: only outcomes that passed the full Viveka cascade — Deterministic Gate, LLM-judge consensus, Mirror congruence, and HitL consecration — are eligible for inscription. Training on Viparyaya-class data deepens wrong grooves and produces hallucination-reinforcing priors. This is why the Harvesting phase (below) filters exclusively for "White Truths" — consecrated Shadow outcomes, not conversational exhaust. The Soulforge is not just a training loop; it is the **Nidrā function of the Lich** — the idle-cycle operation that consolidates the day's verified experience into structural instinct, exactly as sleep consolidates episodic memory into long-term knowledge. See **[The Lich](../sepulcher/lich.md)** for the cognitive map.
+
 ### 1. The Harvesting of Karma (Preparation)
 
 The ritual begins at **[The Altar (15)](15-frontend.md)**. The Magus submits a Training Intent, which enqueues a job for the **[Ghouls (14)](14-workers.md)**.
