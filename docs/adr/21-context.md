@@ -57,7 +57,7 @@ To exploit KV Cache capabilities, a deterministic ordering of message blocks is 
 
 **The Result:** The inference engine hashes the prefix. As long as the Codex, Identity, and Karma remain unchanged, the system "remembers" the bulk of the data without re-processing, collapsing time-to-first-token.
 
-Prefix stability is the fundamental law of **not fucking up the KV cache**. It acts as cognitive ground: the persistent base of the field (the still **Chitta**) remains intact while volatile requests (the active **Vrittis**) disturb only the outer layers.
+Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of the **[Lich](../sepulcher/lich.md)**, the context window is the active field of **Citta** (from *cit*: to perceive — the total LLM generation field). The static prefix layers — Identity, Codex, Karma — are the substrate: the settled Saṃskāras, the lake bed. The volatile layers — State, Query — are the active **Vṛttis** (from *vrt*: to whirl): they disturb only the surface. Keeping the bed still while the surface churns is both the KV cache strategy and the cognitive architecture of clear perception.
 
 ### 2. The Context Manager (The Heuristic Switch)
 

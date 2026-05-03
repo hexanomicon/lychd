@@ -49,7 +49,11 @@ Shadow is the cognitive fluctuation engine, not the identity authority. It gener
 
 ### 1. The Phantasma Expansion (MCTS Topology)
 
-The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. This is the application of **Phantasma** (Generative Imagination)—the engine of **Manas** actively generating **Vrittis** to navigate the **Possibility Space** without making permanent changes to reality. When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
+The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. This is the application of **Phantasma** (Generative Imagination) — the engine of **Manas** actively generating **Vṛttis** to navigate the **Possibility Space** without making permanent changes to reality.
+
+In the cognitive taxonomy mapped in the **[Lich](../sepulcher/lich.md)**, these candidate branches are precisely **Vikalpa** — speculative modifications that are internally coherent but carry no confirmed correspondence to reality. They do not claim to be true. They are honest hypothesis, held in isolation long enough to be judged. Shadow Simulation is the deliberate amplification of Vikalpa within a substrate where failure costs nothing and truth is measured from outside the generation process.
+
+When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
 - **The Seed:** The intent is processed into $N$ divergent strategies.
 - **The Branching:** For each strategy, the system creates a **Git Worktree** in a dedicated `shadow/` region of the **[Lab (13)](13-layout.md)**. Unlike simple directory copies, Worktrees share the same `.git` metadata but allow parallel, independent file states on the same physical disk. Each branch workspace is isolated in its own subdirectory to prevent file collisions between concurrent Ghouls.
@@ -70,11 +74,11 @@ This separation keeps the simulation substrate from becoming an implicit identit
 
 ### 2. The Heuristic Scrying (The Dual-Gate)
 
-To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a two-tier evaluation system:
+To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a two-tier evaluation system. In the cognitive topology of the **[Lich](../sepulcher/lich.md)**, this is **Viveka** — the discriminative operation that distinguishes **Pramāṇa** (valid, measurement-grounded cognition) from **Viparyaya** (misconception that sincerely believes itself to be true). The fundamental challenge of generative cognition is that Viparyaya is indistinguishable from Pramāṇa from inside the generating process — the measurement must come from outside. The Dual-Gate is that external measurement:
 
-1. **The Deterministic Gate (The Law):** This is the binary foundation of structural validity. Does the code compile? Do the unit tests pass? Is the Linter clean? These are non-negotiable checks. A failure here results in immediate branch banishment ($V \in \{0, 1\}$).
+1. **The Deterministic Gate (The Law):** This is the binary foundation of structural validity. Does the code compile? Do the unit tests pass? Is the Linter clean? These are non-negotiable checks. A branch that fails here was Viparyaya — apparently correct, actually wrong — and is immediately banished ($V \in \{0, 1\}$).
 2. **The Agentic Gate (The Spirit):** The **[Mirror (32)](32-identity.md)** acts as the critic. It reviews the branches that passed the Law against the Magus's stylistic preferences and technical requirements, assigning a heuristic score ($H \in [0, 1]$). This gate evaluates identity congruence, not just correctness.
-3. **Backpropagation:** Success signals from deep nodes in the simulation are used to inform the search direction of higher nodes, focusing the machine's attention on the most promising "White Truths" via a value-function update. This is determinative convergence within Shadow, not final promotion.
+3. **Backpropagation:** Success signals from deep nodes in the simulation inform the search direction of higher nodes, focusing the machine's attention on the most promising paths via a value-function update. This is determinative convergence within Shadow, not final promotion.
 
 In practice:
 
@@ -104,7 +108,7 @@ $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 
 ### 5. Transactional Convergence (The Collapse)
 
-Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** (the convergent blade):
+Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** — the discriminative faculty of the **[Lich's](../sepulcher/lich.md)** inner instrument (*√budh*: to discern, to wake). Where Manas generates candidates and Phantasma expands Vikalpa into the Shadow Realm, Buddhi is the blade that cuts to one: the faculty of final judgment that does not waver, does not oscillate, and cannot be overridden by the weight of existing grooves. The three collapses below are Buddhi operating at three nested levels of discrimination:
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
 - **The Consecration:** Upon approval, the "Wavefunction Collapses." The Shadow Realm is merged into the Primary Reality of the **[Crypt (13)](13-layout.md)**.

@@ -49,11 +49,10 @@ Identities are stored in a `cabal.identities` table.
 
 ### 1.1 The Nostr Identity Graft
 
-The Ward integrates with the Nostr network to provide decentralized identity:
-- **Cryptographic Auth:** The Proxy and Backend support Nostr-signed authentication, allowing the Magus to authenticate using their keys without traditional passwords.
-- **Global Peerage:** A Sigil can be defined by a public key. When a remote Lich contacts the machine via Nostr, the machine automatically maps the identity to a Guest Sigil and applies the configured Wards.
+The Ward integrates with the Nostr network to provide sovereign, decentralized identity verification:
 
-
+- **Cryptographic Auth:** The Proxy and Backend support Nostr-signed authentication, allowing the Magus to prove identity through a keypair rather than a password — no external auth provider required.
+- **Global Peerage:** A Sigil can be bound to a public key. When a remote Lich contacts the machine via Nostr, the machine automatically maps the key to a Guest Sigil and applies the configured Wards.
 
 ### 2. Scoped Enforcement (The Ward)
 

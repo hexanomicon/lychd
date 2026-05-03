@@ -16,9 +16,7 @@ icon: material/key-chain
 - **Extension Sovereignty:** Implementation as a pluggable Extension, allowing the proxy engine to be swapped for alternative solutions without modification of internal application logic.
 - **Protocol Agnosticism:** Native support for modern transport protocols, including HTTP/2, HTTP/3, and WebSockets, to facilitate high-performance scrying.
 - **A2A Shielding:** Mandatory provision of the first layer of defense for the **[Intercom (26)](26-a2a.md)**, enforcing path-based routing and encryption for peer-to-peer traffic.
-- **Nostr Gateway:** Provision for Nostr-signed authentication to enable key-based access to the machine's internal routes.
-
-
+- **Nostr Gateway:** Support for Nostr-signed authentication at the edge, allowing the Magus and trusted peers to access internal routes via cryptographic signature rather than session credentials.
 
 ## Considered Options
 
