@@ -56,3 +56,20 @@ icon: material/book-cog-outline
 - **Structure:** Documentation lives in `docs/` and is deployed to GitHub Pages.
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
 - **CSS:** A custom stylesheet (`stylesheets/frostmourne.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
+
+### The "Dark Souls" Documentation Strategy
+
+A delicate balance between narrative depth and engineering clarity is maintained by splitting the documentation into three distinct tiers:
+
+- **The Iron Covenants (ADRs):** `docs/adr/` remains strictly technical and objective. The dark fantasy vocabulary (Vessel, Phylactery, Thrall) is used solely to reduce cognitive load and map domains. It is the architectural ground truth.
+- **The Outer Wall (The Grimoire):** All general documentation within `docs/`. These are heavily stylized and fully embrace the dark fantasy roleplay to make reading the manual an immersive User Experience, but they remain fundamentally functional guides on how to use the software.
+- **The Inner Sanctum (Lore & Transcendence):** Specifically `docs/divination/transcendence/`. This is where the project goes unapologetically off the rails into pure esoteric philosophy, Vedic metaphysics, and cosmic metaphors (the "Why" behind the "How"). Like item descriptions in *Dark Souls*, this lore is entirely optional. It does not help configure the system; it exists to reward the dedicated practitioner who wants to understand the ultimate intent, without confusing the casual contributor who just wants an API endpoint.
+
+### Consequences
+
+!!! success "Positive"
+    - **Cultivation of Lore:** The separation allows the project to maintain its highly stylized "Grimoire" aesthetic and deep eschatological philosophy without compromising the perceived professionalism of the engineering architecture.
+    - **Engine Performance:** Zensical's Rust core drastically reduces build times, improving the developer experience.
+
+!!! failure "Negative"
+    - **Ecosystem Immaturity:** Zensical is newer than MkDocs, which may lead to missing plugins or edge-case bugs that require upstream fixes.

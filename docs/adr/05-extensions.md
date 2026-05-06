@@ -87,6 +87,12 @@ Configuration extensibility uses structural discovery:
 - Subclass presence is the registration signal; no extra registration calls.
 - The loader remains singular and authoritative for all runic TOML parsing and validation.
 
+### 6. The MPL 2.0 Shield (Private Extensions)
+
+Because the system is bound by **[The Iron Pact (00)](00-license.md)** (MPL 2.0), the Federation explicitly supports **proprietary, closed-source extensions**. 
+
+If the core were licensed under AGPLv3, any private "Secret Sauce" would have to be built as a separate network Animator to avoid copyleft infection. The MPL 2.0 allows you to statically link your private code directly into the Daemon's memory space as an Extension. You retain your local sovereign advantage while using the open core to participate in the A2A Swarm.
+
 ### Consequences
 
 !!! success "Positive"

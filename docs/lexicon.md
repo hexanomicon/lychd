@@ -29,7 +29,7 @@ _This is the Rosetta Stone for the Hexanomicon—the single source of truth for 
 | **Incantation** | The act of defining reality through the written word. Writing the Prophecy that compels the code to exist. | Writing Documentation/Specs before implementation (xDDD). |
 | **Intent** | A focused desire submitted by the Magus. It defines what is required rather than prescribing how execution proceeds. | A structured prompt or job submission object. |
 | **Invocation** | The runtime act of calling upon the Lich to perform a task or generate a Shadow Realm timeline. | Submitting a form or API request to trigger an Agent workflow. |
-| **Iron Pact** | The unbreakable ward protecting the system's soul from privatization and enclosure. | The AGPLv3 License and No-CLA policy. |
+| **Iron Pact** | The unbreakable ward protecting the system's soul from privatization and enclosure. | The MPL 2.0 License and Implicit DCA policy. |
 | **Karma** | The crystallized residue of the Magus's judgment. Validated truths stored in the Phylactery to train future iterations. | The dataset of user-accepted code/responses (RLHF data). |
 | **Lab** | The site of Genesis. A protected workspace where new extensions and logic are drafted before promotion. | The `lab/` directory / Development sandbox. |
 | **Legion** | The Lich's personal army of Thralls — soulless Vessels bound to a single Phylactery, extending the imperator's reach across every machine the Magus owns. | The multi-node Thrall coordination extension (ADR 42). |

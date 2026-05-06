@@ -7,13 +7,13 @@ authors = [
     { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
 ]
 requires-python = ">=3.12, <3.15"
-license = { text = "AGPL-3.0-or-later" }
+license = { text = "MPL-2.0" }
 keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai", "quadlet", "ai"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
     "Operating System :: POSIX :: Linux",
     "Environment :: No Input/Output (Daemon)",
     "Programming Language :: Python :: 3.12",

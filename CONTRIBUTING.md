@@ -2,9 +2,12 @@
 
 Read **[AGENTS.md](AGENTS.md)** first — concepts defined there are not repeated here. This file covers the practical rituals: setup commands, implementation conventions, and the authorities that govern specific implementation decisions. Agents and humans alike are expected to internalize both.
 
-## The Iron Pact (No CLA)
+## The Iron Pact (Implicit DCA)
 
-By submitting code, you license your contribution under **AGPL-3.0-or-later** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
+By submitting code, you license your contribution under **MPL-2.0** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
+
+**Implicit Developer Certificate of Origin (DCA):**
+There is no CLA to sign, and you do not need to sign your git commits. By reading this contributing guide, you are aware of the Implicit DCA. Everything you commit is automatically covered by this agreement, confirming that you have the right to submit the code under the MPL 2.0 license.
 
 ## Local Rituals (Setup & Commands)
 

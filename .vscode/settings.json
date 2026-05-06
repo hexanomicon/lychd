@@ -7,12 +7,12 @@
     }
   },
   "[markdown]": {
-        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
-        "editor.codeActionsOnSave": {
-            // This fixes MD022 (headers) and other structure rules
-            "source.fixAll.markdownlint": "explicit"
-        }
-    },
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+    "editor.codeActionsOnSave": {
+      // This fixes MD022 (headers) and other structure rules
+      "source.fixAll.markdownlint": "explicit"
+    }
+  },
   // tag:yaml.org,2002: is required or it lint warns in mkdocs.yaml
   "yaml.customTags": [
     "tag:yaml.org,2002:python/name:material.extensions.emoji.twemoji",
@@ -25,7 +25,6 @@
   "[dockercompose]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
-
   "files.exclude": {
     "**/__pycache__": true,
     "**/.git": true,

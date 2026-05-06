@@ -1,6 +1,10 @@
 # --- LychD / Agent Shadows ---
 .agents/
 
+.jj/
+# Jujutsu VCS
+
+
 # --- Web UI / Frontend ---
 node_modules/
 dist/
