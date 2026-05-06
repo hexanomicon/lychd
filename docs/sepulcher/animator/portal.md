@@ -91,11 +91,11 @@ For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.m
 
 <div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
 
-  <img src="../../../assets/witcher/great-portals-this-just-keeps-getting-better.gif"
+  <img src="../../assets/witcher/great-portals-this-just-keeps-getting-better.gif"
        alt="Great! Portals... This just keeps getting better"
        style="width: 300px; border-radius: 8px; border: 1px solid #7c4dff; box-shadow: 0 0 10px rgba(124, 77, 255, 0.2);">
 
-  <img src="../../../assets/witcher/i-hate-portals.gif"
+  <img src="../../assets/witcher/i-hate-portals.gif"
        alt="I hate portals!"
        style="width: 300px; border-radius: 8px; border: 1px solid #7c4dff; box-shadow: 0 0 10px rgba(124, 77, 255, 0.2);">
 </div>

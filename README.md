@@ -9,10 +9,10 @@
       <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
     <a href="LICENSE">
-      <img src="https://img.shields.io/badge/License-AGPLv3-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
+      <img src="https://img.shields.io/badge/License-MPL_2.0-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
     </a>
     <a href="CONTRIBUTING.md">
-      <img src="https://img.shields.io/badge/CLA-None-000000?style=for-the-badge&labelColor=1a1a20" alt="No CLA">
+      <img src="https://img.shields.io/badge/DCA-Implicit-000000?style=for-the-badge&labelColor=1a1a20" alt="Implicit DCA">
     </a>
   </p>
 </div>
@@ -44,15 +44,25 @@ On **your** hardware, with open-source software **you** control, you retain abso
 
 > *"I would rather reign in a local hell than serve in a cloud heaven."*
 
-## ⚖️ [The Iron Pact](docs/adr/00-license.md) (AGPLv3)
+## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
 
 **This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
 
-AGPLv3 is a poison pill for the oligarchs who would capture the soul of the machine for private gain. It ensures that if they host the Lich as a closed service, they are legally compelled to share their modifications.
+MPL 2.0 is hostile architecture for the oligarchs who would capture the soul of the machine for private gain. LychD's sovereignty comes from architecture—it is a local-first daemon. If they host the Lich and alter the core engine, they are legally compelled to share their modifications.
 
 - **The Engine is Shared:** Improvements to the daemon's body must be returned to the collective.
 - **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, and **Private Agents** remain strictly sovereign.
-- **Interface, Don't Graft:** If you need secrecy, build it as a separate service that interfaces via API. As long as you do not rewrite the engine's core, your code remains your own.
+- **Interface & Private Extensions:** Under AGPL, any private "Secret Sauce" would have to be isolated over the network as an external **[Animator](docs/sepulcher/animator/index.md)**. **MPL allows static linking.** You can graft proprietary code directly into your local daemon as an **[Extension](docs/adr/05-extensions.md)** without open-sourcing it. This saves the **[A2A Necropolis](docs/adr/26-a2a.md)** network—you can trade labor in the Swarm while keeping your advantage hidden.
+
+<br>
+<div align="center">
+  <p><strong>🛡️ The Developer Safehouse</strong></p>
+  <p>The corporate rights-grab is explicitly rejected. There is <strong>no CLA to sign</strong>. An <strong>Implicit DCA</strong> (Developer Certificate of Origin) is utilized—by reading the contributing guide, commits are covered. There is no need to manually sign git commits. Between MPL 2.0 protecting proprietary extensions and the Implicit DCA protecting open-source contributions, LychD is structurally designed to be an absolute sanctuary for builders.</p>
+</div>
+<br>
+
+**The Protocol over the Implementation (The Bloodlines)**
+LychD is a pure Linux-native implementation. But the **A2A Intercom** and Extension APIs are universal standards. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not cloning LychD—they are founding new **Bloodlines**. As long as they speak the protocol, they can enter the Necropolis and trade labor in the Swarm. We do not bloat our codebase for cross-platform abstraction; we rely on the protocol to unite the lineages.
 
 **The Iron Pact is the Institutional Trust of the Necropolis.**
 Shared code is the guard that prevents the emergence of "Mal-Liches"—modified, malicious versions of the intelligence that remain hidden from the community. Transparency in code is the only way to build a decentralized network.

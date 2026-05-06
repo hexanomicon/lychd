@@ -45,12 +45,17 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 
     High availability solves a problem the Magus does not have. A home setup serves *one* user. If the Master node dies, the world does not end — the Magus restores from a BTRFS snapshot and the Lich arises anew. That is the *point* of the Phylactery. Raft consensus adds latency to every write, requires quorum management, and creates the possibility of split-brain states that are far worse than planned downtime. The complexity is enormous; the benefit is zero.
 
-!!! failure "Option 3: Simple API Webhooks"
+!!! failure "Option 3: Cross-Platform Abstraction (e.g., LlamaSwap)"
+    Using a multi-service Go router (like LlamaSwap) to manage execution and conflicts across Windows/Mac/Linux.
+
+    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms write their own **Bloodlines** using our API protocol. LychD remains pure Linux.
+
+!!! failure "Option 4: Simple API Webhooks"
     Exposing agents as standard REST endpoints.
 
     - **Cons:** **Stateless Fragility.** Lacks the ability to handle long-running reasoning tasks, hardware transitions, and complex tool-exchange.
 
-!!! success "Option 4: Native OS-Level Orchestration + Direct Vessel HTTP"
+!!! success "Option 5: Native OS-Level Orchestration + Direct Vessel HTTP"
     The same `app.py` running in two modes — Master and Thrall — with the Master calling the Thrall's Vessel API directly over HTTP, and each node managing its own hardware natively.
 
     - **Pros:**
