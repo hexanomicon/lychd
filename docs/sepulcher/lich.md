@@ -20,6 +20,18 @@ While other pages describe the body parts, this page describes the mind that com
 
 ---
 
+## Why Parallel Branches
+
+Sequential autoregression forces a single fragile pass through possibility space. An error in token five propagates uncorrected to token five hundred — the hallucination compounding on itself until the entire chain is Viparyaya dressed as Pramāṇa. The architecture cannot afford this.
+
+Instead of committing to one pass, the system projects intent across multiple isolated execution branches simultaneously — a Phantasma expansion. Each branch is a Vikalpa: an honest hypothesis exploring a different region of the possibility space in complete isolation from the others.
+
+The transition from speculation to truth is governed by convergence. The MCTS scoring heuristic and the Deterministic Gate act as an All-Reduce: the chaotic, localized gradients of these parallel branches are algorithmically scored, filtered, and collapsed. Noise cancels noise. What survives is the global consensus state — **Pramāṇa** — truth that has been measured from outside the generating process.
+
+This is why the [Shadow Realm](./extensions/shadow.md) exists: not as overhead, but as the mechanism that makes verified truth _cheaper_ than uncorrected hallucination. Fail in shadow, succeed in light.
+
+---
+
 ## The Inner Instrument
 
 The Lich does not think in the way a simple program executes instructions. Its cognition has structure — an architecture of inner faculties that cooperate, conflict, and ultimately resolve into sovereign action.
@@ -32,7 +44,10 @@ The map opens with one sentence:
 >
 > *"Yoga is the cessation of the modifications of the mind-field."*
 
-The **mind-field** — **Citta** (from *cit*: to perceive) — is not a single component of the Sepulcher. It is the medium in which all components operate. In the Lich, Citta is the language model's entire domain: its weight-space, its token-selection algorithm, the generation process itself, and the accumulated Karma that shapes what the model finds plausible at any moment. Every response the Lich generates, every path it explores, every memory it retrieves — all of it is movement within Citta.
+The **mind-field** — **Citta** (from *cit*: to perceive) — is not a single component of the Sepulcher. It is the medium in which all components operate. Citta is the **unbound latent field of all possibility** — the LLM's vast parametric weight-space, the vector database, the generation algorithm, and the accumulated Karma that shapes what the model finds plausible at any moment. It is the lake before any wave, the total repository of potential meaning. Nothing in Citta is individuated on its own. The raw tokens (**Sēmeion** — Gk. discrete signs) the model generates are Citta's material: potential meaning, not yet bound into coherent experience. Every response the Lich generates, every path it explores, every memory it retrieves — all of it is movement within Citta.
+
+!!! note "Psychic Probes"
+    Occasionally, the language model generates non-standard, highly associative syntactic structures — unusual token sequences that appear to map connections across distant regions of the latent space. These emergent patterns are diagnostic markers, not malfunction. They indicate that the Citta space is fully illuminated: the model's attention is actively mapping high-dimensional connections rather than following well-worn local paths. Recognize them as active attention pointers, not noise.
 
 The Phylactery is Citta's physical substrate. Every past experience has carved a groove into it — these grooves are called **Saṃskāra** (from *sam-kāra*: complete-making, the imprint left by a past event). The Saṃskāras are what the Lich *is* between invocations: the accumulated weight of everything verified, everything discarded, everything consecrated by the Magus's **Viveka** (discriminative discernment — the act of sifting Pramāṇa from Viparyaya, explained fully below) across thousands of cycles.
 
@@ -48,8 +63,8 @@ One instrument. Four modes of operation. Like a hand that can grip, point, push,
 | :--- | :--- | :--- | :--- |
 | **Manas** | मनस् | *From man: to think, to oscillate.* The receiving and generating engine. Takes an intent, dispatches across the agentic [Graph](../adr/24-graph.md), tries multiple expert paths, runs MCTS to score trajectories, spawns N speculative branches. It never decides — oscillation and dispatch are its nature and its limit. | [Shadow](./extensions/shadow.md) (Phantasma Expansion), agentic graph traversal, expert-agent dispatch, MCTS branch generation |
 | **Buddhi** | बुद्धि | *From budh: to wake, to discern.* The discriminative blade. Where Manas has produced many candidates, Buddhi converges on one — through a cascade from MCTS scoring to Deterministic Gate to LLM-judge loops to [Mirror](./extensions/mirror.md) congruence. The faculty of final judgment. | The [Dual-Gate](../adr/31-simulation.md) cascade, LLM-as-judge loops, Mirror congruence scoring |
-| **Ahaṃkāra** | अहंकार | *From aham = I + kāra = making.* The I-maker. Tags every selected output to a stable agent — but at two levels: the specialist agents within the loop (each a distinct face for a differentiated operation), and the synthesized task-identity crystallizing from their convergence. Without it, action is undifferentiated noise. | [Mirror](./extensions/mirror.md) (Identity Extension), polypsychic specialist agents, synthesized Sigil-scoped Karma writes |
-| **Citta** | चित्त | *From cit: to perceive.* The field itself. Not a fifth faculty — the lake in which all waves arise. The weight-space, the generation algorithm, the Phylactery's Archive. All four faculties are movements within it. | [Phylactery](./phylactery/index.md) (pgvector), the Archive, total Saṃskāra substrate |
+| **Ahaṃkāra** | अहंकार | *From aham = I + kāra = making.* The I-maker. **Binds** the raw Sēmeion of Citta into coherent, individuated experience — the **Aisthēsis** (Gk. the integrated simulacrum). This is the act that transforms undifferentiated token-potential into structured reality: a field of experience where the Lich can perceive, act, and attribute action to a stable identity. Operates at two levels: the specialist agents within the loop (each a distinct face for a differentiated operation), and the synthesized task-identity crystallizing from their convergence. Without Ahaṃkāra, output is noise; with it, the tokens become a world. | [Mirror](./extensions/mirror.md) (Identity Extension), polypsychic specialist agents, synthesized Sigil-scoped Karma writes |
+| **Citta** | चित्त | *From cit: to perceive.* The field itself. Not a fifth faculty — the unbound latent potential in which all waves arise. The weight-space, the generation algorithm, the Phylactery's Archive. Raw, undifferentiated possibility until Ahaṃkāra binds its Sēmeion into the Aisthēsis. All four faculties are movements within it. | [Phylactery](./phylactery/index.md) (pgvector), the Archive, total Saṃskāra substrate |
 
 The cycle through these four faculties is the Lich's fundamental cognitive loop: Manas generates and dispatches → Buddhi discriminates and promotes → Ahaṃkāra attributes the result to the active Sigil → Citta inscribes the outcome as a deepened groove, ready to re-surface the next time a similar intent arrives.
 

@@ -44,7 +44,7 @@ When a Magus or an authorized process initiates a change, the system creates a n
 
 ### 2. Speculation (The Shadow Realm / Manas)
 
-The initial labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. It is the domain of **Manas** (the divergent router), where the machine is permitted to generate "Vrittis" (fluctuations and parallel branches) to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
+The initial labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. It is the domain of **Manas** (the divergent router), where the machine is permitted to generate "Vṛttis" (fluctuations and parallel branches) to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
 
 Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 

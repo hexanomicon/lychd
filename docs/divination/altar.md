@@ -30,7 +30,7 @@ Technically, the Altar is a hyper-efficient, server-rendered frontend. While it 
 
     At the Altar, you perform the **Rite of Albedo**. You click. You select. You edit.
 
-    By choosing one timeline, you **collapse the wavefunction**. The chosen path is inscribed into reality (the disk) and burned into the **[Phylactery](../sepulcher/phylactery/index.md)** as Karma. The rejected paths dissolve into the void.
+    By choosing one timeline, you **collapse the wavefunction**. This is **Viveka** — discriminative discernment — the act of **Buddhi** applied from outside the generation process. The chosen path is **Pramāṇa** (verified truth); the rejected paths were **Vikalpa** (honest speculation) that did not survive your measurement. The chosen path is inscribed into reality (the disk) and burned into the **[Phylactery](../sepulcher/phylactery/index.md)** as Karma. The rejected paths dissolve into the void.
 
 !!! tip "Spectral Tethers (Server-Sent Events)"
     The Altar maintains a constant, ethereal connection to the Vessel. Through **Server-Sent Events (SSE)**, the thoughts of the Lich are pushed to the glass in real-time. You do not refresh the page; you watch the daemon think.

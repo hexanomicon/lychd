@@ -28,21 +28,21 @@ icon: material/text-box-multiple-outline
     -   **Cons:** **Semantic Blindness.** The Agent loses the ability to perceive the "Big Picture," such as cross-file dependencies in a codebase or the overarching narrative of a document. Reasoning becomes fragmented and shallow.
 
 !!! failure "Option 2: Naive Full Context Ingestion"
-    Passing entire datasets into the prompt for every request without optimization.
-    -   **Cons:** **Extreme Resource Exhaustion.** Processing 100k+ tokens from scratch for every turn of a conversation introduces unacceptable latency (minutes per request) and exhausts GPU cycles, potentially paralyzing the machine.
+    Passing entire datasets (100k+ tokens) into the prompt for every request.
+    -   **Cons:** **Attention Dilution and Exhaustion.** Processing 100k+ tokens from scratch is not only slow, but massive contexts overwhelm the LLM's attention mechanism. The model struggles to extract precise details from a massive wall of text, leading to degraded reasoning and hallucination, even if it mathematically fits in the context window.
 
-!!! success "Option 3: Hybrid CAG with Prefix Caching (Unified RunContext)"
-    Utilizing a strictly ordered prompt structure to maximize KV Cache capabilities alongside a typed dependency injection system.
+!!! success "Option 3: Hybrid CAG with Prefix Caching and Iterative Aggregation"
+    Utilizing a strictly ordered prompt structure to maximize KV Cache capabilities, and iterating over large datasets in focused chunks (chapter-by-chapter).
     -   **Pros:**
-        -   **Near-Instant Response:** Once the static "floor" (Identity/Codex) is processed, subsequent queries are served in milliseconds via cache reuse.
-        -   **Holistic Understanding:** The Agent retains the full semantic relationship of the data within the **[Agents (ADR 20)](./20-agents.md)** framework.
+        -   **Near-Instant Response:** Once the static "floor" (Identity/Codex/Base Prompt) is processed, subsequent queries and snippet loops are served in milliseconds via cache reuse.
+        -   **Attention Exactness:** By looping chapter-by-chapter against a cached base prompt, the attention mechanism remains highly focused, yielding superior extraction, comparison, and synthesis.
         -   **Sovereign Safety:** Permissions and hardware reality are baked into the context, ensuring the mind is grounded in the laws of the machine.
 
 ## Decision Outcome
 
 **Context Aware Generation (CAG)** is adopted as the primary strategy for deep reasoning, enabled by a strict **Prompt Caching** discipline and a heuristic **Context Manager**. The implementation utilizes Pydantic AI's `RunContext` as the universal primitive for all cognitive rituals.
 
-Context is the temporary active field of cognition. It functions as the **Aisthēsis** (The Simulacrum)—the unified holograph where the **Ahamkara** (Identity) perceives the world. It is a bounded surface where identity, world-model artifacts, prior outcomes, and the current request are made simultaneously visible for one reasoning cycle.
+Context is the temporary active field of cognition. It functions as the **Aisthēsis** (Gk. Αἴσθησις — integrated experience; the perceived simulacrum) — the unified holograph where **Ahaṃkāra** binds the raw **Sēmeion** of **Citta** into a coherent field of experience. It is a bounded surface where identity, world-model artifacts, prior outcomes, and the current request are made simultaneously visible for one reasoning cycle.
 
 ### 1. The Cache Protocol (The Stable Floor)
 
@@ -89,6 +89,15 @@ To ensure substrate stability and prevent VRAM spikes, the manager enforces hard
 ### 5. Pluggable Context Formatters
 
 The architecture supports a registry of **Formatters** to prepare the working memory. Extensions can register new `PromptTemplates` or `ArtifactInjectors` to inject unique behavioral constraints or memory summaries into the prefix without modifying the core kernel.
+
+#### Path-Aware Context Hydration
+
+To strictly adhere to the Minimum Context Principle and prevent VRAM exhaustion from irrelevant documentation, the Orchestrator implements dynamic, semantic hydration:
+
+- **Intent:** Inject specialized chapters of the Hexanomicon or technical manuals *only* when the agent's work semantically intersects with them.
+- **Inputs:** The Orchestrator inspects the active `jj` commit intent and the physical file paths being modified (e.g., changes targeting `src/lychd/db/`).
+- **Execution:** It dynamically retrieves and maps only the relevant architectural rules (e.g., `docs/adr/06-persistence.md`) into the Codex layer, leaving unrelated documentation (like UI or networking rules) out of the prompt.
+- **Placement:** Injected into the static Codex layer of the prefix cache. This limits context bloat, focusing the machine's Aisthēsis purely on the domain at hand.
 
 #### Quality Drift Injection (LLM Output Correction)
 

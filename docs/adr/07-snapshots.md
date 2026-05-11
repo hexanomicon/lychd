@@ -30,13 +30,13 @@ icon: material/camera-timer
 
     -   **Cons:** **Tooling Breakage.** This removes the ability to use standard VCS tools (Git/JJ), linters, and IDEs on extension code, violating the principle of deep integration with the developer's lineage and engineering rigor.
 
-!!! success "Option 3: The Checkpoint Protocol"
-    A coordinated signal that freezes execution, locks the code state via a federated manifest, and snapshots the data via an abstracted storage driver.
+!!! success "Option 3: The Checkpoint Protocol (Jujutsu + Btrfs)"
+    A coordinated signal that freezes execution, locks the code state via a federated manifest anchored to Jujutsu's immutable Commit IDs, and snapshots the data and code repository states simultaneously via a Btrfs Copy-on-Write driver.
 
     -   **Pros:**
-        -   **Total Recall:** Guarantees that code and data are always bit-perfectly in sync.
+        -   **Total Recall:** Guarantees that code, version-control state, and data are always bit-perfectly in sync.
         -   **Performance:** Leverages kernel-level features like Btrfs subvolumes for O(1) snapshot speed.
-        -   **Auditability:** Provides a clear history of the machine's exact composition at any point in time.
+        -   **Mathematical Rigour:** Decouples mutable conceptual changes from the frozen file-tree state, preventing metadata corruption.
 
 ## Decision Outcome
 
@@ -51,11 +51,21 @@ To guarantee consistency during self-modification, the system defines an atomic 
 3. **Snapshot (The Soul):** The persistent storage driver executes a data backup synchronized with the generation of the lockfile.
 4. **Resume:** Normal operation continues.
 
-### 2. Logic Persistence: The Federated Manifest
+### 2. Logic Persistence: The Federated Manifest and the Hexadecimal Mandate
 
-VCS (Git/Jujutsu) is the exclusive mechanism for versioning the Daemon's logic. The `lychd.lock` file acts as the anchor, storing the pointers (hashes) to the specific state of every organ. To restore a snapshot is to read this lockfile and execute a coordinated restoration (e.g., `git checkout` or `jj restore`) across the entire Federation to restore the "Body" to its captured state.
+Jujutsu (`jj`) is the exclusive mechanism for versioning the Daemon's logic. Unlike standard Git, which conflates change tracking and snapshots, Jujutsu maintains **two distinct identifiers** for every state transition:
+- **Change ID (Alphabetic, e.g., `qzmzpxyl`):** A stable identifier that tracks a conceptual task. This ID remains constant across amends, rebases, and modifications.
+- **Commit ID (Hexadecimal, e.g., `bc915fcd`):** An immutable, cryptographic hash of the exact state of the file tree at a frozen moment in time.
 
-### 3. Data Persistence: The Storage Interface
+!!! important "The Hexadecimal Mandate"
+    The Checkpoint Protocol MUST strictly capture and record the **hexadecimal Commit ID** within the `lychd.lock` file. Anchoring the manifest to the alphabetic Change ID is forbidden. Because Change IDs represent mutable, evolving timelines, using them for snapshots would cause the restored code to drift from the static database state if the change concept evolved after the snapshot was taken.
+
+### 3. Data & VCS Coherence: Btrfs Integration
+
+To achieve instant, transactional rollbacks of both memory (database) and mind (version control graph), LychD marries Btrfs Copy-on-Write (COW) subvolumes with Jujutsu's SQLite-backed repository state.
+
+- **The Btrfs Subvolume Layout:** Both the `crypt/` (Postgres application database) and the `.jj/` (Jujutsu's internal SQLite state-graph) exist on Btrfs subvolumes.
+- **Coordinated Blink:** When the Checkpoint Protocol is triggered, Btrfs executes a coordinated COW snapshot of both the Postgres tables and the SQLite version-control graph. The entire repository state is physically captured in a single, ACID-compliant database snapshot on disk.
 
 The system abstracts data backup through a Storage Driver Interface, allowing the Lych to adapt its strategy based on the host environment.
 
@@ -67,9 +77,10 @@ The system abstracts data backup through a Storage Driver Interface, allowing th
 
 When a snapshot is restored, the system enforces a strict alignment check before reanimating the Daemon's consciousness.
 
-- **Body-Soul Verification:** The system compares the captured `lychd.lock` hashes with the currently forged physical body.
+- **Body-Soul Verification:** The system compares the captured `lychd.lock` hexadecimal Commit IDs with the current physical body.
+- **The Jujutsu Warp:** Restoring the code is not a simple file overwrite. The system executes `jj edit <Commit_ID>`. This physically warps Jujutsu’s working copy commit (`@`) of the workspace back to the frozen node in the graph, making it active.
 - **Mandatory Rebirth:** If the Cognitive State preserved in the memory belongs to a version of logic newer than the current physical body, the system refuses to reanimate the mind. This triggers a mandatory rebuild/restart to bring the physical substrate into alignment with the restored soul, preventing schema mismatches and cognitive corruption.
-- **Rehydration Ritual**:  Restoring a snapshot is the Reanimation of the machine. To ensure bit-perfect alignment, the system performs an Atomic Reversion of the physical substrate. It does not rely on the instability of logical "migrations" (Alembic) to move backward. Instead, the storage driver physically resets the database directory using the Btrfs or Postgres snapshot. This ensures the Soul (Data) is physically identical to the moment the Body (Code) was captured, bypassing the risk of schema drift entirely.
+- **Rehydration Ritual**: Restoring a snapshot is the Reanimation of the machine. The storage driver physically resets the database directory using the Btrfs or Postgres snapshot. Simultaneously, the `jj edit` command aligns the codebase. This ensures the Soul (Data) is physically identical to the moment the Body (Code) was captured, bypassing the risk of schema drift entirely.
 
 
 ### Consequences

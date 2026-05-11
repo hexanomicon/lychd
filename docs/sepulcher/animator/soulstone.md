@@ -66,6 +66,7 @@ A Soulstone is inert until it is bound to an **Animator**—the engine that pump
 
     1.  **Automatic FSM:** When PydanticAI sends a standard `json_schema` in the API request, SGLang automatically detects it and engages its **Compressed Finite State Machine**. This forces the GPU to generate valid JSON at hardware speed, bypassing the need for Python-based regex parsing.
     2.  **The Multitasking Tree:** Do not fear context switching. The Radix Attention engine is a **Tree**, not a single block. You can run a "Coder Agent" and a "Vision Agent" with completely different System Prompts simultaneously. As long as your VRAM context buffer (the ~13GB margin) is not 100% full, SGLang keeps *both* conversation branches "hot" in memory, switching between them instantly without reloading.
+    3.  **The Iterative Ingestion Pattern (Attention Exactness):** Avoid dumping 100K+ context files (like full framework repos) into a single prompt. LLM attention mechanisms degrade and lose precision in massive contexts. Instead, establish a Base Prompt and loop over the document chapter-by-chapter (`Base Prompt + Snippet 1`, `Base Prompt + Snippet 2`). SGLang's Radix Attention instantly prefills the Base Prompt for every iteration, allowing fast, aggregated results with pinpoint attention accuracy across massive codebases.
 
 ### III. The Titan (llama.cpp)
 

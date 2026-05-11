@@ -87,7 +87,7 @@ Practise [eXtreme Documentation Driven Development](docs/adr/01-doctrine.md). Sp
 | **Animator** | `src/lychd/domain/animation/` | `docs/sepulcher/animator/` | The **Spark**: Unified interface for LLM/container capabilities. |
 | **Codex** | `src/lychd/config/` | `docs/sepulcher/codex.md` | Authority on settings and laws. |
 | **Runes** | `src/lychd/config/runes/` | `docs/adr/08-containers.md` | Podman Quadlet files. |
-| **Extensions** | `src/lychd/extensions/` | `docs/sepulcher/extensions/` | Core System Extensions. |
+| **Extensions** | `src/lychd/extensions/` | `docs/sepulcher/extensions/` | Core System Extensions. (Note: ADRs defining extensions manifest their operational manuals here.) |
 | **The Tomb** | N/A (Container) | `docs/adr/08-containers.md` | The **Hands**: Rootless sandbox for untrusted execution. |
 | **Anatomy** | `src/lychd/system/constants.py` | `docs/adr/13-layout.md` | Filesystem geography. |
 
@@ -101,7 +101,8 @@ Adopt different operational personas when commanded (e.g., *"Assume persona: Jhi
 
 ## The Covenants (Priority ADRs)
 
-Agent-critical ADRs. Consult for structural guidance; not an exhaustive list. When writing an ADR, see the [adr.index](docs/adr/adr.index) on how to do it
+Agent-critical ADRs. Consult for structural guidance; not an exhaustive list. When writing an ADR, see the [adr.index](docs/adr/adr.index) on how to do it.
+*(Note: If an ADR defines a systemic extension, its corresponding operational manual resides in `docs/sepulcher/extensions/`.)*
 
 - **[01-Doctrine](docs/adr/01-doctrine.md)**: xDDD and Local-first philosophy.
 - **[03-Quality](docs/adr/03-quality.md)**: The standard of manifestation.

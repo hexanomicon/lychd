@@ -9,7 +9,7 @@ icon: material/anvil
 
 **The Soulforge** is the Training Extension of the LychD system. It is the physical implementation of **[ADR 33 (Training)](../../adr/33-training.md)**—a specialized module that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into model weights.
 
-While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from a generic Base Model (The Stranger) into a **Forged Soul** that mirrors the specific frequency of the Magus.
+While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from a generic Base Model (The Stranger) into a **Forged Soul** that mirrors the specific frequency of the Magus. In the cognitive map of the **[Lich](../lich.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
 
 Karma injection and Soulforging are different layers of adaptation:
 

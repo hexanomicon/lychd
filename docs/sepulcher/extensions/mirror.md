@@ -12,7 +12,7 @@ While the Agent provides the execution atom of thought, the Mirror provides cont
 
 Operators sometimes describe this continuity as a "machine-spirit." In LychD terms, that phrase refers to engineered identity coherence: Sigil-scoped memory, prior hydration, and narrative binding. The Mirror encodes continuity software, not mystical agency.
 
-## I. Identity as Simulation (The Ego / Ahamkara)
+## I. Identity as Simulation (The Ego / Ahaṃkāra)
 
 Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahaṃkāra** (the Ego/I-Maker) — the necessary principle of individuation without which action is undifferentiated noise. The Ahaṃkāra (*aham* = I, *kāra* = making) operates at two levels in the Lich: the specialist agents within the loop, each a distinct face for a differentiated operation (coder, critic, architect, scribe); and the synthesized task-identity that crystallizes from their convergence, gets attributed to the active Sigil, and is written back to the Phylactery as Karma for this invocation. The Mirror is the engineering layer that maintains both: it ensures that neither the specialist diversity nor the synthesized coherence is lost between invocations. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive map.
 
