@@ -9,15 +9,15 @@ icon: material/source-branch
 !!! abstract "Context and Problem Statement"
     Standard Large Language Model inference is inherently reflexive—it predicts the next token without the capacity for structural correction or internal deliberation. For complex architectural tasks, such as recursive refactoring or strategic planning, a linear response is insufficient. A probabilistic error in an early reasoning step propagates through the entire chain, leading to systemic hallucination. The machine possesses the capacity for labor, but lacks the mechanism to doubt its own path.
 
-    Simultaneously, the LychD architecture functions as an engine of relentless accumulation. Every interaction is crystallized into **[Memory (27)](27-memory.md)**, and **[HitL (25)](25-hitl.md)** rituals generate divergent **Shadow Realms** to test potential futures. In a sovereign system bound by finite storage and VRAM, this accumulation leads to **Digital Senility**: a state where retrieval latency increases, the vector index becomes saturated with "hallucinated noise," and the host disk fills with abandoned Git branches and orphaned artifacts. To maintain a sharp, responsive intellect, the machine requires the capability to inhabit a thousand illusions (Simulation) while possessing the metabolic discipline to banish the noise (Pruning).
+    Simultaneously, the LychD architecture functions as an engine of relentless accumulation. Every interaction is crystallized into **[Memory (27)](27-memory.md)**, and **[HitL (25)](25-hitl.md)** rituals generate divergent **Shadow Realms** to test potential futures. In a sovereign system bound by finite storage and VRAM, this accumulation leads to **Digital Senility**: a state where retrieval latency increases, the vector index becomes saturated with "hallucinated noise," and the host disk fills with abandoned version-control references and orphaned artifacts. To maintain a sharp, responsive intellect, the machine requires the capability to inhabit a thousand illusions (Simulation) while possessing the metabolic discipline to banish the noise (Pruning).
 
 ## Requirements
 
 - **System 2 Deliberative Reasoning:** Implementation of a non-linear reasoning engine that moves beyond "reflexive token prediction" into structural, deliberative thought via Monte Carlo Tree Search (MCTS).
 - **Phantasma Expansion (Branching):** Support for generating $N$ parallel future states, each operating in an isolated, temporary environment without cross-contamination.
-- **The Shadow Realm Topology:** Physical isolation of simulation branches within the **[Lab (13)](13-layout.md)**, utilizing **Git Worktrees** to enable parallel, independent file states sharing a single repository history.
+- **The Shadow Realm Topology:** Physical isolation of simulation branches within the **[Lab (13)](13-layout.md)**, utilizing **Jujutsu Workspaces** (`jj workspace`) to enable parallel, independent file states sharing a single SQLite-backed repository state.
 - **Heuristic Scrying (Dual-Gate Evaluation):** A rigorous scoring system combining deterministic verification (Compilers, Linters, Test Suites) and agentic critique (The Mirror Persona).
-- **Metabolic Pruning (The Reaper):** An automated background protocol (Ghoul) to identify and banish failed timelines, orphaned files, and "stale" memories.
+- **Metabolic Pruning (The Reaper):** An automated background protocol (Ghoul) leveraging Jujutsu's native transactional abandonment (`jj abandon`) to instantly dissolve failed timelines, orphaned files, and "stale" memories.
 - **Heuristic Vector Decay:** Implementation of a mathematical decay function for vector embeddings to ensure long-term retrieval remains sharp and focused on high-signal data.
 - **The Anchor Protocol:** A mechanism for the Magus to grant absolute immunity to specific artifacts or memories, setting their decay factor to zero.
 - **Transactional Convergence:** Mandatory support for "Wavefunction Collapse"—the atomic merge of a verified simulation branch into the Primary Substrate (The Crypt).
@@ -34,11 +34,11 @@ icon: material/source-branch
     Generating N responses and selecting the "best" based on log-probabilities or a simple judge agent.
     - **Cons:** **Shallow Verification.** It samples different ways to *say* things, but doesn't *do* anything. It cannot verify if code compiles or if a research path is a dead end. It consumes $N$ times the tokens without providing a "Verified Truth."
 
-!!! success "Option 3: Deliberative Tree Search and Metabolic Pruning"
-    Utilizing Monte Carlo Tree Search (MCTS) logic to explore branches within the Shadow Realm, coupled with a "Reaper" (Ghoul) to enforce system hygiene.
+!!! success "Option 3: Jujutsu Workspace Tree Search and Metabolic Pruning"
+    Utilizing Monte Carlo Tree Search (MCTS) logic via Jujutsu concurrent workspaces to explore branches within the Shadow Realm, coupled with a "Reaper" (Ghoul) leveraging `jj abandon` to enforce system hygiene.
     - **Pros:**
         - **System 2 Intelligence:** The machine can "doubt" itself, exploring multiple paths and choosing the one that passes the "White Truth" tests.
-        - **Substrate Health:** Reclaims VRAM and disk space instantly upon branch failure or completion.
+        - **Substrate Health:** Reclaims VRAM and disk space instantly upon branch failure via transactional graph updates.
         - **High-Signal Memory:** Ensures the Phylactery only stores "Consecrated" memories, preventing retrieval drift and senility.
 
 ## Decision Outcome
@@ -56,7 +56,7 @@ In the cognitive taxonomy mapped in the **[Lich](../sepulcher/lich.md)**, these 
 When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
 - **The Seed:** The intent is processed into $N$ divergent strategies.
-- **The Branching:** For each strategy, the system creates a **Git Worktree** in a dedicated `shadow/` region of the **[Lab (13)](13-layout.md)**. Unlike simple directory copies, Worktrees share the same `.git` metadata but allow parallel, independent file states on the same physical disk. Each branch workspace is isolated in its own subdirectory to prevent file collisions between concurrent Ghouls.
+- **The Workspaces:** For each strategy, the system invokes `jj workspace add shadow/branch_<ID> -r @`. This creates a physical subdirectory under `shadow/` in the **[Lab (13)](13-layout.md)**. Each workspace has its own distinct, tracked working copy (`@`) but shares the same central SQLite state-graph (`.jj/`). This provides absolute filesystem isolation for concurrent Ghouls without the fragility of Git worktrees.
 - **The Labor:** **[Ghouls (14)](14-workers.md)** dispatch execution payloads (code, tests, linters) to the Shadow via SAQ. The Vessel agent orchestrating the simulation retains the graph state; only raw scripts are sent to Shadow for execution.
 - **The Observation:** The Agent observes the *physical outcome* of its dream (e.g., "The test failed in Branch B"). It can then decide to "Prune" the branch or "Backtrack" to a previous node in the tree.
 
@@ -76,9 +76,13 @@ This separation keeps the simulation substrate from becoming an implicit identit
 
 To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a two-tier evaluation system. In the cognitive topology of the **[Lich](../sepulcher/lich.md)**, this is **Viveka** — the discriminative operation that distinguishes **Pramāṇa** (valid, measurement-grounded cognition) from **Viparyaya** (misconception that sincerely believes itself to be true). The fundamental challenge of generative cognition is that Viparyaya is indistinguishable from Pramāṇa from inside the generating process — the measurement must come from outside. The Dual-Gate is that external measurement:
 
-1. **The Deterministic Gate (The Law):** This is the binary foundation of structural validity. Does the code compile? Do the unit tests pass? Is the Linter clean? These are non-negotiable checks. A branch that fails here was Viparyaya — apparently correct, actually wrong — and is immediately banished ($V \in \{0, 1\}$).
+!!! important "The Tracked Working Copy as the Gatekeeper"
+    In Jujutsu, the working copy (`@`) is *always* a tracked commit. When Ghouls run linters or test suites inside a workspace, they do not scan a mutable, "dirty" filesystem. They evaluate a stable, cryptographically recorded commit state. This ensures that the Dual-Gate evaluates a bit-perfect snapshot, completely eliminating the risk of filesystem race conditions where code is modified during compilation or testing.
+
+1. **The Deterministic Gate (The Law) / Pre-Publish Structural Rubrics:** This is the binary foundation of structural validity. It operates as a rigid, scriptable CI gate before any Vision is manifested at the Altar. Does the code compile? Do the unit tests pass? Are ADR markers present in documentation? Are the imports sorted? These are non-negotiable structural checks. A branch that fails here was Viparyaya — apparently correct, actually wrong. Failure triggers autonomous self-correction (via `ModelRetry`) or immediate banishment without bothering the Magus ($V \in \{0, 1\}$).
 2. **The Agentic Gate (The Spirit):** The **[Mirror (32)](32-identity.md)** acts as the critic. It reviews the branches that passed the Law against the Magus's stylistic preferences and technical requirements, assigning a heuristic score ($H \in [0, 1]$). This gate evaluates identity congruence, not just correctness.
-3. **Backpropagation:** Success signals from deep nodes in the simulation inform the search direction of higher nodes, focusing the machine's attention on the most promising paths via a value-function update. This is determinative convergence within Shadow, not final promotion.
+3. **Optimized Execution Rule:** To prevent token exhaustion and "double-hallucination", **the Agentic Gate is strictly gated by the Deterministic Gate.** If a simulation workspace fails the Deterministic Gate ($V == 0$), it is immediately destroyed. No prompt is dispatched to the Mirror Persona.
+4. **Backpropagation:** Success signals from deep nodes in the simulation inform the search direction of higher nodes, focusing the machine's attention on the most promising paths via a value-function update. This is determinative convergence within Shadow, not final promotion.
 
 In practice:
 
@@ -90,9 +94,10 @@ In practice:
 
 Simulation is an "I/O Storm" that generates massive temporary data. The Reaper is a specialized Ghoul that acts as the system's metabolism.
 
-- **Logical Banishment:** The moment a branch fails the Deterministic Gate, the Reaper is triggered. It terminates the associated processes, deletes the Git Worktree, and signals the **[Orchestrator (23)](23-orchestrator.md)** to reclaim the VRAM.
-- **The Orphan Sweep:** Simulation creates "debris"—temporary files, build artifacts, and local caches. The Reaper performs a recursive sweep of the `shadow/` directory, purging any artifact not explicitly marked for "Promotion."
-- **STASIS_TTL:** Any branch in the Lab older than a configurable `STASIS_TTL` (default: 24h) is considered "Stale" and is purged to prevent inode exhaustion.
+- **The Autopsy Protocol (Harvesting the Dead):** Before a failed branch is destroyed, the Reaper extracts the deterministic failure trace (e.g., the specific compiler error or test failure). This "Lesson" is logged to the `.agents/drift/` ledger or the Phylactery as negative Karma. This ensures the physical debris is banished, but the epistemological lesson is retained to prevent the Agent from repeating the exact same failure in the next MCTS rollout.
+- **Logical Banishment:** Once the autopsy is complete, the Reaper executes `jj abandon <Change_ID>`. Because Jujutsu tracks revision history as an immutable graph of changes, abandoning a Change ID instantly dissolves that conceptual node and all its descendants from the SQLite database.
+- **The Workspace Purge (Defensive Teardown):** The Reaper then deletes the physical `shadow/branch_<ID>` directory. However, acting as an **Execution Warden**, it is not enough to simply delete the folder. The Reaper must explicitly verify that all associated PIDs, port locks, and temporary Quadlet containers instantiated in the Tomb for that specific simulation are terminated. This defensive teardown prevents "Zombie Ports" where dead ghouls hold onto physical iron long after their logic has been banished. Because the workspace’s state is tracked centrally in `.jj/`, the final directory deletion leaves no dangling references behind.
+- **STASIS_TTL:** Any workspace in the Lab older than a configurable `STASIS_TTL` (default: 24h) is considered "Stale" and is abandoned to prevent inode exhaustion.
 
 Architecturally, the Reaper dissolves unstable or low-signal modifications so the substrate does not retain abandoned fluctuations as noise.
 
@@ -111,8 +116,9 @@ $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** — the discriminative faculty of the **[Lich's](../sepulcher/lich.md)** inner instrument (*√budh*: to discern, to wake). Where Manas generates candidates and Phantasma expands Vikalpa into the Shadow Realm, Buddhi is the blade that cuts to one: the faculty of final judgment that does not waver, does not oscillate, and cannot be overridden by the weight of existing grooves. The three collapses below are Buddhi operating at three nested levels of discrimination:
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
-- **The Consecration:** Upon approval, the "Wavefunction Collapses." The Shadow Realm is merged into the Primary Reality of the **[Crypt (13)](13-layout.md)**.
+- **The Consecration:** Upon approval, the "Wavefunction Collapses." The speculative change is merged into the trunk via `jj rebase -s <Change_ID> -d trunk()`.
 - **The Inscription:** The successful reasoning trace is stored in the Phylactery as high-signal **Karma**, providing a "Bayesian Prior" that weights future simulations toward similar successful patterns.
+- **Frictionless Collapse (ZTE Chores):** If the work is classified as a minor chore and the workspace's execution history has maintained a flawless **Streak KPI** exceeding the **Confidence Threshold**, the system executes the rebase and merges the workspace autonomously without waiting for HitL approval.
 
 This flow contains three distinct collapses that should remain explicit:
 

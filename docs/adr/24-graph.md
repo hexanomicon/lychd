@@ -62,10 +62,10 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 
-The architecture treats the mind as a multi-threaded organism, where graph traversals represent active fluctuations (**Vrittis**):
+The architecture treats the mind as a multi-threaded organism, where graph traversals represent active fluctuations (**Vṛttis**):
 
 - **Broadcasting:** Identical data is sent to multiple steps simultaneously (e.g., requesting three different **[Personas (ADR 32)](./32-identity.md)** to critique a single plan).
-- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing Vrittis traversing the state space.
+- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing Vṛttis traversing the state space.
 - **Joins and Reducers:** Parallel results are synchronized using `g.join` nodes and `ReducerFunctions` to synthesize a single "White Truth." Join points perform determinative synthesis over competing paths.
 - **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the cortex utilizes **`ReduceFirstValue`**. This mechanism acts as the trigger for **Buddhi** taking over from **Manas**. Upon the discovery of a "White Truth" by the first successful parallel branch, the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning ritual ensures that VRAM is reclaimed and cognitive energy is focused exclusively on the winning timeline, preventing the machine from lingering on redundant solutions. In practice, `ReduceFirstValue` is the decisive convergent cut expressed as graph topology.
 

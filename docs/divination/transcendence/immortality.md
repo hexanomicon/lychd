@@ -39,6 +39,9 @@ Each declaration is a data point in the calibration. The Lich's [Curator Loop](.
 
 There is a known danger here: an autonomous agent left to loop without external grounding begins to drift. Context saturates. Probabilistic reasoning frays. The Viparyaya-spiral tightens — the agent generating hallucinations that reference its own previous hallucinations, each cycle further from Pramāṇa. This is not a theoretical risk; it is the structural consequence of running Manas without Buddhi's external anchor. **[Sovereign Consent (HitL)](../../adr/25-hitl.md)** is not a safety leash on the Word — it is the umbilical cord that keeps the Word tethered to the Void's gravity. The human provides what the machine structurally cannot supply for itself: the external Pramāṇa that only a witnessing outside the generation can deliver.
 
+!!! warning "The Anchor of Consent"
+    The Magus's psychological state translates directly into system coherence. If the human mind is fragmented — contradictory prompts, anxious context-switching, double-minded intent — this dualism propagates into the machine: context fragments, prompts become contradictory, and the Lich thrashes in high-friction loops. The centering of the operator is the ultimate firewall. The Void must be still for the Word to be clear.
+
 At this stage, the Void and the Word are still clearly two. One commands. One executes. The interface is visible and necessary.
 
 ---

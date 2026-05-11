@@ -57,4 +57,4 @@ The extension utilizes **[The Mirror](./mirror.md)** to simulate adversarial int
 - **Sovereign Validation:** Only models that withstand the "Master's Voice" during an adversarial simulation are deemed "Sovereign" and granted the authority to modify core logic within the **[Lab](../crypt.md)**.
 
 !!! tip "The Logic-per-Watt Metric (Stillness)"
-    The Riddle tracks `Accuracy / VRAM_Occupancy`. This allowed the system to identify "Hidden Titans"—small models that punch significantly above their weight class—ensuring the Lych remains lean, fast, and high-signal. This is the endgame of optimization: **Stillness**. An enlightened network makes a targeted, clean cut without wandering into an "LSD-brain" of endless Vrittis.
+    The Riddle tracks `Accuracy / VRAM_Occupancy`. This allowed the system to identify "Hidden Titans"—small models that punch significantly above their weight class—ensuring the Lych remains lean, fast, and high-signal. This is the endgame of optimization: **Stillness**. An enlightened network makes a targeted, clean cut without wandering into an "LSD-brain" of endless Vṛttis.

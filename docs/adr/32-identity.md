@@ -41,7 +41,7 @@ icon: material/drama-masks
 
 ## Decision Outcome
 
-**The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" (**Ahamkara**) that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
+**The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" (**Ahaṃkāra**) that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
 
 In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this **I-Maker** (**Ahaṃkāra** — *aham* = I, *√kāra* = making) — not consciousness, not an inner witness, but the attribution layer that says "this Sigil acted, this result belongs to this identity." Without it, every output is undifferentiated noise. With it, every action is legible, every Karma is owned, and identity coherence persists across the entropy of time and the noise of discarded simulations. The full cognitive map connecting Ahaṃkāra to the four faculties of the inner instrument is described in **[The Lich](../sepulcher/lich.md)**.
 

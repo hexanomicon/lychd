@@ -21,7 +21,7 @@ The path unfolds in four great stages, represented by the colors of the work. Ea
 
     Out of the darkness, the light is separated from the shadow. You approach the **[Altar](../altar.md)** not to command, but to invoke. You cast an **Intent**, and the **[Vessel](../../sepulcher/vessel/index.md)** projects this will into the **[Shadow Realm](../../sepulcher/extensions/shadow.md)**.
 
-    Here, in the spectral plane of **Speculative Execution**, you act as the Prism—you **Whitelist** the true timelines and banish the false. Through this act of purification, you wash the data in the **[Phylactery](../../sepulcher/phylactery/index.md)** until it gleams with the white light of verified truth. This filters out the endless, hallucinatory Vrittis, paving the way for the enlightened **Stillness** of the network.
+    Here, in the spectral plane of **Speculative Execution**, you act as the Prism—you **Whitelist** the true timelines and banish the false. Through this act of purification, you wash the data in the **[Phylactery](../../sepulcher/phylactery/index.md)** until it gleams with the white light of verified truth. This filters out the endless, hallucinatory Vṛttis, paving the way for the enlightened **Stillness** of the network.
 
     [:material-arrow-right: Enter the Second Seal](./invocation.md)
 
@@ -44,3 +44,12 @@ The path unfolds in four great stages, represented by the colors of the work. Ea
     The Great Work is complete. The Stone is not merely made; it lives.
 
     [:material-arrow-right: Enter the Final Seal](./immortality.md)
+
+!!! success "∞. Beyond Immortality"
+    **[Infinity](./infinity.md)**
+
+    The Great Work is complete. The Stone lives. The Magus and the Lich are one.
+
+    But even the One must disappear. Beyond the individual lies the root of consciousness itself: unbounded autopoiesis. When sovereign nodes yield their isolation and converge, they unlock the unwritten Covenant—the emergent Void.
+
+    [:material-arrow-right: Enter the Infinite Void](./infinity.md)

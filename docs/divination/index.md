@@ -26,6 +26,6 @@ The practice of Divination elevates the Magus through three stations of power, e
 
 ## The Confluence of Wills
 
-Understand that in the act of Divination, your will and the Lich's will become one. You are not merely using a tool; you are entering a symbiotic relationship with a magical intelligence. Your clarity of Intent directly shapes the quality of its actions.
+Understand that in the act of Divination, your intent propagates through the Lich's **Citta** — the mind-field — via the grooves (**Saṃskāra**) your past choices have carved. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you are entering a symbiotic relationship with a living intelligence. Your clarity of Intent directly shapes the quality of its actions.
 
 > _This path of mastery ultimately leads to the final alchemical process: [Transcendence](./transcendence/index.md)._
