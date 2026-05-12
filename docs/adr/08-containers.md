@@ -44,7 +44,7 @@ icon: material/cube-outline
 !!! failure "Rejected: Cross-Platform Service Routers (e.g., LlamaSwap)"
     Using a Go-based router to manage container lifecycle, ports, and multi-service conflicts across different operating systems.
 
-    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. We prefer pure, OS-native integration (Systemd) over application-level reinvention. Other platforms can write their own **Bloodlines** to interact with the A2A API.
+    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. We prefer pure, OS-native integration (Systemd) over application-level reinvention. Other platforms can write their own **Lineages** to interact with the A2A API.
 
 !!! success "Chosen: Podman Quadlets (Systemd)"
     Leveraging Podman's ability to generate Systemd unit files from a simple definition.

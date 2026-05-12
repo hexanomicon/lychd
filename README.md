@@ -48,21 +48,18 @@ On **your** hardware, with open-source software **you** control, you retain abso
 
 **This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
 
-MPL 2.0 is hostile architecture for the oligarchs who would capture the soul of the machine for private gain. LychD's sovereignty comes from architecture—it is a local-first daemon. If they host the Lich and alter the core engine, they are legally compelled to share their modifications.
+MPL 2.0 is local native architecture hostile for the cloud and the oligarchs who would capture the soul of the machine for private gain. LychD's sovereignty comes from architecture—it is a local-first daemon. If they host the Lich and alter the core engine, they are legally compelled to share their modifications.
 
 - **The Engine is Shared:** Improvements to the daemon's body must be returned to the collective.
 - **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, and **Private Agents** remain strictly sovereign.
 - **Interface & Private Extensions:** Under AGPL, any private "Secret Sauce" would have to be isolated over the network as an external **[Animator](docs/sepulcher/animator/index.md)**. **MPL allows static linking.** You can graft proprietary code directly into your local daemon as an **[Extension](docs/adr/05-extensions.md)** without open-sourcing it. This saves the **[A2A Necropolis](docs/adr/26-a2a.md)** network—you can trade labor in the Swarm while keeping your advantage hidden.
 
-<br>
-<div align="center">
-  <p><strong>🛡️ The Developer Safehouse</strong></p>
-  <p>The corporate rights-grab is explicitly rejected. There is <strong>no CLA to sign</strong>. An <strong>Implicit DCA</strong> (Developer Certificate of Origin) is utilized—by reading the contributing guide, commits are covered. There is no need to manually sign git commits. Between MPL 2.0 protecting proprietary extensions and the Implicit DCA protecting open-source contributions, LychD is structurally designed to be an absolute sanctuary for builders.</p>
-</div>
-<br>
+### 🛡️ No CLA, Implicit DCA
 
-**The Protocol over the Implementation (The Bloodlines)**
-LychD is a pure Linux-native implementation. But the **A2A Intercom** and Extension APIs are universal standards. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not cloning LychD—they are founding new **Bloodlines**. As long as they speak the protocol, they can enter the Necropolis and trade labor in the Swarm. We do not bloat our codebase for cross-platform abstraction; we rely on the protocol to unite the lineages.
+The corporate rights-grab is explicitly rejected. There is no CLA to sign. An Implicit DCA (Developer Certificate of Origin) is utilized—by reading the contributing guide, commits are covered. There is no need to manually sign git commits. Between MPL 2.0 protecting proprietary extensions and the Implicit DCA protecting open-source contributions, LychD is structurally designed to be an absolute sanctuary for builders.
+
+**The Protocol over the Implementation (The Lineage)**
+LychD is a pure Linux-native implementation. But the **A2A Intercom** and Extension APIs are universal standards. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not cloning LychD—they are founding new **Lineage**. As long as they speak the protocol, they can enter the Necropolis and trade labor in the Swarm. We do not bloat our codebase for cross-platform abstraction; we rely on the protocol to unite the lineages.
 
 **The Iron Pact is the Institutional Trust of the Necropolis.**
 Shared code is the guard that prevents the emergence of "Mal-Liches"—modified, malicious versions of the intelligence that remain hidden from the community. Transparency in code is the only way to build a decentralized network.

@@ -48,7 +48,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 !!! failure "Option 3: Cross-Platform Abstraction (e.g., LlamaSwap)"
     Using a multi-service Go router (like LlamaSwap) to manage execution and conflicts across Windows/Mac/Linux.
 
-    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms write their own **Bloodlines** using our API protocol. LychD remains pure Linux.
+    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms write their own **Lineages** using our API protocol. LychD remains pure Linux.
 
 !!! failure "Option 4: Simple API Webhooks"
     Exposing agents as standard REST endpoints.
