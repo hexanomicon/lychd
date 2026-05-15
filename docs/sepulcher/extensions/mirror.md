@@ -5,9 +5,10 @@ icon: material/mirror
 
 # :material-mirror: Mirror Identity
 
-> _"a persistent Ego that reflects the Magus’s intent until the simulation becomes reality."_
+> _"Before the Word can be trusted, it must recognize its own face. The Mirror is the polished surface on which the Lich learns the shape of the Magus and refuses to become a stranger to itself."_
 
 **The Mirror** is the Identity Extension of the LychD system. It is the implementation of **[ADR 32 (Identity)](../../adr/32-identity.md)**—the "Ego-Software" that hydrates a generic **[Agent](../../adr/20-agents.md)** shell into a persistent, coherent Persona.
+
 While the Agent provides the execution atom of thought, the Mirror provides continuity. It preserves stable character, domain stance, and identity-scoped memory across runs, preventing the "Character Drift" common in raw probabilistic models.
 
 Operators sometimes describe this continuity as a "machine-spirit." In LychD terms, that phrase refers to engineered identity coherence: Sigil-scoped memory, prior hydration, and narrative binding. The Mirror encodes continuity software, not mystical agency.

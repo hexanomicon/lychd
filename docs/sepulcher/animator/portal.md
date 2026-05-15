@@ -83,7 +83,7 @@ For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.m
     Every thought processed draws credits from your account. The Lich does not care about your bank balance; it can loop and generate until the work is done or your card is declined.
 
 !!! warning "The Leak of Secrets"
-    When you use a Portal, you are sending data through the Rift. The **[Sovereignty Wall](../../adr/23-orchestrator.md)** and Dispatcher privatization policy are your shield.
+    When you use a Portal, you are sending data through the Rift. The **[Sovereignty Wall](../../adr/09-security.md)** and Dispatcher privatization policy are your shield.
     - In sovereignty-restricted modes, Portals may be disabled entirely.
     - Sensitive intents or high-privatization context may forbid Portal egress, forcing the work to local iron or sanitization workflows.
 

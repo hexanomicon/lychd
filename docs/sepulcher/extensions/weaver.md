@@ -15,7 +15,7 @@ The Weaver prepares and synchronizes the field of cognition. It does not determi
 
 ## 🎼 The Workflow
 
-A workflow in LychD is a stateful graph definition registered via the Extension Context, not a static script.
+A workflow in LychD is a stateful graph definition expressed through the broader Extension Protocol, not a static script.
 
 ```python
 # A simple Workflow: Research -> Draft -> Review

@@ -91,7 +91,7 @@ The "Iron Pact" is the **Institutional Trust** of the Necropolis. By requiring t
 ### Consequences
 
 !!! success "Positive"
-    - **Outlook:** The core lineage is legally protected from capture.
+    - **Outlook:** The core daemon is legally protected from capture.
     - **Symbiosis:** A collaborative ecosystem is compelled where public use of the core engine requires public contribution, strengthening all practitioners.
     - **Sovereignty:** Private extensions enable true local-first capabilities, saving the A2A network.
 

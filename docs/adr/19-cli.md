@@ -64,7 +64,7 @@ This avoids duplicating logic paths between web runtime and CLI runtime.
 
 ### 3. Command Injection
 
-The CLI acts as a registry for the Federation. When an extension invokes its `register(context)` hook, it can attach custom Click command objects. These are automatically grafted onto the `lychd` group, allowing extensions to provide specialized management interfaces (e.g., `lychd soulforge train`).
+The CLI is expected to participate in the broader extension architecture, but the active `ExtensionContext` surface does not currently expose command grafting. Specialized command injection therefore remains a doctrine target for a richer future registration surface, not a concrete capability of the current source.
 
 ### 3.1 Structured Logging Bootstrap
 

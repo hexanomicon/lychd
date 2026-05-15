@@ -21,9 +21,9 @@ The extension resides within the **[Sepulcher](../index.md)** as a standard cont
 
 ## II. The Scribe's Protocol (Composite Configuration)
 
-To maintain the **[Federation Protocol](../../adr/05-extensions.md)**, the Veil does not possess a monolithic configuration. Instead, it utilizes the **Scribe's Protocol** for assembly.
+To maintain the **[Extension Protocol](../../adr/05-extensions.md)**, the Veil does not possess a monolithic configuration. Instead, it utilizes the **Scribe's Protocol** for assembly.
 
-- **The Fragments:** As mandated by **[ADR 40](../../adr/40-proxy.md)**, any extension can register its own `.caddy` fragments via the Extension Context.
+- **The Fragments:** As mandated by **[ADR 40](../../adr/40-proxy.md)**, active extensions may contribute their own `.caddy` fragments through the wider synthesis pipeline.
 - **The Assembly:** During the **[Packaging Forge](../../adr/17-packaging.md)**, the system scans all active Extensions, concatenating their routing rules into a single, cohesive Caddyfile.
 - **Example:** When the **[Intercom](../../adr/26-a2a.md)** is active, it injects a rule to expose `/a2a/*` while the rest of the system remains hidden behind authentication.
 

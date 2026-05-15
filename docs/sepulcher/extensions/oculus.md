@@ -6,11 +6,11 @@ icon: material/eye-outline
 
 # :material-eye-outline: Oculus
 
-> _"see the Ghost that pull the strings. To command the Daemon, one must not only witness its actions but scry the invisible web of intent from which they are born."_
+> _"See the ghosts that pull the strings. To command the Daemon, one must not only witness its actions, but scry the invisible web of intent from which they are born."_
 
 **The Oculus** is the Observability Extension of the LychD system. It is the implementation of **[ADR 29 (Observability)](../../adr/29-observability.md)**—the all-seeing eye that bridges the gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic).
 
-While traditional tools see only network latency, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain of **Vṛttis** (network fluctuations) from a whispered intent to its final manifestation. It transforms the invisible chaos of agentic reasoning into a structured, scryable record, tracking the **Logic-per-Watt** necessary to achieve the ultimate goal of **Stillness**.
+While traditional tools see only network latency, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain of **Vṛttis** from a whispered intent to its final manifestation. It transforms the invisible chaos of agentic reasoning into a structured, scryable record, tracking the **Logic-per-Watt** necessary to achieve the ultimate goal of **Stillness**.
 
 ## I. The Thought Trace (The Mind's Eye)
 
@@ -36,7 +36,7 @@ The Oculus sees all, and such power demands absolute discipline. It is bound by 
 
 ## IV. Trace Hygiene (The Reaper's Bond)
 
-The Oculus generates massive quantities of data. To prevent the Crypt from filling with the noise of the past, the extension clears its phylactery data.
+The Oculus generates massive quantities of data. To prevent the Crypt from filling with the noise of the past, the extension tends its own traces with discipline.
 
 - **TTL Enforcement:** Traces are tagged with a Time-To-Live.
     - _Standard Traces:_ Retained for 24 hours.

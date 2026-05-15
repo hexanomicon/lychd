@@ -101,6 +101,8 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         app_config.response_cache_config = ResponseCacheConfig(default_expiration=CACHE_EXPIRATION)
 
         # Routers
+        from lychd.interface.api.orchestrator import OrchestratorController
+        app_config.route_handlers.append(OrchestratorController)
 
         # Dependencies
 

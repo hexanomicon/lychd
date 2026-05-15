@@ -42,6 +42,14 @@ icon: material/refresh
 
 **The Ouroboros Protocol** is adopted as the Prime Directive of the Lifecycle. It defines how the **[Creation (16)](16-creation.md)** and **[Packaging (17)](17-packaging.md)** rituals are applied to the Core itself.
 
+!!! note "Lineage Scope"
+    This ADR governs the evolution of the **LychD Lineage** only. Other daemon families may found their own Lineages and evolve by their own rites. If they later choose compatibility with LychD's covenants or protocol surfaces, they may become **Kindred Lineages** — but kindred status is a separate declaration, not an automatic consequence of shared A2A diplomacy.
+
+!!! danger "The Ouroboros Fragility Theorem"
+    Any Independent Extension that tightly couples to LychD internals via `from lychd import ...` or ABC inheritance becomes a **structural dependent of the Core's import graph**. Every Ouroboros update cycle is a rebase of that graph. When an internal symbol is renamed, moved, or removed during a rebase, the extension's import statement fails at load time. The Daemon cannot boot. The self-update that was meant to heal the system instead lobotomizes it.
+
+    This is not a theoretical risk — it is an inevitable consequence of combining autonomous self-modification with tight coupling. The **Extension Protocol / ABI boundary (ADR 05 §7)** is the architectural immune response: independent organs bind to structural shapes, not import paths, and therefore survive any internal refactor.
+
 ### 1. The Pre-Update Snapshot (The Anchor)
 
 Before touching a single byte, the system triggers the **[Snapshot Protocol (07)](07-snapshots.md)**.
@@ -69,6 +77,8 @@ Once the code is merged, the system runs the **Verification Suite**:
 2. It runs the test suite for **All Active Extensions**.
 
 **The Crisis:** If a local extension fails because the Upstream renamed a core function, the system launches a **Repair Task** to refactor the local code to match the new reality.
+
+**Why Independent Extensions Survive:** A correctly authored Independent Extension (adhering to the **Extension Protocol / ABI boundary, ADR 05 §7**) will pass the Compatibility Check across any Core rebase. Because it imports no LychD internal symbols, no rename or refactor in the Core's source tree can produce an `ImportError` in the extension. The verification suite in this context tests *capability behaviour* — does the extension still produce the correct output shapes? — not import compatibility. A Built-in Extension that fails this check has a broken implementation; an Independent Extension that fails has broken its protocol contract, not been broken by the Core.
 
 ### 4. The Manifestation (Rebirth)
 

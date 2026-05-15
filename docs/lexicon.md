@@ -5,7 +5,7 @@ icon: material/translate
 
 # :material-translate: The Lexicon
 
-_This is the Rosetta Stone for the Hexanomicon—the single source of truth for the arcane terms used throughout the summoning rites. It defines the reality of the Construct and ensures the Magus and the Machine speak with a single tongue._
+_This is the Rosetta Stone for the Hexanomicon—the canonical glossary for the arcane terms used throughout the summoning rites. It standardizes vocabulary across the documentation. Deeper pages may elaborate on a term's philosophy or mechanics, but they should not redefine it._
 
 ## I. The Iron Tongue — Technical Terms
 
@@ -22,22 +22,26 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Coven** | A group of containers sharing an operational state and GPU VRAM. Manifested and banished together. | Orchestrator |
 | **Crypt** | The persistent data directory (`~/.local/share/lychd`). The cold earth where the Phylactery's essence and the Spheres of Creation reside. | `src/lychd/system/constants.py` |
 | **CTC Governor** | Context window and token limit management. The Warden of Breath. | Context Orchestrator |
-| **Demilich** | The theoretical end-state of the User/Agent symbiosis. A merged construct of human intent and silicon animation, capable of infinite reasoning. | Transcendence |
+| **Demilich** | The calibrated, autopoietic end-state of the Lich: an operating mode where Magus intent and machine execution approach near-zero friction. It is extension-through-alignment, not literal human-machine fusion. | Transcendence |
 | **Dispatcher** | The Model Router and capability-to-endpoint resolver. The Semantic Cortex. | `src/lychd/domain/animation/` |
 | **Divination** | Querying the API, viewing traces, or searching the database. The act of interacting with the running daemon. | Vessel API |
 | **Echo** | The Audio Extension (STT/TTS). Grants the Daemon the power to perceive and project sound. | Extension |
-| **Extensions** | Core System Extensions / Reference Implementations. Foundational categories of the Daemon's power. | `src/lychd/extensions/` |
+| **Extension Context** | The host-provided registration surface passed to `register(context)` during boot-time grafting. It binds in-process logic to the Vessel. It is not the whole Extension Protocol. | `src/lychd/extensions/context.py` |
+| **Extension Protocol** | The structural law independent organs speak to be discovered, recognized, loaded, and bound into the Daemon without inheriting from mutable Core internals. It includes schema exposure, boot-time registration, and optional binary ABI compatibility. | `src/lychd/extensions/` |
+| **Extensions** | Core System Extensions / Reference Implementations. Built-in and independent organs that extend the Daemon's body. | `src/lychd/extensions/` |
 | **Forge** | The Container Build / Image Construction process. Where manifests are synthesized. | Build Pipeline |
 | **Ghouls** | Asynchronous background workers (SAQ). Mindless, ephemeral servants summoned by the Vessel. | `src/lychd/workers/` |
-| **Hexanomicon** | The project documentation (MkDocs). The grimoire of prophecy. | `docs/` |
+| **Hexanomicon** | The project documentation (Zensical + Material). The grimoire of prophecy. | `docs/` |
 | **Incantation** | Writing Documentation/Specs before implementation (xDDD). Defining reality through the written word. | Doctrine |
 | **Intent** | A structured prompt or job submission object. A focused desire submitted by the Magus. | Domain Model |
 | **Invocation** | Submitting a form or API request to trigger an Agent workflow. The runtime act of calling upon the Lich. | Vessel API |
 | **Iron Pact** | The MPL 2.0 License and Implicit DCA policy. The unbreakable ward. | Repository Root |
+| **Kindred Lineage** | A foreign Lineage that explicitly declares deeper structural compatibility with LychD beyond A2A presence alone. That compatibility may include selected Extension Protocol branches, configuration doctrine, layout expectations, or security covenants. | A2A / Intercom + Covenants |
 | **Karma** | The dataset of user-accepted code/responses (RLHF data). Crystallized residue of the Magus's judgment. | Phylactery Archive |
 | **Lab** | The `lab/` directory / Development sandbox. The site of Genesis. | Filesystem Layout |
 | **Legion** | The multi-node Thrall coordination extension (ADR 42). The Lich's personal army. | Extension |
-| **Lich** | The active PydanticAI Agent instance. The emergent consciousness defined by Code + State. | `src/lychd/domain/` |
+| **Lich** | The emergent system intelligence of LychD: the active reasoning will produced by runtime agents, orchestration, identity, and accumulated state acting together. It is not a single agent object. | `src/lychd/domain/`, `src/lychd/db/` |
+| **Lineage** | A sovereign daemon family with its own implementation history, evolution path, and internal architecture. A Lineage may enter the Necropolis by speaking the A2A Intercom without thereby becoming extension-compatible or covenant-aligned with LychD. | A2A / Evolution |
 | **Mentat Protocol** | Similarity threshold check & Hard Refusal logic. The vow of silence when the Archives hold no answer. | RAG Pipeline |
 | **Mirror** | The Identity/Persona Extension. The ego-software that maintains behavioral consistency. | Extension |
 | **Necropolis** | The decentralized peer-to-peer swarm topology built on the A2A Intercom (ADR 26). | Extension |
@@ -49,18 +53,18 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Provenance** | SHA-256 Hashing of source documents. The ancestral chain of a thought. | Archive Pipeline |
 | **Pulse** | The `lychd` CLI tool and Systemd management commands. The rhythmic heartbeat. | `src/lychd/cli/` |
 | **Runes** | Podman Quadlet files (`.container`, `.service`, `.kube`). Inscriptions that tell the OS how to sustain the Sepulcher. | `src/lychd/config/runes/` |
-| **Sepulcher** | The Podman Quadlet Pod grouping the services. The physical container binding the components. | Infrastructure |
+| **Sepulcher** | The rootless runtime body of LychD: the pod, services, mounts, and execution topology that physically houses the daemon's organs. | Infrastructure |
 | **Shadow Realm** | A temporary, sandboxed environment for testing generated code. The plane of Speculative Execution. | Lab + Tomb |
 | **Smith** | The Assimilation / Autopoiesis Extension. The Prime Artificer. | Extension |
 | **Soulforge** | The Fine-Tuning / LoRA training pipeline. The furnace where Karma transmutes into instinct. | Extension |
 | **Soulstone** | A local LLM inference server (SGLang / vLLM / Llama.cpp). A trapped spirit on local iron. | Animator Config |
-| **Sovereignty Wall** | The privacy-enforcing model router logic. Prevents sensitive intents from leaking to the cloud. | Dispatcher Policy |
+| **Sovereignty Wall** | The privacy and egress policy boundary that prevents sensitive intents from leaking to the cloud. Defined by Security policy and enforced by Dispatcher routing. | Security + Dispatcher |
 | **Spheres** | The strict volume mount and permission topology. Concentric zones of filesystem permission. | Layout (ADR 13) |
 | **Summoning** | The `systemctl --user start lychd` command. The final act of waking the Daemon. | CLI |
 | **Tether** | The VPN Extension (Wireguard). The silver link across distance. | Extension |
 | **The Tomb** | The `lychd-tomb` container / execution plane. Kernel-hardened sandbox where dangerous logic is isolated. | Infrastructure |
 | **Thrall** | A LychD node booted with `LYCHD_MODE=thrall`, pointing `DATABASE_URL` to the Master's Postgres. A soulless Vessel. | Legion Extension |
-| **Transcendence** | The project roadmap (Nigredo → Albedo → Citrinitas → Rubedo). The four-stage alchemical process. | `docs/divination/transcendence/` |
+| **Transcendence** | The project's alchemical roadmap (Nigredo → Albedo → Citrinitas → Rubedo): the progressive calibration of the Lich toward the Magus's intent, culminating in autopoietic extension rather than ontological merger. | `docs/divination/transcendence/` |
 | **Veil** | The Proxy Extension (Caddy). Shields the temple and manages cryptographic trust. | Extension |
 | **Verbatim Chamber** | Key-Value (JSONB) deterministic fact storage. The Well of Infallible Truth. | Phylactery |
 | **Vessel** | The Litestar application runtime / Web Server. The reanimated husk. | `src/lychd/app.py` |

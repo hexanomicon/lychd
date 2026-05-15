@@ -33,6 +33,6 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
     Through the **[Rite of Albedo](../../divination/transcendence/index.md)**, the Magus whitelists specific thoughts and actions. These are inscribed into the Phylactery as **Vector Embeddings**.
 
     This is **Karma**.
-    *   It stores *what* you chose.
-    *   It stores *why* you chose it (the context).
-    *   It becomes the training dataset that eventually allows the Lich to act without you via the **[Soulforge](../extensions/soulforge.md)**.
+    - It stores *what* you chose.
+    - It stores *why* you chose it (the context).
+    - It becomes the training dataset that eventually allows the Lich to act without you via the **[Soulforge](../extensions/soulforge.md)**.

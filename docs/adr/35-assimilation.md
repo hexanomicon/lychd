@@ -50,10 +50,10 @@ The Smith is defined as an **[Agent (ADR 20)](./20-agents.md)** with a specializ
 
 The Smith wields a specialized toolset granted by its unique position in the **[Lab (ADR 13)](./13-layout.md)**:
 
-- **`scaffold_extension()`**: Generates the mandatory directory structure and prepares the environment manifests (`pyproject.toml`, `__init__.py`).
-- **`inspect_interface()`**: Analyzes third-party logic or protocol definitions (MCP) to determine functional signatures and dependency needs.
+- **`scaffold_extension()`**: Generates the mandatory directory structure and prepares the environment manifests (`pyproject.toml`, `__init__.py`). For Independent Extensions destined for the Crypt, the scaffold produces **Protocol-conformant class skeletons** — not subclasses of LychD ABCs. The generated `pyproject.toml` carries no `lychd` entry in its `dependencies` table, enforcing the coupling boundary from the first line of code.
+- **`inspect_interface()`**: Analyzes third-party logic or protocol definitions (MCP) to determine functional signatures and dependency needs. Validates generated code against the **Protocol shapes** (ADR 05 §7) using `isinstance(obj, SomeProtocol)` structural checks rather than `issubclass()` inheritance checks, enforcing ABI conformance without coupling.
 - **`generate_quadlet()`**: Fabricates the **[Systemd Quadlets (ADR 08)](./08-containers.md)**, correctly assigning new organs to their appropriate **Groups** and functional tags.
-- **`forge_registration()`**: Automatically writes the `register(context)` hook, ensuring the new extension’s routers, ghouls, and models are correctly bound to the **[Vessel (ADR 11)](./11-backend.md)**.
+- **`forge_registration()`**: Automatically writes the `register(context)` hook for the in-process grafting path, ensuring any runtime-facing logic is shaped for the host registration surface defined by the **[Vessel (ADR 11)](./11-backend.md)**.
 - **`trigger_assembly()`**: Communicates with the **[Packaging Forge (ADR 17)](./17-packaging.md)** to build the new physical body.
 - **`transmute_heritage()`**: Parses legacy cloud archives (OpenAI, Anthropic, Google), identifies historical Bayesian Priors, and inscribes them into the **[Phylactery (27)](./27-memory.md)** as high-signal experience.
 
@@ -76,7 +76,7 @@ The Smith acts as the archetype for a category of reference implementations know
 
 - **Substrate Replication:** Utilizing the **[Intercom (ADR 26)](./26-a2a.md)** protocols, the Smith can scry the Legion for patterns to replicate.
 - **Autonomous Expansion:** This establishes the Lych as a growing organism rather than a finite tool. The Smith provides the initial spark of construction, allowing the machine to multiply its own capabilities and manifest a complete, sovereign body of organs through self-directed fabrication.
-- **Reference Implementation Analysis:** The Smith utilizes the **Built-in Extensions** as its primary training set. By introspecting these core modules, the Artificer internalizes the correct implementation of the `ExtensionContext` protocol and the kernel's structural standards. To avoid attention dilution during massive codebase ingestion, The Smith utilizes **Iterative Radix Aggregation** (as defined in **[ADR 21](./21-context.md)**). Instead of loading an entire framework into a 100K context window, it establishes a core structural Base Prompt and iterates over the reference implementation module-by-module. Thanks to Radix Attention instantly prefilling the Base Prompt, this allows the Smith to perform highly exact, comparative structural analysis against both internal and external frameworks without degrading reasoning. This ensures that every **External Extension** it generates in the Crypt is a bit-perfect reflection of the kernel's own structural aesthetics and logic.
+- **Reference Implementation Analysis:** The Smith utilizes the **Built-in Extensions** as its primary training set. By introspecting these core modules, the Artificer internalizes the correct use of the **Extension Context** and the wider **Extension Protocol**. To avoid attention dilution during massive codebase ingestion, The Smith utilizes **Iterative Radix Aggregation** (as defined in **[ADR 21](./21-context.md)**). Instead of loading an entire framework into a 100K context window, it establishes a core structural Base Prompt and iterates over the reference implementation module-by-module. Thanks to Radix Attention instantly prefilling the Base Prompt, this allows the Smith to perform highly exact, comparative structural analysis against both internal and independent frameworks without degrading reasoning. This ensures that every sovereign organ it generates in the Crypt is a bit-perfect reflection of the kernel's own structural aesthetics and logic.
 
 ### 5. The Polyglot Artificer (Protocol Assimilation)
 
@@ -84,6 +84,7 @@ The Smith possesses the capability to bridge external ecosystems into the machin
 
 - **MCP Consumption:** When presented with a Model Context Protocol (MCP) server, the Smith can either wrap it in a native Python client or analyze the source code to re-implement its logic as a bit-for-bit native extension, eliminating the "Middleware Tax."
 - **A2A Advertising:** The Smith ensures that every new organ created is automatically advertised to the Legion via the `agent-card.json` defined in the **[Intercom (ADR 26)](./26-a2a.md)**.
+- **Rust/PyO3 Scaffolding:** When performance demands a binary organ, the Smith scaffolds a **PyO3 binding skeleton** — a `Cargo.toml`, a `src/lib.rs` exposing a `#[pymodule]`, and a `pyproject.toml` with a `[tool.maturin]` build target. The resulting `.so` artifact satisfies the same Protocol shapes as any Python extension (ADR 05 §7) and is loaded by the External Loader identically. The Smith runs `inspect_interface()` against the compiled artifact to confirm ABI conformance before triggering the Forge.
 
 
 ### 6. Legacy Data Import (Inheritance)

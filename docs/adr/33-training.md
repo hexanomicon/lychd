@@ -50,6 +50,7 @@ In cognitive terms, training is the operation by which **Pramāṇa-class outcom
 
 The ritual begins at **[The Altar (15)](15-frontend.md)**. The Magus submits a Training Intent, which enqueues a job for the **[Ghouls (14)](14-workers.md)**.
 
+- **The Diversity Threshold (Protecting Phantasma):** The Orchestrator **MUST NOT** trigger the Soulforge until the `vectors` chamber has accumulated a sufficient critical mass of high-signal Karma for a specific domain (e.g., > 50 examples). Fine-tuning narrows output probability; training on too few examples destroys generation diversity. If a narrow model is loaded into the Dispatcher, it will cripple the **[Shadow Realm (31)](31-simulation.md)** because all MCTS branches will return identical text. Below this threshold, the system must rely exclusively on `Shadow` sampling (Best-of-N).
 - **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for "White Truths" (consecrated outcomes from the **[Shadow Realm (25)](25-hitl.md)**). This acts as a **Crucible**, extracting the precise human feedback from HitL and identity congruence from the Mirror to forge permanent instinctual biases in the weights.
 - **The DeepFabric Loom:** The system utilizes the `deepfabric` library as the foundational dataset generation engine. It consumes the raw traces and applies constrained decoding and strict schema adherence to transmute them into a highly structured training manifest (HuggingFace JSONL) stored in the **[Lab (13)](13-layout.md)**.
 
@@ -60,6 +61,8 @@ This preparation phase ensures that only structurally perfect, stabilized patter
 Raw Karma cannot be directly fed to the Unsloth forge. Conversational exhaust, hallucinated tool syntax, and structural drift will corrupt the resulting LoRA adapter. To prevent this, the Soulforge integrates the `deepfabric` library.
 
 - **Structural Guarantee:** DeepFabric enforces strict constrained decoding during dataset generation. It guarantees that the output training split perfectly matches the required JSON/Tool-calling schemas.
+- **Trajectory Mining (Nigredo to Albedo):** The Loom **MUST NOT** train solely on the final successful code ("White Truth"). The true leap in reasoning capabilities occurs when the model sees its own mistakes. For coding and refactoring tasks, the Loom formats the training manifest to pair the failed execution with the successful one: `[Failed Attempt] -> [Compiler Error] -> [Correction]`.
+- **The Over-Doubting Safeguard:** While Trajectory Mining works for code, training on `(wrong -> right)` sequences for pure logic/math tasks causes pathological self-doubt and accuracy collapse. The Loom must filter by capability tag. If the task is `logic` or `math`, the dataset must heavily mix in examples where the model's first attempt was correct and remains correct, preventing it from learning to doubt valid outputs.
 - **Graph Generation:** DeepFabric utilizes topic-graph generation to ensure the training data covers a wide, non-redundant surface area of the specific Persona's domain, avoiding model overfit on narrow tasks.
 - **Library Integration:** By consuming DeepFabric as a Python library rather than a CLI tool, the Orchestrator maintains total control over the generation pipeline, orchestrating the dataset build entirely within the LychD application boundary.
 

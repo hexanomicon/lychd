@@ -33,8 +33,8 @@ Operating with elevated authority within the **[Lab](../../adr/13-layout.md)**, 
 
 To prevent structural decay, the Smith manifests valid, standardized file trees.
 
-- **`scaffold_extension`**: Generates the mandatory `pyproject.toml`, `__init__.py`, and `README.md` required by the **[Federation Protocol](../../adr/05-extensions.md)**.
-- **`forge_registration`**: Automatically writes the `register(context)` hook, ensuring the new extension’s routers, ghouls, and models are correctly bound to the Vessel during the boot sequence.
+- **`scaffold_extension`**: Generates the mandatory `pyproject.toml`, `__init__.py`, and `README.md` required by the **[Extension Protocol](../../adr/05-extensions.md)**.
+- **`forge_registration`**: Automatically writes the `register(context)` hook for the in-process grafting path, ensuring any runtime-facing logic follows the host registration surface defined by the Vessel.
 
 ### Recursive Introspection (Analysis)
 

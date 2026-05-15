@@ -46,7 +46,7 @@ These are the engines running within the Sepulcher itself. A Soulstone is a **ru
 #### "The Rift to the Void."
 
 - **Nature:** Remote, Ephemeral, Rented.
-These are connections to alien intelligences dwelling in the cloud. They generate no Quadlet manifests and consume no local VRAM. They represent "Burst" capacity or frontier reasoning, gated by the **[Sovereignty Wall](../../adr/23-orchestrator.md)**.
+These are connections to alien intelligences dwelling in the cloud. They generate no Quadlet manifests and consume no local VRAM. They represent "Burst" capacity or frontier reasoning, gated by the **[Sovereignty Wall](../../adr/09-security.md)** and resolved through Dispatcher policy.
 
 ## 🧠 The Intelligence Profile
 
@@ -61,7 +61,7 @@ Every Animator possesses a default "Personality" defined in its schema. These pa
 
 ## ⚡ Capabilities
 
-Every Animator declares which **Capabilities** it can provide. A `Capability` is a typed class registered via `ExtensionContext`. The **[Dispatcher](../../adr/22-dispatcher.md)** queries active capabilities to resolve which Animator satisfies an Agent's request.
+Every Animator declares which **Capabilities** it can provide. A `Capability` is a typed runtime contract surfaced through the Animator registry and the wider Extension Protocol. The **[Dispatcher](../../adr/22-dispatcher.md)** queries active capabilities to resolve which Animator satisfies an Agent's request.
 
 Capabilities carry two state flags (defined in **[Containers (08)](../../adr/08-containers.md)**):
 

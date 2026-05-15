@@ -20,7 +20,9 @@ Store state within the [VCS-ignored](.gitignore) [.agents directory](.agents/), 
 - [.agents/journal/](.agents/journal/), the chronicle consists of:
     - Chapters as directories (00-99) — each represents a higher goal.
     - Sessions as Markdown files (00-99) — each represents a subtask pursuing the chapter's goal.
-        - Every chapter must start with a `00` session (e.g., `00-intro.md`) explaining the mission of the whole chapter.
+        - Every chapter must start with a `00` session named `00-intro.md`, explaining the mission of the whole chapter.
+        - Every chapter remains open until it contains a dedicated summary session whose filename ends in `-summary.md` (for example `05-summary.md`).
+        - Session conclusions close sessions; only a `*-summary.md` file closes a chapter.
         - Every session follows the structure:
             - **Current Situation**: Define what we are coming from, where we are going, and why.
             - **Goal**: Define what we want to achieve with this session.
@@ -38,12 +40,35 @@ Each chapter follows a lifecycle that ensures continuity across agent invocation
 
 1. **Planning**: The `00-intro.md` outlines scope, session plan, and cold resumption instructions. It is the authoritative entry point for any agent picking up the chapter.
 2. **Execution**: Sessions (01-99) track incremental labor. Mark steps with `[x]` as completed. Write Notes during work, Retrospective after.
-3. **Summarization**: The final session in a chapter is a summary (`05-summary.md` or similar). It documents:
+3. **Summarization**: The closing session in a chapter is always a dedicated `*-summary.md` file (`05-summary.md` or similar). It documents:
     - What was done (file-level changes with rationale)
     - What was verified (consistency, tests, cross-references)
     - What remains (explicitly bounded, with blocking/non-blocking status)
     - Why the foundation is trustworthy (the verification argument)
 4. **Handoff**: The next chapter's `00-intro.md` opens by declaring the previous chapter closed and referencing the summary. It includes a "Context for Cold Resumption" section listing exactly which files to read.
+
+### Journal Reading Discipline
+
+- The journal is continuity memory, not a global dispatcher.
+- The operator assigns the task; the agent reads only the chapter relevant to that task unless cross-chapter work is explicitly assigned.
+- For an open chapter, the default read path is `00-intro.md` and then the latest `*-summary.md` if present. If no summary exists yet, read the latest relevant session conclusion instead.
+- Open chapters in unrelated domains are not mandatory context.
+
+### Journal Consumption And Archival
+
+- The journal is allowed to accumulate only if it is periodically consumed into a newer summary chapter that states the current trustworthy reality.
+- A consumption chapter may summarize, supersede, or narrow older chapters, but it must name what remains authoritative and what is only historical sediment.
+- After a trustworthy consuming summary exists, older consumed chapters may be moved under `.agents/journal/.old/` for archaeology.
+- Do not delete consumed journal history by default. Deletion is an explicit operator choice, not the automatic consequence of summarisation.
+- The default lifecycle is:
+  1. work in normal chapters
+  2. produce `*-summary.md` closures
+  3. open a consuming summarisation chapter when the corpus becomes noisy
+  4. archive superseded chapters to `.old/` only after the consuming summary exists
+
+### Journal Templates
+
+Use the templates in [.agents/journal/templates/](.agents/journal/templates/) when opening or closing a chapter. The naming rules in those templates are authoritative.
 
 **Trust Verification**: When the Magus asks "is this solid?", do not reassure — audit. Read the critical chain, trace logical dependencies, and report real findings. Pin design decisions in writing so they survive context loss. The journal is the immune system against architectural drift.
 

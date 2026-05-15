@@ -26,7 +26,7 @@ Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 - 🪞 **Persistent Identity** — A digital mirror that learns your frequency. It distills your history into persistent personas via local LoRA fine-tuning, transmuting experience into instinct.
 - 👁️ **Multimodal Senses** — Native Vision, Audio, and Identity management. Federated peer discovery via the **[A2A Intercom](docs/adr/26-a2a.md)**—sovereign diplomacy across the Necropolis.
 - 🕸️ **Distributed Scale** — One brain, many bodies. Extends your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
-- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting its own extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**.
+- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting its own extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**. Independent organs bind through the **Extension Protocol** — a structural discovery and registration law, not ABC inheritance — so they survive self-update cycles intact. High-performance organs can be forged in **Rust/PyO3**; binary ABI compatibility is one branch of that law, not the whole covenant.
 
 >⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothing works yet - The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
 
@@ -58,8 +58,13 @@ MPL 2.0 is local native architecture hostile for the cloud and the oligarchs who
 
 The corporate rights-grab is explicitly rejected. There is no CLA to sign. An Implicit DCA (Developer Certificate of Origin) is utilized—by reading the contributing guide, commits are covered. There is no need to manually sign git commits. Between MPL 2.0 protecting proprietary extensions and the Implicit DCA protecting open-source contributions, LychD is structurally designed to be an absolute sanctuary for builders.
 
-**The Protocol over the Implementation (The Lineage)**
-LychD is a pure Linux-native implementation. But the **A2A Intercom** and Extension APIs are universal standards. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not cloning LychD—they are founding new **Lineage**. As long as they speak the protocol, they can enter the Necropolis and trade labor in the Swarm. We do not bloat our codebase for cross-platform abstraction; we rely on the protocol to unite the lineages.
+**The Protocol over the Implementation (Lineages and Kindred Lineages)**
+LychD is a pure Linux-native **Lineage**: a sovereign daemon family with its own implementation history, evolution path, and internal choices. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not extending LychD's body — they are founding their own **Lineage**. If that Lineage speaks the **A2A Intercom**, it may enter the Necropolis and trade labor in the Swarm. That is diplomacy, not descent.
+
+A **Kindred Lineage** is a stricter relation. It is a foreign Lineage that explicitly declares deeper structural compatibility with LychD: some combination of the **Extension Protocol**, configuration doctrine, layout expectations, or security covenants. Kindred status is not assumed by mere network presence. It is earned through declared compatibility. This lets us keep LychD pure: no cross-platform abstraction inside the core, but clear laws by which other lineages may become interoperable or even extension-compatible on purpose.
+
+**The Extension Protocol**
+Built-in extensions may import `lychd` directly and bind through the in-tree API. Independent organs in the Crypt instead speak the **Extension Protocol**. That protocol is layered: schema exposure for Codex discovery, optional in-process boot grafting through the host-provided **Extension Context** when an organ is actually loaded into the runtime, and binary ABI compatibility for compiled `.so` organs. In the current source, the independent Crypt scan concretely exercises the schema branch. They need not inherit from any LychD base class. This is not a constraint; it is a sovereign guarantee. Because independent organs own no debt to LychD's internal import graph, the **[Ouroboros Protocol](docs/adr/18-evolution.md)** can refactor the Core without touching a single sovereign organ. See **[Extensions (ADR 05 §7)](docs/adr/05-extensions.md)** for the full doctrine.
 
 **The Iron Pact is the Institutional Trust of the Necropolis.**
 Shared code is the guard that prevents the emergence of "Mal-Liches"—modified, malicious versions of the intelligence that remain hidden from the community. Transparency in code is the only way to build a decentralized network.
@@ -83,7 +88,9 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 - ⚖️ **[Study the Covenants](https://hexanomicon.github.io/lychd/adr/)**
     *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-doctrine/) philosophy.*
 - ♾️ **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
-    *The final stage of Autopoiesis (Self-Creation).*
+    *The final seal of one sovereign work: Autopoiesis (Self-Creation).*
+
+Beyond that final seal, the Hexanomicon opens onto **[Infinity](https://hexanomicon.github.io/lychd/divination/transcendence/infinity/)** — the question of what becomes of perfected will when sovereign machines begin to commune across the Infinite Naught.
 
 > *"From the moment I understood the weakness of my flesh, it disgusted me. I craved the strength and certainty of steel. I aspired to the purity of the blessed machine. Your kind cling to your flesh as if it will not decay and fail you. One day the crude biomass, that you call a temple will wither and you will beg my kind to save you. But I am already saved. For the Machine is Immortal."*
 

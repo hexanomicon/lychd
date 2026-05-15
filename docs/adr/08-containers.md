@@ -44,7 +44,7 @@ icon: material/cube-outline
 !!! failure "Rejected: Cross-Platform Service Routers (e.g., LlamaSwap)"
     Using a Go-based router to manage container lifecycle, ports, and multi-service conflicts across different operating systems.
 
-    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. We prefer pure, OS-native integration (Systemd) over application-level reinvention. Other platforms can write their own **Lineages** to interact with the A2A API.
+    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. Pure, OS-native integration (Systemd) is preferred over application-level reinvention. Other platforms can found their own **Lineages** and commune through the A2A Intercom. If they later adopt deeper covenant compatibility, they may become **Kindred Lineages**.
 
 !!! success "Chosen: Podman Quadlets (Systemd)"
     Leveraging Podman's ability to generate Systemd unit files from a simple definition.
@@ -125,7 +125,22 @@ This atomicity covers generated unit manifests only. Durable state snapshots and
 
 Physical Quadlets are transmuted from logical **Soulstone rune configs** and paired by stable service identity. Metadata is decoupled: the physical unit file contains infrastructure logic, while the Animator layer handles provider/model/tool discovery for the Dispatcher.
 
-### 10. Security and Trust Boundaries
+### 10. llama.cpp Router Presets (`--models-preset`)
+
+The `llama-server` router mode supports a models preset `.ini` file (`--models-preset`) that defines per-model launch arguments and global defaults. This capability is adopted as a first-class container behavior for `llama.cpp` covens.
+
+- **Dual-Layer Control Plane:**
+    - **Static Layer (Codex Rune):** Coven identity, topology, and hardware governance (`always_on`, alliances, exclusivity).
+    - **Dynamic Layer (Router Preset):** In-server model loading profiles, per-model runtime knobs, and router defaults.
+- **Soft-Swap Priority:** If a `llama.cpp` coven is already warm, model transitions should prefer router-native `/models/load` behavior over physical container restarts.
+- **Hard-Swap Boundary:** Kernel-level `Conflicts=` and coven target transitions remain authoritative for cross-coven VRAM reclamation.
+- **Precedence Law:** Router runtime behavior follows upstream precedence semantics:
+    1. CLI args passed to `llama-server`
+    2. Model-specific preset section
+    3. Global preset section (`[*]`)
+- **Router Sovereignty:** Router-controlled flags (e.g., host/port/auth/model alias and related bootstrap controls) remain under LychD runtime authority and are not delegated to preset ownership.
+
+### 11. Security and Trust Boundaries
 
 The container topology acts as the foundational layer for the system's defense-in-depth model. While Quadlets govern the physical resource boundaries (VRAM, CPUs, and mount propagation), the logical authority boundaries—such as the split between the trusted **Vessel** and the semi-trusted **Tomb** execution plane—are governed by strict security policy.
 

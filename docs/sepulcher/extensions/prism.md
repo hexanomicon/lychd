@@ -52,7 +52,7 @@ The Prism is a heavy beast. It is subject to the **[Orchestrator's](../../adr/23
 The Prism integrates with the **[Federation](../../adr/05-extensions.md)** to define its costs and providers.
 
 - **Local Visionstones:** (e.g., `LLaVA-v1.6`, `Moondream2`, `Qwen-VL`). These are the eyes of the **[Sepulcher](../index.md)**, utilizing local silicon for total privacy.
-- **Cloud Eyes:** (e.g., `GPT-4o`, `Claude 3.5 Sonnet`). These are accessed via **[Portals](../animator/portal.md)** for frontier-level visual reasoning, subject to the Tithe of tokens and the **[Sovereignty Wall](../../adr/22-dispatcher.md)**.
+- **Cloud Eyes:** (e.g., `GPT-4o`, `Claude 3.5 Sonnet`). These are accessed via **[Portals](../animator/portal.md)** for frontier-level visual reasoning, subject to the Tithe of tokens and the **[Sovereignty Wall](../../adr/09-security.md)**.
 
 !!! warning "The Memory Burden"
     Visual tokens are heavy. Ingesting multiple high-resolution images can rapidly consume the context window. The Prism works alongside the **[Context Manager](../../adr/21-context.md)** to prune older visual data once the "Observation" has been converted into "Textual Memory."

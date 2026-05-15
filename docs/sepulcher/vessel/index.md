@@ -14,10 +14,10 @@ It is the face the Magus sees and the voice that answers the call.
 !!! abstract "Anatomy of the Husk"
     The Vessel is a sophisticated homunculus, constructed from several key arcane components:
 
-    *   **The Breath (`Granian`):** The Rust-based RSGI server that breathes life into the code. It is the raw, high-performance interface that connects the Vessel to the network, allowing it to speak and hear with multi-threaded fury.
-    *   **The Skeleton (`Litestar`):** The asynchronous framework that provides the husk with its structure. Litestar holds the routing logic, the dependency injection, and the application lifecycle, allowing the Vessel to stand upright.
-    *   **The Wards (`Pydantic`):** The runes of protection that define the Vessel's reality. Pydantic models act as the immune system, enforcing strict type validation to ensure that no corrupted or malformed data can penetrate the inner logic.
-    *   **The Synapses (`Pydantic AI`):** The neural pathways that direct the flow of thought. While the **[Animator](../animator/index.md)** provides the raw *capacity* to think, the Synapses define the *strategy*—structuring prompts, managing context windows, and routing decisions through directed graphs.
+    - **The Breath (`Granian`):** The Rust-based RSGI server that breathes life into the code. It is the raw, high-performance interface that connects the Vessel to the network, allowing it to speak and hear with multi-threaded fury.
+    - **The Skeleton (`Litestar`):** The asynchronous framework that provides the husk with its structure. Litestar holds the routing logic, the dependency injection, and the application lifecycle, allowing the Vessel to stand upright.
+    - **The Wards (`Pydantic`):** The runes of protection that define the Vessel's reality. Pydantic models act as the immune system, enforcing strict type validation to ensure that no corrupted or malformed data can penetrate the inner logic.
+    - **The Synapses (`Pydantic AI`):** The neural pathways that direct the flow of thought. While the **[Animator](../animator/index.md)** provides the raw *capacity* to think, the Synapses define the *strategy* by structuring prompts, managing context windows, and routing decisions through directed graphs.
 
 !!! info "The Will of the Vessel"
     The Vessel is the primary executor of the Lich's will. Its core duties are threefold:
