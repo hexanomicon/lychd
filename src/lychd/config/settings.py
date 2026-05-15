@@ -28,7 +28,7 @@ class ServerSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="SERVER_")
 
-    host: str = "0.0.0.0"  # noqa: S104
+    host: str = "127.0.0.1"
     port: int = 7134  # LICH
     reload: bool = False
     workers: int = 1

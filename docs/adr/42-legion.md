@@ -10,6 +10,8 @@ icon: material/sitemap
 
     Like the legions of antiquity, this is not a democracy of equals. It is a hierarchy of purpose — many bodies, one imperator, one undying will bound by a single Phylactery.
 
+    If the **[Prophecy](../index.md)** is the Voidwalker’s Guide Across the Infinite Naught, this covenant asks the obvious next question: how does one sovereign life persist across that naught without forking its soul?
+
 ### The Two Errors
 
 Before arriving at the solution, two dead ends were mapped and rejected:
@@ -48,7 +50,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 !!! failure "Option 3: Cross-Platform Abstraction (e.g., LlamaSwap)"
     Using a multi-service Go router (like LlamaSwap) to manage execution and conflicts across Windows/Mac/Linux.
 
-    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms write their own **Lineages** using our API protocol. LychD remains pure Linux.
+    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms found their own **Lineages** and speak the inter-daemon law. If they choose deeper covenant compatibility, they may become **Kindred Lineages**. LychD remains pure Linux.
 
 !!! failure "Option 4: Simple API Webhooks"
     Exposing agents as standard REST endpoints.

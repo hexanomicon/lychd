@@ -21,6 +21,7 @@ icon: material/directions-fork
 - **Sigil-Based Filtering:** Integration with **[The Ward (38)](38-iam.md)** to physically hide privileged tools/models from an Agent based on the active identity's scope.
 - **Economic Arbitration:** Integration with **[The Toll (41)](41-x402.md)** to select the most cost-effective provider (Local Power vs. Cloud Tokens) based on the ritual's priority.
 - **Privatization-Aware Routing:** Context with elevated privatization weight must not be sent to Portals unless anonymization policy succeeds.
+- **Sovereignty Wall Enforcement:** The policy boundary is defined in **[Security (09)](09-security.md)** and enforced here in the Dispatcher's routing decisions. The **[Orchestrator (23)](23-orchestrator.md)** manages hardware state and container transitions; it does not own egress or privacy policy.
 
 ## Considered Options
 
@@ -57,15 +58,15 @@ Policy resolution still targets a provider-route contract (model/tool identity f
 
 ### 2. The Animator Handshake (The Stasis Protocol)
 
-The **Animator** serves as the metaphysical bridge between the Code and the Model. However, an Animator cannot exist without a Body.
+The **Animator** serves as the metaphysical bridge between the Code and the Model. An Animator exposes stateful **Capability** objects which declare three critical flags: `is_static: bool`, `is_active: bool`, and **`always_on: bool`**.
 
-- **"The Substrate Check:"** When an Agent requires a provider route (for example, a vision-capable animator), the Dispatcher checks the **Orchestrator**. If the required Coven is not in a "Warm" state, the Dispatcher invokes the **Stasis Protocol**. It emits a deferred-transition signal (ADR contract), allowing the Agent state to be serialized to the **Phylactery** while the body reconfigures.
-- **The Physical Check:** Before granting the Animator, the Dispatcher queries the **Orchestrator**: *"Is the `vision.coven` active?"*
-- **The Stasis Signal:** If the answer is **NO**, the Dispatcher does not fail. It raises a `HardwareTransitionRequired` signal.
-    - This signal propagates up to the **[Graph (24)](24-graph.md)**.
-    - The Graph triggers the **Stasis Protocol**: the current thread is serialized and saved to the **[Phylactery (06)](06-persistence.md)**.
-    - Time effectively stops for the Agent while the **Orchestrator** performs the heavy lifting of swapping VRAM contents.
-- **The Reanimation:** Once the Orchestrator confirms the new Coven is "Warm," the Dispatcher releases the lock, and the Agent resumes execution as if no time had passed.
+- **"The Substrate Check:"** When an Agent requests a Capability, the Dispatcher examines these state flags. 
+- **The Physical Check:** If the Capability is `is_static=False` and `is_active=False`, it means the physical Coven supports the model, but it is currently not loaded into VRAM.
+- **The Coven Alliance:** If a capability is marked **`always_on=True`**, it bypasses the Systemd **Hard Swap** protocol. The Infrastructure Service MUST NOT generate `Conflicts=` directives for always-on covens, allowing them to eternally resonate in VRAM alongside Titans.
+- **The Stasis Signal & LlamaSwap:** In this scenario, the Dispatcher does not fail. It raises a `HardwareTransitionRequired` signal. This freezes the Agent Graph, triggering the **Stasis Protocol**. 
+    - **Soft Swap:** If the Coven is `always_on=True`, the Orchestrator invokes the Animator's internal API (e.g., vLLM or llama-server `/models/load`) to dynamically swap the model into VRAM without restarting the container.
+    - **Hard Swap:** If the Coven is not always-on, the Orchestrator executes a physical Systemd target transition, where the kernel uses `Conflicts=` to atomically reclaim VRAM from opposing covens.
+- **The Reanimation:** Once the Animator confirms the requested Capability is `is_active=True`, the Dispatcher releases the lock, and the Agent resumes execution as if no time had passed.
 
 !!! note "Agent State vs. VRAM Swap"
     The Agent's cognitive state (Pydantic AI graph runner, in-flight tool calls) lives in **Vessel process memory**, not inside the VLLM/llama.cpp container. When VLLM restarts, the Vessel continues running and the Agent simply waits for the next LLM response. No serialization to the Phylactery is required for VRAM swaps. Phylactery serialization serves a different concern — **Long Sleep** durability (surviving reboots, multi-day waits for human approval, or deferred A2A results).
@@ -102,8 +103,10 @@ When a reasoning step submits a requirement, the Dispatcher executes a multi-sta
 The Dispatcher does not return a raw model; it returns a **Mind-Bundle**. This is a configuration package containing:
 
 - **The Animator:** The selected model implementation.
-- **The Arsenal:** A `CombinedToolset` containing all permitted functions and sensory tools.
-- **The Archive Lens:** Memory recall tools are injected only when embedding/retrieval substrate is warm and Sigil policy allows archive access.
+- **The Capability Taxonomy:** Concrete capability protocols binding the Agent to the hardware.
+    - `ReasoningCapability`: Text reasoning models returning Pydantic objects.
+    - `SensoryCapability`: Vision/Audio perception engines handling `BinaryContent`.
+    - `EmbeddingCapability`: Vectorization engines.
 - **The Limits:** Strictly defined `UsageLimits` derived from the system's economic laws.
 - **Late-Bound Binding:** The Mind-Bundle is a temporary hydration of a Persona from the currently selected runtime animator/connector. Policy may still be expressed in provider-route terms, but binding is granted against the active physical substrate at the moment of thought.
 

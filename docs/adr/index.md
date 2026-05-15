@@ -17,7 +17,7 @@ icon: material/pillar
 - **Longevity:** Decisions must be recorded in a format that survives team changes and the passage of time.
 - **Asynchronicity:** The process must support asynchronous review and contribution, fitting a distributed or solo development model.
 - **Discoverability:** The records must be easy for developers to find and consult within the repository.
-- **Immutability:** Once a decision is recorded, it must be considered a settled matter unless formally superseded.
+- **Governance Stability:** Once a decision is recorded, it becomes the current architectural contract and must not drift casually. Changes must be deliberate, traceable, and justified in the record itself or by a later ADR when the decision is truly reversed.
 
 ## Considered Options
 
@@ -43,13 +43,13 @@ icon: material/pillar
 
 **Architecture Decision Records (ADRs)**, as popularized by Michael Nygard, are adopted as the primary mechanism of architectural rigour. All significant decisions for the LychD project are documented in Markdown files within the `docs/adr/` directory.
 
-The right is explicitly reserved to **retrospectively adjust** these ADRs as the architecture evolves. These documents function as "Covenants of Architecture" (living technical contracts) rather than immutable point-in-time records. The Git history serves as the immutable time record of how the system evolved.
+These ADRs function as "Covenants of Architecture" (living technical contracts) rather than sealed time capsules. The current text describes the current law. Git history preserves the evolution of that law, while later ADRs remain the mechanism for genuine reversals, competing patterns, or major architectural branch points.
 
 ### ADR Template
 
-- **Format:** Each ADR is a Markdown file named `XXXX-kebab-case-title.md`.
+- **Format:** Each ADR is a Markdown file named `NN-kebab-case-title.md`.
 - **Content Structure:**
-    - **Mkdocs Metadata:** Must include a one word `title` (with the number, e.g., "10. Extensions") and a thematic `icon`.
+    - **Docs Metadata:** Must include a one word `title` (with the number, e.g., "10. Extensions") and a thematic `icon`.
     - **Heading:** The H1 must include the corresponding icon and the full descriptive title.
     - **Context:** Must use `!!! abstract "Context and Problem Statement"`.
         - *Why:* This provides a visual "Flavor Text" box that separates the problem definition from the analysis.
@@ -60,9 +60,9 @@ The right is explicitly reserved to **retrospectively adjust** these ADRs as the
 
     - **Consequences:** (Optional) Use only if there are significant side effects not covered in the Pros/Cons. Use `!!! failure "Negative"` and `!!! success "Positive"` when more than one consequence is present; otherwise explain the consequence in the considered options section. Each pro and con starts with a bolded label and a short explanation. Use a `###` header.
 
-### ADR Authoring Patterns (MkDocs / Material)
+### ADR Authoring Patterns (Zensical / Material)
 
-The documentation stack already enables these authoring features in `mkdocs.yaml`:
+The documentation stack already enables these authoring features in `zensical.toml`:
 
 - `admonition`
 - `pymdownx.details`

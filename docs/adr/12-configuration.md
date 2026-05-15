@@ -200,6 +200,21 @@ Violations abort configuration loading.
 
 ---
 
+### llama.cpp Preset Doctrine (`--models-preset`)
+
+`llama.cpp` soulstones may reference a router preset `.ini` via a typed rune field (e.g., `preset_path`), allowing the Magus to preserve optimized upstream launch profiles while remaining inside Codex governance.
+
+- **Two-Tier Intent:**
+    - **Rune Intent:** Identity, coven policy, and orchestration hints (e.g., `always_on`, matrix metadata).
+    - **Preset Intent:** Router/runtime defaults and per-model launch arguments consumed by `llama-server`.
+- **Validation Rule:** Preset references must resolve to an existing readable file path before binding; unresolved preset paths are configuration errors.
+- **Boundary Rule:** Preset files tune model runtime behavior, but may not redefine host-level governance authority enforced by LychD (port arbitration, coven exclusivity, and orchestration ownership).
+- **Precedence Awareness:** Preset semantics follow upstream llama.cpp precedence (CLI > model section > global section). Codex manifests should document any CLI overrides that intentionally shadow preset values.
+
+This doctrine preserves "Magus heritage" tuning while preventing configuration fragmentation.
+
+---
+
 ### The Leaf Principle
 
 Only leaf schemas (those without subclasses) may define multiple instances by default.
@@ -212,26 +227,24 @@ This prevents ambiguous discovery and implicit polymorphic loading.
 
 ## 4. The Configurable Contract (Extension Integration)
 
-Configuration extensibility is governed by a single structural contract: `RuneConfig`.
+Configuration extensibility is governed by the structural registry of the Core.
 
-Any extension that wishes to declare configuration must:
+However, per the **[Dual-Path Extension Doctrine (ADR 05)](05-extensions.md)**, independent extensions MUST NOT subclass core LychD classes to prevent Ouroboros Fragility (The ABC Trap). 
 
-- Inherit from `RuneConfig`
-- Declare `relative_path` (or `None` for top-level singleton)
-- Optionally declare `singleton` override
+To resolve this **Codex Paradox**, built-in extensions and independent extensions follow different integration paths:
+- **Built-in Extensions:** May inherit directly from `RuneConfig`.
+- **Independent Extensions:** Must implement the `@runtime_checkable` `ExtensionSchemaProtocol`.
 
-Example contract and helper methods are defined directly in `src/lychd/config/runes/base.py` (see `RuneConfig` snippet above).
-
-### Registration Doctrine
+### Registration Doctrine (The Machinery's Translation)
 
 Configuration schemas are registered structurally, not procedurally.
 
-- The subclass itself is the registration signal.
-- Runtime import plus subclass discovery determines ownership.
-- No extension may implement custom configuration loaders.
-- No dynamic `type=` dispatch is permitted.
+- **Built-in Path:** Runtime import plus subclass discovery determines ownership. The subclass itself is the registration signal.
+- **Independent Path:** When `importlib.machinery` scans the Crypt, if it finds an independent class satisfying `ExtensionSchemaProtocol`, the Machinery *dynamically registers* it with the `CodexLoader`. The Machinery bridges the duck-typed independent world into the strict structural registry of the Core.
 
-Inheritance automatically binds the schema to:
+No extension may implement custom configuration loaders, and no dynamic `type=` dispatch is permitted.
+
+Registration automatically binds the schema to:
 
 ```txt
 ~/.config/lychd/runes/<relative_path>/

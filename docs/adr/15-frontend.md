@@ -49,6 +49,7 @@ The Altar utilizes a "Thin Client" stack designed for maximum substrate integrat
 - **HTMX:** The primary engine for state transitions. It swaps HTML fragments into the DOM, allowing the Magus to "zoom" into specific cognitive processes without a page reload.
 - **Alpine.js:** Used for ephemeral, local UI state (e.g., toggling a sidebar) and managing "Islands of Interactivity."
 - **Jinja2:** The templating engine that renders fragments, utilizing the directory structure defined in the **[Layout (13)](13-layout.md)**.
+- **Vite:** The supported asset pipeline and dev/build contract for the Altar. Package manager or runtime substitutions are acceptable only when they preserve Vite compatibility and the Litestar integration surface.
 - **Tailwind CSS:** A utility-first styling engine. The final CSS is synthesized by scanning the templates of both the Core and all active Extensions.
 
 ### 2. Generative UI Patterns (The AG-UI Protocol)
@@ -72,7 +73,7 @@ To maintain the **[Federation (05)](05-extensions.md)**, the Altar functions as 
 
 - **Discovery:** During the registration hook, extensions provide the coordinates for their visual templates.
 - **Grafting:** The Vessel scans these directories, allowing extensions to inject new scrying fragments into the Altar's layout without core modifications.
-- **Islands:** If an extension requires complex client-side logic (e.g., a real-time data visualization or an interactive node-map), it may mount an "Island"—a small, isolated JavaScript bundle—into an HTMX-driven page.
+- **Islands:** If an extension requires complex client-side logic (e.g., a real-time data visualization or an interactive node-map), it may mount an "Island"—a small, isolated JavaScript bundle—into an HTMX-driven page. TypeScript is optional and encouraged for these richer islands, but it is not required for the baseline HTMX/Alpine surface.
 
 ### 5. The Scales of the Whims
 

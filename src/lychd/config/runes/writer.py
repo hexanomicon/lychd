@@ -43,8 +43,10 @@ class ConfigWriter:
 
     def _target_sample_file(self, schema: type[RuneConfig]) -> Path | None:
         """Return sample target path if schema has no existing TOML instances."""
+        file_name = self._get_default_file_name(schema)
+        
         if schema.relative_path is None:
-            target = self._runes_dir / schema.default_file_name()
+            target = self._runes_dir / file_name
             return None if target.exists() else target
 
         anchor = self._runes_dir / schema.relative_path
@@ -55,7 +57,13 @@ class ConfigWriter:
         if existing:
             return None
 
-        return anchor / schema.default_file_name()
+        return anchor / file_name
+
+    def _get_default_file_name(self, schema: type[RuneConfig]) -> str:
+        """Safely resolve the default file name for a schema class."""
+        if hasattr(schema, "default_file_name") and callable(schema.default_file_name):
+            return str(schema.default_file_name())
+        return f"{schema.__name__.lower()}.toml"
 
     def _descendant_relative_paths(self, schema: type[RuneConfig]) -> set[Path]:
         paths: set[Path] = set()

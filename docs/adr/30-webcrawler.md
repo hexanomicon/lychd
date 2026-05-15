@@ -14,8 +14,8 @@ icon: material/spider-thread
 
 - **Tactical Duality:** Implementation of a two-handed approach—a **Skirmisher** (Lightweight/Fast) for static content and a **Siege Engine** (Heavy/Complete) for dynamic applications.
 - **Structural Fidelity:** The capability to interpret JavaScript, solve CAPTCHAs, and navigate complex DOMs when necessary.
-- **Markdown Transmutation:** Automated conversion of chaotic HTML/CSS into clean, hierarchical Markdown to minimize the **[Context (20)](21-context.md)** token tax.
-- **Orchestrated Ingress:** The heavy Siege Engine must be treated as a **[Systemd Quadlet service (08)](08-containers.md)** subject to the **[Orchestrator (22)](23-orchestrator.md)**. It cannot be summoned if the system is under extreme VRAM/RAM pressure (e.g., during Training).
+- **Markdown Transmutation:** Automated conversion of chaotic HTML/CSS into clean, hierarchical Markdown to minimize the **[Context (21)](21-context.md)** token tax.
+- **Orchestrated Ingress:** The heavy Siege Engine must be treated as a **[Systemd Quadlet service (08)](08-containers.md)** subject to the **[Orchestrator (23)](23-orchestrator.md)**. It cannot be summoned if the system is under extreme VRAM/RAM pressure (e.g., during Training).
 - **Isolation:** Execution of the browser engine within a dedicated, unprivileged container to prevent host-level exploitation via malicious JavaScript.
 - **Recursive Utility:** Provision of raw documentation to **[The Smith (35)](35-assimilation.md)** to enable the autonomous construction of new extensions.
 

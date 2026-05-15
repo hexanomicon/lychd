@@ -1,44 +1,66 @@
-from __future__ import annotations
+import importlib.machinery
+import importlib.util
+from typing import Any
+from pathlib import Path
 
-import importlib
-import pkgutil
-from collections.abc import Iterable
-
-import structlog
-
-logger = structlog.get_logger()
-
-
-class ExtensionDiscovery:
-    """Import extension modules so subclass-based contracts are visible at runtime."""
-
-    def import_builtin_modules(self) -> list[str]:
-        """Import every module under ``lychd.extensions.builtin``.
-
-        Importing modules is enough for ABC subclass discovery to work.
+class CryptMachinery:
+    """
+    The Translation layer bridging independent Extension Protocol organs into
+    the strict structural registry of the Core.
+    Resolves the Codex Paradox and supports Dual-Path organs (Python & Rust/PyO3).
+    """
+    
+    def __init__(self, codex_loader: Any) -> None:
         """
-        return self._import_package_tree("lychd.extensions.builtin")
-
-    def import_packages(self, package_names: Iterable[str]) -> list[str]:
-        """Import every module for each provided package name."""
-        imported: list[str] = []
-        for package_name in package_names:
-            imported.extend(self._import_package_tree(package_name))
-        return imported
-
-    def _import_package_tree(self, package_name: str) -> list[str]:
-        package = importlib.import_module(package_name)
-        imported = [package_name]
-
-        if not hasattr(package, "__path__"):
-            return imported
-
-        for module_info in pkgutil.walk_packages(package.__path__, prefix=f"{package_name}."):
-            try:
-                importlib.import_module(module_info.name)
-            except Exception:  # noqa: BLE001 pragma: no cover - defensive import boundary
-                logger.debug("extension_module_skipped", module=module_info.name, reason="import_error")
+        :param codex_loader: The internal singleton registry that manages Rune schemas.
+        """
+        self.codex_loader = codex_loader
+        
+    def scan_crypt(self, crypt_path: Path) -> None:
+        """
+        Scans the external Crypt directory for compiled Rust binaries (.so) 
+        and Python modules (.py).
+        """
+        if not crypt_path.exists():
+            return
+            
+        for item in crypt_path.iterdir():
+            if item.suffix in (".py", ".so") and not item.name.startswith("_"):
+                self._load_and_translate(item)
+                
+    def _load_and_translate(self, file_path: Path) -> None:
+        """
+        Loads the extension bypassing standard import semantics to isolate
+        the module. If it satisfies ExtensionSchemaProtocol, dynamically translates 
+        and registers it into the Core structural registry.
+        """
+        module_name = file_path.stem
+        
+        # 1. Dual-Path Loading via Machinery
+        if file_path.suffix == ".so":
+            loader = importlib.machinery.ExtensionFileLoader(module_name, str(file_path))
+        else:
+            loader = importlib.machinery.SourceFileLoader(module_name, str(file_path))
+            
+        spec = importlib.util.spec_from_loader(module_name, loader)
+        if not spec or not spec.loader:
+            return
+            
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        # 2. Translation (The Codex Paradox Resolution)
+        # Scan the isolated module for any object conforming to the Protocol memory shape
+        for attr_name in dir(module):
+            if attr_name.startswith("_"):
                 continue
-            imported.append(module_info.name)
-
-        return imported
+                
+            obj = getattr(module, attr_name)
+            
+            # We are looking for Classes that match the shape, not instances.
+            # issubclass() fails for Protocols with non-method members.
+            if isinstance(obj, type):
+                has_rel = hasattr(obj, "relative_path")
+                has_sin = hasattr(obj, "singleton")
+                if has_rel and has_sin:
+                    self.codex_loader.register_schema(obj)

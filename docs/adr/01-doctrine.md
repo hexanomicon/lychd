@@ -103,6 +103,7 @@ Waterfall demands upfront planning. The need for foresight in architecture and d
 !!! success "Planning"
     Adopt Waterfall's demand for foresight. Writing the **Prophecy (Documentation)** *before* code prevents massive refactoring later.
 
+
 ## Decision Outcome
 
 The creation of **xDDD**—a distilled amalgamation of the best engineering practices, utilizing AI to dial the knobs to **11**.
@@ -133,4 +134,4 @@ flowchart TD
 
 XP, DDD, TDD, SDD/RDD—these are all fingers pointing to the moon. The method is not the magic. The best of the past has been distilled to create a system of Grandeur, but the ultimate goal is the fulfillment of the [Prophecy](../index.md), not religious adherence to this document.
 
->Use the ritual to manifest the Vision. If the rules bind, **break them.**
+> Use the ritual to manifest the Vision. If the rules bind, **break them.**

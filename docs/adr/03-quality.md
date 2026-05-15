@@ -43,7 +43,7 @@ icon: material/check-all
 
 1. **`uv` as the Foundation (Manager):**
 
-    - **Determinism:** `uv.lock` is the single source of truth.Do not use `pip` directly.
+    - **Determinism:** `uv.lock` is the single source of truth for repository-managed Python environments. Do not use `pip` directly to manage the project environment.
 
     - **Speed:** Environment creation and dependency syncing are effectively instant, removing friction from the "Switching Spheres" context switch.
 
