@@ -171,6 +171,11 @@ class LychdSettings(BaseSettings):
         description="Host directories to mount Read-Write (RW) for the Agent to edit.",
     )
 
+    alliances: list[list[str]] = Field(
+        default_factory=list,
+        description="Explicit coven alliances that relax implicit conflict generation between soulstone groups.",
+    )
+
 
 # This class will hold general app info.
 class AppSettings(BaseSettings):

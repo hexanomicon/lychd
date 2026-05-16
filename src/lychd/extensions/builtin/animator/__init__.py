@@ -2,14 +2,14 @@
 
 from lychd.extensions.builtin.animator.soulstones import (
     LlamaCppMode,
-    LlamaCppSoulstone,
-    SglangSoulstone,
-    VllmSoulstone,
+    LlamaCppSoulstoneConfig,
+    SglangSoulstoneConfig,
+    VllmSoulstoneConfig,
 )
 
 __all__ = [
     "LlamaCppMode",
-    "LlamaCppSoulstone",
-    "SglangSoulstone",
-    "VllmSoulstone",
+    "LlamaCppSoulstoneConfig",
+    "SglangSoulstoneConfig",
+    "VllmSoulstoneConfig",
 ]

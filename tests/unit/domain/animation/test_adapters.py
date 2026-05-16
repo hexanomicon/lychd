@@ -3,14 +3,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
-from lychd.domain.animation.schemas import ModelSurface
+from lychd.domain.animation.capabilities import CapabilityFamily
+from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
-from lychd.domain.animation.services.adapters.surfaces import LlamacppConnector, OpenAICompatibleConnector
-from lychd.extensions.builtin.animator import LlamaCppSoulstone, SglangSoulstone, VllmSoulstone
+from lychd.domain.animation.services.adapters.surfaces import (
+    GenericStone,
+    LlamacppConnector,
+    OpenAICompatibleConnector,
+    OpenAICompatibleStone,
+)
+from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
+from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
+from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 
 
-def _build_llamacpp_connector(soulstone: LlamaCppSoulstone) -> tuple[LlamacppConnector, RuntimePlan]:
+def _build_llamacpp_connector(soulstone: LlamaCppSoulstoneConfig) -> tuple[LlamacppConnector, RuntimePlan]:
     registry = RuntimeAdapterRegistry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
@@ -19,7 +27,7 @@ def _build_llamacpp_connector(soulstone: LlamaCppSoulstone) -> tuple[LlamacppCon
     return connector, registry.plan(soulstone)
 
 
-def _build_vllm_connector(soulstone: VllmSoulstone) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
+def _build_vllm_connector(soulstone: VllmSoulstoneConfig) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
     registry = RuntimeAdapterRegistry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
@@ -28,7 +36,7 @@ def _build_vllm_connector(soulstone: VllmSoulstone) -> tuple[OpenAICompatibleCon
     return connector, registry.plan(soulstone)
 
 
-def _build_sglang_connector(soulstone: SglangSoulstone) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
+def _build_sglang_connector(soulstone: SglangSoulstoneConfig) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
     registry = RuntimeAdapterRegistry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
@@ -38,7 +46,7 @@ def _build_sglang_connector(soulstone: SglangSoulstone) -> tuple[OpenAICompatibl
 
 
 def test_llamacpp_single_mode_plan() -> None:
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "qwen-local",
             "model_path": "/models/qwen.gguf",
@@ -69,7 +77,7 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "qwen-router",
             "startup_mode": "router",
@@ -95,7 +103,7 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
 
 
 def test_vllm_openai_compatible_plan() -> None:
-    soulstone = VllmSoulstone.model_validate(
+    soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "glm47",
             "model_path": "/models/GLM-4.7-Flash-AWQ-4bit",
@@ -131,10 +139,11 @@ def test_vllm_openai_compatible_plan() -> None:
     assert "--trust-remote-code" in plan.exec_args
     assert "--ipc=host" in plan.podman_args
     assert connector.list_models()[0].supports_tools is True
+    assert connector.metadata["runtime"] == "vllm"
 
 
 def test_vllm_model_capability_hints_override_runtime_defaults() -> None:
-    soulstone = VllmSoulstone.model_validate(
+    soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "vllm-capability-overrides",
             "model_path": "/models/fallback-awq",
@@ -170,7 +179,7 @@ def test_vllm_model_capability_hints_override_runtime_defaults() -> None:
 
 
 def test_sglang_openai_compatible_plan() -> None:
-    soulstone = SglangSoulstone.model_validate(
+    soulstone = SglangSoulstoneConfig.model_validate(
         {
             "name": "qwen-sglang",
             "model_path": "/models/qwen-awq",
@@ -199,10 +208,177 @@ def test_sglang_openai_compatible_plan() -> None:
     assert "awq" in plan.exec_args
     assert "--trust-remote-code" in plan.exec_args
     assert "--enable-marlin" in plan.exec_args
+    assert connector.metadata["runtime"] == "sglang"
+
+
+def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "support-vllm",
+            "model_path": "/models/embedder-awq",
+            "dedicated": False,
+            "persistent_resident": True,
+            "evict_cost": 7,
+            "matrix_sets": ["support"],
+            "capabilities": {
+                "families": ["embedding"],
+                "modalities_in": ["text"],
+                "modalities_out": ["vector"],
+            },
+        }
+    )
+
+    registry = RuntimeAdapterRegistry()
+    specs = registry.build_capability_specs(soulstone)
+
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec.family == CapabilityFamily.EMBEDDING
+    assert spec.concurrency.dedicated is False
+    assert spec.concurrency.persistent_resident is True
+    assert spec.concurrency.evict_cost == 7
+    assert spec.concurrency.matrix_sets == ["support"]
+    assert spec.metadata["runtime"] == "vllm"
+
+
+def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None:
+    preset = tmp_path / "models.ini"
+    preset.write_text(
+        (
+            "version = 1\n\n"
+            "[router-main]\n"
+            "model = /models/router-main.gguf\n\n"
+            "[router-vision]\n"
+            "model = /models/router-vision.gguf\n"
+        ),
+        encoding="utf-8",
+    )
+
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "router",
+            "startup_mode": "router",
+            "models_preset": str(preset),
+            "models": {
+                "default": {
+                    "id": "router-main",
+                    "path": "/models/router-main.gguf",
+                }
+            },
+        }
+    )
+
+    registry = RuntimeAdapterRegistry()
+    specs = registry.build_capability_specs(soulstone)
+
+    assert {spec.model_id for spec in specs} == {"router-main", "router-vision"}
+    assert all(spec.lifecycle_mode == "dynamic_soft" for spec in specs)
+
+
+def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> None:
+    preset = tmp_path / "models.ini"
+    preset.write_text(
+        (
+            "version = 1\n\n"
+            "[router-main]\n"
+            "model = /models/router-main.gguf\n\n"
+            "[router-vision]\n"
+            "model = /models/router-vision.gguf\n"
+        ),
+        encoding="utf-8",
+    )
+
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "router",
+            "startup_mode": "router",
+            "models_preset": str(preset),
+        }
+    )
+
+    class StubControlPlane:
+        def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
+            return LlamaCppLifecycle(
+                base_url="http://localhost:8080/v1",
+                mode="router",
+                health="ok",
+                supports_router=True,
+                active_model="/models/router-main.gguf",
+                loaded_models=["router-main"],
+                available_models=["router-main", "router-vision"],
+            )
+
+    adapter = LlamaCppRuntimeAdapter(control_plane=cast("LlamaCppControlPlane", StubControlPlane()))
+    runtime = adapter.build_runtime(soulstone)
+    assert runtime is not None
+    runtime.connector.link.up = True
+
+    specs = adapter.build_capability_specs(soulstone)
+    states = {state.capability_key: state for state in adapter.probe_capability_states(runtime, specs)}
+
+    main = next(spec for spec in specs if spec.model_id == "router-main")
+    vision = next(spec for spec in specs if spec.model_id == "router-vision")
+
+    assert states[main.key].is_static is False
+    assert states[main.key].is_active is True
+    assert states[vision.key].is_active is False
+    assert states[main.key].active_model_id == "router-main"
+
+
+def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
+    soulstone = GenericSoulstoneConfig.model_validate(
+        {
+            "name": "crawler",
+            "image": "crawler:latest",
+            "runtime": "crawler",
+            "capabilities": {
+                "families": ["tool_execution"],
+                "modalities_in": ["url"],
+                "modalities_out": ["html"],
+            },
+        }
+    )
+
+    registry = RuntimeAdapterRegistry()
+    runtime = registry.build_runtime(soulstone)
+    assert isinstance(runtime, GenericStone)
+    assert runtime.connector.kind == "generic:crawler"
+    specs = registry.build_capability_specs(soulstone)
+    assert [spec.family for spec in specs] == [CapabilityFamily.TOOL_EXECUTION]
+
+
+def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
+    soulstone = GenericSoulstoneConfig.model_validate(
+        {
+            "name": "local-openai",
+            "image": "local-openai:latest",
+            "runtime": "openai_compatible",
+            "model_path": "/models/qwen.gguf",
+        }
+    )
+
+    registry = RuntimeAdapterRegistry()
+    runtime = registry.build_runtime(soulstone)
+    assert isinstance(runtime, OpenAICompatibleStone)
+    assert runtime.connector.kind == "generic-openai-compatible"
+
+
+def test_generic_runtime_without_capability_hints_does_not_invent_chat() -> None:
+    soulstone = GenericSoulstoneConfig.model_validate(
+        {
+            "name": "sidecar",
+            "image": "sidecar:latest",
+            "runtime": "crawler",
+        }
+    )
+
+    registry = RuntimeAdapterRegistry()
+
+    assert registry.build_capability_specs(soulstone) == []
 
 
 def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "qwen-cmd",
             "exec": [
@@ -247,7 +423,7 @@ def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_
         encoding="utf-8",
     )
 
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "router-cmd",
             "exec": [
@@ -270,7 +446,7 @@ def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_
 
 
 def test_llamacpp_resolve_uses_env_when_no_exec_args() -> None:
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "env-driven",
             "env_vars": {
@@ -298,7 +474,7 @@ def test_llamacpp_plan_follows_inferred_router_mode_from_extra_args(tmp_path: Pa
         encoding="utf-8",
     )
 
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "router-from-extra",
             "model_path": "/models/should-not-force-single.gguf",
@@ -315,7 +491,7 @@ def test_llamacpp_plan_follows_inferred_router_mode_from_extra_args(tmp_path: Pa
 
 
 def test_llamacpp_resolve_infers_n_predict_from_predict_alias() -> None:
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "predict-alias",
             "exec": [
@@ -340,7 +516,7 @@ def test_llamacpp_resolve_uses_single_model_section_when_provider_does_not_match
         encoding="utf-8",
     )
 
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "router-unmatched-provider",
             "startup_mode": "router",
@@ -373,7 +549,7 @@ def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(t
         encoding="utf-8",
     )
 
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "router-precedence",
             "exec": [
@@ -396,7 +572,7 @@ def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(t
 
 
 def test_llamacpp_resolve_reports_exec_passthrough_diagnostics() -> None:
-    soulstone = LlamaCppSoulstone.model_validate(
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
             "name": "diagnostics",
             "exec": ["llama-server", "-m", "/models/qwen.gguf"],

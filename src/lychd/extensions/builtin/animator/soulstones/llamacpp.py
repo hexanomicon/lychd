@@ -17,7 +17,7 @@ class LlamaCppMode(StrEnum):
     ROUTER = "router"
 
 
-class LlamaCppSoulstone(SoulstoneConfig):
+class LlamaCppSoulstoneConfig(SoulstoneConfig):
     """Builtin Soulstone profile for llama.cpp.
 
     Contract:
@@ -27,7 +27,7 @@ class LlamaCppSoulstone(SoulstoneConfig):
     - managed router mode requires ``models_dir``/``models_preset`` or equivalent router flags
     """
 
-    relative_path: ClassVar[Path | None] = Path("animator/soulstones/llamacpp")
+    path_fragment: ClassVar[Path] = Path("llamacpp")
     runtime: str = "llamacpp"
     image: str = "ghcr.io/ggml-org/llama.cpp:server-cuda"
     model_format: ModelFormat | None = ModelFormat.GGUF
@@ -92,14 +92,14 @@ class LlamaCppSoulstone(SoulstoneConfig):
         return "router"
 
     @model_validator(mode="after")
-    def _validate_runtime_contract(self) -> LlamaCppSoulstone:
+    def _validate_runtime_contract(self) -> LlamaCppSoulstoneConfig:
         """Reject mixed command authority and enforce mode prerequisites."""
         if self.exec:
             conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)
             if conflicting:
                 joined = ", ".join(conflicting)
                 msg = (
-                    "LlamaCppSoulstone uses exec passthrough, but managed fields were also set: "
+                    "LlamaCppSoulstoneConfig uses exec passthrough, but managed fields were also set: "
                     f"{joined}. Remove managed fields or remove 'exec'."
                 )
                 raise ValueError(msg)
@@ -107,7 +107,7 @@ class LlamaCppSoulstone(SoulstoneConfig):
 
         if self.resolved_mode() == "single":
             if not self.model_path:
-                msg = "LlamaCppSoulstone in single mode requires 'model_path'."
+                msg = "LlamaCppSoulstoneConfig in single mode requires 'model_path'."
                 raise ValueError(msg)
             return self
 
@@ -117,7 +117,7 @@ class LlamaCppSoulstone(SoulstoneConfig):
             return self
 
         msg = (
-            "LlamaCppSoulstone in router mode requires 'models_dir' or 'models_preset' "
+            "LlamaCppSoulstoneConfig in router mode requires 'models_dir' or 'models_preset' "
             "(or router flags in extra_args/env_vars)."
         )
         raise ValueError(msg)

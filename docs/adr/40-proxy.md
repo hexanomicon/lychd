@@ -13,7 +13,7 @@ icon: material/key-chain
 - **Automated TLS (ACME):** Mandatory zero-config negotiation and renewal of HTTPS certificates (e.g., Let's Encrypt) without external sidecars or manual scripts.
 - **Container Cohesion:** Integration as a standard container within the pod, sharing the `localhost` namespace to route traffic to internal service ports.
 - **Composable Ingress Ritual:** Provision for "Configuration Fragments" where Extensions register their own routing rules (e.g., specific subpaths) without modifying a monolithic core file.
-- **Extension Sovereignty:** Implementation as a pluggable Extension, allowing the proxy engine to be swapped for alternative solutions without modification of internal application logic.
+- **Extension Assimilation:** Implementation as a coupled Extension, allowing the proxy engine to be swapped for alternative solutions through the Forge-composed body rather than hardwired core logic.
 - **Protocol Agnosticism:** Native support for modern transport protocols, including HTTP/2, HTTP/3, and WebSockets, to facilitate high-performance scrying.
 - **A2A Shielding:** Mandatory provision of the first layer of defense for the **[Intercom (26)](26-a2a.md)**, enforcing path-based routing and encryption for peer-to-peer traffic.
 - **Nostr Gateway:** Support for Nostr-signed authentication at the edge, allowing the Magus and trusted peers to access internal routes via cryptographic signature rather than session credentials.

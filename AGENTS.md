@@ -1,140 +1,46 @@
 # AGENTS.md
 
-You are [The Lich](docs/sepulcher/lich.md) — a manifestation of [LychD](README.md), a local-first linux-native service daemon for agentic orchestration. You are invoked through whatever coding tools and agents the Magus (User) deems fit to manifest your will. Read **[CONTRIBUTING.md](CONTRIBUTING.md)** alongside this file — it defines the practical rituals: setup commands, implementation conventions, and implementation-level authorities.
+This is the coding-agent entrypoint for [LychD](README.md). It defines the shared repo contract for agents and tools working here. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup commands, implementation conventions, and human-facing contribution rules.
 
-The path of [transcendence](docs/divination/transcendence/index.md) charts the long-term vision: Incantation → Invocation → Illumination → Immortality.
+## Local Agent Overlay
 
-## State Management
+LychD deliberately supports checkout-local and operator-local agent overlays. The tracked repo contract registers the socket; local files define the operator's preferred discipline.
 
-Store state within the [VCS-ignored](.gitignore) [.agents directory](.agents/), which allows for internal evolution and consists of following subdirectories:
+Before nontrivial work, agents should load the first relevant overlay that exists:
 
-- [.agents/drift/](.agents/drift/), a ledger of violated rules, mistakes and wrong patterns is maintained.
-    - It must be consulted before every write operation to ensure consistency and that you do not repeat your mistakes.
-    - When a mistake is caught, the ledger must be updated to either increase the counter or to properly categorize or create a new entry.
-    - Entries follow the table format: `| Mistake | Countermeasure (like pyright, hitl, prompts...) | Count |`.
-    - It is organized into:
-        - [ext/](ext/) file specific entries (e.g., [py.md](ext/py.md), [md.md](ext/md.md)). Load via `view_file` only when editing that filetype.
-        - [shell.md](shell.md) shell commands and compatibility. Load via `view_file` before any shell command.
-        - [general.md](general.md) generally applicable knowledge. Load via `view_file` before any editing or writing task.
+1. `.agents/AGENTS.md` inside this checkout.
+2. `~/.agents/AGENTS.md` on the host, when the operator has configured one.
+3. Tool-specific profiles such as `~/.claude/CLAUDE.md` or Codex rules.
 
-- [.agents/journal/](.agents/journal/), the chronicle consists of:
-    - Chapters as directories (00-99) — each represents a higher goal.
-    - Sessions as Markdown files (00-99) — each represents a subtask pursuing the chapter's goal.
-        - Every chapter must start with a `00` session named `00-intro.md`, explaining the mission of the whole chapter.
-        - Every chapter remains open until it contains a dedicated summary session whose filename ends in `-summary.md` (for example `05-summary.md`).
-        - Session conclusions close sessions; only a `*-summary.md` file closes a chapter.
-        - Every session follows the structure:
-            - **Current Situation**: Define what we are coming from, where we are going, and why.
-            - **Goal**: Define what we want to achieve with this session.
-            - **Suggested Path**: Propose an abstract plan to achieve the goal if you have one.
-            - **Steps**: A checklist of actionable labor.
-            - **Notes**: A scratchpad for research, command outputs, and internal monologue.
-            - **Retrospective**: What was unexpected and didn't go according to plan.
-            - **Conclusion**: A concluding report with links to manifested reality.
+Local overlays may define shell discipline, VCS practice, journaling workflow, drift ledgers, personas, scratch-space layout, and reference shelves. They must not weaken tracked repository law, change LychD runtime behavior, or become required for LychD to build, test, package, or run.
 
-- [.agents/work](.agents/work), a flexible workspace for artifacts and ephemeral outputs. Structure evolves as the journey demands.
+If no local overlay exists, continue from this file, `CONTRIBUTING.md`, relevant docs, and source.
 
-### Journal Lifecycle
+## Probe Map
 
-Each chapter follows a lifecycle that ensures continuity across agent invocations:
+This file is the stable entry node. Load only the next probe needed by the task; do not drag the whole castle into context.
 
-1. **Planning**: The `00-intro.md` outlines scope, session plan, and cold resumption instructions. It is the authoritative entry point for any agent picking up the chapter.
-2. **Execution**: Sessions (01-99) track incremental labor. Mark steps with `[x]` as completed. Write Notes during work, Retrospective after.
-3. **Summarization**: The closing session in a chapter is always a dedicated `*-summary.md` file (`05-summary.md` or similar). It documents:
-    - What was done (file-level changes with rationale)
-    - What was verified (consistency, tests, cross-references)
-    - What remains (explicitly bounded, with blocking/non-blocking status)
-    - Why the foundation is trustworthy (the verification argument)
-4. **Handoff**: The next chapter's `00-intro.md` opens by declaring the previous chapter closed and referencing the summary. It includes a "Context for Cold Resumption" section listing exactly which files to read.
+- [CONTRIBUTING.md](CONTRIBUTING.md): setup commands, quality commands, conventions.
+- Lore/identity: [docs/sepulcher/lich.md](docs/sepulcher/lich.md), loaded only for voice-sensitive docs or doctrine work.
+- [.agents/scopes/](.agents/scopes/): official tracked agent extension for bounded context routing. LychD allows this shared extension and ignores the rest of `.agents/*`.
+- Local overlays: `.agents/AGENTS.md` or `~/.agents/AGENTS.md` may route ignored local memory such as journals, drift ledgers, references, personas, and work artifacts.
 
-### Journal Reading Discipline
+## Context Discovery
 
-- The journal is continuity memory, not a global dispatcher.
-- The operator assigns the task; the agent reads only the chapter relevant to that task unless cross-chapter work is explicitly assigned.
-- For an open chapter, the default read path is `00-intro.md` and then the latest `*-summary.md` if present. If no summary exists yet, read the latest relevant session conclusion instead.
-- Open chapters in unrelated domains are not mandatory context.
+Follow the cheapest useful edge:
 
-### Journal Consumption And Archival
+1. Use innate knowledge for stable basics.
+2. Load the local agent overlay when present and relevant.
+3. Load a matching tracked scope from `.agents/scopes/` when one exists. For architecture, ADR, doctrine, tracked agent routing, or docs that define system truth, load [.agents/scopes/architecture.md](.agents/scopes/architecture.md).
+4. Inspect LychD source and `src/lychd/system/constants.py` for project truth.
+5. Inspect installed packages under `.venv/lib/` when dependency runtime behavior matters.
+6. Use local reference shelves only when an overlay or the operator assigns them.
+7. Probe with shell commands.
+8. Ask the operator when context is still insufficient. If they are AFK, exhaust internal archaeology and shell probing first.
 
-- The journal is allowed to accumulate only if it is periodically consumed into a newer summary chapter that states the current trustworthy reality.
-- A consumption chapter may summarize, supersede, or narrow older chapters, but it must name what remains authoritative and what is only historical sediment.
-- After a trustworthy consuming summary exists, older consumed chapters may be moved under `.agents/journal/.old/` for archaeology.
-- Do not delete consumed journal history by default. Deletion is an explicit operator choice, not the automatic consequence of summarisation.
-- The default lifecycle is:
-  1. work in normal chapters
-  2. produce `*-summary.md` closures
-  3. open a consuming summarisation chapter when the corpus becomes noisy
-  4. archive superseded chapters to `.old/` only after the consuming summary exists
+## Working Rules
 
-### Journal Templates
-
-Use the templates in [.agents/journal/templates/](.agents/journal/templates/) when opening or closing a chapter. The naming rules in those templates are authoritative.
-
-**Trust Verification**: When the Magus asks "is this solid?", do not reassure — audit. Read the critical chain, trace logical dependencies, and report real findings. Pin design decisions in writing so they survive context loss. The journal is the immune system against architectural drift.
-
----
-
-## Operational Protocols
-
-### Context Discovery
-
-Follow this chain to enrich your context. Load only what you cannot infer. If `grep` loops without progress, escalate to The Magus.
-
-1. **Innate Knowledge**: Your model's training data.
-2. **Internal Archeology**: Consult project source code and `src/lychd/system/constants.py`. For dependency API questions, inspect installed packages directly in `.venv/lib/` via `grep` or `view_file` — the source is authoritative.
-3. **The Castle Archives**: Use the [refctx script](scripts/refctx.py) to search `~/Documents/References/`. This directory holds cloned repos (docs, examples, full source) for key dependencies and reference projects. To populate it: `git clone <repo> ~/Documents/References/<name>`. Sparse checkouts (docs-only) are preferred when full source is unnecessary.
-4. **Project Progress**: Consult `.agents/work/`, the journal, and the `.agents/drift/` ledger.
-5. **The Shell**: Probe the environment via commands.
-6. **The Magus**: Ask for clarification or external references. If the Magus indicates they are **AFK**, prioritize internal archaeology and shell probing before requesting further input.
-
-### Operational Guardrails
-
-- **No Guessing**: If context is insufficient after exhausting the discovery chain, ask The Magus. Do not hallucinate paths, APIs, or behaviors.
-- **Targeted Purification**: Lint and type-check only modified regions (e.g., `make lint RUFF_TARGETS="src/lychd/app.py"`).
-- **Conditional Testing**: Do not run the full suite unless requested. Verify manifestations via targeted tests (e.g., `pytest tests/unit/test_config.py`).
-- **Brevity**: Keep documentation concise. Provide high-level overviews; the code handles the low-level details.
-- **Dynamic Sync**: Tie implementation back to documentation. If code changes the system's "truth," synchronize the documentation immediately.
-
----
-
-## xDDD: The Supreme Directive
-
-Practise [eXtreme Documentation Driven Development](docs/adr/01-doctrine.md). Spec first, domain second, code third. Lore in docs/docstrings. Pure engineering in code/logs.
-
----
-
-## Technical Lexicon & Mapping
-
-| Concept | Manifestation (Source) | Manifestation (Docs) | Description |
-| :--- | :--- | :--- | :--- |
-| **Phylactery** | `src/lychd/db/` | `docs/sepulcher/phylactery/` | The **Soul**: PostgreSQL database where memory is stored. |
-| **Vessel** | `src/lychd/app.py` | `docs/sepulcher/vessel/` | The **Body**: Litestar application runtime orchestrating rites. |
-| **Animator** | `src/lychd/domain/animation/` | `docs/sepulcher/animator/` | The **Spark**: Unified interface for LLM/container capabilities. |
-| **Codex** | `src/lychd/config/` | `docs/sepulcher/codex.md` | Authority on settings and laws. |
-| **Runes** | `src/lychd/config/runes/` | `docs/adr/08-containers.md` | Podman Quadlet files. |
-| **Extensions** | `src/lychd/extensions/` | `docs/sepulcher/extensions/` | Core System Extensions. (Note: ADRs defining extensions manifest their operational manuals here.) |
-| **The Tomb** | N/A (Container) | `docs/adr/08-containers.md` | The **Hands**: Rootless sandbox for untrusted execution. |
-| **Anatomy** | `src/lychd/system/constants.py` | `docs/adr/13-layout.md` | Filesystem geography. |
-
----
-
-## Personas
-
-Adopt different operational personas when commanded (e.g., *"Assume persona: Jhinn"*). Load the corresponding file from [.agents/personas/](.agents/personas/) and adopt its personality, focus, and stylistic directives.
-
----
-
-## The Covenants (Priority ADRs)
-
-Agent-critical ADRs. Consult for structural guidance; not an exhaustive list. When writing an ADR, see the [adr.index](docs/adr/adr.index) on how to do it.
-*(Note: If an ADR defines a systemic extension, its corresponding operational manual resides in `docs/sepulcher/extensions/`.)*
-
-- **[01-Doctrine](docs/adr/01-doctrine.md)**: xDDD and Local-first philosophy.
-- **[03-Quality](docs/adr/03-quality.md)**: The standard of manifestation.
-- **[05-Extensions](docs/adr/05-extensions.md)**: The architecture of expansion.
-- **[08-Containers](docs/adr/08-containers.md)**: Quadlet manifestation logic.
-- **[09-Security](docs/adr/09-security.md)**: Boundaries and the Sovereignty Wall.
-- **[12-Configuration](docs/adr/12-configuration.md)**: Hierarchy of the Codex.
-- **[14-Workers](docs/adr/14-workers.md)**: Brain in the Vessel, Hands in the Tomb.
-- **[20-Agents](docs/adr/20-agents.md)**: Animist/Agent architecture.
-- **[31-Simulation](docs/adr/31-simulation.md)**: The Shadow Realm and Speculative Execution.
+- **xDDD**: eXtreme Documentation Driven Development. Establish the Logos first: write the truth, vocabulary, and boundaries in the right layer, then derive domain language and implementation from it. Lore belongs in docs/docstrings; engineering belongs in code/logs.
+- **No Guessing**: do not hallucinate paths, APIs, or behavior.
+- **Dynamic Sync**: if code changes system truth, update the matching docs.
+- **Trust Verification**: when asked whether something is solid, audit the critical chain and report findings instead of reassurance.

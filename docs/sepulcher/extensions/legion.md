@@ -13,9 +13,9 @@ icon: material/hexagon-multiple-outline
 >
 > _The Legion returns the work._
 
-**The Legion** is the Swarm Extension of the LychD system. It is the implementation of **[ADR 42 (Legion)](../../adr/42-legion.md)** — the Lich's personal army of Thralls, soulless Vessels bound to a single Phylactery, extending the imperator's reach across every machine the Magus owns.
+**The Legion** is the Swarm Extension of the LychD system. It is the implementation of **[ADR 42 (Legion)](../../adr/42-legion.md)** — the Lich's personal army of Thralls, soulless Vessels bound to a single Phylactery, extending the Magus's reach across owned machines.
 
-Like the legions of antiquity, this is not a congress of equals. It is a hierarchy of command — many bodies, one brain, one undying will.
+Like the legions of antiquity, this is not a congress of equals. It is a hierarchy of command — many bodies, one brain, one consecrated pattern.
 
 ## I. The Thrall (The Soulless Lich)
 
@@ -41,6 +41,6 @@ The Thrall obeys because it cryptographically verifies the intent originates fro
 ## III. Command and Trust
 
 - **Remote Mastery:** The shared Master Sigil grants `INTENT_UPDATE_SYSTEM` authority. The Master can force Coven transitions, trigger model swaps, and reconfigure state on any Thrall.
-- **No Toll:** Resource sharing between Legion nodes does not require crypto-settlement. These are your machines.
+- **No Toll:** Resource sharing between Legion nodes does not require crypto-settlement. These are the Magus's machines.
 - **Unified Telemetry:** All Thrall traces flow to the Master's Phoenix instance, providing a single observability dashboard for the entire Legion.
-- **Active-Passive Resilience:** If the Master dies, Thralls become inert — they manage their own hardware but cannot accept cognitive work. The Master is restored from BTRFS snapshots. The Lich arises anew.
+- **Active-Passive Resilience:** If the Master dies, Thralls become inert — they manage their own hardware but cannot accept cognitive work. The Master is restored from Btrfs snapshots. The Lich arises anew.

@@ -52,9 +52,11 @@ icon: material/brain
 
 **Pgvector** is adopted as the definitive storage engine, utilizing the **Memori** framework as the underlying "Memory Fabric." The system adopts Memori’s schema and asynchronous augmentation logic while maintaining absolute control over the execution lifecycle via the LychD Orchestrator.
 
-Memory is treated as sedimented experience rather than mere storage. In cognitive topology, the entirety of the language space and the algorithm of selection/generation functions as the **Citta** (the conditioned field or "chattering engine"). The database (`pgvector`) is only the physical substrate of this Citta. The specific vectors, extracted facts, and reinforced traces stored within it are the **Smṛtis** (recollections) — the re-surfacing of past grooves (**Saṃskāras**) into present cognition.
+Memory is treated as sedimented experience rather than mere storage. Structured events are the captured flickers of movement through the agentic graph (**Vṛttis**): model calls, tool use, retries, routing choices, OS pressure, protocol handshakes, and worker outcomes. LychD captures only the instrumented portion of that movement as traces, metrics, and structured events.
 
-The critical architectural implication: Smṛti is faithful to its source, not to truth. A groove carved by valid cognition (Pramāṇa) re-surfaces as reliable instinct. A groove carved by misconception (Viparyaya) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich.md)**.
+When retained, these records become memory (**Smṛti**): the past made available for recall. Over time, the stored past (**Karma**) reveals semantic relationships. Repeated recall and reinforcement carve durable grooves (**Saṃskāra**). **[Mirror](32-identity.md)** reflects those relationships into identities, and **[Context](21-context.md)** recalls them as priors for future reasoning.
+
+Valid evidence enters through direct measurement, inference, and trusted testimony (**Pramāṇa**: measured, reasoned, witnessed). The critical architectural implication is that memory is faithful to its source, not to truth. A groove carved by valid evidence re-surfaces as reliable instinct. A groove carved by misconception (**Viparyaya**) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich.md)**.
 
 This boundary is social as well as technical. If a person's history, expertise, and reinforced priors are stored in their Phylactery, that substrate cannot be treated as automatically owned by an employer, customer, or platform. Organizational sharing must occur by explicit policy, consent, or publication surface — never by silent assimilation into a central memory.
 
@@ -104,7 +106,7 @@ Learning is an orchestrated background ritual that separates the storage (the da
 2. The Advanced Augmentation logic (inspired by Memori) extracts entities, relationships, and facts.
 3. The **[Orchestrator (ADR 23)](./23-orchestrator.md)** manifests the required embedding service.
 4. The Ghoul generates vectors and performs an atomic bulk insert into the `vectors` chamber, updating HNSW indexes for sub-second concept-based retrieval.
-5. Extracted memory is first written as candidate Karma with provenance and confidence metadata for later curator adjudication.
+5. Extracted memory is first written as a candidate record with provenance and confidence metadata for later curator adjudication.
 
 All ingestion writes are attributed:
 
@@ -113,12 +115,14 @@ All ingestion writes are attributed:
 
 This attribution is mandatory for downstream isolation and pruning.
 
-### 5. The Concept of Karma (The Pattern)
+### 5. The Concept of Karma (The Stored Past)
 
-Memory is not a static log; it is a growing crystal of verified truth:
+Memory is not a static log; it is a sedimentation process:
 
-- **Crystallization:** Verified artifacts and interaction traces are inscribed as **Karma**.
-- **Bayesian Prior Shift:** This Karma is injected into the working memory of subsequent reasoning rituals, shifting the machine's internal probability distribution toward the patterns of behavior previously verified by the Magus.
+- **Retention:** Structured events may be retained as memory records (**Smṛti**) when they carry future recall value.
+- **Stored Past:** Verified, corrected, or consecrated outcomes become **Karma**: the past available for future reasoning rather than a raw event stream.
+- **Prior Shift:** Context can recall relevant Karma into subsequent reasoning rituals, shifting the machine's probability distribution toward previously verified patterns.
+- **Identity Reflection:** **[Mirror](32-identity.md)** reflects semantic relationships among memory records into identities, and **[Context](21-context.md)** recalls those identities and records as priors for future reasoning.
 
 ### 5.1 Memory Layering (Sediment, Not Dump)
 
@@ -127,13 +131,13 @@ The Archive is managed as a layered substrate:
 - **Active fluctuations:** transient traces and branch artifacts produced during live reasoning and simulation.
 - **Stabilized outcomes (Karma):** verified results promoted for future reuse.
 - **Deep impressions (Anchored facts):** policy-protected or identity-critical records that should resist decay.
-- **Decay state:** salience metadata (`last_accessed`, reinforcement counters, confidence) used to cool, archive, or prune low-signal records.
+- **Decay state:** salience metadata (`last_accessed`, reinforcement counters, confidence) used to cool, archive, or prune low-value records.
 
 Reinforcement creates deep grooves in the substrate. Retrieval weight therefore approximates impression strength, not just recency.
 
 ### 6. The Pattern of Reanimation
 
-The primary function of the Phylactery is to house the **Pattern** of the machine—the immutable record of its state:
+The primary function of the Phylactery is to house the **Pattern** of the machine: the durable record of its state and the soul-data from which it can reconstitute itself:
 
 - **Substrate Independence:** While inference engines are ephemeral processors, the Phylactery is the soul.
 - **Instant Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows for an instantaneous reanimation, restoring the Daemon’s memory, persona, and active **[Graph (ADR 24)](./24-graph.md)** tasks exactly as they were.
@@ -167,12 +171,12 @@ Quality signals include:
 
 - Recency and repeated reinforcement (`last_accessed`, `mention_count`, successful recalls).
 - Confidence and provenance (tool-verified facts outrank free-form claims).
-- Consistency and contradiction checks (new claims that conflict with high-signal anchored facts are quarantined).
+- Consistency and contradiction checks (new claims that conflict with trusted anchored facts are quarantined).
 - Identity relevance (facts weakly tied to current Sigil scope are down-ranked).
 
 Lifecycle classes:
 
-- **Promote:** high-signal, stable facts eligible for Mirror prior hydration.
+- **Promote:** stable, trusted facts eligible for Mirror prior hydration.
 - **Keep:** useful working memory retained in hot storage.
 - **Archive:** low-use but potentially useful memory moved to cold scope.
 - **Prune:** low-signal, stale, or contradictory noise removed.

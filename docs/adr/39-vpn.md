@@ -29,7 +29,7 @@ icon: material/lan-connect
 
     - **Cons:** **The Breach of Autonomy.** These solutions require trusting a "Control Plane" hosted by a third party. If the provider's server is unreachable, the Magus is locked out of their own Daemon.
 
-!!! success "Option 3: Wireguard"
+!!! success "Option 3: WireGuard"
     A modern, high-performance, kernel-level VPN protocol.
 
     - **Pros:**
@@ -40,11 +40,11 @@ icon: material/lan-connect
 
 ## Decision Outcome
 
-**Wireguard** is adopted as the **VPN Extension**, serving as the "Silver Tether" that binds the Magus to the Lych.
+**WireGuard** is adopted as the **VPN Extension**, serving as the "Silver Tether" that binds the Magus to the Lych.
 
 ### 1. The High-Trust Tunnel (The Infrastructure)
 
-The extension registers `lychd-vpn.container` within the pod, claiming Host UDP Port 51820. The container is granted `CAP_NET_ADMIN` to manage the `wg0` interface. Wireguard ensures that remote devices are treated as local entities within the pod's private network (`10.88.x.x`), bypassing the restrictions of the public proxy.
+The extension registers `lychd-vpn.container` within the pod, claiming Host UDP Port 51820. The container is granted `CAP_NET_ADMIN` to manage the `wg0` interface. WireGuard ensures that remote devices are treated as local entities within the pod's private network (`10.88.x.x`), bypassing the restrictions of the public proxy.
 
 ### 2. Sovereign Identity and Bonding
 
@@ -55,7 +55,7 @@ To eliminate the complexity of manual key exchange, the extension grafts managem
 The architecture implements a firewall policy that differentiates between the public "Forest" and the private "Tether":
 
 - **Administrative Access:** Traffic arriving via `wg0` is granted exclusive access to **[Oculus (29)](29-observability.md)** telemetry, **[Worker (14)](14-workers.md)** metrics, and system **[Rebirth (17)](17-packaging.md)** hooks.
-- **Biometric Isolation:** Real-time audio streams (biometric data) defined in **[Echo (32)](../sepulcher/extensions/echo.md)** are physically restricted to the VPN interface to prevent voice-pattern leakage.
+- **Biometric Isolation:** Real-time audio streams (biometric data) defined in **[Echo (37)](37-audio.md)** are physically restricted to the VPN interface to prevent voice-pattern leakage.
 - **Sovereign Intercom:** High-trust **[A2A (26)](26-a2a.md)** endpoints (e.g., `/a2a/smith`) are physically pinned to the VPN interface, allowing nodes to collaborate on sensitive source code with the same security posture as `localhost`.
 
 ### Consequences

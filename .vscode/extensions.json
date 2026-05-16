@@ -24,6 +24,5 @@
     "davidanson.vscode-markdownlint",         // Markdown linting with special rules in settings
     "csstools.postcss",
     "bradlc.vscode-tailwindcss",
-    "openai.chatgpt"
   ]
 }

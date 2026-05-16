@@ -41,7 +41,7 @@ The filesystem is organized into **Three Domains** that govern the existence of 
 **"The Law."**
 This Domain contains immutable configuration files and user-defined intents. It is mounted **Read-Only** into the container. The Agent cannot change the Law; only the Magus can modify these scrolls.
 
-This ADR defines where the Codex lives and how it is mounted. The Codex contract (global `lychd.toml`, `runes/` ownership, anchor rules, singleton behavior, and loader validation) is governed by [Configuration (12)](12-configuration.md).
+This ADR defines where the Codex lives and how it is mounted. The Codex contract (global `lychd.toml`, `runes/` ownership, anchor rules, schema cardinality, and loader validation) is governed by [Configuration (12)](12-configuration.md).
 
 - **Host Path:** `~/.config/lychd/`
 - **Internal Path:** `~/.config/lychd/` (Symmetric)
@@ -65,7 +65,7 @@ This ADR defines where the Codex lives and how it is mounted. The Codex contract
 
 - The taxonomy above shows common built-in anchors for operator orientation.
 - Installed extensions may add additional rune anchors under `runes/` while preserving the same directory-based ownership model.
-- Loader rules, identity derivation, singleton behavior, and validation doctrine are specified in [Configuration (12)](12-configuration.md).
+- Loader rules, identity derivation, schema cardinality, and validation doctrine are specified in [Configuration (12)](12-configuration.md).
 
 ### 2. The Crypt (`XDG_DATA_HOME`)
 
@@ -79,7 +79,7 @@ This Domain contains the persistent reality of the system. It is the primary sto
 
 - **`lychd.lock`:** The Federated Lockfile. Living in the root of the Crypt, it pins the exact hashes of all logic.
 - **`core/`:** Core source code. Mounted **Read-Only** at runtime to maintain the **[Security (09)](09-security.md)** seal.
-- **`extensions/`:** Plugin source code. Mounted **Read-Only** at runtime.
+- **`extensions/`:** Private Crypt extension source. Pre-v1 this is assimilable, Forge-composed code rather than a stable third-party plugin ABI. Mounted **Read-Only** at runtime.
 - **`postgres/`:** The site of the **Phylactery**. A dedicated subvolume containing the partitioned database chambers. Mounted **Read-Write**.
 - **`lab/`:** The site of Genesis. A **Read-Write** region containing isolated subdirectories for **Shadow Realm** branches, allowing the machine to dream of new code without impacting reality.
 
@@ -118,24 +118,26 @@ Inside the container, the layout mirrors the Host Domains via volume mounts. By 
 
 The layout now separates trusted and untrusted execution geography.
 
-- Vessel mounts trusted codex and durable control-plane regions.
-- **The Tomb** mounts only task/workspace/artifact regions with minimal write scope.
+- Vessel mounts trusted Codex and durable control-plane regions. Agents, graph state, LLM calls, routing, validation, and promotion policy stay in this trusted plane.
+- Safe creation/control-plane work may remain in Vessel when it does not require arbitrary code execution or risky host mutation. Tomb is chosen by execution risk, not by the word "creation" alone.
+- **The Tomb** mounts only task/workspace/artifact regions with minimal write scope. It is the execution hand for unsafe labor, not an agent home.
 - Suggested **Tomb** regions:
     - `~/.local/share/lychd/tomb/jobs/` — one subdirectory per SAQ job to prevent file collisions between concurrent Ghouls
     - `~/.local/share/lychd/tomb/workspaces/`
     - `~/.local/share/lychd/tomb/artifacts/`
     - `~/.local/share/lychd/tomb/cache/`
-- **The Tomb** must not mount full Codex or host trigger/signaling paths.
+- **The Tomb** must not mount writable Codex, provider secrets, or host trigger/signaling paths. If a Tomb profile needs Codex-shaped facts, it receives no Codex mount by default or a read-only/sanitized projection.
+- **The Tomb** may receive a narrow queue-only SAQ/Postgres credential for execution-plane job claiming, acknowledgement, and retry bookkeeping, but no control-plane database authority.
 - **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)**.
 
 ### 5. Authority Matrix
 
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
-| Secrets | Secret-bearing codex paths under `0600` ownership. | No secret-bearing codex paths. |
-| Mounts | Codex plus required durable crypt regions. | Task-scoped workspace/artifact/cache mounts. |
-| Network | Internal control-plane connectivity. | Minimal connectivity with deny-by-default egress. |
-| Queue Ownership | Queue state mapped through trusted persistence paths. | No queue state mounts. |
+| Secrets | Secret-bearing Codex paths under `0600` ownership. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, Codex secrets, or control-plane credentials. |
+| Mounts | Codex plus required durable Crypt regions. | Task-scoped workspace/artifact/cache mounts; optional read-only/sanitized Codex projection only. |
+| Network | Internal control-plane connectivity. | Tomb loop may use minimal queue/proxy connectivity; sandboxed `nono` subprocesses have zero network. |
+| Queue Ownership | Queue state mapped through trusted persistence paths. | Claims, acknowledges, and retries execution-plane jobs only; no control-plane queue ownership. |
 | Authority Boundaries | Trigger/intent geography available. | No trigger/intent mount access. |
 
 ### Consequences

@@ -78,15 +78,17 @@ To ensure the persistence layer remains the single source of truth, the Vessel u
 
 Backend scope is now explicitly control-plane only.
 
-- Vessel owns API, orchestration, queue ownership, persistence access, and policy.
-- Vessel agents can plan, score, route, validate, and gate HiTL.
+- Vessel owns API, orchestration, control-plane queue policy, persistence access, and promotion authority.
+- Vessel agents can plan, score, route, validate, and gate HitL.
+- When a Vessel-side agent needs unsafe execution, it serializes only the hand-work into a Tomb job; the agent itself does not migrate into the Tomb.
 - **The Tomb** mounts only task/workspace/artifact regions with minimal write scope.
 - Suggested **Tomb** regions:
     - `~/.local/share/lychd/tomb/jobs/` — one subdirectory per SAQ job to prevent file collisions between concurrent Ghouls
     - `~/.local/share/lychd/tomb/workspaces/`
     - `~/.local/share/lychd/tomb/artifacts/`
     - `~/.local/share/lychd/tomb/cache/`
-- **The Tomb** must not mount full Codex or host trigger/signaling paths.
+- **The Tomb** must not mount writable Codex, provider secrets, or host trigger/signaling paths. If a job profile needs configuration-shaped facts, the profile receives no Codex mount by default or a read-only/sanitized projection.
+- **The Tomb** may receive a narrow queue-only SAQ/Postgres execution credential for execution-plane job claiming, acknowledgement, and retry bookkeeping, but no control-plane database authority.
 - **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)** for the full doctrine.
 
 ### 6. The Four Covenants of the Vessel
@@ -185,16 +187,16 @@ app = Litestar(
 
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
-| Secrets | Uses secrets for control-plane operations with redaction discipline. | No secret exposure in runtime context. |
-| Mounts | Control-plane mount set. | Workspace-scoped mounts only. |
-| Network | Internal services and allow-listed provider routes. | No unrestricted provider/internet egress. |
-| Queue Ownership | Owns SAQ lifecycle and durable rehydration. | No queue ownership or queue credentials. |
+| Secrets | Uses secrets for control-plane operations with redaction discipline. | Narrow queue-only SAQ/Postgres execution credential for execution-plane claim/ack/retry bookkeeping; no provider keys, Codex secrets, or control-plane credentials. |
+| Mounts | Control-plane mount set. | Workspace-scoped mounts; optional read-only/sanitized Codex projection only. |
+| Network | Internal services and allow-listed provider routes. | Tomb loop may use controlled queue/proxy connectivity; sandboxed `nono` execution has zero network. |
+| Queue Ownership | Owns control-plane enqueue policy, durable rehydration, and promotion decisions. | Claims, acks, and retries execution-plane SAQ jobs only; no authority over control-plane queues. |
 | Authority Boundaries | Decides dispatch and promotion. | Returns artifacts only; cannot commit durable state. |
 
 ### Consequences
 
 !!! success "Positive"
-    - **Extension Sovereignty:** The unbound routing system allows extensions to function as independent entities that are cleanly assimilated at runtime.
+    - **Extension Assimilation:** The unbound routing system allows coupled organs to be cleanly assimilated at runtime without a global `app` object.
     - **Physical Performance:** The integration of `msgspec` and binary transmutation hooks ensures the system remains responsive even when processing megabytes of cognitive trace data.
     - **Startup Velocity:** Lazy-loading heavy plugins ensures the CLI remains usable for rapid infrastructure tasks.
 

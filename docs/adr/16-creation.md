@@ -40,7 +40,7 @@ A formal **Creation Workflow** is adopted, governing how new intents are manifes
 When a Magus or an authorized process initiates a change, the system creates a new coordinate in the **Lab** region of the **[Crypt (13)](13-layout.md)**.
 
 - **Freedom:** This directory is the site of conception. The process can break things here, install experimental dependencies, and generate files without affecting the active Daemon.
-- **Context:** The process is provided with the current state of the Core and the **[lychd.lock (07)](07-snapshots.md)** to ensure the new creation is compliant with the system's existing laws.
+- **Context:** The process is provided with the current state of the Core and the **[Crypt lockfile (13)](13-layout.md)** to ensure the new creation is compliant with the system's existing laws.
 
 ### 2. Speculation (The Shadow Realm / Manas)
 
@@ -48,7 +48,7 @@ The initial labor is performed using a divergent VCS revision. This state of "Sp
 
 Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 
-The agent graph orchestrating the speculation runs in the **Vessel**. Raw execution payloads (code edits, test suites, linter invocations) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
+The agent graph orchestrating the speculation runs in the **Vessel**. Safe control-plane creation work may remain there: planning, graph routing, policy checks, structured diff preparation, review packaging, and promotion decisions. Raw execution payloads (code edits, test suites, linter invocations, arbitrary scripts, or risky tool calls) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
 
 ### 3. Creation (The Sequential Deep-Dive / Buddhi)
 

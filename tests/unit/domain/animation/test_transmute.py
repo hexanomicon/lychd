@@ -4,16 +4,16 @@ import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 from lychd.config.settings import get_settings
-from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.schemas import GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget
 
 
-class SoulstoneFactory(ModelFactory[SoulstoneConfig]):
-    """Factory for generating valid Soulstone instances."""
+class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
+    """Factory for generating valid concrete Soulstone config instances."""
 
-    __model__ = SoulstoneConfig
+    __model__ = GenericSoulstoneConfig
     volumes: list[str] = []  # noqa: RUF012 Override the instance attribute
 
 
@@ -23,17 +23,21 @@ def transmuter() -> Transmuter:
 
 
 def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
-    """Verify that the Pod and Core Runes are always generated."""
-    runes = transmuter.transmute_all([])
+    """Verify that the Pod and core Quadlet manifests are always generated."""
+    manifests = transmuter.transmute_all([])
     settings = get_settings()
 
     # 1. Check Pod
-    pods = [r for r in runes if isinstance(r, QuadletPod)]
+    pods = [manifest for manifest in manifests if isinstance(manifest, QuadletPod)]
     assert len(pods) == 1
     assert pods[0].pod_name == "lychd"
 
     # 2. Check Core Containers
-    containers = {r.container_name: r for r in runes if isinstance(r, QuadletContainer)}
+    containers = {
+        manifest.container_name: manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer)
+    }
     assert "lychd-vessel" in containers
     assert "lychd-phylactery" in containers
     assert "lychd-oculus" in containers
@@ -44,24 +48,28 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     assert vessel.env_vars["DB__PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
 
 
-def test_transmute_soulstone_to_rune(transmuter: Transmuter) -> None:
-    """Verify a soulstone is correctly transmuted."""
+def test_transmute_soulstone_to_manifest(transmuter: Transmuter) -> None:
+    """Verify a Soulstone Rune is correctly transmuted."""
     stone = SoulstoneFactory.build(
         name="hermes",
         image="ollama/ollama",
         groups=[],
         env_vars={"CTX_SIZE": "4096"},
     )
-    runes = transmuter.transmute_all([stone])
+    manifests = transmuter.transmute_all([stone])
 
-    soul_runes = [r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-hermes"]
-    assert len(soul_runes) == 1
-    rune = soul_runes[0]
-    assert rune.image == "ollama/ollama"
-    assert rune.env_vars["CTX_SIZE"] == "4096"
+    soul_manifests = [
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-hermes"
+    ]
+    assert len(soul_manifests) == 1
+    manifest = soul_manifests[0]
+    assert manifest.image == "ollama/ollama"
+    assert manifest.env_vars["CTX_SIZE"] == "4096"
 
     # 3. Check System Mounts (ADR 13)
-    volumes = [str(v) for v in rune.volumes]
+    volumes = [str(v) for v in manifest.volumes]
     assert any("config/lychd:ro" in v for v in volumes)
     assert any("share/lychd:rw" in v for v in volumes)
     assert any("share/lychd/core:ro" in v for v in volumes)
@@ -76,11 +84,15 @@ def test_transmute_hydrates_soulstone_secret_env_files(transmuter: Transmuter) -
         secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
     )
 
-    runes = transmuter.transmute_all([stone])
-    rune = next(r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-vault")
+    manifests = transmuter.transmute_all([stone])
+    manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-vault"
+    )
 
-    assert rune.env_vars["HF_TOKEN_FILE"] == "/run/secrets/hf_runtime_token"  # noqa: S105 - fixture secret path
-    assert rune.secrets == ["hf_runtime_token"]
+    assert manifest.env_vars["HF_TOKEN_FILE"] == "/run/secrets/hf_runtime_token"  # noqa: S105 - fixture secret path
+    assert manifest.secrets == ["hf_runtime_token"]
 
 
 def test_transmute_merges_runtime_podman_args() -> None:
@@ -94,23 +106,30 @@ def test_transmute_merges_runtime_podman_args() -> None:
     transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
     stone = SoulstoneFactory.build(name="qwen", image="vllm/vllm-openai:latest")
 
-    runes = transmuter.transmute_all([stone])
-    rune = next(r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-qwen")
+    manifests = transmuter.transmute_all([stone])
+    manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-qwen"
+    )
 
-    assert "--replace" in rune.podman_args
-    assert "--ipc=host" in rune.podman_args
+    assert "--replace" in manifest.podman_args
+    assert "--ipc=host" in manifest.podman_args
 
 
 def test_law_of_exclusivity_solitary(transmuter: Transmuter) -> None:
     """Solitary stones should conflict with each other's services."""
-    stone_a = SoulstoneFactory.build(name="alpha", groups=[])
-    stone_b = SoulstoneFactory.build(name="beta", groups=[])
+    stone_a = SoulstoneFactory.build(name="alpha", groups=[], persistent_resident=False)
+    stone_b = SoulstoneFactory.build(name="beta", groups=[], persistent_resident=False)
 
-    runes = transmuter.transmute_all([stone_a, stone_b])
+    manifests = transmuter.transmute_all([stone_a, stone_b])
 
-    # Find Alpha's rune
-    alpha_rune = next(r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-alpha")
-    assert "lychd-beta.service" in alpha_rune.conflicts
+    alpha_manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-alpha"
+    )
+    assert "lychd-beta.service" in alpha_manifest.conflicts
 
 
 def test_law_of_exclusivity_covens(transmuter: Transmuter) -> None:
@@ -123,15 +142,19 @@ def test_law_of_exclusivity_covens(transmuter: Transmuter) -> None:
     gamma = SoulstoneFactory.build(name="gamma", groups=["creative"])
     delta = SoulstoneFactory.build(name="delta", groups=["creative"])
 
-    runes = transmuter.transmute_all([alpha, beta, gamma, delta])
+    manifests = transmuter.transmute_all([alpha, beta, gamma, delta])
 
     # Alpha should conflict with 'creative' target, but NOT with Beta
-    alpha_rune = next(r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-alpha")
-    assert "lychd-coven-creative.target" in alpha_rune.conflicts
-    assert "lychd-beta.service" not in alpha_rune.conflicts
+    alpha_manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-alpha"
+    )
+    assert "lychd-coven-creative.target" in alpha_manifest.conflicts
+    assert "lychd-beta.service" not in alpha_manifest.conflicts
 
     # Verify targets are generated
-    targets = {r.name: r for r in runes if isinstance(r, QuadletTarget)}
+    targets = {manifest.name: manifest for manifest in manifests if isinstance(manifest, QuadletTarget)}
     assert "logic" in targets
     assert "creative" in targets
 
@@ -140,12 +163,41 @@ def test_coven_of_one_no_target(transmuter: Transmuter) -> None:
     """A group with only one member should NOT generate a target unit."""
     stone = SoulstoneFactory.build(name="hermes", groups=["logic"])
 
-    runes = transmuter.transmute_all([stone])
+    manifests = transmuter.transmute_all([stone])
 
-    # No TargetRune named 'logic'
-    targets = [r for r in runes if isinstance(r, QuadletTarget) and r.name == "logic"]
+    # No Quadlet target named 'logic'
+    targets = [
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletTarget) and manifest.name == "logic"
+    ]
     assert len(targets) == 0
 
-    # Hermes rune should not have targets list set to 'logic' if it's not a real coven
-    hermes_rune = next(r for r in runes if isinstance(r, QuadletContainer) and r.container_name == "lychd-hermes")
-    assert "logic" not in hermes_rune.targets
+    # Hermes manifest should not have targets list set to 'logic' if it's not a real coven
+    hermes_manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-hermes"
+    )
+    assert "logic" not in hermes_manifest.targets
+
+
+def test_persistent_residents_are_not_implicit_conflicts(transmuter: Transmuter) -> None:
+    resident = SoulstoneFactory.build(name="embedder", groups=[], persistent_resident=True)
+    heavyweight = SoulstoneFactory.build(name="planner", groups=[])
+
+    manifests = transmuter.transmute_all([resident, heavyweight])
+
+    resident_manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-embedder"
+    )
+    heavyweight_manifest = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-planner"
+    )
+
+    assert "lychd-planner.service" not in resident_manifest.conflicts
+    assert "lychd-embedder.service" not in heavyweight_manifest.conflicts

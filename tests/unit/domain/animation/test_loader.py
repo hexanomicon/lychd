@@ -20,12 +20,12 @@ def _write(path: Path, content: str) -> None:
     path.write_text(f"{content.strip()}\n", encoding="utf-8")
 
 
-def test_load_soulstone_from_top_level_payload(runes_dir: Path) -> None:
+def test_load_concrete_soulstone_from_top_level_payload(runes_dir: Path) -> None:
     _write(
-        runes_dir / "animator" / "soulstones" / "hermes.toml",
+        runes_dir / "animator" / "soulstones" / "generic" / "hermes.toml",
         """
         name = "hermes"
-        image = "ghcr.io/ggerganov/llama.cpp:server"
+        image = "custom/local-runtime:latest"
         port = 8080
         """,
     )
@@ -35,34 +35,26 @@ def test_load_soulstone_from_top_level_payload(runes_dir: Path) -> None:
 
     assert len(soulstones) == 1
     assert len(portals) == 0
+    assert type(soulstones[0]).__name__ == "GenericSoulstoneConfig"
     assert soulstones[0].name == "hermes"
     assert soulstones[0].base_url == "http://localhost:8080/v1"
 
 
-def test_animator_singleton_defaults_are_inherited_by_portals(runes_dir: Path) -> None:
+def test_animator_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "animator.toml",
         """
         name = "animator"
         orchestration_labels = ["remote", "default"]
-        """,
-    )
-    _write(
-        runes_dir / "animator" / "portals" / "openai.toml",
-        """
-        name = "openai"
-        provider_type = "openai"
-        base_url = "https://api.openai.com/v1"
+        dedicated = false
+        persistent_resident = true
         """,
     )
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
-    _, portals = loader.load_all()
 
-    assert len(portals) == 1
-    portal = portals[0]
-    assert portal.base_url == "https://api.openai.com/v1"
-    assert portal.orchestration_labels == ["remote", "default"]
+    with pytest.raises(AnimatorConfigError, match="AnimatorConfig"):
+        loader.load_all()
 
 
 def test_portal_requires_uri_after_default_merge(runes_dir: Path) -> None:
@@ -106,10 +98,10 @@ def test_port_conflict_detection(runes_dir: Path) -> None:
 
 def test_reserved_port_conflict(runes_dir: Path) -> None:
     _write(
-        runes_dir / "animator" / "soulstones" / "rogue.toml",
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "rogue.toml",
         """
         name = "rogue"
-        image = "img"
+        model_path = "/models/rogue.gguf"
         port = 5432
         """,
     )
@@ -140,10 +132,10 @@ def test_portal_api_key_secret_reference(runes_dir: Path) -> None:
 
 def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
     _write(
-        runes_dir / "animator" / "soulstones" / "secure.toml",
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "secure.toml",
         """
         name = "secure-local"
-        image = "vllm/vllm-openai:latest"
+        model_path = "/models/secure.gguf"
 
         [secret_env_files]
         HF_TOKEN_FILE = "hf_runtime_token"
@@ -157,12 +149,36 @@ def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
     assert soulstones[0].secret_env_files["HF_TOKEN_FILE"] == "hf_runtime_token"  # noqa: S105
 
 
+def test_loader_preserves_dedicated_residency_and_matrix_fields(runes_dir: Path) -> None:
+    _write(
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "resident.toml",
+        """
+        name = "embedder"
+        model_path = "/models/embedder.gguf"
+        dedicated = false
+        persistent_resident = true
+        evict_cost = 9
+        matrix_sets = ["support", "embed"]
+        """,
+    )
+
+    loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
+    soulstones, _ = loader.load_all()
+
+    assert len(soulstones) == 1
+    stone = soulstones[0]
+    assert stone.dedicated is False
+    assert stone.persistent_resident is True
+    assert stone.evict_cost == 9
+    assert stone.matrix_sets == ["support", "embed"]
+
+
 def test_generated_placeholder_samples_are_ignored(runes_dir: Path) -> None:
     _write(
-        runes_dir / "animator" / "soulstones" / "sample.toml",
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "sample.toml",
         """
         name = "<required:str>"
-        image = "<required:str>"
+        model_path = "<required:str>"
         """,
     )
 
@@ -186,7 +202,7 @@ def test_loader_hydrates_builtin_soulstone_subclass(runes_dir: Path) -> None:
     soulstones, _ = loader.load_all()
 
     assert len(soulstones) == 1
-    assert type(soulstones[0]).__name__ == "LlamaCppSoulstone"
+    assert type(soulstones[0]).__name__ == "LlamaCppSoulstoneConfig"
     assert soulstones[0].name == "hermes"
 
 

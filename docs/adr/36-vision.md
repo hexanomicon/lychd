@@ -6,12 +6,12 @@ icon: material/eye-settings-outline
 # :material-eye-settings-outline: 36. The Vision Prism
 
 !!! abstract "Context and Problem Statement"
-    Interpreting terminal output, structural diagrams, and graphical user interfaces depends on the ingestion and analysis of pixel data. Vision Language Models (VLMs) impose significant VRAM demands, creating a physical resource conflict with high-tier reasoning models on consumer-grade hardware. A static infrastructure model results in either systemic OOM failures or permanent "blindness." Additionally, visual containers operate in a dual capacity: providing both raw inference (Animators) and specialized logic (Tools). This duality necessitates an orchestration strategy that manages sight as a stateful, dynamically dispatched capability without destabilizing the machine’s primary cognitive loop.
+    Interpreting terminal output, structural diagrams, and graphical user interfaces depends on the ingestion and analysis of pixel data. Vision Language Models (VLMs) impose significant VRAM demands, creating a physical resource conflict with high-tier reasoning models on consumer-grade hardware. A static infrastructure model results in either systemic OOM failures or permanent "blindness." Additionally, visual services operate in a dual capacity: providing model-backed Animator capabilities and specialized tool capabilities. This duality necessitates an orchestration strategy that manages sight as a stateful, dynamically dispatched capability without destabilizing the machine’s primary cognitive loop.
 
 ## Requirements
 
 - **Atomic Coven Manifestation:** Mandatory grouping of VLM, OCR, and pre-processing units into a single operational state to ensure hardware synchronicity.
-- **Provider-Tool Segmentation:** Provision of a mechanism to distinguish between **Animators** (Inference Providers) and **Tools** (Capability Functions) during the discovery phase.
+- **Provider-Tool Segmentation:** Provision of a mechanism to distinguish between model-backed **Animator** capabilities and tool-style **Animator** capabilities during the discovery phase.
 - **The Stasis Trigger:** Mandatory integration with the **[Dispatcher (22)](22-dispatcher.md)**. When a vision tool is invoked while the hardware is "Cold," it must raise the `HardwareTransitionRequired` signal to freeze the cognitive thread via the **[Stasis Protocol (22)](22-dispatcher.md)**.
 - **Multimodal Context Integration:** Utilization of Pydantic AI’s native **`BinaryContent`** to facilitate the passage of pixel buffers into the reasoning cortex.
 - **Dynamic VRAM Budgeting:** Support for model tiering to enable the concurrent manifestation of small Vision models alongside Reasoning models, minimizing full coven swaps.
@@ -46,7 +46,7 @@ icon: material/eye-settings-outline
 
 The Prism manifests as a collection of **[Quadlet services (08)](08-containers.md)** managed as a mutually exclusive state.
 
-- **The Eye (`vlm.container`):** The primary Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision-analysis` capability.
+- **The Eye (`vlm.container`):** The primary model-backed Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision-analysis` capability.
 - **The Scribe (`ocr.container`):** An optional, lightweight service for pure text extraction (e.g., Tesseract).
 - **Functional Overlap:** A powerful VLM service may declare both `vision-analysis` (Provider) and `ocr` (Tool) capabilities.
 
@@ -54,14 +54,14 @@ The Prism manifests as a collection of **[Quadlet services (08)](08-containers.m
 
 The Prism utilizes the **[Dispatcher (22)](22-dispatcher.md)** to manage the physical reality of sight:
 
-- **The Animator (Provider):** When an Agent requires a Vision Model, the Dispatcher resolves the `vision-analysis` tag.
+- **The Animator (Provider):** When an Agent requires a Vision Model, the Dispatcher resolves the `vision-analysis` capability to a model-backed Animator.
 - **The Handshake:**
     1. The Dispatcher queries the **Orchestrator**.
     2. If the `vision.coven` is **COLD**, the Dispatcher raises `HardwareTransitionRequired`.
     3. **The Freeze:** The Agent's state is serialized to the **[Phylactery (06)](06-persistence.md)**.
     4. **The Swap:** The Orchestrator banishes the current coven and summons the Vision Coven.
     5. **The Thaw:** Once the Vision service is warm, the Agent rehydrates and proceeds with the `vision-analysis` model.
-- **The Tool (Capability):** Specialized tasks (e.g., `extract_text_from_image`) follow the exact same Stasis logic, ensuring the Agent never attempts to use a tool that doesn't physically exist.
+- **The Tool (Capability):** Specialized tasks (e.g., `extract_text_from_image`) follow the exact same Stasis logic through their own Animator capability declarations, ensuring the Agent never attempts to use a tool that does not physically exist.
 
 ### 3. The Pixel Pipeline (`BinaryContent`)
 

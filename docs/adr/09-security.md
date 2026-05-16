@@ -120,10 +120,10 @@ The architecture relies on the **"Golden Mean"** for its Initial Phase (V1):
 All containers (`vessel`, `lychd-tomb`, `phylactery`) share a single Pod and therefore share a `localhost` network namespace. Because they share a network, they all have internet access and can "see" each other's ports.
 Security is guaranteed by two independent layers:
 
-1. **Layer 7 Authentication:** Containers can see the Database and Phoenix, but they cannot access them without the proper passwords. The Tomb is given only a strictly-scoped least-privilege role.
+1. **Layer 7 Authentication:** Containers can see the Database and Phoenix, but they cannot access them without the proper credentials. The Tomb may receive only the narrow SAQ/Postgres execution credential required to claim, acknowledge, and retry execution-plane jobs.
 2. **The Nono Sandbox:** Untrusted execution never runs directly in the Tomb container. It is spawned inside `nono`, which uses Linux Landlock to enforce **zero network access** and strict file isolation.
 
-If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escapes into the Tomb container. They gain internet access and the queue password, but they hit the titanium wall of the container boundary. They cannot steal the Vessel's master DB passwords, API keys, or signing keys.
+If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escapes into the Tomb container. They may gain access to the Tomb worker's narrow queue credential, but they hit the titanium wall of the container boundary. They cannot steal the Vessel's master DB passwords, API keys, provider credentials, signing keys, or control-plane authority.
 
 !!! warning "Axiom: Identity vs. Mounts (The Badge vs. The Wall)"
     Do not confuse system-level authority with data-level authority.
@@ -133,7 +133,7 @@ If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escap
 
 ### 1. Defense in Depth Layers
 
-#### Layer 1: The Static Alias (Pre-carved Geometry)
+#### Layer 1: Rootless User Geometry
 
 The image creates a dedicated fallback unprivileged user:
 
@@ -141,14 +141,10 @@ The image creates a dedicated fallback unprivileged user:
 RUN groupadd --system --gid 1001 lich && \
     useradd --system --uid 1001 --gid 1001 --create-home lich
 
-RUN mkdir -p /home/lich/.local/share/lychd && chmod -R 777 /home/lich
-
 USER lich
 ```
 
-The internal `lich` user (UID 1001) exists only to pre-carve the container's geometry (home directories and shells). It is a Static Alias ensuring consistent internal paths (`/home/lich`) regardless of who the host user is.
-
-The `chmod 777` on `/home/lich` acts as a Bootstrap Grease Trap. It allows any mapped host UID to immediately write internal caches (e.g., `.cache/uv`) upon booting, avoiding permission conflicts with the "baked-in" UID 1001.
+The internal `lich` user (UID 1001) is a fallback execution identity, not a filesystem authority. Persistent runtime paths are governed by **[Layout (13)](13-layout.md)** and mounted symmetrically (`~/.config/lychd`, `~/.local/share/lychd`, and explicit `~/work` Outlands). The image may provide a writable home for process caches, but no security rule may rely on the baked-in user home as the canonical data topology.
 
 #### Layer 2: The Warden (External Rootless Runtime)
 
@@ -179,8 +175,8 @@ Because the UID matches the invoking host user, the process can interact with us
 
 The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined.
 
-- **The Vessel:** High-trust plane. Granted Read-Write (RW) mounts to the Codex, Crypt, and Projects.
-- **The Tomb:** Low-trust plane. Restricted by Read-Only (RO) mounts for system files and the Codex. It receives RW access only to disposable Workspaces (The Lab).
+- **The Vessel:** High-trust plane. Granted the control-plane mount set needed for API, orchestration, persistence, and promotion. Agents live here: graph state, LLM calls, routing, validation, memory access, and promotion policy remain Vessel-side. The Codex is normal runtime configuration; writable Codex mutation remains a host/Magus action or an explicitly authorized ritual, not arbitrary agent labor.
+- **The Tomb:** Low-trust execution hand. Granted no writable Codex. A Tomb profile may receive no Codex mount at all, or only a read-only/sanitized Codex projection for job-safe facts. It receives RW access only to disposable, task-scoped workspaces and artifacts.
 
 Native code modification is protected by Git Branching, not by different UIDs. Unsafe execution may manipulate workspaces, but it must not rewrite the trusted running body of the control plane.
 
@@ -259,10 +255,10 @@ This mechanism ensures that while cognitive labor can be requested by the execut
 
 Inside the Tomb plane, the architecture enforces strict per-process sandboxing using **`nono`**. This is not an optional layer; it is the fundamental mechanism that enables the shared Pod architecture.
 
-- The `lychd-tomb` container itself has internet access and holds the DB queue credentials.
-- The `lychd-tomb` Python worker loop (the Ghoul) is **Semi-Trusted**.
-- When the Ghoul picks up a code-execution job from SAQ, it uses `uv` to fast-install any required dependencies into a **job-scoped temporary workspace** before handing it to `nono`. The Ghoul has internet access for this step; `nono` does not.
-- The Ghoul then wraps the actual untrusted execution in `nono`.
+- The `lychd-tomb` container itself may use controlled Pod connectivity and holds only the narrow SAQ/Postgres execution credential.
+- The `lychd-tomb` Python worker loop (the execution hand) is **Semi-Trusted**.
+- When the Tomb loop picks up a code-execution job from SAQ, it uses `uv` to fast-install any required dependencies into a **job-scoped temporary workspace** before handing it to `nono`. The Tomb loop may use approved network access for this step; `nono` does not.
+- The Tomb loop then wraps the actual untrusted execution in `nono`.
 - `nono` uses Landlock to restrict the process to the job workspace directory and completely **drops its network interface**.
 - If the untrusted script needs to fetch a URL, it cannot do so directly. It must ask the Semi-Trusted Tomb loop (the proxy) to fetch the URL on its behalf.
 
@@ -318,6 +314,7 @@ The worker boundary is only meaningful if its database authority is narrow.
 Rules:
 
 - Tomb/worker units do not receive broad database credentials
+- Tomb/worker units may receive a narrow queue-only SAQ/Postgres credential for execution-plane job claiming, acknowledgement, and retry bookkeeping
 - no superuser
 - no migration authority
 - no schema ownership outside explicitly assigned surfaces
@@ -360,13 +357,13 @@ This keeps experimentation and codegen possible without normalizing mutation of 
 
 ### 5. Authority Matrix
 
-| Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Un-trusted Execution Plane)                                  |
+| Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Untrusted Execution Plane)                                   |
 | :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
 | **Identity**       | UID 1000 (Symmetric Identity).                                 | UID 1000 (Symmetric Identity).                                         |
-| **Secrets**        | Accesses queue/database credentials and high-value API keys.   | Accesses queue/database credentials only (Least Privilege Role).       |
-| **Mounts**         | Read-Write access to Codex, Crypt, and Projects.               | Read-Only access to Codex; Read-Write access to disposable Workspaces. |
-| **Network**        | Shared Pod network (Internet + Localhost).                     | Shared Pod network. (Sandboxed `nono` subprocesses have zero network). |
-| **Queue Control**  | Owns enqueue/dequeue/retry lifecycle for core tasks.           | Owns enqueue/dequeue/retry for untrusted tasks via the worker loop.    |
+| **Secrets**        | Accesses control-plane database credentials and high-value API keys. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, signing keys, Codex secrets, or control-plane credentials. |
+| **Mounts**         | Control-plane mount set for configuration, persistence, and authorized promotion. | No writable Codex. Optional read-only/sanitized Codex projection; RW access only to disposable workspaces and artifacts. |
+| **Network**        | Shared Pod network (Internet + Localhost).                     | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
+| **Queue Control**  | Owns enqueue policy, durable scheduling, and control-plane retries. | Claims, acks, and retries execution-plane SAQ jobs only.               |
 | **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |
 | **Context Egress** | Applies privatization and anonymization gates.                 | Cannot bypass egress policy.                                           |
 | **Host Authority** | May emit validated host intents via the Host Reactor contract. | Cannot emit host intents or mutate infrastructure.                     |

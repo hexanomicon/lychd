@@ -42,13 +42,15 @@ icon: material/refresh
 
 **The Ouroboros Protocol** is adopted as the Prime Directive of the Lifecycle. It defines how the **[Creation (16)](16-creation.md)** and **[Packaging (17)](17-packaging.md)** rituals are applied to the Core itself.
 
-!!! note "Lineage Scope"
-    This ADR governs the evolution of the **LychD Lineage** only. Other daemon families may found their own Lineages and evolve by their own rites. If they later choose compatibility with LychD's covenants or protocol surfaces, they may become **Kindred Lineages** — but kindred status is a separate declaration, not an automatic consequence of shared A2A diplomacy.
+!!! note "Implementation Scope"
+    This ADR governs the evolution of the LychD implementation only. LychD is not "the Agentic OS" and does not require every agentic system to target its body. Other daemon implementations may evolve by their own rites. Across bodies, they speak protocols such as A2A.
 
 !!! danger "The Ouroboros Fragility Theorem"
-    Any Independent Extension that tightly couples to LychD internals via `from lychd import ...` or ABC inheritance becomes a **structural dependent of the Core's import graph**. Every Ouroboros update cycle is a rebase of that graph. When an internal symbol is renamed, moved, or removed during a rebase, the extension's import statement fails at load time. The Daemon cannot boot. The self-update that was meant to heal the system instead lobotomizes it.
+    Any in-process extension that imports LychD internals via `from lychd import ...` or ABC inheritance becomes a **structural dependent of the Core's import graph**. Every Ouroboros update cycle is a rebase of that graph. When an internal symbol is renamed, moved, or removed during a rebase, the extension's import statement may fail at load time. The Daemon cannot boot until the composed image is repaired or rolled back.
 
-    This is not a theoretical risk — it is an inevitable consequence of combining autonomous self-modification with tight coupling. The **Extension Protocol / ABI boundary (ADR 05 §7)** is the architectural immune response: independent organs bind to structural shapes, not import paths, and therefore survive any internal refactor.
+    This is not a smell by itself. It is the accepted cost of the pre-v1 private coupled path: the Forge, verification suite, and Smith repair loop evolve the Core and coupled components as one composed body. A public in-process API/ABI may reduce this import fragility later, but it must be harvested from proven patterns, versioned, and tested before it is advertised as a compatibility guarantee. External-service Animators are the current true decoupled boundary.
+
+    LychD's first extension boundary is not compatibility; it is assimilation. Public compatibility is a product of maturity, not the foundation of infancy.
 
 ### 1. The Pre-Update Snapshot (The Anchor)
 
@@ -56,7 +58,7 @@ Before touching a single byte, the system triggers the **[Snapshot Protocol (07)
 
 - **The Body:** It captures the `core/` and `extensions/` git commit hashes.
 - **The Soul:** It performs a database checkpoint of the **[Phylactery (06)](06-persistence.md)**.
-This is the **Save Point**. If the Ouroboros chokes, the system reverts to this instant.
+This is the **Save Point**: the known-good state. If the Ouroboros chokes, the system reverts to this instant.
 
 ### 2. The Rebase Ritual (Git Topology)
 
@@ -67,7 +69,7 @@ git fetch upstream
 git rebase upstream/main
 ```
 
-If a **Merge Conflict** occurs, the system utilizes its **[Shadow Realm (25)](25-hitl.md)** capabilities (later defined as the Smith) to reason through the conflict, treating the `.py` files as logic to be repaired rather than plain text.
+If a **Merge Conflict** occurs, the system uses **[Shadow Simulation (31)](31-simulation.md)** to explore candidate repairs and the **[Smith (35)](35-assimilation.md)** to reason through the conflict, treating the `.py` files as logic to be repaired rather than plain text.
 
 ### 3. The Compatibility Check (The Pain of Growth)
 
@@ -78,7 +80,7 @@ Once the code is merged, the system runs the **Verification Suite**:
 
 **The Crisis:** If a local extension fails because the Upstream renamed a core function, the system launches a **Repair Task** to refactor the local code to match the new reality.
 
-**Why Independent Extensions Survive:** A correctly authored Independent Extension (adhering to the **Extension Protocol / ABI boundary, ADR 05 §7**) will pass the Compatibility Check across any Core rebase. Because it imports no LychD internal symbols, no rename or refactor in the Core's source tree can produce an `ImportError` in the extension. The verification suite in this context tests *capability behaviour* — does the extension still produce the correct output shapes? — not import compatibility. A Built-in Extension that fails this check has a broken implementation; an Independent Extension that fails has broken its protocol contract, not been broken by the Core.
+**Why External Boundaries Survive:** A capability isolated behind an external-service Animator can survive Core refactors when its network contract, adapter, and Codex declaration remain stable. The capability may be inference, tooling, observability, peer delegation, or another service function. In-process independent compatibility is not promised today. A future public API can earn that status only after LychD harvests a small versioned surface from real components, conformance tests, and Forge packaging rules. Until then, in-process Crypt components are verified and repaired as part of the composed runtime image.
 
 ### 4. The Manifestation (Rebirth)
 
@@ -95,7 +97,10 @@ If the system *cannot* fix the breakage after ($N$) attempts:
 
 1. It aborts the Rebase.
 2. It restores the **Save Point**.
-3. It notifies the Magus: *"I cannot evolve. The upstream reality is incompatible with my local organs. Manual intervention required."*
+3. It preserves a rejection record: intent, candidate diff, failing checks, relevant traces, and the reason the timeline was abandoned.
+4. It notifies the Magus: *"I cannot evolve. The upstream reality is incompatible with my local components. Manual intervention required."*
+
+Rollback restores the known-good body and Phylactery state. The failed timeline is physically banished, but its autopsy may become a future test, memory record, or operator note.
 
 ### 6. Dual-Plane Trust Delta
 
@@ -105,7 +110,7 @@ Evolution follows the same control/unsafe split:
 - **The Tomb** may run unsafe build/test/repair work on speculative branches.
 - **The Tomb** cannot trigger host intents, activate rebuilds, or promote durable state.
 
-### 5. Authority Matrix
+### 7. Authority Matrix
 
 | Dimension | Vessel (Trusted Evolution Control) | The Tomb (Untrusted Evolution Labor) |
 | :--- | :--- | :--- |

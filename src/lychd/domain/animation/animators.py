@@ -1,6 +1,6 @@
 """Runtime animator handle hierarchy (domain layer).
 
-These are orchestratable runtime ABCs, not rune config schemas.
+These are orchestratable runtime ABCs, not TOML Rune schemas.
 
 This is the *first axis* of the animation domain:
 - ``Soulstone`` models local/container-backed placement.
@@ -9,7 +9,7 @@ This is the *first axis* of the animation domain:
 The *second axis* (protocol/capability behavior) is composition through a typed
 ``Connector``. Two generic parameters preserve precision through inheritance:
 - ``C`` = connector type (protocol/capability surface)
-- ``R`` = rune config type (provenance/config surface)
+- ``R`` = Rune type (provenance/config surface)
 
 This allows code handling a concrete animator to access both connector-specific
 methods and the specific rune schema type without casts.
@@ -46,7 +46,7 @@ class Animator[C: Connector, R: RuneConfig](ABC, Runic[R]):
     @property
     @abstractmethod
     def rune(self) -> R:
-        """Return the source rune config that constructed this runtime animator."""
+        """Return the source Rune that constructed this runtime animator."""
         ...
 
     @property

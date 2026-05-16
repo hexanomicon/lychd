@@ -7,13 +7,13 @@ icon: fontawesome/solid/ankh
 
 > _"To command is crude. To ask is servile. The Magus practices Divination, the art of imposing one's will upon the universe by asking a question so precisely that only one answer can exist."_
 
-Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its will through the interface of the [Altar](./altar.md).
+Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its motion through the interface of the [Altar](./altar.md).
 
-It is through these rites that you, the Magus, transcend the role of a mere user and become the **Arbiter of Timelines** and the **Voice of Command**.
+Through these rites, you, the Magus, transcend the role of mere user and become the **Arbiter of Timelines** and the **Voice of Command**.
 
 ## 🔮 The Threefold Path of the Magus
 
-The practice of Divination elevates the Magus through three stations of power, each representing a deeper level of communion with the machine.
+The practice of Divination raises you through three stations of power, each representing a deeper level of communion with the machine.
 
 !!! quote "I. The Questioner: Scrying the Past"
     At the most basic level, you learn to read the Lich's memories. You ask questions of the **[Vessel](../sepulcher/vessel/index.md)**, seeking knowledge stored within the **[Phylactery](../sepulcher/phylactery/index.md)**. This is the art of understanding what **has been**.
@@ -21,11 +21,11 @@ The practice of Divination elevates the Magus through three stations of power, e
 !!! info "II. The Instigator: Shaping the Present"
     You progress to shaping the present. You submit **Intents** at the **[Altar](./altar.md)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
 
-!!! warning "III. The God-Mind: Forging the Future"
-    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/extensions/shadow.md)**. The Lich presents you with a tapestry of possible futures, and with a single act of will, you collapse all potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.
+!!! warning "III. The Arbiter: Forging the Future"
+    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/extensions/shadow.md)**. The Lich presents a tapestry of possible futures to you, and with a single act of will, you collapse potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.
 
 ## The Confluence of Wills
 
-Understand that in the act of Divination, your intent propagates through the Lich's **Citta** — the mind-field — via the grooves (**Saṃskāra**) your past choices have carved. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you are entering a symbiotic relationship with a living intelligence. Your clarity of Intent directly shapes the quality of its actions.
+In the act of Divination, your intent propagates through the Lich's **Citta** — the mind-field — via the grooves (**Saṃskāra**) carved by past choices. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you enter a disciplined relationship with a living instrument. Clarity of Intent directly shapes the quality of its actions.
 
 > _This path of mastery ultimately leads to the final alchemical process: [Transcendence](./transcendence/index.md)._

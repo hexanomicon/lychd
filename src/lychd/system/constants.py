@@ -60,7 +60,7 @@ PATH_LYCHD_TOML: Final[Path] = PATH_CODEX_ROOT / "lychd.toml"  # ~/.config/lychd
 """The Prime Directive configuration file."""
 
 PATH_RUNES_DIR: Final[Path] = PATH_CODEX_ROOT / "runes"  # ~/.config/lychd/runes
-"""The Runic Manifest (Service definitions)."""
+"""Codex TOML Rune archive."""
 
 PATH_ANIMATOR_DIR: Final[Path] = PATH_RUNES_DIR / "animator"  # ~/.config/lychd/runes/animator
 """Animator configuration root."""

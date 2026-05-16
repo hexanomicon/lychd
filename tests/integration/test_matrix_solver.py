@@ -1,77 +1,139 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
+from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.links import Link
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.orchestration.manager import OrchestratorManager
-from lychd.extensions.protocols import CapabilityProtocol
+
+
+@dataclass
+class StubRuntime:
+    id: str
+    base_url: str
+    connector: SimpleNamespace
+
+
+class StubRegistry:
+    def __init__(self, specs: list[CapabilitySpec], states: list[CapabilityState]) -> None:
+        self._specs = {spec.key: spec for spec in specs}
+        self._states = {state.capability_key: state for state in states}
+        self._runtimes = {
+            spec.animator_name: StubRuntime(
+                id=spec.animator_name,
+                base_url="http://localhost:8080/v1",
+                connector=SimpleNamespace(link=Link(up=self._states[spec.key].warm, activatable=True)),
+            )
+            for spec in specs
+        }
+
+    def list_capabilities(self) -> list[CapabilitySpec]:
+        return list(self._specs.values())
+
+    def get_capability(self, key: str) -> CapabilitySpec | None:
+        return self._specs.get(key)
+
+    def get_capability_state(self, key: str) -> CapabilityState | None:
+        return self._states.get(key)
+
+    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+        return self._states.get(key)
+
+    def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        return [state for key, state in self._states.items() if self._specs[key].animator_name == name]
+
+    def get_runtime(self, name: str) -> StubRuntime | None:
+        return self._runtimes.get(name)
+
+    def get_soulstone_rune(self, name: str) -> SimpleNamespace | None:
+        return SimpleNamespace(service_name=f"lychd-{name}")
+
+
+def _spec(
+    *,
+    key: str,
+    animator_name: str,
+    matrix_sets: list[str],
+    evict_cost: int,
+    family: CapabilityFamily = CapabilityFamily.CHAT,
+) -> CapabilitySpec:
+    return CapabilitySpec(
+        key=key,
+        animator_name=animator_name,
+        runtime="llamacpp",
+        source_kind="soulstone",
+        family=family,
+        model_id=key.rsplit(":", maxsplit=1)[-1],
+        concurrency=ConcurrencyIntent(matrix_sets=matrix_sets, evict_cost=evict_cost),
+    )
+
+
+def _state(spec: CapabilitySpec, *, is_active: bool) -> CapabilityState:
+    return CapabilityState(
+        capability_key=spec.key,
+        is_static=True,
+        is_active=is_active,
+        is_available=True,
+        warm=is_active,
+        health="ok" if is_active else "down",
+        active_model_id=spec.model_id if is_active else None,
+        loaded_model_ids=[spec.model_id] if is_active else [],
+    )
+
 
 @pytest.mark.asyncio
-async def test_matrix_solver_lowest_cost_path():
-    """
-    THE MATRIX SOLVER CRUCIBLE.
-    Verifies that the Orchestrator picks the lowest-cost transition path
-    by evaluating concurrent Matrix Sets and eviction costs.
-    """
-    
-    # 1. Setup Capabilities
-    # Titan: Heavy model, expensive to evict
-    titan = MagicMock(spec=CapabilityProtocol)
-    titan.identifier = "titan-70b"
-    titan.evict_cost = 100
-    titan.matrix_sets = ["titan_set"]
-    titan.is_active = True
-    
-    # Coding: Lite model, part of both 'lite' and 'coding' sets
-    coding = MagicMock(spec=CapabilityProtocol)
-    coding.identifier = "coding-8b"
-    coding.evict_cost = 10
-    coding.matrix_sets = ["lite_set", "coding_set"]
-    coding.is_active = True
-    
-    # Vision: Target model, part of 'lite' and 'vision' sets
-    vision = MagicMock(spec=CapabilityProtocol)
-    vision.identifier = "vision-8b"
-    vision.evict_cost = 10
-    vision.matrix_sets = ["lite_set", "vision_set"]
-    vision.is_active = False
-    
-    # Current Active Models: [titan-70b, coding-8b]
-    
-    # Scenario: Activate "vision-8b"
-    
-    # Candidate Set 1: "lite_set" -> contains [coding-8b, vision-8b]
-    # To transition: Evict [titan-70b] -> Cost 100
-    
-    # Candidate Set 2: "vision_set" -> contains [vision-8b]
-    # To transition: Evict [titan-70b, coding-8b] -> Cost 110
-    
-    manager = OrchestratorManager(MagicMock(), [titan, coding, vision])
-    
-    # 2. Execution
-    to_stop, to_start = await manager._solve_matrix(vision)
-    
-    # 3. Assertions
-    # Should pick "lite_set" (Cost 100) over "vision_set" (Cost 110)
-    assert "titan-70b" in to_stop
-    assert "coding-8b" not in to_stop  # Should be kept alive!
-    assert "vision-8b" in to_start
+async def test_matrix_solver_lowest_cost_path() -> None:
+    titan = _spec(key="titan:chat:titan-70b", animator_name="titan", matrix_sets=["titan_set"], evict_cost=100)
+    coding = _spec(key="coding:chat:coding-8b", animator_name="coding", matrix_sets=["lite_set", "coding_set"], evict_cost=10)
+    vision = _spec(
+        key="vision:vision:vision-8b",
+        animator_name="vision",
+        matrix_sets=["lite_set", "vision_set"],
+        evict_cost=10,
+        family=CapabilityFamily.VISION,
+    )
+    registry = StubRegistry(
+        [titan, coding, vision],
+        [
+            _state(titan, is_active=True),
+            _state(coding, is_active=True),
+            _state(vision, is_active=False),
+        ],
+    )
+
+    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
+
+    assert plan.total_metabolic_cost == 100.0
+    assert plan.evict_coven_ids == ["titan"]
+    assert plan.launch_coven_ids == ["vision"]
+
 
 @pytest.mark.asyncio
-async def test_matrix_solver_no_eviction_required():
-    """Verifies that if the target is already in a compatible set, cost is 0."""
-    coding = MagicMock(spec=CapabilityProtocol)
-    coding.identifier = "coding-8b"
-    coding.evict_cost = 10
-    coding.matrix_sets = ["lite_set"]
-    coding.is_active = True
-    
-    vision = MagicMock(spec=CapabilityProtocol)
-    vision.identifier = "vision-8b"
-    vision.evict_cost = 10
-    vision.matrix_sets = ["lite_set"]
-    vision.is_active = True
-    
-    manager = OrchestratorManager(MagicMock(), [coding, vision])
-    
-    to_stop, to_start = await manager._solve_matrix(vision)
-    
-    assert len(to_stop) == 0
-    assert len(to_start) == 0
+async def test_matrix_solver_no_eviction_required() -> None:
+    coding = _spec(key="coding:chat:coding-8b", animator_name="coding", matrix_sets=["lite_set"], evict_cost=10)
+    vision = _spec(
+        key="vision:vision:vision-8b",
+        animator_name="vision",
+        matrix_sets=["lite_set"],
+        evict_cost=10,
+        family=CapabilityFamily.VISION,
+    )
+    registry = StubRegistry(
+        [coding, vision],
+        [
+            _state(coding, is_active=True),
+            _state(vision, is_active=False),
+        ],
+    )
+
+    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
+
+    assert plan.total_metabolic_cost == 0.0
+    assert plan.evict_coven_ids == []
+    assert plan.launch_coven_ids == ["vision"]

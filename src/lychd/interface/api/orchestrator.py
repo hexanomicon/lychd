@@ -1,47 +1,35 @@
+from __future__ import annotations
+
 from typing import Any
+
 from litestar import Controller, get, post
 from litestar.status_codes import HTTP_202_ACCEPTED
-from lychd.domain.orchestration.schema import TransitionPlan
+
 from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.orchestration.schema import TransitionPlan
+
 
 class OrchestratorController(Controller):
-    """
-    The Sovereign Interface.
-    Exposes the Physical Will of the Orchestrator to the Magus.
-    Bound to the local coven boundaries.
-    """
+    """Expose orchestrator planning and activation over the local API."""
+
     path = "/orchestrator"
-    tags = ["Orchestrator"]
+    tags = ("Orchestrator",)
 
     @get("/status")
     async def get_status(self, orchestrator: OrchestratorManager) -> dict[str, Any]:
-        """
-        Returns the current VRAM occupancy and known cognitive capabilities.
-        """
+        """Return capability status from the canonical registry view."""
+        capabilities = orchestrator.list_capability_statuses()
         return {
-            "active_capabilities": [c.identifier for c in orchestrator.all_capabilities if c.is_active],
-            "all_capabilities": [
-                {
-                    "identifier": c.identifier,
-                    "is_active": c.is_active,
-                    "evict_cost": c.evict_cost,
-                    "matrix_sets": c.matrix_sets
-                } for c in orchestrator.all_capabilities
-            ]
+            "active_capabilities": [item["capability_key"] for item in capabilities if item["is_active"]],
+            "all_capabilities": capabilities,
         }
 
     @get("/solver/plan")
     async def get_transition_plan(self, orchestrator: OrchestratorManager, target: str) -> TransitionPlan:
-        """
-        Dry-run the Matrix Solver to see the metabolic cost of a transition.
-        """
+        """Dry-run the transition solver for one capability key."""
         return await orchestrator.calculate_transition_plan(target)
 
     @post("/activate", status_code=HTTP_202_ACCEPTED)
     async def activate_capability(self, orchestrator: OrchestratorManager, target: str) -> TransitionPlan:
-        """
-        Manually trigger a hardware swap. 
-        Follows the standard Graceful Drain and queue-pausing ritual.
-        """
-        # We use a default priority of 100 for manual overrides
+        """Manually trigger the transition path for one capability key."""
         return await orchestrator.request_transition(target, priority=100.0)

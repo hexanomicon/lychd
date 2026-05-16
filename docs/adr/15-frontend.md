@@ -6,7 +6,7 @@ icon: material/language-html5
 # :material-language-html5: 15. Frontend: The Altar
 
 !!! abstract "Context and Problem Statement"
-    The LychD operates as a server-authoritative system where the "Truth" resides exclusively within the **Vessel (11)** and the **Phylactery (06)**. Traditional Single Page Application (SPA) architectures foster a "Cockpit" anti-pattern, bifurcating logic between a Python server and a JavaScript client, which introduces state synchronization fragility and cognitive bottlenecks. A scrying interface is required that moves beyond manual monitoring to become a point of high-level deliberation and **Consent**, supporting the rich interactivity of **Generative UI** without the dependency hell of client-side frameworks.
+    LychD operates as a server-authoritative system where the "Truth" resides exclusively within the **Vessel (11)** and the **Phylactery (06)**. Traditional Single Page Application (SPA) architectures foster a "Cockpit" anti-pattern, bifurcating logic between a Python server and a JavaScript client, which introduces state synchronization fragility and cognitive bottlenecks. A scrying interface is required that moves beyond manual monitoring to become a point of high-level deliberation and **Consent**, supporting the rich interactivity of **Generative UI** without the dependency hell of client-side frameworks.
 
 ## Requirements
 

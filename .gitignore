@@ -1,8 +1,10 @@
 # --- LychD / Agent Shadows ---
-.agents/
+.agents/*
+!.agents/scopes/
+!.agents/scopes/**
 
 .jj/
-# Jujutsu VCS
+.jjconfig.toml
 
 
 # --- Web UI / Frontend ---

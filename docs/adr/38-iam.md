@@ -6,7 +6,7 @@ icon: material/account-check-outline
 # :material-account-check-outline: 38. IAM: The Ward
 
 !!! abstract "Context and Problem Statement"
-    The LychD is a sovereign daemon, but it must be capable of interacting with multiple external entities—human "Apprentices" (Family) or automated "Peers" (API/SaaS)—without compromising the Master's total control. A mechanism is required to authenticate diverse identities and enforce granular access boundaries (**Wards**) over routes and capabilities, ensuring that the machine's "Inner Sanctum" remains air-gapped from restricted users.
+    LychD is a sovereign daemon, but it must be capable of interacting with multiple external entities—human "Apprentices" (Family) or automated "Peers" (API/SaaS)—without compromising the Master's total control. A mechanism is required to authenticate diverse identities and enforce granular access boundaries (**Wards**) over routes and capabilities, ensuring that the machine's "Inner Sanctum" remains air-gapped from restricted users.
 
 ## Requirements
 
@@ -42,6 +42,8 @@ icon: material/account-check-outline
 
 This makes IAM the bridge between sovereign individuals and organizational surfaces. A company-facing API, an employee-facing tool surface, and a client-facing portal may all be projections of policy over the same coordination graph without implying that the organization owns the underlying personal Phylacteries or private priors.
 
+The intended shape is one sovereign continuity substrate expressing many lawful faces. Work, family, clients, and peers need different surfaces and different wards, not different souls.
+
 ### 1. The Sigil Registry
 
 Identities are stored in a `cabal.identities` table.
@@ -49,6 +51,7 @@ Identities are stored in a `cabal.identities` table.
 - **Master Sigil:** The primary key created at Initialization via **[(CLI ADR 19)](./19-cli.md)**. Possesses the `*` (Universal) scope. Can be bound to a **Nostr Keypair** for global identity.
 - **Guest Sigils:** Created by the Master for external entities. Each is bound to a specific list of **Scopes** (e.g., `echo.read`, `altar.interact`, `a2a.execute`). Can be represented by a **Nostr npub**.
 - **Role Surfaces:** A sovereign stack may expose different wards for personal, work, client, or peer contexts while still preserving one underlying continuity substrate. Separation is achieved through Sigils and policy, not by pretending every role requires a different soul.
+- **SaaS As Surface:** External systems may remain necessary, but they are treated as bounded interfaces traversed by the Lich, not as places where the Magus's durable memory or whole professional identity must be permanently rehomed.
 
 ### 1.1 The Nostr Identity Graft
 

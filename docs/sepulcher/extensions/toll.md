@@ -1,5 +1,5 @@
 ---
-title:  Toll
+title: Toll
 icon: material/cash-register
 ---
 

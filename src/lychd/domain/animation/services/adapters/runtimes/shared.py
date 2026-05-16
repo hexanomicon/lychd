@@ -35,6 +35,7 @@ def build_openai_connector(
     soulstone: SoulstoneConfig,
     runtime: str,
     kind: str | None = None,
+    metadata: dict[str, object] | None = None,
 ) -> OpenAICompatibleConnector:
     """Build a standard OpenAI-compatible connector for a local runtime."""
     model_infos = model_infos_from_soulstone(soulstone)
@@ -44,6 +45,7 @@ def build_openai_connector(
         base_url=soulstone.base_url,
         model_infos=model_infos,
         default_model_id=default_model_id_for_soulstone(soulstone, model_infos),
+        metadata=metadata,
     )
 
 

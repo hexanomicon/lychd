@@ -47,6 +47,7 @@ graph TD
     Crypt --> Lab[lab/]
     Crypt --> Ext[extensions/]
     Crypt --> PG[postgres/]
+    Crypt --> Snap[snapshots/]
     Crypt --> Lock[lychd.lock]
 
     subgraph "Sphere 0: The Self"
@@ -63,8 +64,7 @@ graph TD
     end
 
     subgraph "The Phylactery"
-        PG --> Active[active/]
-        PG --> Snap[snapshots/]
+        PG --> Data[data/]
     end
 
     style Crypt fill:#2a2a2a,stroke:#7c4dff,stroke-width:2px
@@ -75,11 +75,11 @@ graph TD
 
 ## 🔮 The Spheres of Creation
 
-To prevent the Lich from destroying itself or your data, it operates within a **Hermetic Seal**. The Agent interacts with the world via specific **Spheres**.
+To prevent the Lich from destroying itself or the Magus's data, it operates within a **Hermetic Seal**. The Agent interacts with the world via specific **Spheres**.
 
 ### 🧪 Sphere I: The Lab (Internal / Read-Write)
 
-**Host Path:** `~/.local/share/lychd/lab` $\leftrightarrow$ **Container Path:** `/home/lich/lab`
+**Host Path:** `~/.local/share/lychd/lab` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/lab`
 
 The **Genesis Sphere**. This is the Agent's private scratchpad.
 
@@ -88,16 +88,17 @@ The **Genesis Sphere**. This is the Agent's private scratchpad.
 
 ### 🌍 Sphere II: The Outlands (External / Read-Write)
 
-**Host Path:** _(User Projects)_ $\leftrightarrow$ **Container Path:** `/home/lich/work/...`
+**Host Path:** _(User Projects)_ $\leftrightarrow$ **Container Path:** `~/work/...`
 
 The **Labor Sphere**.
 
-- **Mounts:** You define external paths (e.g., `~/Projects/MyStartup`) to let the Agent work on your code.
+- **Mounts:** The Magus defines external paths (e.g., `~/Projects/MyStartup`) to let the Agent work on local code.
 - **Safety:** **The Git Ward.** The Agent refuses to touch this sphere unless a git repository is present and clean.
+- **Execution Boundary:** Outlands is a workspace geography, not an execution authority. Vessel controls policy and promotion; Tomb receives only task-scoped Outland access when unsafe execution must touch those files.
 
 ### 🧩 Sphere III: The Extensions (Internal / Read-Only)
 
-**Host Path:** `~/.local/share/lychd/extensions` $\leftrightarrow$ **Container Path:** `/home/lich/.local/share/lychd/extensions`
+**Host Path:** `~/.local/share/lychd/extensions` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/extensions`
 
 The **Living Tissue Sphere**.
 
@@ -106,8 +107,8 @@ The **Living Tissue Sphere**.
 
 ### 📚 Sphere IV: The Library (External / Read-Only)
 
-**Host Path:** _(External)_ $\leftrightarrow$ **Container Path:** `/home/lich/library`
+**Host Path:** _(External)_ $\leftrightarrow$ **Container Path:** `~/work/library/...`
 
 The **Reference Sphere**.
 
-- **Purpose:** The Agent can read your books/docs (RAG), but it is physically barred from modifying them.
+- **Purpose:** The Agent can read the Magus's books/docs (RAG), but it is physically barred from modifying them. The Library is a read-only Outland mount, not a separate trusted domain.

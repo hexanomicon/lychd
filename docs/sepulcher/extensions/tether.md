@@ -1,5 +1,5 @@
 ---
-title:  Tether
+title: Tether
 icon: material/shield-link-variant-outline
 ---
 
@@ -7,7 +7,7 @@ icon: material/shield-link-variant-outline
 
 > _"The Veil protects the temple from the masses, but the Tether is the umbilical of light that binds the Magus to the Lych. Across any distance, through any forest, the Silver Tether ensures that the Master's voice is always heard as if they stood within the Crypt itself."_
 
-**The Tether** is the VPN Extension of the LychD system. It is the implementation of **[ADR 39(VPN)](../../adr/39-vpn.md)**—a specialized, high-performance tunnel based on **Wireguard**.
+**The Tether** is the VPN Extension of the LychD system. It is the implementation of **[ADR 39 (VPN)](../../adr/39-vpn.md)**—a specialized, high-performance tunnel based on **WireGuard**.
 
 While the **[Veil](./veil.md)** secures the public face of the Daemon, the Tether creates a private, encrypted "Inner Circle." It allows the Magus to access privileged internal services—such as the raw cognitive traces of the **[Oculus](./oculus.md)** or the host's **[Cockpit](./oculus.md)**—from remote, untrusted networks without exposing them to the open internet.
 
@@ -16,7 +16,7 @@ While the **[Veil](./veil.md)** secures the public face of the Daemon, the Tethe
 The extension resides within the **[Sepulcher](../index.md)** as a privileged container, tasked with manipulating the network fabric to create a secure bridge.
 
 - **The Interface**: It creates the `wg0` virtual interface. As mandated by **[ADR 39](../../adr/39-vpn.md)**, it is granted `CAP_NET_ADMIN` to manage the host's routing tables.
-- **The Stealth**: Wireguard is silent by design. The extension does not respond to unauthenticated packets, making the VPN's UDP port (default: 51820) effectively invisible to port scanners.
+- **The Stealth**: WireGuard is silent by design. The extension does not respond to unauthenticated packets, making the VPN's UDP port (default: 51820) effectively invisible to port scanners.
 - **The Routing**: Once connected, the Magus's device is treated as a local entity within the Pod's private network (`10.88.x.x`), bypassing the restrictions of the public proxy.
 
 ## II. The Ritual of Bonding (Management)
@@ -39,7 +39,7 @@ The extension enforces a fundamental distinction between types of ingress. It re
 Following the Iron Pact of Sovereignty, the Tether is strictly peer-to-peer.
 
 - **No Third Parties**: Unlike managed mesh networks, the extension relies on no external "Control Plane." If the internet breaks, but the route between Magus and Lych remains, the Tether functions.
-- **Kernel Efficiency**: By utilizing the Wireguard protocol, it provides the lowest possible latency and battery drain for mobile devices, making it the ideal substrate for the **[Echo's](./echo.md)** real-time audio streams.
+- **Kernel Efficiency**: By utilizing the WireGuard protocol, it provides the lowest possible latency and battery drain for mobile devices, making it the ideal substrate for the **[Echo's](./echo.md)** real-time audio streams.
 
 !!! danger "The Endpoint Dilemma"
     For the Tether to find its anchor, the Lych must be reachable. If the host machine is behind a restrictive firewall or a dynamic IP, the Magus may need to employ a Dynamic DNS service or configure Port Forwarding on their gateway.

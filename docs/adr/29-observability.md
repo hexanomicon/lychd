@@ -6,13 +6,14 @@ icon: material/telescope
 # :material-telescope: 29. Observability: The Oculus
 
 !!! abstract "Context and Problem Statement"
-    The operation of an autonomous cognitive engine bridges the deterministic world of infrastructure and the probabilistic world of AI agents. Maintaining operational coherence requires simultaneous visibility into both physical health (VRAM pressure, thermal limits) and cognitive drift (hallucinations, logical loops). Traditional monitoring tools capture network requests but remain blind to the "Thought Trace"—the causal link from prompt to tool to output. A unified observability stack is necessary to illuminate the machine's internal monologue without violating the principle of a lightweight, sovereign kernel or imposing mandatory overhead on the core runtime.
+    The operation of an autonomous cognitive engine bridges the deterministic world of infrastructure and the probabilistic world of AI agents. Maintaining operational coherence requires instrumented perception of both physical health (VRAM pressure, thermal limits) and cognitive drift (hallucinations, logical loops). Traditional monitoring tools capture network requests but remain blind to the "Thought Trace"—the causal link from prompt to tool to output. Observability is the instrumented perception layer of the agentic runtime: structured evidence for diagnosis, routing, evaluation, and repair without mandatory overhead on the core runtime.
 
 ## Requirements
 
-- **Extension Sovereignty:** Implementation as a pluggable module; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture the active fluctuations (**Vṛttis**) of the network, including tool arguments, validation retries, and the raw "Whispers" exchanged with providers.
+- **Extension Assimilation:** Implementation as an optional coupled extension; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
+- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture structured events: the flickers of movement through the agentic graph (**Vṛttis**), including tool arguments, validation retries, and the raw "Whispers" exchanged with providers.
 - **Dual-Layer Scrying:** Separation of concerns into the "Mind" (Agent reasoning traces) and the "Body" (Host hardware and container status).
+- **Runtime Evidence:** Traces, metrics, and structured events must remain available to the runtime as evidence for diagnosis, routing, evaluation, and repair while remaining readable to the Magus.
 - **Physical Integration:** Mirroring of critical hardware metrics (GPU memory pressure) into the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to inform scheduling decisions.
 - **Privacy Enforcement:** Integration with the global `LYCHD_SECURE_MODE` to redact sensitive prompt and completion content from telemetry before it leaves the application memory.
 - **Protocol Adherence:** Compliance with OpenTelemetry (OTLP) standards to ensure interoperability with external collectors if the Magus chooses a cloud backend.
@@ -23,7 +24,7 @@ icon: material/telescope
 !!! failure "Option 1: The Cloud Native Suite (Prometheus / Grafana / Jaeger)"
     Deploying the standard enterprise observability stack.
     - **Pros:** Maximum power and industry standard.
-    - **Cons:** **Extreme Overhead.** Requires 3-4 heavy containers and massive RAM allocation just to monitor a single node. The complexity of PromQL and Grafana dashboarding is disproportionate to the needs of a personal daemon.
+    - **Cons:** **Extreme Default Overhead.** Requires 3-4 heavy containers and meaningful RAM allocation just to monitor a single node. The complexity of PromQL, LogQL, dashboarding, and retention policy is disproportionate to the needs of a personal daemon before it has many active Animators or Legion nodes.
 
 !!! failure "Option 2: Persistence-Layer Logging"
     Storing all traces and metrics directly as JSONB rows in the **[Phylactery (ADR 06)](./06-persistence.md)**.
@@ -39,7 +40,7 @@ icon: material/telescope
 
 ## Decision Outcome
 
-**The Oculus** is adopted as the Observability Extension. It serves as the reference implementation for system introspection, transforming the invisible ghost of intent into a structured, scryable record while leveraging host-native tools for hardware telemetry.
+**The Oculus** is adopted as the Observability Extension. Phoenix is the current scrying pool, but the architectural requirement is the trace itself: structured evidence that connects intent, graph movement, tool use, runtime pressure, and outcome while leveraging host-native tools for hardware telemetry.
 
 ### 1. The Extension Registration (The Retina Hook)
 
@@ -54,8 +55,8 @@ To satisfy the requirement of sovereignty, the Oculus is implemented as an Exten
 The extension configures the process to emit signals following the Generative AI Semantic Conventions:
 
 - **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` and `logfire.instrument_httpx()`. This captures the reasoning loop of the Agent and the raw prompts exchanged with the **[Dispatcher (ADR 22)](./22-dispatcher.md)**'s providers.
-- **The Collector:** It registers a specialized container (Oculus Soulstone) running **Arize Phoenix**.
-- **The Routing:** Telemetry is exported via OTLP to `http://localhost:4318`. Because the entire organism shares the `lychd.pod` network namespace, all containers can natively push traces over TCP without requiring complex network bridging or custom proxies.
+- **The Collector:** It registers a specialized local Animator (an Oculus Soulstone) running **Arize Phoenix**.
+- **The Routing:** Telemetry is exported via OTLP to `http://localhost:4318`. Because the composed runtime shares the `lychd.pod` network namespace, all containers can natively push traces over TCP without requiring complex network bridging or custom proxies.
 
 ### 3. Physical Body Monitoring (Body)
 
@@ -67,10 +68,10 @@ For hardware monitoring, the architecture rejects containerized metrics to avoid
 
 ### 4. Performance & SDLC Metrics (The Pulse)
 
-The third observability layer captures the **inference engine's own vital signs** — the data that Prometheus traditionally collects, harvested without the Prometheus Tax.
+The third observability layer captures the **service body's own vital signs**: model runtime performance, local service health, and the data that Prometheus traditionally collects, harvested without the Prometheus Tax.
 
-- **Per-Request Metrics:** The **[Animator](../sepulcher/animator/index.md)** piggybacks performance data on every inference response: `tokens_generated`, `tokens_per_second`, `time_to_first_token`, `prompt_processing_time`. OpenAI-compatible APIs (vLLM, llama.cpp) already include `usage` fields and timing headers — the Animator extracts and normalizes them.
-- **Engine System Metrics:** The **[Orchestrator (ADR 23)](./23-orchestrator.md)** periodically polls each active Soulstone's `/metrics` endpoint for system-level data: KV cache utilization, request queue depth, active batch size, and GPU memory pressure. These are standard Prometheus exposition format — trivially parseable without requiring a Prometheus server.
+- **Per-Request Metrics:** Model-backed **[Animators](../sepulcher/animator/index.md)** piggyback performance data on every inference response: `tokens_generated`, `tokens_per_second`, `time_to_first_token`, `prompt_processing_time`. OpenAI-compatible APIs (vLLM, llama.cpp) already include `usage` fields and timing headers; the Animator adapter extracts and normalizes them.
+- **Engine System Metrics:** The **[Orchestrator (ADR 23)](./23-orchestrator.md)** periodically polls each active Soulstone's `/metrics` endpoint for system-level data: KV cache utilization, request queue depth, active batch size, GPU memory pressure, or service-family equivalents. These are standard Prometheus exposition format, trivially parseable without requiring a Prometheus server.
 - **Agentic SDLC Quality Telemetry:** The system logs its own software engineering performance to prove competence over time.
     - **Attempts:** The number of self-correction loops (`ModelRetry`) needed before a task succeeds.
     - **Presence:** Whether a task was merged autonomously (Zero-Touch Engineering) or required human intervention (HitL).
@@ -79,7 +80,18 @@ The third observability layer captures the **inference engine's own vital signs*
 - **Phylactery Storage:** All metrics are written to a dedicated `metrics` schema in the **[Phylactery (ADR 06)](./06-persistence.md)**. PostgreSQL handles single-node time-series scale effortlessly. This eliminates the need for a dedicated time-series database.
 - **Scheduling Fuel:** The Orchestrator consumes these metrics directly from Postgres to inform the **Whim** algorithm — routing decisions, model tiering, Thrall delegation, and thermal throttling are all driven by real tok/s and cache pressure, not heuristics.
 - **Legion Scaling:** Each Thrall's Orchestrator scrapes its own local Soulstones and writes to the Master's Phylactery. The Master sees all nodes' performance in one query — no federation, no aggregation layer.
-- **Agent-Consumed Analysis:** Rather than dashboards, trends and anomalies are surfaced by agents querying the metrics table directly. The Magus asks "how's the GPU doing?" and gets a reasoned answer, not a graph.
+- **Agent-Consumed Analysis:** Trends and anomalies are surfaced by agents reading the metrics table directly. The Magus asks "how's the GPU doing?" and gets a reasoned answer with the trace available for inspection.
+
+#### Optional Watcher Coven Boundary
+
+The rejection of the Cloud Native Suite is a default-runtime decision, not a permanent ban. Prometheus, Grafana, Loki, Alloy, or similar tools may become **Watcher-class Animators** when the Magus needs fleet-style operations:
+
+- many Soulstone, Portal, browser, watcher, or tool Animators running at once;
+- Legion/Thrall nodes emitting service metrics from multiple machines;
+- historical dashboards, alert rules, and cross-service correlation beyond what Cockpit, Phoenix, Postgres metrics, and agent queries comfortably provide;
+- log volume where `journalctl` and structured application logs stop being ergonomic.
+
+When summoned, these tools must be optional Soulstones or Portals under the Oculus/Watcher family. They must not become Core dependencies, must not replace the Phylactery metrics used as Orchestrator fuel, and must expose explicit capabilities such as `metrics_query`, `logs_query`, `trace_search`, `dashboard_render`, or `alert_state` rather than masquerading as cognitive Animators.
 
 
 ### 5. Privacy Control
@@ -92,7 +104,7 @@ The Oculus respects the global `LYCHD_SECURE_MODE` toggle:
 ## Consequences
 
 !!! success "Positive"
-    - **Zero-Cost Purity:** Users who do not install the Oculus extension incur zero instrumentation overhead or resource bloat.
+    - **Zero-Cost Purity:** Users who do not enable the Oculus extension incur zero instrumentation overhead or resource bloat.
     - **Specialized Visualization:** Arize Phoenix provides native rendering for "Retrieved Chunks" and "Tool Calls," providing far superior scrying compared to generic logging tools.
     - **Pluggable Eyes:** Any extension can register a telemetry plugin. The Magus can swap the local Oculus for a cloud provider (e.g., Logfire Cloud) simply by changing the extension configuration.
 

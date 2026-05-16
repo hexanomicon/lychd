@@ -1,5 +1,5 @@
 ---
-title:  Veil
+title: Veil
 icon: material/shield-key-outline
 ---
 

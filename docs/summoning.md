@@ -1,10 +1,11 @@
 ---
+title: Summoning
 icon: material/fire
 ---
 
 # :material-fire: Summoning Ritual
 
-To bind the Daemon to the Host, you must complete the four stages of the Rite.
+To bind the Daemon to the Host, complete the four stages of the Rite.
 
 ### I. The Desecration
 
@@ -35,7 +36,7 @@ Prepare the **Unholy Grounds**. The Order of the Iron Covenant mandates the use 
 
 ### II. The Inscription
 
-Before the Lich can rise, you must tell it where the bodies are buried.
+Before the Lich can rise, the Codex must learn where the bodies are buried.
 Initialize the **Codex** to spawn the configuration templates and forge the Crypt.
 
 ```bash
@@ -44,7 +45,7 @@ lychd init
 
 This establishes the **Sacred Grounds**:
 
-- 📜 **[The Codex](sepulcher/codex.md)** (`~/.config/lychd`): The book of **Runes** (Quadlets & Blueprints).
+- 📜 **[The Codex](sepulcher/codex.md)** (`~/.config/lychd`): The book of **Runes** (validated TOML intent).
 - 🪦 **[The Crypt](sepulcher/crypt.md)** (`~/.local/share/lychd`): The persistent storage.
 
 The Scribe inspects the filesystem. If **Btrfs** is not detected, it automatically forges a **Loopback Mirror** to support [Autopoiesis](./divination/transcendence/immortality.md).
@@ -52,18 +53,18 @@ The Scribe inspects the filesystem. If **Btrfs** is not detected, it automatical
 > **Action Required:** Enter the Codex and configure your power sources.
 
 - _Set your `model_root` in `lychd.toml`._
-- _Define your **Soulstones** (Local LLMs) or **Portals** (Cloud APIs) in `soulstones/` and `portals/`._
+- _Define **Soulstones** (local services) or **Portals** (remote services) in `soulstones/` and `portals/`._
 
 ### III. The Transmutation
 
-Once the runes are set, transmute the configuration into Systemd units.
+Once the Runes are set, transmute the configuration into Systemd units.
 This command reads your Codex, generates the native Quadlet files, and reloads the daemon.
 
 ```bash
 lychd bind
 ```
 
-> **"The circle is bound."** The abstract configs have been transmuted into native `.service` units.
+> **"The circle is bound."** The Codex Runes have been transmuted into native Quadlet manifests.
 
 ### IV. The Summoning
 

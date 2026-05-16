@@ -113,3 +113,6 @@ class Layout:
         else:
             logger.info("layout_directory_created", path=str(path))
             return True
+
+
+LayoutService = Layout

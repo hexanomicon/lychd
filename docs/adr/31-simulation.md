@@ -1,5 +1,4 @@
 ---
-
 title: 31. Simulation
 icon: material/source-branch
 ---
@@ -9,7 +8,7 @@ icon: material/source-branch
 !!! abstract "Context and Problem Statement"
     Standard Large Language Model inference is inherently reflexive—it predicts the next token without the capacity for structural correction or internal deliberation. For complex architectural tasks, such as recursive refactoring or strategic planning, a linear response is insufficient. A probabilistic error in an early reasoning step propagates through the entire chain, leading to systemic hallucination. The machine possesses the capacity for labor, but lacks the mechanism to doubt its own path.
 
-    Simultaneously, the LychD architecture functions as an engine of relentless accumulation. Every interaction is crystallized into **[Memory (27)](27-memory.md)**, and **[HitL (25)](25-hitl.md)** rituals generate divergent **Shadow Realms** to test potential futures. In a sovereign system bound by finite storage and VRAM, this accumulation leads to **Digital Senility**: a state where retrieval latency increases, the vector index becomes saturated with "hallucinated noise," and the host disk fills with abandoned version-control references and orphaned artifacts. To maintain a sharp, responsive intellect, the machine requires the capability to inhabit a thousand illusions (Simulation) while possessing the metabolic discipline to banish the noise (Pruning).
+    Simultaneously, the LychD architecture functions as an engine of relentless accumulation. Every interaction is crystallized into **[Memory (27)](27-memory.md)**, and Shadow rituals generate divergent timelines that **[HitL (25)](25-hitl.md)** may later consecrate or reject. In a sovereign system bound by finite storage and VRAM, this accumulation leads to **Digital Senility**: a state where retrieval latency increases, the vector index becomes saturated with "hallucinated noise," and the host disk fills with abandoned version-control references and orphaned artifacts. To maintain a sharp, responsive intellect, the machine requires the capability to inhabit a thousand illusions (Simulation) while possessing the metabolic discipline to banish the noise (Pruning).
 
 ## Requirements
 
@@ -18,7 +17,7 @@ icon: material/source-branch
 - **The Shadow Realm Topology:** Physical isolation of simulation branches within the **[Lab (13)](13-layout.md)**, utilizing **Jujutsu Workspaces** (`jj workspace`) to enable parallel, independent file states sharing a single SQLite-backed repository state.
 - **Heuristic Scrying (Dual-Gate Evaluation):** A rigorous scoring system combining deterministic verification (Compilers, Linters, Test Suites) and agentic critique (The Mirror Persona).
 - **Metabolic Pruning (The Reaper):** An automated background protocol (Ghoul) leveraging Jujutsu's native transactional abandonment (`jj abandon`) to instantly dissolve failed timelines, orphaned files, and "stale" memories.
-- **Heuristic Vector Decay:** Implementation of a mathematical decay function for vector embeddings to ensure long-term retrieval remains sharp and focused on high-signal data.
+- **Heuristic Vector Decay:** Implementation of a mathematical decay function for vector embeddings to ensure long-term retrieval remains sharp and focused on valuable data.
 - **The Anchor Protocol:** A mechanism for the Magus to grant absolute immunity to specific artifacts or memories, setting their decay factor to zero.
 - **Transactional Convergence:** Mandatory support for "Wavefunction Collapse"—the atomic merge of a verified simulation branch into the Primary Substrate (The Crypt).
 - **VRAM Orchestration:** Coordination with the **[Orchestrator (23)](23-orchestrator.md)** to manage the extreme memory pressure of parallel reasoning paths and ensure system stability.
@@ -94,7 +93,7 @@ In practice:
 
 Simulation is an "I/O Storm" that generates massive temporary data. The Reaper is a specialized Ghoul that acts as the system's metabolism.
 
-- **The Autopsy Protocol (Trajectory Pairing):** Before a failed branch is destroyed, the Reaper extracts the deterministic failure trace (e.g., the specific compiler error or test failure). Rather than merely logging the failure in isolation, the Reaper **must** explicitly pair this failure trace with the eventual successful branch (if achieved) to form a complete `[Failed Attempt] -> [Compiler Error] -> [Correction]` trajectory. This prepares the exact data structure required by **[DeepFabric (33)](33-training.md)** for Trajectory Mining. The physical debris is banished, but the structural journey from error to correction is retained as complex Karma.
+- **The Autopsy Protocol (Trajectory Pairing):** Before a failed branch is destroyed, the Reaper extracts the deterministic failure trace (e.g., the specific compiler error or test failure). Rather than merely logging the failure in isolation, the Reaper **must** explicitly pair this failure trace with the eventual successful branch (if achieved) to form a complete `[Failed Attempt] -> [Compiler Error] -> [Correction]` trajectory. This prepares the exact data structure required by **[Riddle/Evaluation (34)](34-evaluation.md)** for trajectory mining. The physical debris is banished, but the structural journey from error to correction is retained as complex Karma.
 - **Logical Banishment:** Once the autopsy is complete, the Reaper executes `jj abandon <Change_ID>`. Because Jujutsu tracks revision history as an immutable graph of changes, abandoning a Change ID instantly dissolves that conceptual node and all its descendants from the SQLite database.
 - **The Workspace Purge (Defensive Teardown):** The Reaper then deletes the physical `shadow/branch_<ID>` directory. However, acting as an **Execution Warden**, it is not enough to simply delete the folder. The Reaper must explicitly verify that all associated PIDs, port locks, and temporary Quadlet containers instantiated in the Tomb for that specific simulation are terminated. This defensive teardown prevents "Zombie Ports" where dead ghouls hold onto physical iron long after their logic has been banished. Because the workspace’s state is tracked centrally in `.jj/`, the final directory deletion leaves no dangling references behind.
 - **STASIS_TTL:** Any workspace in the Lab older than a configurable `STASIS_TTL` (default: 24h) is considered "Stale" and is abandoned to prevent inode exhaustion.
@@ -117,7 +116,7 @@ Once a simulation achieves a "Verified State" (Test Success + High Heuristic Sco
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
 - **The Consecration:** Upon approval, the "Wavefunction Collapses." The speculative change is merged into the trunk via `jj rebase -s <Change_ID> -d trunk()`.
-- **The Inscription:** The successful reasoning trace is stored in the Phylactery as high-signal **Karma**, providing a "Bayesian Prior" that weights future simulations toward similar successful patterns.
+- **The Inscription:** The successful reasoning trace is stored in the Phylactery as **Karma**, providing a "Bayesian Prior" that weights future simulations toward similar successful patterns.
 - **Frictionless Collapse (ZTE Chores):** If the work is classified as a minor chore and the workspace's execution history has maintained a flawless **Streak KPI** exceeding the **Confidence Threshold**, the system executes the rebase and merges the workspace autonomously without waiting for HitL approval.
 
 This flow contains three distinct collapses that should remain explicit:
@@ -132,7 +131,7 @@ Shadow can execute the first and prepare the second, but it cannot self-authoriz
 
 The engine standardizes on **Pydantic AI Testing** primitives to simulate reality without side-effects:
 
-- **`TestModel`:** Used by the **Smith (30)** to dry-run extension structures and routing logic without consuming expensive inference tokens.
+- **`TestModel`:** Used by the **[Smith (35)](35-assimilation.md)** to dry-run extension structures and routing logic without consuming expensive inference tokens.
 - **`FunctionModel`:** Utilized to simulate environment responses (e.g., "How would the VPN react to a port collision?") within the Lab, ensuring error-handling logic is robust before the "Temporal Collapse" into reality.
 
 ### 7. Orchestration of Shadow Simulation
@@ -147,9 +146,9 @@ Simulation is the most resource-intensive ritual in the Sepulcher. It is the "Ri
 The Shadow Realm is infrastructural, not just conceptual.
 
 - The **Shadow extension** runs speculative timelines in the `lychd-tomb` container.
-- The graph runner and agent logic stay in the **Vessel**. **The Tomb** receives only serialized execution payloads (scripts, test suites, linter invocations) via SAQ. It does not run agent logic, graph state machines, or make LLM calls.
+- The graph runner and agent logic stay in the **Vessel**. **The Tomb** receives only serialized execution payloads (scripts, test suites, linter invocations) via SAQ. It is the hand for unsafe work, not the home of the agent. It does not run agent logic, graph state machines, or make LLM calls.
 - Graph steps declare execution mode (`vessel` or `tomb`); unsafe steps serialize their payload and dispatch to **The Tomb**, then await the `stdout` result.
-- **The Tomb** returns structured artifacts/traces only.
+- **The Tomb** returns untrusted `stdout`/`stderr` and declared artifacts/traces only.
 
 Operational summary: Shadow produces possible futures, Mirror filters for congruence, and Vessel authorizes what becomes real.
 
@@ -159,17 +158,17 @@ This stack models cognitive mechanics and control boundaries, not subjective awa
 
 | Dimension | Vessel (Trusted Simulation Control) | The Tomb (Untrusted Simulation Substrate) |
 | :--- | :--- | :--- |
-| Secrets | Holds scoring/policy/provider credentials for adjudication. | No DB/provider/signing secrets. |
-| Mounts | Persistent state and decision metadata mounts. | Simulation workspace and artifact mounts only. |
-| Network | Controlled internal services and approved provider calls. | Constrained network; no unrestricted internet egress. |
-| Queue Ownership | Owns durable simulation scheduling and reanimation state. | No durable queue ownership. |
+| Secrets | Holds scoring/policy/provider credentials for adjudication. | Narrow queue-only SAQ/Postgres execution credential when required; no provider, signing, Codex, or control-plane secrets. |
+| Mounts | Persistent state and decision metadata mounts. | Simulation workspace and artifact mounts; optional read-only/sanitized Codex projection only. |
+| Network | Controlled internal services and approved provider calls. | Tomb loop may use constrained queue/proxy connectivity; sandboxed `nono` subprocesses have zero network. |
+| Queue Ownership | Owns durable simulation scheduling and reanimation state. | Claims, acknowledges, and retries execution-plane jobs only. |
 | Authority Boundaries | Approves collapse/promotion and persistence commits. | Produces candidate timelines only. |
 
 ## Consequences
 
 !!! success "Positive"
     - **Transcendent Intelligence:** By allowing the model to "fail in the shadows," it arrives at solutions that exceed the raw reasoning power of its base weights.
-    - **Physical Integrity:** The Reaper ensures the host filesystem and database index remain lean, fast, and high-signal over years of operation.
+    - **Physical Integrity:** The Reaper ensures the host filesystem and database index remain lean, fast, and focused over years of operation.
     - **Autonomous Evolution:** The machine can solve complex refactoring tasks by "dreaming" thousands of solutions and only presenting the one that provably works.
     - **High-Fidelity Memory:** Retrieval-Augmented Generation (RAG) performance improves over time as "noise" vectors are culled by the Decay function.
 

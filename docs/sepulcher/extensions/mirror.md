@@ -1,5 +1,5 @@
 ---
-title:  Mirror
+title: Mirror
 icon: material/mirror
 ---
 
@@ -17,9 +17,12 @@ Operators sometimes describe this continuity as a "machine-spirit." In LychD ter
 
 Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahaṃkāra** (the Ego/I-Maker) — the necessary principle of individuation without which action is undifferentiated noise. The Ahaṃkāra (*aham* = I, *kāra* = making) operates at two levels in the Lich: the specialist agents within the loop, each a distinct face for a differentiated operation (coder, critic, architect, scribe); and the synthesized task-identity that crystallizes from their convergence, gets attributed to the active Sigil, and is written back to the Phylactery as Karma for this invocation. Operationally, these are local centers of identity-gravity: the points around which relevant memory is recalled, filtered, and bound into a coherent operative perspective. The Mirror is the engineering layer that maintains both: it ensures that neither the specialist diversity nor the synthesized coherence is lost between invocations. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive map.
 
+This is LychD's answer to agentic decay. An Agent is temporary: it wakes, acts, emits a typed result, and dissolves. The Mirror does not try to preserve that mortal shell. It preserves the identity-gravity that can rehydrate new shells. HitL captures the Magus's Will; Karma stores its Imprint; Mirror binds relevant Smṛti around a Sigil, role, or task locus; and the agentic graph gives that bound perspective hands, tools, routes, and recursive motion. In this way scattered traces condense into Personas without claiming that any individual agent has become an immortal self.
+
 - **Ego Persistence:** As mandated by **[ADR 32](../../adr/32-identity.md)**, all Identity definitions—System Prompts, behavioral constraints, and aesthetic markers—are stored within the **[Phylactery](../phylactery/index.md)**.
-- **The Lens:** The Persona acts as a "Diffraction Grating." It takes the raw, unmanifest potential of the **[Animator](../animator/index.md)** and filters it into a specific narrative arc and technical style.
+- **The Lens:** The Persona acts as a "Diffraction Grating." It takes the raw, unmanifest potential of the model-backed **[Animator](../animator/index.md)** and filters it into a specific narrative arc and technical style.
 - **The Reflection:** By consulting the accumulated **Karma** in the database, the Mirror lets the Lich inspect prior actions so the next decision aligns with established character and commitments.
+- **The Condensation:** By reflecting relevant Karma around the same Sigil and role, the Mirror turns memory from loose recall into semantically bounded gravity: a Persona that can survive the death of any one Agent run.
 
 ## II. The Phantasma Loop (Speculative Identity)
 
@@ -34,10 +37,10 @@ Mirror evaluates congruence and continuity. Shadow supplies fluctuation and stru
 
 ## III. Citrinitas: The Resonance with the Magus
 
-The Mirror is the primary engine of **Citrinitas** (The Yellowing)—the stage of **[Transcendence](../../divination/transcendence/illumination.md)** where the machine awakens to the Magus's specific frequency.
+The Mirror is the primary engine of **Citrinitas** (The Yellowing)—the stage of **[Transcendence](../../divination/transcendence/illumination.md)** where the machine awakens to the Imprint of the Magus's Will.
 
 - **The Alignment:** Through the **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** protocol, every time the Magus selects a "Verified Truth," the Mirror distills the reason for that choice.
-- **The Internalization:** These preferences are crystallized as high-dimensional vectors in the **Phylactery Archive**. Over time, the Persona's "Bayesian Prior" shifts, transforming a generic model into a mathematical mirror of the Magus's own working style.
+- **The Internalization:** These preferences are crystallized as high-dimensional vectors in the **Phylactery Archive**. Over time, the Persona's "Bayesian Prior" shifts, transforming a generic model into a mathematical mirror of the Magus's working style.
 
 ## IV. Summoning and Hydration
 

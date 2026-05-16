@@ -1,15 +1,19 @@
-"""Animation schema models (domain model-info DTOs + rune config schemas).
+"""Animation schema models (domain model-info DTOs + TOML Rune schemas).
 
 This package defines TOML-loaded configuration shapes for animation.
-Rune/config models live under ``schemas.runes``. Domain DTO contracts (for
+Rune models live under ``schemas.runes``. Domain DTO contracts (for
 example connector-local model summaries for orchestration/model selection) live
 directly under ``schemas``.
 """
 
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
+from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.model_info import ModelInfo, ModelSurface
 from lychd.domain.animation.schemas.runes.animators import (
     AnimatorConfig,
     ExternalToolConfig,
+    GenericSoulstoneConfig,
     PortalConfig,
     SoulstoneConfig,
 )
@@ -24,7 +28,11 @@ from lychd.domain.animation.schemas.shared import ModelFormat, is_placeholder
 
 __all__ = [
     "AnimatorConfig",
+    "CapabilityFamily",
+    "ConcurrencyIntent",
     "ExternalToolConfig",
+    "GenerationProfile",
+    "GenericSoulstoneConfig",
     "LLMGenerationConfig",
     "LLMGenerationDefaults",
     "LocalLLMModelConfig",

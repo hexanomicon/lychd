@@ -1,6 +1,5 @@
 ---
-
-title:  Oculus
+title: Oculus
 icon: material/eye-outline
 ---
 
@@ -17,7 +16,7 @@ While traditional tools see only network latency, the Oculus grants the Magus th
 The primary gift of the Oculus is the ability to see a thought as it forms. It rejects simple logging in favor of a deep, structural understanding of the cognitive loop.
 
 - **The Retina:** Upon awakening, the extension grafts a "retina" onto the **[Vessel](../vessel/index.md)** and the **[Ghouls](../vessel/ghouls.md)**. This is a set of OpenTelemetry hooks that capture the internal monologue of every **[Agent](../../adr/20-agents.md)**.
-- **The Scrying Pool:** These captured traces are exported to a specialized **Oculus Rune** (a container running Arize Phoenix). This local, high-fidelity interface allows the Magus to visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with the **[Animator](../animator/index.md)**.
+- **The Scrying Pool:** These captured traces are exported to a specialized **Oculus Soulstone** (a local Animator running Arize Phoenix). This local, high-fidelity interface allows the Magus to visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with model-backed **[Animators](../animator/index.md)**.
 - **The Permanent Record:** The visions in the pool are not fleeting. The Oculus inscribes them into a dedicated `traces` chamber within the **[Phylactery](../phylactery/index.md)**, ensuring that every significant thought becomes a permanent, reviewable part of the Daemon's history.
 
 ## II. The Body's Health (The Physical Gaze)
@@ -26,6 +25,7 @@ A mind cannot exist without a body. The extension understands that cognitive fai
 
 - **Grounded Truth:** The Oculus utilizes the host's native monitoring tools (e.g., **Cockpit**) to observe the physical state of the machine.
 - **The Orchestrator's Sight:** This data is fed directly into the **[Orchestrator](../../adr/23-orchestrator.md)**. If the GPU VRAM pressure exceeds a critical threshold, the Oculus signals the Orchestrator to pause low-priority rituals (like **[Training](./soulforge.md)**) to prevent an OOM crash.
+- **The Deferred Watcher Coven:** Prometheus, Grafana, Loki, and collector bridges are not forbidden; they are not the default body. They become optional Watcher Animators only when the Sepulcher has enough Animators, Thralls, logs, dashboards, and alerting needs to justify their mass.
 
 ## III. The Privacy Veil
 
@@ -42,7 +42,7 @@ The Oculus generates massive quantities of data. To prevent the Crypt from filli
     - _Standard Traces:_ Retained for 24 hours.
     - _Error Traces:_ Retained for 7 days.
     - _Consecrated Traces:_ Retained forever.
-- **The Purge:** The Reaper periodically sweeps the `traces` chamber, banishing expired records to the Void to maintain the health of the Phylactery.
+- **The Purge:** The Reaper periodically sweeps the `traces` chamber, retiring expired records to maintain the health of the Phylactery.
 
 !!! failure "The Fragmented Gaze"
     The price for rejecting the "Prometheus Tax" is a fragmented dashboard. To correlate a slow Agent response (Mind) with high GPU utilization (Body), the Magus must look at two separate altars: the **Oculus Scrying Pool** and the host's **Cockpit** interface. This is the trade-off made to keep the Sepulcher lightweight and sovereign.

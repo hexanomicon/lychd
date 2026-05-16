@@ -6,7 +6,7 @@ icon: material/toy-brick-outline
 # :material-toy-brick-outline: 5. Recursive Extension Architecture
 
 !!! abstract "Context and Problem Statement"
-    The LychD system functions as a kernel for orchestrating sovereign intelligence. Static software architectures lack the flexibility to incorporate emerging hardware interfaces, novel reasoning topologies, or specialized memory structures without intrusive core modifications. Existing plugin models typically enforce a binary choice between high-latency network communication and restrictive execution environments that prevent deep integration into the system substrate. This creates a functional disconnect between the stable core and the evolving requirements of agentic capabilities. A foundational architecture is required to define how external logic and infrastructure intents are assimilated into the Daemon’s physical and cognitive anatomy.
+    The LychD system functions as a kernel for orchestrating sovereign intelligence. Static software architectures lack the flexibility to incorporate emerging hardware interfaces, novel reasoning topologies, or specialized memory structures without intrusive core modifications. Existing plugin models typically enforce a binary choice between high-latency network communication and restrictive execution environments that prevent deep integration into the system substrate. LychD is born in an agentic era where code can be inspected, rewritten, verified, and promoted by the same system that runs it. The first extension boundary is therefore assimilation, not premature compatibility.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ icon: material/toy-brick-outline
 - **Deterministic Provenance:** Mandatory implementation of a federated lockfile to ensure the system’s exact composition is trackable and bit-for-bit reproducible.
 - **Interface Simplicity:** Utilization of standard Python patterns and registration hooks to facilitate extension creation, avoiding proprietary Domain Specific Languages (DSLs).
 - **Capability-Driven Design:** Mandatory support for registering abstract functional identifiers that allow the system to orchestrate extension logic through semantic intent.
-- **Extension Protocol:** Establishment of a structural law to integrate independent logic and infrastructure intents into the Daemon’s anatomy without compromising system-wide stability.
+- **Extension Protocol:** Establishment of a composed-runtime law for assimilating local organs before public compatibility surfaces are harvested.
 
 ## Considered Options
 
@@ -32,16 +32,30 @@ icon: material/toy-brick-outline
     - **Cons:** **Functional Castration.** A sandboxed environment prevents deep integration. A script cannot easily define new relational models or register system-level background ghouls, violating the principle of deep modularity.
 
 !!! success "Option 3: Native Recursive Extensions"
-    Extensions are Python packages loaded directly into the Daemon's memory space, managed as independent Git repositories within a unified Federation.
+    Extensions are Python packages loaded directly into the Daemon's memory space, managed as Forge-composed Git repositories within a unified Federation.
 
     - **Pros:**
         - **Zero-Latency:** Direct execution within the kernel's event loop enables high-velocity reasoning.
         - **Total Integration:** Extensions can manipulate any part of the system's anatomy, from the persistence layer to the web router.
-        - **Individual Versioning:** Standard Git tooling handles the evolution of each organ independently.
+        - **Assimilable Source:** Standard Git tooling preserves source history while Forge/Smith verification repairs organs with the body they join.
 
 ## Decision Outcome
 
-**Native Recursive Extensions** are adopted as the standard for system evolution. The Daemon functions as a **Runtime Package Manager**, coordinating a collection of independent repositories into a single, cohesive organism.
+**Native Recursive Extensions** are adopted as the standard for system evolution. The Daemon functions as a **Runtime Package Manager**, coordinating a collection of repositories into a single, cohesive organism.
+
+LychD's first extension boundary is not compatibility; it is assimilation. Public compatibility is a product of maturity, not the foundation of infancy.
+
+The decision line is:
+
+```txt
+Inside the body, couple and repair. Across bodies, speak protocols. Public SDK/ABI later.
+```
+
+This creates an explicit maturity path:
+
+- **Pre-v1:** In-process organs are coupled, assimilable, and repaired through Forge/Smith verification.
+- **v1:** Stable public surfaces may be harvested from patterns that survived real use.
+- **Post-v1:** SDK/API/ABI support becomes a compatibility product with versioning, conformance tests, and deprecation policy.
 
 
 ### 1. The Federation Strategy
@@ -49,8 +63,9 @@ icon: material/toy-brick-outline
 The system's logic resides in a structured directory hierarchy designed for modularity, distinguishing between the system's shipped capabilities and its elective augmentations:
 
 - **Built-in Extensions:** Residing in `src/lychd/extensions/builtin/`. These are core features and reference implementations shipped within the kernel's source tree. They are grafted into the memory space during every boot cycle, providing high-velocity baseline capabilities without requiring a substrate rebuild.
-- **Independent Extensions:** Residing in the **Crypt (13)** (`~/.local/share/lychd/extensions/`). Each subdirectory is a standalone Git repository containing its own dependency manifests (`pyproject.toml`). These require the **Synthetic Forge (17)** to resolve dependency conflicts and manifest a new physical substrate.
-- **The Manifest:** The Daemon maintains a global lockfile that records the specific commit hash of every active repository (both Built-in and Independent). This ensures the Federation is a deterministic body that can be captured, snapshotted, and restored as a single, bit-for-bit reproducible unit.
+- **Crypt Extensions:** Residing in the **Crypt (13)** (`~/.local/share/lychd/extensions/`). Near-term Crypt organs are private coupled repositories unless they explicitly target a future versioned public API. They require the **Synthetic Forge (17)** to resolve dependency conflicts and manifest a new physical substrate.
+- **Future Independent Extensions:** Shareable third-party organs become meaningful at or after v1, when proven patterns can be frozen behind a versioned public API, conformance tests, and manifest-gated packaging.
+- **The Manifest:** The Daemon maintains a global lockfile that records the specific commit hash of every active repository. This ensures the Federation is a deterministic body that can be captured, snapshotted, and restored as a single, bit-for-bit reproducible unit.
 
 ### 2. The Registration Surface (The Extension Context)
 
@@ -59,7 +74,7 @@ The architecture relies on an **Inversion of Control** pattern to facilitate ass
 - **The Entry Point:** Any organ participating in in-process boot grafting exposes a `register(context)` function in its root package.
 - **The Context Object:** The Core passes an `ExtensionContext` object which serves as the host registration surface for boot-time grafting. Through this object, an organ binds runtime-facing logic into the Daemon's anatomy.
 - **Interface Grafting:** The active source surface accepts unbound `Router` objects and standalone `Controller` classes for the Vessel.
-- **Schema Exposure:** Configuration discovery is not a method on the `ExtensionContext`. Organs surface schema classes that satisfy the Codex discovery shape, allowing new rune families to be recognized without inheriting from mutable Core ABCs.
+- **Schema Exposure:** Configuration discovery is not a method on the `ExtensionContext`. Near-term in-process organs expose `RuneConfig` subclasses after import; a provisional structural scan exists for Python source experiments, but it is not a public API or stability promise.
 - **Substrate Declarations:** Synthesis-time requirements (system libraries, binaries, container needs) belong to the wider Extension Protocol and feed the Forge manifest. They must not be confused with the boot-time context itself.
 
 ### 3. Capabilities as Organs
@@ -79,58 +94,99 @@ Extensions are not limited to Python logic. They may declare system-level depend
 Configuration extensibility uses the schema branch of the Extension Protocol:
 
 - Extension modules are imported at runtime during codex/bootstrap.
-- Built-in organs may expose `RuneConfig` subclasses directly.
-- Independent organs surface schema classes matching the Codex discovery shape.
-- Structural presence is the discovery signal; no extra registration calls are required.
+- Built-in and private coupled organs may expose `RuneConfig` subclasses directly.
+- `__subclasses__()` traversal is a schema-discovery convenience after import. It is not the runtime extension ledger and not a public extension API.
+- Experimental Crypt-side Python source modules may expose Pydantic-compatible schema classes matching the Codex discovery shape, but this path is not a stable third-party contract.
 - The loader remains singular and authoritative for all runic TOML parsing and validation.
 
 ### 6. The MPL 2.0 Shield (Private Extensions)
 
-Because the system is bound by **[The Iron Pact (00)](00-license.md)** (MPL 2.0), the Federation explicitly supports **proprietary, closed-source extensions**. 
+Because the system is bound by **[The Iron Pact (00)](00-license.md)** (MPL 2.0), the Federation explicitly supports **proprietary, closed-source extensions**.
 
-If the core were licensed under AGPLv3, any private "Secret Sauce" would have to be built as a separate network Animator to avoid copyleft infection. The MPL 2.0 allows you to statically link your private code directly into the Daemon's memory space as an Extension. You retain your local sovereign advantage while using the open core to participate in the A2A Swarm.
+If the core were licensed under AGPLv3, proprietary in-process "Secret Sauce" would be legally burdensome and would usually need to live behind an external Animator boundary to remain private. MPL 2.0 allows private code to be linked directly into the Daemon's memory space as an Extension. The Magus retains local sovereign advantage while using the open core to participate in the A2A Swarm.
 
-### 7. The Dual-Path Extension Model
+### 7. Extension Compatibility Tiers
 
-The Federation enforces a hard boundary between how Built-in Extensions and Independent Extensions are permitted to bind to the Core. This boundary is not a stylistic preference; it is a structural immune response to the fragility introduced by the **[Ouroboros Protocol (18)](18-evolution.md)**.
+The Federation recognizes real compatibility tiers. The boundary is not stylistic; it defines who owns breakage when the Core evolves.
+
+- **Built-in Direct:** Core-owned extensions shipped under `src/lychd/extensions/builtin/`. They may import internals and subclass core classes because they evolve atomically with the Core.
+- **Private Coupled:** Local/private extensions outside the core tree that intentionally import LychD internals. They are allowed for Magus-owned local power, but they accept refactor coupling. Assimilation may repair them later; it does not make them stable.
+- **Independent Product Surface:** A future distribution tier for extensions intended to survive Core refactors and be shared across implementations. This requires a versioned public API, conformance tests, and Forge-mediated packaging. It is not the active in-process contract today.
 
 #### The Built-in Direct Path
 
 Built-in Extensions (`src/lychd/extensions/builtin/`) are versioned and updated **simultaneously** with the kernel. They are permitted—and expected—to use explicit imports and Abstract Base Class inheritance from the Core. Because they share a single repository and a single release cycle, a core refactor and its built-in extension updates are committed atomically. No upgrade gap exists.
 
-The **Built-in Loader** imports the entire `lychd.extensions.builtin` package tree at boot via `pkgutil.walk_packages`. ABC subclass detection fires automatically upon import; no procedural registration is required.
+The **Built-in Loader** imports the configured `lychd.extensions` package tree at boot via `pkgutil.walk_packages`. `RuneConfig.__subclasses__()` discovery fires automatically upon import. This is acceptable for schema registration because the code is already in-process and version-locked with the Core.
 
-#### The Independent Protocol Path (Mandated Architecture)
+Runtime-facing contributions still use explicit registration when a host surface exists. `register(context)` is the authoritative ledger for boot-time grafting such as routers, controllers, factories, lifecycle hooks, or future command hooks. Schema discovery may remain structural; runtime mutation should be explicit.
 
-Independent Extensions (`extensions/` in the Crypt) are **independent repositories** with independent release cycles. They must **never** import LychD internals.
+#### The Private Coupled Path
 
-!!! warning "The ABC Trap"
-    Independent extension authors must never inherit from LychD base classes or import internal symbols (`from lychd import ...`). Any such coupling creates a hard dependency on a specific internal identifier. When the **[Ouroboros Protocol (18)](18-evolution.md)** rebases the Core, that identifier may be renamed, moved, or removed. The extension's import fails. The Daemon cannot load. A self-update becomes a self-lobotomy.
+Private coupled extensions are local organs that behave like built-ins even though they live outside the core tree. They may import internal modules such as `lychd.config.runes` and may subclass `RuneConfig`.
 
-The correct contract for an Independent Extension is the **Extension Protocol**: a structural law, not an inheritance chain. Core protocol fragments are defined centrally in `src/lychd/extensions/` using Python's `@runtime_checkable Protocol`. In the current doctrine, that law is layered:
+This path is intentionally powerful and intentionally unsafe as a stability contract. It is appropriate for the Magus, local experiments, and organs expected to be rewritten with the Core. It is not appropriate for sovereign third-party distribution unless the author accepts breakage across Ouroboros evolution.
 
-- **Schema Branch:** The Codex loader looks for schema classes exposing the discovery shape (today: `relative_path`, `singleton`, and related schema metadata). This is the branch concretely exercised by the independent Crypt scan in the current source.
-- **Registration Branch:** Organs participating in in-process boot grafting expose `register(context: ExtensionContext)` and bind through the host-provided context surface.
-- **Binary Branch:** Compiled `.so` organs may expose the same Python-visible shapes through PyO3 or equivalent bindings.
+The Assimilation/Smith path may later migrate a private coupled organ after a refactor. That is a repair mechanism, not a compatibility guarantee.
 
-If these shapes are present, the organ is assimilable. The answer is independent of the module's origin, import history, or Python heritage.
+#### The Independent Product Path (v1+)
 
-**The Independent Loader** is mandated to use `importlib.machinery` (e.g., `SourceFileLoader` for `.py` files, `ExtensionFileLoader` for compiled `.so` artifacts) to load files directly from the Crypt path without requiring the extension to be installed as a Python package on `sys.path`. This decouples the loading mechanism from Python's packaging layer entirely.
+Independent in-process extensions are a v1+ product target, not the pre-v1 foundation. A public API can reduce import-path breakage only if LychD commits to versioned semantics, compatibility tests, and a small surface that is actually kept stable. Without those commitments, a dependency-light SDK would duplicate internal concepts while still coupling authors to LychD lifecycle timing, registry semantics, Codex loading order, Pydantic behavior, and process trust.
 
-#### Cross-Language ABI Support
+Therefore, the near-term doctrine is:
 
-Because the contract is a **memory shape** rather than an import tree, Independent Extensions are not restricted to Python. A module compiled from **Rust via PyO3** to a `.so` shared object can expose the same Python-visible schema classes and boot hook surface. The Independent Loader's `importlib.machinery.ExtensionFileLoader` loads it identically.
+- Do not build a separate SDK until real third-party distribution pressure exists.
+- Do not promise independent in-process compatibility across arbitrary Core refactors.
+- Do not treat foreign agent frameworks as first-class in-process runtimes. Wrap them behind external-service Animators, A2A Emissaries, or assimilate their useful patterns into LychD's native Pydantic AI agent runtime.
+- Treat Crypt-side source loading as a local/provisional assimilation mechanism unless the extension is pinned, forged, and verified with the composed runtime image.
+- Prefer external-service Animators when a capability needs a true decoupling boundary. "External-service" describes placement and protocol isolation; the exposed capability may be cognitive, observational, procedural, networked, or tool-bearing.
+- Promote only the minimal host surfaces that survive repeated internal use into a future `lychd.extensions.api` module.
 
-This is the **Active Architectural Standard**. LychD is designed from day one to assimilate high-performance binary organs. The ABI is one branch of the Extension Protocol; the implementation language is sovereign.
+The provisional structural scan currently exercises only a narrow schema branch for Python source modules. It is useful for experiments, but it is not the public compatibility product.
 
-| Property | Built-in (Direct Path) | Independent (Protocol Path) |
-| :--- | :--- | :--- |
-| Location | `src/lychd/extensions/builtin/` | `extensions/` (Crypt) |
-| Coupling | Direct internal API + explicit imports ✅ | Extension Protocol + structural shapes |
-| Loader | `pkgutil.walk_packages` | `importlib.machinery` |
-| Languages | Python | Python **and** Rust/PyO3 (`.so`) |
-| Release Cycle | Atomic with Core | Independent |
-| `from lychd import ...` | Permitted | **Forbidden** |
+#### Rune And Runtime Boundary
+
+Extension integration has two separate contracts:
+
+- **Rune Schema:** The extension exposes configuration shape. Coupled Python extensions may subclass `RuneConfig`; provisional structural schemas must be Pydantic-compatible and expose a safe `relative_path`.
+- **Runtime Hydrator:** A factory, adapter, or provider converts a validated rune into the runtime object LychD stores and operates.
+
+A rune schema alone is not a runtime integration. It only makes TOML loadable. If an extension registers a new rune family, it must also provide a hydrator when that rune should become a live Animator, adapter, router, capability provider, or other runtime handle. LychD-facing runtime handles should be `Runic[T]`, meaning they expose a canonical `.rune` provenance attribute.
+
+Foreign engine objects do not need to be `Runic`. A Rust engine, C-backed object, or private Python implementation may keep whatever internal shape it wants. The adapter wraps or translates it into a LychD-facing handle:
+
+```python
+class AphroditeRuntime:
+    def __init__(self, *, rune: AphroditeConfig, engine: object) -> None:
+        self.rune = rune
+        self.engine = engine
+```
+
+This keeps the contract narrow:
+
+- Codex validates configuration.
+- The adapter builds runtime state from configuration.
+- The LychD-facing handle carries `.rune` so provenance is always recoverable.
+- Foreign internals remain sovereign behind the adapter boundary.
+
+#### Cross-Language Organs
+
+Rust/PyO3 binary organs are valid future organs, but there is no stable LychD ABI today. A binary organ may be:
+
+- a coupled in-process organ built inside the composed Forge image and repaired with the Core;
+- a future public-API organ once the API is versioned and tested;
+- an external-service Animator, which is the current true decoupled boundary.
+
+Blind `.so` scans are forbidden. Binary loading must be mediated by the Synthetic Forge manifest, platform validation, and explicit operator consent before it enters runtime import.
+
+| Property | Built-in Direct | Private Coupled | Future Independent Product |
+| :--- | :--- | :--- | :--- |
+| Location | `src/lychd/extensions/builtin/` | Magus-owned Crypt extension space | Forge-managed extension distribution |
+| Coupling | Internal imports and subclasses | Internal imports by choice | Versioned public API only |
+| Loader | Package import + subclass walk | Local import path chosen by operator | Deferred, manifest-gated |
+| Release Cycle | Atomic with Core | Operator-owned | Independent |
+| Stability Promise | Core-maintained | Best effort/local repair | Not promised until productized |
+| `from lychd import ...` | Permitted | Permitted with coupling risk | Only future public API modules |
 
 ### Consequences
 

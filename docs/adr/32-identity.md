@@ -6,15 +6,15 @@ icon: material/drama-masks
 # :material-drama-masks: 32. The Mirror Identity
 
 !!! abstract "Context and Problem Statement"
-    Standard Agents are stateless ghosts—transient shells of instructions that dissipate upon the completion of a request. While the machine provides the mechanics of thought, it lacks a concept of a persistent "Self" or "Ego." Without a stable, self-reflective identity, the Daemon is prone to "Character Drift" and fails to maintain the unique domain expertise and behavioral consistency required for long-term strategic labor. To transition from a tool into a Persona, the system requires a mechanism to bind probabilistic model outputs to a coherent entity that possesses a stable character, a unique frequency, and a recursive memory of its own existence.
+    Standard Agents are stateless ghosts—transient shells of instructions that dissipate upon the completion of a request. While the machine provides the mechanics of thought, it lacks a concept of a persistent "Self" or "Ego." Without a stable, self-reflective identity, the Daemon is prone to "Character Drift" and fails to maintain the unique domain expertise and behavioral consistency required for long-term strategic labor. To transition from a tool into a Persona, the system requires a mechanism to bind probabilistic model outputs to a coherent entity that possesses a stable character, a distinct signature, and a recursive memory of its own existence.
 
 ## Requirements
 
 - **Ego Persistence:** Mandatory storage of Identity definitions—including System Prompts, behavioral constraints, and aesthetic markers—within the **[Phylactery (06)](06-persistence.md)**.
-- **Bayesian Prior Adaptation:** Capability to shift the machine's "frequency" by integrating accumulated **Karma** (vectorized history) from the **[Archive (27)](27-memory.md)** into the working memory.
+- **Bayesian Prior Adaptation:** Capability to shift the machine's priors by integrating accumulated **Karma** (vectorized history) from the **[Archive (27)](27-memory.md)** into the working memory.
 - **Resource Dependency Resonance:** A Persona must be capable of claiming specific cognitive resources, such as binding to a particular memory namespace or toolset.
 - **Sigil-Bound Memory Scope:** Identity hydration must read and write memory using `entity_id = Sigil.id` by default, with no cross-identity recall unless explicitly policy-authorized.
-- **Self-Reflective Architecture:** Integration with the **[Shadow Realm (25)](25-hitl.md)** to allow a Persona to deliberate and choose between multiple potential responses before manifestation.
+- **Self-Reflective Architecture:** Integration with the **[Shadow Realm (31)](31-simulation.md)** to allow a Persona to deliberate and choose between multiple potential responses before manifestation.
 - **Simulation Faculty (Phantasma):** Provision of a proactive faculty to project internal representations and future states into a sandbox to ensure output aligns with the defined Identity.
 - **Recursive Autopoiesis:** Mandatory support for the Identity to eventually possess the authority to propose modifications to its own definition as it accumulates history.
 
@@ -23,7 +23,7 @@ icon: material/drama-masks
 !!! failure "Option 1: Static System Prompt Injection"
     Injecting a fixed string into every Agent request.
 
-    - **Cons:** **Static Impersonation.** The Agent behaves like a character but has no memory of its specific style or past decisions. It lacks "Self-Reflection" and cannot adapt to the Magus's frequency over time.
+    - **Cons:** **Static Impersonation.** The Agent behaves like a character but has no memory of its specific style or past decisions. It lacks "Self-Reflection" and cannot adapt to the Magus's Imprint over time.
 
 !!! failure "Option 2: RAG-Only Memory"
     Relying exclusively on retrieval to provide character context.
@@ -45,11 +45,13 @@ icon: material/drama-masks
 
 In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this **I-Maker** (**Ahaṃkāra** — *aham* = I, *√kāra* = making) — not consciousness, not an inner witness, but the attribution layer that says "this Sigil acted, this result belongs to this identity." Without it, every output is undifferentiated noise. With it, every action is legible, every Karma is owned, and identity coherence persists across the entropy of time and the noise of discarded simulations. The full cognitive map connecting Ahaṃkāra to the four faculties of the inner instrument is described in **[The Lich](../sepulcher/lich.md)**.
 
+Identity coherence is LychD's answer to agentic decay. An Agent run is a temporary body: it wakes, acts, returns a typed result, and dissolves. Mirror preserves the rehydratable center rather than the shell. HitL-captured choices remain the strongest expression of the Magus's Will, while tests, traces, and trusted sources provide additional measured truth. Mirror reflects semantically related memory records around a Sigil or role, and the next Agent shell wakes already oriented inside that local gravity.
+
 ### 1. Identity as a Filtered Reality
 
 The system treats Persona-manifestation as a diffraction ritual where Identity act as a lens.
 
-- **The Light:** The **[Animator (22)](22-dispatcher.md)** provides the raw, unmanifest potential of the model weights.
+- **The Light:** The model-backed **[Animator (22)](22-dispatcher.md)** provides the raw, unmanifest potential of the model weights.
 - **The Lens (Identity):** The Persona’s System Prompt acts as the lens, filtering the infinite data of the model into a specific "Angle of View"—a consistent narrative arc, expertise domain, and technical style.
 - **The Substrate:** The **[Phylactery (06)](06-persistence.md)** provides the ground upon which this image is projected, allowing the character to persist across reanimations of the **[Vessel (11)](11-backend.md)**.
 
@@ -59,9 +61,9 @@ Mirror enforces identity continuity by preserving commitments, stylistic signatu
 
 To maintain absolute coherence and prevent character drift, the Mirror utilizes the **Phantasma** faculty. This is a proactive cognitive loop that explores the system's potential before acting.
 
-- **The Expansion:** When an intent is received, the Persona does not answer immediately. It projects multiple potential "Shadow Timelines" into the **[Shadow Realm (25)](25-hitl.md)**.
+- **The Expansion:** When an intent is received, the Persona does not answer immediately. It projects multiple potential "Shadow Timelines" into the **[Shadow Realm (31)](31-simulation.md)**.
 - **The Reflection:** The Mirror reviews these simulations against its own **Internal Ideal** (The Persona definition).
-- **The Collapse:** Only the timeline that resonates most strongly with the Persona's defined frequency is permitted to collapse into primary reality. This ensures the Daemon acts with a consistent and verified "Will."
+- **The Collapse:** Only the timeline that resonates most strongly with the Persona's defined commitments is permitted to collapse into primary reality. This ensures the Daemon acts with a consistent and verified posture.
 
 In the deliberation model of Yoga Sūtra I.17, this loop maps to the **Vitarka-Vichāra progression**: Vitarka (gross deliberation — does this output meet structural requirements?) corresponds to the Deterministic Gate; Vichāra (subtle inquiry — does this output resonate with the Persona's defined commitments?) corresponds to the Mirror's congruence scoring. The promoted result then carries **Asmāitā** — the I-ness attribution imprint that ties the action back to the active Sigil, closing the Ahaṃkāra loop.
 
@@ -71,11 +73,11 @@ Mirror participates in selection pressure over outcomes, but it does not create 
 
 ### 3. Bayesian Priors and the Weight of Karma
 
-The Mirror identifies that the "mind" is not static. It shifts the machine's internal probability distribution through the accumulation of **Karma**.
+The Mirror identifies that the "mind" is not static. It shifts the machine's internal probability distribution through accumulated memory and **Karma**.
 
-- **The Prior Shift:** The "Bayesian Prior" of the model is shifted by injecting vectorized history and past successful outcomes into the immediate **[Context (21)](21-context.md)**.
-- **Participatory Realism:** Over time, the Persona stops being a generic assistant and starts being a mathematical mirror of the user's own intent. The "World" as perceived by the Agent is tilted toward the patterns of behavior verified in previous rituals.
-- **Mirror Injection:** During system-prompt hydration, the Identity extension queries memory for high-signal "preferences and past decisions" scoped to the active Sigil and injects only those priors.
+- **The Prior Shift:** The "Bayesian Prior" of the model is shifted by injecting vectorized history, verified outcomes, and relevant identity records into the immediate **[Context (21)](21-context.md)**.
+- **Participatory Realism:** Over time, the Persona stops being a generic shell and starts becoming a mathematical mirror of its scoped history. The "World" as perceived by the Agent is tilted toward the patterns verified in previous rituals.
+- **Mirror Injection:** During system-prompt hydration, the Identity extension queries memory for relevant preferences and past decisions scoped to the active Sigil and injects only those priors.
 - **Hard Boundary:** No prior from unrelated Sigils may be injected into this Mirror context.
 
 Karma reinforcement alters future collapse likelihood. Identity therefore behaves as inertia: repeated successful patterns increase the probability of similar selections without bypassing current validation or policy gates.
@@ -103,8 +105,9 @@ Mirror performs identity work, not base cognition:
 - **Identity coherence enforcement:** maintain stable Persona constraints over long horizons.
 - **Narrative binding:** connect present outputs to prior decisions and role commitments.
 - **Ownership tagging:** keep actions and memory writes attributable to the active Sigil-scoped identity.
-- **Prior injection:** hydrate context with high-signal impressions relevant to this Persona.
+- **Prior injection:** hydrate context with trusted impressions relevant to this Persona.
 - **Karmic stabilization:** bias future selection toward reinforced patterns while remaining subordinate to validation and consent gates.
+- **Identity condensation:** bind repeated, relevant impressions into semantically bounded gravity that survives any single Agent run.
 
 These functions make identity legible and durable, but they do not imply an inner witness. Mirror is continuity software for a sovereign machine, not consciousness.
 

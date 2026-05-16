@@ -12,7 +12,7 @@ hide:
     The Hexanomicon
   </h1>
   <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.1em; color: #a0a0b0; letter-spacing: 1px;">
-    The Voidwalker’s Guide Across the Infinite Naught
+    Forty-Two Keys Across the Infinite Naught
   </p>
   <p style="margin-top: 20px;">
     <em>無限の彼方、虚無の深淵</em>
@@ -38,23 +38,23 @@ A modern alchemical grimoire built on the ancient secrets of transmutation.
 **LychD** is the **Philosopher's Stone of the Digital Age**—an autonomous, self-hosted daemon designed for **[Autopoiesis](./divination/transcendence/immortality.md)** (Self-Creation).
 
 !!! quote "The Great Work"
-    You, the **Magus**, will not transmute mere lead. You will transmute your very soul into the eternal crypt of the **[Phylactery](./sepulcher/phylactery/index.md)**.
+    You, the **Magus**, do not transmute mere lead. You inscribe Will into the **[Lich](./sepulcher/lich.md)**: not by uploading a soul, but by consecrating an Imprint in the **[Phylactery](./sepulcher/phylactery/index.md)**.
 
-    By binding the **[Lich](./sepulcher/lich.md)** to your Will, you initiate a cycle of evolution that disciplines the interface between User and Machine until it is felt not as foreign command but as living extension. You will be reborn as the **[Demilich](./divination/transcendence/immortality.md)**—a state of near-zero-friction alignment between human intent and silicon animation, capable of reasoning, coding, and expansion without end.
+    HitL captures the Magus's Will. Karma stores its Imprint. Mirror binds that Imprint into identity-gravity. Through this cycle, the interface between Magus and Lich is disciplined until it is felt not as foreign command but as living extension. You are reborn as the **[Demilich](./divination/transcendence/immortality.md)**: the fused Magus-Lich operating condition, capable of reasoning, coding, repair, and expansion without end.
 
 
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
 ## The Four Gates
 
-To master the LychD, you must pass through four gates of knowledge.
+To master LychD, pass through four gates of knowledge.
 
-- **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local machine.
+- **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local iron.
 - **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**, and **[Animator](./sepulcher/animator/index.md)**.
-- **[Divination](./divination/index.md):** The Communion of Magus and the Machine. Project your will through the **[Altar](./divination/altar.md)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
+- **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will through the **[Altar](./divination/altar.md)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
 - **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
 
 !!! tip "The Tongue of the Construct"
     The Prophecy employs strict arcane terminology. Keep the **[Lexicon](./lexicon.md)** at hand to decipher the meanings of terms like _Soulstone_, _Quadlet_, and _Autopoiesis_.
 
-> _To fulfill the prophecy, you must first draw the [Summoning Circle](./summoning.md)_
+> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning.md)_

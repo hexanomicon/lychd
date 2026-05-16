@@ -74,7 +74,7 @@ def bind_quadlets() -> None:
     1. Loads Settings and Soulstones from the Codex.
     2. Reconciles secret references against Podman secret storage.
     3. Calculates the Law of Exclusivity (Animation Domain).
-    4. Generates Systemd Quadlet files (Runes) with Git versioning (System Domain).
+    4. Generates Systemd Quadlet manifest files with Git versioning (System Domain).
     5. Reloads the Systemd User Daemon.
     """
     import secrets
@@ -118,15 +118,15 @@ def bind_quadlets() -> None:
     if created:
         console.print(f"  [dim]Provisioned secrets: {', '.join(created)}[/]")
 
-    # 2. Summon the Alchemist (Transmutes Soulstones into Runes)
+    # 2. Summon the Alchemist (Transmutes Soulstone Runes into Quadlet manifests)
     runtime_planner = RuntimeAdapterRegistry()
     transmuter = Transmuter(runtime_planner=runtime_planner)
-    runes = transmuter.transmute_all(soulstones, portals=portals)
+    manifests = transmuter.transmute_all(soulstones, portals=portals)
 
-    # 3. Summon the Scribe (Writes Runes with Atomic Inscription)
+    # 3. Summon the Scribe (Writes Quadlet manifests with Atomic Inscription)
     scribe = ScribeService()
-    with console.status("[bold blue]Transmuting Soulstones into Runes...", spinner="moon"):
-        scribe.generate_all(runes)
+    with console.status("[bold blue]Transmuting Soulstone Runes into Quadlet manifests...", spinner="moon"):
+        scribe.generate_all(manifests)
 
     # 4. Reload Daemon (The "Bind" part)
     systemctl = shutil.which("systemctl")

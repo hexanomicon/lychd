@@ -30,7 +30,7 @@ class Connector(ABC):
     """Base connector for a runtime animator.
 
     A connector encapsulates protocol details and endpoint path expansion. It
-    hides how an animator's base URL is turned into callable model/tool
+    hides how an animator's base URL is turned into callable capability
     surfaces. Concrete connectors may support one or many capabilities by
     inheriting the mixins below.
 
@@ -50,6 +50,11 @@ class Connector(ABC):
     def link(self) -> Link:
         """Return the current readiness snapshot for orchestration."""
         ...
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        """Return connector-owned diagnostics or runtime metadata."""
+        return {}
 
 
 class ModelConnector(ABC):

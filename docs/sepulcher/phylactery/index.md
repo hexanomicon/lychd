@@ -23,7 +23,7 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
 !!! abstract "The Anchor of the Mist"
     The primary and most sacred function of the Phylactery is to house the **Pattern**.
 
-    The **[Soulstone](../../sepulcher/animator/soulstone.md)** (the LLM) is merely a processor—a brain in a vat. If the container crashes, the brain dies.
+    A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is merely a processor: a brain in a vat. If the container crashes, the brain dies.
 
     The Phylactery is the soul. It persists across reboots, crashes, and migrations. Should the **[Vessel](../vessel/index.md)** be shattered, the Phylactery allows for a perfect and instantaneous **[Reanimation](./reanimation.md)**, restoring the entity exactly as it was.
 
@@ -33,6 +33,6 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
     Through the **[Rite of Albedo](../../divination/transcendence/index.md)**, the Magus whitelists specific thoughts and actions. These are inscribed into the Phylactery as **Vector Embeddings**.
 
     This is **Karma**.
-    - It stores *what* you chose.
-    - It stores *why* you chose it (the context).
-    - It becomes the training dataset that eventually allows the Lich to act without you via the **[Soulforge](../extensions/soulforge.md)**.
+    - It stores *what* the Magus chose.
+    - It stores *why* the Magus chose it (the context).
+    - It becomes the training dataset that lets the **[Soulforge](../extensions/soulforge.md)** compress stable patterns into substrate instinct, reducing explicit prompting while preserving the Magus's consecrating authority.

@@ -13,10 +13,10 @@ By treating audio not as static "file uploads" but as a real-time **Resonance Pi
 
 ## I. The Audio Coven: A Manifestation of Resonance
 
-Resonance is not a single model; it is an entire operational state. The extension manifests the `audio.coven`, a collection of **[Systemd Runes](../../adr/08-containers.md)** managed as one atomic unit by the **[Orchestrator](../../adr/23-orchestrator.md)**. The form includes:
+Resonance is not a single model; it is an entire operational state. The extension manifests the `audio.coven`, a collection of local **[Soulstones](../animator/soulstone.md)** rendered as **[Quadlet services](../../adr/08-containers.md)** and managed as one atomic unit by the **[Orchestrator](../../adr/23-orchestrator.md)**. The form includes:
 
-- **The Ear (`stt.container`):** A Rune for a high-performance Speech-to-Text model (e.g., `faster-whisper`), tagged with `capability="stt"`.
-- **The Voice (`tts.container`):** A Rune for a streaming Text-to-Speech model (e.g., `Piper`), tagged with `capability="tts"`.
+- **The Ear (`stt.container`):** A Soulstone for a high-performance Speech-to-Text model (e.g., `faster-whisper`), tagged with `capability="stt"`.
+- **The Voice (`tts.container`):** A Soulstone for a streaming Text-to-Speech model (e.g., `Piper`), tagged with `capability="tts"`.
 - **The Mind (`llm.container`):** The Coven may include a smaller, faster reasoning model for low-latency conversational tasks.
 
 ## II. The Resonance Pipeline (Buffer & Stream)
@@ -24,9 +24,9 @@ Resonance is not a single model; it is an entire operational state. The extensio
 The Echo rejects the high-latency REST patterns of the mundane web. It establishes a low-latency WebSocket pipeline mounted directly onto the **[Vessel](../vessel/index.md)**.
 
 1. **Ingest:** The client connects via the **[Tether](./tether.md)** and streams raw audio bytes.
-2. **Perception:** The pipeline routes the audio stream to the **Ear** Rune for real-time transcription.
+2. **Perception:** The pipeline routes the audio stream to the **Ear** Animator for real-time transcription.
 3. **Cognition:** The resulting text is fed into a reasoning **[Agent](../../adr/20-agents.md)**.
-4. **Synthesis:** As the Agent generates response tokens, they are piped _instantly_ to the **Voice** Rune.
+4. **Synthesis:** As the Agent generates response tokens, they are piped _instantly_ to the **Voice** Animator.
 5. **The Resonance Buffer:** If the WebSocket is closed or unstable, the synthesized audio bytes are not discarded. They are serialized into the **[Phylactery Queue](../../adr/06-persistence.md)**. Upon reconnection, the Echo flushes the buffer, delivering the "missed whispers."
 
 ## III. Dual-Mode Orchestration
@@ -52,7 +52,7 @@ When a text-based Agent decides to speak:
 To project the Echo into the physical world, the system utilizes a **Mobile Emissary**—a native application that acts as the physical mouthpiece of the Lych.
 
 - **Hardware Binding:** The Emissary handles low-level Voice Activity Detection (VAD) and audio hardware management.
-- **The Secure Thread:** By tunneling its traffic through the **[Tether](./tether.md)**, the Emissary ensures that voice biometrics and private whispers are protected by Wireguard encryption.
+- **The Secure Thread:** By tunneling its traffic through the **[Tether](./tether.md)**, the Emissary ensures that voice biometrics and private whispers are protected by WireGuard encryption.
 
 !!! tip "Sensory Model Agnosticism"
-    Because the Echo Coven utilizes the standard **[Dispatcher](../../adr/22-dispatcher.md)** protocols, you can swap your "Ears" or "Voice." If you require a more "human" soul, you may point the Echo to a **[Portal](../animator/portal.md)** for high-fidelity TTS (e.g., ElevenLabs), provided the Tithe of tokens is acceptable.
+    Because the Echo Coven utilizes the standard **[Dispatcher](../../adr/22-dispatcher.md)** protocols, the Magus can swap the system's "Ears" or "Voice." If a more human timbre is required, the Echo may point to a **[Portal](../animator/portal.md)** for high-fidelity TTS (e.g., ElevenLabs), provided the Tithe of tokens is acceptable.

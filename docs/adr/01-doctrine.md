@@ -1,5 +1,4 @@
 ---
-
 title: 1. Philosophy
 icon: material/feather
 ---
@@ -128,9 +127,9 @@ flowchart TD
 ### Consequences
 
 !!! quote "The Final Truth"
-    "It is like a finger pointing away to the moon. Don't concentrate on the finger or you will miss all that heavenly glory." — Bruce Lee
+    The rite is not the moon. It is the finger pointing into the dark.
 
-**Follow Your Own Path.**
+**The Path Remains Local.**
 
 XP, DDD, TDD, SDD/RDD—these are all fingers pointing to the moon. The method is not the magic. The best of the past has been distilled to create a system of Grandeur, but the ultimate goal is the fulfillment of the [Prophecy](../index.md), not religious adherence to this document.
 

@@ -1,16 +1,25 @@
 """Animation domain public surface.
 
 This package now exposes the new runtime core (animators/connectors/link) and
-the schema layers (rune configs + connector model summaries). Builtin extension
+the schema layers (TOML Runes + connector model summaries). Builtin extension
 implementations are not re-exported here; they live under ``extensions``.
 """
 
 from lychd.domain.animation.animators import Animator, Portal, Soulstone
+from lychd.domain.animation.capabilities import (
+    CapabilityFamily,
+    CapabilityGrant,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
+    ConcurrencyIntent,
     ExternalToolConfig,
+    GenerationProfile,
+    GenericSoulstoneConfig,
     LLMGenerationConfig,
     LLMGenerationDefaults,
     LocalLLMModelConfig,
@@ -26,8 +35,15 @@ from lychd.domain.animation.schemas import (
 __all__ = [
     "Animator",
     "AnimatorConfig",
+    "CapabilityFamily",
+    "CapabilityGrant",
+    "CapabilitySpec",
+    "CapabilityState",
+    "ConcurrencyIntent",
     "Connector",
     "ExternalToolConfig",
+    "GenerationProfile",
+    "GenericSoulstoneConfig",
     "LLMGenerationConfig",
     "LLMGenerationDefaults",
     "Link",

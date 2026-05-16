@@ -85,7 +85,7 @@ To support the system's strict egress policies (foreshadowing **[The Dispatcher 
 
     - **Performance:** Binary Transmutation reduces the latency of saving large state objects by orders of magnitude compared to standard handling.
 
-    - **Extension Sovereignty:** An extension author defines a standard Python class, and the system automatically handles the table creation and evolution within the unified body.
+    - **Extension Assimilation:** A coupled extension defines a standard Python class, and the system handles table creation and evolution within the unified body.
 
 !!! failure "Negative"
     - **Migration Complexity:** If two extensions define models with conflicting table names, the migration fails. The system relies on strict namespace conventions to prevent collisions.

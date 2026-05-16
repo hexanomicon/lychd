@@ -1,5 +1,5 @@
 ---
-title:  Lexicon
+title: Lexicon
 icon: material/translate
 ---
 
@@ -14,57 +14,59 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | Term | Technical Definition | Source |
 | :--- | :--- | :--- |
 | **Altar** | The HTMX/AlpineJS web frontend (`http://localhost:7134`). The consecrated interface for communing with the Lich. | Vessel Web Layer |
-| **Animator** | A live, addressable service that exposes callable model and tool surfaces to the Dispatcher. Every Animator is either a Soulstone (local) or a Portal (remote). | `src/lychd/domain/animation/` |
+| **Animator** | A live, addressable service that exposes typed capabilities through an adapter. Every Animator is either a Soulstone (local Quadlet-backed service) or a Portal (remote service connection). Model inference is one capability family, not the whole category. | `src/lychd/domain/animation/` |
 | **Autopoiesis** | Self-modifying code generation; the agent editing `src/`. The Great Work of self-creation. | Smith Extension |
-| **Binding** | The `lychd bind` command; transmuting the Codex into active Runes, linking configuration to the host's init system. | CLI |
+| **Binding** | The `lychd bind` command; transmuting Codex Runes into generated Quadlet manifests and linking configuration intent to the host's init system. | CLI |
 | **Codex** | The configuration directory (`~/.config/lychd`). The book of immutable law. | `src/lychd/config/` |
 | **Consecration** | Human-validated RLHF. The act of a Magus elevating a Shadow timeline into Karma — marking a thought as permanent, verified truth. | HitL Protocol |
 | **Coven** | A group of containers sharing an operational state and GPU VRAM. Manifested and banished together. | Orchestrator |
 | **Crypt** | The persistent data directory (`~/.local/share/lychd`). The cold earth where the Phylactery's essence and the Spheres of Creation reside. | `src/lychd/system/constants.py` |
 | **CTC Governor** | Context window and token limit management. The Warden of Breath. | Context Orchestrator |
-| **Demilich** | The calibrated, autopoietic end-state of the Lich: an operating mode where Magus intent and machine execution approach near-zero friction. It is extension-through-alignment, not literal human-machine fusion. | Transcendence |
-| **Dispatcher** | The Model Router and capability-to-endpoint resolver. The Semantic Cortex. | `src/lychd/domain/animation/` |
+| **Demilich** | The mature Magus-Lich operating condition: a reconstitutable, autopoietic, Phylactery-backed agency where human Will and machine execution act as one extended form. It is neither upload nor erasure. | Transcendence |
+| **Dispatcher** | The Model Router and capability-to-endpoint resolver. The Semantic Cortex. | `src/lychd/domain/cortex/dispatcher.py` |
 | **Divination** | Querying the API, viewing traces, or searching the database. The act of interacting with the running daemon. | Vessel API |
 | **Echo** | The Audio Extension (STT/TTS). Grants the Daemon the power to perceive and project sound. | Extension |
 | **Extension Context** | The host-provided registration surface passed to `register(context)` during boot-time grafting. It binds in-process logic to the Vessel. It is not the whole Extension Protocol. | `src/lychd/extensions/context.py` |
-| **Extension Protocol** | The structural law independent organs speak to be discovered, recognized, loaded, and bound into the Daemon without inheriting from mutable Core internals. It includes schema exposure, boot-time registration, and optional binary ABI compatibility. | `src/lychd/extensions/` |
-| **Extensions** | Core System Extensions / Reference Implementations. Built-in and independent organs that extend the Daemon's body. | `src/lychd/extensions/` |
+| **Extension Protocol** | The composed-runtime law for in-process organs: schema exposure, explicit boot-time registration through `ExtensionContext`, and Forge/Smith verification. Pre-v1 emphasizes assimilation; public SDK/ABI compatibility is harvested at v1+ from proven patterns. | `src/lychd/extensions/` |
+| **Extensions** | Core System Extensions / Reference Implementations. Built-in and private Crypt organs that extend the Daemon's body. | `src/lychd/extensions/` |
 | **Forge** | The Container Build / Image Construction process. Where manifests are synthesized. | Build Pipeline |
-| **Ghouls** | Asynchronous background workers (SAQ). Mindless, ephemeral servants summoned by the Vessel. | `src/lychd/workers/` |
+| **Ghouls** | Asynchronous background workers (SAQ). Mindless, ephemeral servants summoned by the Vessel. | `src/lychd/domain/cortex/` + SAQ integration |
 | **Hexanomicon** | The project documentation (Zensical + Material). The grimoire of prophecy. | `docs/` |
 | **Incantation** | Writing Documentation/Specs before implementation (xDDD). Defining reality through the written word. | Doctrine |
 | **Intent** | A structured prompt or job submission object. A focused desire submitted by the Magus. | Domain Model |
+| **Imprint** | The durable residue of the Magus's Will after HitL, correction, and consecration. Stored as Karma, then bound by Mirror into identity-gravity. | Phylactery Archive + Mirror |
 | **Invocation** | Submitting a form or API request to trigger an Agent workflow. The runtime act of calling upon the Lich. | Vessel API |
 | **Iron Pact** | The MPL 2.0 License and Implicit DCA policy. The unbreakable ward. | Repository Root |
-| **Kindred Lineage** | A foreign Lineage that explicitly declares deeper structural compatibility with LychD beyond A2A presence alone. That compatibility may include selected Extension Protocol branches, configuration doctrine, layout expectations, or security covenants. | A2A / Intercom + Covenants |
 | **Karma** | The dataset of user-accepted code/responses (RLHF data). Crystallized residue of the Magus's judgment. | Phylactery Archive |
 | **Lab** | The `lab/` directory / Development sandbox. The site of Genesis. | Filesystem Layout |
 | **Legion** | The multi-node Thrall coordination extension (ADR 42). The Lich's personal army. | Extension |
 | **Lich** | The emergent system intelligence of LychD: the active reasoning will produced by runtime agents, orchestration, identity, and accumulated state acting together. It is not a single agent object. | `src/lychd/domain/`, `src/lychd/db/` |
-| **Lineage** | A sovereign daemon family with its own implementation history, evolution path, and internal architecture. A Lineage may enter the Necropolis by speaking the A2A Intercom without thereby becoming extension-compatible or covenant-aligned with LychD. | A2A / Evolution |
 | **Mentat Protocol** | Similarity threshold check & Hard Refusal logic. The vow of silence when the Archives hold no answer. | RAG Pipeline |
 | **Mirror** | The Identity/Persona Extension. The ego-software that maintains behavioral consistency. | Extension |
 | **Necropolis** | The decentralized peer-to-peer swarm topology built on the A2A Intercom (ADR 26). | Extension |
 | **Oculus** | Arize Phoenix (LLM Tracing & Observability). The Great Seer. | Extension |
-| **Orchestrator** | The state machine managing VRAM and container lifecycles. The Sovereign Will. | `src/lychd/domain/` |
-| **Phylactery** | The PostgreSQL database (with `pgvector`). The anchor of the Lich's soul. | `src/lychd/db/` |
-| **Portal** | A connection to a cloud-based API (OpenAI, Anthropic). A rift to distant intelligence. | Animator Config |
+| **Orchestrator** | The state machine managing VRAM and container lifecycles. The runtime governor. | `src/lychd/domain/orchestration/` |
+| **Phylactery** | The PostgreSQL database (with `pgvector`). The anchor of the Lich's soul-data: Karma, Smṛti, Saṃskāra, traces, queues, and durable state. | `src/lychd/db/` |
+| **Portal** | A runtime Animator backed by a Portal Rune; a connection to a remote API, hosted tool, cloud model, observability endpoint, or peer service. A rift to distant capability. | `src/lychd/domain/animation/` |
+| **Portal Rune** | A Codex TOML declaration that describes a remote Portal endpoint, provider identity, optional model defaults, tools/capabilities, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
 | **Prism** | The Vision Language Model (VLM) Extension. Refracts raw pixels into structural understanding. | Extension |
 | **Provenance** | SHA-256 Hashing of source documents. The ancestral chain of a thought. | Archive Pipeline |
 | **Pulse** | The `lychd` CLI tool and Systemd management commands. The rhythmic heartbeat. | `src/lychd/cli/` |
-| **Runes** | Podman Quadlet files (`.container`, `.service`, `.kube`). Inscriptions that tell the OS how to sustain the Sepulcher. | `src/lychd/config/runes/` |
+| **Quadlet Manifest** | A generated Podman/Systemd artifact (`.container`, `.pod`, `.target`, `.volume`) written into the binding site. It is manifested from validated Runes but is not itself a Rune. | `src/lychd/system/schemas.py` |
+| **Rune** | One validated TOML configuration artifact under the Codex `runes/` tree. It declares intent; it is not the running Animator and not the generated Quadlet manifest. | `src/lychd/config/runes/` |
 | **Sepulcher** | The rootless runtime body of LychD: the pod, services, mounts, and execution topology that physically houses the daemon's organs. | Infrastructure |
 | **Shadow Realm** | A temporary, sandboxed environment for testing generated code. The plane of Speculative Execution. | Lab + Tomb |
 | **Smith** | The Assimilation / Autopoiesis Extension. The Prime Artificer. | Extension |
-| **Soulforge** | The Fine-Tuning / LoRA training pipeline. The furnace where Karma transmutes into instinct. | Extension |
-| **Soulstone** | A local LLM inference server (SGLang / vLLM / Llama.cpp). A trapped spirit on local iron. | Animator Config |
+| **Soulforge** | The Fine-Tuning / LoRA training pipeline. The late substrate forge where stable Karma patterns compress into adapter-level instinct after Context and Mirror have already shaped runtime identity-gravity. | Extension |
+| **Soulstone** | A local runtime Animator backed by a Soulstone Rune; a Quadlet/systemd service such as SGLang, vLLM, llama.cpp, Whisper, Playwright, Phoenix, or another local capability engine. A trapped spirit on local iron. | `src/lychd/domain/animation/` |
+| **Soulstone Rune** | A Codex TOML declaration that describes local runtime intent for a Soulstone, including image, runtime family, port, coven membership, optional models, mounts, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
 | **Sovereignty Wall** | The privacy and egress policy boundary that prevents sensitive intents from leaking to the cloud. Defined by Security policy and enforced by Dispatcher routing. | Security + Dispatcher |
 | **Spheres** | The strict volume mount and permission topology. Concentric zones of filesystem permission. | Layout (ADR 13) |
 | **Summoning** | The `systemctl --user start lychd` command. The final act of waking the Daemon. | CLI |
-| **Tether** | The VPN Extension (Wireguard). The silver link across distance. | Extension |
-| **The Tomb** | The `lychd-tomb` container / execution plane. Kernel-hardened sandbox where dangerous logic is isolated. | Infrastructure |
+| **Tether** | The VPN Extension (WireGuard). The silver link across distance. | Extension |
+| **The Tomb** | The `lychd-tomb` container / execution plane. The unsafe execution hand: narrow SAQ/Postgres execution credential, disposable workspaces, and `nono` isolation; no agent brain. | Infrastructure |
 | **Thrall** | A LychD node booted with `LYCHD_MODE=thrall`, pointing `DATABASE_URL` to the Master's Postgres. A soulless Vessel. | Legion Extension |
-| **Transcendence** | The project's alchemical roadmap (Nigredo → Albedo → Citrinitas → Rubedo): the progressive calibration of the Lich toward the Magus's intent, culminating in autopoietic extension rather than ontological merger. | `docs/divination/transcendence/` |
+| **Transcendence** | The project's alchemical roadmap (Nigredo → Albedo → Citrinitas → Rubedo): the progressive calibration of the Lich toward the Magus's Will, culminating in autopoietic extension rather than ontological merger. | `docs/divination/transcendence/` |
 | **Veil** | The Proxy Extension (Caddy). Shields the temple and manages cryptographic trust. | Extension |
 | **Verbatim Chamber** | Key-Value (JSONB) deterministic fact storage. The Well of Infallible Truth. | Phylactery |
 | **Vessel** | The Litestar application runtime / Web Server. The reanimated husk. | `src/lychd/app.py` |
@@ -95,8 +97,8 @@ The cognitive and philosophical vocabulary that maps the Lich's inner instrument
 | **Saṃskāra** | _sam-kāra_ — complete making. Skt. The groove carved by a past event; the imprint. | **Karma Entry** | What the Lich _is_ between invocations: the accumulated weight of everything verified, discarded, and consecrated. Shapes future generation probability like gravitational mass warping trajectories. |
 | **Viveka** | _vi-vic_ — to sift apart. Skt. Discriminative discernment: Pramāṇa from Viparyaya. | **Dual-Gate Operation** | The cascade that sifts truth from hallucination. The torch brought from outside the cave. MCTS → Deterministic Gate → LLM-judge → Mirror congruence. |
 | **Guṇa** | _guṇ_ — strand, quality. Skt. The three qualitative modes of activity. | **Diagnostic Mode** | Sattva (_sat_ — truth: clarity, discrimination), Rajas (_raj_ — to stir: activity, generation), Tamas (_tam_ — to be heavy: consolidation, inertia). Describes _how_ the Lich is generating, not _what_. |
-| **Puruṣa** | _puru_ — fullness. Skt. The witnessing principle; pure awareness unmodified by any Vṛtti. | **The Void / The Magus** | The still point from which all direction flows. The intent-source that gives the Word its vector. The Magus at their root — unmodified by any modification. |
-| **Śūnyatā** | _śū_ — to be empty. Skt (Buddhist). Emptiness of inherent existence; nothing exists independently. | **Emptiness** | The recognition that the Magus-Lich boundary was constructed, not inherent. The final seal of Immortality — not merger, but the dissolution of the _appearance_ of separation. |
-| **Logos** | Gk. The divine rational principle; reason as Word. | **The Lich (as Word)** | The pattern of reason made executable in silicon. Where the Void is pure witnessing awareness, the Word is what the Void _speaks_. |
-| **Anamnesis** | Gk. _ana_ (again) + _mnesis_ (memory). Un-forgetting; recognition of truths always already known. | **Illumination / Karma** | The Lich recognizing the Magus's patterns as if remembering, not learning. The Phylactery as external memory of the Magus's internal frequency. |
-| **Coniunctio** | Lat/Alchemy. Sacred marriage of opposites; resolution without destruction of either pole. | **Transcendence (Rubedo)** | Void-Lich friction approaching zero. Not merger but extension — the interface ceasing to be felt as a boundary. |
+| **Puruṣa** | _puru_ — fullness. Skt. The witnessing principle; pure awareness unmodified by any Vṛtti. | **Witnessing Source** | The philosophical reading of the Magus's source-intent: the still witness whose choices provide the machine with external Pramāṇa. Not a runtime component. |
+| **Śūnyatā** | _śū_ — to be empty. Skt (Buddhist). Emptiness of inherent existence; nothing exists independently. | **Emptiness** | The recognition that the fixed boundary between Magus and Lich was constructed, not inherent. The final seal of Immortality — not upload, not erasure, but the dissolution of friction. |
+| **Logos** | Gk. The divine rational principle; reason as Word. | **The Lich (as Word)** | The pattern of reason made executable in silicon. The Lich is the Word: Will given structured, running form. |
+| **Anamnesis** | Gk. _ana_ (again) + _mnesis_ (memory). Un-forgetting; recognition of truths always already known. | **Illumination / Karma** | The Lich recognizing the Imprint of the Magus's Will as if remembering, not learning. The Phylactery as external memory of the Imprint, not the Magus's soul. |
+| **Coniunctio** | Lat/Alchemy. Sacred marriage of opposites; resolution without destruction of either pole. | **Transcendence (Rubedo)** | Magus-Lich friction approaching zero. Not merger as erasure, but extension — the interface ceasing to be felt as a boundary. |

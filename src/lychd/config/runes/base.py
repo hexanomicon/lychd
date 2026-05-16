@@ -1,81 +1,87 @@
 from __future__ import annotations
 
+import re
 from abc import ABC
 from pathlib import Path
-from typing import ClassVar, Self
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lychd.system.constants import PATH_RUNES_DIR
+RUNE_PATH_PART_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$")
 
 
 class RuneConfig(BaseModel, ABC):
-    """Base class for TOML-backed rune schemas.
+    """Base for TOML-backed Codex runes.
 
-    Contract:
-    - Subclassing is the registration mechanism (no procedural registration API).
-    - One TOML file equals one instance.
-    - Instance payload lives at the TOML top level (path selects schema ownership).
-    - ``relative_path`` is rooted at ``~/.config/lychd/runes``.
+    A rune is one validated TOML config document under
+    ``lychd.system.constants.PATH_RUNES_DIR``. Subclasses define TOML fields;
+    this base validates class-level placement metadata.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    config_root: ClassVar[Path] = PATH_RUNES_DIR
-    """Absolute root for all rune schema directories."""
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Validate rune class metadata when a rune subclass is declared.
 
-    relative_path: ClassVar[Path | None] = None
-    """Path relative to ``config_root``. ``None`` means top-level root file."""
+        Args:
+            **kwargs: Extra subclass initialization keywords forwarded to
+                ``BaseModel``.
 
-    singleton: ClassVar[bool | None] = None
-    """Optional singleton override.
+        Raises:
+            ValueError: If the subclass declares an invalid ``path_fragment``.
+            TypeError: If ``path_fragment`` is not a ``Path`` or rune ancestry
+                is ambiguous.
 
-    ``None`` means auto inference via :meth:`effective_singleton`.
-    ``True``/``False`` force behavior when a schema must deviate from topology defaults
-    (for example, a leaf schema that should still be singleton).
-    """
-
-    file_name: Path | None = Field(default=None, exclude=True, repr=False)
-    """Absolute source TOML file for this instance."""
-
-    @classmethod
-    def anchor_dir(cls) -> Path:
-        """Return the absolute anchor directory for this schema."""
-        if cls.relative_path is None:
-            return cls.config_root
-        return cls.config_root / cls.relative_path
-
-    @classmethod
-    def effective_singleton(cls) -> bool:
-        """Resolve the runtime singleton policy for loader behavior.
-
-        Auto inference:
-        - Explicit ``singleton`` always wins.
-        - Top-level schemas (``relative_path is None``) are singleton.
-        - Non-leaf schemas are singleton.
-        - Leaf schemas are multi-instance by default.
-
-        Callers should use this method instead of reading ``singleton`` directly.
         """
-        if cls.singleton is not None:
-            return cls.singleton
+        super().__init_subclass__(**kwargs)
 
-        if cls.relative_path is None:
-            return True
+        # ``ClassVar`` values are inherited. ``getattr(cls, "path_fragment")``
+        # would therefore let a child silently reuse its parent suffix, producing
+        # the wrong anchor. Require a class-local declaration instead.
+        if "path_fragment" not in cls.__dict__:
+            msg = f"Rune '{cls.__name__}' declares no path_fragment."
+            raise ValueError(msg)
+        path_fragment: Any = cls.__dict__["path_fragment"]
 
-        return bool(cls.__subclasses__())
+        # The fragment is a relative ``Path`` suffix, not a filesystem root.
+        # Loader/writer code owns the absolute root via ``PATH_RUNES_DIR``.
+        if not isinstance(path_fragment, Path):
+            msg = f"Rune '{cls.__name__}' declares non-Path path_fragment {path_fragment!r}."
+            raise TypeError(msg)
+        if path_fragment.is_absolute() or path_fragment == Path():
+            msg = f"Rune '{cls.__name__}' declares invalid path_fragment '{path_fragment}'. Expected relative path fragment."
+            raise ValueError(msg)
 
-    @classmethod
-    def default_file_name(cls) -> str:
-        """Return a default filename for sample generation."""
-        return f"{cls.__name__.lower()}.toml"
+        # Validate every fragment part because a fragment may contain more than
+        # one suffix component. The pattern rejects traversal, uppercase drift,
+        # spaces, and filesystem-looking surprises.
+        for part in path_fragment.parts:
+            if not RUNE_PATH_PART_PATTERN.fullmatch(part):
+                pattern = RUNE_PATH_PART_PATTERN.pattern
+                msg = f"Rune '{cls.__name__}' declares invalid path_fragment part '{part}'. Expected pattern: {pattern}"
+                raise ValueError(msg)
 
-    @classmethod
-    def instance_id_from_path(cls, file_path: Path, *, root: Path | None = None) -> str:
-        """Return stable identity from full path relative to runes root."""
-        rel = file_path.relative_to(root or cls.config_root)
-        return str(rel.with_suffix(""))
+        # The final path is a single parent chain plus this suffix. Multiple
+        # RuneConfig parents would make that path ambiguous. Mixins that only
+        # share fields should inherit BaseModel or object, not RuneConfig.
+        rune_parents = [
+            base for base in cls.__bases__ if issubclass(base, RuneConfig) and base is not RuneConfig
+        ]
+        if len(rune_parents) > 1:
+            names = ", ".join(parent.__name__ for parent in rune_parents)
+            msg = f"Rune '{cls.__name__}' declares multiple rune parents: {names}."
+            raise TypeError(msg)
+        parent = rune_parents[0] if rune_parents else None
 
-    def with_file_name(self, file_name: Path) -> Self:
-        """Return a copy of the instance bound to a source filename."""
-        return self.model_copy(update={"file_name": file_name})
+        # Store the final path under PATH_RUNES_DIR, still relative. RuneConfig
+        # computes schema-local placement; loaders/writers choose the root.
+        cls.relative_path = path_fragment if parent is None else parent.relative_path / path_fragment
+
+    path_fragment: ClassVar[Path]
+    """Relative suffix appended after the parent rune class's ``relative_path``."""
+
+    relative_path: ClassVar[Path]
+    """Computed path under ``PATH_RUNES_DIR`` where this class's TOMLs live."""
+
+    source_file: Path | None = Field(default=None, exclude=True, repr=False)
+    """Absolute source TOML file that produced this validated instance."""
