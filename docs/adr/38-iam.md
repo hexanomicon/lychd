@@ -40,12 +40,15 @@ icon: material/account-check-outline
 
 **The Scoped Ward** is adopted as the IAM extension. It functions as a filter that determines which parts of the machine are visible to which identity.
 
+This makes IAM the bridge between sovereign individuals and organizational surfaces. A company-facing API, an employee-facing tool surface, and a client-facing portal may all be projections of policy over the same coordination graph without implying that the organization owns the underlying personal Phylacteries or private priors.
+
 ### 1. The Sigil Registry
 
 Identities are stored in a `cabal.identities` table.
 
 - **Master Sigil:** The primary key created at Initialization via **[(CLI ADR 19)](./19-cli.md)**. Possesses the `*` (Universal) scope. Can be bound to a **Nostr Keypair** for global identity.
 - **Guest Sigils:** Created by the Master for external entities. Each is bound to a specific list of **Scopes** (e.g., `echo.read`, `altar.interact`, `a2a.execute`). Can be represented by a **Nostr npub**.
+- **Role Surfaces:** A sovereign stack may expose different wards for personal, work, client, or peer contexts while still preserving one underlying continuity substrate. Separation is achieved through Sigils and policy, not by pretending every role requires a different soul.
 
 ### 1.1 The Nostr Identity Graft
 

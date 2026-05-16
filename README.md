@@ -23,7 +23,7 @@ Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 - 🧠 **Atomic Persistence** — The spirit arises from the data. Code and memory are bound in atomic snapshots (Btrfs/Git/Postgres) within the **[Phylactery](docs/adr/06-persistence.md)**, enabling perfect reanimation and instant rollback.
 - 🔒 **Sandboxed Security** — Double-rootless Podman isolation. The **[Vessel](docs/sepulcher/vessel/)** reasons in one cage while dangerous tools execute in a second, [kernel-hardened sandbox](https://github.com/always-further/nono/) (Landlock) with strictly limited mounts.
 - 🌀 **Speculative Execution** — Explores multiple solution paths in parallel within the **[Shadow Realm](docs/adr/31-simulation.md)**. It inhabits divergent timelines to verify every truth before it is manifested in reality.
-- 🪞 **Persistent Identity** — A digital mirror that learns your frequency. It distills your history into persistent personas via local LoRA fine-tuning, transmuting experience into instinct.
+- 🪞 **Persistent Identity** — A digital mirror that learns your frequency. It distills your history into persistent personas via local LoRA fine-tuning, transmuting experience into instinct. One sovereign stack may host many roles without surrendering one Phylactery per employer, client, or mask.
 - 👁️ **Multimodal Senses** — Native Vision, Audio, and Identity management. Federated peer discovery via the **[A2A Intercom](docs/adr/26-a2a.md)**—sovereign diplomacy across the Necropolis.
 - 🕸️ **Distributed Scale** — One brain, many bodies. Extends your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
 - 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting its own extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**. Independent organs bind through the **Extension Protocol** — a structural discovery and registration law, not ABC inheritance — so they survive self-update cycles intact. High-performance organs can be forged in **Rust/PyO3**; binary ABI compatibility is one branch of that law, not the whole covenant.
@@ -35,6 +35,8 @@ Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
 
 On **your** hardware, with open-source software **you** control, you retain absolute ownership as a sovereign.
+
+In this model, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
 
 - ⛓️ **No masters**
 - 💰 **No tolls**
