@@ -36,9 +36,9 @@ class Transmuter:
     """The Alchemist of Form.
 
     Responsible for:
-    - Transmuting Soulstones into ContainerRunes.
+    - Transmuting Soulstone Runes into Quadlet manifests.
     - Calculating the Law of Exclusivity (Conflicts/Alliances).
-    - Defining the Core Runes (Pod, Phylactery, Oculus).
+    - Defining the core Quadlet manifests (Pod, Phylactery, Oculus).
     """
 
     def __init__(self, runtime_planner: SoulstoneRuntimePlanner | None = None) -> None:
@@ -51,16 +51,16 @@ class Transmuter:
         *,
         portals: list[PortalConfig] | None = None,
     ) -> list[QuadletBase]:
-        """Convert a set of Soulstones into a complete manifest of Runes."""
+        """Convert Soulstone Runes into a complete Quadlet manifest set."""
         settings = get_settings()
-        runes: list[QuadletBase] = []
+        manifests: list[QuadletBase] = []
         resolved_portals = portals or []
 
         # 1. The Sepulcher (Pod)
-        runes.append(self._create_pod(settings))
+        manifests.append(self._create_pod(settings))
 
-        # 2. The Core Rituals (Core Runes)
-        runes.extend(self._create_core_runes(settings, resolved_portals))
+        # 2. The Core Rituals (Core Quadlet manifests)
+        manifests.extend(self._create_core_manifests(settings, resolved_portals))
 
         # 3. Calculate Covens
         covens: dict[str, list[SoulstoneConfig]] = {}
@@ -71,7 +71,7 @@ class Transmuter:
         # 4. Generate Coven Targets
         for group, members in covens.items():
             if len(members) >= MIN_COVEN_MEMBERS:
-                runes.append(
+                manifests.append(
                     QuadletTarget(
                         name=group,
                         description=f"LychD Coven: {group}",
@@ -80,9 +80,11 @@ class Transmuter:
 
         # 5. Transmute Extension Soulstones
         alliances = getattr(settings.lychd, "alliances", [])
-        runes.extend(self._transmute_soulstone(stone, soulstones, covens, alliances, settings) for stone in soulstones)
+        manifests.extend(
+            self._transmute_soulstone(stone, soulstones, covens, alliances, settings) for stone in soulstones
+        )
 
-        return runes
+        return manifests
 
     def _create_pod(self, settings: Settings) -> QuadletPod:
         """Define the physical boundary of the Sepulcher."""
@@ -94,7 +96,7 @@ class Transmuter:
         ]
         return QuadletPod(publish_ports=ports)
 
-    def _create_core_runes(self, settings: Settings, portals: list[PortalConfig]) -> list[QuadletContainer]:
+    def _create_core_manifests(self, settings: Settings, portals: list[PortalConfig]) -> list[QuadletContainer]:
         """Define the persistent services (Vessel, Phylactery, Oculus).
 
         The Vessel mounts all internal and portal-referenced Podman secrets so
@@ -162,7 +164,7 @@ class Transmuter:
         alliances: list[list[str]],
         settings: Settings,
     ) -> QuadletContainer:
-        """Convert a single Soulstone into a ContainerRune."""
+        """Convert a single Soulstone Rune into a Quadlet container manifest."""
         conflicts = self._calculate_conflicts(stone, all_stones, covens, alliances)
 
         # Only list groups that actually Forge into Targets (The Law of the Coven)
@@ -255,6 +257,8 @@ class Transmuter:
             is_allied = bool(other_covens.intersection(allied_covens))
 
             if not is_allied:
+                if current.persistent_resident or other.persistent_resident:
+                    continue
                 # If the other stone is in a 'real' coven, we already conflict with the target.
                 # If not, we must conflict with the service directly.
                 in_real_coven = any(len(covens.get(g, [])) >= MIN_COVEN_MEMBERS for g in other.groups)

@@ -44,7 +44,7 @@ icon: material/cube-outline
 !!! failure "Rejected: Cross-Platform Service Routers (e.g., LlamaSwap)"
     Using a Go-based router to manage container lifecycle, ports, and multi-service conflicts across different operating systems.
 
-    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. Pure, OS-native integration (Systemd) is preferred over application-level reinvention. Other platforms can found their own **Lineages** and commune through the A2A Intercom. If they later adopt deeper covenant compatibility, they may become **Kindred Lineages**.
+    -   **Cons:** **The Cross-Platform Complexity Trap.** Abstraction breaks native integration. Attempting to simulate hardware governance in user-space forces the system to abandon kernel-level `Conflicts=` directives and the double-rootless security model. Pure, OS-native integration (Systemd) is preferred over application-level reinvention. Other platforms can build independent implementations and commune through the A2A Intercom.
 
 !!! success "Chosen: Podman Quadlets (Systemd)"
     Leveraging Podman's ability to generate Systemd unit files from a simple definition.
@@ -71,14 +71,14 @@ The Sepulcher is organized into a strict hierarchy managed by the host's init sy
 
 Metadata for routing lives with logical animator rune schemas/runtime animators, not in the generated Quadlet manifests. The **[Dispatcher (22)](22-dispatcher.md)** consumes that logical layer while this ADR governs the physical container topology.
 
-Capabilities define what a Coven can do (e.g., `TTS`, `reasoning`), and are tracked with two critical state attributes:
+Capabilities define what an Animator can do (for example `chat`, `vision`, `tts`, or adapter-defined families), and are tracked with two critical state attributes:
 
 - **`is_static: bool`**: Indicates if the capability is permanently baked into the container. If static, it is always available as soon as the container boots.
 - **`is_active: bool`**: Indicates if the capability is currently ready to receive requests. For dynamic containers (like `llama.cpp` or vLLM) that can swap models internally without restarting, a capability might not be static—meaning the Orchestrator must invoke a model load before that specific capability flips to `is_active`.
 
 ### 3. Covens: The Law of Exclusivity
 
-To manage finite hardware, containers are organized into **Covens** (groups). The system operates under **"Implicit Exclusivity, Explicit Alliances"**: every Coven is hostile to every other Coven by default.
+To manage finite hardware, containers are organized into **Covens** (groups). The system operates under **"Implicit Exclusivity, Explicit Alliances"**: every Coven conflicts with every other Coven by default.
 
 - **The Coven (`groups`):** A container belongs to one or more Covens.
 - **The Alliance (`alliances`):** Only Covens listed together are permitted to run concurrently.
@@ -121,16 +121,16 @@ The inscription pipeline (via the Scribe service) implements a transactional upd
 
 This atomicity covers generated unit manifests only. Durable state snapshots and Btrfs/COW recovery semantics are handled by **[Snapshots (07)](07-snapshots.md)** over the **[Layout (13)](13-layout.md)** persistence regions.
 
-### 9. Quadlets as Manifestations of Animators
+### 9. Quadlets as Manifestations of Local Animators
 
-Physical Quadlets are transmuted from logical **Soulstone rune configs** and paired by stable service identity. Metadata is decoupled: the physical unit file contains infrastructure logic, while the Animator layer handles provider/model/tool discovery for the Dispatcher.
+Physical Quadlets are transmuted from logical **Soulstone Runes** and paired by stable service identity. Metadata is decoupled: the physical unit file contains infrastructure logic, while the Animator layer handles adapter/capability discovery for the Dispatcher, Orchestrator, Graph, and extension surfaces. Model and tool discovery are common capability families, not the limit of the pattern.
 
 ### 10. llama.cpp Router Presets (`--models-preset`)
 
 The `llama-server` router mode supports a models preset `.ini` file (`--models-preset`) that defines per-model launch arguments and global defaults. This capability is adopted as a first-class container behavior for `llama.cpp` covens.
 
 - **Dual-Layer Control Plane:**
-    - **Static Layer (Codex Rune):** Coven identity, topology, and hardware governance (`always_on`, alliances, exclusivity).
+    - **Static Layer (Codex Rune):** Coven identity, topology, and hardware governance (`groups`, `alliances`, `dedicated`, `persistent_resident`).
     - **Dynamic Layer (Router Preset):** In-server model loading profiles, per-model runtime knobs, and router defaults.
 - **Soft-Swap Priority:** If a `llama.cpp` coven is already warm, model transitions should prefer router-native `/models/load` behavior over physical container restarts.
 - **Hard-Swap Boundary:** Kernel-level `Conflicts=` and coven target transitions remain authoritative for cross-coven VRAM reclamation.

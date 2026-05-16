@@ -9,9 +9,11 @@ icon: material/hubspot
 
 LychD employs a strict philosophy of **Dogfooding**. The core kernel remains a minimal vessel for routing and state. Every advanced capability—from the API Proxy to the Swarm Protocol—functions as an **Extension**.
 
-This architecture proves the **[Extension Protocol (ADR 05)](../../adr/05-extensions.md)**: the system constructs itself using the same tools available to the Magus.
+This architecture proves the **[Extension Protocol (ADR 05)](../../adr/05-extensions.md)**: the system constructs itself using the same tools available to the Magus. LychD's first extension boundary is not compatibility; it is assimilation.
 
-Each extension is more than a plugin. It is an organ with a fantasy, a discipline, and a jurisdiction:
+Read that boundary narrowly: pre-v1 in-process organs are composed with the body they join; durable compatibility is reserved for surfaces that LychD explicitly versions and tests.
+
+Each extension is more than a plugin-era module. It is an organ with a fantasy, a discipline, and a jurisdiction:
 
 - **The Watchers** see and remember.
 - **The Threshold Rites** secure the border.
@@ -22,25 +24,33 @@ Read this section not as a package index but as an anatomy of powers. Each page 
 
 ## 🏛️ The Federation of Fifteen
 
-Fifteen official extensions form the complete body of the Daemon. They reside in the `extensions/` directory, each a standalone repository within the Federation.
+Fifteen official extension domains form the planned body of the Daemon. Near-term built-ins live under `src/lychd/extensions/builtin/` and evolve atomically with the Core. Private Crypt organs may live under `~/.local/share/lychd/extensions/` as Forge-composed repositories, but that location does not by itself create a stable third-party API contract.
+
+Source-map note: doctrine names are domain names, not guaranteed package slugs. Current built-in source uses functional package names such as `animator`, `observability`, `vpn`, `proxy`, `iam`, `workflow`, `webcrawler`, `assimilation`, `training`, `video`, `audio`, `simulation`, `identity`, and `swarm`.
+
+| Doctrine Domain | Current Source Mapping |
+| :--- | :--- |
+| Prism / Vision | Official domain; current source exposes the media substrate through `video` while the full `vision.coven` surface matures. |
+| Riddle / Evaluation | Official domain; no dedicated built-in package has landed yet. Evaluation work currently routes through simulation/Tomb execution doctrine. |
+| Toll / Economics | Official domain; no dedicated built-in package has landed yet. |
 
 | Name | Domain | Sigil | Function | ADR |
 | :--- | :--- | :--- | :--- | :--- |
 | **[The Oculus](./oculus.md)** | **Observability** | :material-eye-outline: | Records the **Thought Trace** and monitors physical hardware health. | **[29](../../adr/29-observability.md)** |
-| **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a Wireguard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
+| **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a WireGuard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
 | **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
 | **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
 | **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Litanies** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
 | **[The Scout](./scout.md)** | **Ingestion** | :material-navigation-variant-outline: | Wields a **Dual-Mode** browser to harvest internet knowledge. | **[30](../../adr/30-webcrawler.md)** |
 | **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-wrench: | Drafts code and executes the autonomous **Evolution** of the system. | **[35](../../adr/35-assimilation.md)** |
 | **[The Soulforge](./soulforge.md)** | **Training** | :material-anvil: | Transmutes Karma into model weights via **LoRA** fine-tuning. | **[33](../../adr/33-training.md)** |
-| **[The Riddle](./riddle.md)** | **Evaluation** | :material-help-rhombus-outline: | Evaluates the performance of the models in the agentic harness | **[34](../../adr/34-evaluation.md)** |
+| **[The Riddle](./riddle.md)** | **Evaluation** | :material-help-rhombus-outline: | Evaluates model performance in the agentic harness. | **[34](../../adr/34-evaluation.md)** |
 | **[The Toll](./toll.md)** | **Economics** | :material-cash-register: | Enforces **x402** payments and trades VRAM for Tithes. | **[41](../../adr/41-x402.md)** |
 | **[The Prism](./prism.md)** | **Vision** | :material-pyramid: | Manages the **Vision Coven** to perceive and analyze pixel data. | **[36](../../adr/36-vision.md)** |
 | **[The Echo](./echo.md)** | **Audio** | :material-waveform: | Operates the **Resonance Pipeline** for real-time speech. | **[37](../../adr/37-audio.md)** |
 | **[The Shadow](./shadow.md)** | **Simulation** | :material-brightness-6: | Deliberative reasoning engine that projects potential futures. | **[31](../../adr/31-simulation.md)** |
 | **[The Mirror](./mirror.md)** | **Identity** | :material-mirror: | Maintains persistent **Personas** and shifts Bayesian Priors. | **[32](../../adr/32-identity.md)** |
-| **[The Legion](./legion.md)** | **Swarm** | :material-account-multiple-plus: | The imperator's army of Thralls. | **[42](../../adr/42-legion.md)** |
+| **[The Legion](./legion.md)** | **Swarm** | :material-account-multiple-plus: | The Magus's army of Thralls. | **[42](../../adr/42-legion.md)** |
 
 
 ---
@@ -51,11 +61,23 @@ Every extension, from simple script to complex multi-module architecture, adhere
 
 ### I. The Extension Protocol
 
-An independent organ must provide a valid `pyproject.toml` and the structural shapes required by the **Extension Protocol**. One branch exposes schema classes the Codex can discover. Another governs optional in-process boot grafting when an organ is actually loaded into the runtime. This layered handshake prevents organ rejection during the system boot sequence.
+An in-process organ participates in the composed runtime image. Pre-v1 organs are intentionally coupled: they may import LychD internals, expose `RuneConfig` subclasses, and rely on Forge/Smith verification when the Core changes. One branch exposes schema classes the Codex can discover. Another governs optional in-process boot grafting through `register(context)` when an organ binds runtime-facing logic.
+
+Inside the body, couple and repair. Across bodies, speak protocols. Public SDK/ABI later.
+
+### Ia. Compatibility Tiers
+
+Not every organ promises the same stability:
+
+- **Built-in Direct:** Core-maintained organs in `src/lychd/extensions/builtin/`. They may import internals because they evolve with the Core.
+- **Private Coupled:** Magus-owned local organs that intentionally import internals for speed and power. They are valid local work, but refactors may break them.
+- **Future Independent Product:** Shareable organs that target a future versioned public API and conformance suite. This is harvested at v1+ from patterns that survived real use.
+
+Use the private coupled tier when local velocity matters more than long-term compatibility. Use an external-service Animator when the organ needs a true isolation boundary today. Treat independent in-process compatibility as future product work, not current doctrine.
 
 ### II. The Genetic API (ExtensionContext)
 
-The `ExtensionContext` is the host-provided registration surface used during boot-time grafting. In the current core it is intentionally narrow: it exists to bind in-process logic such as unbound routers or controller classes to the Vessel. It is not the whole Extension Protocol. Schema exposure, synthesis declarations, and binary compatibility live in other branches of that law.
+The `ExtensionContext` is the host-provided registration surface used during boot-time grafting. In the current core it is intentionally narrow: it exists to bind in-process logic such as unbound routers or controller classes to the Vessel. It is not the whole Extension Protocol. Schema exposure and synthesis declarations live in other branches of that law; binary compatibility is deferred until Forge-mediated ABI support exists.
 
 | Method | Grant | System Target |
 | :--- | :--- | :--- |

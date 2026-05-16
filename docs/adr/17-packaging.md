@@ -6,7 +6,7 @@ icon: material/package-variant-closed
 # :material-package-variant-closed: 17. Packaging: The Synthetic Forge
 
 !!! abstract "Context and Problem Statement"
-    The capability for autonomous evolution creates a fundamental substrate dilemma. A Lych is a composite organism, its physical body formed by merging disparate manifests (Python, Node, System) and infrastructure intents (Systemd Quadlets) into a single, cohesive runtime. Standard imperative container build cycles suffer from "Substrate Drift"—where external repository shifts or re-tagged base images cause the same source code to produce different binary artifacts over time. A mechanism is required to resolve dependency conflicts and forge a new body for the Daemon that is both mathematically deterministic and synchronized with the machine's physical state.
+    The capability for autonomous evolution creates a fundamental substrate dilemma. A Lych is a composite organism, its physical body formed by merging disparate manifests (Python, Node, System) and infrastructure intents (Systemd Quadlets) into a single, cohesive runtime. Standard imperative container build cycles suffer from "Substrate Drift"—where external repository shifts or re-tagged base images cause the same source code to produce different binary artifacts over time. In the agentic era, the substrate must also preserve enough inspectable source for the Smith to repair coupled organs instead of freezing a premature extension ABI. A mechanism is required to resolve dependency conflicts and forge a new body for the Daemon that is both mathematically deterministic and synchronized with the machine's physical state.
 
 ## Requirements
 
@@ -17,6 +17,7 @@ icon: material/package-variant-closed
 - **Pluggable Forge Strategies:** Support for both a **Mundane Path** (imperative `Containerfile` with Jinja-based injections) and a **Absolute Path** (Nix-based functional image construction).
 - **The Great Seal:** Explicitly Read-Only runner environments (`chmod -R a-w`) to prevent runtime tampering and enforce the separation between evolution and execution.
 - **Source-Centric Assembly:** Preservation of raw Python source files and docstrings to enable the runtime introspection required for self-reflection.
+- **Assimilation Before ABI:** Preservation of coupled source as the pre-v1 compatibility mechanism; public SDK/ABI surfaces are harvested only after stable patterns survive real Forge cycles.
 - **Manual Transition Gate:** Air-gapped activation of new images requiring a manual signal via the **CLI** to prevent autonomous "Infection and Restart" loops.
 
 ## Considered Options
@@ -50,14 +51,16 @@ icon: material/package-variant-closed
 When a packaging ritual begins, the system performs a multi-dimensional synthesis by scanning both the **Built-in** registry and the **Crypt (13)** to prepare for the physical build:
 
 - **Anatomical Grafting:** The Manager discovers all **Built-in Extensions** and establishes the kernel's baseline runtime and substrate requirements through the in-tree registration path. This is an in-memory operation that defines the body the Forge must then manifest.
-- **The Code Layer (Substrate Synthesis):** All `pyproject.toml` (Python), `package.json` (Node), and `tailwind.config.js` manifests from **Independent Extensions** in the Crypt are merged with the core manifests. The system executes a frozen lock to create a single, deterministic source of truth for the **Backend (11)** environment.
-- **Substrate Injection:** During assimilation, extensions declare system-level dependencies (e.g., C-libraries like `ffmpeg` or specialized binaries) and custom container requirements as part of the wider Extension Protocol. These are collected into the global synthesis manifest to be Manifested during the Forge. The `register(context)` hook is only the boot-time grafting branch of that law.
+- **The Code Layer (Substrate Synthesis):** All `pyproject.toml` (Python), `package.json` (Node), and `tailwind.config.js` manifests from active **Crypt Extensions** are merged with the core manifests. Near-term Crypt extensions are private coupled organs unless they explicitly target a future versioned public API. The system executes a frozen lock to create a single, deterministic source of truth for the **Backend (11)** environment.
+- **Substrate Injection:** During assimilation, extensions declare system-level dependencies (e.g., C-libraries like `ffmpeg` or specialized binaries) and custom container requirements as part of the composed-runtime law. These are collected into the global synthesis manifest to be Manifested during the Forge. The `register(context)` hook is only the boot-time grafting branch of that law.
 - **The Infrastructure Layer:** The system reads `Soulstone` intents from the **Codex (12)** and infrastructure requirements from all active Extensions. It dynamically calculates the `lychd.pod` configuration, aggregating all `ExposePort` requirements and hardware tags for **Containers (08)**.
 - **Global Arbitration:** The Manager performs a mandatory conflict check across the entire manifest. It enforces the **Law of Exclusivity**, ensuring no port collisions, image-name overlaps, or dependency version deadlocks exist. Only upon successful arbitration are the "Dumb Blueprints" handed to the **Quadlet Scribe** to manifest the concrete Systemd Quadlet files.
-- **Binary Organ Synthesis:** When an Independent Extension is a compiled **Rust/PyO3** module, its `pyproject.toml` declares a `[tool.maturin]` (or equivalent) build target. The Synthesis Stage detects this signal and switches the synthesis strategy for that extension from `uv sync` to `maturin build`, producing a platform-native `.so` artifact. This artifact is collected into the synthesis manifest alongside Python wheel artifacts and injected into the container image layer during the Forge.
+- **Binary Organ Synthesis:** Rust/PyO3 organs are a Forge-mediated future path. A compiled organ may be built into the composed image as a coupled organ, or later target a versioned public API once that product surface exists. The active runtime must not blindly scan `.so` files; binary artifacts require manifest pinning, platform validation, and explicit activation.
 
 !!! note "Why Multi-Language Synthesis Is Possible"
-    The **Extension Protocol / ABI boundary (ADR 05 §7)** is the precondition that makes cross-language synthesis coherent. Because no independent organ imports LychD internals, the Forge can treat Python wheels and compiled `.so` artifacts as different realizations of the same structural law. The packaging layer is decoupled from the coupling layer. Changing the internal architecture of the Core does not require rebuilding sovereign binary organs.
+    Cross-language synthesis is possible because the Forge builds one composed runtime image and verifies it before promotion. It is not proof of a stable in-process ABI. Until LychD has a versioned public API and conformance suite, binary organs are either coupled to the composed image or isolated behind an external-service Animator boundary. An external-service Animator may expose model inference, tools, observability, peer delegation, or any other typed capability; the boundary is the service contract, not the presence of an LLM.
+
+    Pre-v1, packaging is the repair boundary: source and manifests are assembled together so the Smith can inspect and adapt the organ. At v1, repeated stable seams may be harvested into a public API. Post-v1, that API becomes a compatibility product rather than an assumption baked into infancy.
 
 ### 2. The Forge Strategies
 
@@ -94,10 +97,10 @@ Packaging now emits two runtime classes:
 
 | Dimension | Vessel Artifact (Trusted Control Plane) | The Tomb Artifact (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
-| Secrets | Runtime secret injection for control-plane duties only. | No runtime secret injection in base mode. |
-| Mounts | Trusted codex/persistence mount contract. | Minimal execution mounts; no codex-wide privileged mounts. |
+| Secrets | Runtime secret injection for control-plane duties only. | No provider, signing, or control-plane secret injection. A Tomb worker profile may receive a queue-only SAQ/Postgres execution credential. |
+| Mounts | Trusted Codex/persistence mount contract. | Minimal execution mounts; no writable Codex and no Codex-wide privileged mounts. |
 | Network | Controlled provider/control-plane access. | Constrained egress; brokered resources preferred. |
-| Queue Ownership | Carries queue-capable components. | No queue ownership components. |
+| Queue Ownership | Carries queue-capable control-plane components. | Carries execution-plane queue claim/ack components only. |
 | Authority Boundaries | Participates in controlled rebirth signaling. | Cannot trigger rebirth or infrastructure transitions. |
 
 ### Consequences

@@ -10,7 +10,7 @@ from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
-from lychd.extensions.builtin.animator import LlamaCppSoulstone, SglangSoulstone, VllmSoulstone
+from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -19,13 +19,14 @@ if TYPE_CHECKING:
     from pydantic_ai.toolsets import AbstractToolset
 
 
-class PassiveConnector(Connector):
-    """Connector with readiness only."""
+class PassiveConnector(Connector, ToolConnector):
+    """Connector with readiness and optional toolsets."""
 
-    def __init__(self, *, kind: str, link: Link) -> None:
+    def __init__(self, *, kind: str, link: Link, toolsets: Sequence[AbstractToolset] = ()) -> None:
         """Store readiness-only connector metadata."""
         self._kind = kind
         self._link = link
+        self._toolsets = tuple(toolsets)
 
     @property
     def kind(self) -> str:
@@ -34,6 +35,9 @@ class PassiveConnector(Connector):
     @property
     def link(self) -> Link:
         return self._link
+
+    def get_toolsets(self) -> Sequence[AbstractToolset]:
+        return self._toolsets
 
 
 class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
@@ -50,6 +54,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         api_key_secret: str | None = None,
         default_surface: ModelSurface = ModelSurface.CHAT,
         toolsets: Sequence[AbstractToolset] = (),
+        metadata: dict[str, object] | None = None,
     ) -> None:
         """Store readiness, base URL, models, auth, and toolsets."""
         self._kind = kind
@@ -60,6 +65,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._api_key_secret = api_key_secret
         self._default_surface = default_surface
         self._toolsets = tuple(toolsets)
+        self._metadata = dict(metadata or {})
 
     @property
     def kind(self) -> str:
@@ -72,6 +78,10 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
     @property
     def base_url(self) -> str:
         return self._base_url
+
+    @property
+    def metadata(self) -> dict[str, object]:
+        return dict(self._metadata)
 
     def list_models(self) -> Sequence[ModelInfo]:
         return self._model_infos
@@ -258,15 +268,15 @@ class OpenAICompatibleStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, So
     """Local Soulstone exposing an OpenAI-compatible connector surface."""
 
 
-class LlamacppStone(_BaseSoulstoneAnimator[LlamacppConnector, LlamaCppSoulstone]):
+class LlamacppStone(_BaseSoulstoneAnimator[LlamacppConnector, LlamaCppSoulstoneConfig]):
     """Concrete llama.cpp Soulstone runtime handle."""
 
 
-class VllmStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, VllmSoulstone]):
+class VllmStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, VllmSoulstoneConfig]):
     """Concrete vLLM Soulstone runtime handle (OpenAI-compatible surface)."""
 
 
-class SglangStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, SglangSoulstone]):
+class SglangStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, SglangSoulstoneConfig]):
     """Concrete SGLang Soulstone runtime handle (OpenAI-compatible surface)."""
 
 

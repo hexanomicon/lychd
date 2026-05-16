@@ -15,7 +15,7 @@ icon: material/tournament
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
 - **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** to mirror every state transition, enabling reanimation from the point of failure.
-- **Extension Sovereignty:** Implementation as a pluggable primitive within the broader **[Extension Protocol (ADR 5)](./05-extensions.md)**, allowing specialized executive functions (e.g., a "Research Maestro") to be surfaced without hardwiring them into the core.
+- **Extension Assimilation:** Implementation as a coupled extension primitive within the broader **[Extension Protocol (ADR 5)](./05-extensions.md)**, allowing specialized executive functions (e.g., a "Research Maestro") to be surfaced without hardwiring them into the core.
 - **Strategic Alignment:** Coordination with the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to ensure tactical pacing respects the physical constraints of the local iron.
 
 ## Considered Options
@@ -76,7 +76,7 @@ The Weaver utilizes the functional primitives of the graph to enforce the rhythm
 
 The Weaver governs tempo and synchronization of these movements; validity and selection remain the responsibility of the workflow's evaluators and approval gates.
 
-### 5. Interaction with HITL
+### 5. Interaction with HitL
 
 Every workflow includes a "Decision Point" that triggers the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. When a litany reaches a high-order synapse (e.g., system promotion), the Weaver initiates the stasis event and manifests the scried "Vision" at the interface, awaiting the Magus's signal to resume the tempo.
 

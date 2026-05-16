@@ -10,16 +10,16 @@ icon: material/scale-balance
 
 ## Requirements
 
-* **The Law of Exclusivity:** Mandatory physical enforcement of the constraint that only one resource-intensive operational state (Coven) may occupy a specific hardware coordinate at any given time.
-* **Exclusive vs Shared Authority:** The Orchestrator must distinguish between **exclusive** Soulstones (fully owned — may kill, swap, restart) and **shared** Soulstones (read-only — may route to, but cannot manage lifecycle). A shared Soulstone is one the Magus also exposes to external services outside LychD.
-* **The Stasis Receiver:** Capability to interpret the `HardwareTransitionRequired` signal from the **[Dispatcher (22)](22-dispatcher.md)** and convert it into a scheduled priority event.
-* **The Tipping Point Algorithm:** Implementation of a weight-based scheduling logic to determine if a requested state change is worth the momentum cost of the current state.
-* **The Graceful Drain:** Mandatory signaling to active **[Ghouls (14)](14-workers.md)** to finish their current atomic step and persist state to the **[Phylactery (06)](06-persistence.md)** before a container is banished.
-* **Fluid Model Tiering:** Mandatory support for VRAM budgeting, allowing for the downgrading of model scales (e.g., 70B to 8B) to accommodate concurrent sensory and reasoning requirements.
-* **Lexical Reservation:** Permanent allocation of a specific VRAM margin for the system's core lexical parser to ensure basic cognitive stability during heavy hardware transitions.
-* **Embedding Coven Priority:** During memory ingestion windows, embedding covens must be schedulable with explicit priority so metabolic writes do not starve indefinitely.
-* **Host-Native Authority:** Mandatory utilization of the host's init system via the **[Host Reactor (10)](10-privilege.md)** to ensure atomic and verifiable service lifecycles.
-* **Strategy Extensibility:** Provision of a pluggable architecture to allow for the injection of specialized orchestration policies (e.g., multi-GPU or energy-aware strategies).
+- **The Law of Exclusivity:** Mandatory physical enforcement of the constraint that only one resource-intensive operational state (Coven) may occupy a specific hardware coordinate at any given time.
+- **Exclusive vs Shared Authority:** The Orchestrator must distinguish between **exclusive** Soulstones (fully owned — may kill, swap, restart) and **shared** Soulstones (read-only — may route to, but cannot manage lifecycle). A shared Soulstone is one the Magus also exposes to external services outside LychD.
+- **The Stasis Receiver:** Capability to interpret the `HardwareTransitionRequired` signal from the **[Dispatcher (22)](22-dispatcher.md)** and convert it into a scheduled priority event.
+- **The Tipping Point Algorithm:** Implementation of a weight-based scheduling logic to determine if a requested state change is worth the momentum cost of the current state.
+- **The Graceful Drain:** Mandatory signaling to active **[Ghouls (14)](14-workers.md)** to finish their current atomic step and persist state to the **[Phylactery (06)](06-persistence.md)** before a container is banished.
+- **Fluid Model Tiering:** Mandatory support for VRAM budgeting, allowing for the downgrading of model scales (e.g., 70B to 8B) to accommodate concurrent sensory and reasoning requirements.
+- **Lexical Reservation:** Permanent allocation of a specific VRAM margin for the system's core lexical parser to ensure basic cognitive stability during heavy hardware transitions.
+- **Embedding Coven Priority:** During memory ingestion windows, embedding covens must be schedulable with explicit priority so metabolic writes do not starve indefinitely.
+- **Host-Native Authority:** Mandatory utilization of the host's init system via the **[Host Reactor (10)](10-privilege.md)** to ensure atomic and verifiable service lifecycles.
+- **Strategy Extensibility:** Provision of a pluggable architecture to allow for the injection of specialized orchestration policies (e.g., multi-GPU or energy-aware strategies).
 
 ## Considered Options
 
@@ -52,14 +52,14 @@ icon: material/scale-balance
 
 Decisions regarding hardware state transitions are not binary; they are calculated using a priority-weighting algorithm called **The Whim**. This algorithm governs the transition from **Manas** (divergent exploration) to **Buddhi** (convergent logic). It enforces **Stillness** (metabolic discipline) to prevent the VRAM thrashing that occurs during uncontrolled parallel branching (excessive *Vṛttis*). Critically, this algorithm respects the **Discipline** of the active Soulstone.
 
-* **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
-* **Inertia Bias:** A configurable constant used to prevent thrashing.
-    * *Note:* **Weaver (SGLang)** Covens have a naturally higher Inertia Bias because destroying their **Radix Tree** is expensive.
-* **Concurrency Check (The Parallel Gate):**
-    * Before calculating swap costs, the Orchestrator checks the active Coven's **Discipline**.
-    * **If Kinetic/Weaver:** The system checks `Current_Slots_Used < Max_Concurrency`. If true, **NO SWAP IS REQUIRED**. The Orchestrator bypasses the Tipping Point and simply routes the new signal to the active Coven alongside the existing task (Continuous Batching).
-    * **If Titan:** The system enforces strict Serial Exclusivity. The Tipping Point calculation proceeds to decide if the new task is important enough to interrupt the current one.
-* **The Rule:** A coven swap is only initiated when:
+- **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
+- **Inertia Bias:** A configurable constant used to prevent thrashing.
+    - *Note:* **Weaver (SGLang)** Covens have a naturally higher Inertia Bias because destroying their **Radix Tree** is expensive.
+- **Concurrency Check (The Parallel Gate):**
+    - Before calculating swap costs, the Orchestrator checks the active Coven's **Discipline**.
+    - **If Kinetic/Weaver:** The system checks `Current_Slots_Used < Max_Concurrency`. If true, **NO SWAP IS REQUIRED**. The Orchestrator bypasses the Tipping Point and simply routes the new signal to the active Coven alongside the existing task (Continuous Batching).
+    - **If Titan:** The system enforces strict Serial Exclusivity. The Tipping Point calculation proceeds to decide if the new task is important enough to interrupt the current one.
+- **The Rule:** A coven swap is only initiated when:
     1. The Coven cannot support the request natively (wrong model), OR
     2. The Coven is at max concurrency, AND $\text{Signal Priority} > \text{Momentum} + \text{Inertia Bias}$.
 
@@ -77,21 +77,21 @@ Snapshot note: this drain/swap ritual protects live work during transitions. "Dr
 
 To maximize hardware utility, the Orchestrator manages a fluid manifest:
 
-* **Tier Selection:** If an intent requires concurrent "Vision + Reasoning" exceeding the VRAM capacity, the Orchestrator instructs the Dispatcher to manifest a lower-tier Reasoning Soulstone (e.g., 8B instead of 70B).
-* **Lexical Reservation:** The Orchestrator enforces a permanent 1-2GB margin for the system's **Native Lexicon** (a sub-2B parameter model), ensuring the "Brain Stem" remains resident and operational during all swaps.
-* **Ingestion Scheduling:** Background memory augmentation may run in batched ingestion epochs. During these epochs, embedding covens receive bounded priority and must yield to high-priority interactive reflexes.
+- **Tier Selection:** If an intent requires concurrent "Vision + Reasoning" exceeding the VRAM capacity, the Orchestrator instructs the Dispatcher to manifest a lower-tier Reasoning Soulstone (e.g., 8B instead of 70B).
+- **Lexical Reservation:** The Orchestrator enforces a permanent 1-2GB margin for the system's **Native Lexicon** (a sub-2B parameter model), ensuring the "Brain Stem" remains resident and operational during all swaps.
+- **Ingestion Scheduling:** Background memory augmentation may run in batched ingestion epochs. During these epochs, embedding covens receive bounded priority and must yield to high-priority interactive reflexes.
 
 ### 3. Swarm Lease Management
 
 To protect the local Magus from resource exhaustion by the **[Legion (42)](42-legion.md)**, the Orchestrator implements **Workload Tiering**:
 
-* **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
-* **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
+- **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
+- **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
     1. The swarm Ghoul receives `SIG_SOFT_STOP`.
     2. It completes its current atomic inference step, serializes its `GraphState` to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
     3. The GPU is reclaimed for the local reflex.
     4. When the local user is satisfied and the GPU is free, the Orchestrator restores the lease and the swarm Ghoul rehydrates from the serialized state.
-* **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
+- **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
 
 ### 4. Watchdog and Recovery
 

@@ -1,9 +1,8 @@
 import pytest
-from lychd.domain.cortex.dispatcher import HardwareTransitionRequired as HTR1
-from lychd.domain.cortex.graph_runner import HardwareTransitionRequired as HTR2
+
+from lychd.domain.cortex import dispatcher, graph_runner
+
 
 @pytest.mark.asyncio
-async def test_identity_crisis():
-    print(f"DEBUG: HTR from dispatcher: {id(HTR1)}")
-    print(f"DEBUG: HTR from graph_runner: {id(HTR2)}")
-    assert HTR1 is HTR2
+async def test_graph_runner_reexports_canonical_transition_signal() -> None:
+    assert dispatcher.HardwareTransitionRequired is graph_runner.HardwareTransitionRequired

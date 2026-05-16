@@ -6,20 +6,20 @@ icon: material/directions-fork
 # :material-directions-fork: 22. Dispatcher: The Switchboard
 
 !!! abstract "Context and Problem Statement"
-    Cognitive labor in a sovereign system requires abstract intents—reasoning, visual analysis, vocal perception—but the physical infrastructure is fragmented across discrete local containers (**Soulstones**), remote APIs (**Portals**), and peer-to-peer nodes (**The Legion**).
+    Cognitive and operational labor in a sovereign system requires abstract intents: reasoning, visual analysis, vocal perception, tool execution, telemetry queries, browsing, and peer delegation. The physical infrastructure is fragmented across discrete local containers (**Soulstones**), remote APIs (**Portals**), and peer-to-peer nodes (**The Legion**).
 
     A single provider often offers overlapping services, creating a complex many-to-many mapping between logical intent and physical substrate. Furthermore, on a single-node architecture, provider availability is volatile; a vision model may be "sleeping" to save VRAM. The lack of an intelligent switchboard leads to resource contention, inefficient model loading, and a failure to maintain the **[Sovereignty Wall (09)](09-security.md)**. The machine requires a **Semantic Cortex** to resolve abstract desire into executable power.
 
 ## Requirements
 
-- **Provider-Pair Discovery:** Resolution of intents into a concrete `model_provider` + `tool_provider` pair rather than hardcoded model identifiers.
-- **The Animator Protocol:** Mandatory implementation of the **Animator** interface to bind disparate providers (Local/Cloud/Swarm) to the **[Agents (20)](20-agents.md)** runtime.
+- **Provider-Pair Discovery:** Resolution of intents into concrete capability providers rather than hardcoded model identifiers. Cognitive calls may still resolve a `model_provider` + `tool_provider` pair, but the underlying abstraction is a capability-bearing Animator.
+- **The Animator Protocol:** Mandatory implementation of the **Animator** interface to bind disparate local, remote, and swarm services to the **[Agents (20)](20-agents.md)** runtime, Graph, Orchestrator, and extension surfaces.
 - **The Stasis Handshake:** Mandatory coordination with the **[Orchestrator (23)](23-orchestrator.md)**. The Dispatcher must query the physical state of the required **[Coven (08)](08-containers.md)** before binding logic. If the required hardware is "Cold," it must raise a `HardwareTransitionRequired` signal to trigger the **Stasis Protocol**.
 - **Asynchronous Deferral:** The mechanism must support "The Long Sleep." It must be capable of serializing the calling thread and suspending it until the physical body reconfigures itself.
 - **Modality Zipping:** Capability to "weave" deferred sensory tools into a text-only reasoning agent if the selected provider lacks native multimodal support.
 - **Syntax Standardization (Pydantic Covenant):** Adoption of Python type hints and Pydantic schemas as the definitive internal grammar for tool definitions, eliminating the "Middleware Tax" of legacy proxy translation layers.
 - **Sigil-Based Filtering:** Integration with **[The Ward (38)](38-iam.md)** to physically hide privileged tools/models from an Agent based on the active identity's scope.
-- **Economic Arbitration:** Integration with **[The Toll (41)](41-x402.md)** to select the most cost-effective provider (Local Power vs. Cloud Tokens) based on the ritual's priority.
+- **Economic Arbitration:** Integration with **[The Toll (41)](41-x402.md)** to select the most cost-effective provider (local power vs. remote cost) based on the ritual's priority.
 - **Privatization-Aware Routing:** Context with elevated privatization weight must not be sent to Portals unless anonymization policy succeeds.
 - **Sovereignty Wall Enforcement:** The policy boundary is defined in **[Security (09)](09-security.md)** and enforced here in the Dispatcher's routing decisions. The **[Orchestrator (23)](23-orchestrator.md)** manages hardware state and container transitions; it does not own egress or privacy policy.
 
@@ -47,39 +47,47 @@ icon: material/directions-fork
 
 ## Decision Outcome
 
-**The Dispatcher** is adopted as the system's Semantic Cortex. It functions as the switchboard that assembles the machine's "Mind" by resolving provider pairs into **Mind-Bundles**.
+**The Dispatcher** is adopted as the system's Semantic Cortex. It functions as the switchboard that assembles the machine's working runtime grant from canonical capability records.
 
 
 ### 1. The World Model (Provider Indexing)
 
-At initialization, the Dispatcher constructs an in-memory index of the Sepulcher’s potential. It loads animator rune configs from the Codex anchors (`runes/animator/`, `runes/animator/soulstones/`, `runes/animator/portals/`) and tracks the runtime animators/connectors currently manifest in the system.
+At initialization, the Dispatcher constructs an in-memory index of the Sepulcher’s potential. It loads Animator Runes from the Codex anchors (`runes/animator/`, `runes/animator/soulstones/`, `runes/animator/portals/`) and tracks the runtime animators/connectors currently manifest in the system.
 
-Policy resolution still targets a provider-route contract (model/tool identity for the requested task), while the current runtime binding path is connector-based (`base_url`, discovered/default model ids, and connector toolsets). This index updates as the **Orchestrator** manifests or banishes hardware covens.
+Policy resolution still targets a provider-route contract for cognitive tasks (model/tool identity for the requested task), while the runtime binding path is connector-based (`base_url`, discovered/default model ids, toolsets, service clients, and other adapter-owned surfaces). This index updates as the **Orchestrator** manifests or banishes hardware covens.
 
 ### 2. The Animator Handshake (The Stasis Protocol)
 
-The **Animator** serves as the metaphysical bridge between the Code and the Model. An Animator exposes stateful **Capability** objects which declare three critical flags: `is_static: bool`, `is_active: bool`, and **`always_on: bool`**.
+The runtime registry is the canonical handshake surface. It exposes:
 
-- **"The Substrate Check:"** When an Agent requests a Capability, the Dispatcher examines these state flags. 
-- **The Physical Check:** If the Capability is `is_static=False` and `is_active=False`, it means the physical Coven supports the model, but it is currently not loaded into VRAM.
-- **The Coven Alliance:** If a capability is marked **`always_on=True`**, it bypasses the Systemd **Hard Swap** protocol. The Infrastructure Service MUST NOT generate `Conflicts=` directives for always-on covens, allowing them to eternally resonate in VRAM alongside Titans.
-- **The Stasis Signal & LlamaSwap:** In this scenario, the Dispatcher does not fail. It raises a `HardwareTransitionRequired` signal. This freezes the Agent Graph, triggering the **Stasis Protocol**. 
-    - **Soft Swap:** If the Coven is `always_on=True`, the Orchestrator invokes the Animator's internal API (e.g., vLLM or llama-server `/models/load`) to dynamically swap the model into VRAM without restarting the container.
-    - **Hard Swap:** If the Coven is not always-on, the Orchestrator executes a physical Systemd target transition, where the kernel uses `Conflicts=` to atomically reclaim VRAM from opposing covens.
-- **The Reanimation:** Once the Animator confirms the requested Capability is `is_active=True`, the Dispatcher releases the lock, and the Agent resumes execution as if no time had passed.
+- `CapabilitySpec`: declared capability identity and routing metadata
+- `CapabilityState`: the latest live observation
+- `CapabilityGrant`: the late-bound dispatch handoff
+
+- **The Substrate Check:** When an Agent requests a capability, the Dispatcher reads `CapabilityState`.
+- **The Physical Check:** If `warm=False`, the physical substrate supports the capability but it is not presently ready.
+- **The Residency Boundary:** `persistent_resident=True` keeps a support runtime out of the default eviction set, but it does not create a second conflict law or a second activation path.
+- **The Lifecycle Boundary:** `dedicated=False` means the runtime is routable but not lifecycle-managed by LychD.
+- **The Stasis Signal:** In this scenario, the Dispatcher raises `HardwareTransitionRequired`. This freezes the Agent Graph and hands control to the Orchestrator.
+    - **Soft Activation:** If the runtime is already warm and the adapter exposes a native activation seam, the Orchestrator performs adapter-led activation (for example `llama.cpp` router `/models/load`) without a container restart.
+    - **Hard Swap:** If the target runtime is not warm and LychD owns its lifecycle, the Orchestrator executes a Systemd transition so kernel-level `Conflicts=` reclaims the substrate.
+- **The Reanimation:** Once the requested capability is warm, the Dispatcher grants it and the Agent resumes.
 
 !!! note "Agent State vs. VRAM Swap"
     The Agent's cognitive state (Pydantic AI graph runner, in-flight tool calls) lives in **Vessel process memory**, not inside the VLLM/llama.cpp container. When VLLM restarts, the Vessel continues running and the Agent simply waits for the next LLM response. No serialization to the Phylactery is required for VRAM swaps. Phylactery serialization serves a different concern — **Long Sleep** durability (surviving reboots, multi-day waits for human approval, or deferred A2A results).
 
-The handshake is implemented as a strict adapter contract:
+The handshake is implemented as a strict registry and adapter contract:
 
-1. **`resolve(animator_name)`** -> resolve provider pair and runtime mode (`single`, `router`, or OpenAI-compatible).
-2. **`prepare(animator_name)`** -> produce executable runtime plan (container args/env/mounts).
-3. **`bind_model(resolved)`** -> hydrate `OpenAIChatModel` (or provider-specific model) from resolved provider.
-4. **`bind_toolset(resolved)` / `bind_toolsets(resolved)`** -> hydrate toolsets from the resolved animator connector.
-5. **`health(resolved)`** -> optional pulse endpoint before grant (policy/runtime dependent).
+1. **`list_capabilities()` / `get_capability()`** -> resolve canonical capability identity.
+2. **`refresh_capability_state()`** -> re-probe warm/live readiness before grant.
+3. **`activate_capability()`** -> perform runtime-native soft activation when supported.
+4. **`bind_model()`** -> hydrate the selected model surface from the chosen connector when model-backed.
+5. **`bind_toolset()` / `bind_toolsets()`** -> hydrate tool surfaces from the chosen connector when tool-backed.
+6. **Service-specific binders** -> hydrate watcher, browser, peer, metrics, or other non-model surfaces when an extension registers that adapter family.
 
 This keeps Orchestrator, Dispatcher, and Animator code decoupled while preserving deterministic resolution.
+
+Generic fallback law: an unknown local Soulstone runtime is passive unless a specific adapter or explicit OpenAI-compatible runtime alias is selected. A `base_url` alone is not evidence that the runtime exposes chat, model listing, or OpenAI-compatible binding semantics.
 
 #### Execution Plane Scope (Current Phase)
 
@@ -92,23 +100,23 @@ This keeps Orchestrator, Dispatcher, and Animator code decoupled while preservin
 
 When a reasoning step submits a requirement, the Dispatcher executes a multi-stage resolution:
 
-1. **Candidate Selection:** All physical (Soulstone) and logical (Portal) Animators declaring an active `Capability` matching the requested type are identified. The canonical capability taxonomy is defined in the **[Animator index](../sepulcher/animator/index.md)**.
+1. **Candidate Selection:** All local (Soulstone) and remote (Portal) Animators declaring an active `Capability` matching the requested type are identified. The canonical capability taxonomy is defined in the **[Animator index](../sepulcher/animator/index.md)**.
 2. **Context Filtering:** **[The Ward (38)](38-iam.md)** verifies the Sigil's scopes. Providers not visible to the user are pruned.
 3. **Privatization Gate:** The context envelope is scored. If target is a Portal and the payload exceeds configured thresholds, raw routing is blocked and anonymization workflow is required.
-4. **Economic Arbitration:** If multiple candidates exist, **[The Toll (41)](41-x402.md)** calculates the cost. It prefers "Free" (Local) over "Paid" (Cloud) unless the ritual is marked `high_fidelity`.
-5. **Sovereignty Gate:** If `LYCHD_SECURE_MODE` is active, all Cloud Portals are physically purged from the list.
+4. **Economic Arbitration:** If multiple candidates exist, **[The Toll (41)](41-x402.md)** calculates the cost. It prefers "Free" (local) over "Paid" (remote) unless the ritual is marked `high_fidelity`.
+5. **Sovereignty Gate:** If `LYCHD_SECURE_MODE` is active, external Portals are physically purged from the list unless an explicit policy permits sanitized egress.
 
-### 4. The Mind-Bundle (The Grant)
+### 4. The Capability Grant
 
-The Dispatcher does not return a raw model; it returns a **Mind-Bundle**. This is a configuration package containing:
+The Dispatcher does not return a raw model. It returns a **CapabilityGrant** containing:
 
-- **The Animator:** The selected model implementation.
-- **The Capability Taxonomy:** Concrete capability protocols binding the Agent to the hardware.
-    - `ReasoningCapability`: Text reasoning models returning Pydantic objects.
-    - `SensoryCapability`: Vision/Audio perception engines handling `BinaryContent`.
-    - `EmbeddingCapability`: Vectorization engines.
-- **The Limits:** Strictly defined `UsageLimits` derived from the system's economic laws.
-- **Late-Bound Binding:** The Mind-Bundle is a temporary hydration of a Persona from the currently selected runtime animator/connector. Policy may still be expressed in provider-route terms, but binding is granted against the active physical substrate at the moment of thought.
+- **The Animator:** The selected runtime handle.
+- **The CapabilitySpec:** The canonical declaration that was selected.
+- **The CapabilityState:** The warm/live state observed immediately before grant.
+- **The Hydrated Runtime Surfaces:** The bound model, toolsets, service clients, or other adapter surfaces when the selected connector exposes them.
+- **Late-Bound Binding:** The grant is a temporary hydration against the active physical substrate at the moment of thought.
+
+Tool-only and service-only grants may have no model. External tools are carried by connector capability, not by pretending a Portal has a default chat model. A Portal with external tools and no `default_model_id` exposes `tool_execution` only unless it explicitly declares model-backed families. A Watcher or browser Animator follows the same law: it exposes its own capability families rather than masquerading as chat.
 
 ### 5. The Modality Zip (Joint Intelligence)
 
@@ -137,16 +145,16 @@ The Dispatcher functions as the sole keeper of the **Agent Registry**—a system
 
 ### 8. Health and Pulse
 
-Before granting a Mind-Bundle, the Dispatcher performs a **Stateless Pulse**.
+Before granting a capability, the Dispatcher performs a **Stateless Pulse**.
 It pings the assigned provider endpoint (for OpenAI-compatible connectors, typically `/v1/models`; other connectors may define provider-specific probes). If the pulse fails (timeout/error), the Dispatcher triggers an **Autonomous Repair Signal** to the Orchestrator to investigate or restart the container, protecting the Agent from "Zombie" providers.
 
 ### 9. Portal Egress Gate (Privatization Enforcement)
 
-Before any intent is dispatched to a Cloud Portal, the volatility of the context payload is evaluated based on the explicit schema-level classification established by the **[Phylactery (06)](06-persistence.md)**.
+Before any intent is dispatched to an external Portal, the volatility of the context payload is evaluated based on the explicit schema-level classification established by the **[Phylactery (06)](06-persistence.md)**.
 
 - **Context Weighting:** As data is extracted from the persistence layer, the SQLAlchemy `info={"privatization_weight": X}` tags attached to the ORM models are read. The entire prompt inherits the highest weight present within the payload.
 - **The Egress Policy:**
-    - If the weight is below `portal_threshold` (e.g., public documentation): Dispatch to Cloud Portals is permitted.
+    - If the weight is below `portal_threshold` (e.g., public documentation): Dispatch to external Portals is permitted.
     - If the weight is between `portal_threshold` and `forbidden_threshold`: An Anonymization Ritual (local scrubbing) is required, and only sanitized output is used for the dispatch.
     - If the weight is at or above `forbidden_threshold` (e.g., internal system passwords, private memory): **Raw portal egress is strictly forbidden.**
 - **The Fallback:** If a Portal route is forbidden, routing is forced to a Local Soulstone (e.g., vLLM), or the request is failed closed. This ensures the Dispatcher acts as an unbypassable firewall against prompt injection exfiltration.
@@ -156,8 +164,8 @@ Before any intent is dispatched to a Cloud Portal, the volatility of the context
 !!! success "Positive"
     -   **Hardware Resonance:** The system maximizes the utility of limited local VRAM by intelligently selecting multimodal animators or zipping text-models with Sensory Soulstones.
     -   **Logical Parallelism:** The "Stasis Signal" allows logical parallelism in the Graph (multiple branches waiting for different hardware) without violating the physical seriality of the single GPU.
-    -   **Late-Binding Security:** Logic never possesses permanent access to tools; it is granted a temporary Mind-Bundle filtered by the user's Sigil at the moment of thought.
+    -   **Late-Binding Security:** Logic never possesses permanent access to tools; it is granted a temporary capability grant filtered by the user's Sigil at the moment of thought.
 
 !!! failure "Negative"
-    -   **Resolution Latency:** The calculation of the optimal Mind-Bundle adds a small overhead (10-50ms) to the initiation of every step.
+    -   **Resolution Latency:** The calculation of the optimal capability grant adds a small overhead (10-50ms) to the initiation of every step.
     -   **Registry Complexity:** Maintaining a synchronized map of providers, provider-route policy, and hardware states requires robust handling of extension registration edge-cases.

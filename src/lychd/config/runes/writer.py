@@ -7,26 +7,33 @@ import structlog
 from pydantic_core import PydanticUndefined
 
 from lychd.config.runes.base import RuneConfig
+from lychd.system.constants import PATH_RUNES_DIR
 
 logger = structlog.get_logger()
 
 
 class ConfigWriter:
-    """Writes rune sample TOMLs and initializes schema anchor directories."""
+    """Writes rune sample TOMLs and initializes rune anchor directories."""
 
     def __init__(self, runes_dir: Path | None = None) -> None:
-        """Create a writer for runes under a specific root."""
-        self._runes_dir = runes_dir or RuneConfig.config_root
+        """Create a writer for runes under a specific root.
+
+        Args:
+            runes_dir: Optional root directory to write. Defaults to
+                ``PATH_RUNES_DIR``.
+
+        """
+        self._runes_dir = runes_dir or PATH_RUNES_DIR
 
     def initialize_anchors(self, schemas: list[type[RuneConfig]]) -> None:
-        """Ensure all schema anchor directories exist."""
+        """Ensure all rune anchor directories exist."""
         for schema in schemas:
-            anchor = self._runes_dir if schema.relative_path is None else self._runes_dir / schema.relative_path
+            anchor = self._anchor_dir(schema)
             anchor.mkdir(parents=True, exist_ok=True)
             logger.debug("anchor_initialized", schema=schema.__name__, anchor=str(anchor))
 
     def inscribe_samples(self, schemas: list[type[RuneConfig]]) -> list[Path]:
-        """Write one sample TOML per schema when no files exist yet."""
+        """Write one sample TOML per rune class when no files exist yet."""
         created: list[Path] = []
 
         for schema in schemas:
@@ -43,41 +50,47 @@ class ConfigWriter:
 
     def _target_sample_file(self, schema: type[RuneConfig]) -> Path | None:
         """Return sample target path if schema has no existing TOML instances."""
-        file_name = self._get_default_file_name(schema)
-        
-        if schema.relative_path is None:
-            target = self._runes_dir / file_name
-            return None if target.exists() else target
+        if schema.__subclasses__():
+            return None
 
-        anchor = self._runes_dir / schema.relative_path
-        existing = list(anchor.rglob("*.toml")) if anchor.exists() else []
-        child_anchors = [self._runes_dir / rel for rel in self._descendant_relative_paths(schema)]
-        if child_anchors:
-            existing = [path for path in existing if not any(path.is_relative_to(child) for child in child_anchors)]
+        file_name = self._default_file_name(schema)
+
+        anchor = self._anchor_dir(schema)
+        existing = list(anchor.glob("*.toml")) if anchor.exists() else []
         if existing:
             return None
 
         return anchor / file_name
 
-    def _get_default_file_name(self, schema: type[RuneConfig]) -> str:
-        """Safely resolve the default file name for a schema class."""
-        if hasattr(schema, "default_file_name") and callable(schema.default_file_name):
-            return str(schema.default_file_name())
-        return f"{schema.__name__.lower()}.toml"
+    def _anchor_dir(self, schema: type[RuneConfig]) -> Path:
+        """Resolve the active filesystem anchor for one rune class.
 
-    def _descendant_relative_paths(self, schema: type[RuneConfig]) -> set[Path]:
-        paths: set[Path] = set()
-        for sub in schema.__subclasses__():
-            if sub.relative_path is not None:
-                paths.add(sub.relative_path)
-            paths.update(self._descendant_relative_paths(sub))
-        return paths
+        Args:
+            schema: Rune class whose anchor should be resolved.
+
+        Returns:
+            Absolute directory under this writer's rune root.
+
+        """
+        return self._runes_dir / schema.relative_path
+
+    def _default_file_name(self, schema: type[RuneConfig]) -> str:
+        """Derive the generated TOML sample filename for a rune class.
+
+        Args:
+            schema: Rune class needing a generated sample filename.
+
+        Returns:
+            The lowercase rune class name with a ``.toml`` suffix.
+
+        """
+        return f"{schema.__name__.lower()}.toml"
 
     def _render_sample(self, schema: type[RuneConfig]) -> str:
         lines: list[str] = []
 
         for field_name, field_info in schema.model_fields.items():
-            if field_name == "file_name":
+            if field_name == "source_file":
                 continue
 
             if field_info.description:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
 from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.services.adapters.catalog import capability_specs_from_soulstone
 from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.runtimes.shared import build_openai_connector
 from lychd.domain.animation.services.adapters.surfaces import (
@@ -15,6 +17,13 @@ class GenericRuntimeAdapter:
     """Fallback Soulstone planner/runtime builder for unknown runtimes."""
 
     runtime = "generic"
+    openai_compatible_runtimes = frozenset(
+        {
+            "openai_compatible",
+            "openai-compatible",
+            "openai",
+        }
+    )
 
     def supports(self, runtime: str) -> bool:
         return runtime == self.runtime
@@ -24,8 +33,8 @@ class GenericRuntimeAdapter:
         return RuntimePlan(exec_args=list(soulstone.exec), env_overrides={})
 
     def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
-        """Create a generic runtime handle with best-effort connector capabilities."""
-        if soulstone.base_url:
+        """Create a generic runtime handle without assuming an unknown API grammar."""
+        if soulstone.runtime_name in self.openai_compatible_runtimes:
             connector = build_openai_connector(
                 soulstone=soulstone,
                 runtime=soulstone.runtime_name,
@@ -33,8 +42,39 @@ class GenericRuntimeAdapter:
             )
             return OpenAICompatibleStone(rune=soulstone, connector=connector)
 
-        connector = PassiveConnector(kind="generic", link=local_link_default(runtime=soulstone.runtime_name))
+        connector = PassiveConnector(kind=f"generic:{soulstone.runtime_name}", link=local_link_default(runtime=soulstone.runtime_name))
         return GenericStone(rune=soulstone, connector=connector)
+
+    def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
+        """Synthesize capability specs only when the generic runtime declares intent."""
+        if soulstone.runtime_name not in self.openai_compatible_runtimes and soulstone.capabilities is None:
+            return []
+        return capability_specs_from_soulstone(soulstone)
+
+    def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
+        """Project connector readiness into conservative capability states."""
+        active_model_id = getattr(animator.connector, "default_model_id", None)
+        loaded_model_ids = [spec.model_id for spec in specs] if animator.connector.link.up else []
+        return [
+            CapabilityState(
+                capability_key=spec.key,
+                is_static=True,
+                is_active=animator.connector.link.up,
+                is_available=True,
+                warm=animator.connector.link.up,
+                health="ok" if animator.connector.link.up else "down",
+                active_model_id=active_model_id,
+                loaded_model_ids=loaded_model_ids,
+                reason=None if animator.connector.link.up else "connector_down",
+            )
+            for spec in specs
+        ]
+
+    def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool:
+        """Return ``False`` because generic runtimes have no canonical activation path."""
+        _ = animator
+        _ = spec
+        return False
 
 
 __all__ = ["GenericRuntimeAdapter"]

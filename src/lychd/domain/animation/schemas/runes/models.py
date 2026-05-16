@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.model_info import ModelSurface
 from lychd.domain.animation.schemas.shared import ModelFormat
 
@@ -47,6 +48,7 @@ class ModelCapabilityHints(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    families: list[CapabilityFamily] | None = None
     surface: ModelSurface | None = None
     modalities_in: list[str] | None = None
     modalities_out: list[str] | None = None

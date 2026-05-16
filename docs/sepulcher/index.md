@@ -1,4 +1,5 @@
 ---
+title: Sepulcher
 icon: material/coffin
 ---
 
@@ -10,7 +11,7 @@ The Sepulcher is the anatomy of the Daemon.
 Its organs are not merely colocated services. They are a disciplined body: law in the Codex, memory in the Phylactery, motion in the Vessel, and extension in the organs that grow from them.
 
 !!! abstract ":fontawesome-solid-skull: [Lich](./lich.md)"
-    The central intelligence and sovereign will. The Lich is the master; all other components serve its purpose. The **[Lich](./lich.md)** page contains the complete cognitive map of the daemon — the **Antahkaraṇa** (*anta* = inner, *karaṇa* = instrument — the four-faculty cognitive organ), the five **Vṛttis** (modifications of the mind-field), and the three **Guṇas** (qualitative modes) — as they manifest across the Sepulcher's architecture.
+    The central purpose-bearing intelligence. The Lich is the daemon-instrument; all other components serve its operation. The **[Lich](./lich.md)** page contains the complete cognitive map of the daemon — the **Antahkaraṇa** (*anta* = inner, *karaṇa* = instrument — the four-faculty cognitive organ), the five **Vṛttis** (modifications of the mind-field), and the three **Guṇas** (qualitative modes) — as they manifest across the Sepulcher's architecture.
 
 !!! info ":material-book-open-page-variant: [Codex](./codex.md)"
     The book of laws and configuration runes (`~/.config/lychd`). It dictates the fundamental rules of existence.
@@ -25,11 +26,11 @@ Its organs are not merely colocated services. They are a disciplined body: law i
 
 ## II. The Animator
 
-*The spark of cognition that moves the Vessel.*
+*The spark that turns services into callable power.*
 
-- :fontawesome-solid-heart-pulse: **[Animator](./animator/index.md):** The unified abstraction layer for intelligence.
-- :material-hexagon-slice-6: **[Soulstones](./animator/soulstone.md):** Trapped spirits (Local LLMs) running alongside the Vessel.
-- :material-weather-hurricane: **[Portal](./animator/portal.md):** A rift drawing power from distant cloud APIs.
+- :fontawesome-solid-heart-pulse: **[Animator](./animator/index.md):** The unified abstraction layer for addressable services and their capabilities.
+- :material-hexagon-slice-6: **[Soulstones](./animator/soulstone.md):** Local Quadlet-backed services running alongside the Vessel.
+- :material-weather-hurricane: **[Portal](./animator/portal.md):** Remote service connections reached through adapter-bound APIs.
 
 ## III. The Watchers
 

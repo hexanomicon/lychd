@@ -1,5 +1,5 @@
 ---
-title:  Covenants
+title: Covenants
 icon: material/pillar
 ---
 
@@ -98,17 +98,11 @@ Exact line-slice include (preferred):
 
 ````md
 ```python
-;--8<-- "src/lychd/config/runes/base.py:14:86"
+;--8<-- "src/lychd/config/runes/base.py:14:71"
 ```
 ````
 
-Named section include (optional, when source files carry snippet markers):
-
-````md
-```python
-;--8<-- "src/lychd/system/services/scribe.py:sample_section"
-```
-````
+Named section includes are optional and should be used only when source files carry explicit snippet markers. Otherwise, prefer exact line slices.
 
 Guidelines:
 
@@ -124,7 +118,7 @@ Wrap snippet-backed proofs in collapsed details blocks so the ADR remains readab
 ````md
 ??? example "Live snippet: `src/lychd/config/runes/base.py:14`"
     ```python
-    ;--8<-- "src/lychd/config/runes/base.py:14:86"
+;--8<-- "src/lychd/config/runes/base.py:14:71"
     ```
 ````
 

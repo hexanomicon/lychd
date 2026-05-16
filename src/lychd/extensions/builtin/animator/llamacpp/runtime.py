@@ -13,7 +13,7 @@ from lychd.extensions.builtin.animator.llamacpp.parser import (
     LlamaCppPresetDocument,
     LlamaCppRuntimeInference,
 )
-from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstone
+from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
 
 logger = structlog.get_logger()
 
@@ -33,7 +33,7 @@ class LlamaCppRuntimePlanner:
     def plan_exec_args(
         self,
         *,
-        soulstone: LlamaCppSoulstone,
+        soulstone: LlamaCppSoulstoneConfig,
         inferred: LlamaCppRuntimeInference,
         mode: Literal["single", "router"],
         listen_host: str,
@@ -48,7 +48,7 @@ class LlamaCppRuntimePlanner:
     def describe_runtime(
         self,
         *,
-        soulstone: LlamaCppSoulstone,
+        soulstone: LlamaCppSoulstoneConfig,
         inferred: LlamaCppRuntimeInference,
         mode: Literal["single", "router"],
         parser: LlamaCppCommandParser,
@@ -125,12 +125,12 @@ class LlamaCppRuntimePlanner:
             defaults["reasoning_format"] = inferred.reasoning_format
         return defaults
 
-    def exec_diagnostics(self, *, soulstone: LlamaCppSoulstone, parser: LlamaCppCommandParser) -> list[str]:
+    def exec_diagnostics(self, *, soulstone: LlamaCppSoulstoneConfig, parser: LlamaCppCommandParser) -> list[str]:
         if not soulstone.exec:
             return []
         return parser.inspect_exec_args(list(soulstone.exec))
 
-    def preferred_model_id(self, soulstone: LlamaCppSoulstone) -> str:
+    def preferred_model_id(self, soulstone: LlamaCppSoulstoneConfig) -> str:
         if soulstone.models:
             return next(iter(soulstone.models.values())).id
         if soulstone.model_path:
@@ -140,7 +140,7 @@ class LlamaCppRuntimePlanner:
     def _single_mode_args(
         self,
         *,
-        soulstone: LlamaCppSoulstone,
+        soulstone: LlamaCppSoulstoneConfig,
         args: list[str],
         inferred: LlamaCppRuntimeInference,
     ) -> list[str]:
@@ -154,7 +154,7 @@ class LlamaCppRuntimePlanner:
     def _router_mode_args(
         self,
         *,
-        soulstone: LlamaCppSoulstone,
+        soulstone: LlamaCppSoulstoneConfig,
         args: list[str],
         inferred: LlamaCppRuntimeInference,
     ) -> list[str]:
@@ -172,7 +172,7 @@ class LlamaCppRuntimePlanner:
             args.append("--no-models-autoload")
         return args
 
-    def _append_optional_args(self, *, soulstone: LlamaCppSoulstone, args: list[str]) -> list[str]:
+    def _append_optional_args(self, *, soulstone: LlamaCppSoulstoneConfig, args: list[str]) -> list[str]:
         if soulstone.sleep_idle_seconds is not None:
             args.extend(["--sleep-idle-seconds", str(soulstone.sleep_idle_seconds)])
         if soulstone.chat_template:
@@ -182,7 +182,7 @@ class LlamaCppRuntimePlanner:
         args.extend(soulstone.extra_args)
         return args
 
-    def _common_args(self, *, soulstone: LlamaCppSoulstone, listen_host: str) -> list[str]:
+    def _common_args(self, *, soulstone: LlamaCppSoulstoneConfig, listen_host: str) -> list[str]:
         args = [
             "--host",
             listen_host,

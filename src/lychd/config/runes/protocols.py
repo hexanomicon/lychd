@@ -1,4 +1,4 @@
-"""Typing protocols for runtime objects that compose rune configs."""
+"""Typing protocols for objects that retain rune provenance."""
 
 from __future__ import annotations
 
@@ -9,15 +9,20 @@ from lychd.config.runes.base import RuneConfig
 
 @runtime_checkable
 class Runic[T: RuneConfig](Protocol):
-    """Composition contract for runtime objects backed by a rune config.
+    """Protocol for objects configured by a Codex Rune.
 
-    The ``rune`` reference is intended to be a construction-time invariant:
-    runtime objects may derive effective state from it, but should not replace it
-    after initialization. Concrete implementations should expose ``rune`` as a
-    read-only property and back it with ``_rune: Final[T]`` when practical.
+    Any runtime object with ``rune: T`` satisfies this protocol structurally.
+    Such objects are servants of the Codex: they retain the validated config
+    that shaped them, but they are not themselves rune schemas.
     """
 
     @property
     def rune(self) -> T:
-        """Return the owned source rune config (read-only provenance handle)."""
+        """Return the validated source Rune.
+
+        Returns:
+            The ``RuneConfig`` instance used as this object's configuration
+            provenance.
+
+        """
         ...

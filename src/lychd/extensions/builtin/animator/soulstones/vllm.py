@@ -8,7 +8,7 @@ from pydantic import Field, model_validator
 from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
-class VllmSoulstone(SoulstoneConfig):
+class VllmSoulstoneConfig(SoulstoneConfig):
     """Builtin Soulstone profile for vLLM.
 
     Contract:
@@ -18,7 +18,7 @@ class VllmSoulstone(SoulstoneConfig):
     - container-level toggles (for example ``ipc_host``) still apply in both modes
     """
 
-    relative_path: ClassVar[Path | None] = Path("animator/soulstones/vllm")
+    path_fragment: ClassVar[Path] = Path("vllm")
     runtime: str = "vllm"
     image: str = "vllm/vllm-openai:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
@@ -56,14 +56,14 @@ class VllmSoulstone(SoulstoneConfig):
     )
 
     @model_validator(mode="after")
-    def _validate_runtime_contract(self) -> VllmSoulstone:
+    def _validate_runtime_contract(self) -> VllmSoulstoneConfig:
         """Reject mixed command authority and enforce managed prerequisites."""
         if self.exec:
             conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)
             if conflicting:
                 joined = ", ".join(conflicting)
                 msg = (
-                    "VllmSoulstone uses exec passthrough, but managed fields were also set: "
+                    "VllmSoulstoneConfig uses exec passthrough, but managed fields were also set: "
                     f"{joined}. Remove managed fields or remove 'exec'."
                 )
                 raise ValueError(msg)
@@ -72,5 +72,5 @@ class VllmSoulstone(SoulstoneConfig):
         if self.model_path or self.models:
             return self
 
-        msg = "VllmSoulstone in managed mode requires 'model_path' or explicit 'models' entries."
+        msg = "VllmSoulstoneConfig in managed mode requires 'model_path' or explicit 'models' entries."
         raise ValueError(msg)

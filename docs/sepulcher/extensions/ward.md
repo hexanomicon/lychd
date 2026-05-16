@@ -1,5 +1,5 @@
 ---
-title:  Ward
+title: Ward
 icon: material/shield-account-outline
 ---
 

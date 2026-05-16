@@ -5,7 +5,7 @@ from typing import Any
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo
 from lychd.domain.animation.services.adapters.surfaces import LlamacppConnector, LlamacppStone
-from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstone
+from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import (
     LlamaCppControlPlane,
     LlamaCppControlPlaneError,
@@ -13,7 +13,7 @@ from lychd.extensions.builtin.animator.llamacpp import (
 
 
 def _router_animator() -> LlamacppStone:
-    rune = LlamaCppSoulstone(
+    rune = LlamaCppSoulstoneConfig(
         name="router",
         startup_mode=LlamaCppMode.ROUTER,
         base_url="http://localhost:8080/v1",

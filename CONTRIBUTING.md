@@ -2,24 +2,18 @@
 
 Read **[AGENTS.md](AGENTS.md)** first — concepts defined there are not repeated here. This file covers the practical rituals: setup commands, implementation conventions, and the authorities that govern specific implementation decisions. Agents and humans alike are expected to internalize both.
 
-## Journal Contract
+## Agent Overlay Boundary
 
-The journal in `.agents/journal/` is the continuity layer for multi-session work. Treat it as the authoritative handoff record for active and completed workstreams.
+LychD supports local agent overlays through `.agents/AGENTS.md`, host-level profiles such as `~/.agents/AGENTS.md`, and tool-specific configuration. Those overlays may define journaling, shell, VCS, persona, reference, and scratch-space habits for a particular checkout or operator.
 
-- Every chapter begins with `00-intro.md`.
-- A chapter is not closed by an ordinary session conclusion. It remains open until it contains a dedicated summary file whose name ends in `-summary.md`.
-- If you resume work inside an existing chapter, read `00-intro.md` first and then the latest `*-summary.md` if one exists. If no summary exists yet, read the latest relevant session.
-- The operator is responsible for assigning non-conflicting work. Agents are not expected to load unrelated open chapters by default.
-- Use the templates in `.agents/journal/templates/` when opening or closing chapters.
-- When the journal becomes noisy, open a new summarisation chapter that consumes older chapters into a fresh trustworthy state report.
-- After that consuming summary exists, superseded chapters may be moved to `.agents/journal/.old/`. Do not delete journal history by default.
+Overlays are coding-agent context, not product inputs. They must not be required for LychD to build, test, package, or run, and they must not weaken tracked repository law.
 
 ## The Iron Pact (Implicit DCA)
 
 By submitting code, you license your contribution under **MPL-2.0** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
 
 **Implicit Developer Certificate of Origin (DCA):**
-There is no CLA to sign, and you do not need to sign your git commits. By reading this contributing guide, you are aware of the Implicit DCA. Everything you commit is automatically covered by this agreement, confirming that you have the right to submit the code under the MPL 2.0 license.
+There is no CLA to sign, no private relicensing grant, and no required git sign-off ritual. By submitting a contribution, you certify that you have the right to submit it under MPL-2.0 and agree that it is licensed under MPL-2.0.
 
 ## Local Rituals (Setup & Commands)
 

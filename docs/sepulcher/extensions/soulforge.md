@@ -1,5 +1,5 @@
 ---
-title:  Soulforge
+title: Soulforge
 icon: material/anvil
 ---
 
@@ -9,23 +9,26 @@ icon: material/anvil
 
 **The Soulforge** is the Training Extension of the LychD system. It is the physical implementation of **[ADR 33 (Training)](../../adr/33-training.md)**—a specialized module that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into model weights.
 
-While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from a generic Base Model (The Stranger) into a **Forged Soul** that mirrors the specific frequency of the Magus. In the cognitive map of the **[Lich](../lich.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
+While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from runtime memory and Mirror-bound identity gravity into adapter-level substrate bias. In the cognitive map of the **[Lich](../lich.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
 
-Karma injection and Soulforging are different layers of adaptation:
+Karma injection, Mirror condensation, and Soulforging are different layers of adaptation:
 
-- **Mirror / Context:** injects retrieved Karma as runtime bias for a single reasoning event.
+- **Context:** injects retrieved Karma as runtime bias for a single reasoning event.
+- **Mirror:** reflects relevant Karma around Sigils and roles until loose recall becomes identity-gravity.
 - **Soulforge:** compresses repeated, verified patterns into adapter weights as standing instinct.
 
 ## I. The Harvesting of Karma
 
 Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on raw noise; it trains on **Karma**—the crystallized residue of verified successes.
 
-- **The Extraction (The Crucible):** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**. This extraction process acts as a **Crucible**, taking human feedback from **[HitL](../../adr/25-hitl.md)** that validated **Shadow** simulations, and forging it into permanent biases for the **Mirror** (Identity).
+- **The Extraction (The Crucible):** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**. This extraction process acts as a **Crucible**, taking human feedback from **[HitL](../../adr/25-hitl.md)** and identity congruence from **Mirror**, then preparing stabilized patterns for permanent substrate bias.
 - **The DeepFabric Loom:** Raw Karma is fed into the `deepfabric` engine. DeepFabric acts as the loom, weaving the "White Truths" into a perfectly structured training manifest (JSONL) stored in the **[Lab](../crypt.md)**. It applies strict constraints to ensure that only syntactically perfect, stabilized patterns are sent to the hammer of Unsloth.
 
 ## II. The Loom of DeepFabric
 
 The transition from fluid memory to hard instinct requires a structuring mechanism. The Soulforge employs `deepfabric` as its foundational loom.
+
+In this chamber, DeepFabric is a dataset loom, not an evaluator. The Riddle uses the same family of tooling to score models through physical trials; the Soulforge uses it to shape consecrated Karma into manifests clean enough for training.
 
 - **The Filter:** It strips away conversational exhaust and hallucinatory syntax, ensuring the training data perfectly matches the required schemas.
 - **The Weave:** Using topic-graph algorithms, it generates diverse, non-redundant variations of the harvested Karma, ensuring the resulting instinct is robust rather than overfitted to a single specific interaction.

@@ -57,18 +57,24 @@ icon: material/book-cog-outline
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
 - **CSS:** A custom stylesheet (`stylesheets/frostmourne.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
 
-### The "Dark Souls" Documentation Strategy
+### The Layered Grimoire Strategy
 
 A delicate balance between narrative depth and engineering clarity is maintained by splitting the documentation into three distinct tiers:
 
 - **The Iron Covenants (ADRs):** `docs/adr/` remains strictly technical and objective. The dark fantasy vocabulary (Vessel, Phylactery, Thrall) is used solely to reduce cognitive load and map domains. It is the architectural ground truth.
-- **The Outer Wall (The Grimoire):** All general documentation within `docs/`. These are heavily stylized and fully embrace the dark fantasy roleplay to make reading the manual an immersive User Experience, but they remain fundamentally functional guides on how to use the software.
-- **The Inner Sanctum (Lore & Transcendence):** Specifically `docs/divination/transcendence/`. This is where the project goes unapologetically off the rails into pure esoteric philosophy, Vedic metaphysics, and cosmic metaphors (the "Why" behind the "How"). Like item descriptions in *Dark Souls*, this lore is entirely optional. It does not help configure the system; it exists to reward the dedicated practitioner who wants to understand the ultimate intent, without confusing the casual contributor who just wants an API endpoint.
+- **The Outer Wall (The Grimoire):** All general documentation within `docs/`. These pages carry the dark fantasy aesthetic, but remain functional guides for operating the software.
+- **The Inner Sanctum (Lore & Transcendence):** Specifically `docs/divination/transcendence/`. This is where the project explores esoteric philosophy, Vedic metaphysics, and restrained mythic metaphor — the "why" behind the "how." The lore is optional. It does not help configure the system; it rewards the dedicated practitioner who wants to understand the ultimate intent without confusing the casual contributor seeking an API endpoint.
+
+### Agent Scope Boundary
+
+Agent routing is not documentation canon. LychD may track thin scope cards in `.agents/scopes/**` to tell coding agents when to load a bounded context, which docs/source files to inspect, which files they may edit, and how to verify the work. These files are agent choreography, not Zensical content.
+
+If a scope starts explaining project truth, that truth belongs in `docs/**`, an ADR, or source contracts. The scope should remain a map that points to canon, not a parallel grimoire.
 
 ### Consequences
 
 !!! success "Positive"
-    - **Cultivation of Lore:** The separation allows the project to maintain its highly stylized "Grimoire" aesthetic and deep eschatological philosophy without compromising the perceived professionalism of the engineering architecture.
+    - **Cultivation of Lore:** The separation allows the project to maintain its stylized "Grimoire" aesthetic and mythic philosophy without compromising the perceived professionalism of the engineering architecture.
     - **Engine Performance:** Zensical's Rust core drastically reduces build times, improving the developer experience.
 
 !!! failure "Negative"

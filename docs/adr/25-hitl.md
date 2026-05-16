@@ -22,26 +22,26 @@ icon: material/account-voice
 
 !!! failure "Option 1: Blocking Execution"
     Maintaining active worker threads and GPU VRAM while waiting for human input at a synchronous interface.
-    -   **Pros:** Immediate resumption; low implementation complexity.
-    -   **Cons:** **Resource Paralysis.** If the Magus is away from the interface, the GPU remains locked, preventing other background rituals or interactive reflexes. It creates a physical bottleneck that violates the efficiency laws of the machine's physical will.
+    - **Pros:** Immediate resumption; low implementation complexity.
+    - **Cons:** **Resource Paralysis.** If the Magus is away from the interface, the GPU remains locked, preventing other background rituals or interactive reflexes. It creates a physical bottleneck that violates the efficiency laws of the machine's physical will.
 
 !!! failure "Option 2: Continuous Polling"
     Having the worker process loop indefinitely, checking a database flag or file for an "Approved" status.
-    -   **Pros:** Allows for state persistence; simpler than a full asynchronous deferral system.
-    -   **Cons:** **Wasteful Cycles.** Consumes CPU resources and database I/O for an idle task. It provides no standard mechanism for "Shadow Scrying," making it difficult to present the user with a verified outcome before the choice is made.
+    - **Pros:** Allows for state persistence; simpler than a full asynchronous deferral system.
+    - **Cons:** **Wasteful Cycles.** Consumes CPU resources and database I/O for an idle task. It provides no standard mechanism for "Shadow Scrying," making it difficult to present the user with a verified outcome before the choice is made.
 
 !!! success "Option 3: Deferred Consecration (Stasis & Scrying)"
     Adopting a "Halt and Scry" workflow utilizing Pydantic AI's `DeferredToolRequests` and the Shadow Realm sandbox.
-    -   **Pros:**
-        -   **Hardware Agility:** Physically liberates the machine's body while the mind waits, allowing the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to reallocate VRAM.
-        -   **Verified Visions:** Uses background labor to present a "future state" (e.g., a proposed code merge) before it is committed to the **[Crypt (ADR 13)](./13-layout.md)**.
-        -   **Reflex Reanimation:** Reawakens the mind exactly at the point of decision, triggered by a secure signal from the **[Altar (ADR 15)](./15-frontend.md)**.
+    - **Pros:**
+        - **Hardware Agility:** Physically liberates the machine's body while the mind waits, allowing the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to reallocate VRAM.
+        - **Verified Visions:** Uses background labor to present a "future state" (e.g., a proposed code merge) before it is committed to the **[Crypt (ADR 13)](./13-layout.md)**.
+        - **Reflex Reanimation:** Reawakens the mind exactly at the point of decision, triggered by a secure signal from the **[Altar (ADR 15)](./15-frontend.md)**.
 
 ## Decision Outcome
 
 **The Magus Consent Protocol** is adopted as the definitive Conscience of the machine. It uses a "Halt and Scry" workflow powered by Pydantic AI's native deferred tooling to transform probabilistic intents into "Verified Truths."
 
-There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash. It is the **umbilical cord** that keeps the Word tethered to the Void's gravity — the structural mechanism by which external Pramāṇa enters the system at the moment it is most needed: when the generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
+There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash. It is the **umbilical cord** that keeps the Word tethered to the Magus's Will — the structural mechanism by which external Pramāṇa enters the system at the moment it is most needed: when the generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
 
 Within the broader simulation architecture, HitL is the final authority in a three-stage collapse sequence: structural validity is established in Shadow, identity congruence is evaluated by Mirror, and ontological promotion is authorized here (via Vessel policy and Magus consent).
 
@@ -78,12 +78,12 @@ HitL therefore does not replace simulation or identity evaluation. It ratifies (
 
 Every instance of Consent provides high-quality data for the machine's evolution. Upon successful reanimation and manifestation, the interaction trace—the original Intent, the scried Vision, and the final Blessing—is promoted to the **Karma** partition of the **[Memory Archive (ADR 27)](./27-memory.md)**.
 
-This human feedback forms a **Crucible**, feeding directly into **[Soulforge](../sepulcher/extensions/soulforge.md)**. By validating Shadow simulations with Magus consent, the system crystallizes new identities and biases. This converges the **Mirror** (Ego), **Shadow** (Simulation), and **HitL** (Consent) into a unified pipeline that fundamentally forges the machine's ongoing character.
+This human feedback forms a **Crucible**. HitL captures the Magus's Will; Karma stores its Imprint; Mirror binds that Imprint into identity-gravity; and, once the pattern is stable enough, **[Soulforge](../sepulcher/extensions/soulforge.md)** may compress it into substrate instinct. This converges the **Mirror** (Ego), **Shadow** (Simulation), and **HitL** (Consent) into a unified pipeline that fundamentally forges the machine's ongoing character.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Absolute Sovereignty:** The machine remains a strict extension of the Magus's will; autonomous "runaway" behaviors are physically impossible for critical tasks.
+    - **Absolute Sovereignty:** The machine remains bound to the Magus's Will; autonomous "runaway" behaviors are physically impossible for critical tasks.
     - **Zero-Cost Deliberation:** The system can wait indefinitely for a human signal without consuming active memory or locking inference ports.
     - **High-Fidelity Scrying:** By presenting "Verified Outcomes" (Visions) rather than raw text, the Magus makes decisions based on the projected reality of the change.
 

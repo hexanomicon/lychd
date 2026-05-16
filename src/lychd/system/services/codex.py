@@ -86,7 +86,7 @@ class CodexService:
 
     def _inscribe_configurables(self) -> None:
         """Initialize rune anchor directories and sample TOMLs."""
-        schemas = RuneSchemaDiscovery(include_builtin_extensions=True).discover_classes()
+        schemas = RuneSchemaDiscovery().discover_classes()
 
         writer = ConfigWriter(runes_dir=self.runes_path)
         writer.initialize_anchors(schemas)

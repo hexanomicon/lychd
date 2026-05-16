@@ -5,9 +5,8 @@ from pathlib import Path
 from typing import Any, cast, overload
 
 import structlog
-from pydantic import ValidationError
 
-from lychd.config.runes import ConfigLoader, RuneConfigError, RuneSchemaDiscovery
+from lychd.config.runes import ConfigLoader, RuneSchemaDiscovery
 from lychd.config.settings import get_settings
 from lychd.domain.animation.schemas import AnimatorConfig, PortalConfig, SoulstoneConfig, is_placeholder
 from lychd.system.constants import PATH_RUNES_DIR
@@ -20,14 +19,14 @@ class AnimatorConfigError(ValueError):
 
 
 class AnimatorLoader:
-    """Load animation rune configs with inherited defaults and validation.
+    """Load animation Runes with inherited defaults and validation.
 
-    This loader operates purely on rune config schemas (`*Config`). It does not
+    This loader operates purely on TOML-backed Rune declarations. It does not
     construct runtime animator handles or connectors; that responsibility belongs
     to runtime factories/registry code.
     """
 
-    _INHERITABLE_FIELDS = ("orchestration_labels",)
+    _INHERITABLE_FIELDS = ("orchestration_labels", "dedicated", "persistent_resident")
 
     def __init__(
         self,
@@ -40,11 +39,11 @@ class AnimatorLoader:
         self._reserved_ports = reserved_ports or get_settings().reserved_ports_map
 
     def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
-        """Load Soulstone/Portal rune configs with inherited animator defaults."""
+        """Load Soulstone/Portal Runes with inherited animator defaults."""
         try:
-            schemas = RuneSchemaDiscovery(include_builtin_extensions=True).discover_classes()
+            schemas = RuneSchemaDiscovery().discover_classes()
             loaded = ConfigLoader(runes_dir=self._runes_dir).load_all(schemas)
-        except (RuneConfigError, ValidationError) as exc:
+        except ValueError as exc:
             msg = f"Failed to load animation runes: {exc}"
             raise AnimatorConfigError(msg) from exc
 
@@ -76,7 +75,7 @@ class AnimatorLoader:
     def _resolve_animator_defaults(self, loaded: list[Any]) -> AnimatorConfig | None:
         defaults = [instance for instance in loaded if type(instance) is AnimatorConfig]
         if len(defaults) > 1:
-            msg = "Animator defaults must resolve to at most one singleton instance."
+            msg = "Animator defaults must resolve to at most one parent Rune instance."
             raise AnimatorConfigError(msg)
         return defaults[0] if defaults else None
 
@@ -105,7 +104,8 @@ class AnimatorLoader:
 
         validator = cast("Any", type(instance))
         merged = validator.model_validate(data)
-        return cast("SoulstoneConfig | PortalConfig", merged.with_file_name(instance.file_name))
+        merged.source_file = instance.source_file
+        return cast("SoulstoneConfig | PortalConfig", merged)
 
     def _validate_portal_requirements(self, portal: PortalConfig) -> None:
         if not portal.base_url:
@@ -157,12 +157,12 @@ class AnimatorLoader:
 
     def _is_unresolved_sample_soulstone(self, stone: SoulstoneConfig) -> bool:
         if is_placeholder(stone.name) or is_placeholder(stone.image):
-            logger.debug("skipping_sample_soulstone", path=str(stone.file_name))
+            logger.debug("skipping_sample_soulstone", path=str(stone.source_file))
             return True
         return False
 
     def _is_unresolved_sample_portal(self, portal: PortalConfig) -> bool:
         if is_placeholder(portal.name):
-            logger.debug("skipping_sample_portal", path=str(portal.file_name))
+            logger.debug("skipping_sample_portal", path=str(portal.source_file))
             return True
         return False

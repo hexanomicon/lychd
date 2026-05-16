@@ -16,10 +16,10 @@ logger = structlog.get_logger()
 
 
 class ScribeService:
-    """The Scribe of Runes.
+    """The Scribe of Quadlet manifests.
 
     Responsible for:
-    - Transmuting Rune schemas into Systemd Quadlet files.
+    - Rendering validated manifest models into Systemd Quadlet files.
     - Transactional Inscription (Atomic Swap).
     - Version control via the Git Sentinel.
     """
@@ -73,9 +73,9 @@ class ScribeService:
                 error_msg = getattr(e, "stderr", str(e)).strip()
                 logger.warning("git_init_failed", error=error_msg)
 
-    def generate_all(self, runes: Sequence[QuadletBase]) -> None:
-        """Generate all Runes via the Rite of Atomic Inscription (ADR 08)."""
-        logger.info("beginning_inscription", count=len(runes))
+    def generate_all(self, manifests: Sequence[QuadletBase]) -> None:
+        """Generate all Quadlet manifests via the Rite of Atomic Inscription (ADR 08)."""
+        logger.info("beginning_inscription", count=len(manifests))
 
         # Ensure output directory exists (The Binding Site)
         self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -83,9 +83,9 @@ class ScribeService:
 
         with tempfile.TemporaryDirectory(prefix="lychd-scribe-") as staging_dir:
             staging_path = Path(staging_dir)
-            # Inscribe all runes into the staging directory
-            for rune in runes:
-                self._write_rune(rune, target_dir=staging_path)
+            # Render all manifests into the staging directory.
+            for manifest in manifests:
+                self._write_manifest(manifest, target_dir=staging_path)
             self._atomic_swap(staging_path)
             self._sentinel_commit()
 
@@ -99,8 +99,8 @@ class ScribeService:
                     item.unlink()
 
         # Move new ones
-        for rune in staging_path.iterdir():
-            shutil.move(str(rune), str(self._output_dir / rune.name))
+        for manifest in staging_path.iterdir():
+            shutil.move(str(manifest), str(self._output_dir / manifest.name))
 
     def _sentinel_commit(self) -> None:
         """Commit the new state to the Git Sentinel."""
@@ -123,19 +123,19 @@ class ScribeService:
         except (subprocess.CalledProcessError, OSError):
             logger.exception("sentinel_commit_failed")
 
-    def _write_rune(self, rune: QuadletBase, target_dir: Path) -> None:
-        """Inscribe a single Rune into its physical form."""
-        if isinstance(rune, QuadletPod):
-            content = self._pod_tmpl.render(**rune.model_dump())
-            filename = f"{rune.pod_name}.pod"
-        elif isinstance(rune, QuadletContainer):
-            content = self._container_tmpl.render(**rune.model_dump())
-            filename = f"{rune.container_name}.container"
-        elif isinstance(rune, QuadletTarget):
-            content = self._target_tmpl.render(**rune.model_dump())
-            filename = f"lychd-coven-{rune.name}.target"
+    def _write_manifest(self, manifest: QuadletBase, target_dir: Path) -> None:
+        """Render a single Quadlet manifest into its physical file."""
+        if isinstance(manifest, QuadletPod):
+            content = self._pod_tmpl.render(**manifest.model_dump())
+            filename = f"{manifest.pod_name}.pod"
+        elif isinstance(manifest, QuadletContainer):
+            content = self._container_tmpl.render(**manifest.model_dump())
+            filename = f"{manifest.container_name}.container"
+        elif isinstance(manifest, QuadletTarget):
+            content = self._target_tmpl.render(**manifest.model_dump())
+            filename = f"lychd-coven-{manifest.name}.target"
         else:
-            msg = f"Unknown rune type: {type(rune)}"
+            msg = f"Unknown Quadlet manifest type: {type(manifest)}"
             raise TypeError(msg)
 
         (target_dir / filename).write_text(content, encoding="utf-8")

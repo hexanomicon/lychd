@@ -1,139 +1,242 @@
+from __future__ import annotations
+
 import asyncio
 from typing import Any
 
-from lychd.extensions.protocols import CapabilityProtocol
+from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.orchestration.schema import TransitionPlan
 
-class OrchestratorManager:
-    """
-    The Physical Will of LychD.
-    Calculates optimal VRAM states using the Matrix DSL Solver and executes
-    physical transmutations safely via Systemd.
-    """
-    
-    def __init__(self, worker_broker: Any, all_capabilities: list[CapabilityProtocol] | None = None) -> None:
-        """
-        :param worker_broker: The interface to the SAQ/Worker layer (Ghouls).
-        :param all_capabilities: The registry of known cognitive powers.
-        """
-        self.worker_broker = worker_broker
-        self.all_capabilities = all_capabilities or []
-    
-    async def calculate_transition_plan(self, target_capability_id: str) -> TransitionPlan:
-        """
-        THE MATRIX SOLVER (Public Interface).
-        Calculates the lowest-cost transition path for the requested capability.
-        """
-        target = next((c for c in self.all_capabilities if c.identifier == target_capability_id), None)
-        if not target:
-            raise ValueError(f"Unknown capability: {target_capability_id}")
 
-        # 1. Determine if a Hard Swap is even needed
-        # We assume coven_id == capability_id for routing logic
-        is_warm = await self._is_coven_target_active(target.identifier)
-        
-        if is_warm:
-            # If warm, it's a soft swap (if not already active) or a no-op
+class OrchestratorManager:
+    """Plan and execute local runtime transitions from the canonical registry."""
+
+    def __init__(
+        self,
+        worker_broker: Any,
+        registry: AnimatorRegistry | None = None,
+    ) -> None:
+        """Initialize orchestration against the canonical registry."""
+        self.worker_broker = worker_broker
+        self.registry = registry or AnimatorRegistry()
+
+    def list_capability_statuses(self) -> list[dict[str, Any]]:
+        """Return a canonical status snapshot for the orchestrator API."""
+        items: list[dict[str, Any]] = []
+        for spec in sorted(self.registry.list_capabilities(), key=lambda item: item.key):
+            state = self.registry.get_capability_state(spec.key)
+            if state is None:
+                continue
+            items.append(
+                {
+                    "capability_key": spec.key,
+                    "animator_name": spec.animator_name,
+                    "family": spec.family,
+                    "runtime": spec.runtime,
+                    "source_kind": spec.source_kind,
+                    "lifecycle_mode": spec.lifecycle_mode,
+                    "model_id": spec.model_id,
+                    "is_static": state.is_static,
+                    "is_active": state.is_active,
+                    "is_available": state.is_available,
+                    "warm": state.warm,
+                    "health": state.health,
+                    "reason": state.reason,
+                    "matrix_sets": list(spec.concurrency.matrix_sets),
+                    "evict_cost": spec.concurrency.evict_cost,
+                    "dedicated": spec.concurrency.dedicated,
+                    "persistent_resident": spec.concurrency.persistent_resident,
+                }
+            )
+        return items
+
+    async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
+        """Calculate the lowest-cost transition for a requested capability key."""
+        target, target_state = self._get_capability_record(target_capability_key)
+
+        if target_state.warm:
             return TransitionPlan(
                 total_metabolic_cost=0.0,
                 evict_coven_ids=[],
                 launch_coven_ids=[],
-                action_type="SOFT_SWAP" if not target.is_active else "NO_OP"
+                action_type="NO_OP",
             )
 
-        # 2. Run the Matrix Solver
-        current_active = {c for c in self.all_capabilities if c.is_active}
-        best_cost = float('inf')
-        best_evictees = set()
-        best_candidates = set()
-        
-        for matrix_set in target.matrix_sets:
-            candidate_set = {c for c in self.all_capabilities if matrix_set in c.matrix_sets}
-            evictees = current_active - candidate_set
-            cost = sum(m.evict_cost for m in evictees)
-            
-            if cost < best_cost:
-                best_cost = cost
-                best_evictees = evictees
-                best_candidates = candidate_set
+        if target.lifecycle_mode == "dynamic_soft" and self._is_animator_runtime_warm(target.animator_name):
+            return TransitionPlan(
+                total_metabolic_cost=0.0,
+                evict_coven_ids=[],
+                launch_coven_ids=[],
+                action_type="SOFT_SWAP",
+            )
 
-        # Launching candidates that aren't already active
-        to_launch = best_candidates - current_active
-        # Ensure target is in launch list if not active
-        if target not in current_active:
-            to_launch.add(target)
+        if not target.concurrency.dedicated:
+            msg = (
+                f"Capability '{target.key}' is provided by shared animator '{target.animator_name}' "
+                "and cannot be lifecycle-managed by the orchestrator."
+            )
+            raise RuntimeError(msg)
 
+        evict_ids, launch_ids, total_cost = self._solve_matrix(target)
         return TransitionPlan(
-            total_metabolic_cost=float(best_cost),
-            evict_coven_ids=[m.identifier for m in best_evictees],
-            launch_coven_ids=[m.identifier for m in to_launch],
-            action_type="HARD_SWAP"
+            total_metabolic_cost=float(total_cost),
+            evict_coven_ids=evict_ids,
+            launch_coven_ids=launch_ids,
+            action_type="HARD_SWAP",
         )
 
     async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
-        """
-        Resolves a HardwareTransitionRequired signal by executing a transition plan.
-        """
-        await self.request_transition(exception.capability.identifier, signal_priority)
-        
-        # SOFT SWAP logic (always run to ensure model is loaded in the runner/relic)
-        # Note: In a manual override, we might not have the animator available here 
-        # unless we find it in the registry. For now, handle_transition keeps its behavior.
-        await exception.animator.activate_capability(exception.capability)
+        """Execute the required transition and finish dynamic soft activation when needed."""
+        plan = await self.request_transition(exception.spec.key, signal_priority)
+        if exception.spec.lifecycle_mode != "dynamic_soft":
+            return
 
-    async def request_transition(self, target_capability_id: str, priority: float) -> TransitionPlan:
-        """
-        The Master Switch.
-        Calculates and executes a transition plan with full Graceful Drain physics.
-        """
-        plan = await self.calculate_transition_plan(target_capability_id)
-        
-        if plan.action_type == "HARD_SWAP":
-            # THE GRACEFUL DRAIN PROTOCOL
-            await self.worker_broker.pause_queues()
-            await self.worker_broker.broadcast_soft_stop()
-            await self._await_active_drain()
-            
-            try:
-                # PHYSICAL EXECUTION
-                for evict_id in plan.evict_coven_ids:
-                    await self._stop_coven_target(evict_id)
-                
-                for start_id in plan.launch_coven_ids:
-                    await self._start_coven_target(start_id)
-            finally:
-                await self.worker_broker.unpause_queues()
-        
+        if plan.action_type not in {"SOFT_SWAP", "HARD_SWAP", "NO_OP"}:
+            return
+        await self._activate_dynamic_capability(exception.spec)
+
+    async def request_transition(self, target_capability_key: str, priority: float) -> TransitionPlan:
+        """Calculate and execute the physical transition plan."""
+        _ = priority
+        plan = await self.calculate_transition_plan(target_capability_key)
+
+        if plan.action_type != "HARD_SWAP":
+            return plan
+
+        await self.worker_broker.pause_queues()
+        await self.worker_broker.broadcast_soft_stop()
+        await self._await_active_drain()
+
+        try:
+            for animator_name in plan.evict_coven_ids:
+                await self._stop_animator_runtime(animator_name)
+
+            for animator_name in plan.launch_coven_ids:
+                await self._start_animator_runtime(animator_name)
+        finally:
+            await self.worker_broker.unpause_queues()
+
         return plan
 
-    async def _is_coven_target_active(self, coven_id: str) -> bool:
-        """Asynchronously checks the Systemd status of the Coven Target."""
-        process = await asyncio.create_subprocess_exec(
-            "systemctl", "--user", "is-active", f"lychd-coven-{coven_id}.target",
-            stdout=asyncio.subprocess.DEVNULL,
-            stderr=asyncio.subprocess.DEVNULL
-        )
-        await process.wait()
-        return process.returncode == 0
+    def _solve_matrix(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
+        """Select the lowest-cost local eviction set from concurrency intent."""
+        local_specs = self._local_animator_specs()
+        active_specs = {
+            spec.animator_name: spec
+            for spec in local_specs.values()
+            if (state := self.registry.get_capability_state(spec.key)) is not None and state.is_active
+        }
 
-    async def _start_coven_target(self, coven_id: str) -> None:
-        """Asynchronously executes the Systemd start command."""
-        process = await asyncio.create_subprocess_exec(
-            "systemctl", "--user", "start", f"lychd-coven-{coven_id}.target"
-        )
+        if target.animator_name in active_specs:
+            return ([], [], 0)
+
+        matrix_sets = list(target.concurrency.matrix_sets)
+        if not matrix_sets:
+            evictees = [
+                spec
+                for spec in active_specs.values()
+                if spec.concurrency.dedicated and not spec.concurrency.persistent_resident
+            ]
+            return (self._sorted_animator_ids(evictees), [target.animator_name], sum(self._evict_costs(evictees)))
+
+        best_evictees: list[CapabilitySpec] | None = None
+        best_cost: int | None = None
+        for matrix_set in matrix_sets:
+            allowed = {
+                spec.animator_name
+                for spec in local_specs.values()
+                if matrix_set in spec.concurrency.matrix_sets
+            }
+            evictees = [
+                spec
+                for spec in active_specs.values()
+                if spec.animator_name not in allowed
+                and spec.concurrency.dedicated
+                and not spec.concurrency.persistent_resident
+            ]
+            cost = sum(self._evict_costs(evictees))
+            if best_cost is None or cost < best_cost:
+                best_evictees = evictees
+                best_cost = cost
+
+        selected_evictees = best_evictees or []
+        return (self._sorted_animator_ids(selected_evictees), [target.animator_name], best_cost or 0)
+
+    def _local_animator_specs(self) -> dict[str, CapabilitySpec]:
+        specs: dict[str, CapabilitySpec] = {}
+        for spec in self.registry.list_capabilities():
+            if spec.source_kind != "soulstone":
+                continue
+            specs.setdefault(spec.animator_name, spec)
+        return specs
+
+    def _evict_costs(self, specs: list[CapabilitySpec]) -> list[int]:
+        return [spec.concurrency.evict_cost for spec in specs]
+
+    def _sorted_animator_ids(self, specs: list[CapabilitySpec]) -> list[str]:
+        return sorted(spec.animator_name for spec in specs)
+
+    def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
+        spec = self.registry.get_capability(key)
+        if spec is None:
+            msg = f"Unknown capability: {key}"
+            raise ValueError(msg)
+
+        state = self.registry.refresh_capability_state(key) or self.registry.get_capability_state(key)
+        if state is None:
+            msg = f"Capability state is unavailable for '{key}'."
+            raise ValueError(msg)
+        return spec, state
+
+    def _is_animator_runtime_warm(self, animator_name: str) -> bool:
+        for state in self.registry.list_capability_states_for_animator(animator_name):
+            if state.is_active or state.warm:
+                return True
+        return False
+
+    async def _activate_dynamic_capability(self, target: CapabilitySpec) -> None:
+        if not self.registry.activate_capability(target.key):
+            msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'."
+            raise RuntimeError(msg)
+
+    async def _start_animator_runtime(self, animator_name: str) -> None:
+        unit_name = self._runtime_unit(animator_name)
+        if unit_name is None:
+            msg = f"Animator '{animator_name}' is not backed by a local lifecycle-managed runtime."
+            raise RuntimeError(msg)
+
+        process = await asyncio.create_subprocess_exec("systemctl", "--user", "start", unit_name)
         await process.wait()
         if process.returncode != 0:
-            raise RuntimeError(f"Physical manifestation failed: systemctl returned {process.returncode}")
+            msg = f"Physical manifestation failed: systemctl returned {process.returncode} for {unit_name}"
+            raise RuntimeError(msg)
 
-    async def _stop_coven_target(self, coven_id: str) -> None:
-        """Asynchronously executes the Systemd stop command."""
-        process = await asyncio.create_subprocess_exec(
-            "systemctl", "--user", "stop", f"lychd-coven-{coven_id}.target"
-        )
+        runtime = self.registry.get_runtime(animator_name)
+        if runtime is not None:
+            runtime.connector.link.up = True
+        self.registry.refresh_capability_states_for_animator(animator_name)
+
+    async def _stop_animator_runtime(self, animator_name: str) -> None:
+        unit_name = self._runtime_unit(animator_name)
+        if unit_name is None:
+            return
+
+        process = await asyncio.create_subprocess_exec("systemctl", "--user", "stop", unit_name)
         await process.wait()
 
+        runtime = self.registry.get_runtime(animator_name)
+        if runtime is not None:
+            runtime.connector.link.up = False
+        self.registry.refresh_capability_states_for_animator(animator_name)
+
+    def _runtime_unit(self, animator_name: str) -> str | None:
+        soulstone = self.registry.get_soulstone_rune(animator_name)
+        if soulstone is None:
+            return None
+        return f"{soulstone.service_name}.service"
+
     async def _await_active_drain(self) -> None:
-        """Polls the worker broker until the active job count reaches 0."""
-        while await self.worker_broker.get_active_worker_count() > 0:
+        """Poll the worker broker until the active job count reaches zero."""
+        while await self.worker_broker.get_active_worker_count() > 0:  # noqa: ASYNC110
             await asyncio.sleep(1)

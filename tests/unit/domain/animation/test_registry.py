@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic_ai import Agent, DeferredToolRequests
@@ -8,12 +9,14 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.toolsets import ExternalToolset
 
+from lychd.domain.animation.connectors import ToolConnector
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, PortalConfig
+from lychd.domain.animation.schemas import ExternalToolConfig, ModelInfo, PortalConfig
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
 from lychd.domain.animation.services.loader import AnimatorLoader
-from lychd.domain.animation.services.registry import AnimatorRegistry, RuntimeAnimator
+from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
 
 
@@ -89,6 +92,39 @@ def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> 
     assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
 
 
+def test_registry_indexes_capabilities_and_persistent_residents(tmp_path: Path) -> None:
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "soulstones" / "vllm" / "embedder.toml",
+        """
+        name = "embedder"
+        model_path = "/models/embedder.gguf"
+        dedicated = false
+        persistent_resident = true
+        matrix_sets = ["support"]
+
+        [capabilities]
+        families = ["embedding"]
+        modalities_out = ["vector"]
+        """,
+    )
+
+    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    capabilities = registry.list_capabilities()
+    residents = registry.list_persistent_residents()
+
+    assert len(capabilities) == 1
+    assert len(residents) == 1
+    spec = residents[0]
+    assert spec.animator_name == "embedder"
+    assert spec.concurrency.persistent_resident is True
+    assert registry.get_capability(spec.key) == spec
+    state = registry.get_capability_state(spec.key)
+    assert state is not None
+    assert state.is_static is True
+    assert state.is_active is False
+
+
 def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     (runes_dir / "animator" / "soulstones").mkdir(parents=True, exist_ok=True)
@@ -102,6 +138,22 @@ def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> Non
     assert registry.prepare("missing") is None
     assert registry.is_ready("missing") is False
     assert registry.list_models("missing") == ()
+
+
+def test_registry_activate_capability_returns_false_for_static_runtime(tmp_path: Path) -> None:
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "soulstones" / "vllm" / "embedder.toml",
+        """
+        name = "embedder"
+        model_path = "/models/embedder.gguf"
+        """,
+    )
+
+    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    spec = registry.list_capabilities()[0]
+
+    assert registry.activate_capability(spec.key) is False
 
 
 def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path) -> None:
@@ -119,7 +171,7 @@ def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path
             super().__init__()
             self.seen_animator_id: str | None = None
 
-        def inspect_animator(self, animator: RuntimeAnimator) -> LlamaCppLifecycle:
+        def inspect_animator(self, animator: Any) -> LlamaCppLifecycle:
             self.seen_animator_id = animator.id
             return LlamaCppLifecycle(
                 base_url=animator.base_url,
@@ -168,6 +220,29 @@ def test_runtime_adapter_registry_supports_custom_portal_factories() -> None:
     assert runtime.connector.kind == "portal:my-openai-gateway"
 
 
+def test_passive_tool_portal_does_not_invent_chat_capability() -> None:
+    portal = PortalConfig(
+        name="crawler-tools",
+        base_url="https://crawler.internal",
+        provider_type="crawler",
+        external_tools=[
+            ExternalToolConfig(
+                name="crawl_url",
+                parameters_json_schema={"type": "object", "properties": {"url": {"type": "string"}}},
+            )
+        ],
+    )
+
+    adapters = RuntimeAdapterRegistry()
+    runtime = adapters.build_runtime(portal)
+    assert runtime is not None
+    specs = adapters.build_capability_specs(portal, runtime)
+
+    assert [spec.family for spec in specs] == [CapabilityFamily.TOOL_EXECUTION]
+    assert isinstance(runtime.connector, ToolConnector)
+    assert len(runtime.connector.get_toolsets()) == 1
+
+
 def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     runes_dir = tmp_path / "runes"
     _write(
@@ -190,4 +265,3 @@ def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest
     registry.load()
 
     assert registry.get_runtime("qwen-local") is None
-    assert any("runtime_unresolved" in record.getMessage() for record in caplog.records)

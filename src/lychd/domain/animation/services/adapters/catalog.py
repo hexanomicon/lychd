@@ -11,7 +11,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lychd.domain.animation.schemas import ModelCapabilityHints, ModelInfo, ModelSurface, SoulstoneConfig
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilitySpec
+from lychd.domain.animation.schemas import (
+    ConcurrencyIntent,
+    GenerationProfile,
+    LLMGenerationDefaults,
+    ModelCapabilityHints,
+    ModelInfo,
+    ModelSurface,
+    SoulstoneConfig,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -123,6 +132,124 @@ def model_infos_from_soulstone(soulstone: SoulstoneConfig) -> list[ModelInfo]:
     ]
 
 
+def capability_specs_from_soulstone(
+    soulstone: SoulstoneConfig,
+    *,
+    runtime_metadata: dict[str, object] | None = None,
+    runtime_defaults: dict[str, object] | None = None,
+    lifecycle_mode: str = "static",
+) -> list[CapabilitySpec]:
+    """Build capability specs from a soulstone declaration plus runtime metadata."""
+    profile = _RUNTIME_PROFILES.get(soulstone.runtime_name, _DEFAULT_PROFILE)
+    specs: list[CapabilitySpec] = []
+    runtime_meta = runtime_metadata or {}
+    generation_runtime_defaults = runtime_defaults or {}
+
+    if soulstone.models:
+        for model in soulstone.models.values():
+            info = _build_model_info(
+                model_id=model.id,
+                description=model.description,
+                metadata=_model_metadata(model.path, model.format.value if model.format else None, model.tags),
+                max_context=model.llm_defaults.max_context if model.llm_defaults is not None else None,
+                profile=profile,
+                soulstone_hints=soulstone.capabilities,
+                model_hints=model.capabilities,
+            )
+            specs.extend(
+                _capability_specs_from_model_info(
+                    soulstone=soulstone,
+                    info=info,
+                    generation_defaults=_merge_generation_defaults(
+                        runtime_defaults=generation_runtime_defaults,
+                        animator_defaults=soulstone.llm_defaults,
+                        model_defaults=model.llm_defaults,
+                    ),
+                    lifecycle_mode=lifecycle_mode,
+                    runtime_metadata=runtime_meta,
+                    families_hint=model.capabilities.families if model.capabilities is not None else None,
+                )
+            )
+        return specs
+
+    inferred_infos = model_infos_from_soulstone(soulstone)
+    for info in inferred_infos:
+        specs.extend(
+            _capability_specs_from_model_info(
+                soulstone=soulstone,
+                info=info,
+                generation_defaults=_merge_generation_defaults(
+                    runtime_defaults=generation_runtime_defaults,
+                    animator_defaults=soulstone.llm_defaults,
+                    model_defaults=None,
+                ),
+                lifecycle_mode=lifecycle_mode,
+                runtime_metadata=runtime_meta,
+                families_hint=soulstone.capabilities.families if soulstone.capabilities is not None else None,
+            )
+        )
+    return specs
+
+
+def capability_specs_from_model_infos(
+    soulstone: SoulstoneConfig,
+    model_infos: Sequence[ModelInfo],
+    *,
+    runtime_metadata: dict[str, object] | None = None,
+    runtime_defaults: dict[str, object] | None = None,
+    lifecycle_mode: str = "static",
+) -> list[CapabilitySpec]:
+    """Build capability specs from runtime-discovered model infos plus rune overrides."""
+    profile = _RUNTIME_PROFILES.get(soulstone.runtime_name, _DEFAULT_PROFILE)
+    runtime_meta = runtime_metadata or {}
+    generation_runtime_defaults = runtime_defaults or {}
+    declared_models = {model.id: model for model in soulstone.models.values()} if soulstone.models else {}
+
+    specs: list[CapabilitySpec] = []
+    for info in model_infos:
+        declared = declared_models.get(info.id)
+        if declared is not None:
+            hydrated_info = _build_model_info(
+                model_id=declared.id,
+                description=declared.description or info.description,
+                metadata={**_model_metadata(declared.path, declared.format.value if declared.format else None, declared.tags), **dict(info.metadata)},
+                max_context=declared.llm_defaults.max_context if declared.llm_defaults is not None else info.max_context,
+                profile=profile,
+                soulstone_hints=soulstone.capabilities,
+                model_hints=declared.capabilities,
+            )
+            model_defaults = declared.llm_defaults
+            families_hint = declared.capabilities.families if declared.capabilities is not None else None
+        else:
+            hydrated_info = _build_model_info(
+                model_id=info.id,
+                description=info.description,
+                metadata=dict(info.metadata),
+                max_context=info.max_context,
+                profile=profile,
+                soulstone_hints=soulstone.capabilities,
+                model_hints=None,
+            )
+            model_defaults = None
+            families_hint = soulstone.capabilities.families if soulstone.capabilities is not None else None
+
+        specs.extend(
+            _capability_specs_from_model_info(
+                soulstone=soulstone,
+                info=hydrated_info,
+                generation_defaults=_merge_generation_defaults(
+                    runtime_defaults=generation_runtime_defaults,
+                    animator_defaults=soulstone.llm_defaults,
+                    model_defaults=model_defaults,
+                ),
+                lifecycle_mode=lifecycle_mode,
+                runtime_metadata=runtime_meta,
+                families_hint=families_hint,
+            )
+        )
+    return specs
+
+
 def _build_model_info(
     *,
     model_id: str,
@@ -132,7 +259,7 @@ def _build_model_info(
     description: str | None = None,
     max_context: int | None = None,
     metadata: dict[str, object] | None = None,
-) -> ModelInfo:
+    ) -> ModelInfo:
     """Create one ``ModelInfo`` with layered capability defaults/overrides."""
     return ModelInfo(
         id=model_id,
@@ -165,6 +292,76 @@ def _build_model_info(
         max_context=max_context,
         metadata=metadata or {},
     )
+
+
+def _capability_specs_from_model_info(
+    *,
+    soulstone: SoulstoneConfig,
+    info: ModelInfo,
+    generation_defaults: GenerationProfile,
+    lifecycle_mode: str,
+    runtime_metadata: dict[str, object],
+    families_hint: list[CapabilityFamily] | None,
+) -> list[CapabilitySpec]:
+    families = families_hint or _infer_families_from_model_info(info)
+    concurrency = ConcurrencyIntent(
+        matrix_sets=list(soulstone.matrix_sets),
+        evict_cost=soulstone.evict_cost,
+        dedicated=soulstone.dedicated,
+        persistent_resident=soulstone.persistent_resident,
+    )
+    return [
+        CapabilitySpec(
+            key=f"{soulstone.name}:{family}:{info.id}",
+            animator_name=soulstone.name,
+            runtime=soulstone.runtime_name,
+            source_kind="soulstone",
+            family=family,
+            model_id=info.id,
+            surface=info.surface,
+            modalities_in=list(info.modalities_in),
+            modalities_out=list(info.modalities_out),
+            supports_tools=info.supports_tools,
+            supports_streaming=info.supports_streaming,
+            generation_profile=generation_defaults,
+            lifecycle_mode=lifecycle_mode,
+            concurrency=concurrency,
+            metadata={**runtime_metadata, **dict(info.metadata)},
+        )
+        for family in families
+    ]
+
+
+def _infer_families_from_model_info(info: ModelInfo) -> list[CapabilityFamily]:
+    families: list[CapabilityFamily] = []
+    if info.surface is not None or "text" in info.modalities_in or "text" in info.modalities_out:
+        families.append(CapabilityFamily.CHAT)
+    if "image" in info.modalities_in:
+        families.append(CapabilityFamily.VISION)
+    return list(dict.fromkeys(families or [CapabilityFamily.CHAT]))
+
+
+def _merge_generation_defaults(
+    *,
+    runtime_defaults: dict[str, object],
+    animator_defaults: LLMGenerationDefaults | None,
+    model_defaults: LLMGenerationDefaults | None,
+) -> GenerationProfile:
+    data = dict(runtime_defaults)
+    if animator_defaults is not None:
+        data.update(animator_defaults.model_dump(exclude_none=True))
+    if model_defaults is not None:
+        data.update(model_defaults.model_dump(exclude_none=True))
+    return GenerationProfile.model_validate(data)
+
+
+def _model_metadata(path: Path, model_format: str | None, tags: list[str]) -> dict[str, object]:
+    metadata: dict[str, object] = {"path": str(path)}
+    if model_format is not None:
+        metadata["format"] = model_format
+    if tags:
+        metadata["tags"] = list(tags)
+    return metadata
 
 
 def _pick_surface(
@@ -219,4 +416,8 @@ def _pick_flag(
     return default
 
 
-__all__ = ["default_model_id_for_soulstone", "model_infos_from_soulstone"]
+__all__ = [
+    "capability_specs_from_soulstone",
+    "default_model_id_for_soulstone",
+    "model_infos_from_soulstone",
+]

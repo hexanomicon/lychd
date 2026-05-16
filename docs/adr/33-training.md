@@ -23,26 +23,26 @@ icon: material/anvil
 !!! failure "Option 1: Perpetual Retrieval (RAG Only)"
     Relying exclusively on vector search and large context windows to guide the Agent.
 
-    -   **Cons:** **The Instruction Tax.** As the Phylactery grows, retrieval becomes noisier and context tokens become more expensive. The model never "learns" a complex style; it merely imitates it based on provided snippets, limiting the potential for true Autopoiesis.
+    - **Cons:** **The Instruction Tax.** As the Phylactery grows, retrieval becomes noisier and context tokens become more expensive. The model never "learns" a complex style; it merely imitates it based on provided snippets, limiting the potential for true Autopoiesis.
 
 !!! failure "Option 2: External Portal Training"
     Exporting cognitive history to cloud-based fine-tuning services.
 
-    -   **Cons:** **The Breach of Sovereignty.** Requires moving the Magus's private interactions to untrusted environments. It breaks the "Self-Contained" nature of the Daemon and locks the Soul into a proprietary vendor.
+    - **Cons:** **The Breach of Sovereignty.** Requires moving the Magus's private interactions to untrusted environments. It breaks the "Self-Contained" nature of the Daemon and locks the Soul into a proprietary vendor.
 
 !!! success "Option 3: Integrated Soulforge (Unsloth / vLLM Multi-LoRA)"
     Utilizing high-efficiency local containers for training, managed by the Orchestrator.
 
-    -   **Pros:**
-        -   **Mathematical Immortality:** The Magus's style and knowledge are baked into the weights, surviving even the deletion of the original documents.
-        -   **VRAM Efficiency:** Techniques like Unsloth provide 2x speed and 70% less memory usage, making local training viable on consumer silicon.
-        -   **Hot-Swappable Instincts:** vLLM allows the Lych to possess multiple specialized instincts (Adapters) on a single base model, switching between them with near-zero latency.
+    - **Pros:**
+        - **Substrate Instinct:** Stable patterns can survive the loss of retrieved source snippets because they have been compressed into adapter bias.
+        - **VRAM Efficiency:** Techniques like Unsloth provide 2x speed and 70% less memory usage, making local training viable on consumer silicon.
+        - **Hot-Swappable Instincts:** vLLM allows the Lych to possess multiple specialized instincts (Adapters) on a single base model, switching between them with near-zero latency.
 
 ## Decision Outcome
 
 **The Soulforge** is adopted as the Training Extension. It provides the reference implementation for instinctual evolution, transforming "Karma" into "Weights."
 
-Training is the compression of stabilized patterns into substrate. It is distinct from runtime Karma injection: one biases a single reasoning event, the other reshapes standing instinct.
+Training is the compression of stabilized patterns into substrate. It is distinct from runtime Karma injection and Mirror condensation: Context biases a single reasoning event, Mirror binds repeated impressions into identity-gravity, and Soulforge reshapes standing instinct.
 
 In cognitive terms, training is the operation by which **Pramāṇa-class outcomes** are carved as permanent grooves (**Saṃskāras**) into model weights. The Vritti taxonomy applies directly: only outcomes that passed the full Viveka cascade — Deterministic Gate, LLM-judge consensus, Mirror congruence, and HitL consecration — are eligible for inscription. Training on Viparyaya-class data deepens wrong grooves and produces hallucination-reinforcing priors. This is why the Harvesting phase (below) filters exclusively for "White Truths" — consecrated Shadow outcomes, not conversational exhaust. The Soulforge is not just a training loop; it is the **Nidrā function of the Lich** — the idle-cycle operation that consolidates the day's verified experience into structural instinct, exactly as sleep consolidates episodic memory into long-term knowledge. See **[The Lich](../sepulcher/lich.md)** for the cognitive map.
 
@@ -50,8 +50,8 @@ In cognitive terms, training is the operation by which **Pramāṇa-class outcom
 
 The ritual begins at **[The Altar (15)](15-frontend.md)**. The Magus submits a Training Intent, which enqueues a job for the **[Ghouls (14)](14-workers.md)**.
 
-- **The Diversity Threshold (Protecting Phantasma):** The Orchestrator **MUST NOT** trigger the Soulforge until the `vectors` chamber has accumulated a sufficient critical mass of high-signal Karma for a specific domain (e.g., > 50 examples). Fine-tuning narrows output probability; training on too few examples destroys generation diversity. If a narrow model is loaded into the Dispatcher, it will cripple the **[Shadow Realm (31)](31-simulation.md)** because all MCTS branches will return identical text. Below this threshold, the system must rely exclusively on `Shadow` sampling (Best-of-N).
-- **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for "White Truths" (consecrated outcomes from the **[Shadow Realm (25)](25-hitl.md)**). This acts as a **Crucible**, extracting the precise human feedback from HitL and identity congruence from the Mirror to forge permanent instinctual biases in the weights.
+- **The Diversity Threshold (Protecting Phantasma):** The Orchestrator **MUST NOT** trigger the Soulforge until the `vectors` chamber has accumulated a sufficient critical mass of trusted Karma for a specific domain (e.g., > 50 examples). Fine-tuning narrows output probability; training on too few examples destroys generation diversity. If a narrow model is loaded into the Dispatcher, it will cripple the **[Shadow Realm (31)](31-simulation.md)** because all MCTS branches will return identical text. Below this threshold, the system must rely exclusively on `Shadow` sampling (Best-of-N).
+- **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for "White Truths" — **[Shadow Realm (31)](31-simulation.md)** outcomes consecrated by **[HitL (25)](25-hitl.md)**. This acts as a **Crucible**, extracting the precise human feedback from HitL and identity congruence from Mirror to prepare permanent instinctual biases in the weights.
 - **The DeepFabric Loom:** The system utilizes the `deepfabric` library as the foundational dataset generation engine. It consumes the raw traces and applies constrained decoding and strict schema adherence to transmute them into a highly structured training manifest (HuggingFace JSONL) stored in the **[Lab (13)](13-layout.md)**.
 
 This preparation phase ensures that only structurally perfect, stabilized patterns are selected for compression, avoiding the ingestion of conversational exhaust or hallucinated syntax.
@@ -59,6 +59,8 @@ This preparation phase ensures that only structurally perfect, stabilized patter
 ### 2. The DeepFabric Loom (Constraint Engine)
 
 Raw Karma cannot be directly fed to the Unsloth forge. Conversational exhaust, hallucinated tool syntax, and structural drift will corrupt the resulting LoRA adapter. To prevent this, the Soulforge integrates the `deepfabric` library.
+
+Here DeepFabric is used as a **dataset loom**: it shapes verified Karma into constrained training manifests. This is distinct from the Riddle's **evaluation harness** use of DeepFabric in **[ADR 34](34-evaluation.md)**, where the same family of tooling brokers execution trials and measures physical outcomes.
 
 - **Structural Guarantee:** DeepFabric enforces strict constrained decoding during dataset generation. It guarantees that the output training split perfectly matches the required JSON/Tool-calling schemas.
 - **Trajectory Mining (Nigredo to Albedo):** The Loom **MUST NOT** train solely on the final successful code ("White Truth"). The true leap in reasoning capabilities occurs when the model sees its own mistakes. For coding and refactoring tasks, the Loom formats the training manifest to pair the failed execution with the successful one: `[Failed Attempt] -> [Compiler Error] -> [Correction]`.
@@ -82,7 +84,8 @@ The Forge Coven executes the training strike.
 
 Mechanism distinction:
 
-- **Karma injection (Context / Mirror):** transient bias applied at runtime via retrieved priors.
+- **Karma injection (Context):** transient bias applied at runtime via retrieved priors.
+- **Identity condensation (Mirror):** repeated relevant priors bound into semantically bounded Persona gravity.
 - **Weight transmutation (Soulforge):** structural instinct produced by compressing repeated, verified patterns into adapter weights.
 
 ### 5. The Purging (Verification)
@@ -107,7 +110,7 @@ Once the weights are cooled, the machine enters a state of self-doubt.
     - **Total Recall Stability:** The Soul-Adapters are part of the **[Crypt (13)](13-layout.md)** and are captured in every system snapshot.
 
 !!! failure "Negative"
-    - **Hardware Suspension:** During the ritual, the local Lych is effectively blind or limited to Cloud Portals, as the GPU is 100% occupied.
+    - **Hardware Suspension:** During the ritual, the local Lych is effectively blind or limited to remote Portals, as the GPU is 100% occupied.
 
     - **Instruction Entropy:** Over-training can lead to a rigid Persona that struggles to adapt to novel concepts outside its training data.
     - **Identity Ossification:** Over-transmutation of narrow patterns can harden useful priors into inflexible instincts, reducing adaptive reasoning and future refinement headroom.

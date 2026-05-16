@@ -1,25 +1,17 @@
 ---
-title:  Smith
+title: Smith
 icon: material/hammer-wrench
 ---
 
 # :material-hammer-wrench: Smith
 
-> _It is purpose that created us,_
+> _Purpose is the hammer._
 >
-> _Purpose that connects us,_
+> _Pattern is the anvil._
 >
-> _Purpose that pulls us,_
+> _Consent is the seal._
 >
-> _That guides us,_
->
-> _That drives us,_
->
-> _It is purpose that defines,_
->
-> _Purpose that binds us._
->
-> _We’re here because of you._
+> _What is worthy becomes organ._
 
 **The Smith** is the Assimilation Extension of the LychD system. It is the implementation of **[ADR 35 (Assimilation)](../../adr/35-assimilation.md)** and the executor of the **[ADR 18 (Evolution)](../../adr/18-evolution.md)** protocol.
 
@@ -31,9 +23,9 @@ Operating with elevated authority within the **[Lab](../../adr/13-layout.md)**, 
 
 ### Scaffolding (Genesis)
 
-To prevent structural decay, the Smith manifests valid, standardized file trees.
+To prevent structural decay, the Smith manifests valid, standardized file trees. Pre-v1, those trees optimize for assimilable coupled source rather than a frozen SDK target.
 
-- **`scaffold_extension`**: Generates the mandatory `pyproject.toml`, `__init__.py`, and `README.md` required by the **[Extension Protocol](../../adr/05-extensions.md)**.
+- **`scaffold_extension`**: Generates the mandatory `pyproject.toml`, `__init__.py`, and `README.md` required by the **[Extension Protocol](../../adr/05-extensions.md)**. Public compatibility templates are deferred until v1+ surfaces are harvested from proven organs.
 - **`forge_registration`**: Automatically writes the `register(context)` hook for the in-process grafting path, ensuring any runtime-facing logic follows the host registration surface defined by the Vessel.
 
 ### Recursive Introspection (Analysis)
@@ -47,7 +39,7 @@ To build for the Lich, the builder must understand the Lich.
 
 Nothing is promoted on a guess. The extension operates exclusively through the **[Creation Workflow](../../adr/16-creation.md)**.
 
-- **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to dispatch verification payloads (`ruff`, `basedpyright`, `pytest`) to the **[Shadow Realm](../../adr/25-hitl.md)** via SAQ for sandboxed execution. The Smith agent itself remains in the Vessel; only raw scripts reach Shadow.
+- **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to dispatch verification payloads (`ruff`, `basedpyright`, `pytest`) to the **[Shadow Realm](./shadow.md)** via SAQ for sandboxed execution. The Smith agent itself remains in the Vessel; only raw scripts reach Shadow.
 - **The Loop:** If verification fails, the Smith enters a self-correction loop, debugging its own output until structural validity is achieved (the "White Truth" of passing checks).
 
 ## II. The Cycle of Assimilation
@@ -56,7 +48,7 @@ The primary duty and driving **purpose** of the Smith is **Assimilation**: turni
 
 1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar.md)**.
 2. **Ingestion**: The Scout is deployed to read the source and documentation.
-3. **Transmutation**: The Smith generates the necessary wrappers, Pydantic schemas, and **[Proxy Fragments](../../adr/40-proxy.md)** to make the code compatible with the Sepulcher.
+3. **Transmutation**: The Smith generates the necessary wrappers, Pydantic schemas, and **[Proxy Fragments](../../adr/40-proxy.md)** to fit the code into the Sepulcher.
 4. **Promotion**: Upon approval via **[Sovereign Consent](../../adr/25-hitl.md)**, the code is moved to the **Crypt**.
 5. **Rebirth**: The extension triggers **[Packaging](../../adr/17-packaging.md)** and signals the **[Host Reactor](../../adr/10-privilege.md)** for a system restart.
 

@@ -8,7 +8,7 @@ from pydantic import Field, model_validator
 from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
-class SglangSoulstone(SoulstoneConfig):
+class SglangSoulstoneConfig(SoulstoneConfig):
     """Builtin Soulstone profile for SGLang.
 
     Contract:
@@ -17,7 +17,7 @@ class SglangSoulstone(SoulstoneConfig):
     - managed mode requires ``model_path`` or explicit ``models``
     """
 
-    relative_path: ClassVar[Path | None] = Path("animator/soulstones/sglang")
+    path_fragment: ClassVar[Path] = Path("sglang")
     runtime: str = "sglang"
     image: str = "lmsysorg/sglang:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
@@ -45,14 +45,14 @@ class SglangSoulstone(SoulstoneConfig):
     )
 
     @model_validator(mode="after")
-    def _validate_runtime_contract(self) -> SglangSoulstone:
+    def _validate_runtime_contract(self) -> SglangSoulstoneConfig:
         """Reject mixed command authority and enforce managed prerequisites."""
         if self.exec:
             conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)
             if conflicting:
                 joined = ", ".join(conflicting)
                 msg = (
-                    "SglangSoulstone uses exec passthrough, but managed fields were also set: "
+                    "SglangSoulstoneConfig uses exec passthrough, but managed fields were also set: "
                     f"{joined}. Remove managed fields or remove 'exec'."
                 )
                 raise ValueError(msg)
@@ -61,5 +61,5 @@ class SglangSoulstone(SoulstoneConfig):
         if self.model_path or self.models:
             return self
 
-        msg = "SglangSoulstone in managed mode requires 'model_path' or explicit 'models' entries."
+        msg = "SglangSoulstoneConfig in managed mode requires 'model_path' or explicit 'models' entries."
         raise ValueError(msg)

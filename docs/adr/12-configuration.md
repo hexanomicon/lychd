@@ -16,8 +16,8 @@ icon: material/cog-box
 
 - **Single Source of Truth:** All user intent must reside within a bounded configuration domain.
 - **Type Authority:** Configuration must be validated through explicit schemas before any infrastructure is generated.
-- **Deterministic Discovery:** Filesystem hierarchy must uniquely determine schema ownership and instance identity.
-- **Fail-Fast Validation:** Port conflicts, duplicate singleton declarations, and schema violations must abort loading before Quadlets are written.
+- **Deterministic Discovery:** Filesystem hierarchy must uniquely determine rune ownership and instance identity.
+- **Fail-Fast Validation:** Port conflicts, branch-owned TOML files, duplicate instance identity, and schema violations must abort loading before Quadlets are written.
 - **Secret Discipline:** Sensitive values must be protected from accidental exposure and validated for permission correctness.
 - **Privatization Policy:** Context egress thresholds and anonymization requirements must be configurable as first-class policy.
 - **Extensibility Contract:** Extensions must integrate into the configuration system without custom parsers or ad-hoc loading logic.
@@ -43,9 +43,9 @@ icon: material/cog-box
     Separating configuration into a typed Schema Layer and anchored Rune Schemas.
 
     - **Pros:**
-        - **Deterministic Topology:** Directory structure defines schema ownership.
+        - **Deterministic Topology:** Directory structure defines rune ownership.
         - **Type Enforcement:** All configuration validated through Pydantic models.
-        - **Extension Compatibility:** Any extension inheriting `RuneConfig` participates in the same loading model.
+        - **Coupled Extension Compatibility:** Built-in and private extensions inheriting `RuneConfig` participate in the same loading model.
         - **Fail-Fast Infrastructure:** Quadlets are generated only after full validation succeeds.
         - **Clear Secret Model:** Explicit at-rest protection and runtime boundary definition.
 
@@ -112,12 +112,12 @@ It is implemented using Pydantic and defines:
 
 ```txt
 
-Init kwargs → Explicit Environment Overrides → Codex `.env` → `lychd.toml` → File Secrets → Model Defaults
+Init kwargs → Explicit Environment Overrides → Pydantic dotenv source, when enabled → `lychd.toml` → File Secrets → Model Defaults
 
 ```
 
 Environment variables enter through explicit override channels in the schema loader.  
-If `.env` files are used:
+If `.env` files are enabled:
 
 - They must reside within the Codex boundary.
 - They must be `0600`.
@@ -125,26 +125,53 @@ If `.env` files are used:
 
 The Schema Layer validates global state before any infrastructure intent is processed.
 
-Exact source precedence and reserved-port validation are implemented in `src/lychd/config/settings.py:321`:
+Exact source precedence and reserved-port validation are implemented in `src/lychd/config/settings.py:281`:
 
-??? example "Live snippet: `src/lychd/config/settings.py:321`"
+??? example "Live snippet: `src/lychd/config/settings.py:281`"
     ```python
-    --8<-- "src/lychd/config/settings.py:321:372"
+    --8<-- "src/lychd/config/settings.py:281:371"
     ```
 
 ---
 
-## 3. Rune Schemas (Instance Scrolls)
+## 3. Runes (Instance Scrolls)
 
-Infrastructure intent is declared through Rune Schemas.
+Infrastructure intent is declared through runes.
 
-Each schema:
+A **rune** is one validated TOML configuration document under the Codex `runes/` tree. It describes extension-owned intent; it is not the final runtime object and not the generated Systemd/Quadlet artifact.
+
+Each rune class:
 
 - Inherits from `RuneConfig`
-- Declares `relative_path` rooted at `~/.config/lychd/runes/` (or `None` for runes root)
-- Uses `singleton: bool | None` where `None` enables auto topology inference
+- Declares `path_fragment` as the safe relative path fragment it contributes; no rune type may place TOML files directly under the rune root
+- Uses safe fragment parts: lowercase ASCII letters, digits, `_`, and `-`, length 1-50, starting and ending alphanumeric
+- Uses Python subclassing as rune path ancestry; `relative_path` is computed from the single direct rune parent plus the local fragment
+- Relies on runic identity and domain validation for required named instances; no base-loader singleton override exists
 
 Rune instances are stored as TOML files under their Anchor directory.
+
+### Rune And Runic Boundary
+
+`RuneConfig.__init_subclass__()` enforces rune anchor rules at class declaration time. Concrete `RuneConfig` subclasses declare `path_fragment` as a `Path`; the computed `relative_path` is relative to the Codex rune root:
+
+??? example "Live snippet: `src/lychd/config/runes/base.py:10`"
+    ```python
+    --8<-- "src/lychd/config/runes/base.py:10:78"
+    ```
+
+`RuneConfig` is the base contract for typed TOML runes:
+
+??? example "Live snippet: `src/lychd/config/runes/base.py:10`"
+    ```python
+    --8<-- "src/lychd/config/runes/base.py:13:87"
+    ```
+
+`Runic` is only a runtime provenance protocol. Any object with `.rune` can be treated as a servant of the Codex backed by a validated rune; that does not make the object a rune class.
+
+??? example "Live snippet: `src/lychd/config/runes/protocols.py:1`"
+    ```python
+    --8<-- "src/lychd/config/runes/protocols.py:1:27"
+    ```
 
 Example structure:
 
@@ -154,7 +181,6 @@ Example structure:
 lychd.toml
 runes/
   animator/
-    animator.toml
     soulstones/
       vision.toml
       ocr.toml
@@ -167,21 +193,71 @@ runes/
 
 ### The Anchor Doctrine
 
-Each `RuneConfig` schema owns exactly one anchor territory.
+Each `RuneConfig` rune class owns exactly one anchor territory.
 
-- Folder location determines schema type.
+- Folder location determines rune type.
+- The declared `path_fragment` is local to the rune class.
+- Each fragment part must match `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`.
+- Python subclassing is rune path ancestry and must form a single direct parent chain.
+- Mixins/composition should carry shared fields that do not need a new anchor or path fragment.
+- `relative_path` is the resolved Codex-root-relative anchor assembled from ancestry.
 - Anchors may not overlap.
 - No internal `type=` switching is permitted.
 - The filesystem hierarchy is authoritative.
 
-Schema ownership is structural, not dynamic.
+Rune ownership is structural, not dynamic.
 
-Loader enforcement for anchor scanning, singleton exclusivity, top-level TOML payload, and duplicate identity rejection lives in `src/lychd/config/runes/loader.py:19`:
+Loader enforcement for anchor scanning, branch-file rejection, top-level TOML payload, and duplicate identity rejection lives in `src/lychd/config/runes/loader.py:19`:
 
 ??? example "Live snippet: `src/lychd/config/runes/loader.py:19`"
     ```python
-    --8<-- "src/lychd/config/runes/loader.py:19:102"
+    --8<-- "src/lychd/config/runes/loader.py:19:180"
     ```
+
+---
+
+### Fragment Path Tradeoff
+
+`path_fragment` keeps declarations short while preserving a concrete computed
+anchor:
+
+```python
+class SoulstoneConfig(AnimatorConfig):
+    path_fragment: ClassVar[Path] = Path("soulstones")
+
+class GenericSoulstoneConfig(SoulstoneConfig):
+    path_fragment: ClassVar[Path] = Path("generic")
+
+class LlamaCppSoulstoneConfig(SoulstoneConfig):
+    path_fragment: ClassVar[Path] = Path("llamacpp")
+```
+
+This means Python inheritance is filesystem ancestry for `RuneConfig`
+subclasses. That coupling is intentional inside the core and coupled extension
+path because it keeps declarations readable and makes branch/leaf topology
+mechanical.
+
+The tradeoff is that schema-only reuse should not be modeled as a `RuneConfig`
+parent. Use a mixin or composed Pydantic model when shared fields should not move
+the class in the Codex tree:
+
+```python
+class GenerationDefaultsMixin(BaseModel):
+    temperature: float = 0.7
+
+class LlamaCppSoulstoneConfig(SoulstoneConfig, GenerationDefaultsMixin):
+    path_fragment: ClassVar[Path] = Path("llamacpp")
+```
+
+Provisional structural extension schemas that do not inherit `RuneConfig` cannot
+derive a parent chain; they expose a full `relative_path` at the current
+schema-intake boundary instead.
+
+`AnimatorConfig` and `SoulstoneConfig` are abstract branch configs. They are
+configuration base classes, but they are not direct TOML owners. Concrete
+Soulstone TOML instances must live under a leaf schema such as
+`GenericSoulstoneConfig`, `LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or
+`SglangSoulstoneConfig`.
 
 ---
 
@@ -194,9 +270,31 @@ Within an Anchor:
 - Instance identity is derived from relative path.
 - Duplicate identity across files is forbidden.
 
-If a schema resolves as `singleton`, only one file may exist.
+If a rune class has children, it is a branch namespace and may not own TOML files in its own anchor.
+
+Leaf rune classes may define multiple instances.
+
+Branch anchors are not profile buckets. If a branch needs reusable profiles,
+those profiles must be modeled as their own leaf rune family and referenced by
+name from the capability-bearing rune. This keeps parent/default runes single
+and makes many-profile configuration explicit.
 
 Violations abort configuration loading.
+
+### Semantic Profile Doctrine
+
+Filesystem ancestry must not masquerade as semantic defaults.
+
+Shared defaults that apply only to a capability family, such as LLM generation settings, should become named rune/profile instances and be referenced by capability-bearing runes. For example, a generative Soulstone or Portal may reference a generation profile and add local overrides, while a web crawler or tool-only animator never receives irrelevant generation fields just because it lives under `animator/`.
+
+Resolvers compute effective runtime config from:
+
+- named profile runes
+- runtime/family defaults
+- local rune overlays
+- request-time overrides
+
+This keeps directory layout useful for discovery while semantic policy remains explicit and capability-scoped.
 
 ---
 
@@ -205,7 +303,7 @@ Violations abort configuration loading.
 `llama.cpp` soulstones may reference a router preset `.ini` via a typed rune field (e.g., `preset_path`), allowing the Magus to preserve optimized upstream launch profiles while remaining inside Codex governance.
 
 - **Two-Tier Intent:**
-    - **Rune Intent:** Identity, coven policy, and orchestration hints (e.g., `always_on`, matrix metadata).
+    - **Rune Intent:** Identity, coven policy, and orchestration hints (e.g., `dedicated`, `persistent_resident`, `matrix_sets`).
     - **Preset Intent:** Router/runtime defaults and per-model launch arguments consumed by `llama-server`.
 - **Validation Rule:** Preset references must resolve to an existing readable file path before binding; unresolved preset paths are configuration errors.
 - **Boundary Rule:** Preset files tune model runtime behavior, but may not redefine host-level governance authority enforced by LychD (port arbitration, coven exclusivity, and orchestration ownership).
@@ -217,34 +315,41 @@ This doctrine preserves "Magus heritage" tuning while preventing configuration f
 
 ### The Leaf Principle
 
-Only leaf schemas (those without subclasses) may define multiple instances by default.
+Only leaf rune classes (those without subclasses) may define multiple instances.
 
-Non-leaf schemas are singleton by default.
+Non-leaf rune classes are branch namespaces only. They share fields and code defaults with descendants but do not own TOML instances. In animation, this means `AnimatorConfig` and `SoulstoneConfig` are ABC-style branch configs, not files such as `runes/animator/animator.toml` or `runes/animator/soulstones/foo.toml`.
 
-Explicit `singleton=True/False` overrides auto behavior.
+There is no explicit singleton override in `RuneConfig`. If a domain requires one specific named instance, or requires that one named instance be active, that is domain validation rather than base rune authority.
 
-This prevents ambiguous discovery and implicit polymorphic loading.
+This prevents ambiguous discovery, implicit polymorphic loading, and ad hoc singleton exceptions in the base loader.
 
 ## 4. The Configurable Contract (Extension Integration)
 
 Configuration extensibility is governed by the structural registry of the Core.
 
-However, per the **[Dual-Path Extension Doctrine (ADR 05)](05-extensions.md)**, independent extensions MUST NOT subclass core LychD classes to prevent Ouroboros Fragility (The ABC Trap). 
+However, per the **[Extension Compatibility Tiers (ADR 05)](05-extensions.md#7-extension-compatibility-tiers)**, not every external organ has the same stability promise.
 
-To resolve this **Codex Paradox**, built-in extensions and independent extensions follow different integration paths:
+To resolve this **Codex Paradox**, rune classes follow tiered integration paths:
+
 - **Built-in Extensions:** May inherit directly from `RuneConfig`.
-- **Independent Extensions:** Must implement the `@runtime_checkable` `ExtensionSchemaProtocol`.
+- **Private Coupled Extensions:** May inherit directly from `RuneConfig` if the operator accepts refactor coupling.
+- **Future Independent Extensions:** Must wait for a versioned public schema API before LychD promises Core-refactor compatibility. The current structural scan is a provisional Python-source assimilation path, not the stable third-party contract.
 
 ### Registration Doctrine (The Machinery's Translation)
 
-Configuration schemas are registered structurally, not procedurally.
+Rune schema discovery is structural, not the runtime contribution ledger.
 
-- **Built-in Path:** Runtime import plus subclass discovery determines ownership. The subclass itself is the registration signal.
-- **Independent Path:** When `importlib.machinery` scans the Crypt, if it finds an independent class satisfying `ExtensionSchemaProtocol`, the Machinery *dynamically registers* it with the `CodexLoader`. The Machinery bridges the duck-typed independent world into the strict structural registry of the Core.
+- **Built-in/Private Coupled Path:** Runtime import plus `RuneConfig.__subclasses__()` discovery determines schema ownership. The subclass itself is the schema registration signal.
+- **Provisional Crypt Source Path:** `CryptSourceLoader` may load Python source files from the extensions directory, scan their module objects, and register Pydantic-compatible classes with a safe `relative_path`. This is local/provisional assimilation; it must not be described as an SDK or ABI.
+
+??? example "Live snippet: `src/lychd/extensions/discovery.py:31`"
+    ```python
+    --8<-- "src/lychd/extensions/discovery.py:31:73"
+    ```
 
 No extension may implement custom configuration loaders, and no dynamic `type=` dispatch is permitted.
 
-Registration automatically binds the schema to:
+Registration automatically binds the rune class to:
 
 ```txt
 ~/.config/lychd/runes/<relative_path>/
@@ -252,13 +357,14 @@ Registration automatically binds the schema to:
 
 If an extension is installed:
 
-1. Its `RuneConfig` subclasses are discovered.
+1. Its `RuneConfig` subclasses or structural rune classes are discovered.
 2. Their Anchors become valid Codex territories.
 3. One TOML file equals one instance and payload lives at TOML top level.
 4. Instances located in those directories are validated and loaded.
-5. Validated instances become infrastructure intent.
+5. Validated instances become configuration intent.
+6. A separate factory, adapter, or registration hook must hydrate that intent into runtime state when the rune is meant to do work.
 
-Extension import + inheritance registers **schema ownership** under the shared loader.
+Extension import + inheritance registers **rune ownership** under the shared loader. It does not by itself register a runtime service.
 
 The Codex loader remains singular and authoritative.
 
@@ -298,25 +404,27 @@ Infrastructure is never generated from invalid state.
 At runtime, initialization follows a deterministic inscription path:
 
 1. `lychd init` calls `CodexService.inscribe()`.
-2. `RuneSchemaDiscovery.discover_classes()` imports built-in extensions and discovers all `RuneConfig` subclasses.
+2. `RuneSchemaDiscovery.discover_classes()` imports configured extension package roots and discovers all allowed `RuneConfig` subclasses.
 3. `ConfigWriter.initialize_anchors()` materializes all anchor directories.
 4. `ConfigWriter.inscribe_samples()` writes one sample TOML per schema only when no instance file exists yet.
 
 This keeps extension configuration registration structural (inheritance/import), not procedural.
 Animation follows the same path: `AnimatorLoader` consumes the same `RuneConfig` runes under `runes/animator/`.
 
-Discovery import + subclass traversal (`RuneSchemaDiscovery`) is implemented in `src/lychd/config/runes/discovery.py:10`:
+Generic local runtimes are passive by default. Non-model runtimes must declare capability hints explicitly, and local OpenAI-compatible APIs must select an explicit OpenAI-compatible runtime alias or a dedicated adapter. Endpoint presence is not configuration authority for model binding.
 
-??? example "Live snippet: `src/lychd/config/runes/discovery.py:10`"
+Discovery package import, subclass traversal, and allowed-rune anchor validation (`RuneSchemaDiscovery`) are implemented in `src/lychd/config/runes/discovery.py:37`:
+
+??? example "Live snippet: `src/lychd/config/runes/discovery.py:37`"
     ```python
-    --8<-- "src/lychd/config/runes/discovery.py:10:53"
+    --8<-- "src/lychd/config/runes/discovery.py:37:121"
     ```
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 
 ??? example "Live snippet: `src/lychd/config/runes/writer.py:16`"
     ```python
-    --8<-- "src/lychd/config/runes/writer.py:16:70"
+    --8<-- "src/lychd/config/runes/writer.py:16:115"
     ```
 
 ---
@@ -330,8 +438,8 @@ The configuration lifecycle proceeds in strict order:
 3. Discover Anchored Rune Schemas.
 4. Validate each instance.
 5. Enforce:
-   - Singleton exclusivity
    - Duplicate identity rejection
+   - Domain identity and policy constraints
    - Port arbitration
 6. Only after full validation:
    - Generate Quadlets.
@@ -398,16 +506,17 @@ Configuration is now split by trust boundary:
 - Vessel config is the only source of truth for secrets, persistence, and policy.
 - The Tomb config is a generated runtime envelope with only task-safe fields.
 - The Tomb config is derived data, never an alternate source of truth.
-- The Tomb schema forbids secret fields and infrastructure authority fields.
+- The Tomb schema forbids provider secret fields and infrastructure authority fields.
 - Provider/API keys are never serialized into Tomb payloads.
+- Narrow queue-only SAQ/Postgres execution credentials, when needed, are worker-unit credentials rather than Tomb configuration authority.
 - The Tomb cannot override queue, network, or authority policy.
 
 ### 5. Authority Matrix
 
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
-| Secrets | Loaded via Podman secret references and mounted into trusted units. | Secret fields are forbidden by schema. |
-| Mounts | Codex-backed config and durable state mounts. | Sanitized task-scoped config artifact only. |
+| Secrets | Loaded via Podman secret references and mounted into trusted units. | Provider and authority secret fields are forbidden by schema; narrow queue-only SAQ/Postgres execution credentials live at worker-unit policy. |
+| Mounts | Codex-backed config and durable state mounts. | Sanitized task-scoped config artifact or read-only projection only. |
 | Network | Resolves provider and broker routes per policy. | No direct secret-bearing provider routes. |
 | Queue Ownership | Owns queue workflow configuration. | No queue configuration ownership. |
 | Context Privatization | Defines thresholds and anonymization policy for portal egress. | Cannot lower thresholds or bypass sanitization gates. |
@@ -416,9 +525,9 @@ Configuration is now split by trust boundary:
 ## Consequences
 
 !!! success "Positive"
-    - **Deterministic Topology:** Filesystem structure defines schema ownership and instance identity.
+    - **Deterministic Topology:** Filesystem structure defines rune ownership and instance identity.
     - **Fail-Fast Guarantees:** Invalid configuration aborts before infrastructure generation.
-    - **Extension Uniformity:** Any extension inheriting `RuneConfig` integrates without special handling.
+    - **Extension Uniformity:** Coupled extensions inheriting `RuneConfig` integrate without custom configuration loaders.
     - **Clear Trust Boundaries:** Secret visibility is explicit and aligned with process boundaries.
 
 !!! failure "Negative"

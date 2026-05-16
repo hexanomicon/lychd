@@ -1,66 +1,73 @@
 import importlib.machinery
 import importlib.util
-from typing import Any
 from pathlib import Path
+from typing import Any
 
-class CryptMachinery:
+
+class CryptSourceLoader:
+    """Load provisional Crypt source modules into Core registries.
+
+    This is a pre-v1 assimilation helper, not an extension ABI. It imports
+    trusted Python source so the composed runtime can discover rune-shaped
+    schemas and then let Forge/Smith verification own repair.
+
+    Binary organs require Forge-mediated validation before runtime loading.
     """
-    The Translation layer bridging independent Extension Protocol organs into
-    the strict structural registry of the Core.
-    Resolves the Codex Paradox and supports Dual-Path organs (Python & Rust/PyO3).
-    """
-    
+
     def __init__(self, codex_loader: Any) -> None:
-        """
-        :param codex_loader: The internal singleton registry that manages Rune schemas.
+        """Create loader bound to a schema registry.
+
+        Args:
+            codex_loader: Registry exposing ``register_schema(schema)``.
+
         """
         self.codex_loader = codex_loader
-        
-    def scan_crypt(self, crypt_path: Path) -> None:
+
+    def scan_extensions(self, extensions_path: Path) -> None:
+        """Scan an extension directory for loadable modules.
+
+        Args:
+            extensions_path: Directory containing provisional Python source modules.
+
         """
-        Scans the external Crypt directory for compiled Rust binaries (.so) 
-        and Python modules (.py).
-        """
-        if not crypt_path.exists():
+        if not extensions_path.exists():
             return
-            
-        for item in crypt_path.iterdir():
-            if item.suffix in (".py", ".so") and not item.name.startswith("_"):
+
+        for item in extensions_path.iterdir():
+            if item.suffix == ".py" and not item.name.startswith("_"):
                 self._load_and_translate(item)
-                
+
     def _load_and_translate(self, file_path: Path) -> None:
-        """
-        Loads the extension bypassing standard import semantics to isolate
-        the module. If it satisfies ExtensionSchemaProtocol, dynamically translates 
-        and registers it into the Core structural registry.
+        """Load one extension module and register rune-shaped classes.
+
+        Args:
+            file_path: Python source module path to load.
+
         """
         module_name = file_path.stem
-        
-        # 1. Dual-Path Loading via Machinery
-        if file_path.suffix == ".so":
-            loader = importlib.machinery.ExtensionFileLoader(module_name, str(file_path))
-        else:
-            loader = importlib.machinery.SourceFileLoader(module_name, str(file_path))
-            
+
+        # Binary modules are deliberately excluded from this direct runtime path.
+        # They need a Forge manifest and platform validation before import.
+        loader = importlib.machinery.SourceFileLoader(module_name, str(file_path))
+
         spec = importlib.util.spec_from_loader(module_name, loader)
         if not spec or not spec.loader:
             return
-            
+
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        
-        # 2. Translation (The Codex Paradox Resolution)
-        # Scan the isolated module for any object conforming to the Protocol memory shape
+
+        # 2. Scan the isolated module for rune-shaped classes.
         for attr_name in dir(module):
             if attr_name.startswith("_"):
                 continue
-                
+
             obj = getattr(module, attr_name)
-            
+
             # We are looking for Classes that match the shape, not instances.
             # issubclass() fails for Protocols with non-method members.
             if isinstance(obj, type):
-                has_rel = hasattr(obj, "relative_path")
-                has_sin = hasattr(obj, "singleton")
-                if has_rel and has_sin:
+                has_path = hasattr(obj, "relative_path")
+                has_validate = hasattr(obj, "model_validate")
+                if has_path and has_validate:
                     self.codex_loader.register_schema(obj)

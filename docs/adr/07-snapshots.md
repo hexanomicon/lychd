@@ -28,7 +28,7 @@ icon: material/camera-timer
 
     -   **Pros:** Simplifies snapshots to a single database operation.
 
-    -   **Cons:** **Tooling Breakage.** This removes the ability to use standard VCS tools (Git/JJ), linters, and IDEs on extension code, violating the principle of deep integration with the developer's lineage and engineering rigor.
+    -   **Cons:** **Tooling Breakage.** This removes the ability to use standard VCS tools (Git/JJ), linters, and IDEs on extension code, violating the principle of deep integration with the developer workflow and engineering rigor.
 
 !!! success "Option 3: The Checkpoint Protocol (Jujutsu + Btrfs)"
     A coordinated signal that freezes execution, locks the code state via a federated manifest anchored to Jujutsu's immutable Commit IDs, and snapshots the data and code repository states simultaneously via a Btrfs Copy-on-Write driver.

@@ -1,12 +1,13 @@
 import pytest
 import copy
 from dataclasses import dataclass
-from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 from typing import Any
 from pydantic import BaseModel
 from pydantic_graph import Graph, BaseNode, End, GraphRunContext, FullStatePersistence
 from pydantic_graph.persistence import NodeSnapshot
+from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.graph_runner import GraphRunner
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 
@@ -14,22 +15,27 @@ class MockState(BaseModel):
     data: str = "initial"
     warm: bool = False
 
-# Helper objects to avoid Pydantic serialization errors with MagicMock
-@dataclass
-class MockCap:
-    identifier: str = "mock-cap"
-    matrix_sets: list = None
-    evict_cost: int = 0
-    is_active: bool = True
-
-    def __post_init__(self):
-        if self.matrix_sets is None:
-            self.matrix_sets = ["test"]
-
 @dataclass
 class MockAnim:
-    identifier: str = "mock-anim"
-    async def activate_capability(self, cap): pass
+    id: str = "mock-anim"
+    base_url: str = "http://localhost:8080/v1"
+
+
+MOCK_SPEC = CapabilitySpec(
+    key="mock-anim:chat:mock-cap",
+    animator_name="mock-anim",
+    runtime="llamacpp",
+    source_kind="soulstone",
+    family=CapabilityFamily.CHAT,
+    model_id="mock-cap",
+)
+MOCK_STATE = CapabilityState(
+    capability_key=MOCK_SPEC.key,
+    is_static=False,
+    is_active=False,
+    is_available=True,
+    warm=False,
+)
 
 # Nodes at module level for Pydantic serialization stability
 @dataclass
@@ -47,7 +53,7 @@ class StasisNode(BaseNode[MockState]):
     async def run(self, ctx: GraphRunContext[MockState]) -> SuccessNode:
         if not ctx.state.warm:
             ctx.state.warm = True # The State is persisted!
-            raise HardwareTransitionRequired(MockCap(), MockAnim())
+            raise HardwareTransitionRequired(MOCK_SPEC, MOCK_STATE, MockAnim())
         return SuccessNode()
 
 # Custom Persistence for testing that includes LychD-specific rituals

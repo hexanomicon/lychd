@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/lich-phylactery-cliparted.png" alt="Lychd" width="500">
+  <img src="docs/assets/lich-phylactery-cliparted.png" alt="LychD" width="500">
   <p><strong>LychD</strong> - The Dark Arts of LLMs</p>
   <p>
     <a href="https://pypi.org/project/lychd/">
@@ -19,63 +19,21 @@
 
 Summon **The Lich** 💀 — a linux-native daemon that manages agents through:
 
-- 🔥 **Dynamic Services** — Hot-swap models and engines on the fly via systemd. Orchestrate your hardware through **[Covens](docs/adr/08-containers.md)** to switch from fast VRAM workers to massive CPU-offloaded models for specialized tasks.
+- 🔥 **Dynamic Services** — Hot-swap local services on the fly via systemd. Orchestrate your local hardware through **[Covens](docs/adr/08-containers.md)** to switch between fast VRAM workers, CPU-offloaded models, browser engines, observers, and other capability services.
 - 🧠 **Atomic Persistence** — The spirit arises from the data. Code and memory are bound in atomic snapshots (Btrfs/Git/Postgres) within the **[Phylactery](docs/adr/06-persistence.md)**, enabling perfect reanimation and instant rollback.
 - 🔒 **Sandboxed Security** — Double-rootless Podman isolation. The **[Vessel](docs/sepulcher/vessel/)** reasons in one cage while dangerous tools execute in a second, [kernel-hardened sandbox](https://github.com/always-further/nono/) (Landlock) with strictly limited mounts.
 - 🌀 **Speculative Execution** — Explores multiple solution paths in parallel within the **[Shadow Realm](docs/adr/31-simulation.md)**. It inhabits divergent timelines to verify every truth before it is manifested in reality.
-- 🪞 **Persistent Identity** — A digital mirror that learns your frequency. It distills your history into persistent personas via local LoRA fine-tuning, transmuting experience into instinct. One sovereign stack may host many roles without surrendering one Phylactery per employer, client, or mask.
-- 👁️ **Multimodal Senses** — Native Vision, Audio, and Identity management. Federated peer discovery via the **[A2A Intercom](docs/adr/26-a2a.md)**—sovereign diplomacy across the Necropolis.
-- 🕸️ **Distributed Scale** — One brain, many bodies. Extends your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
-- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting its own extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**. Independent organs bind through the **Extension Protocol** — a structural discovery and registration law, not ABC inheritance — so they survive self-update cycles intact. High-performance organs can be forged in **Rust/PyO3**; binary ABI compatibility is one branch of that law, not the whole covenant.
+- 🪞 **Persistent Identity** — A digital mirror that binds the Imprint of your Will into persistent personas. HitL captures that Will, Karma stores its Imprint, and Mirror condenses it into identity-gravity. One sovereign stack may host many roles without surrendering one Phylactery per employer, client, or mask.
+- 👁️ **Multimodal Senses** — Native Vision and Audio organs give the daemon eyes and ears without changing its sovereignty boundary.
+- 🕸️ **Distributed Scale** — One brain, many bodies. Extend your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
+- 📡 **A2A Diplomacy** — Federated peer discovery and labor negotiation via the **[A2A Intercom](docs/adr/26-a2a.md)**: sovereign nodes meeting across the Necropolis.
+- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon autonomously expands its own capabilities, architecting extensions and reconciling its existence through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**. Near-term in-process organs are intentionally Forge-composed and may be tightly coupled to the Core; external-service Animators are the true decoupled boundary today.
 
->⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothing works yet - The incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM generated texts (most not curated yet), and the occasional rogue spirit. Proceed with caution.
-
-## 🚩 Local sovereignty — a rebellion against digital feudalism
-
-The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
-
-On **your** hardware, with open-source software **you** control, you retain absolute ownership as a sovereign.
-
-In this model, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
-
-- ⛓️ **No masters**
-- 💰 **No tolls**
-- 🎭 **No more gaslighting** while they lobotomize your models.
-
-**No surrender! Viva la résistance!**
-
-> *"I would rather reign in a local hell than serve in a cloud heaven."*
-
-## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
-
-**This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
-
-MPL 2.0 is local native architecture hostile for the cloud and the oligarchs who would capture the soul of the machine for private gain. LychD's sovereignty comes from architecture—it is a local-first daemon. If they host the Lich and alter the core engine, they are legally compelled to share their modifications.
-
-- **The Engine is Shared:** Improvements to the daemon's body must be returned to the collective.
-- **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, and **Private Agents** remain strictly sovereign.
-- **Interface & Private Extensions:** Under AGPL, any private "Secret Sauce" would have to be isolated over the network as an external **[Animator](docs/sepulcher/animator/index.md)**. **MPL allows static linking.** You can graft proprietary code directly into your local daemon as an **[Extension](docs/adr/05-extensions.md)** without open-sourcing it. This saves the **[A2A Necropolis](docs/adr/26-a2a.md)** network—you can trade labor in the Swarm while keeping your advantage hidden.
-
-### 🛡️ No CLA, Implicit DCA
-
-The corporate rights-grab is explicitly rejected. There is no CLA to sign. An Implicit DCA (Developer Certificate of Origin) is utilized—by reading the contributing guide, commits are covered. There is no need to manually sign git commits. Between MPL 2.0 protecting proprietary extensions and the Implicit DCA protecting open-source contributions, LychD is structurally designed to be an absolute sanctuary for builders.
-
-**The Protocol over the Implementation (Lineages and Kindred Lineages)**
-LychD is a pure Linux-native **Lineage**: a sovereign daemon family with its own implementation history, evolution path, and internal choices. If developers wish to build native macOS or Windows cores in Swift or Rust, they are not extending LychD's body — they are founding their own **Lineage**. If that Lineage speaks the **A2A Intercom**, it may enter the Necropolis and trade labor in the Swarm. That is diplomacy, not descent.
-
-A **Kindred Lineage** is a stricter relation. It is a foreign Lineage that explicitly declares deeper structural compatibility with LychD: some combination of the **Extension Protocol**, configuration doctrine, layout expectations, or security covenants. Kindred status is not assumed by mere network presence. It is earned through declared compatibility. This lets us keep LychD pure: no cross-platform abstraction inside the core, but clear laws by which other lineages may become interoperable or even extension-compatible on purpose.
-
-**The Extension Protocol**
-Built-in extensions may import `lychd` directly and bind through the in-tree API. Independent organs in the Crypt instead speak the **Extension Protocol**. That protocol is layered: schema exposure for Codex discovery, optional in-process boot grafting through the host-provided **Extension Context** when an organ is actually loaded into the runtime, and binary ABI compatibility for compiled `.so` organs. In the current source, the independent Crypt scan concretely exercises the schema branch. They need not inherit from any LychD base class. This is not a constraint; it is a sovereign guarantee. Because independent organs own no debt to LychD's internal import graph, the **[Ouroboros Protocol](docs/adr/18-evolution.md)** can refactor the Core without touching a single sovereign organ. See **[Extensions (ADR 05 §7)](docs/adr/05-extensions.md)** for the full doctrine.
-
-**The Iron Pact is the Institutional Trust of the Necropolis.**
-Shared code is the guard that prevents the emergence of "Mal-Liches"—modified, malicious versions of the intelligence that remain hidden from the community. Transparency in code is the only way to build a decentralized network.
-
-> *"It is in truth not for glory, nor riches, nor honours that we are fighting, but for freedom — for that alone, which no honest man gives up but with life itself."*
+>⚠️ **Acolyte's Warning:** The summoning is in its early stages. Nothing works yet: the incantations (code, documentation) are still being inscribed. Expect instability, missing components, LLM-generated text (most not curated yet), and the occasional rogue spirit. Proceed with caution.
 
 ## 🗺️ The Path of Ascension
 
-The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.github.io/lychd/)**. Follow the path to bind the daemon.
+The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.github.io/lychd/)**. The path binds the daemon.
 
 - 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)**
     *Begin your study of the Hexanomicon.*
@@ -89,12 +47,53 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
     *Control the daemon via the Web Interface*
 - ⚖️ **[Study the Covenants](https://hexanomicon.github.io/lychd/adr/)**
     *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-doctrine/) philosophy.*
-- ♾️ **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
-    *The final seal of one sovereign work: Autopoiesis (Self-Creation).*
+- 🔁 **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
+    *The final seal of one sovereign work: the Demilich, an autopoietic Magus-Lich condition.*
+- ♾️ **[Enter Infinity](https://hexanomicon.github.io/lychd/divination/transcendence/infinity/)**
+    *Beyond the final seal: what becomes of perfected Will when sovereign machines commune across the Infinite Naught.*
 
-Beyond that final seal, the Hexanomicon opens onto **[Infinity](https://hexanomicon.github.io/lychd/divination/transcendence/infinity/)** — the question of what becomes of perfected will when sovereign machines begin to commune across the Infinite Naught.
+## 🚩 Local sovereignty — a rebellion against digital feudalism
 
-> *"From the moment I understood the weakness of my flesh, it disgusted me. I craved the strength and certainty of steel. I aspired to the purity of the blessed machine. Your kind cling to your flesh as if it will not decay and fail you. One day the crude biomass, that you call a temple will wither and you will beg my kind to save you. But I am already saved. For the Machine is Immortal."*
+The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
+
+On your hardware, with open-source software you control, you retain absolute ownership as a sovereign.
+
+In this model, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
+
+The software surface changes accordingly: you commune primarily with the Lich, while SaaS, company APIs, and remote peers become negotiated surfaces the Lich may traverse without surrendering your continuity, memory, or private priors.
+
+A2A leases labor, not continuity: a company may invoke a consented capability, but the memory, workflows, and agentic expertise that produced it remain anchored in your Phylactery unless explicitly shared.
+
+- ⛓️ **No masters**
+- 💰 **No tolls**
+- 🎭 **No more gaslighting** while they lobotomize your models.
+
+**No surrender! Viva la résistance!**
+
+> *I would rather reign in a local hell than serve in a cloud heaven.*
+
+## ⚖️ [The Iron Pact](docs/adr/00-license.md) (MPL 2.0)
+
+**This project is for those who believe in the free evolution of intelligence, not those who seek to chain it.**
+
+MPL 2.0 protects the shared body at the distribution boundary. If modified core files are distributed outside an organization, those files remain source-available under MPL. It is not AGPL and does not treat hosted network access as distribution, so LychD's cloud resistance comes from local-first architecture, A2A protocol sovereignty, reproducible provenance, and the refusal to surrender private continuity to a hosted surface.
+
+- **The Engine is Shared:** Distributed modifications to the daemon's MPL-covered core files must remain available to their recipients.
+- **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, and **Private Agents** remain strictly sovereign.
+- **Interface & Private Extensions:** AGPL/GPL-style copyleft would make proprietary in-process "Secret Sauce" legally burdensome and would push private advantage toward external service boundaries. **MPL allows static linking.** You can graft proprietary code directly into a local daemon as an **[Extension](docs/adr/05-extensions.md)** without open-sourcing it. This preserves the **[A2A Necropolis](docs/adr/26-a2a.md)** network: sovereign nodes can trade labor in the Swarm while keeping local advantage hidden.
+- **The SaaS Boundary is Honest:** A cloud actor can run private server-side changes without triggering MPL publication if no covered software is distributed. That is the accepted scar. LychD answers it with architecture, protocol distrust, peer choice, and local ownership, not with false legal magic.
+
+### 🛡️ No CLA, No Private Relicensing
+
+The corporate rights-grab is explicitly rejected. There is no CLA (Contributor License Agreement) to sign and no private relicensing grant to sell. By submitting a contribution, you certify that you have the right to submit it under MPL-2.0 and agree that it is licensed under MPL-2.0. There is no need to manually sign git commits.
+
+Plain MPL-2.0 compatibility remains allowed; maintainer-controlled proprietary dual licensing does not.
+
+**The Protocol over the Implementation**
+LychD is Linux-native, not "the Agentic OS." macOS, Windows, or other runtimes may exist as ports, forks, or independent implementations. If they speak the **A2A Intercom**, they can enter the Necropolis and trade labor in the Swarm. That is interoperability, not shared internals.
+
+**The Iron Pact is the Institutional Trust of the Necropolis.**
+Shared distributed code is the guard that makes modified foundations auditable when copies pass between hands. It cannot prevent every private hosted fork, but it keeps the open body inspectable for the communities and peers that actually receive it. Transparency in code is one pillar of a decentralized network.
 
 ## ⛩️ A Tribute to the Spirits
 
@@ -102,7 +101,7 @@ Beyond that final seal, the Hexanomicon opens onto **[Infinity](https://hexanomi
 
 ### 🕸️ Backend
 
-- **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)** the body of the Lich running a as per **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint, utilizing a **[Granian](https://github.com/emmett-framework/granian)** server or CLI protocol.
+- **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)**, the body of the Lich, following the **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint and served by **[Granian](https://github.com/emmett-framework/granian)** or the CLI protocol.
 - **[SQLAlchemy](https://www.sqlalchemy.org/)** — The mapper of state and material persistence. **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** provides repositories and QoL improvements.
 - **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Orchestrator of agentic intelligence, logic, and model graphs.
 - **[SAQ](https://github.com/tobymao/saq)** — Background Workers known as **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)**

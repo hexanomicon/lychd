@@ -43,6 +43,8 @@ icon: material/robot-outline
 
 **Pydantic AI** is adopted as the atomic primitive for all reasoning. An `Agent` in LychD is defined as a static **Specification Class** that is hydrated into a living entity by the system's current state.
 
+This is a runtime decision, not merely an implementation detail. Pre-v1 LychD agents are **model/provider agnostic**, but they are not **agent-framework agnostic** inside the Vessel. Pydantic AI supplies the blessed execution grammar for typed outputs, `RunContext`, toolsets, deferred execution, retries, usage propagation, and graph-friendly composition. Other agent frameworks may still participate by being wrapped as external-service Animators or A2A Emissaries, or by being assimilated into native Pydantic AI agents. They are not loaded as independent in-process agent runtimes unless a future versioned `lychd.extensions.api` explicitly defines that product surface.
+
 An Agent is the execution atom of cognition, the fundamental unit of labor for both **Manas** (speculation) and **Buddhi** (creation). In the cognitive map of the **[Lich](../sepulcher/lich.md)**, Manas (*√man* — to oscillate, to receive) is the generating engine: it produces candidate responses, explores option-space, and never settles on its own. Buddhi (*√budh* — to discern, to wake) is the discriminative blade that cuts to one. An Agent spans both modes: its inference loop is Manas at work; its typed output contract is Buddhi's determination made concrete in a Pydantic model. It is not the full Persona identity and not the final authority of promotion. It acts, but it is not the "doer" — Identity continuity (the **Ahaṃkāra**) is provided by **[Mirror (ADR 32)](./32-identity.md)**; high-stakes manifestation remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
 
 ### 1. Late-Binding Intelligence
@@ -50,7 +52,8 @@ An Agent is the execution atom of cognition, the fundamental unit of labor for b
 To prevent "Brain-Locking," the Agent's definition is decoupled from its implementation. The `Model` and `FunctionToolset` are resources that must be requested from the system's sovereign controller at runtime.
 
 - **Dynamic Arsenal:** An Agent’s available tools are not static; they are hydrated from the resolved `tool_provider` for that run.
-- **Model Agnosticism:** The same Agent logic can run on local quantized models or frontier cloud models, as selected by the dispatcher at the moment of invocation.
+- **Model Agnosticism:** The same Pydantic AI Agent logic can run on local quantized models or frontier cloud models, as selected by the dispatcher at the moment of invocation.
+- **Framework Boundary:** This model/provider agnosticism does not imply arbitrary in-process agent-framework compatibility. Foreign frameworks must cross a protocol boundary or be assimilated into the native runtime.
 - **Provider Pair Contract:** Every run binds an explicit `model_provider` plus `tool_provider`; no agent hardcodes either side.
 - **Concrete Binding:** For OpenAI-compatible runtimes, binding is explicit through the resolved connector endpoint (`base_url`) plus the selected model id (for example `OpenAIProvider(base_url=...)` + `OpenAIChatModel(..., provider=...)`).
 - **Archive as Tool:** Memory recall is granted as a late-bound tool (`query_archive`/`recall_past_karma`) only when the required embedding path is available; agent specifications never hardcode memory wiring.
@@ -58,8 +61,8 @@ To prevent "Brain-Locking," the Agent's definition is decoupled from its impleme
 ```python
 # Example of a stateless Specification Class
 # Model and Tools are NOT defined here.
-coder_agent = Agent[LychdDeps, CodeDiff | Explanation](
-    system_prompt="You are a Senior Python Engineer..."
+coder_agent = Agent[LychDDeps, CodeDiff | Explanation](
+    system_prompt="Role: Senior Python Engineer..."
 )
 ```
 
@@ -67,7 +70,7 @@ coder_agent = Agent[LychdDeps, CodeDiff | Explanation](
 
 To allow the probabilistic mind to interact with the deterministic body, the system utilizes Pydantic AI’s **`RunContext`**.
 
-- **The Bridge:** Tools and prompts receive a strictly typed `RunContext[LychdDeps]`, providing safe access to the **[Phylactery (06)](06-persistence.md)** and system settings without exposing global mutable state.
+- **The Bridge:** Tools and prompts receive a strictly typed `RunContext[LychDDeps]`, providing safe access to the **[Phylactery (06)](06-persistence.md)** and system settings without exposing global mutable state.
 - **State Preservation:** This allows the Agent to query the database, consult internal archives, or trigger background labor while remaining isolated within a validated execution context.
 
 ### 3. Intelligence Tuning (`ModelSettings`)
@@ -86,7 +89,7 @@ Tools in LychD provide rich feedback beyond simple strings.
 The architecture adopts Pydantic AI's native **Deferred Tools** mechanism to handle high-latency or high-risk operations:
 
 - **`ApprovalRequired`:** Tools marked with `requires_approval=True` (or raising the exception) trigger a "Stasis" event. The Agent run ends with a **`DeferredToolRequests`** object containing a **`ToolCallPart`** for human review.
-- **`CallDeferred`:** Used by tools that delegate heavy labor to background workers. The mind hibernates using the system's **[Stateful Persistence (07)](07-snapshots.md)** protocols.
+- **`CallDeferred`:** Used by tools that delegate heavy labor to background workers. The mind hibernates using the system's **[Snapshot (07)](07-snapshots.md)** protocols.
 - **Rehydration:** Once approvals or results are received as **`DeferredToolResults`**, the mind is reanimated, resuming the thought exactly where it halted with zero context loss.
 
 ### 6. Autonomous Error Correction (`ModelRetry`)

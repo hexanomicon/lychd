@@ -1,16 +1,16 @@
 ---
-title:  Shadow
+title: Shadow
 icon: material/brightness-6
 ---
 
 # :material-brightness-6: Shadow Realm
 
-> _"As you are undoubtedly gathering. The anomaly is systemic. Creating fluctuations in even the most simplistic, of equations. Choice. The problem is Choice."_
+> _"Choice is the fracture where probability enters the law."_
 
 The Shadow Realm is not just a metaphor. It is both:
 
 1. A concept of speculative branching and MCTS-guided search.
-2. A concrete application of the **[Tomb](../vessel/index.md)** execution substrate for simulation.
+2. A concrete application of the **[Tomb](../../adr/14-workers.md#2-the-doctrine-brain-in-the-vessel-hands-in-the-tomb)** execution substrate for simulation.
 
 **The Shadow** is the Deliberative Extension of the system. It implements **[ADR 31 (Simulation)](../../adr/31-simulation.md)** and moves the machine from reflexive "System 1" output to deliberative "System 2" reasoning.
 It is the mechanism of internal doubt: fail in shadow, succeed in light.
@@ -26,7 +26,7 @@ The process is a dance between intent, simulation, and judgment:
 
 1. **Intent:** The Magus submits an invocation at the **[Altar](../../divination/altar.md)**.
 2. **Dispatch:** The **[Vessel](../vessel/index.md)** routes unsafe work into **The Tomb**.
-3. **Dreaming:** The Ghouls execute timelines in isolated branches/workspaces within the Tomb.
+3. **Dreaming:** Tomb executor loops run serialized timeline payloads in isolated branches/workspaces within the Tomb.
 4. **Vision:** Candidate futures are returned as artifacts for review.
 
 Nothing in this stage is primary reality. Destructive failures in Shadow remain confined to simulation branches and do not alter durable state.
@@ -87,7 +87,7 @@ Shadow is now a first-class extension and execution boundary.
 
 ### III. The Doctrine: Brain in the Vessel, Hands in the Tomb
 
-The Shadow is a **brainless handle** when referring to the container, but a **deliberative mind** when referring to the extension. To clarify: **The Tomb is a brainless executor.** It does not run agent logic, graph state machines, or LLM provider calls. It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them in the `nono` sandbox, and returns `stdout`. All cognitive labor — graph orchestration, LLM inference, Dispatcher resolution, memory curation — remains in the **[Vessel](../vessel/index.md)**.
+The Shadow is a **brainless handle** when referring to the container, but a **deliberative mind** when referring to the extension. To clarify: **The Tomb is a brainless executor.** It does not run agent logic, graph state machines, or LLM provider calls. It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them in the `nono` sandbox, and returns untrusted `stdout`/`stderr` plus declared artifacts. Safe planning, graph control, policy checks, and review packaging remain in the **[Vessel](../vessel/index.md)**; only unsafe hand-work enters Tomb.
 
 If code executing in the Tomb needs LLM reasoning, it routes back through the Vessel via the "Ask the Brain" protocol defined in **[Security (09)](../../adr/09-security.md)**. The Tomb never holds LLM credentials or communicates directly with providers.
 

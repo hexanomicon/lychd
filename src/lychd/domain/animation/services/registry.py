@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from lychd.config.runes import RuneConfig
 from lychd.domain.animation.animators import Animator
+from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
 from lychd.domain.animation.connectors import Connector, ModelConnector
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.binder import AnimatorBinder
@@ -21,15 +21,15 @@ if TYPE_CHECKING:
     from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
 
 
-type RuntimeAnimator = Animator[Connector, RuneConfig]
-type AnimatorRune = SoulstoneConfig | PortalConfig
-type AnimatorFactory = Callable[[AnimatorRune], RuntimeAnimator | None]
+type RuntimeAnimator = Animator[Connector, SoulstoneConfig | PortalConfig]
+type AnimatorConfigDeclaration = SoulstoneConfig | PortalConfig
+type AnimatorFactory = Callable[[AnimatorConfigDeclaration], RuntimeAnimator | None]
 
 logger = structlog.get_logger()
 
 
 class AnimatorRegistry:
-    """Registry for animation rune configs and resolved runtime animators.
+    """Registry for animation Runes and resolved runtime animators.
 
     Stores two distinct layers:
     - rune declarations (``SoulstoneConfig`` / ``PortalConfig``)
@@ -72,6 +72,8 @@ class AnimatorRegistry:
         self._portals: dict[str, PortalConfig] = {}
         self._groups: dict[str, list[SoulstoneConfig]] = {}
         self._animators: dict[str, RuntimeAnimator] = {}
+        self._capabilities: dict[str, CapabilitySpec] = {}
+        self._capability_states: dict[str, CapabilityState] = {}
         self._loaded = False
 
     def register_runtime_factory(self, factory: AnimatorFactory) -> None:
@@ -83,7 +85,7 @@ class AnimatorRegistry:
         self._animators[animator.id] = animator
 
     def load(self) -> None:
-        """Load rune configs and build runtime animators via registered factories."""
+        """Load Runes and build runtime animators via registered factories."""
         raw_soulstones, raw_portals = self._loader.load_all()
 
         new_soulstones = {stone.name: stone for stone in raw_soulstones}
@@ -94,6 +96,8 @@ class AnimatorRegistry:
                 new_groups.setdefault(group, []).append(stone)
 
         new_animators: dict[str, RuntimeAnimator] = {}
+        new_capabilities: dict[str, CapabilitySpec] = {}
+        new_capability_states: dict[str, CapabilityState] = {}
         for rune in [*raw_soulstones, *raw_portals]:
             resolved = False
             for factory in self._runtime_factories:
@@ -101,6 +105,11 @@ class AnimatorRegistry:
                 if runtime is None:
                     continue
                 new_animators[runtime.id] = runtime
+                specs = self._runtime_adapters.build_capability_specs(rune, runtime)
+                for spec in specs:
+                    new_capabilities[spec.key] = spec
+                for state in self._runtime_adapters.probe_capability_states(runtime, specs):
+                    new_capability_states[state.capability_key] = state
                 resolved = True
                 break
             if not resolved:
@@ -114,6 +123,8 @@ class AnimatorRegistry:
         self._portals = new_portals
         self._groups = new_groups
         self._animators = new_animators
+        self._capabilities = new_capabilities
+        self._capability_states = new_capability_states
         self._loaded = True
 
         logger.info(
@@ -122,6 +133,7 @@ class AnimatorRegistry:
             portals=len(self._portals),
             groups=list(self._groups.keys()),
             runtime_animators=len(self._animators),
+            capabilities=len(self._capabilities),
         )
 
     def ensure_loaded(self) -> None:
@@ -155,7 +167,7 @@ class AnimatorRegistry:
         self.ensure_loaded()
         return list(self._animators.values())
 
-    def list_runes(self) -> list[AnimatorRune]:
+    def list_runes(self) -> list[AnimatorConfigDeclaration]:
         self.ensure_loaded()
         return [*self._soulstones.values(), *self._portals.values()]
 
@@ -179,6 +191,87 @@ class AnimatorRegistry:
         if animator is None:
             return None
         return self._binder.bind_model(animator, model_id=model_id)
+
+    def list_capabilities(self) -> list[CapabilitySpec]:
+        """List synthesized capabilities across all loaded animators."""
+        self.ensure_loaded()
+        return list(self._capabilities.values())
+
+    def list_capabilities_for_animator(self, name: str) -> list[CapabilitySpec]:
+        """List synthesized capabilities for a specific animator."""
+        self.ensure_loaded()
+        return [spec for spec in self._capabilities.values() if spec.animator_name == name]
+
+    def get_capability(self, key: str) -> CapabilitySpec | None:
+        """Return a capability spec by stable capability key."""
+        self.ensure_loaded()
+        return self._capabilities.get(key)
+
+    def get_capability_state(self, key: str) -> CapabilityState | None:
+        """Return the last observed capability state by stable capability key."""
+        self.ensure_loaded()
+        return self._capability_states.get(key)
+
+    def list_capability_states(self) -> list[CapabilityState]:
+        """List the last observed capability states across all loaded animators."""
+        self.ensure_loaded()
+        return list(self._capability_states.values())
+
+    def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        """List the last observed capability states for a specific animator."""
+        self.ensure_loaded()
+        keys = {spec.key for spec in self.list_capabilities_for_animator(name)}
+        return [state for state in self._capability_states.values() if state.capability_key in keys]
+
+    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        """Re-probe and cache capability states for one resolved runtime animator."""
+        self.ensure_loaded()
+        animator = self._animators.get(name)
+        if animator is None:
+            return []
+
+        specs = self.list_capabilities_for_animator(name)
+        if not specs:
+            return []
+
+        states = self._runtime_adapters.probe_capability_states(animator, specs)
+        for state in states:
+            self._capability_states[state.capability_key] = state
+        return states
+
+    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+        """Re-probe and return the latest cached state for one capability key."""
+        self.ensure_loaded()
+        spec = self._capabilities.get(key)
+        if spec is None:
+            return None
+
+        self.refresh_capability_states_for_animator(spec.animator_name)
+        return self._capability_states.get(key)
+
+    def activate_capability(self, key: str) -> bool:
+        """Request runtime-specific activation for a single capability key."""
+        self.ensure_loaded()
+        spec = self._capabilities.get(key)
+        if spec is None:
+            return False
+
+        animator = self._animators.get(spec.animator_name)
+        if animator is None:
+            return False
+
+        activated = self._runtime_adapters.activate_capability(animator, spec)
+        if not activated:
+            return False
+
+        animator.connector.link.up = True
+        self.refresh_capability_states_for_animator(spec.animator_name)
+        return True
+
+    def list_persistent_residents(self) -> list[CapabilitySpec]:
+        """List capabilities declared on persistent-resident animators."""
+        self.ensure_loaded()
+        return [spec for spec in self._capabilities.values() if spec.concurrency.persistent_resident]
 
     def bind_toolsets(self, name: str) -> Sequence[AbstractToolset]:
         animator = self.get_runtime(name)

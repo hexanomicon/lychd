@@ -5,47 +5,46 @@ from typing import ClassVar
 
 import pytest
 
-from lychd.config.runes import ConfigLoader, RuneConfig, RuneConfigError, RuneSchemaDiscovery
+from lychd.config.runes import ConfigLoader, RuneConfig, RuneSchemaDiscovery
+from lychd.extensions.discovery import CryptSourceLoader
 
 
-class LeafConfig(RuneConfig):
-    relative_path: ClassVar[Path | None] = Path("test/leaf")
+class RootConfig(RuneConfig):
+    path_fragment: ClassVar[Path] = Path("test")
+
+    marker: str = "root"
+
+
+class LeafConfig(RootConfig):
+    path_fragment: ClassVar[Path] = Path("leaf")
 
     value: str
 
 
-class ParentConfig(RuneConfig):
-    relative_path: ClassVar[Path | None] = Path("test/tree")
+class ParentConfig(RootConfig):
+    path_fragment: ClassVar[Path] = Path("tree")
 
     title: str = "parent"
 
 
 class ChildConfig(ParentConfig):
-    relative_path: ClassVar[Path | None] = Path("test/tree/child")
+    path_fragment: ClassVar[Path] = Path("child")
 
     value: str
 
 
-class ForcedSingletonConfig(RuneConfig):
-    relative_path: ClassVar[Path | None] = Path("test/forced")
-    singleton: ClassVar[bool | None] = True
+def test_leaf_schema_loads_multiple_instances(tmp_path: Path) -> None:
+    """Leaf rune classes are multi-instance by topology."""
+    first = tmp_path / "test" / "leaf" / "alpha.toml"
+    second = tmp_path / "test" / "leaf" / "beta.toml"
+    first.parent.mkdir(parents=True, exist_ok=True)
+    first.write_text('value = "alpha"\n', encoding="utf-8")
+    second.write_text('value = "beta"\n', encoding="utf-8")
 
-    value: str
+    loader = ConfigLoader(runes_dir=tmp_path)
+    instances = [i for i in loader.load_all([LeafConfig]) if isinstance(i, LeafConfig)]
 
-
-class TopLevelConfig(RuneConfig):
-    relative_path: ClassVar[Path | None] = None
-
-    marker: str
-
-
-def test_singleton_auto_and_override_contract() -> None:
-    """Validate singleton auto inference and explicit override behavior."""
-    assert ParentConfig.effective_singleton() is True
-    assert ChildConfig.effective_singleton() is False
-    assert LeafConfig.effective_singleton() is False
-    assert ForcedSingletonConfig.effective_singleton() is True
-    assert TopLevelConfig.effective_singleton() is True
+    assert [instance.value for instance in instances] == ["alpha", "beta"]
 
 
 def test_loader_parses_top_level_payload_one_file(tmp_path: Path) -> None:
@@ -59,8 +58,7 @@ def test_loader_parses_top_level_payload_one_file(tmp_path: Path) -> None:
 
     assert len(instances) == 1
     assert instances[0].value == "alpha"
-    assert instances[0].file_name == target
-    assert LeafConfig.instance_id_from_path(target, root=tmp_path) == "test/leaf/alpha"
+    assert instances[0].source_file == target
 
 
 def test_parent_schema_does_not_consume_child_anchor_files(tmp_path: Path) -> None:
@@ -83,11 +81,11 @@ def test_parent_schema_does_not_consume_grandchild_anchor_files(tmp_path: Path) 
     """Recursive descendant anchors must also be excluded from parent loading."""
 
     class GrandChildConfig(ChildConfig):
-        relative_path: ClassVar[Path | None] = Path("test/tree/grandchild")
+        path_fragment: ClassVar[Path] = Path("grandchild")
 
-        marker: str
+        marker: str = ""
 
-    target = tmp_path / "test" / "tree" / "grandchild" / "alpha.toml"
+    target = tmp_path / "test" / "tree" / "child" / "grandchild" / "alpha.toml"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text('value = "alpha"\nmarker = "g1"\n', encoding="utf-8")
 
@@ -111,39 +109,163 @@ def test_loader_rejects_legacy_model_envelope(tmp_path: Path) -> None:
 
     loader = ConfigLoader(runes_dir=tmp_path)
 
-    with pytest.raises(RuneConfigError, match="legacy"):
+    with pytest.raises(ValueError, match="legacy"):
         loader.load_all([LeafConfig])
 
 
-def test_loader_enforces_singleton_conflicts(tmp_path: Path) -> None:
-    """Singleton schemas fail fast when multiple instance files exist."""
-    a = tmp_path / "test" / "forced" / "a.toml"
-    b = tmp_path / "test" / "forced" / "b.toml"
+def test_loader_rejects_branch_rune_files(tmp_path: Path) -> None:
+    """Branch rune classes are namespaces, not TOML owners."""
+    a = tmp_path / "test" / "tree" / "a.toml"
     a.parent.mkdir(parents=True, exist_ok=True)
-    a.write_text('value = "one"\n', encoding="utf-8")
-    b.write_text('value = "two"\n', encoding="utf-8")
+    a.write_text('title = "one"\n', encoding="utf-8")
 
     loader = ConfigLoader(runes_dir=tmp_path)
 
-    with pytest.raises(RuneConfigError, match="singleton"):
-        loader.load_all([ForcedSingletonConfig])
+    with pytest.raises(ValueError, match="cannot own TOML files"):
+        loader.load_all([ParentConfig])
 
 
-def test_loader_supports_top_level_singleton_file(tmp_path: Path) -> None:
-    """Top-level schemas resolve default filename at runes root."""
-    root_file = tmp_path / "toplevelconfig.toml"
-    root_file.write_text('marker = "sentinel"\n', encoding="utf-8")
+def test_path_fragment_rejects_string_values() -> None:
+    """RuneConfig subclasses declare path fragments as Paths."""
 
-    loader = ConfigLoader(runes_dir=tmp_path)
-    instances = [i for i in loader.load_all([TopLevelConfig]) if isinstance(i, TopLevelConfig)]
+    def define_bad_schema() -> type[RuneConfig]:
+        class StringAnchorConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = "animator"  # type: ignore[assignment]
 
-    assert len(instances) == 1
-    assert instances[0].marker == "sentinel"
+            value: str
+
+        return StringAnchorConfig
+
+    with pytest.raises(TypeError):
+        define_bad_schema()
+
+
+def test_relative_path_is_assembled_from_parent_chain() -> None:
+    """Rune fragments are resolved through Python ancestry."""
+    assert ParentConfig.relative_path == Path("test/tree")
+    assert ChildConfig.relative_path == Path("test/tree/child")
+
+
+def test_rune_class_rejects_multiple_rune_parents() -> None:
+    """Rune ancestry is a single linked list, not a diamond graph."""
+
+    class OtherRootConfig(RuneConfig):
+        path_fragment: ClassVar[Path] = Path("other")
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class AmbiguousConfig(ParentConfig, OtherRootConfig):
+            path_fragment: ClassVar[Path] = Path("ambiguous")
+
+        return AmbiguousConfig
+
+    with pytest.raises(TypeError, match="multiple rune parents"):
+        define_bad_schema()
+
+
+def test_path_fragment_is_required_for_all_subclasses() -> None:
+    """No rune type may place TOML files directly in the rune root."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class RootFileConfig(RuneConfig):
+            value: str
+
+        return RootFileConfig
+
+    with pytest.raises(ValueError, match="declares no path_fragment"):
+        define_bad_schema()
+
+
+def test_child_path_fragment_must_be_declared_locally() -> None:
+    """Child rune classes must not inherit the parent's path fragment."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class MissingChildDirConfig(ParentConfig):
+            value: str
+
+        return MissingChildDirConfig
+
+    with pytest.raises(ValueError, match="declares no path_fragment"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_absolute_paths() -> None:
+    """Rune fragments are relative to their parent rune anchor."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class AbsoluteAnchorConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path("/outside")
+
+            value: str
+
+        return AbsoluteAnchorConfig
+
+    with pytest.raises(ValueError, match="invalid path_fragment"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_parent_traversal() -> None:
+    """Rune fragments reject traversal parts."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class TraversalAnchorConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path("safe/../outside")
+
+            value: str
+
+        return TraversalAnchorConfig
+
+    with pytest.raises(ValueError, match="invalid path_fragment part"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_empty_fragment() -> None:
+    """Rune fragments must not be empty."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class EmptyAnchorConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path()
+
+            value: str
+
+        return EmptyAnchorConfig
+
+    with pytest.raises(ValueError, match="invalid path_fragment"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_uppercase_parts() -> None:
+    """Rune fragments are lowercase Codex identifiers."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class UppercaseConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path("Soulstones")
+
+            value: str
+
+        return UppercaseConfig
+
+    with pytest.raises(ValueError, match="invalid path_fragment part"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_long_parts() -> None:
+    """Rune fragment parts are bounded so extension namespaces stay readable."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class LongNameConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path("valid") / ("a" * 51)
+
+            value: str
+
+        return LongNameConfig
+
+    with pytest.raises(ValueError, match="invalid path_fragment part"):
+        define_bad_schema()
 
 
 def test_extension_discovery_imports_builtin_configurable(tmp_path: Path) -> None:
     """Built-in extension config subclasses are discovered after runtime import."""
-    classes = RuneSchemaDiscovery(include_builtin_extensions=True).discover_classes()
+    classes = RuneSchemaDiscovery().discover_classes()
 
     names = {cls.__name__ for cls in classes}
     assert "ShadowSimulationConfig" in names
@@ -152,8 +274,26 @@ def test_extension_discovery_imports_builtin_configurable(tmp_path: Path) -> Non
 
 def test_extension_discovery_is_deduplicated_and_stable() -> None:
     """Discovery should return deterministic, duplicate-free class lists."""
-    classes = RuneSchemaDiscovery(include_builtin_extensions=True).discover_classes()
+    classes = RuneSchemaDiscovery().discover_classes()
     keys = [(cls.__module__, cls.__qualname__) for cls in classes]
 
     assert len(classes) == len(set(classes))
     assert keys == sorted(keys)
+
+
+def test_extension_loader_does_not_blindly_load_binary_organs(tmp_path: Path) -> None:
+    """Binary organs require Forge mediation before they enter runtime import."""
+
+    class Collector:
+        registered = 0
+
+        def register_schema(self, _schema: type[RuneConfig]) -> None:
+            self.registered += 1
+
+    binary = tmp_path / "organ.so"
+    binary.write_bytes(b"not a real extension module")
+
+    collector = Collector()
+    CryptSourceLoader(collector).scan_extensions(tmp_path)
+
+    assert collector.registered == 0

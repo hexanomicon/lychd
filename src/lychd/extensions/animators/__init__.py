@@ -1,6 +1,6 @@
 """Builtin animator schema and adapter exports for extension authors."""
 
-from lychd.extensions.builtin.animator import LlamaCppSoulstone, SglangSoulstone, VllmSoulstone
+from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
     SglangRuntimeAdapter,
@@ -9,9 +9,9 @@ from lychd.extensions.builtin.animator.runtimes import (
 
 __all__ = [
     "LlamaCppRuntimeAdapter",
-    "LlamaCppSoulstone",
+    "LlamaCppSoulstoneConfig",
     "SglangRuntimeAdapter",
-    "SglangSoulstone",
+    "SglangSoulstoneConfig",
     "VllmRuntimeAdapter",
-    "VllmSoulstone",
+    "VllmSoulstoneConfig",
 ]
