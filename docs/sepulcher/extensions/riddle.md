@@ -47,7 +47,10 @@ To orchestrate these trials, the Riddle relies on the `deepfabric` Evaluator lib
 The Riddle utilizes a library of "Golden Truths"—standardized datasets curated by the Magus to represent the unique environment of the Sepulcher.
 
 - **Human-in-the-Loop Curation:** The "Tricks" and "Riddles" are curated and consecrated at the **[Altar](../../divination/altar.md)** to ensure they reflect real-world technical requirements and safety boundaries.
+- **Vritti Perturbation Riddles:** The Golden Set includes Magus-specific grammar mutations, case drift, and identity inversions that remain semantically legible while bending ordinary syntax. These are used to measure behavioral responses under stylistic pressure: `adoption_rate`, `contagion_rate`, `semantic_stability`, and `recovery_latency`.
 - **Regression Detection:** When a new **[Soul-Adapter](./soulforge.md)** is forged, it is automatically run through the Riddle's Golden Set. This ensures that fine-tuning for style has not induced "Catastrophic Forgetting" or reduced the model's fundamental reasoning power.
+
+These probes are not metaphysical tests for consciousness. They are practical diagnostics for how a model traverses, stabilizes, and exits unusual regions of the Magus-conditioned latent field.
 
 ## VI. Calibration via The Mirror
 

@@ -23,6 +23,7 @@ icon: material/brain
 - **Standardized Semantic Schema:** Adoption of a proven third-normal-form (3NF) schema for storing entity facts, process attributes, and knowledge graph triples to ensure interoperability with existing memory protocols.
 - **Metabolic Engine Contract:** Memory framework must be integrated as a wrapped substrate driver, not as an autonomous execution loop, preserving Orchestrator and Dispatcher authority.
 - **Identity-Scoped Attribution:** Every memory write and recall path must carry an `entity_id` bound to the active Sigil to prevent cross-identity contamination.
+- **Consent-Governed Sharing:** Expertise, priors, and reinforced memory remain owned by the Sigil that cultivated them unless an explicit shared-memory or publication policy grants broader access.
 - **Curator Loop:** Memory lifecycle must include a periodic curation pass that classifies records into promote/keep/archive/prune classes using explicit quality signals.
 
 ## Considered Options
@@ -54,6 +55,8 @@ icon: material/brain
 Memory is treated as sedimented experience rather than mere storage. In cognitive topology, the entirety of the language space and the algorithm of selection/generation functions as the **Citta** (the conditioned field or "chattering engine"). The database (`pgvector`) is only the physical substrate of this Citta. The specific vectors, extracted facts, and reinforced traces stored within it are the **Smṛtis** (recollections) — the re-surfacing of past grooves (**Saṃskāras**) into present cognition.
 
 The critical architectural implication: Smṛti is faithful to its source, not to truth. A groove carved by valid cognition (Pramāṇa) re-surfaces as reliable instinct. A groove carved by misconception (Viparyaya) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich.md)**.
+
+This boundary is social as well as technical. If a person's history, expertise, and reinforced priors are stored in their Phylactery, that substrate cannot be treated as automatically owned by an employer, customer, or platform. Organizational sharing must occur by explicit policy, consent, or publication surface — never by silent assimilation into a central memory.
 
 ### 0. Build-vs-Buy Posture (Glue, Not Surrender)
 
@@ -142,6 +145,7 @@ Memory is manifested as a dynamic power granted to an **[Agent (ADR 20)](./20-ag
 - **The Grant:** A `query_archive()` tool is injected into the arsenal only when the required Embedding Coven is active.
 - **The Mentat Refusal:** If a retrieval ritual returns a similarity score below the **Sovereign Threshold**, the Agent is physically barred from "guessing." It must return a **Hard Refusal**: *"The Archive contains no truth regarding this intent."*
 - **Sigil Scope:** Retrieval MUST include `entity_id` scoping (or explicit policy-authorized shared scope) so one identity cannot read another identity’s Karma.
+- **Shared Scope Is Exceptional:** Cross-persona or cross-organization recall is a deliberate grant, not the default shape of memory. The system begins from sovereignty and moves outward only by consent.
 
 ### 8. Algorithmic Memory Evolution
 
