@@ -49,6 +49,9 @@ icon: material/directions-fork
 
 **The Dispatcher** is adopted as the system's Semantic Cortex. It functions as the switchboard that assembles the machine's working runtime grant from canonical capability records.
 
+!!! note "Capability Binding Cartography"
+    Current source names such as `CapabilitySpec`, `CapabilityState`, and `CapabilityGrant` are implementation handles, not final ontology. The durable boundary is the flow from declared intent, to discovered capability, to live substrate state, to late-bound runtime grant, to physical transition when required, to graph or worker recovery boundary. Future R&D may rename, split, or collapse classes as long as the authority boundaries remain intact.
+
 
 ### 1. The World Model (Provider Indexing)
 

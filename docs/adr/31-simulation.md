@@ -14,12 +14,14 @@ icon: material/source-branch
 
 - **System 2 Deliberative Reasoning:** Implementation of a non-linear reasoning engine that moves beyond "reflexive token prediction" into structural, deliberative thought via Monte Carlo Tree Search (MCTS).
 - **Phantasma Expansion (Branching):** Support for generating $N$ parallel future states, each operating in an isolated, temporary environment without cross-contamination.
+- **Lens-Separated Seeding:** Support for cheap, text-only divergent strategy generation through independent operational lenses before spending Lab workspaces on physical branches.
 - **The Shadow Realm Topology:** Physical isolation of simulation branches within the **[Lab (13)](13-layout.md)**, utilizing **Jujutsu Workspaces** (`jj workspace`) to enable parallel, independent file states sharing a single SQLite-backed repository state.
 - **Heuristic Scrying (Dual-Gate Evaluation):** A rigorous scoring system combining deterministic verification (Compilers, Linters, Test Suites) and agentic critique (The Mirror Persona).
 - **Metabolic Pruning (The Reaper):** An automated background protocol (Ghoul) leveraging Jujutsu's native transactional abandonment (`jj abandon`) to instantly dissolve failed timelines, orphaned files, and "stale" memories.
 - **Heuristic Vector Decay:** Implementation of a mathematical decay function for vector embeddings to ensure long-term retrieval remains sharp and focused on valuable data.
 - **The Anchor Protocol:** A mechanism for the Magus to grant absolute immunity to specific artifacts or memories, setting their decay factor to zero.
 - **Transactional Convergence:** Mandatory support for "Wavefunction Collapse"—the atomic merge of a verified simulation branch into the Primary Substrate (The Crypt).
+- **Policy-Governed Promotion:** Mandatory routing of branch collapse through **[Codex (12)](12-configuration.md)** autonomy policy and **[HitL (25)](25-hitl.md)** so preauthorization is explicit and high-stakes promotion remains human-gated.
 - **VRAM Orchestration:** Coordination with the **[Orchestrator (23)](23-orchestrator.md)** to manage the extreme memory pressure of parallel reasoning paths and ensure system stability.
 
 ## Considered Options
@@ -46,6 +48,10 @@ icon: material/source-branch
 
 Shadow is the cognitive fluctuation engine, not the identity authority. It generates and tests candidate realities, but it does not define Self and cannot self-authorize promotion.
 
+For the Agent inside a branch, simulation is the present working world: the active context, filesystem state, tool surface, and execution trace in which that Agent can perceive and act. The boundary is ontological, not experiential. Shadow may be the Agent's local now, but it remains unpromoted Vikalpa relative to the Crypt until the gates measure it and the Magus or Vessel policy authorizes collapse.
+
+Shadow therefore feeds the Ouroboros without owning it. It supplies motion and candidate reality; Weaver preserves motion through time, Riddle measures it, Mirror binds identity, and Memory stores the residue. Treating Shadow as final identity would turn simulation into hallucinated sovereignty.
+
 ### 1. The Phantasma Expansion (MCTS Topology)
 
 The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. This is the application of **Phantasma** (Generative Imagination) — the engine of **Manas** actively generating **Vṛttis** to navigate the **Possibility Space** without making permanent changes to reality.
@@ -61,12 +67,29 @@ When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
 Each branch is an active task modification (a candidate timeline) that exists long enough to be tested, scored, and dissolved if needed. In cognitive terms, branches are the live modifications under comparison. Shadow is therefore fluctuation-first: it maintains possibility space without claiming ownership of results.
 
-### 1.1 Shadow Roles: Expansion, Determination, Neutrality
+Shadow distinguishes three branch strata:
+
+1. **Idea branches:** cheap, text-only Vikalpa produced by divergent strategy seeding. They expose the shape of possible approaches but do not touch the Lab.
+2. **Shadow branches:** physical `jj workspace` timelines in the Lab. They carry files, tool traces, deterministic gate results, and Reaper obligations.
+3. **Promotion candidates:** verified branches packaged as Visions for Vessel policy and HitL collapse. They are no longer merely interesting; they have earned measured evidence.
+
+### 1.1 Lens-Separated Seeding
+
+Before spending filesystem, queue, or VRAM budget on physical timelines, Shadow may run an inexpensive seed pass that forces strategy diversity. The same intent is routed through several independent seed invocations using operational lenses such as lifecycle steward, rollback sentry, dependency minimalist, security ward, cost governor, outage operator, or migration cartographer. These lenses are not Personas and not claims of expertise. They are bounded distortions that make different parts of the possibility space visible before the Lab pays for a real branch.
+
+The seed pass has two strict laws:
+
+- **Expansion isolation:** each seed invocation receives the original intent and one lens, but does not read sibling outputs until the join. This prevents early seed text from narrowing later seed text.
+- **Separated expansion and review:** expansion runs return typed candidate strategies only. Review runs classify related paths, assign heuristic value, flag hazards, and choose which candidates merit Lab execution. No single seed run both opens and judges the candidate space.
+
+Only candidates retained by this review pass deserve physical Shadow branches. In this topology, lens-separated seeding widens Manas without multiplying Lab debris, while the later Dual-Gate still decides what is true. A clever idea branch is not Pramāṇa; it is merely Vikalpa selected for measurement.
+
+### 1.2 Shadow Roles: Expansion, Determination, Neutrality
 
 Shadow Simulation contains multiple roles that must remain distinct:
 
 - **Expansion (oscillation):** branch generation, strategy seeding, retrieval/tool candidate surfacing, and search-space exposure.
-- **Determination (convergence):** gate execution, scoring, and value backpropagation used to converge on a candidate branch.
+- **Determination (convergence):** review classification, hazard flagging, gate execution, scoring, and value backpropagation used to converge on a candidate branch.
 - **Identity neutrality:** Shadow may produce a structurally strong candidate, but it does not decide whether the candidate is congruent with Persona identity.
 
 This separation keeps the simulation substrate from becoming an implicit identity authority.
@@ -94,6 +117,9 @@ In practice:
 Simulation is an "I/O Storm" that generates massive temporary data. The Reaper is a specialized Ghoul that acts as the system's metabolism.
 
 - **The Autopsy Protocol (Trajectory Pairing):** Before a failed branch is destroyed, the Reaper extracts the deterministic failure trace (e.g., the specific compiler error or test failure). Rather than merely logging the failure in isolation, the Reaper **must** explicitly pair this failure trace with the eventual successful branch (if achieved) to form a complete `[Failed Attempt] -> [Compiler Error] -> [Correction]` trajectory. This prepares the exact data structure required by **[Riddle/Evaluation (34)](34-evaluation.md)** for trajectory mining. The physical debris is banished, but the structural journey from error to correction is retained as complex Karma.
+- **Validator-Centered Failure Shape:** When a branch fails through a tool or action validator, the autopsy preserves the validator's failure class and state comparison rather than reconstructing intent from reasoning prose alone. A `precondition_miss` with `required_state` and `observed_state` is evidence about the action contract; it may point to a schema repair, a state-hydration repair, or an agent policy repair depending on which side of the boundary was false.
+- **Truthful Dead Ends:** Some branches fail because the requested path is impossible, unsafe, underspecified, or internally contradictory. In those cases, the useful artifact is not a correction but a proven boundary. The Reaper should preserve the blocked premise and measured evidence so future runs learn that non-manifestation can be the White Truth.
+- **Non-Manifestation as Measurement:** A dead end is promoted only when it is grounded in Pramāṇa: a failed deterministic gate, an exhausted retrieval threshold, a violated policy boundary, or trusted Magus testimony. Mere model hesitation is not evidence; the boundary must be witnessed.
 - **Logical Banishment:** Once the autopsy is complete, the Reaper executes `jj abandon <Change_ID>`. Because Jujutsu tracks revision history as an immutable graph of changes, abandoning a Change ID instantly dissolves that conceptual node and all its descendants from the SQLite database.
 - **The Workspace Purge (Defensive Teardown):** The Reaper then deletes the physical `shadow/branch_<ID>` directory. However, acting as an **Execution Warden**, it is not enough to simply delete the folder. The Reaper must explicitly verify that all associated PIDs, port locks, and temporary Quadlet containers instantiated in the Tomb for that specific simulation are terminated. This defensive teardown prevents "Zombie Ports" where dead ghouls hold onto physical iron long after their logic has been banished. Because the workspace’s state is tracked centrally in `.jj/`, the final directory deletion leaves no dangling references behind.
 - **STASIS_TTL:** Any workspace in the Lab older than a configurable `STASIS_TTL` (default: 24h) is considered "Stale" and is abandoned to prevent inode exhaustion.
@@ -115,17 +141,20 @@ $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** — the discriminative faculty of the **[Lich's](../sepulcher/lich.md)** inner instrument (*√budh*: to discern, to wake). Where Manas generates candidates and Phantasma expands Vikalpa into the Shadow Realm, Buddhi is the blade that cuts to one: the faculty of final judgment that does not waver, does not oscillate, and cannot be overridden by the weight of existing grooves. The three collapses below are Buddhi operating at three nested levels of discrimination:
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
-- **The Consecration:** Upon approval, the "Wavefunction Collapses." The speculative change is merged into the trunk via `jj rebase -s <Change_ID> -d trunk()`.
+- **The Consecration:** Upon approval by live Magus consent or configured Vessel preauthorization, the "Wavefunction Collapses." The speculative change is merged into the trunk via `jj rebase -s <Change_ID> -d trunk()`.
 - **The Inscription:** The successful reasoning trace is stored in the Phylactery as **Karma**, providing a "Bayesian Prior" that weights future simulations toward similar successful patterns.
-- **Frictionless Collapse (ZTE Chores):** If the work is classified as a minor chore and the workspace's execution history has maintained a flawless **Streak KPI** exceeding the **Confidence Threshold**, the system executes the rebase and merges the workspace autonomously without waiting for HitL approval.
+- **Frictionless Collapse (ZTE Chores):** If Codex policy classifies the work as a minor preauthorized chore, the deterministic gates pass, forbidden scopes are untouched, identity constraints hold, and the workspace's execution history maintains a flawless **Streak KPI** above the **Confidence Threshold**, the Vessel may execute the rebase autonomously without a live HitL prompt. This is preauthorization, not self-approval.
 
 This flow contains three distinct collapses that should remain explicit:
 
 1. **Structural validity collapse (Shadow gate):** invalid branches are eliminated by deterministic checks.
 2. **Identity congruence collapse (Mirror gate):** valid branches are ranked for Persona alignment.
-3. **Ontological promotion collapse (Vessel + HitL):** only approved candidates become durable reality.
+3. **Ontological promotion collapse (Vessel policy + HitL):** only candidates authorized by explicit Magus consent or Codex-defined preauthorization become durable reality.
 
 Shadow can execute the first and prepare the second, but it cannot self-authorize the third.
+
+!!! note "Approval Policy Boundary"
+    ZTE is a policy class under **[Configuration (ADR 12)](12-configuration.md)**. It may cover small chores such as documentation link fixes, non-runtime metadata, or narrow test maintenance when all verification gates pass. It must not cover core runtime mutation, schema migration, destructive deletion, secret changes, host lifecycle authority, broad network/egress changes, or promotion that requires a Snapshot rollback plan. Those classes still require live HitL.
 
 ### 6. Shadow Simulation Primitives
 
@@ -162,7 +191,7 @@ This stack models cognitive mechanics and control boundaries, not subjective awa
 | Mounts | Persistent state and decision metadata mounts. | Simulation workspace and artifact mounts; optional read-only/sanitized Codex projection only. |
 | Network | Controlled internal services and approved provider calls. | Tomb loop may use constrained queue/proxy connectivity; sandboxed `nono` subprocesses have zero network. |
 | Queue Ownership | Owns durable simulation scheduling and reanimation state. | Claims, acknowledges, and retries execution-plane jobs only. |
-| Authority Boundaries | Approves collapse/promotion and persistence commits. | Produces candidate timelines only. |
+| Authority Boundaries | Applies approval policy, authorizes collapse/promotion, and commits persistence. | Produces candidate timelines only. |
 
 ## Consequences
 
@@ -174,6 +203,6 @@ This stack models cognitive mechanics and control boundaries, not subjective awa
 
 !!! failure "Negative"
     - **Temporal Latency:** Simulation is slow. It is a "System 2" process for background labor, not for sub-second reflexes.
-    - **I/O Exhaustion:** Running $N$ Git branches simultaneously creates high disk pressure. High-performance NVMe storage is a physical requirement.
+    - **I/O Exhaustion:** Running $N$ Jujutsu workspaces simultaneously creates high disk pressure. High-performance NVMe storage is a physical requirement.
     - **Resource Hunger:** Simulation is the most token-expensive ritual, requiring careful economic management.
     - **The Risk of Forgetfulness:** An overly aggressive Decay Factor might cause the Lych to forget subtle preferences that the Magus rarely reinforces.

@@ -67,6 +67,10 @@ Tests are categorized to manage execution time and infrastructure requirements:
 - **Threshold:** A **mandatory minimum coverage of 80%** is enforced. Builds falling below this threshold are rejected by the CI.
 - **Exclusions:** Pragmatic exclusions (e.g., `if TYPE_CHECKING:`, `abstractmethod`) are configured to ensure the focus remains on logic rather than boilerplate.
 
+### 5. Runtime Surface Probes
+
+Some behavior only becomes real when the daemon is running and a surface can be observed. For Altar fragments, agent-facing verification views, and generated artifacts, tests may drive the rendered surface and inspect the semantic contract defined in **[Frontend (15)](15-frontend.md)**. These probes complement unit and integration tests; they must distinguish `BLOCKED` from `FAIL`, preserve evidence such as DOM state or screenshots when useful, and still treat server state as the source of authority.
+
 ### Consequences
 
 !!! success "Positive"

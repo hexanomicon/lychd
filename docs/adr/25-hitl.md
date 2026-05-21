@@ -15,7 +15,8 @@ icon: material/account-voice
 - **Multi-Modal Transparency:** Mandatory presentation of rich, multimodal context—including code diffs, terminal logs, and visual screenshots—to the Magus at the primary interface.
 - **Resource Liberation:** Signaling to the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to evacuate hardware covens when a task enters a pending state, reclaiming VRAM for active user reflexes.
 - **Undeletable Authority:** Hardcoded enforcement of consent for system-critical capabilities, preventing autonomous "oversight-bypass" behaviors.
-- **Reanimation Fidelity:** Absolute rehydration of the cognitive state upon approval, utilizing Pydantic AI's deferred result patterns to ensure zero context loss.
+- **Configurable Preauthorization:** Low-risk autonomous approval must be expressible only through explicit **[Codex (ADR 12)](12-configuration.md)** policy and must remain subordinate to hard HitL gates.
+- **Reanimation Fidelity:** Phylactery-backed rehydration must resume from the declared recovery boundary upon approval, utilizing Pydantic AI's deferred result patterns without claiming every volatile frame survives.
 - **Feedback Integration:** Support for corrective feedback that triggers internal agent reflection via self-correction loops.
 
 ## Considered Options
@@ -35,7 +36,7 @@ icon: material/account-voice
     - **Pros:**
         - **Hardware Agility:** Physically liberates the machine's body while the mind waits, allowing the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to reallocate VRAM.
         - **Verified Visions:** Uses background labor to present a "future state" (e.g., a proposed code merge) before it is committed to the **[Crypt (ADR 13)](./13-layout.md)**.
-        - **Reflex Reanimation:** Reawakens the mind exactly at the point of decision, triggered by a secure signal from the **[Altar (ADR 15)](./15-frontend.md)**.
+        - **Reflex Reanimation:** Re-enters the mind at the declared decision boundary, triggered by a secure signal from the **[Altar (ADR 15)](./15-frontend.md)**.
 
 ## Decision Outcome
 
@@ -43,7 +44,10 @@ icon: material/account-voice
 
 There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash. It is the **umbilical cord** that keeps the Word tethered to the Magus's Will — the structural mechanism by which external Pramāṇa enters the system at the moment it is most needed: when the generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
 
-Within the broader simulation architecture, HitL is the final authority in a three-stage collapse sequence: structural validity is established in Shadow, identity congruence is evaluated by Mirror, and ontological promotion is authorized here (via Vessel policy and Magus consent).
+Within the broader simulation architecture, HitL is the final authority in a three-stage collapse sequence: structural validity is established in Shadow, identity congruence is evaluated by Mirror, and ontological promotion is authorized here through explicit Magus consent or Codex-governed Vessel preauthorization. High-stakes promotion remains live Magus authority.
+
+!!! note "Consent and Preauthorization"
+    "Approved" is a policy result, not a feeling produced by the model. It can mean live Magus approval at the Altar or a preauthorized Vessel policy class defined in **[Configuration (ADR 12)](12-configuration.md)**. ZTE chores may use the second path only when deterministic checks, scope limits, risk class, identity constraints, and confidence predicates all pass. Core mutation, schema migration, destructive deletion, secret changes, host lifecycle authority, and broad egress changes always require live HitL.
 
 
 ### 1. The Trigger (Stasis Initiation)
@@ -54,12 +58,13 @@ Consent is treated as a first-class state transition within the **[Graph (ADR 24
 - Upon invocation, the tool raises an `ApprovalRequired` exception.
 - The Agent run terminates and returns a `DeferredToolRequests` object containing the tool name, validated arguments, and a unique `tool_call_id`.
 - The Graph executes an atomic exit, serializing the `StateT` and message history into the `queue` chamber of the **[Phylactery (ADR 06)](./06-persistence.md)**.
+- Tools identified as preauthorizable still pass through the same Vessel-side policy gate. They may skip a live Altar prompt only when Codex policy explicitly permits that action class.
 
 ### 2. The Shadow Realm (The Dreaming)
 
 While the reasoning thread is in stasis, the system enters the state of **Albedo** (Purification):
 
-1. A background **[Ghoul (ADR 14)](./14-workers.md)** executes the intent within an isolated Git branch in the `lab/` directory.
+1. A background **[Ghoul (ADR 14)](./14-workers.md)** executes the intent within an isolated Jujutsu workspace or change in the `lab/` directory.
 2. The Ghoul performs the "Rite of Speculation"—running compilers, linters, and unit tests against the proposed change.
 3. The results are packaged into a **Vision artifact**, containing a technical summary, code diffs, and visual feedback (e.g., screenshots or Mermaid diagrams).
 
@@ -70,9 +75,12 @@ This phase establishes structural validity evidence and prepares material for do
 The moment of human choice is the site of ontological promotion collapse. The Magus scries the Vision at the **[Altar (ADR 15)](./15-frontend.md)**, with identity and scope established via the active Sigil context in **[Context (ADR 21)](./21-context.md)**.
 
 - **The Blessing:** Approval enqueues a reanimation job. A Ghoul rehydrates the Graph, injects a `DeferredToolResults` object with the approval, and the mind resumes the thought.
+- **The Preauthorized Blessing:** A configured low-risk policy may enqueue the same reanimation job without a live prompt only after all Codex predicates and verification gates pass.
 - **The Refinement:** If denied, the Magus's feedback is delivered to the mind via a `ModelRetry`. The Agent reflects on the refusal and generates a new speculation within the Shadow Realm.
 
-HitL therefore does not replace simulation or identity evaluation. It ratifies (or rejects) promotion after those earlier gates have already reduced the candidate space.
+Denial is a calibration signal, not punishment. The returned context should name the violated constraint, missing evidence, or unacceptable risk clearly enough that the next Shadow pass can change shape rather than loop defensively around the same false premise. HitL therefore strengthens truthful correction without training the Agent to please authority at the expense of Pramāṇa.
+
+HitL therefore does not replace simulation, identity evaluation, or Codex policy. It ratifies (or rejects) promotion after those earlier gates have already reduced the candidate space, and it remains mandatory wherever policy marks the action as high-risk or undeletably human.
 
 ### 4. Promotion to Karma (The Crucible Convergence)
 

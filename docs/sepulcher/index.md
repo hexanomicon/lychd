@@ -22,7 +22,7 @@ Its organs are not merely colocated services. They are a disciplined body: law i
 
 - :material-skull-scan: **[Vessel](./vessel/index.md) (Granian + Litestar):** The reanimated husk. It orchestrates asynchronous rites via **Ghouls** and serves the **Altar**.
 - :material-folder-key: **[Crypt](./crypt.md) (Btrfs Volume):** The physical earth where the daemon rests. It holds the **Spheres** (Files) and the physical files of the database.
-- :fontawesome-solid-flask: **[Phylactery](./phylactery/index.md) (Postgres):** The soul-anchor. If the Vessel is destroyed, the Lich reforms instantly from this point.
+- :fontawesome-solid-flask: **[Phylactery](./phylactery/index.md) (Postgres):** The soul-anchor. It stores memory, queues, traces, and committed recovery boundaries so a restarted Vessel can resume from the last valid durable state.
 
 ## II. The Animator
 

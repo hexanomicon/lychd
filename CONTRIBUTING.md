@@ -2,11 +2,11 @@
 
 Read **[AGENTS.md](AGENTS.md)** first — concepts defined there are not repeated here. This file covers the practical rituals: setup commands, implementation conventions, and the authorities that govern specific implementation decisions. Agents and humans alike are expected to internalize both.
 
-## Agent Overlay Boundary
+## Agent Context Boundary
 
-LychD supports local agent overlays through `.agents/AGENTS.md`, host-level profiles such as `~/.agents/AGENTS.md`, and tool-specific configuration. Those overlays may define journaling, shell, VCS, persona, reference, and scratch-space habits for a particular checkout or operator.
+LychD's tracked agent context comes from **[AGENTS.md](AGENTS.md)** and the tracked scopes under **[.agents/scopes/](.agents/scopes/)**.
 
-Overlays are coding-agent context, not product inputs. They must not be required for LychD to build, test, package, or run, and they must not weaken tracked repository law.
+Agents must not load checkout-local overlays such as `.agents/AGENTS.md`, host-level profiles such as `~/.agents/AGENTS.md`, or tool-specific local profiles for this repo unless the operator explicitly assigns one for the current task. Ignored local shelves may exist as private scratch space, but they are not repository authorities and must not be required for LychD to build, test, package, or run.
 
 ## The Iron Pact (Implicit DCA)
 

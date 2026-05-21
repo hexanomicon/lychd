@@ -42,6 +42,9 @@ icon: material/camera-timer
 
 A **Hybrid Snapshot Strategy** governed by a **Checkpoint Protocol** is adopted. This ensures the Daemon can "blink" its current reality into permanence without risk of corruption.
 
+!!! note "Replay Is Not Snapshot Rollback"
+    Workflow replay is normally a Phylactery concern: Postgres records queue rows, graph checkpoints, traces, committed outputs, and recovery markers so work can resume from the last declared safe boundary. Snapshot rollback is heavier. It restores whole reality when the Body (code, lockfiles, VCS state) and Soul (database state) must move together after Creation, Assimilation, Evolution, migration, or failed promotion. Postgres is authoritative for replaying work; Snapshots are authoritative for restoring body/soul coherence.
+
 ### 1. The Checkpoint Protocol (The Freeze)
 
 To guarantee consistency during self-modification, the system defines an atomic "Freeze" ritual that must occur before any destructive operation or state capture.

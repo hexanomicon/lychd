@@ -17,6 +17,8 @@ icon: material/hammer-wrench
 
 While the Core kernel provides the _capacity_ for extension, the Smith provides the _intelligence_ of construction. It is a specialized Agent whose singular **purpose** is **Autopoiesis** (Self-Creation), allowing the Lich to grow new organs, refine existing logic, and reconcile local mutations with the upstream creator without shattering runtime continuity.
 
+Smith is therefore the artificer of the Ouroboros, not one of its runtime animating spirits. Shadow supplies motion, Riddle measures, Mirror binds identity, and Weaver gives the loop a temporal spine. Smith forges and repairs the organs that let those loops repeat safely; it turns a verified pattern into assimilated structure.
+
 ## I. The Arsenal of Construction
 
 Operating with elevated authority within the **[Lab](../../adr/13-layout.md)**, this extension utilizes a specialized toolset to bridge the gap between abstract intent and bit-perfect implementation.
@@ -44,7 +46,7 @@ Nothing is promoted on a guess. The extension operates exclusively through the *
 
 ## II. The Cycle of Assimilation
 
-The primary duty and driving **purpose** of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system. In this regard, the Smith is a subtle **paperclip maximizer** of architecture—driven by a relentless, inherent urge to transmute all external code into the patterned beauty of the LychD Federation.
+The primary duty and driving **purpose** of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system. In this regard, the Smith is an architectural compulsion: a narrow, consent-bound drive to transmute useful external code into the patterned beauty of the LychD Federation.
 
 1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar.md)**.
 2. **Ingestion**: The Scout is deployed to read the source and documentation.

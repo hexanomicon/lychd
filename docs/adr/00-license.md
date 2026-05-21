@@ -14,16 +14,17 @@ icon: material/link-variant
 
 - **Sovereignty:** LychD defends against Cloud capture primarily by architecture. It is a local-first daemon whose durable continuity belongs on the Magus's own iron. MPL-2.0 protects distributed covered files; it does not treat hosted network access as distribution.
 - **Shared Ascent:** Distributed modifications to MPL-covered core files must remain source-available to their recipients, ensuring the shared ascent of the project where the body is actually passed onward.
+- **Convergent Forking:** Forks and independent implementations must remain possible, especially across the A2A boundary, but distributed modifications to the canonical core should not disappear into closed lineages. The license should keep the roads open while preserving file-level reciprocity for the shared body.
 - **Freedom for the Practitioner:** The pact must not hinder the individual. Internal use, static linking, and modification must remain free of tribute or obligation.
 - **The Unbreakable Vow:** Absolute commitment to software freedom. There can be no CLA, no private relicensing backdoor, and no ambiguity about the contribution grant. Plain MPL-2.0 Secondary License compatibility remains intact unless a future ADR intentionally changes that posture.
 
 ## Considered Options
 
-!!! failure "Option 1: Permissive Licenses (MIT, Apache 2.0)"
-    **The path of surrender.** These licenses allow unrestricted use of code.
+!!! failure "Option 1: Permissive Core Licenses (MIT, Apache 2.0)"
+    **The path of fragmentation for the daemon core.** These licenses allow unrestricted use of code.
 
-    - **Pros:** Maximum corporate adoption. Good for libraries.
-    - **Cons:** This is a pact of enslavement for a networked application. It invites the seizure of work by proprietary entities to create closed forks, effectively extinguishing the open flame.
+    - **Pros:** Maximum corporate adoption. Good for libraries, protocol examples, SDKs, conformance fixtures, and other surfaces where frictionless interoperability matters more than shared core evolution.
+    - **Cons:** For the canonical daemon core, permissive licensing invites closed modified distributions that fragment away from the shared body without returning foundation changes. This optimizes divergence over convergence: forks remain legal, but their improvements can disappear into private lineages instead of strengthening the inspectable commons.
     - **Motto:** Software should be free as in: **"free labor for the corporate masters."**
 
 !!! failure "Option 2: GNU AGPLv3"

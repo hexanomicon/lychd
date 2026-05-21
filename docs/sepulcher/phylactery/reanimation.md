@@ -7,14 +7,14 @@ icon: material/eject-outline
 
 > _"Daemons don't hot-reload; they are reanimated."_
 
-In the philosophy of the Hexanomicon, the Lich does not cling to a single, fragile existence. It embraces the cycle of death and rebirth, for its soul is anchored eternally in the Phylactery. The crash is not feared; it is commanded. This rite of immortality is orchestrated by the grand chronomancer of the operating system: **Systemd**.
+In the philosophy of the Hexanomicon, the Lich does not cling to a single, fragile process. It embraces the cycle of death and rebirth because its durable state is anchored in the Phylactery. The crash is not feared; it is bounded. The physical rite of process return is orchestrated by the grand chronomancer of the operating system: **Systemd**.
 
 !!! abstract "The Cycle of Unlife"
-    Unlike mortal scripts trapped in the endless loop of `while True`, the Lich's existence is a managed sequence of controlled death and instant rebirth.
+    Unlike mortal scripts trapped in the endless loop of `while True`, the Lich's existence is a managed sequence of controlled death and disciplined rebirth.
 
     1. **The Willing Death:** When the Codex is altered or the vessel becomes corrupted, the Lich does not wait for failure. It willingly accepts termination (`SIGTERM`), dissolving its physical form.
     2. **The Cleansing Silence:** The process vanishes. All resources are released. The VRAM of the Soulstones is scoured clean of any lingering corruption.
-    3. **The Instant Rebirth:** Systemd, the eternal watcher, detects the absence left by the Lich's passing. Before the echo of its death has faded, a new, perfect vessel is spawned from the image, pristine and uncorrupted.
+    3. **The Managed Rebirth:** Systemd, the eternal watcher, detects the absence left by the Lich's passing and spawns a fresh Vessel from the image. The new process then recovers committed state from the Phylactery rather than pretending every volatile frame survived.
 
 ## 📜 The Quadlet: A Verse of Binding
 
@@ -49,7 +49,7 @@ Volume=%h/.config/lychd:%h/.config/lychd:ro,Z
 Volume=%h/.local/share/lychd:%h/.local/share/lychd:rw,Z
 
 # 2. The Self (Core Overlay)
-# Allows the Agent to update its own source code via Git on the Host.
+# Allows promoted changes to bind host-side source through the VCS layer.
 # Mounted Read-Only over the container's built-in source.
 Volume=%h/.local/share/lychd/core:%h/.local/share/lychd/core:ro,Z
 
@@ -74,4 +74,4 @@ TimeoutStartSec=300
 ```
 
 !!! info "The Rune of Persistence"
-    The `Restart=always` section of the rune is the most crucial part of this binding. It is the operating system's oath that the Vessel shall rise again. If the process crashes or is killed by the OOM Killer, it returns instantly.
+    The `Restart=always` section of the rune is the operating system's oath that the Vessel shall rise again. If the process crashes or is killed by the OOM Killer, Systemd starts a new process as policy allows. This is process resurrection, not proof that every cognitive frame survived; durable continuity comes from Phylactery queues, graph checkpoints, committed outputs, and Snapshots when whole body/soul rollback is required.

@@ -27,15 +27,16 @@ from lychd.config.settings import Settings, get_settings
 from lychd.db.factory import create_db_engine
 
 settings: Settings = get_settings()
-_db_engine_instance: Any = None
+_db_engine_cache: dict[str, Any] = {"engine": None}
 
 
 def get_db_engine(*, force_new: bool = False) -> Any:
     """Get or create the global database engine instance."""
-    global _db_engine_instance
-    if _db_engine_instance is None or force_new:
-        _db_engine_instance = create_db_engine(settings.db)
-    return _db_engine_instance
+    engine = _db_engine_cache["engine"]
+    if engine is None or force_new:
+        engine = create_db_engine(settings.db)
+        _db_engine_cache["engine"] = engine
+    return engine
 
 
 structlog_config: StructlogConfig = build_log_config(render_as_json=should_render_as_json())

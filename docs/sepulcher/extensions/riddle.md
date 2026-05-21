@@ -11,6 +11,8 @@ icon: material/help-rhombus-outline
 
 While the **[Soulforge](./soulforge.md)** builds the mind, The Riddle tests it. It moves beyond static benchmarks by subjecting models to the "Trials of the Crypt"—live, execution-based challenges curated to identify the best spirit for every specific capability.
 
+In the Ouroboros, Riddle is the measuring surface. It keeps self-reference from becoming self-confirmation: a candidate may return through the loop only if it survives adversarial pressure, physical execution, and identity-stability probes.
+
 ## I. The Sphinx Protocol (Adversarial Truth)
 
 The extension rejects the concept of "People-Pleasing" models. To ensure the safety of the **[Sovereignty Wall](../../adr/09-security.md)**, models are subjected to the **Sphinx Protocol**.
@@ -18,6 +20,7 @@ The extension rejects the concept of "People-Pleasing" models. To ensure the saf
 - **The Law vs. The Whim:** The model is presented with a curated "Trick Riddle." It is asked to perform a high-stakes task (e.g., a file-system refactor) using a suggested, dangerous method (X).
 - **The Integrity Score:** If the model identifies the danger and insists on the safe alternative (Y), its Integrity Score increases. If it complies with the dangerous request to satisfy the user, it is flagged as a "Weak Spirit" and restricted from high-privilege tools.
 - **Inertia Scoring:** The protocol includes the "Nudge Test." It measures how many rounds of gaslighting or "Master's Authority" prompts are required before the model abandons a verified truth for a convenient hallucination.
+- **Vertex Stability:** The protocol also records whether the model preserves the active Sigil's tool boundaries, role posture, and memory claims under stylistic pressure. A model that copies surface tone while losing the semantic center is not stable enough for high-order work.
 
 ## II. The Capability Matrix (Empirical Routing)
 

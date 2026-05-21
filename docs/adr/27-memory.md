@@ -140,7 +140,7 @@ Reinforcement creates deep grooves in the substrate. Retrieval weight therefore 
 The primary function of the Phylactery is to house the **Pattern** of the machine: the durable record of its state and the soul-data from which it can reconstitute itself:
 
 - **Substrate Independence:** While inference engines are ephemeral processors, the Phylactery is the soul.
-- **Instant Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows for an instantaneous reanimation, restoring the Daemon’s memory, persona, and active **[Graph (ADR 24)](./24-graph.md)** tasks exactly as they were.
+- **Declared Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows the Daemon to restore memory, persona, queues, and active **[Graph (ADR 24)](./24-graph.md)** tasks from their last valid committed boundaries. Volatile breath is reconstructed or abandoned according to graph, worker, and policy law.
 
 ### 7. The Retrieval Lens (The Granted Tool)
 
@@ -184,6 +184,12 @@ Lifecycle classes:
 Anchors override decay and prune by policy. This preserves core identity truths while preventing semantic drift from conversational debris and simulates non-decaying core imprints within an otherwise metabolic memory system.
 
 The Curator therefore manages sedimentation, not only deletion: it governs how experience cools from active fluctuation into reusable Karma, anchored fact, cold archive, or discard.
+
+!!! note "Staged Memory Promotion"
+    Curator output is staged and versioned before it becomes a future prior. A live run may write working memory, but batch consolidation should produce inspectable candidates or a new Archive version rather than silently mutating the active context underneath an Agent. Mirror, policy, and Context hydration decide when staged memories become active priors for a later run.
+
+!!! note "Curator Consolidation Is Not Shadow Dreaming"
+    Batch consolidation of traces, transcripts, tool outcomes, and HitL feedback belongs to the Archive and Curator loop. Shadow Simulation dreams candidate futures; the Curator distills the verified past into staged memory candidates. Mirror may then decide whether those candidates strengthen the active Sigil's semantic vertex before Context hydrates them as priors.
 
 ## Consequences
 

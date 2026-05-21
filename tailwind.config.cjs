@@ -9,14 +9,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Frostmourne: The Tri-Color Palette
+        // Hexanomicon: The Tri-Color Palette
         void: {
           DEFAULT: "#08080b", // Deep Void Black
           light: "#12121a",   // Slightly lighter for cards/code
         },
         arcane: "#7c4dff",     // Deep Magic (Purple)
         frost: "#00e5ff",      // Ice Chill (Blue)
-        necro: "#00ff9d",      // Matrix Code (Green)
+        necro: "#00ff9d",      // Sigil Code (Green)
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],

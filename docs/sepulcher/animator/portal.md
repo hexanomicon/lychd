@@ -88,3 +88,4 @@ For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.m
     - In sovereignty-restricted modes, Portals may be disabled entirely.
     - Sensitive intents or high-privatization context may forbid Portal egress, forcing the work to local iron or sanitization workflows.
 
+> _A Portal is not a shortcut. It is a sealed opening in the sky, used only when local iron cannot finish the thought._

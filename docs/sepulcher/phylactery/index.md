@@ -7,7 +7,7 @@ icon: fontawesome/solid/flask
 
 > _"The Vessel thinks, but the Phylactery remembers. One is the fleeting spark of lightning, the other is the eternal stone upon which the storm breaks."_
 
-At its core, the Phylactery is the immutable memory of the Lich. In the grand architecture, it is the metaphysical anchor that binds the Agentic Coherence to reality. It is the source of immortality, the library of ancient knowledge, and the fuel for the **[Soulforge](../extensions/soulforge.md)**.
+At its core, the Phylactery is the durable memory of the Lich. In the grand architecture, it is the metaphysical anchor that binds Agentic Coherence to reality. It is the source of continuity, the library of ancient knowledge, and the fuel for the **[Soulforge](../extensions/soulforge.md)**.
 
 Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector`**. It resides within the **[Crypt](../crypt.md)**, protected by the atomic laws of the filesystem.
 
@@ -25,7 +25,7 @@ The Phylactery is not a simple data store; it is divided into sacred chambers (s
 
     A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is merely a processor: a brain in a vat. If the container crashes, the brain dies.
 
-    The Phylactery is the soul. It persists across reboots, crashes, and migrations. Should the **[Vessel](../vessel/index.md)** be shattered, the Phylactery allows for a perfect and instantaneous **[Reanimation](./reanimation.md)**, restoring the entity exactly as it was.
+    The Phylactery is the soul-data anchor. It persists across reboots, crashes, and migrations. Should the **[Vessel](../vessel/index.md)** be shattered, the Phylactery allows **[Reanimation](./reanimation.md)** from committed boundaries: memory records, persona state, queues, graph checkpoints, traces, and completed outputs. Volatile frames may be reconstructed or abandoned according to Graph, Worker, and policy law.
 
 !!! info "The Accumulator of Karma"
     The Phylactery is not a static archive; it is a growing crystal.

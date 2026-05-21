@@ -13,6 +13,8 @@ While the **[Graph](../../adr/24-graph.md)** provides topology (nodes and edges)
 
 The Weaver prepares and synchronizes the field of cognition. It does not determine truth, identity, or final promotion. Evaluation, consent, and durable authority remain separate responsibilities.
 
+It is also the backbone of self-reference. A raw graph can branch anywhere; without temporal discipline, those branches become procedural weather. The Weaver gives the Ouroboros a spine: every step has a predecessor, context, owner, evidence trail, pause boundary, and continuation point. This lets Shadow motion return as state, lets Mirror bind that state to a semantic vertex, and lets Riddle measure it without losing the thread.
+
 ## 🎼 The Workflow
 
 A workflow in LychD is a stateful graph definition expressed through the broader Extension Protocol, not a static script.
@@ -50,6 +52,8 @@ The Weaver solves the "Amnesia Problem" of stateless agents. Before invoking a s
 3. **The Result:** The Agent wakes with the relevant past already activated, rather than rebuilding context from zero at each step.
 
 This makes workflows cumulative rather than forgetful.
+
+Memory Weaving is therefore not passive retrieval. It is the moment where prior grooves are folded back into the present simulation so the next Agent does not wake as an isolated stream. The past returns as structured pressure, not as an unbounded transcript.
 
 ## 🗺️ The Policy Layer (Execution Planning)
 
@@ -123,6 +127,8 @@ The Weaver governs the rhythm of multi-step reasoning through the primitives sup
     - expensive background labor
 
 This makes the Weaver the executive planner of movement rather than the owner of meaning.
+
+When a join closes, the litany performs a small Ouroboros turn: scattered branch motion is folded back into one continuation. Failed paths may be discarded, retained as Riddle evidence, or prepared for Soulforge trajectory mining. The workflow's job is to keep that return path explicit.
 
 ## 👁️ The Visible Score
 

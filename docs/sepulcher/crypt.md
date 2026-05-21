@@ -17,23 +17,23 @@ The Crypt employs a **Decoupled Strategy** for persistence. The architecture tre
 
 ### 1. Code Persistence (The Body)
 
-**Mechanism:** **Federated Git.**
+**Mechanism:** **Jujutsu-managed repository federation.**
 
-The Code (Extensions and Core Source) is managed as a collection of Git repositories.
+The Code (Extensions and Core Source) is managed as a collection of repositories whose local working state is governed through Jujutsu while Git remains the exchange substrate.
 
-- **Safety:** Every modification is a commit. History is preserved via the Git log.
+- **Safety:** Every modification is a recorded change. Local intent is visible through `jj log`; distributed exchange still moves through Git remotes.
 - **Universality:** This works on any filesystem (Ext4, Btrfs, XFS).
 
 ### 2. Data Persistence (The Soul)
 
 **Mechanism:** **Hybrid Snapshots.**
-The Database (Postgres) is binary and fragile. It requires atomic backups. Ideally, it lives on a **Btrfs Subvolume** for instant rollback, but it can function on standard filesystems via `pg_dump`.
+The Database (Postgres) is binary and fragile. It requires atomic backups. Ideally, it lives on a **Btrfs Subvolume** for fast rollback of whole body/soul state, but it can function on standard filesystems via `pg_dump`.
 
-- **Immortal Mode (Btrfs):** Instant subvolume snapshots. Zero-latency backups.
+- **Immortal Mode (Btrfs):** Fast subvolume snapshots for body/soul rollback.
 - **Mortal Mode (Ext4):** Slow SQL dumps. Functional, but heavy.
 
 !!! tip "Ascension"
-    Mortal users can ascend to Immortality (Instant DB Rollback) without reformatting their drive by using the **Loopback Method** (mounting a Btrfs image file at `~/.local/share/lychd`).
+    Mortal users can ascend to stronger rollback support without reformatting their drive by using the **Loopback Method** (mounting a Btrfs image file at `~/.local/share/lychd`).
 
 ## 🗺️ The Cartography of the Crypt
 
@@ -51,7 +51,7 @@ graph TD
     Crypt --> Lock[lychd.lock]
 
     subgraph "Sphere 0: The Self"
-        Core -- Git Repo --> Source[src/]
+        Core -- JJ/Git Repo --> Source[src/]
     end
 
     subgraph "Sphere I: Workspace"
@@ -59,8 +59,8 @@ graph TD
     end
 
     subgraph "Sphere III: The Federation"
-        Ext -- Git Repo --> PluginA
-        Ext -- Git Repo --> PluginB
+        Ext -- JJ/Git Repo --> PluginA
+        Ext -- JJ/Git Repo --> PluginB
     end
 
     subgraph "The Phylactery"
@@ -84,7 +84,7 @@ To prevent the Lich from destroying itself or the Magus's data, it operates with
 The **Genesis Sphere**. This is the Agent's private scratchpad.
 
 - **Usage:** Cloning new repos, drafting extensions, running tests.
-- **Safety:** Managed by Git inside the project folders. Not system-backed.
+- **Safety:** Managed by Jujutsu/Git inside the project folders. Not system-backed.
 
 ### 🌍 Sphere II: The Outlands (External / Read-Write)
 
@@ -93,7 +93,7 @@ The **Genesis Sphere**. This is the Agent's private scratchpad.
 The **Labor Sphere**.
 
 - **Mounts:** The Magus defines external paths (e.g., `~/Projects/MyStartup`) to let the Agent work on local code.
-- **Safety:** **The Git Ward.** The Agent refuses to touch this sphere unless a git repository is present and clean.
+- **Safety:** **The VCS Ward.** The Agent refuses to touch this sphere unless a recognized repository is present and clean.
 - **Execution Boundary:** Outlands is a workspace geography, not an execution authority. Vessel controls policy and promotion; Tomb receives only task-scoped Outland access when unsafe execution must touch those files.
 
 ### 🧩 Sphere III: The Extensions (Internal / Read-Only)
@@ -102,7 +102,7 @@ The **Labor Sphere**.
 
 The **Living Tissue Sphere**.
 
-- **Federation:** A collection of Git repositories tracked by `lychd.lock`.
+- **Federation:** A collection of Jujutsu/Git repositories tracked by `lychd.lock`.
 - **Promotion:** To install a new extension, the Agent builds it in the **Lab**, then triggers a **Promotion Ritual** to move it here and commit the change.
 
 ### 📚 Sphere IV: The Library (External / Read-Only)

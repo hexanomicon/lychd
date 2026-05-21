@@ -60,6 +60,11 @@ The Altar adopts the **Agentic Generative UI (AG-UI)** philosophy but implements
 - **Predictive State:** The Altar subscribes to the Agent's thought stream via Server-Sent Events (SSE). If the Agent is "drafting" a document, the UI updates a live preview window in real-time, utilizing shared state between the Python kernel and the DOM.
 - **Tool-Based Interaction:** Approvals use dynamically generated forms based on the Pydantic schema of the pending tool call, allowing precise parameter editing before execution.
 
+!!! note "Runtime Surface Contract"
+    Server-rendered fragments may expose stable semantic attributes and roles so agents, tests, and the Magus can verify the visible artifact at runtime. This contract is evidence, not authority: the Vessel and Phylactery own truth; the DOM is a machine-readable projection of that truth.
+
+    Verification surfaces should be explicit enough to drive both human review and automated probes: fragment identifiers, declared state, accessible roles, and clear verdict states (`PASS`, `FAIL`, `BLOCKED`, `SKIP`) when a fragment is itself a verification view. `BLOCKED` means the artifact could not be observed; it is not a failed behavior and never a pass.
+
 ### 3. The Ritual of Consent
 
 The Altar is the primary coordinate for high-level deliberation.

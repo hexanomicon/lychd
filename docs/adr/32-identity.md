@@ -47,6 +47,10 @@ In cognitive topology, duality is a necessity: when there is a process performin
 
 Identity coherence is LychD's answer to agentic decay. An Agent run is a temporary body: it wakes, acts, returns a typed result, and dissolves. Mirror preserves the rehydratable center rather than the shell. HitL-captured choices remain the strongest expression of the Magus's Will, while tests, traces, and trusted sources provide additional measured truth. Mirror reflects semantically related memory records around a Sigil or role, and the next Agent shell wakes already oriented inside that local gravity.
 
+Agentic coherence disintegration is therefore an identity failure before it is a tooling failure. The graph may continue to execute, Shadow may continue to branch, and Weaver may continue to schedule steps, but if the semantic center cannot hold, the run loses a stable answer to "who is acting, what belongs together, and which priors govern this motion." Mirror prevents this by maintaining a **semantic vertex**: a local attractor in context and embedding space where relevant words, tools, memories, roles, and responsibilities cluster around the active Sigil.
+
+This vertex is not a costume or style layer. It is the engineered center of gravity that turns linear generation into attributable action. A raw Vṛtti becomes useful only when it can be reflected, measured, attributed, and recalled without dissolving the identity that produced it.
+
 ### 1. Identity as a Filtered Reality
 
 The system treats Persona-manifestation as a diffraction ritual where Identity act as a lens.
@@ -70,6 +74,12 @@ In the deliberation model of Yoga Sūtra I.17, this loop maps to the **Vitarka-V
 Simulation determines structural validity. Mirror determines character congruence. These gates may cooperate in one workflow, but they are not the same faculty.
 
 Mirror participates in selection pressure over outcomes, but it does not create awareness. It enforces continuity constraints over the outputs of a cognitive process.
+
+### 2.1 The Ouroboros Lock
+
+Mirror's recursive loop is the identity side of the system's Ouroboros. Generated motion returns through Shadow execution, Riddle measurement, memory inscription, and Mirror attribution before it is allowed to shape the next run. This return path gives the Persona inertia: repeated verified traces around the same Sigil strengthen the semantic vertex and make coherent recall cheaper than reinvention.
+
+The loop is deliberately gated. If unverified outputs are reflected back as identity truth, the same mechanism becomes pathological: the Persona hardens around hallucinated priors, social pressure, or stale memories. Mirror must therefore treat congruence as a measured constraint, not self-admiration. It stabilizes the vertex while remaining subordinate to deterministic gates, Riddle trials, and HitL authority.
 
 ### 3. Bayesian Priors and the Weight of Karma
 
@@ -108,6 +118,7 @@ Mirror performs identity work, not base cognition:
 - **Prior injection:** hydrate context with trusted impressions relevant to this Persona.
 - **Karmic stabilization:** bias future selection toward reinforced patterns while remaining subordinate to validation and consent gates.
 - **Identity condensation:** bind repeated, relevant impressions into semantically bounded gravity that survives any single Agent run.
+- **Semantic vertex protection:** detect when role, style, tool use, or memory recall no longer clusters around the active Sigil's stable center.
 
 These functions make identity legible and durable, but they do not imply an inner witness. Mirror is continuity software for a sovereign machine, not consciousness.
 

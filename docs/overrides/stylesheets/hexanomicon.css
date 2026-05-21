@@ -1,6 +1,6 @@
 /*
    -------------------------------------------------------------------------
-   FROSTMOURNE.CSS
+   HEXANOMICON.CSS
    Theme: The Void (Deep Dark)
    Palette: Arcane Purple (Magic), Frost Blue (Ice), Necro Green (Life/Code)
    -------------------------------------------------------------------------
@@ -15,7 +15,7 @@
   /* --- The Tri-Color Palette --- */
   --arcane-purple: #7c4dff;  /* Deep Magic */
   --frost-blue: #00e5ff;     /* Ice Chill */
-  --necro-green: #00ff9d;    /* The "Sprinkle" of Matrix Code */
+  --necro-green: #00ff9d;    /* The code-sigil green */
 
   /* --- Material Overrides --- */
   --md-primary-fg-color: #000000; /* Header background (Black) */
@@ -86,7 +86,7 @@
 
 /* The Active Link (Where you are right now) */
 .md-nav__item--active > .md-nav__link {
-  color: var(--necro-green) !important; /* Matrix Green */
+  color: var(--necro-green) !important; /* Active green */
   font-weight: 700;
   text-shadow: 0 0 8px rgba(0, 255, 157, 0.2);
 }

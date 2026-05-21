@@ -66,12 +66,18 @@ Decisions regarding hardware state transitions are not binary; they are calculat
 When the Tipping Point is reached, the Orchestrator executes a coordinated ritual to ensure data integrity and physical stability. This solves the "Lobotomy Risk."
 
 1. **The Pause:** The Orchestrator instructs the **[Ghoul (14)](14-workers.md)** broker to pause the claiming of new jobs associated with the *Current Coven*.
-2. **The Drain:** It broadcasts a `SIG_SOFT_STOP` to active workers. The workers complete their *current atomic step* (e.g., finishing a sentence), serialize their `GraphState` to the Phylactery, and go dormant.
+2. **The Drain:** It broadcasts a `SIG_SOFT_STOP` to active workers. The workers complete their *current atomic step* (e.g., finishing a sentence) and reach a safe wait or checkpoint boundary. If that boundary is a **Long Sleep** condition, they persist graph or job state to the Phylactery; an ordinary VRAM swap does not by itself require graph serialization.
 3. **The Signal:** Once the drain is confirmed (active worker count = 0), the Orchestrator writes a structured intent file to the shared volume, triggering the **[Host Reactor (10)](10-privilege.md)**.
 4. **The Transmutation:** The Host Reactor executes `systemctl start [Target Coven]`. Because of the `Conflicts=` directives in the **[Quadlets (08)](08-containers.md)**, Systemd automatically and cleanly kills the old coven before starting the new one.
-5. **The Awakening:** The Orchestrator polls the **[Dispatcher (22)](22-dispatcher.md)** until the new endpoint pulses "Warm." It then unpauses the Ghouls, allowing the "Stasis" tasks to rehydrate on the new hardware.
+5. **The Awakening:** The Orchestrator polls the **[Dispatcher (22)](22-dispatcher.md)** until the new endpoint pulses "Warm." It then unpauses the Ghouls, allowing waiting tasks to continue on the new hardware.
 
 Snapshot note: this drain/swap ritual protects live work during transitions. "Drain" means Ghouls finish their current atomic inference step and stop claiming new jobs — the Agent's cognitive state remains alive in Vessel process memory throughout. Phylactery serialization is reserved for **Long Sleep** scenarios (human approval pending, multi-day waits, or full system reboots). Durable state capture and Btrfs/COW snapshot strategy are governed separately by **[Snapshots (07)](07-snapshots.md)**.
+
+!!! note "Stasis as Parked Vritti"
+    Stasis is not a separate Magus-initiated ritual. It is the condition of an active cognitive fluctuation (**Vritti**) parked at a recoverable boundary because physical reality is not ready. A short model swap may produce **Live Stasis**, where the Vritti waits in Vessel memory. A reboot, approval wait, peer callback, or other long delay requires **Durable Stasis**, where the recoverable boundary is recorded in the Phylactery. Replay resumes from that persisted boundary; rollback discards or restores the timeline according to Worker, Graph, Simulation, or Snapshot law.
+
+!!! note "Orchestration Boundary"
+    The Orchestrator owns physical lifecycle decisions: warm/cold checks, transition plans, drains, leases, runtime-native activation, and host lifecycle requests. It consumes Dispatcher signals and worker drain status, but it does not own privacy routing, cognitive binding, graph schema, queue retry semantics, or whole-system snapshot rollback. Those boundaries may receive better class names later, but the authority split is durable.
 
 ### 2. Model Tiering and Reservation
 
@@ -88,7 +94,7 @@ To protect the local Magus from resource exhaustion by the **[Legion (42)](42-le
 - **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
 - **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
     1. The swarm Ghoul receives `SIG_SOFT_STOP`.
-    2. It completes its current atomic inference step, serializes its `GraphState` to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
+    2. It completes its current atomic inference step, persists its recovery boundary (graph or job state as applicable) to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
     3. The GPU is reclaimed for the local reflex.
     4. When the local user is satisfied and the GPU is free, the Orchestrator restores the lease and the swarm Ghoul rehydrates from the serialized state.
 - **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
@@ -101,7 +107,7 @@ The Orchestrator maintains a "Watchdog" for every active container service. If a
 
 !!! success "Positive"
     - **Physical Reliability:** GPU VRAM is never over-committed; transitions occur with 100% kernel-enforced determinism.
-    - **Zero-Data Loss:** The "Drain" protocol ensures that even mid-thought agents are safely serialized before their brain is swapped.
+    - **Zero-Data Loss:** The "Drain" protocol ensures that active work reaches a safe boundary before its physical substrate is swapped.
     - **Economic Efficiency:** The tiering logic maximizes the utility of local silicon, reducing reliance on expensive cloud fallbacks.
     - **Governance Sovereignty:** The Magus can define complex orchestration policies through extensions, adapting the system to any specific hardware configuration.
 
