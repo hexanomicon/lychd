@@ -32,11 +32,13 @@ class CodexService:
         toml_path: Path | None = None,
         runes_path: Path | None = None,
         templates_dir: Path | None = None,
+        postgres_root_path: Path | None = None,
     ) -> None:
         """Create a codex service bound to concrete codex/runes paths."""
         self.toml_path = toml_path or PATH_LYCHD_TOML
         self.runes_path = runes_path or PATH_RUNES_DIR
         self.templates_dir = templates_dir or PATH_RUNE_TEMPLATES_DIR
+        self.postgres_root_path = postgres_root_path or PATH_POSTGRES_ROOT_DIR
 
         self._env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -71,7 +73,7 @@ class CodexService:
 
     def _inscribe_init_db(self) -> None:
         """Inscribe the dynamic DB initialization script."""
-        init_sh_path = PATH_POSTGRES_ROOT_DIR / "init_db.sh"
+        init_sh_path = self.postgres_root_path / "init_db.sh"
         if init_sh_path.exists():
             return
 

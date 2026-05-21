@@ -18,16 +18,31 @@ logger = structlog.get_logger()
 class Layout:
     """Orchestrate the host physical directory architecture and lifecycles."""
 
-    def __init__(self, paths: tuple[Path, ...] | None = None) -> None:
+    def __init__(
+        self,
+        paths: tuple[Path, ...] | list[Path] | None = None,
+        *,
+        layout: tuple[Path, ...] | list[Path] | None = None,
+    ) -> None:
         """Initialize the layout orchestrator with defined architectural paths.
 
         Args:
             paths: System directories to manage. Defaults to HOST_LAYOUT constant.
+            layout: Legacy alias for paths retained for older call sites.
 
         """
+        if paths is not None and layout is not None:
+            msg = "Use either paths or layout, not both."
+            raise ValueError(msg)
+
         # Strictly check for None so an empty tuple () can be respected if passed.
-        self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if paths is None else paths
+        selected_paths = layout if layout is not None else paths
+        self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if selected_paths is None else tuple(selected_paths)
         self.btrfs: Final[Btrfs] = Btrfs()
+
+    def initialize(self) -> None:
+        """Synchronize the physical layout using the public CLI-facing API."""
+        self.mkdirs()
 
     def mkdirs(self) -> None:
         """Synchronize the physical layout with the system blueprint."""

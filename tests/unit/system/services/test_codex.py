@@ -29,13 +29,12 @@ def codex_paths(tmp_path: Path) -> dict[str, Path]:
 
 
 @pytest.fixture
-def codex_service(codex_paths: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> CodexService:
+def codex_service(codex_paths: dict[str, Path]) -> CodexService:
     """Instantiate CodexService with isolated paths."""
-    monkeypatch.setattr("lychd.system.services.codex.PATH_POSTGRES_DIR", codex_paths["postgres"])
-
     return CodexService(
         toml_path=codex_paths["toml"],
         runes_path=codex_paths["runes"],
+        postgres_root_path=codex_paths["postgres"],
     )
 
 

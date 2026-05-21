@@ -15,6 +15,8 @@ The Shadow Realm is not just a metaphor. It is both:
 **The Shadow** is the Deliberative Extension of the system. It implements **[ADR 31 (Simulation)](../../adr/31-simulation.md)** and moves the machine from reflexive "System 1" output to deliberative "System 2" reasoning.
 It is the mechanism of internal doubt: fail in shadow, succeed in light.
 
+Shadow is also the present simulation-field of an active branch. To the Agent acting inside it, the branch is the current world: context, files, tools, traces, and feedback are all immediate. To the Sepulcher as a whole, that same world is still Vikalpa until measured and promoted. This distinction keeps the system honest: every experience inside Shadow may be operationally real while remaining ontologically untrusted.
+
 !!! abstract "The Crucible of Albedo"
     In the alchemical map of [Transcendence](../../divination/transcendence/index.md), the Shadow Realm is the crucible of **Albedo** (Whitening).
 
@@ -31,7 +33,7 @@ The process is a dance between intent, simulation, and judgment:
 
 Nothing in this stage is primary reality. Destructive failures in Shadow remain confined to simulation branches and do not alter durable state.
 
-Shadow produces candidate futures and structural evidence. Identity congruence and final promotion remain downstream gates.
+Shadow produces candidate futures and structural evidence. Identity congruence and final promotion remain downstream gates. In the Ouroboros, Shadow supplies the motion that will later return through Riddle, Mirror, Memory, and HitL; it does not decide what the motion means.
 
 Typical outcomes:
 
@@ -47,9 +49,10 @@ While a standard **[Agent](../../adr/20-agents.md)** produces one linear answer,
 
 - The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread) as the engine of **Manas**, generating active **Vṛttis** to navigate the **Possibility Space**.
 - Each branch the Lich generates here is precisely **Vikalpa** — honest speculation: internally coherent, structurally plausible, and carrying no confirmed correspondence to reality. Vikalpa does not claim to be true. It exists to be judged. The Shadow Realm is the space where Vikalpa is held safely long enough for Viveka (the Dual-Gate) to determine which candidates have crossed into Pramāṇa and which are Viparyaya in disguise. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive taxonomy.
+- For open-ended strategy work, Shadow may first run cheap, text-only idea branches through isolated operational lenses. These seed branches widen the pool without creating filesystem debris; only review-selected candidates become physical timelines.
 - It spawns $N$ branch timelines for complex intents.
 - The Branch execution is physically performed in the `lychd-tomb` container.
-- Each branch is a Git Worktree isolated in the `shadow/` region of the **[Lab (13)](../../adr/13-layout.md)**.
+- Each branch is a Jujutsu workspace isolated in the `shadow/` region of the **[Lab (13)](../../adr/13-layout.md)**.
 - Each execution step utilizes a job-scoped temporary directory to prevent file collisions.
 
 ### B. Scrying (Evaluation)

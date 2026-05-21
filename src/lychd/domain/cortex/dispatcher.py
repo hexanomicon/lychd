@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any, Protocol
+
 from lychd.domain.animation.capabilities import CapabilityGrant, CapabilitySpec, CapabilityState
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.services.binder import AnimatorBindingError
-from lychd.domain.animation.services.registry import AnimatorRegistry, RuntimeAnimator
+from lychd.domain.animation.services.registry import AnimatorRegistry
 
 _INTENT_FAMILY_MAP = {
     "reasoning": CapabilityFamily.CHAT,
@@ -18,10 +21,28 @@ _INTENT_FAMILY_MAP = {
 }
 
 
+class CapabilityRegistry(Protocol):
+    """Registry surface required by dispatch resolution."""
+
+    def list_capabilities(self) -> list[CapabilitySpec]: ...
+
+    def get_capability(self, key: str, /) -> CapabilitySpec | None: ...
+
+    def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
+
+    def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...
+
+    def get_runtime(self, name: str, /) -> Any | None: ...
+
+    def bind_model(self, name: str, /, *, model_id: str | None = None) -> Any | None: ...
+
+    def bind_toolsets(self, name: str, /) -> Sequence[Any]: ...
+
+
 class HardwareTransitionRequired(Exception):  # noqa: N818
     """Raised when a requested capability exists but the substrate is not warm."""
 
-    def __init__(self, spec: CapabilitySpec, state: CapabilityState, animator: RuntimeAnimator) -> None:
+    def __init__(self, spec: CapabilitySpec, state: CapabilityState, animator: Any) -> None:
         """Store the canonical capability record that requires a transition."""
         super().__init__(f"Hardware transition required for capability: {spec.key}")
         self.spec = spec
@@ -32,7 +53,7 @@ class HardwareTransitionRequired(Exception):  # noqa: N818
 class Dispatcher:
     """Resolve abstract intent onto the canonical capability registry."""
 
-    def __init__(self, registry: AnimatorRegistry | None = None) -> None:
+    def __init__(self, registry: CapabilityRegistry | None = None) -> None:
         """Initialize the dispatcher against the canonical runtime registry."""
         self._registry = registry or AnimatorRegistry()
 

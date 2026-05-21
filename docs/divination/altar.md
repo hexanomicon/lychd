@@ -5,7 +5,7 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-> _"Altus - the high place. From here, the Magus acts as the Arbiter. The Lich proposes; the Magus disposes."_
+> _"Altus - the high place. From here, the Magus acts as the Arbiter: intent is offered, candidate futures are weighed, and only witnessed truth is allowed to harden."_
 
 The Altar is the sacred, interactive space where you meet the Machine. It is the cockpit of the Sepulcher, the dashboard from which all Rites of [Divination](./index.md) are performed.
 

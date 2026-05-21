@@ -88,15 +88,4 @@ For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.m
     - In sovereignty-restricted modes, Portals may be disabled entirely.
     - Sensitive intents or high-privatization context may forbid Portal egress, forcing the work to local iron or sanitization workflows.
 
-> _"I hate portals."_ — Geralt of Rivia
-
-<div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-
-  <img src="../../assets/witcher/great-portals-this-just-keeps-getting-better.gif"
-       alt="Great! Portals... This just keeps getting better"
-       style="width: 300px; border-radius: 8px; border: 1px solid #7c4dff; box-shadow: 0 0 10px rgba(124, 77, 255, 0.2);">
-
-  <img src="../../assets/witcher/i-hate-portals.gif"
-       alt="I hate portals!"
-       style="width: 300px; border-radius: 8px; border: 1px solid #7c4dff; box-shadow: 0 0 10px rgba(124, 77, 255, 0.2);">
-</div>
+> _A Portal is not a shortcut. It is a sealed opening in the sky, used only when local iron cannot finish the thought._

@@ -1,20 +1,25 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, Graph
 from pydantic_graph.persistence import BaseStatePersistence
 
-from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
-from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.extensions.protocols import PhylacteryProtocol
+
+
+class TransitionOrchestrator(Protocol):
+    """Orchestration surface required by graph stasis recovery."""
+
+    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None: ...
 
 
 class GraphRunner[StateT: BaseModel]:
     """Execute Pydantic Graph loops with LychD stasis and rehydration support."""
 
-    def __init__(self, dispatcher: Dispatcher, orchestrator: OrchestratorManager, persistence: PhylacteryProtocol) -> None:
+    def __init__(self, dispatcher: object, orchestrator: TransitionOrchestrator, persistence: PhylacteryProtocol) -> None:
         """Initialize graph runner dependencies."""
         self.dispatcher = dispatcher
         self.orchestrator = orchestrator

@@ -42,6 +42,11 @@ icon: material/telescope
 
 **The Oculus** is adopted as the Observability Extension. Phoenix is the current scrying pool, but the architectural requirement is the trace itself: structured evidence that connects intent, graph movement, tool use, runtime pressure, and outcome while leveraging host-native tools for hardware telemetry.
 
+!!! note "Trace Correlation Contract"
+    Runtime evidence must preserve correlation keys across layers: `run_id`, `step_id`, `tool_call_id`, `lane_id`, peer task IDs, and relevant hardware lease IDs. This lets an incident, Riddle failure, HitL decision, or A2A callback be followed from visible surface to graph movement to provider call without granting the trace authority over the underlying state.
+
+    Failed tool calls must also preserve the validator-known rejection shape: `failure_class`, `required_state`, `observed_state`, and retryability when available. This keeps "the model ignored the state" distinct from "the state surface omitted a hidden precondition" during later Riddle, Reaper, or Magus review.
+
 ### 1. The Extension Registration (The Retina Hook)
 
 To satisfy the requirement of sovereignty, the Oculus is implemented as an Extension:

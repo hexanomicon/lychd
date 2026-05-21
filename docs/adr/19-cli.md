@@ -104,7 +104,7 @@ The **Hand** (CLI) resides on the **Host Substrate**, physically separated from 
 ### Consequences
 
 !!! success "Positive"
-    - **Consistency:** One tool to rule the entire Sepulcher. The user never needs to remember if a directory is in `.local` or `.config`; the Hand handles the geography.
+    - **Consistency:** One tool owns the Sepulcher's geography. The user never needs to remember if a directory is in `.local` or `.config`; the Hand handles the map.
     - **Evolution Safety:** Because the CLI and Server share the same code, a breaking change in the configuration schema is caught at compile/build time.
     - **Ease of Deployment:** The CLI provides the "Zero-Trust" confirmation needed for secure self-evolution.
 

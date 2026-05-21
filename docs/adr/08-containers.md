@@ -53,9 +53,12 @@ icon: material/cube-outline
 
 ## Decision Outcome
 
-Podman Quadlets are adopted as the exclusive orchestration mechanism. These unit definitions serve as the physical blueprint of the Daemon. They are organized into **Covens** for state management and tagged with **Capabilities** for semantic discovery.
+Podman Quadlets are adopted as the exclusive orchestration mechanism. These unit definitions serve as the physical blueprint of the Daemon. They are organized into **Covens** for state management and paired with logical Animator capabilities for semantic discovery.
 
 Terminology boundary: configuration **runes** are TOML declarations in the Codex (see **[Configuration (12)](12-configuration.md)**). This ADR governs the generated **Quadlet manifests** and their Systemd lifecycle.
+
+!!! note "Manifestation Boundary"
+    Quadlets are physical manifestations, not cognitive binding objects. The binding path for Agents and Graphs lives through logical Animator records, runtime/connectors, the capability registry, and the Dispatcher grant surface. The Orchestrator may use Quadlet service or target identity to change hardware state, but a generated Quadlet should not become the object that proves a capability exists to an Agent.
 
 ### 1. The Quadlet Hierarchy
 

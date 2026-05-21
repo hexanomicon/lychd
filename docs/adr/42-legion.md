@@ -25,7 +25,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 ## Requirements
 
 - **Dual-Mode Boot:** The Vessel must support two boot modes: `master` (full stack with local Phylactery) and `thrall` (headless mode pointing `DATABASE_URL` to the Master's Postgres).
-- **Centralized State:** One Phylactery per Magus. One Phylactery to bind them. Thralls connect to the Master's database over the network. No replication, no sharding, no consensus.
+- **Centralized State:** One Phylactery per Magus. Thralls connect to the Master's database over the network and treat it as the sole state authority. No replication, no sharding, no consensus.
 - **Sovereign Hardware Management:** A Thrall must run its own Orchestrator and generate its own Systemd Quadlets. Only the local kernel knows its hardware state.
 - **The Emissary Pattern:** Thralls must be manifested within the Master's **[Dispatcher (22)](22-dispatcher.md)** as standard **Tools**, transparent to the Agent.
 - **Asynchronous Deferral:** Support for the "Long Sleep" via the **[Stasis Protocol (22)](22-dispatcher.md)** while awaiting remote Emissaries.
@@ -74,7 +74,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 
 A Thrall is a LychD Vessel booted in headless mode (`LYCHD_MODE=thrall`). It runs the same `app.py` as the Master but with a critical difference: it has no soul.
 
-- **No Local Phylactery:** The Thrall does not spin up a local Postgres database. Its `DATABASE_URL` points to the Master's Postgres over the network. Its `PHOENIX_ENDPOINT` points to the Master's Arize Phoenix. There is one Phylactery, and it binds them all.
+- **No Local Phylactery:** The Thrall does not spin up a local Postgres database. Its `DATABASE_URL` points to the Master's Postgres over the network. Its `PHOENIX_ENDPOINT` points to the Master's Arize Phoenix. There is one Phylactery, and every Thrall reads from that single authority.
 - **Sovereign Hardware:** Despite lacking a local DB, the Thrall runs its own **[Orchestrator (23)](23-orchestrator.md)** and generates its own **[Systemd Quadlets (08)](08-containers.md)**. When the Master delegates a vision task, the Thrall handles killing its local text container, starting its local vision container, managing thermal pressure — all natively. The Master cannot and should not manage remote Systemd units.
 - **No Tomb:** A Thrall does not run a **Tomb** container. It is not an execution substrate for untrusted code. It is a smart, self-managing inference endpoint. All cognitive labor (agent graphs, memory curation, Dispatcher resolution) remains on the Master Vessel.
 

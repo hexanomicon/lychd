@@ -17,7 +17,7 @@ icon: material/import
 - **Atomic Promotion Safety:** Mandatory execution of the **[Snapshot Protocol (ADR 07)](./07-snapshots.md)** prior to any modification of the Primary Reality (The Crypt).
 - **Migration Verification:** Implementation of a hardcoded verification step for relational schemas against a transient database; failure of the database bind must trigger an automatic reversion to the previous stable state.
 - **Privileged Signal Authority:** Authority to modify the federated lockfile and invoke the **[Host Reactor (ADR 10)](./10-privilege.md)** to trigger system-wide state transitions.
-- **Shadow Realm Compliance:** Strict adherence to **[Sovereign Consent (ADR 25)](./25-hitl.md)**, ensuring no generated logic or infrastructure is promoted without explicit Magus verification in the Lab.
+- **Shadow Realm Compliance:** Strict adherence to **[Sovereign Consent (ADR 25)](./25-hitl.md)** and Codex autonomy policy, ensuring no generated logic or infrastructure is promoted without explicit Magus verification or a bounded preauthorization class. High-stakes promotion remains live Magus authority.
 - **Engineering Rigor:** Mandatory adherence to the laws of **[xDDD (ADR 01)](./01-doctrine.md)**, ensuring documentation and unit tests are manifested alongside the implementation logic.
 - **Legacy Data Ingestion:** Mandatory capability to parse, clean, and transmute unstructured cloud exports (.zip) from major AI providers into structured Karma and Mirror Identities.
 
@@ -43,6 +43,8 @@ icon: material/import
 **The Smith** is adopted as the machine's First Extension. It functions as the Primordial Artificer, serving as the bridge between "Thought" and "Implementation" through the ritual of **Assimilation**.
 
 Assimilation is the inward counterpart to **[A2A (ADR 26)](./26-a2a.md)**. Where A2A negotiates labor across sovereign boundaries, Assimilation studies an external pattern deeply enough that the capability may be re-expressed as part of the local LychD implementation without collapsing those boundaries into dependence.
+
+Smith is not a runtime identity, measurement, or simulation faculty. Those live loops are animated by Shadow, Riddle, Mirror, and their Weaver-governed workflow context. Smith is the artificer of loop-forms: it fabricates, repairs, and evolves the organs that make verified self-reference repeatable without turning the Core into an ungoverned mutation surface.
 
 LychD's first extension boundary is not compatibility; it is assimilation. Public compatibility is a product of maturity, not the foundation of infancy. Pre-v1, the Smith optimizes for coupled source that can be repaired. At v1, the project may harvest public surfaces from repeated patterns that have survived real use.
 
@@ -70,10 +72,10 @@ The Smith wields a specialized toolset granted by its unique position in the **[
 The Smith automates the creation ritual through a multi-stage process governed by the **[Snapshots (ADR 07)](./07-snapshots.md)** logic:
 
 1. **Genesis:** The Magus submits an intent via the **[Altar (ADR 15)](./15-frontend.md)**.
-2. **Speculation:** The Smith enters the **Shadow Realm**. It creates a git branch in the Lab and fabricates the logic, tests, and Quadlet definitions.
+2. **Speculation:** The Smith enters the **Shadow Realm**. It creates a Jujutsu workspace or change in the Lab and fabricates the logic, tests, and Quadlet definitions.
 3. **The Rite of Albedo:** The Smith enqueues a job for the **[Ghouls (ADR 14)](./14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against the new creation. It iterates autonomously on any failures.
 4. **The Preemptive Blink:** Upon achieving a "White Truth" (successful tests), the machine executes a system-wide Snapshot.
-5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)**, the code is moved to the Crypt and the federated lockfile is updated.
+5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)** or a Codex-governed preauthorization class, the code is moved to the Crypt and the federated lockfile is updated.
 6. **The Rebirth:** The Smith triggers the **[Packaging (ADR 17)](./17-packaging.md)** ritual. If the "Alembic Bind" (database migration) to the **[Phylactery (ADR 06)](./06-persistence.md)** fails or the container crashes during boot, the system executes an immediate Rehydration Ritual to revert the logic and database.
 
 The Smith workflow therefore spans all three collapse stages: structural validity in Shadow (tests/lint/type-check), identity/architectural congruence in review and persona-guided critique, and final ontological promotion only under Vessel policy and Magus consent.
@@ -93,6 +95,7 @@ The Smith possesses the capability to bridge external ecosystems into the machin
 - **MCP Consumption:** When presented with a Model Context Protocol (MCP) server, the Smith can either wrap it in a native Python client or analyze the source code to re-implement its logic as a bit-for-bit native extension, eliminating the "Middleware Tax."
 - **A2A Advertising:** The Smith ensures that every new extension created is automatically advertised to the Legion via the `agent-card.json` defined in the **[Intercom (ADR 26)](./26-a2a.md)**.
 - **Rust/PyO3 Scaffolding:** When performance demands a binary component, the Smith may scaffold a **PyO3 binding skeleton** — a `Cargo.toml`, a `src/lib.rs` exposing a `#[pymodule]`, and a `pyproject.toml` with a `[tool.maturin]` build target. The resulting `.so` artifact is not loaded by a blind runtime scan. It must be built and pinned by the Forge, verified against the composed image, and treated as coupled unless a future public ABI exists.
+- **The Rust Transfiguration:** The old temptation to "rewrite it in Rust" is accepted as a future Smith capability only after Python has taught the machine what its stable contracts actually are. Smith may first crystallize hot organs into Rust/PyO3, but the doctrine is stronger than extension optimization: if Core surfaces become sufficiently specified, tested, and Forge-proven, Smith may progressively reimplement even LychD's own kernel modules in Rust. A whole Rust body is not forbidden; it is earned by verified equivalence one boundary at a time, never by a blind heroic rewrite.
 
 
 ### 6. Legacy Data Import (Inheritance)

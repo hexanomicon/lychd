@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from litestar.serialization import decode_json, encode_json
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from litestar.serialization import decode_json, encode_json
-
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine
+
     from lychd.config.settings import DatabaseSettings
 
 

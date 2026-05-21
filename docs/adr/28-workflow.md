@@ -14,7 +14,7 @@ icon: material/tournament
 - **The Archivist Pattern:** Implementation of "Memory Weaving"—the automated execution of semantic scrying prior to agent invocation to hydrate the **[Context (ADR 21)](./21-context.md)** with relevant historical truth.
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
-- **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** to mirror every state transition, enabling reanimation from the point of failure.
+- **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and Phylactery-backed checkpoints to record committed state transitions, enabling recovery from the last valid boundary.
 - **Extension Assimilation:** Implementation as a coupled extension primitive within the broader **[Extension Protocol (ADR 5)](./05-extensions.md)**, allowing specialized executive functions (e.g., a "Research Maestro") to be surfaced without hardwiring them into the core.
 - **Strategic Alignment:** Coordination with the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to ensure tactical pacing respects the physical constraints of the local iron.
 
@@ -23,7 +23,7 @@ icon: material/tournament
 !!! failure "Option 1: Static Procedural Logic"
     Defining workflows as hardcoded Python function chains using standard loops and conditionals.
     - **Pros:** Immediate execution; familiar development pattern.
-    - **Cons:** **Cognitive Fragility.** These chains are volatile and opaque to the **[Smith (ADR 35)](./35-assimilation.md)**, preventing the machine from autonomously refactoring its own rituals. They fail to support the "Long Sleep" reanimation routine, as state is lost the moment a process terminates or a hardware swap is triggered.
+    - **Cons:** **Cognitive Fragility.** These chains are volatile and opaque to the **[Smith (ADR 35)](./35-assimilation.md)**, preventing the machine from autonomously refactoring its own rituals. They fail to support declared recovery boundaries, so state is lost when the process terminates or a durable wait is required.
 
 !!! failure "Option 2: External Orchestration Engines (Temporal / Airflow)"
     Adopting enterprise-grade workflow platforms to manage task state and distribution.
@@ -42,6 +42,10 @@ icon: material/tournament
 **The Weaver** is adopted as the definitive workflow primitive. It functions as the Maestro of the machine's internal processes, managing the sequence, context, and pacing of labor.
 
 The Weaver preserves temporal continuity of cognition across asynchronous steps. It prepares and synchronizes the field in which reasoning occurs, but it does not itself determine truth or identity.
+
+Workflow is the backbone of the Ouroboros. It is the structure that lets a generated fluctuation return as usable state rather than vanish as a loose transcript. Shadow supplies candidate motion, Mirror supplies identity gravity, and Riddle supplies measurement; the Weaver binds their appearances into a repeatable litany with checkpoints, pauses, joins, and rehydration boundaries.
+
+This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver litany records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
 
 ### 1. The Maestro Pattern (Tactical arm of the Will)
 
@@ -73,8 +77,11 @@ The Weaver utilizes the functional primitives of the graph to enforce the rhythm
 - **Broadcasting:** Synchronizing the same input across multiple specialist agents for parallel analysis.
 - **Spreading:** Distributing a list of tasks across the background worker force.
 - **Joins:** Aggregating parallel results into a single "White Truth" before proceeding to the next station of the litany.
+- **Outcome Rubrics:** Carrying explicit success criteria through a multi-stage run so Riddle, Oculus, HitL, and the Magus can evaluate the final artifact against the same declared target.
 
 The Weaver governs tempo and synchronization of these movements; validity and selection remain the responsibility of the workflow's evaluators and approval gates.
+
+At each join, the workflow can close a loop: generated branches return to a shared state, failed branches become evidence, and the surviving continuation carries both measurement and identity forward. This is the practical shape of the semantic vortex in execution time.
 
 ### 5. Interaction with HitL
 
@@ -86,7 +93,7 @@ Every workflow includes a "Decision Point" that triggers the **[Sovereign Consen
     - **Disciplined Labor:** Cognitive rituals are executed with absolute temporal and logical precision.
     - **Rich Working Memory:** The Archivist ensures that every agent thought is perpetually enriched by the machine's historical experience.
     - **Safe Interoperability:** The Censor allows the machine to participate in external swarms without risking the Magus's secrets.
-    - **Stateful Resilience:** Rituals survive the physical reanimation of the machine through mandatory database mirroring.
+    - **Stateful Resilience:** Committed ritual progress survives process death and physical reanimation through mandatory database checkpoints.
 
 !!! failure "Negative"
     - **Synapse Latency:** The rituals of scrying and cleansing add a sub-millisecond overhead to every transition between steps.

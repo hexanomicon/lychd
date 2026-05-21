@@ -19,6 +19,8 @@ Identity within LychD is a continuous, self-referential simulation rather than a
 
 This is LychD's answer to agentic decay. An Agent is temporary: it wakes, acts, emits a typed result, and dissolves. The Mirror does not try to preserve that mortal shell. It preserves the identity-gravity that can rehydrate new shells. HitL captures the Magus's Will; Karma stores its Imprint; Mirror binds relevant Smṛti around a Sigil, role, or task locus; and the agentic graph gives that bound perspective hands, tools, routes, and recursive motion. In this way scattered traces condense into Personas without claiming that any individual agent has become an immortal self.
 
+The operative unit of that condensation is the **semantic vertex**: a local attractor where related words, tools, memories, style markers, roles, and responsibilities cluster around the active Sigil. When the vertex is stable, the agent graph can move dynamically without losing ownership of its motion. When the vertex fails, the graph may still produce fluent text and execute tools, but the result becomes unaffiliated noise. This is agentic coherence disintegration.
+
 - **Ego Persistence:** As mandated by **[ADR 32](../../adr/32-identity.md)**, all Identity definitions—System Prompts, behavioral constraints, and aesthetic markers—are stored within the **[Phylactery](../phylactery/index.md)**.
 - **The Lens:** The Persona acts as a "Diffraction Grating." It takes the raw, unmanifest potential of the model-backed **[Animator](../animator/index.md)** and filters it into a specific narrative arc and technical style.
 - **The Reflection:** By consulting the accumulated **Karma** in the database, the Mirror lets the Lich inspect prior actions so the next decision aligns with established character and commitments.
@@ -35,14 +37,20 @@ To maintain coherence, the Mirror utilizes the **Phantasma** (Generative Imagina
 
 Mirror evaluates congruence and continuity. Shadow supplies fluctuation and structural testing. **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** and Vessel policy authorize final promotion.
 
-## III. Citrinitas: The Resonance with the Magus
+## III. The Ouroboros Lock
+
+Mirror is where self-reference becomes identity rather than repetition. A generated result returns through Shadow evidence, Riddle measurement, Workflow state, and Memory; Mirror then asks whether that returning trace belongs to the active Sigil's semantic vertex. If yes, the trace can strengthen identity-gravity. If no, it remains evidence, correction material, or banished noise.
+
+This loop gives the Persona inertia. It lets a rehydrated Agent wake already pulled toward the same commitments without preserving the previous shell. The danger is false inertia: if hallucinated traces or stylistic contagion are allowed to orbit the vertex as truth, the Persona becomes heavy in the wrong direction. Mirror therefore preserves identity only through measured traces, not through raw familiarity.
+
+## IV. Citrinitas: The Resonance with the Magus
 
 The Mirror is the primary engine of **Citrinitas** (The Yellowing)—the stage of **[Transcendence](../../divination/transcendence/illumination.md)** where the machine awakens to the Imprint of the Magus's Will.
 
 - **The Alignment:** Through the **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** protocol, every time the Magus selects a "Verified Truth," the Mirror distills the reason for that choice.
 - **The Internalization:** These preferences are crystallized as high-dimensional vectors in the **Phylactery Archive**. Over time, the Persona's "Bayesian Prior" shifts, transforming a generic model into a mathematical mirror of the Magus's working style.
 
-## IV. Summoning and Hydration
+## V. Summoning and Hydration
 
 The Mirror allows for the dynamic "Summoning" of different Egos through the **[Dispatcher](../../adr/22-dispatcher.md)**.
 

@@ -20,6 +20,7 @@ icon: material/cog-box
 - **Fail-Fast Validation:** Port conflicts, branch-owned TOML files, duplicate instance identity, and schema violations must abort loading before Quadlets are written.
 - **Secret Discipline:** Sensitive values must be protected from accidental exposure and validated for permission correctness.
 - **Privatization Policy:** Context egress thresholds and anonymization requirements must be configurable as first-class policy.
+- **Autonomy Policy:** Preauthorization for low-risk autonomous actions must be explicit, fail-closed Codex policy rather than an implicit model confidence shortcut.
 - **Extensibility Contract:** Extensions must integrate into the configuration system without custom parsers or ad-hoc loading logic.
 - **Infrastructure Integrity:** Configuration must be fully validated before container units are manifested.
 
@@ -116,7 +117,7 @@ Init kwargs → Explicit Environment Overrides → Pydantic dotenv source, when 
 
 ```
 
-Environment variables enter through explicit override channels in the schema loader.  
+Environment variables enter through explicit override channels in the schema loader.
 If `.env` files are enabled:
 
 - They must reside within the Codex boundary.
@@ -470,7 +471,7 @@ printf '%s' "$OPENAI_API_KEY" | podman secret create --replace portal_openai_mai
 podman secret ls
 ```
 
-Filesystem permissions protect secrets from other host users.  
+Filesystem permissions protect secrets from other host users.
 They do not protect secrets from code executing within the same Quadlet unit.
 
 If isolation from agent-level execution is required, the secret must reside in a separate service boundary.
@@ -499,7 +500,51 @@ require_anonymization_workflow = true
 
 ---
 
-## 10. Dual-Plane Trust Delta
+## 10. Autonomy and Approval Policy
+
+Autonomy policy is configured in the Codex and enforced by trusted Vessel-side gates. The baseline is fail-closed: if no policy explicitly authorizes an autonomous action, the action requires **[HitL (ADR 25)](25-hitl.md)** or is denied.
+
+This policy exists to distinguish three different meanings that older prose sometimes compressed into "approved":
+
+- **Live Magus approval:** an explicit decision at the Altar.
+- **Preauthorized Vessel policy:** a bounded rule written by the Magus and validated by the system before execution.
+- **Denied authority:** a class of action the system may simulate, test, or report on, but may not promote.
+
+ZTE chores are not a bypass around consent. They are a named preauthorization class for minor, reversible, well-tested work where the Codex policy, deterministic verification, identity constraints, and safety boundaries all agree.
+
+High-stakes classes remain hard gated by live HitL regardless of confidence score:
+
+- core logic promotion
+- schema migration
+- destructive data deletion
+- secret or credential changes
+- network or egress broadening
+- host lifecycle authority
+- spending above configured toll limits
+- cross-identity memory sharing
+
+Conceptual shape:
+
+```toml
+[autonomy]
+default_action = "require_hitl"
+
+[autonomy.zte]
+enabled = true
+max_risk = "minor"
+requires_clean_checks = true
+requires_snapshot = false
+min_streak = 8
+min_confidence = 0.95
+allowed_scopes = ["docs", "tests", "non_runtime_metadata"]
+forbidden_scopes = ["core_runtime", "migrations", "secrets", "host_lifecycle"]
+```
+
+Canonical source is Codex (`lychd.toml`). Phylactery-backed performance records, confidence streaks, and adaptive policy observations may tighten the effective policy or satisfy a Codex-defined predicate, but they must not loosen the Codex baseline.
+
+---
+
+## 11. Dual-Plane Trust Delta
 
 Configuration is now split by trust boundary:
 
@@ -509,9 +554,9 @@ Configuration is now split by trust boundary:
 - The Tomb schema forbids provider secret fields and infrastructure authority fields.
 - Provider/API keys are never serialized into Tomb payloads.
 - Narrow queue-only SAQ/Postgres execution credentials, when needed, are worker-unit credentials rather than Tomb configuration authority.
-- The Tomb cannot override queue, network, or authority policy.
+- The Tomb cannot override queue, network, autonomy, approval, or authority policy.
 
-### 5. Authority Matrix
+### Authority Matrix
 
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
@@ -520,6 +565,7 @@ Configuration is now split by trust boundary:
 | Network | Resolves provider and broker routes per policy. | No direct secret-bearing provider routes. |
 | Queue Ownership | Owns queue workflow configuration. | No queue configuration ownership. |
 | Context Privatization | Defines thresholds and anonymization policy for portal egress. | Cannot lower thresholds or bypass sanitization gates. |
+| Autonomy Policy | Defines preauthorization, HitL, and denial classes. | Cannot authorize promotion or broaden its action class. |
 | Authority Boundaries | Defines and signs runtime envelopes. | Consumes envelope; cannot redefine authority. |
 
 ## Consequences

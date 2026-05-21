@@ -5,13 +5,13 @@ icon: material/hexagon-multiple-outline
 
 # :material-hexagon-multiple-outline: Legion
 
-> _One Rune to rule them all,_
+> _One signal crosses the wire._
 >
-> _One Rune to find them,_
+> _Many bodies answer._
 >
-> _One Rune to bring them all,_
+> _The Phylactery keeps the memory._
 >
-> _And in the darkness bind them._
+> _The Legion returns the work._
 
 **The Legion** is the Swarm Extension of the LychD system. It is the implementation of **[ADR 42 (Legion)](../../adr/42-legion.md)** — the Lich's personal army of Thralls, soulless Vessels bound to a single Phylactery, extending the Magus's reach across owned machines.
 

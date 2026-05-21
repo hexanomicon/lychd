@@ -8,7 +8,7 @@
     "ms-toolsai.jupyter",             // For testing agents in notebooks
 
     // --- 📜 Documentation & confi ---
-    "bungcip.better-toml",            // Essential for pyproject.toml
+    "tamasfe.even-better-toml",       // Essential for pyproject.toml and config runes
     "redhat.vscode-yaml",             // Essential for mkdocs.yml & GitHub Actions
     "yzhang.markdown-all-in-one",     // Essential for writing docs
     "samuelcolvin.jinjahtml",         // For Litestar/HTML templates

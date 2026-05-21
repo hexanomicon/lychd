@@ -46,6 +46,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Necropolis** | The decentralized peer-to-peer swarm topology built on the A2A Intercom (ADR 26). | Extension |
 | **Oculus** | Arize Phoenix (LLM Tracing & Observability). The Great Seer. | Extension |
 | **Orchestrator** | The state machine managing VRAM and container lifecycles. The runtime governor. | `src/lychd/domain/orchestration/` |
+| **Ouroboros** | The self-reference loop by which generated outputs return through workflow state, Shadow execution, Riddle measurement, Mirror attribution, memory inscription, and consent before shaping future runs. The mechanism that turns linear generation into coherent inertia. | Evolution + Lich |
 | **Phylactery** | The PostgreSQL database (with `pgvector`). The anchor of the Lich's soul-data: Karma, Smṛti, Saṃskāra, traces, queues, and durable state. | `src/lychd/db/` |
 | **Portal** | A runtime Animator backed by a Portal Rune; a connection to a remote API, hosted tool, cloud model, observability endpoint, or peer service. A rift to distant capability. | `src/lychd/domain/animation/` |
 | **Portal Rune** | A Codex TOML declaration that describes a remote Portal endpoint, provider identity, optional model defaults, tools/capabilities, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
@@ -55,6 +56,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Quadlet Manifest** | A generated Podman/Systemd artifact (`.container`, `.pod`, `.target`, `.volume`) written into the binding site. It is manifested from validated Runes but is not itself a Rune. | `src/lychd/system/schemas.py` |
 | **Rune** | One validated TOML configuration artifact under the Codex `runes/` tree. It declares intent; it is not the running Animator and not the generated Quadlet manifest. | `src/lychd/config/runes/` |
 | **Sepulcher** | The rootless runtime body of LychD: the pod, services, mounts, and execution topology that physically houses the daemon's organs. | Infrastructure |
+| **Semantic Vertex** | A local identity attractor in context and embedding space where related words, tools, memories, roles, priors, and responsibilities cluster around an active Sigil or task identity. | Mirror + Context |
 | **Shadow Realm** | A temporary, sandboxed environment for testing generated code. The plane of Speculative Execution. | Lab + Tomb |
 | **Smith** | The Assimilation / Autopoiesis Extension. The Prime Artificer. | Extension |
 | **Soulforge** | The Fine-Tuning / LoRA training pipeline. The late substrate forge where stable Karma patterns compress into adapter-level instinct after Context and Mirror have already shaped runtime identity-gravity. | Extension |

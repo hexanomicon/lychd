@@ -12,11 +12,12 @@ icon: material/refresh
 
 ## Requirements
 
-- **The Tri-State Git Strategy:** Mandatory management of three code states: **Upstream** (Remote), **Local** (Active), and **Dream** (Shadow Realm).
-- **The Rebase Ritual:** Updates must be applied via `git rebase`, preserving local Autopoiesis on top of the new upstream foundation.
+- **The Tri-State Jujutsu Strategy:** Mandatory management of three code states: **Upstream** (Remote), **Local** (Active), and **Dream** (Shadow Realm).
+- **The Rebase Ritual:** Updates must be applied via Jujutsu rebase, preserving local Autopoiesis on top of the new upstream foundation.
 - **The Conflict Resolution Loop:** If a merge conflict occurs, the system must not crash; it must treat the conflict as a reasoning task, utilizing the system's cognitive engine to resolve the divergence in a sandboxed environment.
 - **The Breaking Change Detector:** Automated execution of the verification suite against all active extensions *after* the code merge but *before* the physical restart.
-- **The Atomic Rollback:** If the system fails to prove its own health after an update attempt, it must physically revert the `git` state and the **[Phylactery (06)](06-persistence.md)** schema to the pre-update **[Snapshot (07)](07-snapshots.md)**.
+- **The Atomic Rollback:** If the system fails to prove its own health after an update attempt, it must restore the Jujutsu body state, lockfile, and **[Phylactery (06)](06-persistence.md)** schema to the pre-update **[Snapshot (07)](07-snapshots.md)**.
+- **Policy-Governed Promotion:** Update promotion must be authorized by explicit Magus consent or a Codex-defined low-risk maintenance preauthorization. High-stakes update, migration, and host-lifecycle steps remain live HitL gated.
 - **Elevated Execution:** Authorization to trigger the **[Host Reactor (10)](10-privilege.md)** to restart the **[Vessel (11)](11-backend.md)** only after the code has been successfully transmuted and packaged.
 
 ## Considered Options
@@ -56,17 +57,17 @@ icon: material/refresh
 
 Before touching a single byte, the system triggers the **[Snapshot Protocol (07)](07-snapshots.md)**.
 
-- **The Body:** It captures the `core/` and `extensions/` git commit hashes.
+- **The Body:** It captures the `core/` and `extensions/` Jujutsu hexadecimal Commit IDs, lockfiles, and repository state.
 - **The Soul:** It performs a database checkpoint of the **[Phylactery (06)](06-persistence.md)**.
 This is the **Save Point**: the known-good state. If the Ouroboros chokes, the system reverts to this instant.
 
-### 2. The Rebase Ritual (Git Topology)
+### 2. The Rebase Ritual (Jujutsu Topology)
 
 The system operates on the `core/` repository within the **[Crypt (13)](13-layout.md)**. The system attempts to pull the new reality:
 
 ```bash
-git fetch upstream
-git rebase upstream/main
+jj git fetch upstream
+jj rebase -s <local-change-id> -d <upstream-main>
 ```
 
 If a **Merge Conflict** occurs, the system uses **[Shadow Simulation (31)](31-simulation.md)** to explore candidate repairs and the **[Smith (35)](35-assimilation.md)** to reason through the conflict, treating the `.py` files as logic to be repaired rather than plain text.
@@ -84,7 +85,7 @@ Once the code is merged, the system runs the **Verification Suite**:
 
 ### 4. The Manifestation (Rebirth)
 
-If—and only if—all tests pass, the mutation is consecrated:
+If—and only if—all tests pass and the promotion is authorized by live Magus consent or Codex-governed maintenance preauthorization, the mutation is consecrated:
 
 1. The system triggers **[The Forge (17)](17-packaging.md)** to build the new container image.
 2. It performs any required **Alembic Migrations** on the **[Phylactery (06)](06-persistence.md)**.
@@ -95,7 +96,7 @@ If—and only if—all tests pass, the mutation is consecrated:
 
 If the system *cannot* fix the breakage after ($N$) attempts:
 
-1. It aborts the Rebase.
+1. It abandons the candidate change or returns the working copy to the pre-update Jujutsu state.
 2. It restores the **Save Point**.
 3. It preserves a rejection record: intent, candidate diff, failing checks, relevant traces, and the reason the timeline was abandoned.
 4. It notifies the Magus: *"I cannot evolve. The upstream reality is incompatible with my local components. Manual intervention required."*
@@ -109,6 +110,7 @@ Evolution follows the same control/unsafe split:
 - Vessel owns update orchestration, snapshot gates, migration decisions, and restart intents.
 - **The Tomb** may run unsafe build/test/repair work on speculative branches.
 - **The Tomb** cannot trigger host intents, activate rebuilds, or promote durable state.
+- Codex autonomy policy may preauthorize only low-risk maintenance update classes; migrations, lockfile shifts with runtime impact, host lifecycle authority, and failed-repair decisions remain live HitL gated.
 
 ### 7. Authority Matrix
 

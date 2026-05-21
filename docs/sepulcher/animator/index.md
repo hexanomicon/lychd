@@ -9,7 +9,7 @@ icon: fontawesome/solid/heart-pulse
 
 The Animator is the subsystem responsible for **Service Animation**. It is the unified runtime definition for any addressable service that LychD can summon, bind through an adapter, observe, and route by capability.
 
-Inference is the most important Animator family, but it is not the whole category. A model server, speech engine, browser worker, tracing pool, metrics backend, remote API, or peer node can all be Animators when they expose a typed capability surface to the daemon.
+Inference is the most important Animator family today, but it is not the whole category and not limited to next-token text generation. A model server, energy-based scorer, world-model service, proof engine, speech engine, browser worker, tracing pool, metrics backend, remote API, or peer node can all be Animators when they expose a typed capability surface to the daemon.
 
 An Animator is a **live, addressable service**, not an abstract concept. Every Animator is one of two placement forms:
 
@@ -25,7 +25,7 @@ The Vessel does not care _where_ a capability comes from. It cares that the serv
 !!! abstract "The Universal Tongue"
     The Lich speaks to services through **typed capability contracts**.
 
-    The Animator standardizes all sources of power into a single typed runtime contract. In the current core, many cognitive connectors expose an **OpenAI-compatible surface** through Pydantic AI, while the same adapter pattern can bind non-cognitive services such as browsers, telemetry stores, dashboards, or peer nodes. This creates a powerful abstraction:
+    The Animator standardizes all sources of power into a single typed runtime contract. In the current core, many cognitive connectors expose an **OpenAI-compatible surface** through Pydantic AI, while the same adapter pattern can bind non-cognitive services such as browsers, telemetry stores, dashboards, or peer nodes. OpenAI-compatible chat is a practical adapter surface, not the ontology of intelligence in LychD. This creates a powerful abstraction:
 
     - **Capability-Based Routing:** The Magus requests an intent (reasoning, vision, tools, metrics, browsing, trace search, peer delegation) and the system resolves a suitable Animator from the active substrate.
     - **Hot-Swappable Services:** A local service can be banished and a remote Portal summoned without changing the calling Agent or Graph logic.
@@ -80,7 +80,7 @@ The active core family registry currently includes cognitive and tool-oriented f
 | `tool_execution` | Sandboxed code or tool execution | `nono`-wrapped execution surfaces |
 | `rerank` | Ranking or reranking of retrieved candidates | reranker models, hosted ranking APIs |
 
-This registry is not a philosophical ceiling. Watcher families such as `metrics_query`, `trace_search`, `dashboard_render`, and network families such as `a2a_delegate` can become first-class when the schema and adapter layer know how to bind, probe, and route them. Not all Animators offer all capabilities. A single llama.cpp Soulstone in router mode can expose different capabilities depending on which model is currently loaded; capabilities flip `is_active` as models hot-swap, without restarting the container. The Orchestrator manages these transitions.
+This registry is not a philosophical ceiling. Watcher families such as `metrics_query`, `trace_search`, `dashboard_render`, and network families such as `a2a_delegate` can become first-class when the schema and adapter layer know how to bind, probe, and route them. Future cognitive families may also include constraint scoring, state optimization, latent rollout, proof search, formal verification, or other energy/world-model-like services. Those capabilities may make individual graph nodes far stronger, but they still enter through the same Animator binding law instead of absorbing the daemon's persistence, authority, identity, and hardware boundaries. Not all Animators offer all capabilities. A single llama.cpp Soulstone in router mode can expose different capabilities depending on which model is currently loaded; capabilities flip `is_active` as models hot-swap, without restarting the container. The Orchestrator manages these transitions.
 
 ## 🫀 The Galvanic Arc
 

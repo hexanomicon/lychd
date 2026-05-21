@@ -11,6 +11,8 @@ icon: material/anvil
 
 While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from runtime memory and Mirror-bound identity gravity into adapter-level substrate bias. In the cognitive map of the **[Lich](../lich.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
 
+Soulforge begins only after the Ouroboros has already done its first work. Shadow generated motion, Riddle measured it, Mirror bound it to a semantic vertex, and HitL or policy marked it eligible for durable memory. The Forge does not train on motion; it trains on stabilized return. Its task is to precipitate repeated Smṛti into reusable instinct, adapters, and eventually agentic capabilities that can hold a class of work without paying the full instruction tax every time.
+
 Karma injection, Mirror condensation, and Soulforging are different layers of adaptation:
 
 - **Context:** injects retrieved Karma as runtime bias for a single reasoning event.
@@ -33,6 +35,7 @@ In this chamber, DeepFabric is a dataset loom, not an evaluator. The Riddle uses
 - **The Filter:** It strips away conversational exhaust and hallucinatory syntax, ensuring the training data perfectly matches the required schemas.
 - **The Weave:** Using topic-graph algorithms, it generates diverse, non-redundant variations of the harvested Karma, ensuring the resulting instinct is robust rather than overfitted to a single specific interaction.
 - **The Spool:** It outputs standard HuggingFace JSONL manifests, perfectly formatted for the Unsloth pipeline.
+- **The Vertex:** It preserves the identity, role, workflow step, and validation context that made the trace coherent, preventing the adapter from learning isolated phrasing without the semantic gravity that justified it.
 
 ## III. The Rite of Ignition (The Pipeline)
 

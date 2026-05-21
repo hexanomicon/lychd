@@ -90,6 +90,11 @@ The Ghouls operate under the strict discipline of the **[Orchestrator (23)](23-o
 - **The Pause:** When the Orchestrator initiates a **[Coven (08)](08-containers.md)** swap, it issues a signal to the Ghoul process to pause the claiming of new jobs from the queue. This ensures that no tasks are dispatched to container services that are about to be banished.
 - **The Drain:** Once a new Coven is manifested, the Orchestrator unpauses the Ghouls, allowing them to resume their labor with the newly available hardware capabilities.
 
+!!! note "Queue and Recovery Boundary"
+    Workers own durable queue state: claim, ack, retry, result recording, and crash pickup. The Orchestrator may pause and drain workers during physical transitions, but it does not decide replay semantics for every job. Ordinary hardware stasis stops new claims and lets active work reach a safe boundary; Long Sleep, reboot recovery, and failed job retry are queue and Phylactery concerns.
+
+    A worker may hold non-authoritative in-memory state while it is actively laboring. After process death, that breath is lost and reconstructed from durable inputs: queued jobs, graph checkpoints, completed step outputs, traces, Codex configuration, and live capability probes. The testable invariant is not that every intermediate thought survives; it is that every declared recovery boundary can be replayed or safely abandoned.
+
 ### 4. The Reflex Arc and Memory Rituals
 
 The Ghouls are the primary drivers of the Daemon's long-term cognitive processes.

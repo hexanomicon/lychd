@@ -12,7 +12,7 @@ icon: material/graph-outline
 
 - **Type Safety as the Cortex:** Mandatory passage of task memory as strongly-typed `StateT` objects between nodes to ensure the "Chain of Thought" is validated by Pydantic at every synapse.
 - **Orchestrated Handshakes:** Integration with the system’s physical arbiter to submit capability requirements at each graph step, suspending execution until the hardware state matches the logical intent.
-- **Durable Persistence:** Mandatory support for serializing the entire graph state—including message history and node progress—to the persistent substrate after every step completion.
+- **Durable Persistence:** Mandatory support for committing graph state at declared boundaries—including message history, typed state, deferred waits, and completed step outputs—to the persistent substrate.
 - **Functional Topology:** Adoption of functional "Steps" over class-based nodes to enable high-velocity development and reduce architectural boilerplate.
 - **Logical Parallelism:** Provision of primitives for **Broadcasting** (same data to multiple paths) and **Spreading** (fanning out elements of an iterable) to enable concurrent reasoning.
 - **Join and Reduce Synchronization:** Implementation of specialized synchronization points to aggregate and "collapse" parallel results back into a single, verified truth.
@@ -35,7 +35,7 @@ icon: material/graph-outline
     - **Pros:**
         - **Static Verifiability:** Transitions are governed by return type hints, making the entire topology verifiable before execution.
         - **Native Parallelism:** Built-in primitives for broadcasting and mapping allow the mind to explore multiple "Shadow Realities" simultaneously.
-        - **Durable Reanimation:** Standardized support for `BaseStatePersistence` allows the mind to be anchored in the database, enabling reanimation after system restarts or VRAM swaps.
+        - **Durable Reanimation:** Standardized support for `BaseStatePersistence` allows the mind to be anchored in the database, enabling replay after system restarts, deferred approvals, or high-latency external waits. Ordinary VRAM swaps may remain Live Stasis when the Vessel process survives.
 
 ## Decision Outcome
 
@@ -56,9 +56,21 @@ The cortex is constructed using the **`GraphBuilder`** pattern, defining the min
 Every step in the graph respects the physical laws established in the **[Dispatcher (ADR 22)](./22-dispatcher.md)**. Before invoking an Agent, a node performs a handshake:
 
 1. **Intent Submission:** The node defines the **CapabilitySet** required (e.g., `{"text-gen", "vision"}`).
-2. **Stasis:** If the hardware is not ready, the node invokes a **Deferred Tool**.
-3. **The Long Sleep:** The Graph executes an atomic exit, serializing the `StateT` to the **[Phylactery (ADR 06)](./06-persistence.md)** and liberating VRAM.
-4. **Awakening:** Once the physical substrate is manifested, the Graph is re-entered via `iter_from_persistence()`, resuming at the exact point of suspension.
+2. **Grant Request:** The node asks the Dispatcher for a runtime grant instead of binding directly to a model, tool, container, or provider.
+3. **Live Stasis:** If the required capability exists but the hardware is not ready, the node waits while the Orchestrator performs the physical transition. For ordinary VRAM swaps, the graph may remain alive in Vessel process memory.
+4. **The Long Sleep:** If the wait must survive process death, reboot, human approval delay, or high-latency peer return, the Graph executes an atomic exit, serializing the `StateT` to the **[Phylactery (ADR 06)](./06-persistence.md)**.
+5. **Awakening:** Once the physical substrate or external result is available, the Graph resumes from Vessel memory or is re-entered via persistence, depending on which boundary was crossed.
+
+!!! note "Graph Binding Boundary"
+    Graph and Agent code should describe capability needs and consume granted runtime surfaces. They should not know whether the capability was satisfied by a warm local Soulstone, a runtime-native soft activation, a hard Quadlet swap, a Portal, or a Tomb execution payload. Current object names are allowed to change during R&D; the stable rule is that Graph topology owns cognitive flow, Dispatcher owns runtime binding, and Orchestrator owns physical readiness.
+
+!!! note "Volatile Breath and Committed Progress"
+    Volatile state is allowed. Active iterator frames, partial token streams, warm grants, derived context windows, and live adapter handles may live only in memory. The durable promise is narrower: committed step outputs, graph checkpoints, approval waits, external commitments, recovery markers, and traces must be persisted at declared boundaries. A crash may kill breath, but not committed progress.
+
+!!! note "Run Events Are Observation, Not Recovery"
+    A graph run may expose lanes and append-only events for the Altar and Oculus: node movement, child-agent branches, Tomb jobs, approval requests, hardware stasis, and completion. These streams are the Magus's observation surface. They do not replace graph checkpoints, queue records, or Phylactery recovery boundaries.
+
+    The event surface must support backfill plus live tail: stable `run_id`, `lane_id`, `step_id`, and `event_id` values allow the Altar, Oculus, and agent reviewers to resume observation without inventing state. Approval should appear as correlated request/result events, while the durable reanimation boundary remains the Graph checkpoint and queue record.
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 
@@ -66,6 +78,7 @@ The architecture treats the mind as a multi-threaded organism, where graph trave
 
 - **Broadcasting:** Identical data is sent to multiple steps simultaneously (e.g., requesting three different **[Personas (ADR 32)](./32-identity.md)** to critique a single plan).
 - **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing Vṛttis traversing the state space.
+- **Lens-Spreading:** For open-ended strategy work, Graph may spread the same intent across different operational lenses rather than different input items. The branches remain isolated during expansion and join only at a reducer or review step, preserving divergent range before convergence.
 - **Joins and Reducers:** Parallel results are synchronized using `g.join` nodes and `ReducerFunctions` to synthesize a single "White Truth." Join points perform determinative synthesis over competing paths.
 - **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the cortex utilizes **`ReduceFirstValue`**. This mechanism acts as the trigger for **Buddhi** taking over from **Manas**. Upon the discovery of a "White Truth" by the first successful parallel branch, the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning ritual ensures that VRAM is reclaimed and cognitive energy is focused exclusively on the winning timeline, preventing the machine from lingering on redundant solutions. In practice, `ReduceFirstValue` is the decisive convergent cut expressed as graph topology.
 
@@ -89,7 +102,7 @@ To provide transparency, the system generates real-time visualizations:
 ## Consequences
 
 !!! success "Positive"
-    - **Cognitive Resilience:** Thoughts survive system reboots and hardware failures through mandatory persistence.
+    - **Cognitive Resilience:** Committed graph progress survives system reboots and hardware failures through mandatory persistence.
     - **Physical Discipline:** The graph acts as a "polite citizen," negotiating for hardware at every synapse to prevent VRAM thrashing.
     - **Neural Scaling:** Logical parallelism allows the Daemon to scale its attention across multiple sub-tasks without manual intervention.
     - **Type Sovereignty:** The entire cortex is statically verifiable, preventing systemic slop.

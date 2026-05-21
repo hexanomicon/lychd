@@ -48,11 +48,17 @@ class StubRegistry:
     def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         return [state for key, state in self._states.items() if self._specs[key].animator_name == name]
 
+    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        return self.list_capability_states_for_animator(name)
+
     def get_runtime(self, name: str) -> StubRuntime | None:
         return self._runtimes.get(name)
 
     def get_soulstone_rune(self, name: str) -> SimpleNamespace | None:
         return SimpleNamespace(service_name=f"lychd-{name}")
+
+    def activate_capability(self, key: str) -> bool:
+        return key in self._states
 
 
 def _spec(

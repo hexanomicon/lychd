@@ -14,8 +14,8 @@ icon: material/creation
 - **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the production substrate but lacks the authority to impact Primary Reality.
 - **The Verification Ritual:** Mandatory success of a formal verification suite (e.g., Unit Testing, Linting, Type Checking) before logic transitions from experiment to reality.
 - **Atomic Promotion:** Transactional migration of code; broken or untested artifacts must be discarded rather than merged.
-- **History Preservation:** Mandatory VCS version control (Git/JJ) from the moment of inception to ensure a permanent audit trail of the system's evolution.
-- **Magus Oversight:** Integration with the **Human-in-the-Loop** protocol to ensure that no structural change occurs without the Magus's subjective verification.
+- **History Preservation:** Mandatory Jujutsu-backed VCS tracking from the moment of inception to ensure a permanent audit trail of the system's evolution.
+- **Promotion Authorization:** Integration with the **Human-in-the-Loop** protocol and Codex autonomy policy so structural promotion requires live Magus consent unless an explicitly bounded preauthorization class applies.
 
 ## Considered Options
 
@@ -67,7 +67,7 @@ Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 
 ### 5. Promotion (The Rite of Passage)
 
-Once a creation is deemed "Stable" (passes all verification) and is consecrated by the Magus via **[Consent](25-hitl.md)**, it undergoes **[Assimilation](./35-assimilation.md)**.
+Once a creation is deemed "Stable" (passes all verification) and is authorized through **[Consent](25-hitl.md)** or a Codex-defined preauthorization class, it undergoes **[Assimilation](./35-assimilation.md)**. High-stakes creation, schema changes, secrets, host lifecycle authority, and destructive actions still require live Magus consent.
 
 1. **The Lock:** The new logic is formally added to the system's federated lockfile.
 2. **The Move:** The directory is moved from the **Lab** (Read-Write) to the **Crypt** (Read-Only).

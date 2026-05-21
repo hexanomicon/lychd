@@ -110,6 +110,17 @@ A formatter/injector may provide a compact "quality drift" block containing rece
 
 This is a correction aid, not a replacement for Ruff/BasedPyright enforcement; the quality stack remains the authoritative judge after generation.
 
+#### Metacognitive Pressure Valve
+
+A formatter may also inject a compact pressure valve for tasks with ambiguous premises, adversarial constraints, or repeated failed retries.
+
+- **Intent:** Preserve the Agent's ability to report contradiction, missing inputs, or structural impossibility before pressure turns uncertainty into hallucinated completion.
+- **Shape:** Short, operational instructions such as "name the blocked premise," "declare the unresolvable constraint," or "return the typed bottleneck after bounded retries."
+- **Boundary:** This does not relax typed outputs, verification, or policy gates. It only prevents the volatile query from forcing false certainty into the generation field.
+- **Placement:** Inject near other quality drift rules, after stable project law and before the volatile task request, so epistemic humility remains subordinate to system contracts.
+
+The valve is not a friendliness layer or a substitute for proof. It is a small epistemic exit installed before the volatile query: if the three Pramāṇa sources are unavailable, the Agent must be allowed to stop with a named missing measurement. A generic "I don't know" is only valuable when it carries the blocked premise, failed retrieval, missing tool result, or contradiction that made completion structurally false.
+
 ## Consequences
 
 !!! success "Positive"

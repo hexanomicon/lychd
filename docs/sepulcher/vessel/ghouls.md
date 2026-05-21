@@ -5,7 +5,7 @@ icon: material/robot-dead
 
 # :material-robot-dead: Ghouls
 
-> _Minions, servants, soldiers of the cold dark._
+> _Work is queued. The dead hand rises. The result returns._
 
 Ghouls are the tireless, undead servitors of the Vessel: worker bodies that carry delegated intent. Some are cognitive Vessel workers that advance graph state and call trusted services. Some are brainless Tomb executors that only run serialized unsafe hand-work. A Ghoul is not an agent identity by itself; it is the spectral hands and feet of the Lich.
 

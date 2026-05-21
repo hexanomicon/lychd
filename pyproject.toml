@@ -88,9 +88,23 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 path = "src/lychd/__about__.py"
 
-[tool.hatch.build]
-sources = ["src"]
-ignore-vcs = true
+[tool.hatch.build.targets.sdist]
+include = [
+    "/LICENSE",
+    "/README.md",
+    "/TRADEMARKS.md",
+    "/pyproject.toml",
+    "/src",
+    "/tests",
+]
+exclude = [
+    "/.agents",
+    "/.cache",
+    "/.coverage",
+    "/.jj",
+    "/node_modules",
+    "/site",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lychd"]

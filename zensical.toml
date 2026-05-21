@@ -9,7 +9,7 @@ repo_url = "https://github.com/hexanomicon/lychd"
 edit_uri = "edit/main/docs/"
 copyright = "Copyright &copy; 2026 Hexanomicon &ndash;"
 
-extra_css = ["overrides/stylesheets/frostmourne.css"]
+extra_css = ["overrides/stylesheets/hexanomicon.css"]
 extra_javascript = [
     "javascripts/mathjax.js",
     "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"

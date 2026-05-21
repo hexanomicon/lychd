@@ -1,12 +1,34 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Any, Protocol
 
 from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.orchestration.schema import TransitionPlan
+
+
+class OrchestratorRegistry(Protocol):
+    """Registry surface required by transition planning and activation."""
+
+    def list_capabilities(self) -> list[CapabilitySpec]: ...
+
+    def get_capability(self, key: str, /) -> CapabilitySpec | None: ...
+
+    def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
+
+    def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...
+
+    def list_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
+
+    def refresh_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
+
+    def get_runtime(self, name: str, /) -> Any | None: ...
+
+    def get_soulstone_rune(self, name: str, /) -> Any | None: ...
+
+    def activate_capability(self, key: str, /) -> bool: ...
 
 
 class OrchestratorManager:
@@ -15,7 +37,7 @@ class OrchestratorManager:
     def __init__(
         self,
         worker_broker: Any,
-        registry: AnimatorRegistry | None = None,
+        registry: OrchestratorRegistry | None = None,
     ) -> None:
         """Initialize orchestration against the canonical registry."""
         self.worker_broker = worker_broker

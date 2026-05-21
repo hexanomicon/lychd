@@ -55,7 +55,7 @@ icon: material/book-cog-outline
 - **Theme:** `material` (Scheme: Slate/Dark Mode) to match the "Lich" aesthetic.
 - **Structure:** Documentation lives in `docs/` and is deployed to GitHub Pages.
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
-- **CSS:** A custom stylesheet (`stylesheets/frostmourne.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
+- **CSS:** A custom stylesheet (`stylesheets/hexanomicon.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
 
 ### The Layered Grimoire Strategy
 
