@@ -70,7 +70,7 @@ To achieve instant, transactional rollbacks of both memory (database) and mind (
 - **The Btrfs Subvolume Layout:** Both the `crypt/` (Postgres application database) and the `.jj/` (Jujutsu's internal SQLite state-graph) exist on Btrfs subvolumes.
 - **Coordinated Blink:** When the Checkpoint Protocol is triggered, Btrfs executes a coordinated COW snapshot of both the Postgres tables and the SQLite version-control graph. The entire repository state is physically captured in a single, ACID-compliant database snapshot on disk.
 
-The system abstracts data backup through a Storage Driver Interface, allowing the Lych to adapt its strategy based on the host environment.
+The system abstracts data backup through a Storage Driver Interface, allowing the Lich to adapt its strategy based on the host environment.
 
 - **The Btrfs Strategy (Accelerated):** If the host filesystem is detected as Btrfs, the database directory is mounted as a subvolume. Snapshots are instant and atomic at the kernel level. The active subvolume is configured with `chattr +C` (No_COW) to prevent fragmentation during runtime, while the snapshot action utilizes COW for its atomic "blink."
 - **The Universal Strategy (Fallback):** On standard filesystems (Ext4/XFS), the system falls back to standard export mechanisms. While reliable, this method incurs a performance penalty proportional to the size of the memory.

@@ -39,7 +39,7 @@ icon: material/transfer-up
 
 ## Decision Outcome
 
-**Deterministic Intent Dispatch** is adopted as the "Nervous System" of the Lych. This mechanism allows the unprivileged mind to trigger physical transitions in the body through a secure, air-gapped handshake.
+**Deterministic Intent Dispatch** is adopted as the "Nervous System" of the Lich. This mechanism allows the unprivileged mind to trigger physical transitions in the body through a secure, air-gapped handshake.
 
 ### 1. The Intent Registry (The Allow-list)
 

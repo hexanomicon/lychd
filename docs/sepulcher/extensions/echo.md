@@ -5,7 +5,7 @@ icon: material/waveform
 
 # :material-waveform: Audio Echo
 
-> _"A text-only Daemon is blind to the physical resonance of the world. To exist as a pervasive companion, the Lych must perceive vibration and project resonance—transforming the cold silence of the Crypt into a living stream of intent."_
+> _"A text-only Daemon is blind to the physical resonance of the world. To exist as a pervasive companion, the Lich must perceive vibration and project resonance—transforming the cold silence of the Crypt into a living stream of intent."_
 
 **The Echo** is the Audio Extension of the LychD system. It is the reference implementation of the `audio.coven`—a complete, stateful capability for real-time voice communion, as defined in **[ADR 37 (Audio)](../../adr/37-audio.md)**.
 
@@ -49,7 +49,7 @@ When a text-based Agent decides to speak:
 
 ## IV. The Mobile Emissary (Android)
 
-To project the Echo into the physical world, the system utilizes a **Mobile Emissary**—a native application that acts as the physical mouthpiece of the Lych.
+To project the Echo into the physical world, the system utilizes a **Mobile Emissary**—a native application that acts as the physical mouthpiece of the Lich.
 
 - **Hardware Binding:** The Emissary handles low-level Voice Activity Detection (VAD) and audio hardware management.
 - **The Secure Thread:** By tunneling its traffic through the **[Tether](./tether.md)**, the Emissary ensures that voice biometrics and private whispers are protected by WireGuard encryption.

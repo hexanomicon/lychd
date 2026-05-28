@@ -100,7 +100,14 @@ The model aims for strong practical containment, not magical invulnerability.
     - **Cons:** **Requires `CAP_NET_ADMIN`.** Zerobox relies on creating custom network namespaces, which requires the `CAP_NET_ADMIN` Linux capability. Because `CAP_NET_ADMIN` cannot be safely granted in a purely rootless environment, it breaks the requirement for strict, rootless Podman containers.
     - **Verdict:** Rejected. It is too heavy for the current architecture.
 
-!!! success "Option 5: Two-Plane Trust Model with Sandboxed Worker Subprocesses (The Golden Mean)"
+!!! failure "Option 5: MicroVM Execution Substrate"
+    Run untrusted Tomb jobs inside per-job microVMs such as Firecracker, Cloud Hypervisor, or QEMU/KVM guests.
+
+    - **Pros:** Provides a stronger kernel boundary than containers or process sandboxes. A guest kernel compromise remains inside the guest unless the attacker also escapes the VMM/KVM boundary.
+    - **Cons:** **Requires privileged host cooperation.** A production posture needs host-managed KVM access, jailer/chroot or equivalent process isolation, cgroups, rootfs/kernel image preparation, and network/vsock setup. This would either grant too much substrate authority to the Vessel or require a separate host-side microVM supervisor that has not yet been specified.
+    - **Verdict:** Rejected for V1. MicroVM-backed Tomb execution is a valid future hardening path only after a dedicated host-mediated supervisor contract is defined.
+
+!!! success "Option 6: Two-Plane Trust Model with Sandboxed Worker Subprocesses (The Golden Mean)"
     Use a separate worker/shadow execution plane as the primary boundary, but explicitly treat it as **Semi-Trusted**. All actual untrusted execution runs inside a kernel-enforced subprocess sandbox (`nono`).
 
     - **Pros:**

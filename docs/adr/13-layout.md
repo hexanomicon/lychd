@@ -51,15 +51,16 @@ This ADR defines where the Codex lives and how it is mounted. The Codex contract
 - `lychd.toml`: Global settings
 
 - **Rune Schemas (Anchored Instances):**
-    - `animator/`: Animation root defaults and child anchors.
-        - `soulstones/`: Local infrastructure intent (container-backed providers).
-            - `llamacpp/`: Instances of llama.cpp providers (TOML files).
-            - `vllm/`: Instances of vLLM providers.
-            - `sglang/`: Instances of SGLang providers.
-        - `portals/`: Remote API intent (network-backed providers).
-            - `openai/`: Instances of OpenAI portals.
-            - `anthropic/`: Instances of Anthropic portals.
-            - *(future anchors live here as additional subdirectories)*
+    - `runes/`: Validated TOML instance declarations.
+        - `animator/`: Animation root defaults and child anchors.
+            - `soulstones/`: Local infrastructure intent (container-backed providers).
+                - `llamacpp/`: Instances of llama.cpp providers (TOML files).
+                - `vllm/`: Instances of vLLM providers.
+                - `sglang/`: Instances of SGLang providers.
+            - `portals/`: Remote API intent (network-backed providers).
+                - `openai/`: Instances of OpenAI portals.
+                - `anthropic/`: Instances of Anthropic portals.
+                - *(future anchors live here as additional subdirectories)*
 
 **Layout Notes:**
 

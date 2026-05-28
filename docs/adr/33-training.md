@@ -36,7 +36,7 @@ icon: material/anvil
     - **Pros:**
         - **Substrate Instinct:** Stable patterns can survive the loss of retrieved source snippets because they have been compressed into adapter bias.
         - **VRAM Efficiency:** Techniques like Unsloth provide 2x speed and 70% less memory usage, making local training viable on consumer silicon.
-        - **Hot-Swappable Instincts:** vLLM allows the Lych to possess multiple specialized instincts (Adapters) on a single base model, switching between them with near-zero latency.
+        - **Hot-Swappable Instincts:** vLLM allows the Lich to possess multiple specialized instincts (Adapters) on a single base model, switching between them with near-zero latency.
 
 ## Decision Outcome
 
@@ -107,14 +107,14 @@ Once the weights are cooled, the machine enters a state of self-doubt.
 ### Consequences
 
 !!! success "Positive"
-    - **Instinctual Alignment:** The Lych becomes a mathematical mirror of the Magus, reducing the need for elaborate prompt engineering.
+    - **Instinctual Alignment:** The Lich becomes a mathematical mirror of the Magus, reducing the need for elaborate prompt engineering.
 
     - **Economic Efficiency:** Local silicon is utilized to transform data into intelligence, paying the Cloud Tithe only for verification or overflow.
 
     - **Total Recall Stability:** The Soul-Adapters are part of the **[Crypt (13)](13-layout.md)** and are captured in every system snapshot.
 
 !!! failure "Negative"
-    - **Hardware Suspension:** During the ritual, the local Lych is effectively blind or limited to remote Portals, as the GPU is 100% occupied.
+    - **Hardware Suspension:** During the ritual, the local Lich is effectively blind or limited to remote Portals, as the GPU is 100% occupied.
 
     - **Instruction Entropy:** Over-training can lead to a rigid Persona that struggles to adapt to novel concepts outside its training data.
     - **Identity Ossification:** Over-transmutation of narrow patterns can harden useful priors into inflexible instincts, reducing adaptive reasoning and future refinement headroom.

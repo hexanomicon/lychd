@@ -6,7 +6,7 @@ icon: material/headphones
 # :material-headphones: 37. The Audio Echo
 
 !!! abstract "Context and Problem Statement"
-    A text-only Daemon remains blind to the physical resonance of the world. To exist as a pervasive companion, the Lych requires sensory organs capable of perceiving vibration (Speech-to-Text) and projecting resonance (Text-to-Speech). Standard HTTP request-response patterns introduce unacceptable latency. Furthermore, these heavy acoustic models require significant VRAM, creating a conflict with reasoning engines. A specialized pipeline is required to treat voice as a real-time stream while managing the physical costs of the sensory apparatus.
+    A text-only Daemon remains blind to the physical resonance of the world. To exist as a pervasive companion, the Lich requires sensory organs capable of perceiving vibration (Speech-to-Text) and projecting resonance (Text-to-Speech). Standard HTTP request-response patterns introduce unacceptable latency. Furthermore, these heavy acoustic models require significant VRAM, creating a conflict with reasoning engines. A specialized pipeline is required to treat voice as a real-time stream while managing the physical costs of the sensory apparatus.
 
 ## Requirements
 

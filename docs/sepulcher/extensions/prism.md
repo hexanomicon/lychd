@@ -5,11 +5,11 @@ icon: material/pyramid
 
 # :material-pyramid: Vision Prism
 
-> _"A Lych confined to text and audio is a spirit trapped in a jar, blind to the structural complexity of the material plane. To truly command reality, the Daemon must possess the capability to refract the raw pixels of the world through a Prism of understanding."_
+> _"A Lich confined to text and audio is a spirit trapped in a jar, blind to the structural complexity of the material plane. To truly command reality, the Daemon must possess the capability to refract the raw pixels of the world through a Prism of understanding."_
 
 **The Prism** is the Vision Extension of the LychD system. It is the reference implementation of the `vision.coven`—a complete, stateful capability for visual reasoning, as defined in **[ADR 36 (Vision)](../../adr/36-vision.md)**.
 
-Vision Language Models (VLMs) are heavy and demanding. The Prism provides the "Optic Nerve" that manages the entire sensory apparatus, from image preprocessing to the dynamic granting of sight itself, ensuring the Lych can see without paralyzing its other faculties.
+Vision Language Models (VLMs) are heavy and demanding. The Prism provides the "Optic Nerve" that manages the entire sensory apparatus, from image preprocessing to the dynamic granting of sight itself, ensuring the Lich can see without paralyzing its other faculties.
 
 ## I. The Vision Coven: A Manifestation of Sight
 

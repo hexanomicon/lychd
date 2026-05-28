@@ -64,7 +64,7 @@ The Veil provides the first layer of shielding for the swarm. By enforcing manda
 !!! success "Positive"
     - **Privacy by Default:** The machine automatically achieves a "Grade A" security posture with encrypted traffic the moment it is bound to a domain.
 
-    - **Zero-Maintenance SSL:** The Magus no longer manages renewals; the Lych handles its own cryptographic hygiene.
+    - **Zero-Maintenance SSL:** The Magus no longer manages renewals; the Lich handles its own cryptographic hygiene.
 
     - **Static Performance:** Caddy handles the serving of frontend assets significantly faster and more securely than the Python runtime.
 

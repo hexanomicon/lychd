@@ -53,7 +53,7 @@ The Scribe inspects the filesystem. If **Btrfs** is not detected, it automatical
 > **Action Required:** Enter the Codex and configure your power sources.
 
 - _Set your `model_root` in `lychd.toml`._
-- _Define **Soulstones** (local services) or **Portals** (remote services) in `soulstones/` and `portals/`._
+- _Define **Soulstones** (local services) or **Portals** (remote services) under `runes/animator/soulstones/` and `runes/animator/portals/`._
 
 ### III. The Transmutation
 

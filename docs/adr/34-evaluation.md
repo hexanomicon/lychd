@@ -24,7 +24,7 @@ icon: material/chart-bell-curve-cumulative
 
 !!! failure "Option 1: Static Generic Benchmarking"
     Utilizing common datasets (MMLU, HumanEval) to score models during the boot sequence.
-    - **Cons:** **Contextual Blindness.** These tests do not measure how a model handles the Lych's specific **[RunContext (21)](21-context.md)** or tool definitions. High scores on MMLU do not guarantee a model won't attempt to execute a dangerous `eval()` if prompted by a malicious user.
+    - **Cons:** **Contextual Blindness.** These tests do not measure how a model handles the Lich's specific **[RunContext (21)](21-context.md)** or tool definitions. High scores on MMLU do not guarantee a model won't attempt to execute a dangerous `eval()` if prompted by a malicious user.
 
 !!! failure "Option 2: LLM-as-a-Judge"
     Relying on a powerful frontier model (e.g., GPT-4o) to grade the responses of smaller local models.
@@ -39,7 +39,7 @@ icon: material/chart-bell-curve-cumulative
 
 ## Decision Outcome
 
-**The Riddle** is adopted as the Evaluation protocol. It transforms the Lych from a passive host into a selective organism that only manifests models capable of passing the "Trials of the Crypt."
+**The Riddle** is adopted as the Evaluation protocol. It transforms the Lich from a passive host into a selective organism that only manifests models capable of passing the "Trials of the Crypt."
 
 Within the Ouroboros, Riddle is the measurement body. It prevents self-reference from becoming self-hypnosis. A branch, model, or adapter may feel coherent from inside its own context, but Riddle forces that motion against adversarial prompts, deterministic execution, and outcome metrics. Only measured motion may strengthen identity gravity or enter the Soulforge.
 

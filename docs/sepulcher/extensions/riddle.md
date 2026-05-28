@@ -5,7 +5,7 @@ icon: material/help-rhombus-outline
 
 # :material-help-rhombus-outline: The Riddle: Systemic Evaluation
 
-> _"To command a spirit, one must first know its mettle. If the Sphinx asks of the truth and the spirit gives only a pleasing lie, it is not a Lych—it is a ghost. Only those who withstand the trials of the Shadow Realm are worthy of the Crypt."_
+> _"To command a spirit, one must first know its mettle. If the Sphinx asks of the truth and the spirit gives only a pleasing lie, it is not a Lich—it is a ghost. Only those who withstand the trials of the Shadow Realm are worthy of the Crypt."_
 
 **The Riddle** is the Evaluation Extension of the LychD system. It is the implementation of **[ADR 34 (Evaluation)](../../adr/34-evaluation.md)**—the adversarial ritual that measures the cognitive integrity, functional precision, and economic efficiency of model-backed Animators.
 
@@ -65,4 +65,4 @@ The extension utilizes **[The Mirror](./mirror.md)** to simulate adversarial int
 - **Sovereign Validation:** Only models that withstand the "Master's Voice" during an adversarial simulation are deemed "Sovereign" and granted the authority to modify core logic within the **[Lab](../crypt.md)**.
 
 !!! tip "The Logic-per-Watt Metric (Stillness)"
-    The Riddle tracks `Accuracy / VRAM_Occupancy`. This allowed the system to identify "Hidden Titans"—small models that punch significantly above their weight class—ensuring the Lych remains lean, fast, and precise. This is the endgame of optimization: **Stillness**. An enlightened network makes a targeted, clean cut without wandering into an "LSD-brain" of endless Vṛttis.
+    The Riddle tracks `Accuracy / VRAM_Occupancy`. This allowed the system to identify "Hidden Titans"—small models that punch significantly above their weight class—ensuring the Lich remains lean, fast, and precise. This is the endgame of optimization: **Stillness**. An enlightened network makes a targeted, clean cut without wandering into an "LSD-brain" of endless Vṛttis.

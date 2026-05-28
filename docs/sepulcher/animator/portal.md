@@ -27,7 +27,7 @@ LychD leverages adapter-backed binding so Portals are first-class citizens of th
 - **Endpoint + Connector Identity:** Runtime binding is driven by `provider_type`, `base_url`, and a selected/default remote model id.
 - **Standardized Runtime Contract:** Regardless of the vendor, the Portal enters the system through the same **[Animator](./index.md)** runtime/binder path.
 - **Optional External Tools:** Portals may declare `external_tools` that connectors expose as deferred toolsets.
-- **The Fallback Ritual:** The system often wraps a local Soulstone and a remote Portal into a `FallbackModel`. If local hardware returns a 4xx or 5xx error, the Lych automatically tears the sky and replays the request through the Portal to ensure the thought is completed.
+- **The Fallback Ritual:** The system often wraps a local Soulstone and a remote Portal into a `FallbackModel`. If local hardware returns a 4xx or 5xx error, the Lich automatically tears the sky and replays the request through the Portal to ensure the thought is completed.
 
 Current implementation scope:
 

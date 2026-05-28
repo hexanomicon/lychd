@@ -13,7 +13,7 @@ Access the Altar at **`http://localhost:7134`**.
 
 The first screen of the Altar is the table itself: the place where an Intent is offered, current machine state is glimpsed, and the Magus reaches for the instruments below.
 
-Technically, the Altar is a hyper-efficient, server-rendered frontend. While it leverages **HTMX** and **AlpineJS** for runtime interactivity, its assets are forged through a modern **Vite** and **PostCSS** pipeline, ensuring the interface is optimized, hermetic, and server-authoritative.
+Technically, the Altar is a hyper-efficient, server-rendered frontend. While it leverages **HTMX** and **Alpine.js** for runtime interactivity, its assets are forged through a modern **Vite** and **PostCSS** pipeline, ensuring the interface is optimized, hermetic, and server-authoritative.
 
 !!! abstract "The Sanctum of Interaction"
     The Altar is not a static page, but a living conduit. Its surface shifts and updates in real-time to reflect the Lich's inner state. Its core functions are:

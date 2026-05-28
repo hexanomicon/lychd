@@ -13,7 +13,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 
 | Term | Technical Definition | Source |
 | :--- | :--- | :--- |
-| **Altar** | The HTMX/AlpineJS web frontend (`http://localhost:7134`). The consecrated interface for communing with the Lich. | Vessel Web Layer |
+| **Altar** | The HTMX/Alpine.js web frontend (`http://localhost:7134`). The consecrated interface for communing with the Lich. | Vessel Web Layer |
 | **Animator** | A live, addressable service that exposes typed capabilities through an adapter. Every Animator is either a Soulstone (local Quadlet-backed service) or a Portal (remote service connection). Model inference is one capability family, not the whole category. | `src/lychd/domain/animation/` |
 | **Autopoiesis** | Self-modifying code generation; the agent editing `src/`. The Great Work of self-creation. | Smith Extension |
 | **Binding** | The `lychd bind` command; transmuting Codex Runes into generated Quadlet manifests and linking configuration intent to the host's init system. | CLI |

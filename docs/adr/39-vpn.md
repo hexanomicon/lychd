@@ -40,7 +40,7 @@ icon: material/lan-connect
 
 ## Decision Outcome
 
-**WireGuard** is adopted as the **VPN Extension**, serving as the "Silver Tether" that binds the Magus to the Lych.
+**WireGuard** is adopted as the **VPN Extension**, serving as the "Silver Tether" that binds the Magus to the Lich.
 
 ### 1. The High-Trust Tunnel (The Infrastructure)
 
@@ -61,7 +61,7 @@ The architecture implements a firewall policy that differentiates between the pu
 ### Consequences
 
 !!! success "Positive"
-    - **Total Privacy:** Cryptographic keys remain only on the Magus's device and the Lych's iron. No third party possesses metadata regarding system access.
+    - **Total Privacy:** Cryptographic keys remain only on the Magus's device and the Lich's iron. No third party possesses metadata regarding system access.
 
     - **Physical Stealth:** The Daemon is effectively invisible to internet scanning; only those who possess the "Silver Tether" can detect the VPN's existence.
 

@@ -81,7 +81,7 @@ In the logic of the **[Orchestrator (23)](23-orchestrator.md)**, visual intents 
 ## Consequences
 
 !!! success "Positive"
-    - **Structural Awareness:** The Lych can interpret terminal output, UI errors, and diagrams as if it possessed a biological optic nerve.
+    - **Structural Awareness:** The Lich can interpret terminal output, UI errors, and diagrams as if it possessed a biological optic nerve.
     - **Resource Purity:** The distinction between Providers and Tools allows the Dispatcher to choose the most VRAM-efficient container for a specific task.
     - **Thought Continuity:** The Stasis Protocol ensures that "opening the eyes" does not kill the thought process, even if it takes 30 seconds to load the model.
 
