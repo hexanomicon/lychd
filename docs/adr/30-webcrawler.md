@@ -79,7 +79,7 @@ Raw HTML is poison to an LLM. The Scout acts as a filter.
 Data acquired by the Scout is not just ephemeral context; it is material for construction.
 
 - **For The Smith:** When **[The Smith (35)](35-assimilation.md)** encounters an unknown library, it deploys the Scout to ingest the documentation. The resulting Markdown is stored in the **[Lab (13)](13-layout.md)** as a reference manual for code generation.
-- **For Memory:** General inquiries are partitioned and inscribed into the **[Archive (27)](27-memory.md)**, allowing the Lych to "remember" the internet without re-crawling it.
+- **For Memory:** General inquiries are partitioned and inscribed into the **[Archive (27)](27-memory.md)**, allowing the Lich to "remember" the internet without re-crawling it.
 
 ## Consequences
 

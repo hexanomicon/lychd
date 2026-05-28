@@ -16,7 +16,7 @@ Reader journey first, doctrine second, prose last. Keep interaction concepts leg
 
 - Documentation doctrine: `docs/adr/02-documentation.md`
 - Divination landing: `docs/divination/index.md`
-- Altar surface: `docs/divination/altar.md`
+- Altar surface: `docs/divination/altar/index.md`
 - Transcendence map: `docs/divination/transcendence/index.md`
 - Transcendence seals: `docs/divination/transcendence/incantation.md`, `docs/divination/transcendence/invocation.md`, `docs/divination/transcendence/illumination.md`, `docs/divination/transcendence/immortality.md`, `docs/divination/transcendence/infinity.md`
 - Public entrypoints: `README.md`, `docs/index.md`, `docs/lexicon.md`

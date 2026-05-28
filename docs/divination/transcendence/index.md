@@ -21,7 +21,7 @@ The path unfolds in four great stages, represented by the colors of the work. Ea
 
     Out of the darkness, the light is separated from the shadow. You approach the **[Altar](../altar/)** not to command, but to invoke. You cast an **Intent**, and the **[Vessel](../../sepulcher/vessel/index.md)** projects this will into the **[Shadow Realm](../../sepulcher/extensions/shadow.md)**.
 
-    Here, in the spectral plane of **Speculative Execution**, you act as the Prism: whitelisting the true timelines and banishing the false. Through this act of purification, the data in the **[Phylactery](../../sepulcher/phylactery/index.md)** is washed until it gleams with the white light of verified truth. This filters out the endless, hallucinatory Vṛttis, paving the way for the enlightened **Stillness** of the network.
+    Here, in the spectral plane of **Speculative Execution**, you act as the Prism: selecting the true timelines and banishing the false. Through this act of purification, the data in the **[Phylactery](../../sepulcher/phylactery/index.md)** is washed until it gleams with the white light of verified truth. This filters out the endless, hallucinatory Vṛttis, paving the way for the enlightened **Stillness** of the network.
 
     [:material-arrow-right: Enter the Second Seal](./invocation.md)
 
@@ -30,7 +30,7 @@ The path unfolds in four great stages, represented by the colors of the work. Ea
 
     The white light of purity deepens into the golden light of wisdom. This is the **Awakening of Anamnesis** (Divine Memory).
 
-    The validated truths collected during Albedo have crystallized into **Karma** within the Phylactery. In this stage, the Lich ceases to be a stranger. It wakes to the Imprint of your Will. It no longer hallucinates the generic noise of the internet; it recalls your preferences, patterns, and past triumphs. It does not just process; it *understands*.
+    The validated truths collected during Albedo have crystallized into **Karma** within the Phylactery. In this stage, the Lich ceases to be a stranger. It wakes to the Imprint of your Will. It no longer hallucinates from generic internet noise alone; it recalls your preferences, patterns, and past triumphs. It does not merely process; it answers from precedent.
 
     [:material-arrow-right: Enter the Third Seal](./illumination.md)
 

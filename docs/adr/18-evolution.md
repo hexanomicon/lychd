@@ -30,7 +30,7 @@ icon: material/refresh
 !!! failure "Option 2: The Frozen State (Never Update)"
     Treating the install as immutable.
 
-    - **Cons:** **Stagnation.** The Lych fails to receive security patches, performance optimizations, or new capabilities from the Hive Mind.
+    - **Cons:** **Stagnation.** The Lich fails to receive security patches, performance optimizations, or new capabilities from the Hive Mind.
 
 !!! success "Option 3: The Ouroboros (Reasoned Merging)"
     Treating an update as a **Migration of Logic**. The system attempts to merge the new wisdom of the Creator with the accumulated experience of the Self.
@@ -90,7 +90,7 @@ If—and only if—all tests pass and the promotion is authorized by live Magus 
 1. The system triggers **[The Forge (17)](17-packaging.md)** to build the new container image.
 2. It performs any required **Alembic Migrations** on the **[Phylactery (06)](06-persistence.md)**.
 3. It writes the `INTENT_RESTART_VESSEL` signal to the **[Host Reactor (10)](10-privilege.md)**.
-4. The host system restarts the service. The Lych wakes up. It has the new features of the Upstream, but it retains the memories and modifications of the Self.
+4. The host system restarts the service. The Lich wakes up. It has the new features of the Upstream, but it retains the memories and modifications of the Self.
 
 ### 5. The Great Reject (Rollback)
 

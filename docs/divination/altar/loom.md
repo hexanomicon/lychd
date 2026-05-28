@@ -9,7 +9,7 @@ The Loom is the Altar surface for the **[Weaver](../../sepulcher/extensions/weav
 
 The Weaver does not weave rites. It weaves workflow **Patterns**: graph-shaped ways of moving intent through agents, workers, memory, evaluation, and approval gates.
 
-This page should show:
+The Loom shows:
 
 - available workflow Patterns
 - their graph shape

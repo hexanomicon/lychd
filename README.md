@@ -16,9 +16,8 @@
     </a>
   </p>
   <p>
-    <img src="https://img.shields.io/badge/Status-Experimental_Pre--Alpha-ff6f00?style=for-the-badge&labelColor=1a1a20" alt="Status: Experimental Pre-Alpha">
+    <img src="https://img.shields.io/badge/Status-Pre--Alpha-ff6f00?style=for-the-badge&labelColor=1a1a20" alt="Status: Pre-Alpha">
   </p>
-  <p><strong>Experimental pre-alpha.</strong> The Logos is still being inscribed: architecture, docs, and code are not yet a working daemon.</p>
 </div>
 
 Summon **The Lich** 💀 — an experimental Linux-native daemon for local agentic orchestration. It is designed to manage agents through:

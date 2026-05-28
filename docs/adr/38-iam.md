@@ -27,7 +27,7 @@ icon: material/account-check-outline
 !!! failure "Option 2: Single-User Sovereignty (No IAM)"
     Hardcoding the system to only accept one Master identity.
     - **Pros:** Absolute simplicity; zero overhead.
-    - **Cons:** **Functional Rigidity.** Prevents the Magus from safely sharing the Lych's capabilities with family or integrating it with external webhooks (e.g., FB/SaaS) without exposing the entire system.
+    - **Cons:** **Functional Rigidity.** Prevents the Magus from safely sharing the Lich's capabilities with family or integrating it with external webhooks (e.g., FB/SaaS) without exposing the entire system.
 
 !!! success "Option 3: Scoped Sovereignty (RBAC + Sigils)"
     Using a Role-Based Access Control (RBAC) model where identities (Sigils) are assigned functional "Scopes."
@@ -79,7 +79,7 @@ The **[Veil (ADR 40)](./40-proxy.md)** acts as the first Ward. It can be configu
 !!! success "Positive"
     - **Safe Sharing:** The Magus can safely expose parts of the system to the public internet or family members without risking the core substrate.
     - **Operational Leaness:** Avoids the complexity of multi-database or multi-schema management.
-    - **Sovereign Control:** The Master remains the sole arbiter of who can speak to the Lych and what they can say.
+    - **Sovereign Control:** The Master remains the sole arbiter of who can speak to the Lich and what they can say.
 
 !!! failure "Negative"
     - **Internal Data Leakage:** Because data is not physically partitioned, the developer must be disciplined in ensuring that sensitive "Master-only" memories are not tagged with scopes that make them visible to "Guest" agents.

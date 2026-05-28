@@ -9,7 +9,7 @@ Bindings are the Altar's user-facing configuration surface.
 
 They reflect the **[Codex](../../sepulcher/codex.md)** without replacing it as the source of truth. The purpose is to make important connections and policies visible from the interface.
 
-This page may expose:
+Bindings expose safe handles for:
 
 - provider and Portal references
 - secret names, not secret values

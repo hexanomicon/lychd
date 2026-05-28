@@ -9,7 +9,7 @@ icon: material/cash-register
 
 **The Toll** is the Economic Extension of the LychD system. It is the implementation of **[ADR 41 (x402)](../../adr/41-x402.md)**—a middleware and toolset that enables the Daemon to transact value natively via the **x402 (Payment Required)** protocol.
 
-It transforms the Lych from a cost center into an economic agent. It manages the **Tithe** (Resource Quotas) for internal users and facilitates **Settlement** (Crypto Payments) for external services and the Swarm.
+It transforms the Lich from a cost center into an economic agent. It manages the **Tithe** (Resource Quotas) for internal users and facilitates **Settlement** (Crypto Payments) for external services and the Swarm.
 
 ## I. The Middleware (The Gate)
 
@@ -51,7 +51,7 @@ The Toll is the lifeblood of the **[Swarm (A2A)](./legion.md)**. It allows sover
 The Toll manages the **System Wallet**. This is a high-risk component protected by the **[Iron Pact of Sovereignty](../../adr/00-license.md)**.
 
 - **Key Storage:** Private keys are encrypted at rest in the Crypt, accessible only to the Toll process.
-- **Spending Limits:** The Magus can configure strict daily spending caps in the **[Codex](../codex.md)**. If the Lych attempts to spend more than the limit (e.g., due to a runaway loop), the Toll freezes the wallet and alerts the Magus.
+- **Spending Limits:** The Magus can configure strict daily spending caps in the **[Codex](../codex.md)**. If the Lich attempts to spend more than the limit (e.g., due to a runaway loop), the Toll freezes the wallet and alerts the Magus.
 
 !!! tip "Frictionless Portals"
-    The Toll supports providers that implement native L402. This allows the Lych to use paid APIs without the Magus ever signing up for an account or entering a credit card. The machine simply pays for what it uses, packet by packet.
+    The Toll supports providers that implement native L402. This allows the Lich to use paid APIs without the Magus ever signing up for an account or entering a credit card. The machine simply pays for what it uses, packet by packet.

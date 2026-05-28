@@ -62,4 +62,4 @@ The Scout integrates with the **[Federation](../../adr/05-extensions.md)** to de
 
 - **Local Capability:** The Siege Engine is a **Soulstone** (local container-backed Animator). It costs only electricity and memory.
 - **Portal Capability:** The `WebSearchTool` often relies on external APIs (e.g., Tavily, Google). These are **[Portals](../animator/portal.md)**.
-- **The Toll:** Interactions with paid search providers are intercepted by **[The Toll](./toll.md)**. The system calculates the cost of the query and deducts it from the ritual's budget, ensuring the Lych does not bankrupt the Magus in pursuit of a dead link.
+- **The Toll:** Interactions with paid search providers are intercepted by **[The Toll](./toll.md)**. The system calculates the cost of the query and deducts it from the ritual's budget, ensuring the Lich does not bankrupt the Magus in pursuit of a dead link.

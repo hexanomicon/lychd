@@ -9,7 +9,7 @@ The Reliquary is the visible shelf of artifacts.
 
 It is not the whole **[Phylactery](../../sepulcher/phylactery/index.md)**. It is the Altar-facing place for outputs the Magus may want to inspect, keep, compare, export, or consecrate.
 
-This page should hold:
+The Reliquary holds:
 
 - generated files
 - reports and summaries

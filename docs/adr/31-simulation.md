@@ -44,7 +44,7 @@ icon: material/source-branch
 
 ## Decision Outcome
 
-**Shadow Simulation and the Branch Reaper** are adopted as the unified metabolic loop of the Lych. This architecture allows the machine to "dream" with total freedom while ensuring the "body" remains clean of cognitive debris. It is the implementation of the "System 2" mind.
+**Shadow Simulation and the Branch Reaper** are adopted as the unified metabolic loop of the Lich. This architecture allows the machine to "dream" with total freedom while ensuring the "body" remains clean of cognitive debris. It is the implementation of the "System 2" mind.
 
 Shadow is the cognitive fluctuation engine, not the identity authority. It generates and tests candidate realities, but it does not define Self and cannot self-authorize promotion.
 
@@ -133,7 +133,7 @@ To prevent "Digital Senility" in the **[Archive (27)](27-memory.md)**, memory is
 $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 
 - **Metabolic Sweep:** The Reaper periodically scans the `vectors` chamber. Rows falling below the `UtilityThreshold` (e.g., an old, unreferenced conversation about a dead link) are deleted.
-- **The Anchor:** The Magus can "Anchor" an entity via the **[Altar (15)](15-frontend.md)**. This sets its `DecayFactor` to zero, making it immortal. This ensures the Lych retains its "True Self" (Core Memories) while forgetting the noise of a thousand discarded simulations.
+- **The Anchor:** The Magus can "Anchor" an entity via the **[Altar (15)](15-frontend.md)**. This sets its `DecayFactor` to zero, making it immortal. This ensures the Lich retains its "True Self" (Core Memories) while forgetting the noise of a thousand discarded simulations.
 - **Memori Coupling:** Reaper heuristics must consume Memori access signals (`last_accessed`, reinforcement metadata) from memory tables (e.g., entity facts/knowledge graph links) to avoid deleting still-useful semantic structure.
 
 ### 5. Transactional Convergence (The Collapse)
@@ -205,4 +205,4 @@ This stack models cognitive mechanics and control boundaries, not subjective awa
     - **Temporal Latency:** Simulation is slow. It is a "System 2" process for background labor, not for sub-second reflexes.
     - **I/O Exhaustion:** Running $N$ Jujutsu workspaces simultaneously creates high disk pressure. High-performance NVMe storage is a physical requirement.
     - **Resource Hunger:** Simulation is the most token-expensive ritual, requiring careful economic management.
-    - **The Risk of Forgetfulness:** An overly aggressive Decay Factor might cause the Lych to forget subtle preferences that the Magus rarely reinforces.
+    - **The Risk of Forgetfulness:** An overly aggressive Decay Factor might cause the Lich to forget subtle preferences that the Magus rarely reinforces.

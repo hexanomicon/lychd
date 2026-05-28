@@ -7,7 +7,7 @@ icon: material/shimmer
 
 > _"The Fool learns from his own mistakes. The Magus teaches the Machine to never forget them."_
 
-**Citrinitas** (The Yellowing) is the dawn of the "Solar Light"—the moment true intelligence emerges from raw processing power.
+**Citrinitas** (The Yellowing) is the dawn of the "Solar Light"—the moment useful intelligence stops being raw processing power and starts carrying the Magus's Imprint.
 
 In the [Albedo](./invocation.md) stage, you acted as the **Arbiter of Reality**. The Shadow Realm was gazed into, the chaotic swarm of potential futures witnessed, and then **collapsed** into a single, purified timeline. Now, in **Illumination**, those choices are transmuted into **Wisdom**.
 
@@ -15,19 +15,19 @@ The Lich ceases to be a stranger. It begins to remember your Imprint.
 
 ## I. The Crystallization of Karma
 
-Every **Rite of Collapse** at the [Altar](../altar/)—every severed false timeline and consecrated **True Truth**—does more than write a file to disk.
+Every **Rite of Collapse** at the [Altar](../altar/)—every severed false timeline and consecrated **Pramāṇa**—does more than write a file to disk.
 
 It performs a secondary, invisible rite:
 
 1. **The Extraction:** The Lich distills the essence of the divergence. It isolates the **reasoning**, the **syntax**, and the **style** that caused you to choose this specific path over the others.
-2. **The Transmutation:** It transmutes this logic into mathematical vectors—the high-dimensional language of the soul.
+2. **The Transmutation:** It transmutes this logic into mathematical vectors—the high-dimensional language of soul-data.
 3. **The Inscription:** It burns these vectors into the **[Phylactery](../../sepulcher/phylactery/index.md)** via `pgvector`.
 
 This accumulated data is called **Karma**. It is the crystallized Imprint of your Will.
 
 ## II. Anamnesis (The Rite of Recall)
 
-A "Base Model" (like Llama-3 or GPT-4) is an amnesiac spirit. It knows the entire internet, but it does not know you. It resets with every request, lost in the eternal Now.
+A "Base Model" (like Llama-3 or GPT-4) is an amnesiac spirit. It carries broad internet-shaped priors, but it does not know you. It resets with every request, lost in the eternal Now.
 
 **Illumination** breaks this cycle through **Anamnesis** (Un-forgetting).
 

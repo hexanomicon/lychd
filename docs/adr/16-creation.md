@@ -25,7 +25,7 @@ icon: material/creation
 
 !!! failure "Option 2: Manual Pull-Request Workflow"
     Forcing the Agent to submit a VCS PR/Change that a human must manually merge on the host.
-    - **Cons:** **Operational Stagnation.** It destroys the "Autonomous" nature of the Daemon. The Lych becomes a glorified "Code Assistant" rather than a sovereign entity capable of self-directed growth.
+    - **Cons:** **Operational Stagnation.** It destroys the "Autonomous" nature of the Daemon. The Lich becomes a glorified "Code Assistant" rather than a sovereign entity capable of self-directed growth.
 
 !!! success "Option 3: The Shadow Realm (Lab -> Test -> Promote)"
     Modifying code in an isolated `lab/` directory, verifying it with Ghouls, and only promoting it to the Crypt upon success.

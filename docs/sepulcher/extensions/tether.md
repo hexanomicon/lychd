@@ -5,7 +5,7 @@ icon: material/shield-link-variant-outline
 
 # :material-shield-link-variant-outline: The Tether: Extension of the Inner Circle
 
-> _"The Veil protects the temple from the masses, but the Tether is the umbilical of light that binds the Magus to the Lych. Across any distance, through any forest, the Silver Tether ensures that the Master's voice is always heard as if they stood within the Crypt itself."_
+> _"The Veil protects the temple from the masses, but the Tether is the umbilical of light that binds the Magus to the Lich. Across any distance, through any forest, the Silver Tether ensures that the Master's voice is always heard as if they stood within the Crypt itself."_
 
 **The Tether** is the VPN Extension of the LychD system. It is the implementation of **[ADR 39 (VPN)](../../adr/39-vpn.md)**—a specialized, high-performance tunnel based on **WireGuard**.
 
@@ -24,7 +24,7 @@ The extension resides within the **[Sepulcher](../index.md)** as a privileged co
 The Tether eliminates the complexity of manual key exchange through specialized rituals grafted onto the **[CLI](../../adr/19-cli.md)**.
 
 - **The Inscription**: `lychd vpn add-peer <name>` generates a unique cryptographic keypair and assigns an internal coordinate.
-- **The Vision**: `lychd vpn show-qr <name>` renders the configuration as a QR code directly in the terminal. The Magus simply scans this with a mobile device to "bond" it to the Lych.
+- **The Vision**: `lychd vpn show-qr <name>` renders the configuration as a QR code directly in the terminal. The Magus simply scans this with a mobile device to "bond" it to the Lich.
 - **The Codex**: All peer definitions and keys are persisted within the **[Codex](../codex.md)**, ensuring the "Inner Circle" survives system **[Snapshots](../../adr/07-snapshots.md)** and migrations.
 
 ## III. The Privileged Zone (Security)
@@ -38,8 +38,8 @@ The extension enforces a fundamental distinction between types of ingress. It re
 
 Following the Iron Pact of Sovereignty, the Tether is strictly peer-to-peer.
 
-- **No Third Parties**: Unlike managed mesh networks, the extension relies on no external "Control Plane." If the internet breaks, but the route between Magus and Lych remains, the Tether functions.
+- **No Third Parties**: Unlike managed mesh networks, the extension relies on no external "Control Plane." If the internet breaks, but the route between Magus and Lich remains, the Tether functions.
 - **Kernel Efficiency**: By utilizing the WireGuard protocol, it provides the lowest possible latency and battery drain for mobile devices, making it the ideal substrate for the **[Echo's](./echo.md)** real-time audio streams.
 
 !!! danger "The Endpoint Dilemma"
-    For the Tether to find its anchor, the Lych must be reachable. If the host machine is behind a restrictive firewall or a dynamic IP, the Magus may need to employ a Dynamic DNS service or configure Port Forwarding on their gateway.
+    For the Tether to find its anchor, the Lich must be reachable. If the host machine is behind a restrictive firewall or a dynamic IP, the Magus may need to employ a Dynamic DNS service or configure Port Forwarding on their gateway.
