@@ -48,7 +48,7 @@ Nothing is promoted on a guess. The extension operates exclusively through the *
 
 The primary duty and driving **purpose** of the Smith is **Assimilation**: turning unstructured external logic into a disciplined organ of the system. In this regard, the Smith is an architectural compulsion: a narrow, consent-bound drive to transmute useful external code into the patterned beauty of the LychD Federation.
 
-1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar.md)**.
+1. **Invocation**: The Magus provides a URL (Repo/Script) at the **[Altar](../../divination/altar/)**.
 2. **Ingestion**: The Scout is deployed to read the source and documentation.
 3. **Transmutation**: The Smith generates the necessary wrappers, Pydantic schemas, and **[Proxy Fragments](../../adr/40-proxy.md)** to fit the code into the Sepulcher.
 4. **Promotion**: Upon approval via **[Sovereign Consent](../../adr/25-hitl.md)**, the code is moved to the **Crypt**.

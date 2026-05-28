@@ -7,7 +7,7 @@ icon: material/skull-scan
 
 > _"The Vessel is the reanimated husk through which the Lich speaks. It is not a tool; it is a conduit."_
 
-The Vessel is the **[Lich's](../lich.md)** physical form in the mortal plane, a construct of code and will that serves as the nexus for all interaction. It renders the [Altar](../../divination/altar.md), summons [Ghouls](./ghouls.md), and orchestrates [Shadow](../extensions/shadow.md).
+The Vessel is the **[Lich's](../lich.md)** physical form in the mortal plane, a construct of code and will that serves as the nexus for all interaction. It renders the [Altar](../../divination/altar/), summons [Ghouls](./ghouls.md), and orchestrates [Shadow](../extensions/shadow.md).
 
 It is the face the Magus sees and the voice that answers the call.
 

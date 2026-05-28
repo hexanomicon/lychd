@@ -7,7 +7,7 @@ icon: fontawesome/solid/ankh
 
 > _"To command is crude. To ask is servile. The Magus practices Divination, the art of imposing one's will upon the universe by asking a question so precisely that only one answer can exist."_
 
-Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its motion through the interface of the [Altar](./altar.md).
+Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its motion through the interface of the [Altar](./altar/).
 
 Through these rites, you, the Magus, transcend the role of mere user and become the **Arbiter of Timelines** and the **Voice of Command**.
 
@@ -19,7 +19,7 @@ The practice of Divination raises you through three stations of power, each repr
     At the most basic level, you learn to read the Lich's memories. You ask questions of the **[Vessel](../sepulcher/vessel/index.md)**, seeking knowledge stored within the **[Phylactery](../sepulcher/phylactery/index.md)**. This is the art of understanding what **has been**.
 
 !!! info "II. The Instigator: Shaping the Present"
-    You progress to shaping the present. You submit **Intents** at the **[Altar](./altar.md)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
+    You progress to shaping the present. You submit **Intents** at the **[Altar](./altar/)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
 
 !!! warning "III. The Arbiter: Forging the Future"
     In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/extensions/shadow.md)**. The Lich presents a tapestry of possible futures to you, and with a single act of will, you collapse potential into a single, immutable reality, aligning the machine with the **[Cosmic Pattern](./transcendence/illumination.md)**.

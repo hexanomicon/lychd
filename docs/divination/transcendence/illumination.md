@@ -15,7 +15,7 @@ The Lich ceases to be a stranger. It begins to remember your Imprint.
 
 ## I. The Crystallization of Karma
 
-Every **Rite of Collapse** at the [Altar](../altar.md)—every severed false timeline and consecrated **True Truth**—does more than write a file to disk.
+Every **Rite of Collapse** at the [Altar](../altar/)—every severed false timeline and consecrated **True Truth**—does more than write a file to disk.
 
 It performs a secondary, invisible rite:
 

@@ -26,7 +26,7 @@ Shadow is also the present simulation-field of an active branch. To the Agent ac
 
 The process is a dance between intent, simulation, and judgment:
 
-1. **Intent:** The Magus submits an invocation at the **[Altar](../../divination/altar.md)**.
+1. **Intent:** The Magus submits an invocation at the **[Altar](../../divination/altar/)**.
 2. **Dispatch:** The **[Vessel](../vessel/index.md)** routes unsafe work into **The Tomb**.
 3. **Dreaming:** Tomb executor loops run serialized timeline payloads in isolated branches/workspaces within the Tomb.
 4. **Vision:** Candidate futures are returned as artifacts for review.
@@ -108,7 +108,7 @@ Shadow is one of the highest-cost rituals in the Sepulcher.
 
 Shadow Simulation requires a first-class policy/strategy component in the domain/orchestration layer. This explicit policy layer is needed to decide, per work item:
 
-- Which workflow/litany shape to run.
+- Which workflow pattern to run.
 - Which extensions participate (Shadow, Weaver, Mirror, etc.).
 - Which execution plane/container(s) to start or reuse.
 - When to prefer local Soulstones vs Portals vs pause/preempt.

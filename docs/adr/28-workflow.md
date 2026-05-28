@@ -6,7 +6,7 @@ icon: material/tournament
 # :material-tournament: 28. Workflow: The Weaver
 
 !!! abstract "Context and Problem Statement"
-    Cognitive labor involving multiple asynchronous **[Workers (ADR 14)](./14-workers.md)** and specialized **[Agents (ADR 20)](./20-agents.md)** often devolves into execution chaos without a centralized executive function to dictate tempo and sequence. While the machine possesses the raw topology of the **[Graph (ADR 24)](./24-graph.md)**, the tactical movement of data between synapses remains uncoordinated, leading to fragmentation and logic drift. A mechanism is necessary to translate the strategic intent of the machine's physical will into a synchronized, verifiable, and stateful ritual—ensuring that every step of a litany is provided with woven context and purified data.
+    Cognitive labor involving multiple asynchronous **[Workers (ADR 14)](./14-workers.md)** and specialized **[Agents (ADR 20)](./20-agents.md)** often devolves into execution chaos without a centralized executive function to dictate tempo and sequence. While the machine possesses the raw topology of the **[Graph (ADR 24)](./24-graph.md)**, the tactical movement of data between synapses remains uncoordinated, leading to fragmentation and logic drift. A mechanism is necessary to translate the strategic intent of the machine's physical will into a synchronized, verifiable, and stateful workflow, ensuring that every step of a pattern is provided with woven context and purified data.
 
 ## Requirements
 
@@ -43,13 +43,13 @@ icon: material/tournament
 
 The Weaver preserves temporal continuity of cognition across asynchronous steps. It prepares and synchronizes the field in which reasoning occurs, but it does not itself determine truth or identity.
 
-Workflow is the backbone of the Ouroboros. It is the structure that lets a generated fluctuation return as usable state rather than vanish as a loose transcript. Shadow supplies candidate motion, Mirror supplies identity gravity, and Riddle supplies measurement; the Weaver binds their appearances into a repeatable litany with checkpoints, pauses, joins, and rehydration boundaries.
+Workflow is the backbone of the Ouroboros. It is the structure that lets a generated fluctuation return as usable state rather than vanish as a loose transcript. Shadow supplies candidate motion, Mirror supplies identity gravity, and Riddle supplies measurement; the Weaver binds their appearances into a repeatable Pattern with checkpoints, pauses, joins, and rehydration boundaries.
 
-This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver litany records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
+This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver Pattern records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
 
 ### 1. The Maestro Pattern (Tactical arm of the Will)
 
-The Weaver translates the strategy of the **[Orchestrator (ADR 23)](./23-orchestrator.md)** into tactical steps. It manages the temporal execution of nodes, coordinating between immediate reflexes and long-term rituals. By registering via the extension hook, the Weaver grafts itself onto the core, ensuring all multi-stage labor follows a disciplined litany.
+The Weaver translates the strategy of the **[Orchestrator (ADR 23)](./23-orchestrator.md)** into tactical steps. It manages the temporal execution of nodes, coordinating between immediate reflexes and long-term rituals. By registering via the extension hook, the Weaver grafts itself onto the core, ensuring all multi-stage labor follows a disciplined workflow pattern.
 
 ### 2. The Archivist (Memory Weaving)
 
@@ -70,13 +70,13 @@ To maintain the "Privacy Veil," the Weaver provides a Censor interceptor:
 - For external rituals (e.g., calling a remote peer), the Censor scrubs sensitive artifacts before they exit the **[Sovereignty Wall (ADR 09)](./09-security.md)**.
 - Re-identification or de-anonymization is performed only upon the result's return to the internal substrate.
 
-### 4. The Litany (Pacing and Joins)
+### 4. The Pattern (Pacing and Joins)
 
 The Weaver utilizes the functional primitives of the graph to enforce the rhythm of thought:
 
 - **Broadcasting:** Synchronizing the same input across multiple specialist agents for parallel analysis.
 - **Spreading:** Distributing a list of tasks across the background worker force.
-- **Joins:** Aggregating parallel results into a single "White Truth" before proceeding to the next station of the litany.
+- **Joins:** Aggregating parallel results into a single "White Truth" before proceeding to the next station of the pattern.
 - **Outcome Rubrics:** Carrying explicit success criteria through a multi-stage run so Riddle, Oculus, HitL, and the Magus can evaluate the final artifact against the same declared target.
 
 The Weaver governs tempo and synchronization of these movements; validity and selection remain the responsibility of the workflow's evaluators and approval gates.
@@ -85,7 +85,7 @@ At each join, the workflow can close a loop: generated branches return to a shar
 
 ### 5. Interaction with HitL
 
-Every workflow includes a "Decision Point" that triggers the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. When a litany reaches a high-order synapse (e.g., system promotion), the Weaver initiates the stasis event and manifests the scried "Vision" at the interface, awaiting the Magus's signal to resume the tempo.
+Every workflow includes a "Decision Point" that triggers the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. When a pattern execution reaches a high-order synapse (e.g., system promotion), the Weaver initiates the stasis event and manifests the scried "Vision" at the interface, awaiting the Magus's signal to resume the tempo.
 
 ## Consequences
 
@@ -97,4 +97,4 @@ Every workflow includes a "Decision Point" that triggers the **[Sovereign Consen
 
 !!! failure "Negative"
     - **Synapse Latency:** The rituals of scrying and cleansing add a sub-millisecond overhead to every transition between steps.
-    - **Architectural Rigor:** Extension authors must adhere to the strict Litany structure, requiring higher initial engineering effort compared to simple scripts.
+    - **Architectural Rigor:** Extension authors must adhere to the strict Pattern structure, requiring higher initial engineering effort compared to simple scripts.
