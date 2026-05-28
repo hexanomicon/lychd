@@ -40,7 +40,7 @@ Source-map note: doctrine names are domain names, not guaranteed package slugs. 
 | **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a WireGuard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
 | **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
 | **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
-| **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Litanies** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
+| **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Patterns** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
 | **[The Scout](./scout.md)** | **Ingestion** | :material-navigation-variant-outline: | Wields a **Dual-Mode** browser to harvest internet knowledge. | **[30](../../adr/30-webcrawler.md)** |
 | **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-wrench: | Drafts code and executes the autonomous **Evolution** of the system. | **[35](../../adr/35-assimilation.md)** |
 | **[The Soulforge](./soulforge.md)** | **Training** | :material-anvil: | Transmutes Karma into model weights via **LoRA** fine-tuning. | **[33](../../adr/33-training.md)** |

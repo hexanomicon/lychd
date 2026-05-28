@@ -9,7 +9,7 @@ icon: material/shield-key-outline
 
 **The Veil** is the Proxy Extension of the LychD system. It is the implementation of **[ADR 40 (Proxy)](../../adr/40-proxy.md)**—a specialized gatekeeper based on **Caddy** that stands between the raw **[Vessel](../vessel/index.md)** and the chaotic public network.
 
-While the Vessel handles the internal logic of the machine, the Veil handles the external reality of the "Forest" (the Internet). It provides the high-performance TLS termination, DDoS protection, and routing required to safely expose the **[Intercom (A2A)](../../adr/26-a2a.md)** and the **[Altar](../../divination/altar.md)** to the world.
+While the Vessel handles the internal logic of the machine, the Veil handles the external reality of the "Forest" (the Internet). It provides the high-performance TLS termination, DDoS protection, and routing required to safely expose the **[Intercom (A2A)](../../adr/26-a2a.md)** and the **[Altar](../../divination/altar/)** to the world.
 
 ## I. The Gatekeeper (The Infrastructure)
 

@@ -30,7 +30,7 @@ The operative unit of that condensation is the **semantic vertex**: a local attr
 
 To maintain coherence, the Mirror utilizes the **Phantasma** (Generative Imagination) faculty. This is a specialized application of **[Shadow Simulation](../../adr/31-simulation.md)**.
 
-- **The Dreaming:** Before an answer is manifested at the **[Altar](../../divination/altar.md)**, the Persona projects multiple potential responses into the **[Shadow Realm](./shadow.md)**.
+- **The Dreaming:** Before an answer is manifested at the **[Altar](../../divination/altar/)**, the Persona projects multiple potential responses into the **[Shadow Realm](./shadow.md)**.
 - **The Self-Critique:** The Mirror reviews these "Shadow Timelines" against the Persona’s own internal ideal.
 - **The Congruence Gate:** The Mirror ranks timelines for identity fit after Shadow establishes structural validity.
 - **The Collapse:** Only the timeline with the strongest character congruence proceeds toward promotion. This keeps the Daemon "in character" without granting Mirror final authority over reality.

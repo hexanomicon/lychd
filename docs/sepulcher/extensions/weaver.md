@@ -128,7 +128,7 @@ The Weaver governs the rhythm of multi-step reasoning through the primitives sup
 
 This makes the Weaver the executive planner of movement rather than the owner of meaning.
 
-When a join closes, the litany performs a small Ouroboros turn: scattered branch motion is folded back into one continuation. Failed paths may be discarded, retained as Riddle evidence, or prepared for Soulforge trajectory mining. The workflow's job is to keep that return path explicit.
+When a join closes, the workflow performs a small Ouroboros turn: scattered branch motion is folded back into one continuation. Failed paths may be discarded, retained as Riddle evidence, or prepared for Soulforge trajectory mining. The workflow's job is to keep that return path explicit.
 
 ## 👁️ The Visible Score
 
@@ -141,7 +141,7 @@ The Weaver produces a visible structure of work.
     - which branch is waiting
     - which memory was injected
     - where the workflow paused
-- **Operational Clarity:** this turns orchestration from a hidden implementation detail into an inspectable surface at the **[Altar](../../divination/altar.md)**.
+- **Operational Clarity:** this turns orchestration from a hidden implementation detail into an inspectable surface at the **[Altar](../../divination/altar/)**.
 
 !!! tip "Execution Planning Without Drift"
     As simulation, orchestration, and extension participation become more adaptive, keep planning logic in the Weaver's policy layer rather than scattering it across Shadow, runtime adapters, or graph step implementations. The workflow should describe the work. The policy layer should decide how to run it. The Orchestrator and Vessel should decide what may actually happen.

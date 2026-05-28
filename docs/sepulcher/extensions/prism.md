@@ -33,7 +33,7 @@ The Prism utilizes the **[Dispatcher](../../adr/22-dispatcher.md)** to manage th
 
 Pixels are chaotic. To make them intelligible, the Prism implements a specialized preprocessing pipeline within the **[Vessel](../vessel/index.md)**:
 
-1. **Ingest:** The system receives raw binary data from the **[Altar](../../divination/altar.md)** or the **[Phylactery Archive](../phylactery/index.md)**.
+1. **Ingest:** The system receives raw binary data from the **[Altar](../../divination/altar/)** or the **[Phylactery Archive](../phylactery/index.md)**.
 2. **Normalization:** The Prism automatically resizes and crops the image to match the specific "Patch Resolution" of the assigned model (e.g., 336x336).
 3. **Encoding:** The pixels are transmuted into Base64 or Tensor formats and prepared for injection into the Agent's context via Pydantic AI's **`BinaryContent`**.
 4. **Tokenization:** By optimizing the image _before_ it reaches the Animator, the Prism significantly reduces the token cost and memory pressure of visual reasoning.

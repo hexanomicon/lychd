@@ -59,7 +59,14 @@ nav = [
     ]},
     { "Divination" = [
         "divination/index.md",
-        "divination/altar.md",
+        { "Altar" = [
+            "divination/altar/index.md",
+            "divination/altar/scrying.md",
+            "divination/altar/nexus.md",
+            "divination/altar/loom.md",
+            "divination/altar/reliquary.md",
+            "divination/altar/bindings.md"
+        ]},
         { "Transcendence" = [
             "divination/transcendence/index.md",
             "divination/transcendence/incantation.md",
