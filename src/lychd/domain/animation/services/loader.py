@@ -3,12 +3,18 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast, overload
+from urllib.parse import urlsplit
 
 import structlog
 
-from lychd.config.runes import ConfigLoader, RuneSchemaDiscovery
+from lychd.config.runes import ConfigLoader, RuneConfig
 from lychd.config.settings import get_settings
-from lychd.domain.animation.schemas import AnimatorConfig, PortalConfig, SoulstoneConfig, is_placeholder
+from lychd.domain.animation.schemas import (
+    AnimatorConfig,
+    PortalConfig,
+    SoulstoneConfig,
+    is_placeholder,
+)
 from lychd.system.constants import PATH_RUNES_DIR
 
 logger = structlog.get_logger()
@@ -26,23 +32,31 @@ class AnimatorLoader:
     to runtime factories/registry code.
     """
 
-    _INHERITABLE_FIELDS = ("orchestration_labels", "dedicated", "persistent_resident")
+    _INHERITABLE_FIELDS: tuple[str, ...] = ()
+    _AUTO_PORT_START = 20000
+    _MAX_PORT = 65535
 
     def __init__(
         self,
         runes_dir: Path | None = None,
         *,
+        rune_schemas: list[type[RuneConfig]] | None = None,
         reserved_ports: dict[str, int] | None = None,
     ) -> None:
         """Initialize loader with rune root and reserved host ports."""
+        if rune_schemas is None:
+            from lychd.extensions.manager import ExtensionManager
+
+            rune_schemas = list(ExtensionManager.from_settings().assemble().runes.rune_schemas)
+
         self._runes_dir = runes_dir or PATH_RUNES_DIR
+        self._rune_schemas = list(rune_schemas)
         self._reserved_ports = reserved_ports or get_settings().reserved_ports_map
 
     def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
         """Load Soulstone/Portal Runes with inherited animator defaults."""
         try:
-            schemas = RuneSchemaDiscovery().discover_classes()
-            loaded = ConfigLoader(runes_dir=self._runes_dir).load_all(schemas)
+            loaded = ConfigLoader(runes_dir=self._runes_dir).load_all(self._rune_schemas)
         except ValueError as exc:
             msg = f"Failed to load animation runes: {exc}"
             raise AnimatorConfigError(msg) from exc
@@ -59,9 +73,7 @@ class AnimatorLoader:
         portals = [portal for portal in portals if not self._is_unresolved_sample_portal(portal)]
         self._validate_unique_names(soulstones, portals)
 
-        for portal in portals:
-            self._validate_portal_requirements(portal)
-
+        soulstones = self._hydrate_soulstone_endpoints(soulstones)
         self._validate_ports(soulstones)
 
         logger.info(
@@ -104,19 +116,84 @@ class AnimatorLoader:
 
         validator = cast("Any", type(instance))
         merged = validator.model_validate(data)
-        merged.source_file = instance.source_file
+        if instance.source_file is not None:
+            merged = merged.bind_source_file(instance.source_file)
         return cast("SoulstoneConfig | PortalConfig", merged)
 
-    def _validate_portal_requirements(self, portal: PortalConfig) -> None:
-        if not portal.base_url:
-            msg = f"Portal '{portal.name}' requires 'base_url'."
-            raise AnimatorConfigError(msg)
+    def _hydrate_soulstone_endpoints(self, stones: list[SoulstoneConfig]) -> list[SoulstoneConfig]:
+        used_ports = set(self._reserved_ports.values())
+        for stone in stones:
+            port_was_set = self._field_was_set(stone, "port")
+            base_url_was_set = self._field_was_set(stone, "base_url")
+            base_url_port = self._port_from_base_url(stone.base_url)
+            if (
+                port_was_set
+                and stone.port is not None
+                and base_url_was_set
+                and base_url_port is not None
+                and stone.port != base_url_port
+            ):
+                msg = (
+                    f"Soulstone '{stone.name}' declares port {stone.port} but base_url uses port {base_url_port}."
+                )
+                raise AnimatorConfigError(msg)
+            if stone.port is not None:
+                used_ports.add(stone.port)
+            elif base_url_was_set and base_url_port is not None:
+                port = base_url_port
+                used_ports.add(port)
+
+        hydrated: list[SoulstoneConfig] = []
+        for stone in stones:
+            auto_port = stone.port is None
+            auto_base_url = not self._field_was_set(stone, "base_url")
+
+            port = stone.port
+            if auto_port:
+                port = self._port_from_base_url(stone.base_url) or self._next_auto_port(used_ports)
+                used_ports.add(port)
+
+            base_url = str(stone.base_url) if not auto_base_url else f"http://localhost:{port}/v1"
+            if port == stone.port and str(stone.base_url) == base_url:
+                hydrated.append(stone)
+                continue
+
+            data = stone.model_dump(mode="json")
+            data["port"] = port
+            data["base_url"] = base_url
+            validator = cast("Any", type(stone))
+            merged = validator.model_validate(data)
+            if stone.source_file is not None:
+                merged = merged.bind_source_file(stone.source_file)
+            hydrated.append(cast("SoulstoneConfig", merged))
+
+        return hydrated
+
+    def _field_was_set(self, instance: SoulstoneConfig | PortalConfig, field_name: str) -> bool:
+        return field_name in instance.model_fields_set
+
+    def _port_from_base_url(self, base_url: object | None) -> int | None:
+        if base_url is None:
+            return None
+        return urlsplit(str(base_url)).port
+
+    def _next_auto_port(self, used_ports: set[int]) -> int:
+        port = self._AUTO_PORT_START
+        while port in used_ports:
+            port += 1
+            if port > self._MAX_PORT:
+                msg = "No free auto-allocatable Soulstone ports remain."
+                raise AnimatorConfigError(msg)
+        return port
 
     def _validate_ports(self, stones: list[SoulstoneConfig]) -> None:
         errors: list[str] = []
         seen: dict[int, str] = {}
 
         for stone in stones:
+            if stone.port is None:
+                errors.append(f"{stone.name} has no hydrated port")
+                continue
             for owner, port in self._reserved_ports.items():
                 if stone.port == port:
                     errors.append(f"{stone.name} conflicts with {owner} (port {stone.port})")

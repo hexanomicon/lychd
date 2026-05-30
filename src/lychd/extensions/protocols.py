@@ -56,9 +56,6 @@ class ExtensionSchemaProtocol(Protocol):
 
     relative_path: Path
 
-    evict_cost: int | None
-    matrix_sets: list[str] | None
-
 
 @runtime_checkable
 class AnimatorProviderProtocol(Protocol):

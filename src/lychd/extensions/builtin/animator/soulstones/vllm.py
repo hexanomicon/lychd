@@ -14,11 +14,32 @@ class VllmSoulstoneConfig(SoulstoneConfig):
     Contract:
     - ``exec`` present => passthrough mode (command is authoritative)
     - ``exec`` absent  => managed mode (typed fields synthesize command args)
-    - managed mode requires ``model_path`` or declared ``models``
+    - managed mode requires ``model_path``
     - container-level toggles (for example ``ipc_host``) still apply in both modes
     """
 
     path_fragment: ClassVar[Path] = Path("vllm")
+    sample_template: ClassVar[str | None] = """
+# ~/.config/lychd/runes/animator/soulstones/vllm/glm.toml
+
+name = "glm-vllm"
+description = "Static vLLM Soulstone for one OpenAI-compatible local model."
+groups = ["local-llm"]
+port = 8010
+
+model_path = "/models/GLM-4.7-Flash-AWQ-4bit"
+tensor_parallel_size = 1
+gpu_memory_utilization = 0.90
+max_model_len = 32768
+max_num_seqs = 2
+
+language_model_only = true
+tool_call_parser = "glm47"
+reasoning_parser = "glm45"
+enable_auto_tool_choice = true
+trust_remote_code = true
+ipc_host = true
+"""
     runtime: str = "vllm"
     image: str = "vllm/vllm-openai:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
@@ -51,7 +72,6 @@ class VllmSoulstoneConfig(SoulstoneConfig):
             "enable_auto_tool_choice",
             "trust_remote_code",
             "extra_args",
-            "llm_defaults",
         }
     )
 
@@ -69,8 +89,8 @@ class VllmSoulstoneConfig(SoulstoneConfig):
                 raise ValueError(msg)
             return self
 
-        if self.model_path or self.models:
+        if self.model_path:
             return self
 
-        msg = "VllmSoulstoneConfig in managed mode requires 'model_path' or explicit 'models' entries."
+        msg = "VllmSoulstoneConfig in managed mode requires 'model_path'."
         raise ValueError(msg)

@@ -3,22 +3,33 @@ from __future__ import annotations
 import re
 from abc import ABC
 from pathlib import Path
-from typing import Any, ClassVar
+from re import Pattern
+from typing import Any, ClassVar, Final, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
-RUNE_PATH_PART_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$")
+# Shared grammar for one rune path segment. Keep this module-level so every
+# runtime schema uses the same non-overridable path rule.
+RUNE_PATH_PART_PATTERN: Final[Pattern[str]] = re.compile(r"^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$")
 
 
 class RuneConfig(BaseModel, ABC):
-    """Base for TOML-backed Codex runes.
+    """Base for TOML-backed Codex runes. Frozen.
 
     A rune is one validated TOML config document under
     ``lychd.system.constants.PATH_RUNES_DIR``. Subclasses define TOML fields;
-    this base validates class-level placement metadata.
+    this base validates class-level placement metadata. Leaf ownership is
+    resolved when binding a source file, after import has revealed the subclass
+    topology.
+
+    ``RuneConfig`` does not import or discover extensions. Enabled extensions
+    expose their rune subclasses through extension registration stores, usually from a
+    ``register(context)`` shim that calls ``context.runes.add_schema(...)``.
+    The Codex loader then receives the assembled schema list explicitly and
+    remains only responsible for filesystem-backed TOML validation.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Validate rune class metadata when a rune subclass is declared.
@@ -43,7 +54,8 @@ class RuneConfig(BaseModel, ABC):
             raise ValueError(msg)
         path_fragment: Any = cls.__dict__["path_fragment"]
 
-        # The fragment is a relative ``Path`` suffix, not a filesystem root.
+        # The fragment is a single relative ``Path`` segment. Python inheritance
+        # owns ancestry; one class must not smuggle multiple directories.
         # Loader/writer code owns the absolute root via ``PATH_RUNES_DIR``.
         if not isinstance(path_fragment, Path):
             msg = f"Rune '{cls.__name__}' declares non-Path path_fragment {path_fragment!r}."
@@ -51,22 +63,24 @@ class RuneConfig(BaseModel, ABC):
         if path_fragment.is_absolute() or path_fragment == Path():
             msg = f"Rune '{cls.__name__}' declares invalid path_fragment '{path_fragment}'. Expected relative path fragment."
             raise ValueError(msg)
+        if len(path_fragment.parts) != 1:
+            msg = (
+                f"Rune '{cls.__name__}' declares multi-part path_fragment '{path_fragment}'. Expected one path segment."
+            )
+            raise ValueError(msg)
 
-        # Validate every fragment part because a fragment may contain more than
-        # one suffix component. The pattern rejects traversal, uppercase drift,
-        # spaces, and filesystem-looking surprises.
-        for part in path_fragment.parts:
-            if not RUNE_PATH_PART_PATTERN.fullmatch(part):
-                pattern = RUNE_PATH_PART_PATTERN.pattern
-                msg = f"Rune '{cls.__name__}' declares invalid path_fragment part '{part}'. Expected pattern: {pattern}"
-                raise ValueError(msg)
+        # The pattern rejects traversal, uppercase drift, spaces, and
+        # filesystem-looking surprises.
+        part = path_fragment.parts[0]
+        if not RUNE_PATH_PART_PATTERN.fullmatch(part):
+            pattern = RUNE_PATH_PART_PATTERN.pattern
+            msg = f"Rune '{cls.__name__}' declares invalid path_fragment part '{part}'. Expected pattern: {pattern}"
+            raise ValueError(msg)
 
         # The final path is a single parent chain plus this suffix. Multiple
         # RuneConfig parents would make that path ambiguous. Mixins that only
         # share fields should inherit BaseModel or object, not RuneConfig.
-        rune_parents = [
-            base for base in cls.__bases__ if issubclass(base, RuneConfig) and base is not RuneConfig
-        ]
+        rune_parents = [base for base in cls.__bases__ if issubclass(base, RuneConfig) and base is not RuneConfig]
         if len(rune_parents) > 1:
             names = ", ".join(parent.__name__ for parent in rune_parents)
             msg = f"Rune '{cls.__name__}' declares multiple rune parents: {names}."
@@ -83,5 +97,52 @@ class RuneConfig(BaseModel, ABC):
     relative_path: ClassVar[Path]
     """Computed path under ``PATH_RUNES_DIR`` where this class's TOMLs live."""
 
-    source_file: Path | None = Field(default=None, exclude=True, repr=False)
-    """Absolute source TOML file that produced this validated instance."""
+    sample_template: ClassVar[str | None] = None
+    """Optional complete sample TOML template used by ``ConfigWriter``."""
+
+    _source_file: Path | None = PrivateAttr(default=None)
+
+    @classmethod
+    def anchor_dir(cls, runes_dir: Path) -> Path:
+        """Resolve this rune class's anchor under an active rune root.
+
+        Args:
+            runes_dir: Active root directory for rune TOML files.
+
+        Returns:
+            Absolute or caller-root-relative anchor directory for this class.
+
+        """
+        return runes_dir / cls.relative_path
+
+    @property
+    def source_file(self) -> Path | None:
+        """Absolute source TOML file that produced this validated instance."""
+        return self._source_file
+
+    def bind_source_file(self, source_file: Path) -> Self:
+        """Bind filesystem provenance after TOML validation.
+
+        Source binding turns a validated schema instance into a concrete
+        file-backed rune. Branch classes are rejected here because subclass
+        topology is only complete after schema modules have been imported.
+
+        Args:
+            source_file: Absolute TOML file path that produced this instance.
+
+        Returns:
+            This rune instance, with source provenance bound.
+
+        Raises:
+            TypeError: If this instance belongs to a branch rune class.
+            ValueError: If this instance is already bound to another source.
+
+        """
+        if type(self).__subclasses__():
+            msg = f"Branch rune class '{type(self).__name__}' cannot bind source_file."
+            raise TypeError(msg)
+        if self._source_file is not None and self._source_file != source_file:
+            msg = f"Rune source_file already bound to '{self._source_file}'."
+            raise ValueError(msg)
+        self._source_file = source_file
+        return self

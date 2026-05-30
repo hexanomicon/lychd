@@ -119,7 +119,7 @@ The Dispatcher does not return a raw model. It returns a **CapabilityGrant** con
 - **The Hydrated Runtime Surfaces:** The bound model, toolsets, service clients, or other adapter surfaces when the selected connector exposes them.
 - **Late-Bound Binding:** The grant is a temporary hydration against the active physical substrate at the moment of thought.
 
-Tool-only and service-only grants may have no model. External tools are carried by connector capability, not by pretending a Portal has a default chat model. A Portal with external tools and no `default_model_id` exposes `tool_execution` only unless it explicitly declares model-backed families. A Watcher or browser Animator follows the same law: it exposes its own capability families rather than masquerading as chat.
+Tool-only and service-only grants may have no model. Capability-bearing surfaces are carried by connectors, not by pretending every Portal has a default chat model. A Watcher, browser Animator, or remote service Portal follows the same law: it exposes its own capability families rather than masquerading as chat.
 
 ### 5. The Modality Zip (Joint Intelligence)
 

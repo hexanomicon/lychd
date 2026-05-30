@@ -8,8 +8,9 @@ import structlog
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
 
-from lychd.config.runes import ConfigWriter, RuneSchemaDiscovery
+from lychd.config.runes import ConfigWriter, RuneConfig
 from lychd.config.settings import get_settings
+from lychd.extensions.manager import ExtensionManager
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
 
 if TYPE_CHECKING:
@@ -33,12 +34,17 @@ class CodexService:
         runes_path: Path | None = None,
         templates_dir: Path | None = None,
         postgres_root_path: Path | None = None,
+        rune_schemas: list[type[RuneConfig]] | None = None,
     ) -> None:
         """Create a codex service bound to concrete codex/runes paths."""
         self.toml_path = toml_path or PATH_LYCHD_TOML
         self.runes_path = runes_path or PATH_RUNES_DIR
         self.templates_dir = templates_dir or PATH_RUNE_TEMPLATES_DIR
         self.postgres_root_path = postgres_root_path or PATH_POSTGRES_ROOT_DIR
+        if rune_schemas is None:
+            self.rune_schemas = list(ExtensionManager.from_settings().assemble().runes.rune_schemas)
+        else:
+            self.rune_schemas = list(rune_schemas)
 
         self._env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -88,13 +94,11 @@ class CodexService:
 
     def _inscribe_configurables(self) -> None:
         """Initialize rune anchor directories and sample TOMLs."""
-        schemas = RuneSchemaDiscovery().discover_classes()
-
         writer = ConfigWriter(runes_dir=self.runes_path)
-        writer.initialize_anchors(schemas)
-        writer.inscribe_samples(schemas)
+        writer.initialize_anchors(self.rune_schemas)
+        writer.inscribe_samples(self.rune_schemas)
 
-        logger.info("configurable_anchors_inscribed", count=len(schemas), runes_root=str(self.runes_path))
+        logger.info("configurable_anchors_inscribed", count=len(self.rune_schemas), runes_root=str(self.runes_path))
 
     def _introspect_model(self, model: BaseModel) -> list[str]:
         """Recursively walk the Pydantic model to generate TOML lines."""

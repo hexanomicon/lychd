@@ -96,7 +96,11 @@ The Magus can specify standard Systemd ordering and dependency directives direct
 
 ### 5. Federated Quadlet Registration
 
-Extensions provide generated container blueprints via `context.add_container()`. Rune config ownership/discovery remains governed by **[Configuration (12)](12-configuration.md)**. The CLI treats all Quadlet manifests as a single inscription set so the **Law of Exclusivity** and port arbitration are enforced across the entire organism.
+Extensions will provide generated container blueprints through a shaped
+orchestration/transmutation store, not a flat `ExtensionContext` method. Rune
+config ownership/discovery remains governed by **[Configuration (12)](12-configuration.md)**.
+The CLI treats all Quadlet manifests as a single inscription set so the **Law of
+Exclusivity** and port arbitration are enforced across the entire organism.
 
 **Initial Phase vs Future Refinements:**
 For the Initial Phase (V1), all extensions (including Webcrawlers) are configured to join the single `lychd.pod` by default. This simplifies networking and allows Layer 7 authentication to manage internal boundaries. However, the Quadlet generation architecture inherently supports standalone execution, meaning future versions can deploy extensions to isolated network namespaces outside the Pod.

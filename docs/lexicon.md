@@ -26,7 +26,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Dispatcher** | The Model Router and capability-to-endpoint resolver. The Semantic Cortex. | `src/lychd/domain/cortex/dispatcher.py` |
 | **Divination** | Querying the API, viewing traces, or searching the database. The act of interacting with the running daemon. | Vessel API |
 | **Echo** | The Audio Extension (STT/TTS). Grants the Daemon the power to perceive and project sound. | Extension |
-| **Extension Context** | The host-provided registration surface passed to `register(context)` during boot-time grafting. It binds in-process logic to the Vessel. It is not the whole Extension Protocol. | `src/lychd/extensions/context.py` |
+| **Extension Context** | The host-provided registration surface passed to `register(context)` during boot-time extension assembly. It exposes explicit stores such as `runes`, `soulstones`, `portals`, and the reserved `vessel` store. It is not the whole Extension Protocol. | `src/lychd/extensions/context.py` |
 | **Extension Protocol** | The composed-runtime law for in-process organs: schema exposure, explicit boot-time registration through `ExtensionContext`, and Forge/Smith verification. Pre-v1 emphasizes assimilation; public SDK/ABI compatibility is harvested at v1+ from proven patterns. | `src/lychd/extensions/` |
 | **Extensions** | Core System Extensions / Reference Implementations. Built-in and private Crypt organs that extend the Daemon's body. | `src/lychd/extensions/` |
 | **Forge** | The Container Build / Image Construction process. Where manifests are synthesized. | Build Pipeline |

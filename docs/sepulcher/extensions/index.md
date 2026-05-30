@@ -61,7 +61,7 @@ Every extension, from simple script to complex multi-module architecture, adhere
 
 ### I. The Extension Protocol
 
-An in-process organ participates in the composed runtime image. Pre-v1 organs are intentionally coupled: they may import LychD internals, expose `RuneConfig` subclasses, and rely on Forge/Smith verification when the Core changes. One branch exposes schema classes the Codex can discover. Another governs optional in-process boot grafting through `register(context)` when an organ binds runtime-facing logic.
+An in-process organ participates in the composed runtime image. Pre-v1 organs are intentionally coupled: they may import LychD internals, expose `RuneConfig` subclasses, and rely on Forge/Smith verification when the Core changes. One branch exposes schema classes the Codex can load through explicit stores. Another governs optional in-process boot registration through `register(context)` when an organ binds runtime-facing logic.
 
 Inside the body, couple and repair. Across bodies, speak protocols. Public SDK/ABI later.
 
@@ -77,12 +77,87 @@ Use the private coupled tier when local velocity matters more than long-term com
 
 ### II. The Genetic API (ExtensionContext)
 
-The `ExtensionContext` is the host-provided registration surface used during boot-time grafting. In the current core it is intentionally narrow: it exists to bind in-process logic such as unbound routers or controller classes to the Vessel. It is not the whole Extension Protocol. Schema exposure and synthesis declarations live in other branches of that law; binary compatibility is deferred until Forge-mediated ABI support exists.
+The `ExtensionContext` is the host-provided root of explicit registration stores
+used during boot-time extension assembly. It is not the whole Extension
+Protocol. Each store names a boundary that Core is willing to extend. Store
+implementations live with the layer that owns their meaning: rune stores in
+Codex/runes, Animator stores in the animation domain, and future Vessel stores
+in the Vessel boundary.
 
-| Method | Grant | System Target |
+Extension activation is selected before rune loading. The core `lychd.toml`
+uses lists, so every extension is inactive unless named:
+
+```toml
+[extensions]
+builtins = ["observability/phoenix", "animator"]
+crypt = ["my-private-organ"]
+```
+
+This selector decides which organs are imported and allowed to register schemas,
+runtime hydrators, and registration stores. Extension-owned runes then configure the
+selected organ's instances; they do not decide whether the organ exists.
+
+Fresh Codex inscription writes the known built-ins into `builtins` explicitly, so
+the default body is active without hidden magic. Removing an id from the list
+deactivates that organ on the next assembly pass.
+
+| Store | Grant | System Target |
 | :--- | :--- | :--- |
-| `add_router(Router)` | :material-router: **Interface** | **[Vessel (11)](../../adr/11-backend.md)** |
-| `add_controller(Controller)` | :material-view-list: **Interface** | **[Vessel (11)](../../adr/11-backend.md)** |
+| `context.runes.add_schema(RuneConfig)` | :material-file-cog-outline: **Codex Schema** | **[Codex (12)](../../adr/12-configuration.md)** |
+| `context.soulstones.add(SoulstoneDefinition)` | :material-cog-transfer: **Soulstone Runtime Definition** | **[Animator](../animator/index.md)** |
+| `context.portals` | :material-cloud-outline: **Reserved Remote/API Model Store** | **[Animator](../animator/portal.md)** |
+| `context.vessel` | :material-router: **Reserved Web/API/Event Store** | **[Vessel (11)](../../adr/11-backend.md)** |
+
+An enabled Python organ exposes a small shim:
+
+```python
+def register(context: ExtensionContext) -> None:
+    context.runes.add_schema(MyExtensionConfig)
+```
+
+Soulstone providers register through the Animator-specific store:
+
+```python
+from lychd.domain.animation.services.adapters.contracts import SoulstoneDefinition
+
+def register(context: ExtensionContext) -> None:
+    context.soulstones.add(
+        SoulstoneDefinition(
+            rune_schema=MySoulstoneConfig,
+            runtime_adapter=MySoulstoneRuntimeAdapter(),
+        )
+    )
+```
+
+`context.vessel` intentionally has no active flat methods yet. Routes,
+middleware, auth policies, and event hooks will be added as shaped bundles or
+sub-stores once the Vessel boundary is stable enough to avoid becoming a grab
+bag.
+
+The manager owns import order and calls this function only for selected
+extensions. Codex never scans arbitrary packages by itself. For built-ins, the
+host resolves configured ids to `lychd.extensions.builtin.<id>.register`.
+Crypt ids resolve to `<crypt-root>/<id>/register.py`. The selected shim owns
+its own `register(context)` body.
+
+The current manager returns the populated `ExtensionContext`. Codex reads
+schemas from `context.runes.rune_schemas`; Animator reads local runtime adapters
+from `context.soulstones.runtime_adapters`. Animator runtimes such as
+`animator/vllm` therefore become visible to both `ConfigWriter`/`ConfigLoader`
+and the `AnimatorRegistry`/`Dispatcher` model binding path through the same
+activation list.
+
+Observability follows the same rule: `observability/phoenix` registers
+`PhoenixSettings` as a RuneConfig. Its generated TOML lives under
+`runes/observability/phoenix/`; the Core settings model does not own a
+`[phoenix]` section.
+
+Cross-language organs follow the same rule. A Rust or C-backed engine may keep
+its native configuration internally, but the operator-facing surface should be a
+Codex rune when it is managed by LychD. A Python shim or adapter translates the
+validated rune into the foreign engine's native shape and may expose a
+LychD-facing `Runic` wrapper when provenance is needed. The foreign object
+itself is not required to implement `.rune`.
 
 ### III. Federated Persistence
 

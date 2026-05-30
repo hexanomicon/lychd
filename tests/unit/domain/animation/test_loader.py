@@ -57,18 +57,18 @@ def test_animator_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
         loader.load_all()
 
 
-def test_portal_requires_uri_after_default_merge(runes_dir: Path) -> None:
+def test_portal_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "portals" / "broken.toml",
         """
         name = "broken"
-        default_model_id = "gpt-like"
+        description = "Misplaced direct portal"
         """,
     )
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
 
-    with pytest.raises(AnimatorConfigError, match="requires 'base_url'"):
+    with pytest.raises(AnimatorConfigError, match="PortalConfig"):
         loader.load_all()
 
 
@@ -114,12 +114,11 @@ def test_reserved_port_conflict(runes_dir: Path) -> None:
 
 def test_portal_api_key_secret_reference(runes_dir: Path) -> None:
     _write(
-        runes_dir / "animator" / "portals" / "secure.toml",
+        runes_dir / "animator" / "portals" / "openai" / "secure.toml",
         """
         name = "secure"
-        base_url = "https://api.example.com/v1"
-        default_model_id = "example-model"
-        api_key_secret = "portal_secure_api_key"
+        description = "Secure OpenAI portal"
+        api_key_secret_name = "portal_secure_api_key"
         """,
     )
 
@@ -127,7 +126,7 @@ def test_portal_api_key_secret_reference(runes_dir: Path) -> None:
     _, portals = loader.load_all()
 
     assert len(portals) == 1
-    assert portals[0].api_key_secret == "portal_secure_api_key"  # noqa: S105 - secret name fixture
+    assert portals[0].api_key_secret_name == "portal_secure_api_key"  # noqa: S105 - secret name fixture
 
 
 def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
@@ -313,16 +312,16 @@ def test_duplicate_name_across_soulstone_and_portal_is_rejected(runes_dir: Path)
         runes_dir / "animator" / "soulstones" / "llamacpp" / "stone.toml",
         """
         name = "dupe"
-        model_path = "/models/qwen.gguf"
+        description = "Duplicate LlamaCpp soulstone"
         port = 8080
+        exec = ["llama-server"]
         """,
     )
     _write(
-        runes_dir / "animator" / "portals" / "portal.toml",
+        runes_dir / "animator" / "portals" / "openai" / "portal.toml",
         """
         name = "dupe"
-        provider_type = "openai"
-        base_url = "https://api.openai.com/v1"
+        description = "Duplicate OpenAI portal"
         """,
     )
 

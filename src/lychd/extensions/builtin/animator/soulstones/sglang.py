@@ -14,7 +14,7 @@ class SglangSoulstoneConfig(SoulstoneConfig):
     Contract:
     - ``exec`` present => passthrough mode (command is authoritative)
     - ``exec`` absent  => managed mode (typed fields synthesize command args)
-    - managed mode requires ``model_path`` or explicit ``models``
+    - managed mode requires ``model_path``
     """
 
     path_fragment: ClassVar[Path] = Path("sglang")
@@ -40,7 +40,6 @@ class SglangSoulstoneConfig(SoulstoneConfig):
             "quantization",
             "enable_marlin",
             "extra_args",
-            "llm_defaults",
         }
     )
 
@@ -58,8 +57,8 @@ class SglangSoulstoneConfig(SoulstoneConfig):
                 raise ValueError(msg)
             return self
 
-        if self.model_path or self.models:
+        if self.model_path:
             return self
 
-        msg = "SglangSoulstoneConfig in managed mode requires 'model_path' or explicit 'models' entries."
+        msg = "SglangSoulstoneConfig in managed mode requires 'model_path'."
         raise ValueError(msg)

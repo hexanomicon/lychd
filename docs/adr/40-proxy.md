@@ -53,7 +53,7 @@ The extension registers `lychd-proxy.container` within the Pod, claiming Host Po
 
 ### 2. Composite Configuration (The Scribe's Protocol)
 
-To maintain the federation of logic, the Proxy utilizes a dynamic assembly mechanism. Extensions register specific `.caddy` fragments during their registration hook. During the **[Packaging (17)](17-packaging.md)** ritual, the system concatenates these fragments into a single manifest. This allows an extension to register a rule like `reverse_proxy /a2a/* localhost:8000` to expose the Intercom without requiring manual edits to the Proxy source.
+To maintain the federation of logic, the Proxy utilizes a dynamic assembly mechanism. Extensions will register specific `.caddy` fragments through a shaped proxy store during the extension registration pass. During the **[Packaging (17)](17-packaging.md)** ritual, the system concatenates these fragments into a single manifest. This allows an extension to register a rule like `reverse_proxy /a2a/* localhost:8000` to expose the Intercom without requiring manual edits to the Proxy source.
 
 ### 3. The Outer Intercom Ward
 

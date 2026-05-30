@@ -81,21 +81,31 @@ def bind_quadlets() -> None:
     import shutil
     import subprocess
 
+    from lychd.config.runes import ConfigLoader
     from lychd.config.settings import get_settings
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.loader import AnimatorLoader
     from lychd.domain.animation.transmute import Transmuter
+    from lychd.extensions.manager import ExtensionManager
     from lychd.system.services.scribe import ScribeService
     from lychd.system.services.secrets import PodmanSecretStore
 
     console = get_console()
 
+    extensions = ExtensionManager.from_settings().assemble()
+    settings = get_settings()
+    extension_runes = ConfigLoader().load_all(list(extensions.runes.rune_schemas))
+    reserved_ports = dict(settings.reserved_ports_map)
+    for rune in extension_runes:
+        if type(rune).__name__ == "PhoenixSettings":
+            reserved_ports["Oculus (Phoenix UI)"] = rune.ui_port  # type: ignore[attr-defined]
+            reserved_ports["Oculus (Phoenix OTLP)"] = rune.otlp_port  # type: ignore[attr-defined]
+
     # 1. Summon the Librarian (Loads & Validates Config)
-    loader = AnimatorLoader()
+    loader = AnimatorLoader(rune_schemas=list(extensions.runes.rune_schemas), reserved_ports=reserved_ports)
     soulstones, portals = loader.load_all()
 
     # 1.5. Ensure required Podman secrets exist before rendering units.
-    settings = get_settings()
     secret_store = PodmanSecretStore()
     created: list[str] = []
     if secret_store.ensure_present(settings.app.secret_key_secret, secrets.token_hex(32)):
@@ -106,9 +116,9 @@ def bind_quadlets() -> None:
     required_soulstone_secrets = _required_secret_names_from_soulstones(soulstones)
     missing_portal_secrets = sorted(
         {
-            portal.api_key_secret
+            portal.api_key_secret_name
             for portal in portals
-            if portal.api_key_secret is not None and not secret_store.exists(portal.api_key_secret)
+            if portal.api_key_secret_name is not None and not secret_store.exists(portal.api_key_secret_name)
         }
     )
     missing_soulstone_secrets = [name for name in required_soulstone_secrets if not secret_store.exists(name)]
@@ -119,9 +129,9 @@ def bind_quadlets() -> None:
         console.print(f"  [dim]Provisioned secrets: {', '.join(created)}[/]")
 
     # 2. Summon the Alchemist (Transmutes Soulstone Runes into Quadlet manifests)
-    runtime_planner = RuntimeAdapterRegistry()
+    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.soulstones.runtime_adapters)
     transmuter = Transmuter(runtime_planner=runtime_planner)
-    manifests = transmuter.transmute_all(soulstones, portals=portals)
+    manifests = transmuter.transmute_all(soulstones, portals=portals, extension_runes=extension_runes)
 
     # 3. Summon the Scribe (Writes Quadlet manifests with Atomic Inscription)
     scribe = ScribeService()

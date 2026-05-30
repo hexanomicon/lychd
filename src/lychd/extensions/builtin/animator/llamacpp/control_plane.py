@@ -70,7 +70,7 @@ class LlamaCppControlPlane:
             raise LlamaCppControlPlaneError(msg)
 
         model_id = getattr(connector, "router_query_model_id", None)
-        return self.inspect(base_url=animator.base_url, mode=cast("str", mode), model_id=cast("str | None", model_id))
+        return self.inspect(base_url=connector.base_url, mode=cast("str", mode), model_id=cast("str | None", model_id))
 
     def inspect(self, *, base_url: str, mode: str, model_id: str | None = None) -> LlamaCppLifecycle:
         """Inspect runtime state from llama.cpp health/props/models endpoints."""

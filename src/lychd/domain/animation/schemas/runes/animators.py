@@ -2,16 +2,11 @@ from __future__ import annotations
 
 from abc import ABC
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AnyHttpUrl, Field, model_validator
 
 from lychd.config.runes import RuneConfig
-from lychd.domain.animation.schemas.runes.models import (
-    LLMGenerationDefaults,
-    LocalLLMModelConfig,
-    ModelCapabilityHints,
-)
 from lychd.domain.animation.schemas.shared import ModelFormat
 
 
@@ -29,42 +24,12 @@ class AnimatorConfig(RuneConfig, ABC):
 
     path_fragment: ClassVar[Path] = Path("animator")
 
-    name: str = Field(default="animator")
-    description: str = Field(default="Global animation defaults.")
-
-    orchestration_labels: list[str] = Field(
-        default_factory=list,
-        description="Advisory routing labels (privacy, locality, cost, latency, etc.).",
+    name: str
+    description: str = ""
+    base_url: AnyHttpUrl | None = Field(
+        default=None,
+        description="HTTP(S) endpoint root for URL-backed animator connectors.",
     )
-    dedicated: bool = Field(
-        default=True,
-        description="Whether LychD owns this animator lifecycle and may start or stop it during transitions.",
-    )
-    persistent_resident: bool = Field(
-        default=False,
-        description="Whether this animator should stay out of the default eviction set when possible.",
-    )
-
-
-class ExternalToolConfig(BaseModel):
-    """External/deferred tool definition exposed by a connector-backed animator.
-
-    This is a rune-side declaration only. Connectors translate these entries
-    into Pydantic AI ``ToolDefinition`` objects and usually wrap them in an
-    ``ExternalToolset`` so deferred/external tool execution is reused directly
-    from Pydantic AI.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(min_length=1)
-    parameters_json_schema: dict[str, Any] = Field(
-        default_factory=lambda: {"type": "object", "properties": {}},
-        description="JSON schema for tool arguments (object schema).",
-    )
-    description: str | None = None
-    strict: bool | None = None
-    sequential: bool = False
 
 
 class SoulstoneConfig(AnimatorConfig, ABC):
@@ -78,26 +43,30 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     path_fragment: ClassVar[Path] = Path("soulstones")
 
-    name: str = Field(default="soulstone", min_length=1)
     image: str = Field(..., min_length=1, description="OCI image used for this container.")
     runtime: str = Field(default="generic", min_length=1, description="Local runtime family id for this Soulstone.")
-    base_url: str = Field(
-        default="",
-        description="Explicit local API base URL override. Defaults to http://localhost:{port}/v1.",
-    )
     model_path: str | None = Field(
-        default=None, description="Primary local model artifact path when using single-model runtimes."
+        default=None,
+        description=(
+            "Single model artifact or model directory inside the runtime container. "
+            "Use runtime-specific catalogs for multi-model runtimes."
+        ),
     )
     model_format: ModelFormat | None = Field(
-        default=None, description="Primary local model format hint for runtime dispatch/validation."
+        default=None,
+        description="Optional model weight format for connector metadata and runtime planning.",
     )
-    port: int = Field(default=8000, ge=1, le=65535)
+    base_url: AnyHttpUrl | None = Field(
+        default=None,
+        description="Local API base URL. Omit to let the loader derive one.",
+    )
+    port: int | None = Field(
+        default=None,
+        ge=1,
+        le=65535,
+        description="Host port for the local API. Omit to let the loader allocate one.",
+    )
     groups: list[str] = Field(default_factory=list, description="Coven membership labels.")
-    evict_cost: int = Field(default=1, ge=0, description="Relative cost of evicting this soulstone from residency.")
-    matrix_sets: list[str] = Field(
-        default_factory=list,
-        description="Solver-style coexistence set labels used by later transition planning.",
-    )
     volumes: list[str] = Field(default_factory=list, description="Extra bind mounts for this soulstone.")
     env_vars: dict[str, str] = Field(default_factory=dict)
     secret_env_files: dict[str, str] = Field(
@@ -108,18 +77,6 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         ),
     )
     exec: list[str] = Field(default_factory=list, description="Explicit container command arguments.")
-    llm_defaults: LLMGenerationDefaults | None = Field(
-        default=None,
-        description="Optional LLM generation defaults overlay for this Soulstone.",
-    )
-    capabilities: ModelCapabilityHints | None = Field(
-        default=None,
-        description="Optional Soulstone-wide capability hints for synthesized model summaries.",
-    )
-    models: dict[str, LocalLLMModelConfig] = Field(
-        default_factory=dict,
-        description="Local model declarations owned by this Soulstone.",
-    )
 
     @property
     def service_name(self) -> str:
@@ -133,8 +90,6 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     @model_validator(mode="after")
     def _hydrate_local_defaults(self) -> SoulstoneConfig:
-        if not self.base_url:
-            self.base_url = f"http://localhost:{self.port}/v1"
         for env_name, secret_name in self.secret_env_files.items():
             if not env_name.strip():
                 msg = "secret_env_files keys must be non-empty environment variable names."
@@ -146,44 +101,51 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
 
 class GenericSoulstoneConfig(SoulstoneConfig):
-    """Concrete config for custom local runtimes without a dedicated adapter schema."""
+    """Leaf Soulstone Rune for simple container-backed generic runtimes."""
 
     path_fragment: ClassVar[Path] = Path("generic")
-    runtime: str = "generic"
 
 
-class PortalConfig(AnimatorConfig):
-    """Rune config for a remote/API-backed animator (Portal).
+class PortalConfig(AnimatorConfig, ABC):
+    """Abstract branch config for remote/API-backed animator schemas.
 
-    Portals usually do not own local model artifacts. Model availability is
-    typically discovered through the connector at runtime. This config focuses on
-    endpoint identity and authentication hints.
+    Portals declare endpoint identity and authentication references. Provider
+    subclasses own the concrete TOML anchors because ``portals/`` is only the
+    broad remote-service family, not a loadable provider by itself.
     """
 
     path_fragment: ClassVar[Path] = Path("portals")
 
-    name: str = Field(default="portal", min_length=1)
-    provider_type: str = Field(default="openai", description="High-level provider type (openai, anthropic, etc).")
-    base_url: str = Field(default="", description="Remote API base URL (for example https://api.openai.com/v1).")
-    default_model_id: str | None = Field(
-        default=None, description="Preferred/default remote model id for this portal connector."
-    )
-    llm_defaults: LLMGenerationDefaults | None = Field(
+    provider_name: str = Field(..., description="High-level provider type (openai, anthropic, etc).")
+    base_url: AnyHttpUrl | None = Field(
         default=None,
-        description="Optional LLM generation defaults overlay for this Portal.",
+        description="Remote API base URL, when the Portal Rune declares one directly.",
     )
-    capabilities: ModelCapabilityHints | None = Field(
+    api_key_secret_name: str | None = Field(
         default=None,
-        description="Optional Portal-wide capability hints for synthesized model summaries.",
+        description="Podman secret name for provider API key injection inside the Vessel runtime.",
     )
-    external_tools: list[ExternalToolConfig] = Field(
-        default_factory=list,
-        description=(
-            "Optional external/deferred tools exposed by this portal. Connectors "
-            "map these into Pydantic AI ExternalToolset definitions."
-        ),
+
+
+class OpenAIPortalConfig(PortalConfig):
+    """Leaf Portal Rune for OpenAI's native API."""
+
+    path_fragment: ClassVar[Path] = Path("openai")
+
+    provider_name: str = Field(default="openai", description="OpenAI provider alias.")
+    base_url: AnyHttpUrl | None = Field(
+        default=AnyHttpUrl("https://api.openai.com/v1"),
+        description="OpenAI API base URL.",
     )
-    api_key_secret: str | None = Field(
-        default=None,
-        description="Podman secret name used for provider API key injection inside the Vessel runtime.",
+
+
+class GoogleGeminiPortalConfig(PortalConfig):
+    """Leaf Portal Rune for Google's OpenAI-compatible Gemini endpoint."""
+
+    path_fragment: ClassVar[Path] = Path("google-gemini")
+
+    provider_name: str = Field(default="google-gemini", description="Google Gemini provider alias.")
+    base_url: AnyHttpUrl | None = Field(
+        default=AnyHttpUrl("https://generativelanguage.googleapis.com/v1beta/openai/"),
+        description="Google Gemini OpenAI-compatible API base URL.",
     )

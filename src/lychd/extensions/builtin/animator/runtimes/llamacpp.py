@@ -13,6 +13,7 @@ from lychd.domain.animation.services.adapters.surfaces import (
     LlamacppStone,
     local_link_default,
 )
+from lychd.system.schemas import QuadletContainer
 from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane, LlamaCppControlPlaneError
 from lychd.extensions.builtin.animator.llamacpp.parser import LlamaCppCommandParser, LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
@@ -38,7 +39,7 @@ class LlamaCppRuntimeAdapter:
     def supports(self, runtime: str) -> bool:
         return runtime == self.runtime
 
-    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
         """Build llama.cpp runtime handle with control-plane metadata attached."""
         stone = require_runtime_soulstone(
             soulstone,
@@ -46,16 +47,17 @@ class LlamaCppRuntimeAdapter:
             runtime=self.runtime,
         )
         descriptor = self._describe_runtime(stone)
+        base_url = str(stone.base_url) if stone.base_url is not None else f"http://localhost:{stone.port}/v1"
         connector = LlamacppConnector(
             link=local_link_default(runtime=self.runtime),
-            base_url=stone.base_url,
+            base_url=base_url,
             model_infos=descriptor.model_infos,
             default_model_id=descriptor.default_model_id,
             mode=descriptor.mode,
             router_query_model_id=descriptor.router_query_model_id,
             metadata=descriptor.metadata,
         )
-        return LlamacppStone(rune=stone, connector=connector)
+        return LlamacppStone(rune=stone, connector=connector, quadlet=quadlet)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for llama.cpp single or router runtimes."""
@@ -124,7 +126,7 @@ class LlamaCppRuntimeAdapter:
         connector = animator.connector
         if getattr(connector, "mode", "single") != "router":
             return False
-        return self._control_plane.load_model(animator.base_url, spec.model_id)
+        return self._control_plane.load_model(animator.connector.base_url, spec.model_id)
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Plan llama.cpp command args from passthrough or managed fields."""

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from lychd.config.settings import get_settings
+from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
 from lychd.system.services.codex import CodexService
 
 if TYPE_CHECKING:
@@ -35,6 +36,7 @@ def codex_service(codex_paths: dict[str, Path]) -> CodexService:
         toml_path=codex_paths["toml"],
         runes_path=codex_paths["runes"],
         postgres_root_path=codex_paths["postgres"],
+        rune_schemas=[ShadowSimulationConfig],
     )
 
 
@@ -48,7 +50,7 @@ def test_inscribe_structure(codex_service: CodexService, codex_paths: dict[str, 
     assert (codex_paths["postgres"] / "init_db.sh").exists()
     assert codex_paths["toml"].stat().st_mode & 0o777 == 0o600
 
-    # Built-in extension configurable sample should exist after discovery/import.
+    # Runtime-supplied configurable sample should exist after inscription.
     assert (codex_paths["runes"] / "simulation" / "shadowsimulationconfig.toml").exists()
 
 

@@ -16,6 +16,7 @@ from lychd.domain.animation.services.adapters.surfaces import (
     VllmStone,
 )
 from lychd.extensions.builtin.animator.soulstones import VllmSoulstoneConfig
+from lychd.system.schemas import QuadletContainer
 
 
 class VllmRuntimeAdapter:
@@ -26,7 +27,7 @@ class VllmRuntimeAdapter:
     def supports(self, runtime: str) -> bool:
         return runtime == self.runtime
 
-    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
         """Build vLLM runtime handle with OpenAI-compatible connector surface."""
         stone = require_runtime_soulstone(
             soulstone,
@@ -38,7 +39,7 @@ class VllmRuntimeAdapter:
             runtime=self.runtime,
             metadata=self._runtime_metadata(stone),
         )
-        return VllmStone(rune=stone, connector=connector)
+        return VllmStone(rune=stone, connector=connector, quadlet=quadlet)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for a vLLM soulstone."""
@@ -157,8 +158,6 @@ class VllmRuntimeAdapter:
             "runtime": self.runtime,
             "tensor_parallel_size": soulstone.tensor_parallel_size,
             "gpu_memory_utilization": soulstone.gpu_memory_utilization,
-            "dedicated": soulstone.dedicated,
-            "persistent_resident": soulstone.persistent_resident,
         }
         if soulstone.max_num_seqs is not None:
             metadata["max_num_seqs"] = soulstone.max_num_seqs

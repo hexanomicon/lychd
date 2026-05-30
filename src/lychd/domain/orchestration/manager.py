@@ -65,8 +65,6 @@ class OrchestratorManager:
                     "warm": state.warm,
                     "health": state.health,
                     "reason": state.reason,
-                    "matrix_sets": list(spec.concurrency.matrix_sets),
-                    "evict_cost": spec.concurrency.evict_cost,
                     "dedicated": spec.concurrency.dedicated,
                     "persistent_resident": spec.concurrency.persistent_resident,
                 }
@@ -74,7 +72,7 @@ class OrchestratorManager:
         return items
 
     async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
-        """Calculate the lowest-cost transition for a requested capability key."""
+        """Calculate the transition for a requested capability key."""
         target, target_state = self._get_capability_record(target_capability_key)
 
         if target_state.warm:
@@ -100,7 +98,7 @@ class OrchestratorManager:
             )
             raise RuntimeError(msg)
 
-        evict_ids, launch_ids, total_cost = self._solve_matrix(target)
+        evict_ids, launch_ids, total_cost = self._solve_transition(target)
         return TransitionPlan(
             total_metabolic_cost=float(total_cost),
             evict_coven_ids=evict_ids,
@@ -141,8 +139,8 @@ class OrchestratorManager:
 
         return plan
 
-    def _solve_matrix(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
-        """Select the lowest-cost local eviction set from concurrency intent."""
+    def _solve_transition(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
+        """Select the local eviction set from lifecycle ownership hints."""
         local_specs = self._local_animator_specs()
         active_specs = {
             spec.animator_name: spec
@@ -153,37 +151,12 @@ class OrchestratorManager:
         if target.animator_name in active_specs:
             return ([], [], 0)
 
-        matrix_sets = list(target.concurrency.matrix_sets)
-        if not matrix_sets:
-            evictees = [
-                spec
-                for spec in active_specs.values()
-                if spec.concurrency.dedicated and not spec.concurrency.persistent_resident
-            ]
-            return (self._sorted_animator_ids(evictees), [target.animator_name], sum(self._evict_costs(evictees)))
-
-        best_evictees: list[CapabilitySpec] | None = None
-        best_cost: int | None = None
-        for matrix_set in matrix_sets:
-            allowed = {
-                spec.animator_name
-                for spec in local_specs.values()
-                if matrix_set in spec.concurrency.matrix_sets
-            }
-            evictees = [
-                spec
-                for spec in active_specs.values()
-                if spec.animator_name not in allowed
-                and spec.concurrency.dedicated
-                and not spec.concurrency.persistent_resident
-            ]
-            cost = sum(self._evict_costs(evictees))
-            if best_cost is None or cost < best_cost:
-                best_evictees = evictees
-                best_cost = cost
-
-        selected_evictees = best_evictees or []
-        return (self._sorted_animator_ids(selected_evictees), [target.animator_name], best_cost or 0)
+        evictees = [
+            spec
+            for spec in active_specs.values()
+            if spec.concurrency.dedicated and not spec.concurrency.persistent_resident
+        ]
+        return (self._sorted_animator_ids(evictees), [target.animator_name], len(evictees))
 
     def _local_animator_specs(self) -> dict[str, CapabilitySpec]:
         specs: dict[str, CapabilitySpec] = {}
@@ -192,9 +165,6 @@ class OrchestratorManager:
                 continue
             specs.setdefault(spec.animator_name, spec)
         return specs
-
-    def _evict_costs(self, specs: list[CapabilitySpec]) -> list[int]:
-        return [spec.concurrency.evict_cost for spec in specs]
 
     def _sorted_animator_ids(self, specs: list[CapabilitySpec]) -> list[str]:
         return sorted(spec.animator_name for spec in specs)

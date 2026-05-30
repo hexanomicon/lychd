@@ -10,6 +10,7 @@ from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
+from lychd.system.schemas import QuadletContainer
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 
 if TYPE_CHECKING:
@@ -22,10 +23,18 @@ if TYPE_CHECKING:
 class PassiveConnector(Connector, ToolConnector):
     """Connector with readiness and optional toolsets."""
 
-    def __init__(self, *, kind: str, link: Link, toolsets: Sequence[AbstractToolset] = ()) -> None:
+    def __init__(
+        self,
+        *,
+        kind: str,
+        link: Link,
+        base_url: str = "",
+        toolsets: Sequence[AbstractToolset] = (),
+    ) -> None:
         """Store readiness-only connector metadata."""
         self._kind = kind
         self._link = link
+        self._base_url = base_url
         self._toolsets = tuple(toolsets)
 
     @property
@@ -35,6 +44,10 @@ class PassiveConnector(Connector, ToolConnector):
     @property
     def link(self) -> Link:
         return self._link
+
+    @property
+    def base_url(self) -> str:
+        return self._base_url
 
     def get_toolsets(self) -> Sequence[AbstractToolset]:
         return self._toolsets
@@ -51,7 +64,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         base_url: str,
         model_infos: Sequence[ModelInfo] = (),
         default_model_id: str | None = None,
-        api_key_secret: str | None = None,
+        api_key_secret_name: str | None = None,
         default_surface: ModelSurface = ModelSurface.CHAT,
         toolsets: Sequence[AbstractToolset] = (),
         metadata: dict[str, object] | None = None,
@@ -62,7 +75,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._base_url = base_url
         self._model_infos = tuple(model_infos)
         self._default_model_id = default_model_id
-        self._api_key_secret = api_key_secret
+        self._api_key_secret_name = api_key_secret_name
         self._default_surface = default_surface
         self._toolsets = tuple(toolsets)
         self._metadata = dict(metadata or {})
@@ -141,22 +154,22 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
 
     def _resolve_api_key(self) -> str | None:
         """Resolve API key value from mounted Podman secret files when configured."""
-        if not self._api_key_secret:
+        if not self._api_key_secret_name:
             return None
 
         root = Path(os.environ.get("LYCHD_SECRET_ROOT", "/run/secrets"))
-        path = root / self._api_key_secret
+        path = root / self._api_key_secret_name
         try:
             value = path.read_text(encoding="utf-8").strip()
         except OSError as exc:
             msg = (
-                f"Portal secret '{self._api_key_secret}' was not found at '{path}'. "
+                f"Portal secret '{self._api_key_secret_name}' was not found at '{path}'. "
                 "Ensure the Vessel unit mounts this Podman secret."
             )
             raise RuntimeError(msg) from exc
 
         if not value:
-            msg = f"Portal secret '{self._api_key_secret}' at '{path}' is empty."
+            msg = f"Portal secret '{self._api_key_secret_name}' at '{path}' is empty."
             raise RuntimeError(msg)
         return value
 
@@ -203,31 +216,27 @@ class LlamacppConnector(OpenAICompatibleConnector):
 class _BaseSoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
     """Concrete Soulstone runtime base with immutable rune + connector references."""
 
-    def __init__(self, *, rune: R, connector: C) -> None:
-        """Store immutable rune + connector references."""
+    def __init__(self, *, rune: R, connector: C, quadlet: QuadletContainer) -> None:
+        """Store immutable rune, connector, and generated Quadlet references."""
         self._rune = rune
         self._connector = connector
+        self._quadlet = quadlet
 
     @property
     def rune(self) -> R:
         return self._rune
 
     @property
+    def quadlet(self) -> QuadletContainer:
+        return self._quadlet
+
+    @property
     def name(self) -> str:
         return self._rune.name
 
     @property
-    def base_url(self) -> str:
-        return self._rune.base_url
-
-    @property
     def connector(self) -> C:
         return self._connector
-
-    @property
-    def orchestration_labels(self) -> frozenset[str]:
-        labels = [*self._rune.orchestration_labels, "local", f"runtime:{self._rune.runtime_name}"]
-        return frozenset(labels)
 
 
 class _BasePortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
@@ -247,17 +256,8 @@ class _BasePortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
         return self._rune.name
 
     @property
-    def base_url(self) -> str:
-        return self._rune.base_url
-
-    @property
     def connector(self) -> C:
         return self._connector
-
-    @property
-    def orchestration_labels(self) -> frozenset[str]:
-        labels = [*self._rune.orchestration_labels, "remote", f"provider:{self._rune.provider_type}"]
-        return frozenset(labels)
 
 
 class GenericStone(_BaseSoulstoneAnimator[Connector, SoulstoneConfig]):

@@ -25,6 +25,7 @@ icon: material/brain
 - **Identity-Scoped Attribution:** Every memory write and recall path must carry an `entity_id` bound to the active Sigil to prevent cross-identity contamination.
 - **Consent-Governed Sharing:** Expertise, priors, and reinforced memory remain owned by the Sigil that cultivated them unless an explicit shared-memory or publication policy grants broader access.
 - **Curator Loop:** Memory lifecycle must include a periodic curation pass that classifies records into promote/keep/archive/prune classes using explicit quality signals.
+- **Training-Grade Harvestability:** Stored memory must be directly queryable as structured, attributed records (facts, triples, provenance, identity/role/workflow vertex) so the **[Soulforge (ADR 33)](./33-training.md)** can mine consecrated Karma into training manifests via direct `SELECT`/`JOIN` — never by scraping a recall API.
 
 ## Considered Options
 
@@ -32,9 +33,13 @@ icon: material/brain
     Deploying a dedicated service to manage semantic embeddings.
     - **Cons:** **Logical Disjunction.** External stores introduce the risk of "Sync Drift" where memory and state fall out of alignment during system failures. Managing a secondary stateful service increases the attack surface and fragments the system's atomic **[Snapshot (ADR 07)](./07-snapshots.md)** strategy. Cloud-only providers violate the **[Iron Pact (ADR 00)](./00-license.md)** of local sovereignty.
 
-!!! failure "Option 2: Intrusive Memory Frameworks (Mem0 / Letta)"
-    Utilizing high-level frameworks that provide managed episodic memory loops.
-    - **Cons:** **Architectural Interference.** These frameworks act as "Intrusive Agents"—they enforce proprietary execution loops that conflict with the system's type-safe **[Graph (ADR 24)](./24-graph.md)** and the physical hardware management of the **[Orchestrator (ADR 23)](./23-orchestrator.md)**.
+!!! failure "Option 2: Retrieval-Layer Frameworks (Mem0 / Letta)"
+    Adopting a high-level memory framework as the system of record, storing and recalling experience through its `add()` / `search()` surface.
+
+    !!! note "2026 reassessment — rejected on fit, not capability"
+        Earlier drafts rejected Mem0 as cloud-bound and Neo4j-dependent. **Both objections are now stale:** Mem0 v3 runs fully local on `pgvector` (no graph database, no managed cloud required), and its single-pass ADD-only algorithm posts strong recall benchmarks (LoCoMo, LongMemEval). *As a retrieval layer, Mem0 is a genuine contender.* It is declined here purely on architectural fit.
+
+    - **Cons:** **The substrate is not yours to mine.** Mem0 owns its records behind an `add()` / `search()` API, and its v3 schema is shaped for internal multi-signal *retrieval* (vector + BM25 + opaque entity-linking), not for external harvesting. But LychD does not consume memory by recall alone — the **[Soulforge (ADR 33)](./33-training.md)** *mines* it: a Ghoul must `SELECT` stabilized Karma by `entity_id`, confidence, reinforcement, and its identity/role/workflow vertex to weave a training manifest. A retrieval black box forces us to reconstruct the structured facts and triples it deliberately hides, and assumes the extraction/dedup/decay lifecycle loop that LychD reserves for its own **[Orchestrator (ADR 23)](./23-orchestrator.md)**, **[Dispatcher (ADR 22)](./22-dispatcher.md)**, and Curator. The retrieval win is real; it just is not the axis LychD is optimizing.
 
 !!! failure "Option 3: Pipeline-Heavy RAG (Haystack / LlamaIndex)"
     Implementing complex, multi-service ingestion and retrieval pipelines.
@@ -44,13 +49,16 @@ icon: material/brain
     Leveraging native `pgvector` inside PostgreSQL and Memori for asynchronous fact/triple extraction, while keeping lifecycle control in LychD.
     - **Pros:**
         - **Substrate Purity:** Memory becomes a logical chamber within the existing database, governed by the same transactional and snapshot laws as the rest of the machine.
-        - **Physical Cohesion:** Relational metadata and embeddings exist within the same storage engine, ensuring bit-perfect synchronization.
-        - **Metabolic Lift:** Memori solves extraction/deduplication of facts and triples asynchronously, avoiding custom pipeline sprawl.
+        - **Atomic Session Cohesion:** Memori's SQLAlchemy adapter binds to the *same async session* as the Vessel, so a memory write commits inside the same transaction and lands in the same Phylactery snapshot — not merely the same engine reached over a side connection. This is what makes **[Reanimation (ADR 07)](./07-snapshots.md)** bit-perfect.
+        - **Harvestable Karma:** Memori writes an inspectable 3NF schema (`memori_entity_fact`, `memori_knowledge_graph` triples, process attribution) directly into our own tables. The Soulforge Crucible can `SELECT`/`JOIN` consecrated Karma with its semantic vertex intact — memory is feedstock the **[Forge (ADR 33)](./33-training.md)** reads, not a recall API it must scrape.
+        - **Metabolic Lift:** Memori solves extraction/deduplication of facts and triples asynchronously, avoiding custom pipeline sprawl, while LychD retains Curator, decay, and lifecycle authority.
         - **Standardization:** Pydantic AI’s native `Embedder` remains the runtime embedding contract for reasoning and retrieval.
 
 ## Decision Outcome
 
 **Pgvector** is adopted as the definitive storage engine, utilizing the **Memori** framework as the underlying "Memory Fabric." The system adopts Memori’s schema and asynchronous augmentation logic while maintaining absolute control over the execution lifecycle via the LychD Orchestrator.
+
+The deciding criterion is **substrate ownership, not retrieval accuracy**. A pure-recall workload would now justify either framework — Mem0 v3's local retrieval is competitive. But because the **[Soulforge (ADR 33)](./33-training.md)** transmutes verified Karma into LoRA weights, memory must be a structured, attributed substrate LychD owns and mines in SQL, not a retrieval service it queries. Memori writes that substrate into our own session and exposes its facts and triples as plain tables; a retrieval-layer framework would keep them behind its API. That single difference — *mined, not recalled* — is why Memori is selected.
 
 Memory is treated as sedimented experience rather than mere storage. Structured events are the captured flickers of movement through the agentic graph (**Vṛttis**): model calls, tool use, retries, routing choices, OS pressure, protocol handshakes, and worker outcomes. LychD captures only the instrumented portion of that movement as traces, metrics, and structured events.
 

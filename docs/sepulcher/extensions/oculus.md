@@ -16,7 +16,7 @@ While traditional tools see only network latency, the Oculus grants the Magus th
 The primary gift of the Oculus is the ability to see a thought as it forms. It rejects simple logging in favor of a deep, structural understanding of the cognitive loop.
 
 - **The Retina:** Upon awakening, the extension grafts a "retina" onto the **[Vessel](../vessel/index.md)** and the **[Ghouls](../vessel/ghouls.md)**. This is a set of OpenTelemetry hooks that capture the internal monologue of every **[Agent](../../adr/20-agents.md)**.
-- **The Scrying Pool:** These captured traces are exported to a specialized **Oculus Soulstone** (a local Animator running Arize Phoenix). This local, high-fidelity interface allows the Magus to visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with model-backed **[Animators](../animator/index.md)**.
+- **The Scrying Pool:** These captured traces are exported to a local Arize Phoenix service manifested from the `PhoenixSettings` Rune under `runes/observability/phoenix/`. This local, high-fidelity interface allows the Magus to visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with model-backed **[Animators](../animator/index.md)**.
 - **The Permanent Record:** The visions in the pool are not fleeting. The Oculus inscribes them into a dedicated `traces` chamber within the **[Phylactery](../phylactery/index.md)**, ensuring that every significant thought becomes a permanent, reviewable part of the Daemon's history.
 
 ## II. The Body's Health (The Physical Gaze)

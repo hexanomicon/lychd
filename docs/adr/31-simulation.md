@@ -84,12 +84,19 @@ The seed pass has two strict laws:
 
 Only candidates retained by this review pass deserve physical Shadow branches. In this topology, lens-separated seeding widens Manas without multiplying Lab debris, while the later Dual-Gate still decides what is true. A clever idea branch is not Pramāṇa; it is merely Vikalpa selected for measurement.
 
+**Feasibility before the Lab pays.** Among the review pass's duties is a precondition reading. Before a candidate earns a physical branch, the review weighs the `required_state` each strategy presupposes against the `observed_state` hydrated from context, using the same validator vocabulary the autopsy records downstream (see §3 and **[Agents (20)](20-agents.md)**). This reading is carried by the existing expansion-to-review separation, **not** by a separate pre-Seed chokepoint. An impossible, contradicted, or unwitnessed premise becomes one reviewed candidate among many — flagged, scored low, and withheld from the Lab — rather than a veto that strangles the intent before any branch can witness the boundary. Determination may withhold on this evidence; Expansion (strategy seeding, rationale) may only widen the seed field and never blocks. This is the discipline that keeps a feasibility reading from hardening into an officious agent that overwrites a valid Magus choice: the right to say "impossible" is earned by measurement, not asserted by hesitation.
+
+When a premise is neither confirmed nor refuted by the context at hand, the review may spawn a **bounded inquiry** — a child Agent dispatched against *one named question*, not a feeling, carrying an explicit retrieval budget and stop condition. It has three honest exits: **resolved** (the premise is grounded and seeding proceeds), **refuted** (a `precondition_miss` or contradiction is recorded and routed into the Truthful Dead End shape of §3), or **unknown after exhausted retrieval** (escalated to **[HitL (25)](25-hitl.md)** as a typed bottleneck). On the third exit the truthful non-answer is itself the Pramāṇa — Buddhi refusing to mint Viparyaya — and the Magus's testimony, if given, is its external grounding. The inquiry never blocks on its own fatigue; mere model hesitation is not a refutation, and the boundary must still be witnessed.
+
+!!! note "Open: Where Feasibility Ends and Rationale Begins"
+    Two lines are left deliberately unset for the Magus. **(a)** Exactly where the feasibility reading (which may withhold a candidate) ends and pure rationale seeding (which may only add alternatives, never block) begins. **(b)** The trust and provenance threshold at which an *exhausted retrieval* earns the standing of Pramāṇa rather than mere fatigue. Until both are set, the inquiry escalates to HitL rather than self-authorizing a withhold on weak evidence.
+
 ### 1.2 Shadow Roles: Expansion, Determination, Neutrality
 
 Shadow Simulation contains multiple roles that must remain distinct:
 
 - **Expansion (oscillation):** branch generation, strategy seeding, retrieval/tool candidate surfacing, and search-space exposure.
-- **Determination (convergence):** review classification, hazard flagging, gate execution, scoring, and value backpropagation used to converge on a candidate branch.
+- **Determination (convergence):** review classification, hazard flagging, the pre-Lab feasibility reading that may withhold a candidate from the Lab, gate execution, scoring, and value backpropagation used to converge on a candidate branch.
 - **Identity neutrality:** Shadow may produce a structurally strong candidate, but it does not decide whether the candidate is congruent with Persona identity.
 
 This separation keeps the simulation substrate from becoming an implicit identity authority.

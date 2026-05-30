@@ -77,7 +77,6 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
             "chat_template",
             "lora_adapters",
             "extra_args",
-            "llm_defaults",
         }
     )
 

@@ -1,18 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
-from pydantic_ai import Agent, DeferredToolRequests
 from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.models.test import TestModel
-from pydantic_ai.toolsets import ExternalToolset
 
-from lychd.domain.animation.connectors import ToolConnector
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ExternalToolConfig, ModelInfo, PortalConfig
-from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas import ModelInfo, PortalConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
 from lychd.domain.animation.services.loader import AnimatorLoader
@@ -25,7 +20,11 @@ def _write(path: Path, content: str) -> None:
     path.write_text(f"{content.strip()}\n", encoding="utf-8")
 
 
-def test_registry_binds_model_and_external_toolset_for_portal(
+class CustomPortalConfig(PortalConfig):
+    path_fragment: ClassVar[Path] = Path("custom")
+
+
+def test_registry_binds_model_for_portal(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -35,43 +34,25 @@ def test_registry_binds_model_and_external_toolset_for_portal(
     (secrets_dir / "portal_openai_main").write_text("sk-proj-test\n", encoding="utf-8")
     monkeypatch.setenv("LYCHD_SECRET_ROOT", str(secrets_dir))
     _write(
-        runes_dir / "animator" / "portals" / "openai.toml",
+        runes_dir / "animator" / "portals" / "openai" / "main.toml",
         """
         name = "openai-main"
-        base_url = "https://api.openai.com/v1"
-        provider_type = "openai"
-        default_model_id = "gpt-5"
-        api_key_secret = "portal_openai_main"
-        external_tools = [
-          { name = "frontend_ping", description = "Frontend deferred ping", parameters_json_schema = { type = "object", properties = {} } }
-        ]
+        description = "OpenAI test portal"
+        api_key_secret_name = "portal_openai_main"
         """,
     )
 
     registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
 
     model = registry.bind_model("openai-main")
-    toolset = registry.bind_toolset("openai-main")
     toolsets = registry.bind_toolsets("openai-main")
 
     assert isinstance(model, OpenAIChatModel)
     assert model.model_name == "gpt-5"
     assert model.base_url.rstrip("/") == "https://api.openai.com/v1"
-    assert isinstance(toolset, ExternalToolset)
-    assert len(toolsets) == 1
-    assert isinstance(toolsets[0], ExternalToolset)
+    assert registry.bind_toolset("openai-main") is None
+    assert toolsets == ()
     assert registry.prepare("openai-main") is None
-
-    agent = Agent(
-        TestModel(call_tools=["frontend_ping"]),
-        toolsets=[toolset],
-        output_type=[str, DeferredToolRequests],
-    )
-    result = agent.run_sync("Ping the frontend")
-
-    assert isinstance(result.output, DeferredToolRequests)
-    assert [call.tool_name for call in result.output.calls] == ["frontend_ping"]
-    assert result.output.approvals == []
 
 
 def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> None:
@@ -174,7 +155,7 @@ def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path
         def inspect_animator(self, animator: Any) -> LlamaCppLifecycle:
             self.seen_animator_id = animator.id
             return LlamaCppLifecycle(
-                base_url=animator.base_url,
+                base_url=animator.connector.base_url,
                 mode="single",
                 health="ok",
             )
@@ -193,20 +174,22 @@ def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path
 
 
 def test_runtime_adapter_registry_supports_custom_portal_factories() -> None:
-    portal = PortalConfig(
-        name="custom-portal",
-        base_url="https://custom.portal/v1",
-        provider_type="my-openai-gateway",
-        default_model_id="custom-gpt",
+    portal = CustomPortalConfig.model_validate(
+        {
+            "name": "custom-portal",
+            "description": "Custom OpenAI-compatible portal",
+            "base_url": "https://custom.portal/v1",
+            "provider_name": "my-openai-gateway",
+        }
     )
 
     def custom_factory(config: PortalConfig) -> OpenAIPortal | None:
-        if config.provider_type != "my-openai-gateway":
+        if config.provider_name != "my-openai-gateway":
             return None
         connector = OpenAICompatibleConnector(
             kind="portal:my-openai-gateway",
             link=Link(up=True, activatable=False),
-            base_url=config.base_url,
+            base_url=str(config.base_url or ""),
             model_infos=(ModelInfo(id="custom-gpt"),),
             default_model_id="custom-gpt",
         )
@@ -220,17 +203,14 @@ def test_runtime_adapter_registry_supports_custom_portal_factories() -> None:
     assert runtime.connector.kind == "portal:my-openai-gateway"
 
 
-def test_passive_tool_portal_does_not_invent_chat_capability() -> None:
-    portal = PortalConfig(
-        name="crawler-tools",
-        base_url="https://crawler.internal",
-        provider_type="crawler",
-        external_tools=[
-            ExternalToolConfig(
-                name="crawl_url",
-                parameters_json_schema={"type": "object", "properties": {"url": {"type": "string"}}},
-            )
-        ],
+def test_passive_portal_without_declared_capabilities_does_not_invent_chat_capability() -> None:
+    portal = CustomPortalConfig.model_validate(
+        {
+            "name": "crawler-tools",
+            "description": "Custom crawler portal",
+            "base_url": "https://crawler.internal",
+            "provider_name": "crawler",
+        }
     )
 
     adapters = RuntimeAdapterRegistry()
@@ -238,9 +218,7 @@ def test_passive_tool_portal_does_not_invent_chat_capability() -> None:
     assert runtime is not None
     specs = adapters.build_capability_specs(portal, runtime)
 
-    assert [spec.family for spec in specs] == [CapabilityFamily.TOOL_EXECUTION]
-    assert isinstance(runtime.connector, ToolConnector)
-    assert len(runtime.connector.get_toolsets()) == 1
+    assert specs == []
 
 
 def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:

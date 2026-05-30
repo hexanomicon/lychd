@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar
 
+from pydantic import Field
+
 from lychd.config.runes import ConfigWriter, RuneConfig
 
 
@@ -16,8 +18,19 @@ class WriterSampleConfig(WriterRootConfig):
     path_fragment: ClassVar[Path] = Path("sample")
 
     required_name: str
+    groups: list[str] = Field(default_factory=list)
+    env_vars: dict[str, str] = Field(default_factory=dict)
+    optional_port: int | None = None
     retries: int = 3
     enabled: bool = True
+
+
+class WriterCustomTemplateConfig(WriterRootConfig):
+    path_fragment: ClassVar[Path] = Path("custom")
+    sample_template: ClassVar[str | None] = 'name = "custom"\n'
+
+    name: str
+    required_value: str
 
 
 class WriterParentConfig(WriterRootConfig):
@@ -52,10 +65,26 @@ def test_writer_generates_commented_defaults(tmp_path: Path) -> None:
     content = target.read_text(encoding="utf-8")
     assert "[model]" not in content
     assert 'required_name = "<required:str>"' in content
+    assert "# groups = []" in content
+    assert "# env_vars = {}" in content
+    assert "# optional_port = 0" in content
     assert "# default: 3" in content
     assert "# retries = 0" in content
     assert "# default: True" in content
     assert "# enabled = false" in content
+
+
+def test_writer_prefers_custom_sample_template(tmp_path: Path) -> None:
+    """Schema-local sample templates replace the generic field scaffold."""
+    writer = ConfigWriter(runes_dir=tmp_path)
+
+    writer.initialize_anchors([WriterCustomTemplateConfig])
+    created = writer.inscribe_samples([WriterCustomTemplateConfig])
+
+    assert len(created) == 1
+    content = created[0].read_text(encoding="utf-8")
+    assert content == 'name = "custom"\n'
+    assert "required_value" not in content
 
 
 def test_writer_only_creates_leaf_samples(tmp_path: Path) -> None:

@@ -6,8 +6,9 @@ ABCs and connector contracts live outside ``schemas.runes``.
 
 from lychd.domain.animation.schemas.runes.animators import (
     AnimatorConfig,
-    ExternalToolConfig,
     GenericSoulstoneConfig,
+    GoogleGeminiPortalConfig,
+    OpenAIPortalConfig,
     PortalConfig,
     SoulstoneConfig,
 )
@@ -20,12 +21,13 @@ from lychd.domain.animation.schemas.runes.models import (
 
 __all__ = [
     "AnimatorConfig",
-    "ExternalToolConfig",
     "GenericSoulstoneConfig",
+    "GoogleGeminiPortalConfig",
     "LLMGenerationConfig",
     "LLMGenerationDefaults",
     "LocalLLMModelConfig",
     "LocalModelConfig",
+    "OpenAIPortalConfig",
     "PortalConfig",
     "SoulstoneConfig",
 ]

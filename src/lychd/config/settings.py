@@ -21,6 +21,16 @@ from lychd.config.utils import (
 )
 from lychd.system.constants import PATH_LYCHD_TOML
 
+DEFAULT_BUILTIN_EXTENSION_IDS: tuple[str, ...] = (
+    "animator",
+    "animator/llamacpp",
+    "animator/vllm",
+    "animator/sglang",
+    "observability/phoenix",
+    "simulation",
+)
+"""Built-in extension ids written into a freshly generated lychd.toml."""
+
 
 # --- 2. The Infrastructure (Server) ---
 class ServerSettings(BaseSettings):
@@ -111,14 +121,26 @@ class LogSettings(BaseSettings):
     pydantic_ai_level: int = 10  # DEBUG
 
 
-class PhoenixSettings(BaseSettings):
-    """Configuration for Arize Phoenix (The Oculus)."""
+class ExtensionSettings(BaseSettings):
+    """Extension activation lists for the composed runtime image.
 
-    model_config = SettingsConfigDict(env_prefix="PHOENIX_")
+    Extensions are inert unless named here. Their own RuneConfig classes become
+    loadable only after the extension assembly step imports the selected organ.
+    """
 
-    image: str = "docker.io/arize-ai/phoenix:latest"
-    ui_port: int = 6006
-    otlp_port: int = 4317
+    model_config = SettingsConfigDict(env_prefix="EXTENSIONS_")
+
+    builtins: list[str] = Field(
+        default_factory=lambda: list(DEFAULT_BUILTIN_EXTENSION_IDS),
+        description=(
+            "Built-in extension ids to activate. Fresh configs enable the known built-ins explicitly; "
+            "remove an id to deactivate that organ."
+        ),
+    )
+    crypt: list[str] = Field(
+        default_factory=list,
+        description="Crypt extension ids to activate from the local extension root.",
+    )
 
 
 # --- 6. The Worker ---
@@ -276,7 +298,7 @@ class Settings(BaseSettings):
     log: LogSettings = Field(default_factory=LogSettings)
     saq: SaqSettings = Field(default_factory=SaqSettings)
     vite: ViteSettings = Field(default_factory=ViteSettings)
-    phoenix: PhoenixSettings = Field(default_factory=PhoenixSettings)
+    extensions: ExtensionSettings = Field(default_factory=ExtensionSettings)
 
     @classmethod
     def settings_customise_sources(
@@ -303,7 +325,6 @@ class Settings(BaseSettings):
             "LychD Server": self.server.port,
             "Phylactery (Postgres)": self.db.port,
             "Vite (Frontend)": self.vite.port,
-            "Oculus (Phoenix)": self.phoenix.ui_port,
         }
 
     @model_validator(mode="after")

@@ -7,8 +7,9 @@ no filesystem writes or host mutations.
 from __future__ import annotations
 
 import shlex
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
+from lychd.config.runes import RuneConfig
 from lychd.config.settings import get_settings
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.system.constants import (
@@ -43,24 +44,31 @@ class Transmuter:
 
     def __init__(self, runtime_planner: SoulstoneRuntimePlanner | None = None) -> None:
         """Initialize transmuter with a runtime planner dependency."""
-        self._runtime_planner = runtime_planner or RuntimeAdapterRegistry()
+        if runtime_planner is None:
+            from lychd.extensions.manager import ExtensionManager
+
+            extensions = ExtensionManager.from_settings().assemble()
+            runtime_planner = RuntimeAdapterRegistry(adapters=extensions.soulstones.runtime_adapters)
+        self._runtime_planner = runtime_planner
 
     def transmute_all(
         self,
         soulstones: list[SoulstoneConfig],
         *,
         portals: list[PortalConfig] | None = None,
+        extension_runes: list[RuneConfig] | None = None,
     ) -> list[QuadletBase]:
         """Convert Soulstone Runes into a complete Quadlet manifest set."""
         settings = get_settings()
         manifests: list[QuadletBase] = []
         resolved_portals = portals or []
+        phoenix = self._resolve_phoenix(extension_runes or [])
 
         # 1. The Sepulcher (Pod)
-        manifests.append(self._create_pod(settings))
+        manifests.append(self._create_pod(settings, phoenix))
 
         # 2. The Core Rituals (Core Quadlet manifests)
-        manifests.extend(self._create_core_manifests(settings, resolved_portals))
+        manifests.extend(self._create_core_manifests(settings, resolved_portals, phoenix))
 
         # 3. Calculate Covens
         covens: dict[str, list[SoulstoneConfig]] = {}
@@ -86,18 +94,28 @@ class Transmuter:
 
         return manifests
 
-    def _create_pod(self, settings: Settings) -> QuadletPod:
+    def _create_pod(self, settings: Settings, phoenix: Any | None = None) -> QuadletPod:
         """Define the physical boundary of the Sepulcher."""
         ports = [
             f"{settings.server.port}:{CONTAINER_LYCHD_PORT}",
             f"{settings.db.port}:{CONTAINER_POSTGRES_PORT}",
-            f"{settings.phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
-            f"{settings.phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
         ]
+        if phoenix is not None:
+            ports.extend(
+                [
+                    f"{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
+                    f"{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
+                ]
+            )
         return QuadletPod(publish_ports=ports)
 
-    def _create_core_manifests(self, settings: Settings, portals: list[PortalConfig]) -> list[QuadletContainer]:
-        """Define the persistent services (Vessel, Phylactery, Oculus).
+    def _create_core_manifests(
+        self,
+        settings: Settings,
+        portals: list[PortalConfig],
+        phoenix: Any | None = None,
+    ) -> list[QuadletContainer]:
+        """Define the persistent services (Vessel, Phylactery, and optional Phoenix).
 
         The Vessel mounts all internal and portal-referenced Podman secrets so
         runtime connectors can resolve credentials from ``/run/secrets``.
@@ -105,7 +123,7 @@ class Transmuter:
         system_mounts = [MountData.from_str(mount) for mount in self._system_mount_strings()]
         app_secret_name = settings.app.secret_key_secret
         db_secret_name = settings.db.password_secret
-        portal_secret_names = [portal.api_key_secret for portal in portals if portal.api_key_secret]
+        portal_secret_names = [portal.api_key_secret_name for portal in portals if portal.api_key_secret_name]
         vessel_secrets = list(dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names]))
 
         # 1. The Vessel (LychD Web Server)
@@ -142,19 +160,37 @@ class Transmuter:
             after=["lychd.pod"],
         )
 
-        # 3. The Oculus (Phoenix)
-        db_url = f"postgresql://{settings.db.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
-        oculus = QuadletContainer(
-            description="The Oculus (Arize Phoenix)",
-            image=settings.phoenix.image,
-            container_name="lychd-oculus",
-            pod="lychd.pod",
-            env_vars={"PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT), "PHOENIX_SQL_DATABASE_URL": db_url},
-            wants=["lychd-phylactery.service"],
-            after=["lychd-phylactery.service"],
-        )
+        manifests = [vessel, phylactery]
+        if phoenix is not None:
+            db_url = f"postgresql://{settings.db.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
+            manifests.append(
+                QuadletContainer(
+                    description="The Oculus (Arize Phoenix)",
+                    image=phoenix.image,
+                    container_name=f"lychd-{phoenix.name}",
+                    pod="lychd.pod",
+                    env_vars={
+                        "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
+                        "PHOENIX_SQL_DATABASE_URL": db_url,
+                    },
+                    wants=["lychd-phylactery.service"],
+                    after=["lychd-phylactery.service"],
+                )
+            )
 
-        return [vessel, phylactery, oculus]
+        return manifests
+
+    def _resolve_phoenix(self, extension_runes: list[RuneConfig]) -> Any | None:
+        """Return the active Phoenix rune, if the observability extension configured one."""
+        phoenix_runes = [
+            rune
+            for rune in extension_runes
+            if type(rune).__name__ == "PhoenixSettings"
+        ]
+        if len(phoenix_runes) > 1:
+            msg = "At most one PhoenixSettings rune may be active."
+            raise ValueError(msg)
+        return phoenix_runes[0] if phoenix_runes else None
 
     def _transmute_soulstone(
         self,
@@ -257,8 +293,6 @@ class Transmuter:
             is_allied = bool(other_covens.intersection(allied_covens))
 
             if not is_allied:
-                if current.persistent_resident or other.persistent_resident:
-                    continue
                 # If the other stone is in a 'real' coven, we already conflict with the target.
                 # If not, we must conflict with the service directly.
                 in_real_coven = any(len(covens.get(g, [])) >= MIN_COVEN_MEMBERS for g in other.groups)

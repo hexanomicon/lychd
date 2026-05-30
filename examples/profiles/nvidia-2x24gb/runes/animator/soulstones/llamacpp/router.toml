@@ -1,0 +1,31 @@
+# ~/.config/lychd/runes/animator/soulstones/llamacpp/router.toml
+
+name = "llama-router"
+description = "Dual-card llama.cpp router-mode Soulstone backed by a models preset INI."
+groups = ["local-llm", "nvidia-2x24gb"]
+port = 8080
+
+volumes = [
+  "%h/.config/lychd/llamacpp:/presets:ro,Z",
+]
+
+startup_mode = "router"
+models_dir = "/models"
+models_preset = "/presets/router-models.ini"
+models_max = 2
+models_autoload = true
+sleep_idle_seconds = 900
+
+n_gpu_layers = 99
+n_ctx = 8192
+n_parallel = 1
+flash_attn = true
+cache_type_k = "q8_0"
+cache_type_v = "q8_0"
+split_mode = "layer"
+jinja = true
+
+extra_args = [
+  "--chat_template_kwargs",
+  "{\"enable_thinking\":false}",
+]

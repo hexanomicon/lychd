@@ -1,0 +1,18 @@
+# ~/.config/lychd/runes/animator/soulstones/llamacpp/single.toml
+
+name = "llama-single"
+description = "Single-card llama.cpp Soulstone for one GGUF model."
+groups = ["local-llm", "nvidia-24gb"]
+port = 8080
+
+startup_mode = "single"
+model_path = "/models/qwen/Qwen3-Next-Q4_K_M.gguf"
+
+n_gpu_layers = 99
+n_ctx = 65536
+n_parallel = 1
+flash_attn = true
+cache_type_k = "q4_0"
+cache_type_v = "q4_0"
+split_mode = "layer"
+jinja = true

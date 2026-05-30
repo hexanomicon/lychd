@@ -1,5 +1,5 @@
 from .base import RuneConfig
-from .discovery import RuneSchemaDiscovery
+from .extension import RuneConfigStore
 from .loader import ConfigLoader
 from .protocols import Runic
 from .writer import ConfigWriter
@@ -8,6 +8,6 @@ __all__ = [
     "ConfigLoader",
     "ConfigWriter",
     "RuneConfig",
-    "RuneSchemaDiscovery",
+    "RuneConfigStore",
     "Runic",
 ]
