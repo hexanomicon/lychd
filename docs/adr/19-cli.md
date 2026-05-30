@@ -29,7 +29,7 @@ icon: material/console-line
 
     - **Pros:**
         - **Total Symmetry:** The CLI and the Vessel share the same "Brain." Changes to the Prime Directive are instantly reflected in both.
-        - **Extension Lifecycle:** Extensions use a unified registration hook to add both web routes and management commands.
+        - **Extension Lifecycle:** Extensions use a unified registration pass to add both web routes and management commands once the relevant stores exist.
         - **Context Awareness:** Commands inherit the full system state, including validated database connections and secure directory paths.
 
 ## Decision Outcome
@@ -64,7 +64,7 @@ This avoids duplicating logic paths between web runtime and CLI runtime.
 
 ### 3. Command Injection
 
-The CLI is expected to participate in the broader extension architecture, but the active `ExtensionContext` surface does not currently expose command grafting. Specialized command injection therefore remains a doctrine target for a richer future registration surface, not a concrete capability of the current source.
+The CLI is expected to participate in the broader extension architecture, but the active `ExtensionContext` surface does not currently expose a command store. Specialized command injection therefore remains a doctrine target for a richer future registration surface, not a concrete capability of the current source.
 
 ### 3.1 Structured Logging Bootstrap
 

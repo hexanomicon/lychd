@@ -13,7 +13,7 @@ Unlike a remote API, a Soulstone requires the Magus to understand the physics of
 
 ## 💎 The Infrastructure Mapping
 
-Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `SoulstoneConfig` branch, such as `GenericSoulstoneConfig`, `LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`. The fields defined in the scroll shape the local runtime and the generated container manifest.
+Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `SoulstoneConfig` branch, such as `LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`. The fields defined in the scroll shape the local runtime and the generated container manifest.
 
 | TOML Field | Runtime Mapping | Purpose |
 | :--- | :--- | :--- |
@@ -196,6 +196,6 @@ The **[Orchestrator](../../adr/23-orchestrator.md)** uses these group definition
     Even if they are in different Covens and never run together, the host OS requires a "cool down" period for the TCP socket. Reusing a port across different Soulstones causes state transitions to fail with `Address already in use`.
 
 !!! tip "Self-Aware Connectivity"
-    The system automatically calculates the `base_url` for every Soulstone as `http://localhost:{port}/v1` unless the rune overrides it.
+    A Soulstone may omit `port` and `base_url`; the loader assigns a unique local port and calculates `base_url` as `http://localhost:{port}/v1` before runtime binding. Explicit values still win.
 
     The Lich handles the internal networking within the Pod. The rune defines the local runtime shape (`runtime`, ports, groups, models, flags), and the Dispatcher/Binder hydrate callable capability surfaces from the connector exposed by that runtime.

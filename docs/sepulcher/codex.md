@@ -40,8 +40,10 @@ graph TD
     SoulDir --> S1[hermes.toml]
     SoulDir --> S2[vision.toml]
 
-    PortalDir --> P1[openai.toml]
-    PortalDir --> P2[anthropic.toml]
+    PortalDir --> OpenAIDir[openai/]
+    PortalDir --> AnthropicDir[anthropic/]
+    OpenAIDir --> P1[main.toml]
+    AnthropicDir --> P2[main.toml]
 
     style Codex fill:#2a2a2a,stroke:#7c4dff,stroke-width:2px
     style Prime fill:#1a1a1a,stroke:#fff
@@ -68,16 +70,16 @@ The Prime Scroll carries global law. Instance declarations live in `runes/`.
 
 This is the archive of instance scrolls.
 
-In Codex terms, a **rune** is one validated TOML config document under the active rune root, defaulting to `~/.config/lychd/runes/` through XDG-aware constants. It is intent, not the running service and not the generated Quadlet artifact. `RuneConfig` defines fields and its Codex-root-relative anchor path; Codex validates those anchors and owns root resolution. `Runic` marks runtime objects that keep `.rune` provenance and are therefore servants of the Codex.
+In Codex terms, a **rune** is one validated TOML config document under the active rune root, defaulting to `~/.config/lychd/runes/` through XDG-aware constants. It is frozen intent, not the running service and not the generated Quadlet artifact. `RuneConfig` defines TOML fields and its Codex-root-relative anchor path; Codex validates those anchors, derives source provenance from the filesystem path, and owns root resolution. `Runic` marks runtime objects that keep `.rune` provenance and are therefore servants of the Codex.
 
 ??? example "Live source: relative anchor validation"
     ```python
-    --8<-- "src/lychd/config/runes/base.py:23:78"
+    --8<-- "src/lychd/config/runes/base.py:28:86"
     ```
 
 ??? example "Live source: `RuneConfig`"
     ```python
-    --8<-- "src/lychd/config/runes/base.py:10:87"
+    --8<-- "src/lychd/config/runes/base.py:16:142"
     ```
 
 ??? example "Live source: `Runic`"
@@ -104,8 +106,7 @@ The Codex ships with animator-related rune families by default:
 
 - `runes/animator/`: branch anchor for animator-owned rune families
 - `runes/animator/soulstones/`: branch anchor for local Quadlet-backed runtime families
-- `runes/animator/soulstones/generic/`: custom/passive local runtimes without a dedicated adapter schema
-- `runes/animator/portals/`: remote service/provider connections
+- `runes/animator/portals/`: branch anchor for remote service/provider families
 
 For details on each family:
 
@@ -125,7 +126,7 @@ The Codex is merely a book of **Potential** until it is spoken. The `lychd bind`
 
 ```bash
 # 1. Edit the Scrolls
-vim ~/.config/lychd/runes/animator/soulstones/generic/my-model.toml
+vim ~/.config/lychd/runes/animator/soulstones/llamacpp/my-model.toml
 
 # 2. Perform the Rite
 lychd bind

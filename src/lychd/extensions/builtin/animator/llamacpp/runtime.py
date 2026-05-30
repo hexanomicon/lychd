@@ -131,8 +131,6 @@ class LlamaCppRuntimePlanner:
         return parser.inspect_exec_args(list(soulstone.exec))
 
     def preferred_model_id(self, soulstone: LlamaCppSoulstoneConfig) -> str:
-        if soulstone.models:
-            return next(iter(soulstone.models.values())).id
         if soulstone.model_path:
             return Path(soulstone.model_path).stem
         return soulstone.name

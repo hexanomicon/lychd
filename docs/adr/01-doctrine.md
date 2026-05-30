@@ -124,6 +124,107 @@ flowchart TD
     G --> H[VI. CI/CD]
 ```
 
+### Documentation Topology
+
+LychD documentation is a traversable knowledge topology, not a passive manual.
+Each document belongs to a layer with a distinct authority and audience.
+
+#### Repository Entry Doors
+
+Root-level documents exist outside `docs/` because they must be visible before
+the published documentation site is built or loaded:
+
+- **README.md** is the public repository foyer. It presents the project to
+  GitHub, package indexes, and first-time readers, then routes them into the
+  published Hexanomicon.
+- **CONTRIBUTING.md** is the contributor operating guide. It contains setup
+  commands, quality rituals, implementation conventions, and links to the ADRs
+  that own deeper law.
+- **AGENTS.md** is the stable coding-agent entrypoint. It describes how agents
+  enter repository context and which probes are safe to load first, but it does
+  not replace ADRs, the Lexicon, or Sepulcher doctrine.
+
+These files are entry doors and routing contracts. They may summarize doctrine,
+but they should link to the layer that owns the truth instead of duplicating it.
+
+#### Published Hexanomicon
+
+The `docs/` tree is the published Hexanomicon rendered by Zensical for the
+GitHub Pages site. Its root `docs/index.md` is the **Prophecy**: the parent page
+of the documentation site and the user-facing orientation gate. It introduces
+the promise of the system, names the main paths, and routes readers through the
+Four Gates without carrying every architectural rule itself.
+
+Within `docs/`, authority is divided by purpose:
+
+- **docs/adr/** defines architectural law, current boundaries, and decision
+  rationale.
+- **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
+  term, but they should not redefine it.
+- **docs/sepulcher/** defines domain anatomy, runtime doctrine, and the
+  vocabulary of the body.
+- **docs/divination/** defines operator interaction, interface doctrine, and
+  transcendence-facing workflows.
+- **docs/summoning.md** is the practical user ritual for bringing the daemon up.
+
+Directory `index.md` files inside `docs/` are parent pages in the published
+site. They are reflective maps, not passive listings: an index names the local
+jurisdiction, explains what lives beneath it, and routes a human or agent toward
+the smallest sufficient source of truth. Child pages carry focused concepts;
+the parent page explains the region those concepts belong to.
+
+#### Agent Context Layer
+
+The tracked `.agents/scopes/` directory is outside the published Hexanomicon
+because it is not human-facing doctrine. It is an agent routing layer for
+bounded context loading. A scope file names the cheapest useful probes for a
+task family and remains derived from the documentation topology.
+
+Ignored local overlays such as `.agents/AGENTS.md`, host-level profiles, and
+tool-specific local profiles may exist as private scratch space. They are not
+repository authorities unless the operator explicitly assigns one for the
+current task.
+
+#### Context Loading Doctrine
+
+Readers and agents should load the smallest truthful context that can answer
+the task:
+
+1. Start at the entry door appropriate to the reader: `README.md` for public
+   orientation, `CONTRIBUTING.md` for contribution mechanics, `AGENTS.md` for
+   agent operation, and `docs/index.md` for the published Prophecy.
+2. Use directory indexes as maps before opening child concepts.
+3. Use `docs/lexicon.md` when terminology controls meaning.
+4. Use ADRs when architecture, boundaries, or governance are in question.
+5. Use Sepulcher and Divination pages when domain doctrine or operator workflow
+   is in question.
+6. Use tracked `.agents/scopes/` only as routing hints for agent context, not as
+   replacement truth.
+7. Inspect source, runes, lockfiles, and runtime artifacts when executable
+   behavior matters.
+
+Documentation changes follow the same dynamic sync law as source changes. When
+code changes executable behavior, update the matching source-backed doctrine.
+When doctrine changes system truth, update the entry doors, indexes, agent
+scopes, and contribution guidance that route readers to that truth. Avoid
+duplicating the full law across entrypoints; link to the layer that owns the
+truth.
+
+Authority resolves from concrete to interpretive:
+
+1. Runtime artifacts, source code, Codex runes, and lockfiles define current
+   executable behavior.
+2. ADRs define architectural law and intended boundaries.
+3. The Lexicon defines canonical terminology.
+4. Sepulcher and Divination documents define domain doctrine and operator
+   workflow.
+5. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
+   humans through the topology.
+6. `AGENTS.md` defines agent operating procedure.
+7. `.agents/scopes/` define cheap routing hints.
+8. Generated indexes, search results, and local overlays assist discovery but do
+   not decide.
+
 ### Consequences
 
 !!! quote "The Final Truth"

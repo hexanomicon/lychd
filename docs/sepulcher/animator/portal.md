@@ -24,9 +24,9 @@ Portals serve specific strategic purposes in the Necromancer's arsenal:
 
 LychD leverages adapter-backed binding so Portals are first-class citizens of the runtime.
 
-- **Endpoint + Connector Identity:** Runtime binding is driven by `provider_type`, `base_url`, and a selected/default remote model id.
+- **Endpoint + Connector Identity:** Runtime binding is driven by `provider_name`, optional `base_url`, and connector-owned capability semantics.
 - **Standardized Runtime Contract:** Regardless of the vendor, the Portal enters the system through the same **[Animator](./index.md)** runtime/binder path.
-- **Optional External Tools:** Portals may declare `external_tools` that connectors expose as deferred toolsets.
+- **Capability Surface:** Portal capabilities are exposed by the resolved connector, not by Portal-specific tool fields.
 - **The Fallback Ritual:** The system often wraps a local Soulstone and a remote Portal into a `FallbackModel`. If local hardware returns a 4xx or 5xx error, the Lich automatically tears the sky and replays the request through the Portal to ensure the thought is completed.
 
 Current implementation scope:
@@ -36,30 +36,18 @@ Current implementation scope:
 
 ## 🖋️ Inscribing a Portal
 
-To open a rift, define its properties under the Portal anchor in the Codex. The core Portal Rune owns `runes/animator/portals/` directly; provider-specific subdirectories only make sense when a provider-specific Portal Rune subclass owns that deeper anchor.
+To open a rift, define its properties under a provider-specific Portal anchor in the Codex. `PortalConfig` is the abstract branch at `runes/animator/portals/`; concrete provider Runes such as `OpenAIPortalConfig` and `GoogleGeminiPortalConfig` own the TOML files below their own leaf directories.
 
 ```toml
-# ~/.config/lychd/runes/animator/portals/openai.toml
+# ~/.config/lychd/runes/animator/portals/openai/main.toml
 
 name = "gpt4"
 description = "The Frontier Intelligence."
-provider_type = "openai" # Determines the high-level provider family
 
-# 1. The Address (Manifestation)
-base_url = "https://api.openai.com/v1"
-
-# 2. The Identity (Contract)
-default_model_id = "gpt-4o"
-
-# 3. The Offering (Security)
+# The Offering (Security)
 # Reference a Podman secret name, not a raw API key value.
-api_key_secret = "portal_openai_main"
+api_key_secret_name = "portal_openai_main"
 
-# 4. Optional External Tools (Deferred/Connector-Mapped)
-[[external_tools]]
-name = "web_search"
-description = "Search the web through the provider's hosted tool surface."
-sequential = false
 ```
 
 ```bash
@@ -70,7 +58,7 @@ printf '%s' "$OPENAI_API_KEY" | podman secret create --replace portal_openai_mai
 
 Portal auth is reference-driven:
 
-1. Portal Rune stores only `api_key_secret = "<name>"`.
+1. Portal Rune stores only `api_key_secret_name = "<name>"`.
 2. `lychd bind` verifies the named Podman secret exists.
 3. If missing, bind fails closed before writing units.
 4. Vessel receives `Secret=<name>` and connector reads `/run/secrets/<name>`.

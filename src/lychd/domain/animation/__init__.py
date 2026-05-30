@@ -13,13 +13,13 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
+from lychd.domain.animation.extension import PortalStore, SoulstoneStore
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
     ConcurrencyIntent,
-    ExternalToolConfig,
     GenerationProfile,
-    GenericSoulstoneConfig,
+    GoogleGeminiPortalConfig,
     LLMGenerationConfig,
     LLMGenerationDefaults,
     LocalLLMModelConfig,
@@ -27,6 +27,7 @@ from lychd.domain.animation.schemas import (
     ModelCapabilityHints,
     ModelFormat,
     ModelInfo,
+    OpenAIPortalConfig,
     PortalConfig,
     SoulstoneConfig,
     is_placeholder,
@@ -41,9 +42,8 @@ __all__ = [
     "CapabilityState",
     "ConcurrencyIntent",
     "Connector",
-    "ExternalToolConfig",
     "GenerationProfile",
-    "GenericSoulstoneConfig",
+    "GoogleGeminiPortalConfig",
     "LLMGenerationConfig",
     "LLMGenerationDefaults",
     "Link",
@@ -53,10 +53,13 @@ __all__ = [
     "ModelConnector",
     "ModelFormat",
     "ModelInfo",
+    "OpenAIPortalConfig",
     "Portal",
     "PortalConfig",
+    "PortalStore",
     "Soulstone",
     "SoulstoneConfig",
+    "SoulstoneStore",
     "ToolConnector",
     "is_placeholder",
 ]

@@ -36,12 +36,17 @@ make type-check [TYPECHECK_TARGETS="..."] # Targeted or repo-wide BasedPyright
 make check                       # Full purification (Lint -> Type -> Test)
 ```
 
+When `rtk` is available on `PATH`, Makefile targets automatically route noisy CLI calls through it for compact agent-facing output. If `rtk` is absent, the targets fall back to the underlying tools (`uv`, `npm`, `curl`, `grep`) so bootstrap remains plain.
+
+Use `VERBOSE=1` when an agent or human needs full logs in the terminal/LLM context. It disables RTK filtering for that invocation and makes pytest stream stdout plus long tracebacks. Pytest's debug log streaming is already configured in `pyproject.toml`.
+
 ### The Ritual of Testing
 
 ```bash
 make test                        # Run all tests (Parallel)
 make test N=0                    # Run tests Serially (Better for debugging)
 make test PYTEST_TARGETS="..."   # Targeted file/directory
+make test VERBOSE=1              # Full raw pytest output/logs; no RTK filtering
 ```
 
 ### The Ritual of Jujutsu (JJ)
@@ -65,13 +70,14 @@ jj git push         # Synchronize with the external world (Git remotes)
 - **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.
 - **Paths**: Never hardcode `~/.config/...`. Use `PATH_*` constants from `src/lychd/system/constants.py`.
 - **Boundaries**: Domain computes intent (pure); System performs mutations (filesystem, systemd).
+- **Documentation**: Follow **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Keep root entry doors (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) thin and routed; put architectural law in ADRs, canonical terms in `docs/lexicon.md`, published orientation in `docs/index.md`, domain doctrine in Sepulcher/Divination pages, and routing hints in `.agents/scopes/`. When a docs change moves system truth, update the links and hints that route readers to that truth.
 - **Vessel (Litestar) Laws**: See **[ADR 11 §6](docs/adr/11-backend.md)** for full mandates:
     1. **Unbound Routing**: Use standalone `Controller` or `Router`. Never use `@app.get`.
     2. **DTO Mandate**: Use `SQLAlchemyDTO`. Never write redundant Pydantic models for ORM.
     3. **Repository Law**: Use `SQLAlchemyAsyncRepository`. Never write raw `session.execute` in routes.
     4. **Native Responses**: Use Litestar's built-in HTMX and OpenTelemetry plugins. No external shims.
 - **Dependencies**: Use `uv add` or `uv remove` with proper groups. Ideally do not hand-edit `pyproject.toml`.
-- **Frontend Tooling**: Keep the default Altar surface thin (`HTMX + Alpine + Jinja`). Introduce TypeScript when an island has enough client-side logic to justify stronger contracts; do not add a thick SPA runtime by default.
+- **Frontend Tooling**: Keep the default Altar surface thin (`HTMX + Alpine + Jinja`). Introduce TypeScript and Vite-compiled Svelte only for bounded instrument islands with enough client-side logic to justify stronger contracts; do not add a thick SPA runtime by default.
 - **Logging**: Use `structlog` with semantic event IDs.
     - Our global config uses `log_exceptions="always"` and an `EventRenamer`.
     - **Convention**: For fatal initialization errors, simply `raise` the exception with a descriptive message. The logger will automatically capture the message and the traceback. Manual `logger.critical()` calls are only needed if you must log an event *without* stopping execution.

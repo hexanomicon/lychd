@@ -15,7 +15,7 @@ icon: material/toy-brick-outline
 - **Infrastructure Declaration:** Mandatory capability for extensions to declare their own physical requirements, specifically container blueprints and functional capability tags.
 - **Federated Sovereignty:** Treatment of the Core and its Extensions as a "Federation" of independent components, each maintaining its own version history and repository.
 - **Deterministic Provenance:** Mandatory implementation of a federated lockfile to ensure the system’s exact composition is trackable and bit-for-bit reproducible.
-- **Interface Simplicity:** Utilization of standard Python patterns and registration hooks to facilitate extension creation, avoiding proprietary Domain Specific Languages (DSLs).
+- **Interface Simplicity:** Utilization of standard Python patterns and registration stores to facilitate extension creation, avoiding proprietary Domain Specific Languages (DSLs).
 - **Capability-Driven Design:** Mandatory support for registering abstract functional identifiers that allow the system to orchestrate extension logic through semantic intent.
 - **Extension Protocol:** Establishment of a composed-runtime law for assimilating local organs before public compatibility surfaces are harvested.
 
@@ -71,11 +71,36 @@ The system's logic resides in a structured directory hierarchy designed for modu
 
 The architecture relies on an **Inversion of Control** pattern to facilitate assimilation. The Core provides a host registration surface, but that surface is only one branch of the broader Extension Protocol.
 
-- **The Entry Point:** Any organ participating in in-process boot grafting exposes a `register(context)` function in its root package.
-- **The Context Object:** The Core passes an `ExtensionContext` object which serves as the host registration surface for boot-time grafting. Through this object, an organ binds runtime-facing logic into the Daemon's anatomy.
-- **Interface Grafting:** The active source surface accepts unbound `Router` objects and standalone `Controller` classes for the Vessel.
-- **Schema Exposure:** Configuration discovery is not a method on the `ExtensionContext`. Near-term in-process organs expose `RuneConfig` subclasses after import; a provisional structural scan exists for Python source experiments, but it is not a public API or stability promise.
+- **Activation Selection:** Extensions are inactive unless explicitly selected in the core `lychd.toml` extension lists. The selector lives outside extension-owned runes because Codex cannot load an extension's rune schema until the extension has first been imported. An omitted extension id means inactive.
+- **The Entry Point:** Any organ participating in in-process boot registration exposes a `register(context)` function in its selected `register.py` shim.
+- **The Context Object:** The Core passes an `ExtensionContext` object which serves as the host registration surface for boot-time stores. Through this object, an organ binds runtime-facing logic into the Daemon's anatomy.
+- **Interface Registration:** Vessel routes, middleware, auth, and event hooks are reserved for a shaped `context.vessel` store instead of flat registration methods.
+- **Schema Exposure:** Selected in-process organs register `RuneConfig` subclasses through the extension context after import. Runtime package/source scanning is not the extension ledger.
 - **Substrate Declarations:** Synthesis-time requirements (system libraries, binaries, container needs) belong to the wider Extension Protocol and feed the Forge manifest. They must not be confused with the boot-time context itself.
+
+The activation selector has list semantics, not boolean map semantics:
+
+```toml
+[extensions]
+builtins = ["observability/phoenix", "animator"]
+crypt = ["my-private-organ"]
+```
+
+This keeps the default body inert. Enabling an extension means its schemas,
+hydrators, and registration stores may participate. It does not by itself start every
+rune instance owned by that extension; instance-level activation remains a
+domain/runtime decision inside the extension's runes.
+
+An enabled Python organ contributes through its selected `register.py` shim:
+
+```python
+def register(context: ExtensionContext) -> None:
+    context.runes.add_schema(MyExtensionConfig)
+```
+
+The extension manager owns the selected import list and invokes this shim.
+Codex receives the resulting rune schema list; it does not scan arbitrary
+packages on its own.
 
 ### 3. Capabilities as Organs
 
@@ -93,10 +118,11 @@ Extensions are not limited to Python logic. They may declare system-level depend
 
 Configuration extensibility uses the schema branch of the Extension Protocol:
 
-- Extension modules are imported at runtime during codex/bootstrap.
-- Built-in and private coupled organs may expose `RuneConfig` subclasses directly.
-- `__subclasses__()` traversal is a schema-discovery convenience after import. It is not the runtime extension ledger and not a public extension API.
-- Experimental Crypt-side Python source modules may expose Pydantic-compatible schema classes matching the Codex discovery shape, but this path is not a stable third-party contract.
+- Selected extension modules are imported at runtime during codex/bootstrap.
+- Built-in and private coupled organs register `RuneConfig` subclasses through `context.runes`.
+- Domain stores may wrap related contributions. For example, `context.soulstones.add(SoulstoneDefinition(...))` stores the Animator-owned definition and registers its rune schema into the shared rune store.
+- `__subclasses__()` traversal is only an internal audit/debug convenience after import. It is not the runtime extension ledger and not a public extension API.
+- Crypt organs participate through explicit selected `register(context)` shims. Raw Python source scanning is not an active runtime mechanism.
 - The loader remains singular and authoritative for all runic TOML parsing and validation.
 
 ### 6. The MPL 2.0 Shield (Private Extensions)
@@ -117,9 +143,9 @@ The Federation recognizes real compatibility tiers. The boundary is not stylisti
 
 Built-in Extensions (`src/lychd/extensions/builtin/`) are versioned and updated **simultaneously** with the kernel. They are permitted—and expected—to use explicit imports and Abstract Base Class inheritance from the Core. Because they share a single repository and a single release cycle, a core refactor and its built-in extension updates are committed atomically. No upgrade gap exists.
 
-The **Built-in Loader** imports the configured `lychd.extensions` package tree at boot via `pkgutil.walk_packages`. `RuneConfig.__subclasses__()` discovery fires automatically upon import. This is acceptable for schema registration because the code is already in-process and version-locked with the Core.
+The **Extension Manager** imports only configured built-in ids and Crypt ids. A selected organ exposes `register(context)`, receives the host `ExtensionContext`, and contributes through explicit registration stores. Core built-ins resolve by convention inside `lychd.extensions.builtin`; private Crypt organs resolve through their selected shim path. Codex never scans arbitrary packages to decide what is active.
 
-Runtime-facing contributions still use explicit registration when a host surface exists. `register(context)` is the authoritative ledger for boot-time grafting such as routers, controllers, factories, lifecycle hooks, or future command hooks. Schema discovery may remain structural; runtime mutation should be explicit.
+Runtime-facing contributions use the same explicit registration pass. `register(context)` is the authoritative ledger for boot-time stores such as rune schemas, Animator Soulstone definitions, future Vessel bundles, lifecycle hooks, or future command stores. Runtime mutation should be explicit.
 
 #### The Private Coupled Path
 
@@ -138,22 +164,22 @@ Therefore, the near-term doctrine is:
 - Do not build a separate SDK until real third-party distribution pressure exists.
 - Do not promise independent in-process compatibility across arbitrary Core refactors.
 - Do not treat foreign agent frameworks as first-class in-process runtimes. Wrap them behind external-service Animators, A2A Emissaries, or assimilate their useful patterns into LychD's native Pydantic AI agent runtime.
-- Treat Crypt-side source loading as a local/provisional assimilation mechanism unless the extension is pinned, forged, and verified with the composed runtime image.
+- Treat unpinned Crypt-side source loading as a future Forge/Smith assimilation concern, not as a live runtime registration path.
 - Prefer external-service Animators when a capability needs a true decoupling boundary. "External-service" describes placement and protocol isolation; the exposed capability may be cognitive, observational, procedural, networked, or tool-bearing.
 - Promote only the minimal host surfaces that survive repeated internal use into a future `lychd.extensions.api` module.
 
-The provisional structural scan currently exercises only a narrow schema branch for Python source modules. It is useful for experiments, but it is not the public compatibility product.
+No public source-scanning extension ABI exists today. Any future source assimilation path must be pinned, forged, verified, and translated into the same explicit registration-store model.
 
 #### Rune And Runtime Boundary
 
 Extension integration has two separate contracts:
 
-- **Rune Schema:** The extension exposes configuration shape. Coupled Python extensions may subclass `RuneConfig`; provisional structural schemas must be Pydantic-compatible and expose a safe `relative_path`.
-- **Runtime Hydrator:** A factory, adapter, or provider converts a validated rune into the runtime object LychD stores and operates.
+- **Rune Schema:** The extension exposes configuration shape. Coupled Python extensions may subclass `RuneConfig` and register those schemas through `context.runes`.
+- **Runtime Definition:** A domain-owned store may wrap the schema with runtime machinery. For Soulstones, `SoulstoneDefinition` pairs one `SoulstoneConfig` schema with a `SoulstoneRuntimeAdapter`.
 
-A rune schema alone is not a runtime integration. It only makes TOML loadable. If an extension registers a new rune family, it must also provide a hydrator when that rune should become a live Animator, adapter, router, capability provider, or other runtime handle. LychD-facing runtime handles should be `Runic[T]`, meaning they expose a canonical `.rune` provenance attribute.
+A rune schema alone is not a runtime integration. It only makes TOML loadable. If an extension registers a new rune family, it must also provide a domain definition or hydrator when that rune should become a live Animator, adapter, router, capability provider, or other runtime handle. LychD-facing runtime handles should be `Runic[T]`, meaning they expose a canonical `.rune` provenance attribute.
 
-Foreign engine objects do not need to be `Runic`. A Rust engine, C-backed object, or private Python implementation may keep whatever internal shape it wants. The adapter wraps or translates it into a LychD-facing handle:
+Foreign engine objects do not need to be `Runic`. A Rust engine, C-backed object, or private Python implementation may keep whatever internal shape it wants. The adapter wraps or translates it into a LychD-facing handle when LychD needs provenance:
 
 ```python
 class AphroditeRuntime:
@@ -168,6 +194,13 @@ This keeps the contract narrow:
 - The adapter builds runtime state from configuration.
 - The LychD-facing handle carries `.rune` so provenance is always recoverable.
 - Foreign internals remain sovereign behind the adapter boundary.
+
+A foreign organ may still use LychD's rune machinery directly if it wants a
+common TOML-facing configuration surface. The stable boundary is not "Rust must
+implement `Runic`"; the stable boundary is "LychD owns user-facing
+configuration through Codex, then the adapter translates that validated rune
+into the foreign engine's native configuration shape." This permits fast
+Rust-side kernels while keeping operator configuration in one place.
 
 #### Cross-Language Organs
 

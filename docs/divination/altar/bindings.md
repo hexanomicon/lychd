@@ -20,3 +20,5 @@ Bindings expose safe handles for:
 - safe links to the underlying Codex locations
 
 Bindings should make the system legible without teaching users to edit generated artifacts or bypass the Codex.
+
+Bindings are the top-level settings instrument. Per-session controls such as temperature, local behavior, pinned context, or a Coven request may appear in the [Altar](./index.md) session rail, but durable provider, policy, identity, and preference surfaces belong here.

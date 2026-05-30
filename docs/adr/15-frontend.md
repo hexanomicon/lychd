@@ -6,21 +6,22 @@ icon: material/language-html5
 # :material-language-html5: 15. Frontend: The Altar
 
 !!! abstract "Context and Problem Statement"
-    LychD operates as a server-authoritative system where the "Truth" resides exclusively within the **Vessel (11)** and the **Phylactery (06)**. Traditional Single Page Application (SPA) architectures foster a "Cockpit" anti-pattern, bifurcating logic between a Python server and a JavaScript client, which introduces state synchronization fragility and cognitive bottlenecks. A scrying interface is required that moves beyond manual monitoring to become a point of high-level deliberation and **Consent**, supporting the rich interactivity of **Generative UI** without the dependency hell of client-side frameworks.
+    LychD operates as a server-authoritative system where the "Truth" resides exclusively within the **Vessel (11)** and the **Phylactery (06)**. Traditional Single Page Application (SPA) architectures foster a "Cockpit" anti-pattern, bifurcating logic between a Python server and a JavaScript client, which introduces state synchronization fragility and cognitive bottlenecks. A scrying interface is required that moves beyond manual monitoring to become a point of high-level deliberation and **Consent**, supporting the rich interactivity of **Generative UI** without surrendering routing, validation, or durable state to a client-side application runtime.
 
 ## Requirements
 
 - **Server-Side Verification:** Mandatory logic unification; all validation, state management, and routing must reside on the server to prevent architectural bifurcation.
+- **Multi-Page Instrument Map:** The primary Altar application is an MPA with top-level instruments matching the Hexanomicon map: Altar, Scrying, Nexus, Loom, Reliquary, and Bindings.
 - **Hypermedia-Driven Scrying:** Adoption of the HATEOAS pattern, where the server returns HTML fragments representing distilled outcomes rather than raw data.
 - **Generative UI Protocol:** Capability to dynamically render interactive components (forms, diff-views, checklists) based on the schema of an Agent's tool call, allowing the interface to evolve with the machine's capabilities.
 - **Predictive State Streaming:** Support for Server-Sent Events (SSE) to animate the machine’s internal states and "Predictive" drafts in real-time, sharing state between the Python kernel and the DOM.
 - **Extension Template Discovery:** Provision of a formal mechanism for Extensions to register Jinja2 templates and visual components that are automatically assimilated into the interface at boot time.
-- **Island Architecture:** Support for optional "Islands of Interactivity" (Alpine.js) to allow specialized, high-fidelity tools to be mounted as non-critical extension components.
+- **Island Architecture:** Support for optional "Islands of Interactivity" (Alpine.js or Vite-compiled Svelte) to allow specialized, high-fidelity tools to be mounted as non-critical extension components.
 - **Hermetic Asset Strategy:** Prioritization of local, self-contained asset compilation (Vite) to ensure the interface remains functional in air-gapped or isolated environments.
 
 ## Considered Options
 
-!!! failure "Option 1: Heavy SPA Frameworks (React / Vue / Svelte)"
+!!! failure "Option 1: Heavy SPA Frameworks (React / Vue / SvelteKit / full-app Svelte)"
     Building a thick-client application that manages its own state and routing.
 
     -   **Cons:** **Architectural Bifurcation.** Duplicates validation logic and requires a complex, independent build chain. This model encourages the "Cockpit" mentality and makes extension injection nearly impossible without runtime patching of compiled bundles.
@@ -38,16 +39,45 @@ icon: material/language-html5
         -   **Generative Agility:** Allows the server to "push" new UI components (like a specialized approval form) in response to an Agent's thought process.
         -   **Speed:** HTMX provides SPA-like responsiveness with near-zero client-side overhead.
 
+!!! success "Accepted Refinement: Svelte Instrument Islands"
+    Mounting small Svelte components inside server-rendered Altar slots when an instrument needs rich local interaction but must not own routing, persistence, validation, or authorization.
+
+    -   **Pros:**
+        -   **Graph Ergonomics:** Tools such as the Weaver lens can use mature component ecosystems like Svelte Flow without turning the Altar into a separate application.
+        -   **Vite Continuity:** Svelte compiles through the existing Vite asset contract instead of requiring a separate frontend service.
+        -   **Bounded State:** The island owns viewport state, selection, drag gestures, and temporary edits; the Vessel still owns workflow truth and consent.
+
 ## Decision Outcome
 
-**The Altar** is implemented as a **Server-Rendered Hypermedia** interface. Its primary role is observation and the **Rite of Consecration**, with control surfaces expressed through typed ritual forms rather than a generic cockpit model.
+**The Altar** is implemented as a **Server-Rendered Hypermedia** interface. Its primary role is Intent offering, observation, consent, and the **Rite of Consecration**, with control surfaces expressed through typed ritual forms rather than a generic cockpit model.
+
+The Altar application is multi-page by instrument. The top navigation is the canonical user-facing map: **Altar**, **Scrying**, **Nexus**, **Loom**, **Reliquary**, and **Bindings**. Each instrument owns its page and local layout; HTMX provides fragment motion inside those pages rather than collapsing the whole application into one thick client shell.
+
+This decision rejects Svelte as a full Altar application shell, not Svelte as a component compiler. Svelte is permitted as an island runtime when the interface surface is intrinsically interactive enough that Alpine would become a miniature framework by accident.
+
+### 0. Instrument Boundaries
+
+The Altar's top-level pages divide work by responsibility:
+
+- **Altar:** the Bridge where natural-language Intent is offered and routed into direct answers, jobs, workflows, artifacts, approvals, or other instruments.
+- **Scrying:** live visualization of active Invocations, workflow progress, logs, trace fragments, and waiting decisions.
+- **Nexus:** visualization of Orchestrator state, queues, Covens, Portals, Animator availability, and hardware pressure.
+- **Loom:** Weaver Pattern browsing and design, including Mermaid, Pydantic AI graph renderings, and future graph-editing islands.
+- **Reliquary:** durable inspection of generated artifacts, reports, retained evidence, and blessed outputs.
+- **Bindings:** user-facing settings, provider references, identity bindings, privacy policy, approval policy, and Altar preferences.
+
+The Altar page itself may use a left session rail for conversation history, session settings, pinned context, and Coven requests. That rail is local to the Bridge, not global navigation. A right-side inspector is optional and contextual; it appears for selected messages, artifacts, approvals, workers, or log lines rather than serving as a permanent dashboard. On narrow screens, these rails collapse into drawers or separate views.
+
+Coven switching is a cross-instrument concern. The Bridge may show active Coven status or accept a request, but availability, background-worker pressure, warming, sleeping, manual swaps, and queue tradeoffs are Nexus responsibilities.
 
 ### 1. The Scrying Stack
 
 The Altar utilizes a "Thin Client" stack designed for maximum substrate integration:
 
 - **HTMX:** The primary engine for state transitions. It swaps HTML fragments into the DOM, allowing the Magus to "zoom" into specific cognitive processes without a page reload.
-- **Alpine.js:** Used for ephemeral, local UI state (e.g., toggling a sidebar) and managing "Islands of Interactivity."
+- **Alpine.js:** Used for small ephemeral UI state (e.g., toggling a sidebar). It remains the default for simple local behavior but should not grow into instrument-level application logic.
+- **Svelte Islands:** Optional Vite-compiled components mounted into server-rendered slots for instruments whose client-side interaction is substantial: graph navigation, drag selection, local layout, canvas-like editing, and dense live inspection.
+- **Svelte Flow (`@xyflow/svelte`):** A permitted island dependency for Weaver and graph-shaped Scrying views. It renders node/edge projections of workflow state; it does not become the workflow authority.
 - **Jinja2:** The templating engine that renders fragments, utilizing the directory structure defined in the **[Layout (13)](13-layout.md)**.
 - **Vite:** The supported asset pipeline and dev/build contract for the Altar. Package manager or runtime substitutions are acceptable only when they preserve Vite compatibility and the Litestar integration surface.
 - **Tailwind CSS:** A utility-first styling engine. The final CSS is synthesized by scanning the templates of both the Core and all active Extensions.
@@ -59,6 +89,7 @@ The Altar adopts the **Agentic Generative UI (AG-UI)** philosophy but implements
 - **Dynamic Component Rendering:** When an Agent utilizes a tool (e.g., `create_plan`), the **Vessel** does not return raw JSON state to a client-side framework. Instead, it renders a specialized **Jinja2 fragment** (e.g., `<div id="plan">...</div>`) that is swapped directly into the chat stream via HTMX.
 - **Predictive State:** The Altar subscribes to the Agent's thought stream via Server-Sent Events (SSE). If the Agent is "drafting" a document, the UI updates a live preview window in real-time, utilizing shared state between the Python kernel and the DOM.
 - **Tool-Based Interaction:** Approvals use dynamically generated forms based on the Pydantic schema of the pending tool call, allowing precise parameter editing before execution.
+- **Island Hydration:** A Svelte island may receive a typed snapshot and an SSE stream for local rendering. Any mutation that would affect durable state must return to the Vessel as a typed intent and pass server-side validation before the projection changes from speculative to authoritative.
 
 !!! note "Runtime Surface Contract"
     Server-rendered fragments may expose stable semantic attributes and roles so agents, tests, and the Magus can verify the visible artifact at runtime. This contract is evidence, not authority: the Vessel and Phylactery own truth; the DOM is a machine-readable projection of that truth.
@@ -76,17 +107,19 @@ The Altar is the primary coordinate for high-level deliberation.
 
 To maintain the **[Federation (05)](05-extensions.md)**, the Altar functions as a discovery engine:
 
-- **Discovery:** During the registration hook, extensions provide the coordinates for their visual templates.
-- **Grafting:** The Vessel scans these directories, allowing extensions to inject new scrying fragments into the Altar's layout without core modifications.
-- **Islands:** If an extension requires complex client-side logic (e.g., a real-time data visualization or an interactive node-map), it may mount an "Island"—a small, isolated JavaScript bundle—into an HTMX-driven page. TypeScript is optional and encouraged for these richer islands, but it is not required for the baseline HTMX/Alpine surface.
+- **Discovery:** During the extension registration pass, future Altar stores may collect the coordinates for extension-owned visual templates.
+- **Grafting:** Once shaped, the Vessel can consume those registered template roots, allowing extensions to inject new scrying fragments into the Altar's layout without core modifications.
+- **Islands:** If an extension requires complex client-side logic (e.g., a real-time data visualization or an interactive node-map), it may mount an "Island"—a small, isolated JavaScript or Svelte bundle—into an HTMX-driven page. TypeScript is optional and encouraged for these richer islands, but it is not required for the baseline HTMX/Alpine surface.
+- **Graph Lenses:** Weaver-grade graph views may use Svelte Flow when the island contract is explicit: the component owns presentation mechanics, while the extension and Vessel own workflow state, mutation rules, persistence, and consent.
 
-### 5. The Scales of the Whims
+### 5. Queues, Whims, and Coven Pressure
 
-The Altar provides a real-time scrying view of the **Orchestrator’s Intent Queues**.
+The instrument map provides real-time visibility into the **Orchestrator's Intent Queues** without turning the Bridge into an all-purpose control room.
 
-- **The Scales:** Visualization of current "Inertia" weights and "Whim" multipliers. This allows the Magus to see exactly why the Orchestrator is maintaining a specific Coven or why a swap is pending.
-- **Queue Scrying:** A live stream of the **Ghoul (14)** labor force, showing which tasks are active, which are in "Stasis," and which are awaiting a hardware transition.
-- **Manual Flip:** A privileged interface component to manually trigger a **Coven Swap**, providing the Override required to break logical loops or prioritize specific work.
+- **Altar:** Shows the active Coven status and may accept a Coven or capability request for the current session.
+- **Scrying:** Shows which Invocations, Ghoul jobs, and workflow steps are active, paused, failed, or awaiting Magus decision.
+- **Nexus:** Shows queue pressure, "Inertia" weights, "Whim" multipliers, available Covens, Portals, hardware pressure, and why a swap is pending or denied.
+- **Manual Flip:** A privileged Nexus component may trigger a **Coven Swap**, providing the Override required to break logical loops or prioritize specific work when policy allows.
 
 ### Consequences
 
@@ -95,7 +128,10 @@ The Altar provides a real-time scrying view of the **Orchestrator’s Intent Que
     - **Cognitive Clarity:** By focusing on summarized "Visions," the Altar prevents user overwhelm.
     - **Atomic Consistency:** The UI and backend cannot drift out of sync because the "View" is simply a fragment of the "State."
     - **Generative Flexibility:** The interface can evolve its own controls based on the changing needs of the Agent without deploying new frontend code.
+    - **Instrument Depth:** Rich tools such as the Weaver graph can use Svelte/Svelte Flow where hypermedia alone would force awkward local state.
 
 !!! failure "Negative"
     - **Macro Complexity:** Reusing visual components across extensions requires disciplined use of Jinja Macros.
     - **Paradigm Shift:** Developers must abandon "Application" thinking and adopt "Hypermedia" thinking, focusing on the flow of fragments rather than the flow of raw data.
+    - **Boundary Discipline:** Svelte islands must be prevented from quietly becoming a second application shell.
+    - **Bundle Weight:** Graph-focused islands add JavaScript cost and must remain opt-in per instrument.

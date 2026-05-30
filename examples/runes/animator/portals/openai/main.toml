@@ -1,0 +1,5 @@
+# ~/.config/lychd/runes/animator/portals/openai/main.toml
+
+name = "openai-main"
+description = "OpenAI remote Portal for frontier chat/model capabilities."
+api_key_secret_name = "portal_openai_api_key"

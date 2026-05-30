@@ -51,8 +51,16 @@ icon: material/telescope
 
 To satisfy the requirement of sovereignty, the Oculus is implemented as an Extension:
 
-- **The Hook:** During registration, it invokes `context.add_litestar_plugin(OculusTelemetryPlugin())`.
-- **The Injection:** This plugin implements the **[Backend's (ADR 11)](./11-backend.md)** `InitPluginProtocol`. During the "Deep Awakening" (Server Mode), it configures the global OpenTelemetry providers.
+- **The Rune:** `observability/phoenix` registers `PhoenixSettings`, a
+  `RuneConfig` under `runes/observability/phoenix/`. Phoenix image and host
+  ports are extension-owned TOML, not fields on the core `Settings` model.
+- **The Store:** Vessel telemetry registration is reserved for a future shaped
+  `context.vessel` bundle; it must not become another flat ExtensionContext
+  method.
+- **The Injection:** Once shaped, that Vessel bundle may install the
+  **[Backend's (ADR 11)](./11-backend.md)** `InitPluginProtocol`. During the
+  "Deep Awakening" (Server Mode), it configures the global OpenTelemetry
+  providers.
 - **The Scope:** Because the Vessel and the **[Ghouls (ADR 14)](./14-workers.md)** share the same boot logic, the Oculus automatically observes both the scrying at the Altar and the labor in the background.
 
 ### 2. The Thought Trace (Mind)
@@ -60,7 +68,8 @@ To satisfy the requirement of sovereignty, the Oculus is implemented as an Exten
 The extension configures the process to emit signals following the Generative AI Semantic Conventions:
 
 - **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` and `logfire.instrument_httpx()`. This captures the reasoning loop of the Agent and the raw prompts exchanged with the **[Dispatcher (ADR 22)](./22-dispatcher.md)**'s providers.
-- **The Collector:** It registers a specialized local Animator (an Oculus Soulstone) running **Arize Phoenix**.
+- **The Collector:** An active `PhoenixSettings` rune manifests a local
+  `lychd-oculus` service running **Arize Phoenix**.
 - **The Routing:** Telemetry is exported via OTLP to `http://localhost:4318`. Because the composed runtime shares the `lychd.pod` network namespace, all containers can natively push traces over TCP without requiring complex network bridging or custom proxies.
 
 ### 3. Physical Body Monitoring (Body)

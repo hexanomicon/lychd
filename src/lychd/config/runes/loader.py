@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import tomllib
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import structlog
 
 from lychd.config.runes.base import RuneConfig
+from lychd.config.runes.writer import SAMPLE_MARKER
 from lychd.system.constants import PATH_RUNES_DIR
 
 logger = structlog.get_logger()
@@ -26,7 +26,7 @@ class ConfigLoader:
         """
         self._runes_dir = runes_dir or PATH_RUNES_DIR
 
-    def load_all(self, schemas: Sequence[type[RuneConfig]]) -> list[RuneConfig]:
+    def load_all(self, schemas: list[type[RuneConfig]]) -> list[RuneConfig]:
         """Load and validate all instances for the provided rune classes.
 
         Args:
@@ -65,16 +65,18 @@ class ConfigLoader:
         files = self._candidate_files(cls)
         if cls.__subclasses__():
             if files:
-                msg = f"Branch rune class '{cls.__name__}' cannot own TOML files in '{self._anchor_dir(cls)}'."
+                msg = f"Branch rune class '{cls.__name__}' cannot own TOML files in '{cls.anchor_dir(self._runes_dir)}'."
                 raise ValueError(msg)
             return []
 
         instances: list[RuneConfig] = []
 
         for file_path in files:
+            if self._is_generated_sample(file_path):
+                logger.debug("skipping_sample_rune", schema=cls.__name__, path=str(file_path))
+                continue
             payload = self._read_payload(file_path, cls)
-            instance = cls.model_validate(payload)
-            instance.source_file = file_path
+            instance = cls.model_validate(payload).bind_source_file(file_path)
             instances.append(instance)
 
         self._assert_unique_identity(files)
@@ -90,23 +92,25 @@ class ConfigLoader:
             Sorted TOML files directly in the rune class's anchor.
 
         """
-        anchor = self._anchor_dir(cls)
+        anchor = cls.anchor_dir(self._runes_dir)
         if not anchor.exists():
             return []
 
         return sorted(anchor.glob("*.toml"))
 
-    def _anchor_dir(self, cls: type[RuneConfig]) -> Path:
-        """Resolve the active filesystem anchor for one rune class.
-
-        Args:
-            cls: Rune class whose anchor should be resolved.
-
-        Returns:
-            Absolute directory under this loader's rune root.
-
-        """
-        return self._runes_dir / cls.relative_path
+    def _is_generated_sample(self, file_path: Path) -> bool:
+        """Return whether a TOML file is a generated inactive sample."""
+        try:
+            with file_path.open(encoding="utf-8") as handle:
+                for line in handle:
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    return stripped == SAMPLE_MARKER
+        except OSError as exc:
+            msg = f"Could not read '{file_path}'."
+            raise ValueError(msg) from exc
+        return False
 
     def _read_payload(self, file_path: Path, cls: type[RuneConfig]) -> dict[str, Any]:
         """Read one TOML payload and enforce rune envelope rules.

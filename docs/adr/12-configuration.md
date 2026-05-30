@@ -144,9 +144,10 @@ A **rune** is one validated TOML configuration document under the Codex `runes/`
 Each rune class:
 
 - Inherits from `RuneConfig`
-- Declares `path_fragment` as the safe relative path fragment it contributes; no rune type may place TOML files directly under the rune root
-- Uses safe fragment parts: lowercase ASCII letters, digits, `_`, and `-`, length 1-50, starting and ending alphanumeric
+- Declares `path_fragment` as the single safe relative path segment it contributes; no rune type may place TOML files directly under the rune root
+- Uses safe fragment segments: lowercase ASCII letters, digits, `_`, and `-`, length 1-50, starting and ending alphanumeric
 - Uses Python subclassing as rune path ancestry; `relative_path` is computed from the single direct rune parent plus the local fragment
+- Keeps source provenance as runtime-only instance metadata; `source_file` is derived from the filesystem path and is not a TOML field
 - Relies on runic identity and domain validation for required named instances; no base-loader singleton override exists
 
 Rune instances are stored as TOML files under their Anchor directory.
@@ -157,14 +158,14 @@ Rune instances are stored as TOML files under their Anchor directory.
 
 ??? example "Live snippet: `src/lychd/config/runes/base.py:10`"
     ```python
-    --8<-- "src/lychd/config/runes/base.py:10:78"
+    --8<-- "src/lychd/config/runes/base.py:28:86"
     ```
 
 `RuneConfig` is the base contract for typed TOML runes:
 
 ??? example "Live snippet: `src/lychd/config/runes/base.py:10`"
     ```python
-    --8<-- "src/lychd/config/runes/base.py:13:87"
+    --8<-- "src/lychd/config/runes/base.py:16:142"
     ```
 
 `Runic` is only a runtime provenance protocol. Any object with `.rune` can be treated as a servant of the Codex backed by a validated rune; that does not make the object a rune class.
@@ -186,7 +187,8 @@ runes/
       vision.toml
       ocr.toml
     portals/
-      openai.toml
+      openai/
+        main.toml
 
 ```
 
@@ -198,7 +200,7 @@ Each `RuneConfig` rune class owns exactly one anchor territory.
 
 - Folder location determines rune type.
 - The declared `path_fragment` is local to the rune class.
-- Each fragment part must match `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`.
+- Each `path_fragment` must be one path segment matching `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`.
 - Python subclassing is rune path ancestry and must form a single direct parent chain.
 - Mixins/composition should carry shared fields that do not need a new anchor or path fragment.
 - `relative_path` is the resolved Codex-root-relative anchor assembled from ancestry.
@@ -225,9 +227,6 @@ anchor:
 ```python
 class SoulstoneConfig(AnimatorConfig):
     path_fragment: ClassVar[Path] = Path("soulstones")
-
-class GenericSoulstoneConfig(SoulstoneConfig):
-    path_fragment: ClassVar[Path] = Path("generic")
 
 class LlamaCppSoulstoneConfig(SoulstoneConfig):
     path_fragment: ClassVar[Path] = Path("llamacpp")
@@ -257,8 +256,7 @@ schema-intake boundary instead.
 `AnimatorConfig` and `SoulstoneConfig` are abstract branch configs. They are
 configuration base classes, but they are not direct TOML owners. Concrete
 Soulstone TOML instances must live under a leaf schema such as
-`GenericSoulstoneConfig`, `LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or
-`SglangSoulstoneConfig`.
+`LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`.
 
 ---
 
@@ -270,6 +268,8 @@ Within an Anchor:
 - Instance payload resides at TOML top level (arrays-of-tables are forbidden for instance encoding).
 - Instance identity is derived from relative path.
 - Duplicate identity across files is forbidden.
+- Validated rune instances are frozen. Resolvers and runtime handles may derive
+  effective state from a rune, but they must not mutate Codex intent after load.
 
 If a rune class has children, it is a branch namespace and may not own TOML files in its own anchor.
 
@@ -304,7 +304,7 @@ This keeps directory layout useful for discovery while semantic policy remains e
 `llama.cpp` soulstones may reference a router preset `.ini` via a typed rune field (e.g., `preset_path`), allowing the Magus to preserve optimized upstream launch profiles while remaining inside Codex governance.
 
 - **Two-Tier Intent:**
-    - **Rune Intent:** Identity, coven policy, and orchestration hints (e.g., `dedicated`, `persistent_resident`, `matrix_sets`).
+    - **Rune Intent:** Identity, coven policy, and runtime launch shape.
     - **Preset Intent:** Router/runtime defaults and per-model launch arguments consumed by `llama-server`.
 - **Validation Rule:** Preset references must resolve to an existing readable file path before binding; unresolved preset paths are configuration errors.
 - **Boundary Rule:** Preset files tune model runtime behavior, but may not redefine host-level governance authority enforced by LychD (port arbitration, coven exclusivity, and orchestration ownership).
@@ -334,19 +334,48 @@ To resolve this **Codex Paradox**, rune classes follow tiered integration paths:
 
 - **Built-in Extensions:** May inherit directly from `RuneConfig`.
 - **Private Coupled Extensions:** May inherit directly from `RuneConfig` if the operator accepts refactor coupling.
-- **Future Independent Extensions:** Must wait for a versioned public schema API before LychD promises Core-refactor compatibility. The current structural scan is a provisional Python-source assimilation path, not the stable third-party contract.
+- **Future Independent Extensions:** Must wait for a versioned public schema API before LychD promises Core-refactor compatibility.
 
 ### Registration Doctrine (The Machinery's Translation)
 
-Rune schema discovery is structural, not the runtime contribution ledger.
+Rune schema registration belongs to runtime/extension composition, not to the
+rune loader. Enabled extensions import or register their active `RuneConfig`
+classes before Codex inscription or runtime loading. The rune layer then receives
+an explicit `list[type[RuneConfig]]` and performs only filesystem anchoring,
+sample writing, TOML parsing, and Pydantic validation.
 
-- **Built-in/Private Coupled Path:** Runtime import plus `RuneConfig.__subclasses__()` discovery determines schema ownership. The subclass itself is the schema registration signal.
-- **Provisional Crypt Source Path:** `CryptSourceLoader` may load Python source files from the extensions directory, scan their module objects, and register Pydantic-compatible classes with a safe `relative_path`. This is local/provisional assimilation; it must not be described as an SDK or ABI.
+In the current implementation, `ExtensionManager` assembles this list from
+`[extensions].builtins` and `[extensions].crypt`. Built-ins are resolved inside
+the trusted `lychd.extensions.builtin` namespace by convention, then the selected
+builtin's own `register(context)` shim performs the contribution. Crypt organs
+follow the same selected-shim rule from the local extension root. The selected
+shim writes into explicit registration stores on `ExtensionContext`.
 
-??? example "Live snippet: `src/lychd/extensions/discovery.py:31`"
-    ```python
-    --8<-- "src/lychd/extensions/discovery.py:31:73"
-    ```
+Store ownership stays with the layer that owns the concept:
+
+- `context.runes` is a Codex/rune store and receives `RuneConfig` schemas.
+- `context.soulstones` is an Animator store and receives `SoulstoneDefinition`
+  objects; each definition registers its rune schema and exposes its runtime
+  adapter.
+
+The same activation decision therefore feeds Codex inscription/loading,
+Animator loading, Quadlet planning, and Dispatcher-facing capability binding
+without the rune loader scanning packages or knowing extension internals.
+
+Extension activation itself is configured outside extension-owned runes. Core
+`lychd.toml` names active built-in and Crypt organs with lists:
+
+```toml
+[extensions]
+builtins = ["observability/phoenix", "animator"]
+crypt = ["my-private-organ"]
+```
+
+All omitted extension ids are inactive. This avoids the bootstrap paradox where
+Codex would need an extension's rune schema in order to decide whether that same
+extension should be imported. Once selected, the extension may register rune
+schemas; those runes configure selected extension instances, not extension
+existence.
 
 No extension may implement custom configuration loaders, and no dynamic `type=` dispatch is permitted.
 
@@ -358,14 +387,14 @@ Registration automatically binds the rune class to:
 
 If an extension is installed:
 
-1. Its `RuneConfig` subclasses or structural rune classes are discovered.
+1. Its selected `register(context)` shim contributes `RuneConfig` subclasses into `context.runes`.
 2. Their Anchors become valid Codex territories.
 3. One TOML file equals one instance and payload lives at TOML top level.
 4. Instances located in those directories are validated and loaded.
 5. Validated instances become configuration intent.
-6. A separate factory, adapter, or registration hook must hydrate that intent into runtime state when the rune is meant to do work.
+6. A separate factory, adapter, or domain store contribution must hydrate that intent into runtime state when the rune is meant to do work.
 
-Extension import + inheritance registers **rune ownership** under the shared loader. It does not by itself register a runtime service.
+Extension import alone does not register **rune ownership** under the shared loader. The explicit registration store does. A rune schema alone does not by itself register a runtime service.
 
 The Codex loader remains singular and authoritative.
 
@@ -405,27 +434,24 @@ Infrastructure is never generated from invalid state.
 At runtime, initialization follows a deterministic inscription path:
 
 1. `lychd init` calls `CodexService.inscribe()`.
-2. `RuneSchemaDiscovery.discover_classes()` imports configured extension package roots and discovers all allowed `RuneConfig` subclasses.
+2. Runtime/extension composition supplies the active `RuneConfig` schema classes.
 3. `ConfigWriter.initialize_anchors()` materializes all anchor directories.
 4. `ConfigWriter.inscribe_samples()` writes one sample TOML per schema only when no instance file exists yet.
 
-This keeps extension configuration registration structural (inheritance/import), not procedural.
+This keeps extension activation outside the rune filesystem layer.
 Animation follows the same path: `AnimatorLoader` consumes the same `RuneConfig` runes under `runes/animator/`.
 
+Generated sample TOMLs are marked with `# lychd: sample-rune`. The loader skips
+marked files before schema validation, so first-run placeholders do not break
+`lychd bind`. Removing that marker promotes the TOML into real configuration.
+
 Generic local runtimes are passive by default. Non-model runtimes must declare capability hints explicitly, and local OpenAI-compatible APIs must select an explicit OpenAI-compatible runtime alias or a dedicated adapter. Endpoint presence is not configuration authority for model binding.
-
-Discovery package import, subclass traversal, and allowed-rune anchor validation (`RuneSchemaDiscovery`) are implemented in `src/lychd/config/runes/discovery.py:37`:
-
-??? example "Live snippet: `src/lychd/config/runes/discovery.py:37`"
-    ```python
-    --8<-- "src/lychd/config/runes/discovery.py:37:121"
-    ```
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 
 ??? example "Live snippet: `src/lychd/config/runes/writer.py:16`"
     ```python
-    --8<-- "src/lychd/config/runes/writer.py:16:115"
+    --8<-- "src/lychd/config/runes/writer.py:16:132"
     ```
 
 ---

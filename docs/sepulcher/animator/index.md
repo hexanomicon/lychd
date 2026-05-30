@@ -40,7 +40,6 @@ The Animator draws its energy from two distinct types of sources, inscribed in t
 #### "The Trapped Spirit."
 
 - **Nature:** Local, Containerized, Stateful. These are the engines running within the Sepulcher itself. A Soulstone is a runtime Animator backed by a **Soulstone Rune** in the Codex; the binding pipeline transmutes that Rune into physical Quadlet manifests and services (see **[Containers (08)](../../adr/08-containers.md)**). They belong to **Covens** when their lifecycle or resource profile requires coordinated state, and they are subject to the **[Orchestrator's](../../adr/23-orchestrator.md)** law of lifecycle ownership.
-- **Dedicated vs Shared Lifecycle:** A Soulstone may be declared `dedicated = true` when LychD owns its lifecycle and may start, stop, swap, restart, or reconfigure it during orchestration. A Soulstone with `dedicated = false` is shared with the Magus or another service; LychD may route requests to it, but must not assume it has the right to manage or kill that process. `persistent_resident = true` is a residency hint: keep this animator out of the default eviction set when possible. It is not a claim of exclusive ownership by itself.
 
 ### :material-weather-hurricane: [Portals](./portal.md)
 

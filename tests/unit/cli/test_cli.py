@@ -59,7 +59,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader = mock_loader_cls.return_value
     stone = SimpleNamespace(secret_env_files={})
-    portal = SimpleNamespace(api_key_secret=None)
+    portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader.load_all.return_value = ([stone], [portal])
 
     # 1.5. Mock Podman secret provisioning

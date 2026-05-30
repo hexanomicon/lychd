@@ -12,8 +12,9 @@ from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.model_info import ModelInfo, ModelSurface
 from lychd.domain.animation.schemas.runes.animators import (
     AnimatorConfig,
-    ExternalToolConfig,
     GenericSoulstoneConfig,
+    GoogleGeminiPortalConfig,
+    OpenAIPortalConfig,
     PortalConfig,
     SoulstoneConfig,
 )
@@ -30,9 +31,9 @@ __all__ = [
     "AnimatorConfig",
     "CapabilityFamily",
     "ConcurrencyIntent",
-    "ExternalToolConfig",
     "GenerationProfile",
     "GenericSoulstoneConfig",
+    "GoogleGeminiPortalConfig",
     "LLMGenerationConfig",
     "LLMGenerationDefaults",
     "LocalLLMModelConfig",
@@ -41,6 +42,7 @@ __all__ = [
     "ModelFormat",
     "ModelInfo",
     "ModelSurface",
+    "OpenAIPortalConfig",
     "PortalConfig",
     "SoulstoneConfig",
     "is_placeholder",

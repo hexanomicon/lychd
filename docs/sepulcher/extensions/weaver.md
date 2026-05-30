@@ -134,7 +134,7 @@ When a join closes, the workflow performs a small Ouroboros turn: scattered bran
 
 The Weaver produces a visible structure of work.
 
-- **Graph Visibility:** active workflows can be rendered as Mermaid diagrams or similar execution views.
+- **Graph Visibility:** active workflows can be rendered as Mermaid diagrams for static documentation or as a Svelte Flow island inside **[Scrying](../../divination/altar/scrying.md)** for interactive inspection.
 - **Step Visibility:** the Magus can see:
 
     - which step is active
@@ -142,6 +142,8 @@ The Weaver produces a visible structure of work.
     - which memory was injected
     - where the workflow paused
 - **Operational Clarity:** this turns orchestration from a hidden implementation detail into an inspectable surface at the **[Altar](../../divination/altar/)**.
+
+The visible score is a projection. An interactive graph may let the Magus select, inspect, filter, or draft a change to a workflow, but the Weaver and Vessel remain the authorities for transition rules, persistence, and consent.
 
 !!! tip "Execution Planning Without Drift"
     As simulation, orchestration, and extension participation become more adaptive, keep planning logic in the Weaver's policy layer rather than scattering it across Shadow, runtime adapters, or graph step implementations. The workflow should describe the work. The policy layer should decide how to run it. The Orchestrator and Vessel should decide what may actually happen.

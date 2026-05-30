@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from inspect import Parameter, signature
 from typing import TYPE_CHECKING
 
 import structlog
@@ -19,13 +20,15 @@ if TYPE_CHECKING:
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
+    from lychd.system.schemas import QuadletContainer
 
 
 type RuntimeAnimator = Animator[Connector, SoulstoneConfig | PortalConfig]
 type AnimatorConfigDeclaration = SoulstoneConfig | PortalConfig
-type AnimatorFactory = Callable[[AnimatorConfigDeclaration], RuntimeAnimator | None]
+type AnimatorFactory = Callable[..., RuntimeAnimator | None]
 
 logger = structlog.get_logger()
+_RUNTIME_FACTORY_WITH_QUADLET_ARITY = 2
 
 
 class AnimatorRegistry:
@@ -50,7 +53,15 @@ class AnimatorRegistry:
         llamacpp_control: LlamaCppControlPlane | None = None,
     ) -> None:
         """Initialize loader/binder plus runtime factories and optional llama.cpp control."""
-        self._loader = loader or AnimatorLoader()
+        extensions = None
+        if loader is None or runtime_adapters is None:
+            from lychd.extensions.manager import ExtensionManager
+
+            extensions = ExtensionManager.from_settings().assemble()
+
+        self._loader = loader or AnimatorLoader(
+            rune_schemas=list(extensions.runes.rune_schemas) if extensions is not None else None
+        )
         self._binder = binder or AnimatorBinder()
 
         if runtime_adapters is None:
@@ -58,7 +69,9 @@ class AnimatorRegistry:
                 RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
             )
 
-            runtime_adapters = _RuntimeAdapterRegistry()
+            runtime_adapters = _RuntimeAdapterRegistry(
+                adapters=extensions.soulstones.runtime_adapters if extensions is not None else None,
+            )
         self._runtime_adapters = runtime_adapters
 
         if runtime_factories is None:
@@ -95,13 +108,18 @@ class AnimatorRegistry:
             for group in stone.groups:
                 new_groups.setdefault(group, []).append(stone)
 
+        quadlets = self._transmute_soulstone_quadlets(raw_soulstones, raw_portals)
         new_animators: dict[str, RuntimeAnimator] = {}
         new_capabilities: dict[str, CapabilitySpec] = {}
         new_capability_states: dict[str, CapabilityState] = {}
         for rune in [*raw_soulstones, *raw_portals]:
             resolved = False
             for factory in self._runtime_factories:
-                runtime = factory(rune)
+                runtime = self._call_runtime_factory(
+                    factory,
+                    rune,
+                    quadlets.get(rune.name) if isinstance(rune, SoulstoneConfig) else None,
+                )
                 if runtime is None:
                     continue
                 new_animators[runtime.id] = runtime
@@ -135,6 +153,49 @@ class AnimatorRegistry:
             runtime_animators=len(self._animators),
             capabilities=len(self._capabilities),
         )
+
+    def _transmute_soulstone_quadlets(
+        self,
+        soulstones: list[SoulstoneConfig],
+        portals: list[PortalConfig],
+    ) -> dict[str, QuadletContainer]:
+        """Transmute loaded Soulstones into generated Quadlet manifests keyed by Soulstone name."""
+        if not soulstones:
+            return {}
+
+        from lychd.domain.animation.transmute import Transmuter
+        from lychd.system.schemas import QuadletContainer
+
+        manifests = Transmuter(runtime_planner=self._runtime_adapters).transmute_all(soulstones, portals=portals)
+        soulstone_names = {stone.name for stone in soulstones}
+        quadlets: dict[str, QuadletContainer] = {}
+        for manifest in manifests:
+            if not isinstance(manifest, QuadletContainer):
+                continue
+            if not manifest.container_name.startswith("lychd-"):
+                continue
+            soulstone_name = manifest.container_name.removeprefix("lychd-")
+            if soulstone_name in soulstone_names:
+                quadlets[soulstone_name] = manifest
+        return quadlets
+
+    def _call_runtime_factory(
+        self,
+        factory: AnimatorFactory,
+        rune: AnimatorConfigDeclaration,
+        quadlet: QuadletContainer | None,
+    ) -> RuntimeAnimator | None:
+        """Call runtime factories with Quadlet hydration when their signature supports it."""
+        parameters = list(signature(factory).parameters.values())
+        accepts_varargs = any(parameter.kind == Parameter.VAR_POSITIONAL for parameter in parameters)
+        positional_parameters = [
+            parameter
+            for parameter in parameters
+            if parameter.kind in {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
+        ]
+        if accepts_varargs or len(positional_parameters) >= _RUNTIME_FACTORY_WITH_QUADLET_ARITY:
+            return factory(rune, quadlet)
+        return factory(rune)
 
     def ensure_loaded(self) -> None:
         if not self._loaded:

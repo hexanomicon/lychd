@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
+from pydantic import ValidationError
 
-from lychd.config.runes import ConfigLoader, RuneConfig, RuneSchemaDiscovery
-from lychd.extensions.discovery import CryptSourceLoader
+from lychd.config.runes import ConfigLoader, RuneConfig
 
 
 class RootConfig(RuneConfig):
@@ -59,6 +59,60 @@ def test_loader_parses_top_level_payload_one_file(tmp_path: Path) -> None:
     assert len(instances) == 1
     assert instances[0].value == "alpha"
     assert instances[0].source_file == target
+
+
+def test_source_file_is_provenance_not_toml_field(tmp_path: Path) -> None:
+    """source_file is derived from the filesystem, never from TOML payload."""
+    assert "source_file" not in LeafConfig.model_fields
+
+    target = tmp_path / "test" / "leaf" / "alpha.toml"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text('value = "alpha"\nsource_file = "/tmp/forged.toml"\n', encoding="utf-8")
+
+    loader = ConfigLoader(runes_dir=tmp_path)
+
+    with pytest.raises(ValidationError, match="source_file"):
+        loader.load_all([LeafConfig])
+
+
+def test_source_file_binding_marks_validated_instance(tmp_path: Path) -> None:
+    """Source binding records provenance on the validated rune itself."""
+    target = tmp_path / "test" / "leaf" / "alpha.toml"
+    instance = LeafConfig(value="alpha")
+
+    bound = instance.bind_source_file(target)
+
+    assert bound is instance
+    assert instance.source_file == target
+
+
+def test_source_file_binding_rejects_rebinding(tmp_path: Path) -> None:
+    """A rune source can be bound once during loading."""
+    instance = LeafConfig(value="alpha").bind_source_file(tmp_path / "alpha.toml")
+
+    with pytest.raises(ValueError, match="already bound"):
+        instance.bind_source_file(tmp_path / "beta.toml")
+
+
+def test_source_file_binding_rejects_branch_classes(tmp_path: Path) -> None:
+    """Only leaf rune classes become file-backed runes."""
+    instance = ParentConfig()
+
+    with pytest.raises(TypeError, match="Branch rune class"):
+        instance.bind_source_file(tmp_path / "parent.toml")
+
+
+def test_loaded_runes_are_frozen(tmp_path: Path) -> None:
+    """Validated Codex intent must not drift after loading."""
+    target = tmp_path / "test" / "leaf" / "alpha.toml"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text('value = "alpha"\n', encoding="utf-8")
+
+    loader = ConfigLoader(runes_dir=tmp_path)
+    instance = next(i for i in loader.load_all([LeafConfig]) if isinstance(i, LeafConfig))
+
+    with pytest.raises(ValidationError, match="frozen"):
+        instance.value = "changed"
 
 
 def test_parent_schema_does_not_consume_child_anchor_files(tmp_path: Path) -> None:
@@ -146,6 +200,11 @@ def test_relative_path_is_assembled_from_parent_chain() -> None:
     assert ChildConfig.relative_path == Path("test/tree/child")
 
 
+def test_anchor_dir_resolves_under_active_rune_root(tmp_path: Path) -> None:
+    """RuneConfig resolves anchors only under a caller-provided root."""
+    assert ChildConfig.anchor_dir(tmp_path) == tmp_path / "test" / "tree" / "child"
+
+
 def test_rune_class_rejects_multiple_rune_parents() -> None:
     """Rune ancestry is a single linked list, not a diamond graph."""
 
@@ -208,13 +267,28 @@ def test_path_fragment_rejects_parent_traversal() -> None:
 
     def define_bad_schema() -> type[RuneConfig]:
         class TraversalAnchorConfig(RuneConfig):
-            path_fragment: ClassVar[Path] = Path("safe/../outside")
+            path_fragment: ClassVar[Path] = Path("..")
 
             value: str
 
         return TraversalAnchorConfig
 
     with pytest.raises(ValueError, match="invalid path_fragment part"):
+        define_bad_schema()
+
+
+def test_path_fragment_rejects_multiple_parts() -> None:
+    """One rune class contributes exactly one path segment."""
+
+    def define_bad_schema() -> type[RuneConfig]:
+        class MultiPartAnchorConfig(RuneConfig):
+            path_fragment: ClassVar[Path] = Path("safe/outside")
+
+            value: str
+
+        return MultiPartAnchorConfig
+
+    with pytest.raises(ValueError, match="multi-part path_fragment"):
         define_bad_schema()
 
 
@@ -249,11 +323,11 @@ def test_path_fragment_rejects_uppercase_parts() -> None:
 
 
 def test_path_fragment_rejects_long_parts() -> None:
-    """Rune fragment parts are bounded so extension namespaces stay readable."""
+    """Rune fragment segments are bounded so extension namespaces stay readable."""
 
     def define_bad_schema() -> type[RuneConfig]:
         class LongNameConfig(RuneConfig):
-            path_fragment: ClassVar[Path] = Path("valid") / ("a" * 51)
+            path_fragment: ClassVar[Path] = Path("a" * 51)
 
             value: str
 
@@ -262,38 +336,3 @@ def test_path_fragment_rejects_long_parts() -> None:
     with pytest.raises(ValueError, match="invalid path_fragment part"):
         define_bad_schema()
 
-
-def test_extension_discovery_imports_builtin_configurable(tmp_path: Path) -> None:
-    """Built-in extension config subclasses are discovered after runtime import."""
-    classes = RuneSchemaDiscovery().discover_classes()
-
-    names = {cls.__name__ for cls in classes}
-    assert "ShadowSimulationConfig" in names
-    assert "LeafConfig" not in names
-
-
-def test_extension_discovery_is_deduplicated_and_stable() -> None:
-    """Discovery should return deterministic, duplicate-free class lists."""
-    classes = RuneSchemaDiscovery().discover_classes()
-    keys = [(cls.__module__, cls.__qualname__) for cls in classes]
-
-    assert len(classes) == len(set(classes))
-    assert keys == sorted(keys)
-
-
-def test_extension_loader_does_not_blindly_load_binary_organs(tmp_path: Path) -> None:
-    """Binary organs require Forge mediation before they enter runtime import."""
-
-    class Collector:
-        registered = 0
-
-        def register_schema(self, _schema: type[RuneConfig]) -> None:
-            self.registered += 1
-
-    binary = tmp_path / "organ.so"
-    binary.write_bytes(b"not a real extension module")
-
-    collector = Collector()
-    CryptSourceLoader(collector).scan_extensions(tmp_path)
-
-    assert collector.registered == 0

@@ -19,3 +19,9 @@ The Loom shows:
 - Mermaid or Pydantic AI graph renderings when available
 
 A Pattern becomes an Invocation only when the Magus offers it at the Altar.
+
+## Surface Shape
+
+The Loom is the design-time workflow surface. Its first form may be a Pattern browser with rendered Mermaid or Pydantic AI graph diagrams, input/output contracts, required capabilities, and expected approval gates.
+
+As Weaver matures, the Loom is the natural home for a richer graph island. Svelte Flow may be used here for node/edge creation, selection, layout, and editing, in the spirit of workflow tools such as n8n. Even then, the browser edits only draft Pattern structure. The Vessel and Weaver remain responsible for validation, persistence, capability resolution, and the moment a Pattern becomes an Invocation.

@@ -7,6 +7,7 @@ from lychd.domain.animation.animators import Animator
 from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
 from lychd.domain.animation.connectors import Connector
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
+from lychd.system.schemas import QuadletContainer
 
 LISTEN_HOST = "0.0.0.0"  # noqa: S104
 
@@ -23,6 +24,14 @@ class RuntimePlan:
     podman_args: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class SoulstoneDefinition:
+    """Registration-time definition of one Soulstone runtime family."""
+
+    rune_schema: type[SoulstoneConfig]
+    runtime_adapter: SoulstoneRuntimeAdapter
+
+
 class SoulstoneRuntimeAdapter(Protocol):
     """Contract for Soulstone runtime planners/builders."""
 
@@ -32,7 +41,7 @@ class SoulstoneRuntimeAdapter(Protocol):
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan: ...
 
-    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None: ...
+    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None: ...
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]: ...
 
@@ -51,6 +60,7 @@ __all__ = [
     "LISTEN_HOST",
     "RuntimeAnimator",
     "RuntimePlan",
+    "SoulstoneDefinition",
     "SoulstoneRuntimeAdapter",
     "SoulstoneRuntimePlanner",
 ]

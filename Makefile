@@ -13,14 +13,53 @@ MAKEFLAGS += --no-print-directory
 # Usage: make test K="animation" M="unit"
 #        make test PYTEST_TARGETS="tests/unit/config/runes"
 # Default parallelism is auto, but can be overridden (e.g., make test N=0)
+# Default output is compact for agent context. Use VERBOSE=1 when debugging:
+# it disables RTK filtering and makes pytest stream stdout plus long tracebacks
+# into the caller. Pytest log streaming is already owned by pyproject.toml.
+# RTK is optional; when it is missing, targets fall back to raw uv/npm/curl/grep.
 N ?= auto
+VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
 RUFF_TARGETS ?= .
 FORMAT_TARGETS ?= .
 TYPECHECK_TARGETS ?=
 PYTEST_EFFECTIVE_TARGETS := $(PYTEST_TARGETS)
+UV ?= uv
+UV_CACHE_DIR ?= .cache/uv
+RTK ?= rtk
+RTK_AVAILABLE := $(shell command -v $(RTK) >/dev/null 2>&1 && echo 1 || echo 0)
+RTK_ACTIVE := $(RTK_AVAILABLE)
+
+ifeq ($(VERBOSE),1)
+RTK_ACTIVE := 0
+endif
+
+ifeq ($(RTK_ACTIVE),1)
+RUN := $(UV) run $(RTK) run
+ERR := $(UV) run $(RTK) err
+RUFF := $(UV) run $(RTK) ruff
+PYTEST := $(UV) run $(RTK) pytest
+TYPECHECK := $(UV) run --group typing $(RTK) err basedpyright
+NPM := $(RTK) npm
+NPM_ERR := $(RTK) err npm
+CURL := $(RTK) curl
+GREP := $(RTK) grep
+else
+RUN :=
+ERR :=
+RUFF := $(UV) run ruff
+PYTEST := $(UV) run pytest
+TYPECHECK := $(UV) run --group typing basedpyright
+NPM := npm
+NPM_ERR := npm
+CURL := curl
+GREP := grep
+endif
 
 PYTEST_ARGS := -n $(N)
+ifeq ($(VERBOSE),1)
+	PYTEST_ARGS += -s --tb=long
+endif
 ifdef K
 	PYTEST_ARGS += -k "$(K)"
 endif
@@ -68,13 +107,13 @@ endef
 .PHONY: install-uv
 install-uv:                                         ## Install latest version of uv
 	@echo "${INFO} Installing uv..."
-	@curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
+	@$(CURL) -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
 	@echo "${OK} UV installed successfully"
 
 .PHONY: install
 install: ## Install Python dependencies (Backend)
 	@echo "${INFO} Syncing Python dependencies via uv..."
-	@uv sync --all-extras --dev
+	@$(ERR) $(UV) sync --all-extras --dev
 	@echo "${OK} Ready to rock."
 
 # =============================================================================
@@ -84,32 +123,32 @@ install: ## Install Python dependencies (Backend)
 .PHONY: frontend-install
 frontend-install: ## Install frontend dependencies for the Altar (TODO)
 	@echo "${INFO} Installing frontend dependencies..."
-	@npm ci
+	@$(NPM_ERR) ci
 	@echo "${OK} Frontend dependencies installed."
 
 .PHONY: frontend-dev
 frontend-dev: ## Run the Altar frontend in watch mode (TODO)
 	@echo "${INFO} Starting frontend dev server..."
-	@npm run dev
+	@$(NPM) run dev
 
 .PHONY: frontend-build
 frontend-build: ## Build frontend assets for the Altar (TODO)
 	@echo "${INFO} Building frontend assets..."
-	@npm run build
+	@$(NPM) run build
 	@echo "${OK} Frontend build complete."
 
 .PHONY: clean
 clean: ## Nuke all artifacts, caches, and build files
 	@echo "${INFO} Cleaning project..."
-	@rm -rf .venv .ruff_cache .pytest_cache .mypy_cache .coverage htmlcov dist build
-	@find . -type d -name "__pycache__" -exec rm -rf {} +
-	@find . -type f -name "*.pyc" -delete
+	@$(RUN) rm -rf .venv .cache .ruff_cache .pytest_cache .mypy_cache .coverage htmlcov dist build
+	@$(RUN) find . -type d -name "__pycache__" -exec rm -rf {} +
+	@$(RUN) find . -type f -name "*.pyc" -delete
 	@echo "${OK} Cleaned."
 
 .PHONY: lock
 lock: ## Re-resolve dependencies and update uv.lock
 	@echo "${INFO} Updating lockfile..."
-	@uv lock --upgrade
+	@$(ERR) $(UV) lock --upgrade
 	@echo "${OK} Locked."
 
 # =============================================================================
@@ -120,27 +159,27 @@ lock: ## Re-resolve dependencies and update uv.lock
 lint: ## Run Ruff (Linter). Usage: make lint RUFF_TARGETS="src/lychd/app.py tests/unit"
 	@$(call validate_paths,$(RUFF_TARGETS))
 	@echo "${INFO} Linting (Targets: $(RUFF_TARGETS))..."
-	@uv run ruff check $(RUFF_TARGETS)
+	@$(RUFF) check $(RUFF_TARGETS)
 	@echo "${OK} Lint pass."
 
 .PHONY: format
 format: ## Run Ruff (Formatter). Usage: make format FORMAT_TARGETS="src/lychd/app.py"
 	@$(call validate_paths,$(FORMAT_TARGETS))
 	@echo "${INFO} Formatting (Targets: $(FORMAT_TARGETS))..."
-	@uv run ruff format $(FORMAT_TARGETS)
+	@$(RUFF) format $(FORMAT_TARGETS)
 	@echo "${OK} Formatted."
 
 .PHONY: type-check
 type-check: ## Run BasedPyright. Usage: make type-check TYPECHECK_TARGETS="src/lychd/app.py"
 	@$(call validate_paths,$(TYPECHECK_TARGETS))
 	@echo "${INFO} Type checking (Targets: $(if $(strip $(TYPECHECK_TARGETS)),$(TYPECHECK_TARGETS),<repo-default>))..."
-	@uv run --group typing basedpyright $(TYPECHECK_TARGETS)
+	@$(TYPECHECK) $(TYPECHECK_TARGETS)
 	@echo "${OK} Types are strict."
 
 .PHONY: test
 test: ## Run tests. Usage: make test K="anim" M="unit"
 	@echo "${INFO} Running tests (Args: $(PYTEST_ARGS) Targets: $(PYTEST_EFFECTIVE_TARGETS))..."
-	@uv run pytest $(PYTEST_ARGS) $(PYTEST_EFFECTIVE_TARGETS)
+	@$(PYTEST) $(PYTEST_ARGS) $(PYTEST_EFFECTIVE_TARGETS)
 
 .PHONY: test-config
 test-config: ## Run configurable/runes focused tests only
@@ -149,7 +188,7 @@ test-config: ## Run configurable/runes focused tests only
 .PHONY: coverage
 coverage: ## Run tests with coverage report
 	@echo "${INFO} Generating coverage..."
-	@uv run pytest --cov --cov-report=html:htmlcov --cov-report=term
+	@$(PYTEST) --cov --cov-report=html:htmlcov --cov-report=term
 	@echo "${OK} Report generated at htmlcov/index.html"
 
 .PHONY: check
@@ -163,13 +202,13 @@ check: lint format type-check test ## Run ALL quality checks (The "CI" command)
 .PHONY: docs
 docs: ## Serve the documentation locally
 	@echo "${INFO} Serving The Hexanomicon at http://localhost:7778"
-	@uv run zensical serve --dev-addr localhost:7778
+	@$(RUN) $(UV) run zensical serve --dev-addr localhost:7778
 
 
 .PHONY: kill-docs
 kill-docs: ## Kill any process running on the docs port (7778)
 	@echo "${INFO} Finding and stopping process on port 7778..."
-	@lsof -t -i:7778 | xargs -r kill -9 || true
+	@$(RUN) lsof -t -i:7778 | xargs -r kill -9 || true
 	@echo "${OK} Port 7778 is clear."
 
 # =============================================================================
@@ -182,13 +221,13 @@ ifndef part
 	$(error "You must specify a part! Usage: make release part=patch")
 endif
 	@echo "${INFO} Bumping version ($(part))..."
-	@uv run bump-my-version bump $(part)
+	@$(ERR) $(UV) run bump-my-version bump $(part)
 	@echo "${OK} Version bumped and tagged."
 
 .PHONY: build
 build: ## Build the Python wheel
 	@echo "${INFO} Building wheel..."
-	@uv build
+	@$(ERR) $(UV) build
 	@echo "${OK} Built."
 
 
@@ -198,15 +237,15 @@ build: ## Build the Python wheel
 
 .PHONY: init
 init: ## Initialize LychD Codex
-	@uv run lychd init
+	@$(ERR) $(UV) run lychd init
 
 .PHONY: bind
 bind: ## Bind Systemd units
-	@uv run lychd bind
+	@$(ERR) $(UV) run lychd bind
 
 # =============================================================================
 # 📚 Help
 # =============================================================================
 .PHONY: help
 help: ## Display this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@$(GREP) -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'

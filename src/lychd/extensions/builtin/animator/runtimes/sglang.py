@@ -15,6 +15,7 @@ from lychd.domain.animation.services.adapters.runtimes.shared import (
 from lychd.domain.animation.services.adapters.surfaces import (
     SglangStone,
 )
+from lychd.system.schemas import QuadletContainer
 from lychd.extensions.builtin.animator.soulstones import SglangSoulstoneConfig
 
 
@@ -26,7 +27,7 @@ class SglangRuntimeAdapter:
     def supports(self, runtime: str) -> bool:
         return runtime == self.runtime
 
-    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
         """Build SGLang runtime handle with OpenAI-compatible connector surface."""
         stone = require_runtime_soulstone(
             soulstone,
@@ -38,7 +39,7 @@ class SglangRuntimeAdapter:
             runtime=self.runtime,
             metadata=self._runtime_metadata(stone),
         )
-        return SglangStone(rune=stone, connector=connector)
+        return SglangStone(rune=stone, connector=connector, quadlet=quadlet)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for an SGLang soulstone."""
@@ -125,8 +126,6 @@ class SglangRuntimeAdapter:
         metadata: dict[str, object] = {
             "runtime": self.runtime,
             "tensor_parallel_size": soulstone.tensor_parallel_size,
-            "dedicated": soulstone.dedicated,
-            "persistent_resident": soulstone.persistent_resident,
         }
         if soulstone.attention_backend is not None:
             metadata["attention_backend"] = soulstone.attention_backend

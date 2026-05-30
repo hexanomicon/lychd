@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import ClassVar
+
 import pytest
 from pydantic_ai import FunctionToolset
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, PortalConfig
+from lychd.domain.animation.schemas import ModelInfo, OpenAIPortalConfig, PortalConfig
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericPortal,
     OpenAICompatibleConnector,
@@ -15,17 +18,21 @@ from lychd.domain.animation.services.adapters.surfaces import (
 from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
 
 
+class CustomPortalConfig(PortalConfig):
+    path_fragment: ClassVar[Path] = Path("custom")
+
+
 def _openai_portal_animator(*, toolsets: tuple[FunctionToolset, ...] = ()) -> OpenAIPortal:
-    rune = PortalConfig(
-        name="openai-main",
-        base_url="https://api.openai.com/v1",
-        provider_type="openai",
-        default_model_id="gpt-5",
+    rune = OpenAIPortalConfig.model_validate(
+        {
+            "name": "openai-main",
+            "description": "OpenAI test portal",
+        }
     )
     connector = OpenAICompatibleConnector(
         kind="portal:openai",
         link=Link(up=True),
-        base_url=rune.base_url,
+        base_url=str(rune.base_url or ""),
         model_infos=(ModelInfo(id="gpt-5"),),
         default_model_id="gpt-5",
         toolsets=toolsets,
@@ -45,7 +52,14 @@ def test_binder_hydrates_openai_model_from_connector() -> None:
 
 
 def test_binder_returns_empty_toolsets_for_non_tool_connector() -> None:
-    rune = PortalConfig(name="passive", base_url="https://example.test/v1", provider_type="custom")
+    rune = CustomPortalConfig.model_validate(
+        {
+            "name": "passive",
+            "description": "Custom passive portal",
+            "provider_name": "custom",
+            "base_url": "https://example.test/v1",
+        }
+    )
     animator = GenericPortal(
         rune=rune,
         connector=PassiveConnector(kind="portal:custom", link=Link(up=True)),
@@ -80,7 +94,14 @@ def test_binder_combines_multiple_toolsets() -> None:
 
 
 def test_binder_raises_for_missing_model_capability() -> None:
-    rune = PortalConfig(name="passive", base_url="https://example.test/v1", provider_type="custom")
+    rune = CustomPortalConfig.model_validate(
+        {
+            "name": "passive",
+            "description": "Custom passive portal",
+            "provider_name": "custom",
+            "base_url": "https://example.test/v1",
+        }
+    )
     animator = GenericPortal(
         rune=rune,
         connector=PassiveConnector(kind="portal:custom", link=Link(up=True)),

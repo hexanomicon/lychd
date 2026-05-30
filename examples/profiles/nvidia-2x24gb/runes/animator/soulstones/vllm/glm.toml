@@ -1,0 +1,19 @@
+# ~/.config/lychd/runes/animator/soulstones/vllm/glm.toml
+
+name = "glm-vllm"
+description = "Dual-card vLLM Soulstone for one OpenAI-compatible local model."
+groups = ["local-llm", "nvidia-2x24gb"]
+port = 8010
+
+model_path = "/models/GLM-4.7-Flash-AWQ-4bit"
+tensor_parallel_size = 2
+gpu_memory_utilization = 0.90
+max_model_len = 65536
+max_num_seqs = 2
+
+language_model_only = true
+tool_call_parser = "glm47"
+reasoning_parser = "glm45"
+enable_auto_tool_choice = true
+trust_remote_code = true
+ipc_host = true

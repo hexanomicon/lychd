@@ -48,8 +48,8 @@ icon: material/star-shooting-outline
 
 The application rejects the use of a global `app` object. Instead, logic is assimilated via a registration protocol:
 
-- **The Context:** During boot, the system initializes an `ExtensionContext`. This object is passed only to organs participating in in-process runtime grafting. It is the host-provided grafting surface for that binding path, not the whole Extension Protocol defined in **[ADR 05](./05-extensions.md)**.
-- **Assembly:** The application factory iterates through these registered objects, collecting unbound `Router` instances and standalone `Controller` classes. These are then grafted onto the Vessel to assemble the final API surface. This prevents circular imports and allows for the seamless addition of new interfaces without a global `app` object.
+- **The Context:** During boot, the system initializes an `ExtensionContext`. It is the host-provided registration surface for selected organs, not the whole Extension Protocol defined in **[ADR 05](./05-extensions.md)**.
+- **Assembly:** The current source exposes `context.vessel` only as a reserved store. Route, middleware, auth, and event bundles must be shaped there before the application factory may collect them. This preserves the no-global-`app` rule without flattening Vessel concerns onto `ExtensionContext`.
 
 ### 2. The Initialization Protocol (Duality)
 
@@ -98,9 +98,9 @@ These are non-negotiable implementation laws for all code written against the Ve
 #### I. The Unbound Routing Law
 
 !!! warning "Forbidden"
-    `@app.get(...)`, `@app.post(...)`, or any decorator that binds a route directly to the application instance. This couples the route to a specific `app` object at import time, which causes circular imports when the `ExtensionContext` tries to collect unbound `Router` objects from isolated organs.
+    `@app.get(...)`, `@app.post(...)`, or any decorator that binds a route directly to the application instance. This couples the route to a specific `app` object at import time and blocks later `context.vessel` collection.
 
-**Mandate:** All routes must be defined in standalone `Controller` classes or unbound `Router` instances. The application factory collects these from the `ExtensionContext` and grafts them onto the Vessel at boot — they must have zero knowledge of the application object at definition time.
+**Mandate:** All routes must be defined in standalone `Controller` classes or unbound `Router` instances. Once `VesselStore` grows route bundles, the application factory can collect those unbound objects at boot; they must have zero knowledge of the application object at definition time.
 
 ```python
 # ✅ Correct — unbound, collectable
@@ -114,7 +114,8 @@ class RuneController(Controller):
 
 router = Router(path="/api", route_handlers=[RuneController])
 
-# In register(context): context.add_router(router)
+# Future VesselStore shape, once route bundles are active:
+# context.vessel.http.add_router(router)
 ```
 
 #### II. The DTO Mandate (Death to Boilerplate)

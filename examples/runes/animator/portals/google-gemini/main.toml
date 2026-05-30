@@ -1,0 +1,5 @@
+# ~/.config/lychd/runes/animator/portals/google-gemini/main.toml
+
+name = "google-gemini"
+description = "Google Gemini Portal using the provider OpenAI-compatible endpoint."
+api_key_secret_name = "portal_google_gemini_api_key"
