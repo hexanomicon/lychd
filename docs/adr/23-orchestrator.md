@@ -50,6 +50,11 @@ icon: material/scale-balance
 
 ### 1. The Tipping Point (Whim Algorithm)
 
+!!! note "The v1 Default Strategy and the Whim"
+    The canonical v1 `OrchestrationStrategy` is **Warm-First with Metabolic Accounting**: candidates already warm are preferred, and a swap is chosen only when its metabolic cost (VRAM load time plus context re-processing) is justified. This degenerate, predictable strategy is the shipped default, not a placeholder.
+
+    **The Whim** described below is a *named future strategy*, not the current default. Its constants — Momentum, Inertia Bias, the Tipping Point — become Codex-tunable policy when it lands. The transition ritual (Pause → Drain → Signal → Transmutation → Awakening) is shared by every strategy; only the swap *decision* differs.
+
 Decisions regarding hardware state transitions are not binary; they are calculated using a priority-weighting algorithm called **The Whim**. This algorithm governs the transition from **Manas** (divergent exploration) to **Buddhi** (convergent logic). It enforces **Stillness** (metabolic discipline) to prevent the VRAM thrashing that occurs during uncontrolled parallel branching (excessive *Vṛttis*). Critically, this algorithm respects the **Discipline** of the active Soulstone.
 
 - **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
@@ -73,11 +78,29 @@ When the Tipping Point is reached, the Orchestrator executes a coordinated ritua
 
 Snapshot note: this drain/swap ritual protects live work during transitions. "Drain" means Ghouls finish their current atomic inference step and stop claiming new jobs — the Agent's cognitive state remains alive in Vessel process memory throughout. Phylactery serialization is reserved for **Long Sleep** scenarios (human approval pending, multi-day waits, or full system reboots). Durable state capture and Btrfs/COW snapshot strategy are governed separately by **[Snapshots (07)](07-snapshots.md)**.
 
-!!! note "Stasis as Parked Vritti"
-    Stasis is not a separate Magus-initiated ritual. It is the condition of an active cognitive fluctuation (**Vritti**) parked at a recoverable boundary because physical reality is not ready. A short model swap may produce **Live Stasis**, where the Vritti waits in Vessel memory. A reboot, approval wait, peer callback, or other long delay requires **Durable Stasis**, where the recoverable boundary is recorded in the Phylactery. Replay resumes from that persisted boundary; rollback discards or restores the timeline according to Worker, Graph, Simulation, or Snapshot law.
+!!! note "Stasis as Parked Vritti: Live vs Durable"
+    Stasis is not a separate Magus-initiated ritual. It is the condition of an active cognitive fluctuation (**Vritti**) parked at a recoverable boundary because physical reality is not ready. Two kinds are distinguished not by *whether state was written* but by *who resumes the run*.
+
+    - **Live Stasis:** the run remains a resident in-process loop and resumes itself once the substrate is ready. A checkpoint to the Phylactery may be taken opportunistically, and its absence is lawful — the loop never exited, so nothing needs reanimating.
+    - **Durable Stasis:** the run exits the process; a checkpoint to the Phylactery is mandatory, and resumption requires Reanimation.
+
+    The defining axis is the pause locus, not the checkpoint. Hardware transitions default to **Live Stasis with an opportunistic checkpoint** — the implemented GraphRunner behaviour. HitL waits (**[HitL (25)](25-hitl.md)**), Long Sleep, Vessel-lifecycle intents, and deferred peer (A2A) waits are **Durable**. Replay resumes from a persisted boundary; rollback discards or restores the timeline according to Worker, Graph, Simulation, or Snapshot law.
 
 !!! note "Orchestration Boundary"
     The Orchestrator owns physical lifecycle decisions: warm/cold checks, transition plans, drains, leases, runtime-native activation, and host lifecycle requests. It consumes Dispatcher signals and worker drain status, but it does not own privacy routing, cognitive binding, graph schema, queue retry semantics, or whole-system snapshot rollback. Those boundaries may receive better class names later, but the authority split is durable.
+
+    A cold capability whose Animator is not dedicated (`dedicated=False`) lies outside the Orchestrator's authority entirely: the Orchestrator cannot move a runtime it does not own. The **[Dispatcher (22)](22-dispatcher.md)** must exclude such candidates or reject them with `dependency_unavailable`; the transition planner never crashes on a capability it has no power to manifest.
+
+### Soft Activation Contract
+
+Not every transition is a container swap. When the target runtime is already warm and its adapter exposes a native activation seam, the Orchestrator performs `dynamic_soft` activation without a Systemd transition.
+
+- **Activate:** for the `llama.cpp` router, activation is `POST /models/load` against the running router.
+- **State projection:** `CapabilityState` projects `loaded_model_ids` and `estimated_ready_ms` from the router's reported `status`, which is one of `unloaded`, `loading`, or `loaded`.
+- **Readiness:** the capability is grantable once its model id appears in `loaded_model_ids` with `status = loaded`.
+
+!!! note "Implementation status"
+    Soft activation is doctrine ahead of code. Current adapters return `False` from `activate_capability`; the `llama.cpp` router lifecycle is modelled but not yet driven. Until it is, every activation resolves to a Hard Swap or a `dependency_unavailable` rejection.
 
 ### 2. Model Tiering and Reservation
 

@@ -158,6 +158,7 @@ Memory is manifested as a dynamic power granted to an **[Agent (ADR 20)](./20-ag
 - **The Mentat Refusal:** If a retrieval ritual returns a similarity score below the **Sovereign Threshold**, the Agent is physically barred from "guessing." It must return a **Hard Refusal**: *"The Archive contains no truth regarding this intent."*
 - **Sigil Scope:** Retrieval MUST include `entity_id` scoping (or explicit policy-authorized shared scope) so one identity cannot read another identity’s Karma.
 - **Shared Scope Is Exceptional:** Cross-persona or cross-organization recall is a deliberate grant, not the default shape of memory. The system begins from sovereignty and moves outward only by consent.
+- **Cross-Identity Recall Is Hard-Gated:** Cross-identity recall is a hard-gated class under the **[Codex (ADR 12)](./12-configuration.md)** whose grant record is future work. Until that grant record is defined, **[Archive Gating (ADR 38)](./38-iam.md)** admits no exception, and every recall stays scoped to the active Sigil's `entity_id`.
 
 ### 8. Algorithmic Memory Evolution
 
@@ -195,6 +196,8 @@ The Curator therefore manages sedimentation, not only deletion: it governs how e
 
 !!! note "Staged Memory Promotion"
     Curator output is staged and versioned before it becomes a future prior. A live run may write working memory, but batch consolidation should produce inspectable candidates or a new Archive version rather than silently mutating the active context underneath an Agent. Mirror, policy, and Context hydration decide when staged memories become active priors for a later run.
+
+    The staged-promotion boundary is already provided by the `vectors` chamber (**[Persistence (ADR 06)](./06-persistence.md)**): Curator writes are born `speculative`; the Rite of Consecration (**[HitL (ADR 25)](./25-hitl.md)**) alone flips a record to `consecrated`; and the **[Soulforge (ADR 33)](./33-training.md)** mines only consecrated Karma. Staged promotion is therefore a status transition under explicit authority, never a silent overwrite of live memory.
 
 !!! note "Curator Consolidation Is Not Shadow Dreaming"
     Batch consolidation of traces, transcripts, tool outcomes, and HitL feedback belongs to the Archive and Curator loop. Shadow Simulation dreams candidate futures; the Curator distills the verified past into staged memory candidates. Mirror may then decide whether those candidates strengthen the active Sigil's semantic vertex before Context hydrates them as priors.

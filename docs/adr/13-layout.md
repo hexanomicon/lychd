@@ -127,16 +127,19 @@ The layout now separates trusted and untrusted execution geography.
     - `~/.local/share/lychd/tomb/workspaces/`
     - `~/.local/share/lychd/tomb/artifacts/`
     - `~/.local/share/lychd/tomb/cache/`
-- **The Tomb** must not mount writable Codex, provider secrets, or host trigger/signaling paths. If a Tomb profile needs Codex-shaped facts, it receives no Codex mount by default or a read-only/sanitized projection.
+- **The Tomb** must not mount writable Codex, provider secrets, or host trigger/signaling paths.
 - **The Tomb** may receive a narrow queue-only SAQ/Postgres credential for execution-plane job claiming, acknowledgement, and retry bookkeeping, but no control-plane database authority.
 - **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)**.
+
+!!! note "The No-Codex Law"
+    The Tomb mounts **no Codex**—not read-only, not sanitized, not projected. A job carries its complete runtime envelope in its payload (**[Backend (11)](11-backend.md)**'s task-safe, secret-forbidden Tomb config). If a job seems to need configuration its payload cannot carry, the design of the job is wrong, not the mount table. This law deletes the notion of a "sanitized Codex projection" outright; **[Security (09)](09-security.md)**, **[Backend (11)](11-backend.md)**, and **[Configuration (12)](12-configuration.md)** cross-reference this statement rather than each defining a sanitizer.
 
 ### 5. Authority Matrix
 
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Secret-bearing Codex paths under `0600` ownership. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, Codex secrets, or control-plane credentials. |
-| Mounts | Codex plus required durable Crypt regions. | Task-scoped workspace/artifact/cache mounts; optional read-only/sanitized Codex projection only. |
+| Mounts | Codex plus required durable Crypt regions. | Task-scoped workspace/artifact/cache mounts; no Codex mount (the No-Codex Law). |
 | Network | Internal control-plane connectivity. | Tomb loop may use minimal queue/proxy connectivity; sandboxed `nono` subprocesses have zero network. |
 | Queue Ownership | Queue state mapped through trusted persistence paths. | Claims, acknowledges, and retries execution-plane jobs only; no control-plane queue ownership. |
 | Authority Boundaries | Trigger/intent geography available. | No trigger/intent mount access. |

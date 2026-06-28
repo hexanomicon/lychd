@@ -78,6 +78,9 @@ A Thrall is a LychD Vessel booted in headless mode (`LYCHD_MODE=thrall`). It run
 - **Sovereign Hardware:** Despite lacking a local DB, the Thrall runs its own **[Orchestrator (23)](23-orchestrator.md)** and generates its own **[Systemd Quadlets (08)](08-containers.md)**. When the Master delegates a vision task, the Thrall handles killing its local text container, starting its local vision container, managing thermal pressure — all natively. The Master cannot and should not manage remote Systemd units.
 - **No Tomb:** A Thrall does not run a **Tomb** container. It is not an execution substrate for untrusted code. It is a smart, self-managing inference endpoint. All cognitive labor (agent graphs, memory curation, Dispatcher resolution) remains on the Master Vessel.
 
+!!! note "The Tomb and the Shadow Realm"
+    Two planes are distinct, and a Thrall possesses neither by default. The **Tomb** is the semi-trusted *execution* plane — SAQ workers, `nono` sandboxing, job payloads — where untrusted code runs. The **Shadow Realm** is the speculative *reality* substrate — the Jujutsu workspaces under `lab/shadow/` where **[Simulation (31)](31-simulation.md)** branches explore. A Shadow branch's test payloads *execute in* the Tomb, which is how the two are often conflated, but they are never synonyms. A Thrall holds neither: it is a smart inference proxy, and all speculation and untrusted execution remain on the Master.
+
 ### 2. The Smart Proxy Pattern
 
 A Thrall is a smart inference proxy, not a remote Tomb.
@@ -124,6 +127,7 @@ High availability is a design for services that cannot afford a second of downti
 - **One Master Phylactery.** No replication, no Raft, no consensus quorum.
 - **Disaster Recovery:** Native Btrfs snapshots (`btrbkup`) of the Master's Phylactery, restored to a new machine if the original burns.
 - **Thrall Reconnection:** When the Master returns, Thralls reconnect automatically. Their local Orchestrators continue managing their own hardware in the interim — they simply cannot accept new cognitive work until the brain comes back online.
+- **The Rite of Reconciliation:** A Master restore rewinds the Thralls' world — leases and in-flight work held against the Master Phylactery no longer match the restored state. The restore summons the **[Rite of Reconciliation (07)](07-snapshots.md)**: the Watchdog pulse and ghost-lease sweep (§6) reattach surviving Thralls, sweeping stale leases and abandoning work orphaned by the rewind before new cognitive labor is accepted.
 - **The Philosophy:** The Lich can die. The Lich *will* die. That is not a failure — it is a design constraint acknowledged and solved by the Phylactery, not by infrastructure complexity.
 
 ### 6. VRAM Exclusivity and Zombie-Proofing
@@ -139,7 +143,7 @@ A node cannot be deadlocked by rogue or hanging tasks.
 | :--- | :--- | :--- |
 | Phylactery | Local Postgres. The one true memory. | None. Points `DATABASE_URL` to Master. |
 | Orchestrator | Local. Manages its own Covens. | Local. Manages its own Covens. |
-| Shadow | Yes. Untrusted execution substrate. | No. Smart Proxy only. |
+| Tomb | Yes. Untrusted execution substrate. | No. Smart Proxy only. |
 | Sigil | Master Sigil. | Shared Master Sigil. |
 | Authority | Full. Brain + Body + Soul. | Body only. Hardware management. |
 | Telemetry | Local Phoenix. | Routes to Master's Phoenix. |

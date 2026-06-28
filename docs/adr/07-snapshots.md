@@ -43,7 +43,10 @@ icon: material/camera-timer
 A **Hybrid Snapshot Strategy** governed by a **Checkpoint Protocol** is adopted. This ensures the Daemon can "blink" its current reality into permanence without risk of corruption.
 
 !!! note "Replay Is Not Snapshot Rollback"
-    Workflow replay is normally a Phylactery concern: Postgres records queue rows, graph checkpoints, traces, committed outputs, and recovery markers so work can resume from the last declared safe boundary. Snapshot rollback is heavier. It restores whole reality when the Body (code, lockfiles, VCS state) and Soul (database state) must move together after Creation, Assimilation, Evolution, migration, or failed promotion. Postgres is authoritative for replaying work; Snapshots are authoritative for restoring body/soul coherence.
+    Workflow replay is normally a Phylactery concern: Postgres records queue rows, graph checkpoints, traces, committed outputs, and recovery markers so work can resume from the last declared safe boundary. Snapshot rollback is heavier. It restores whole reality when the Body (code, lockfiles, VCS state) and Soul (database state) must move together after Creation, Assimilation, Evolution, migration, or failed promotion.
+
+!!! important "The Precedence Doctrine"
+    The two authorities do not partition the *data*. Graph checkpoints and queue rows live inside the Soul (the [Phylactery (06)](06-persistence.md) `queue` chamber and graph checkpoints), so any whole-body restore necessarily rewinds the replay authority's own state. They cannot be disjoint in data; they are disjoint in **decision rights**. Replay authority operates *within* a Soul; Restore authority *selects which Soul exists*. After a restore, the replay state contained in the restored Soul is the sole truth: work enqueued after the snapshot instant is lost by design and must be re-submitted, never reconstructed.
 
 ### 1. The Checkpoint Protocol (The Freeze)
 
@@ -84,6 +87,28 @@ When a snapshot is restored, the system enforces a strict alignment check before
 - **The Jujutsu Warp:** Restoring the code is not a simple file overwrite. The system executes `jj edit <Commit_ID>`. This physically warps Jujutsu’s working copy commit (`@`) of the workspace back to the frozen node in the graph, making it active.
 - **Mandatory Rebirth:** If the Cognitive State preserved in the memory belongs to a version of logic newer than the current physical body, the system refuses to reanimate the mind. This triggers a mandatory rebuild/restart to bring the physical substrate into alignment with the restored soul, preventing schema mismatches and cognitive corruption.
 - **Rehydration Ritual**: Restoring a snapshot is the Reanimation of the machine. The storage driver physically resets the database directory using the Btrfs or Postgres snapshot. Simultaneously, the `jj edit` command aligns the codebase. This ensures the Soul (Data) is physically identical to the moment the Body (Code) was captured, bypassing the risk of schema drift entirely.
+
+### 5. The Rite of Reconciliation
+
+A restore rewinds the Soul, but not the world that surrounded it. Leases, worker claims, and external effects survive the snapshot instant and must be reconciled before the Vessel accepts new work. The system therefore performs the **Rite of Reconciliation**—a deterministic post-restore sweep that runs after every restore, before the Vessel resumes labor:
+
+- **Sweep ghost leases:** Swarm leases and Thrall attachments held by workers that no longer exist are revoked. This reuses the ghost-lease sweep of the **[Orchestrator (23)](23-orchestrator.md)** and the Thrall reattachment against the Master Phylactery defined in **[Legion (42)](42-legion.md)**.
+- **Abandon mid-flight runs:** A run that was in flight at snapshot time is marked `abandoned` unless its next checkpoint is a declared recovery boundary, in which case it may be replayed.
+- **Taint newer external commitments:** Any run whose trace shows an external commitment newer than the snapshot—an A2A message sent, a Toll payment, a file written to the Outlands, a host intent fired—is tainted, surfaced, and never silently replayed. External effects do not rewind; the doctrine only guarantees they are not compounded.
+- **Consecrate before replay:** Tainted work requires manual consecration before it may be replayed.
+
+The Rite deliberately borrows the shape of the compromise response in **[Security (09)](09-security.md)** (revoke lease, quarantine, taint jobs, require manual consecration before replay). A restore is treated as a controlled contamination event: the same containment ritual that answers a Tomb compromise answers a rewound reality.
+
+### 6. The Resumption Authority Table
+
+Resumption is shared across several authorities. Each owns exactly one share, and no authority replays work it does not own. The governing law, promoted here from **[Workers (14)](14-workers.md)**, is the **replay-or-abandon invariant**: every declared recovery boundary can be replayed or safely abandoned, and nothing in between is lawful.
+
+| Concern | Authority | Owning ADR |
+| :--- | :--- | :--- |
+| Snapshot capture and whole-body restore | Snapshots | ADR 07 (this) |
+| Queue claim, ack, retry, crash-pickup | Ghouls / SAQ | **[Workers (14)](14-workers.md)** |
+| Graph stasis and rehydration within a live Soul | GraphRunner | **[Graph (24)](24-graph.md)** |
+| Physical drain and pause | Orchestrator | **[Orchestrator (23)](23-orchestrator.md)** (drains, never decides replay) |
 
 
 ### Consequences

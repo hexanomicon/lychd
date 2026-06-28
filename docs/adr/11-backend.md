@@ -167,8 +167,9 @@ async def list_runes(repo: RuneRepository) -> list[RuneReadDTO]:
     Installing external HTMX middleware or a third-party OpenTelemetry integration library when Litestar provides these natively. External middleware for natively-supported features adds dependency weight and can conflict with Litestar's plugin lifecycle.
 
 **Mandate:**
-- **Altar (HTMX):** Use Litestar's `HTMXRequest` and `HTMXResponse` types. Use `HTMXPlugin` for global configuration. Return `Template` responses with `hx-swap` headers natively.
+- **Altar (HTMX):** Use Litestar's `HTMXRequest` and `HTMXResponse` types. Use `HTMXPlugin` for global configuration. Return `Template` responses with `hx-swap` headers natively. The `litestar[htmx]` extra is a first-class dependency of the Vessel, not an optional add-on; the HTMX request/response surface is always present.
 - **Oculus (Observability):** Use Litestar's built-in `OpenTelemetryPlugin` for tracing Agent Thought Traces. Do not introduce `opentelemetry-instrumentation-fastapi` or equivalent shims.
+- **Graph Scrying (Mermaid):** Graph visualizations render client-side from the `stateDiagram-v2` source produced by `graph.render()` (see **[Graph (24)](24-graph.md)**). The Vessel ships diagram source as text; there is no server-side image-rendering API.
 
 ```python
 # ✅ Correct — native plugins, no external shims

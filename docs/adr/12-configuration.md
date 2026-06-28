@@ -271,6 +271,8 @@ Within an Anchor:
 - Validated rune instances are frozen. Resolvers and runtime handles may derive
   effective state from a rune, but they must not mutate Codex intent after load.
 
+The path names the Animator; capabilities are synthesized per-model within it and take their identity from the capability key, not the filesystem. One rune file is one animator instance (a container or portal), while a multi-model runtime behind it yields several capabilities keyed by model within that single instance.
+
 If a rune class has children, it is a branch namespace and may not own TOML files in its own anchor.
 
 Leaf rune classes may define multiple instances.
@@ -311,6 +313,21 @@ This keeps directory layout useful for discovery while semantic policy remains e
 - **Precedence Awareness:** Preset semantics follow upstream llama.cpp precedence (CLI > model section > global section). Codex manifests should document any CLI overrides that intentionally shadow preset values.
 
 This doctrine preserves "Magus heritage" tuning while preventing configuration fragmentation.
+
+---
+
+### Capability Declaration Doctrine
+
+A passthrough Soulstone declares a single Animator instance, yet the runtime behind it may serve several models with different capabilities. To describe them, a Soulstone rune may carry `[[models]]` blocks, each binding a `ModelCapabilityHints` declaration to a model id:
+
+- `families`: the routable service kinds the model answers (chat, embedding, and so on).
+- `surface` and `modalities_in` / `modalities_out`: what the model admits and emits.
+- `supports_tools`, `supports_streaming`: runtime behaviour flags.
+- `max_context`: the model's context window.
+
+These `[[models]]` blocks are capability declarations *within* one instance, not instance encoding; the arrays-of-tables prohibition of the Instance Doctrine still forbids encoding multiple instances in one file. Absent any declaration, the runtime profile's `text`/`text` default stands. Where a declaration is present, its hints merge over the runtime profile defaults during catalog synthesis, so declared capability is authoritative and the profile supplies only what the declaration omits.
+
+Capability hints are declarations *about the model*, not re-typed framework flags; execution-passthrough purity is preserved. The **[Dispatcher (22)](22-dispatcher.md)** consumes these hints as the declared half of the Declare-then-Verify Doctrine, where live probes may only downgrade a declared capability, never invent one.
 
 ---
 
@@ -454,6 +471,17 @@ Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/
     --8<-- "src/lychd/config/runes/writer.py:16:132"
     ```
 
+### The Rite of Inscription (Writable Codex)
+
+`ConfigWriter` writes sample runes at `lychd init`; sanctioned runtime writes to live Codex intent follow a stricter path. When the system itself originates a rune write — the Smith promoting a forged Organ into an activation list (**[Assimilation (35)](35-assimilation.md)**), or the Altar's Bindings instrument editing a rune (**[Altar (15)](15-frontend.md)**) — the write proceeds as a **Rite of Inscription**:
+
+1. The change is composed into a staging file rather than mutating the live TOML in place.
+2. The full `ConfigLoader` validates the staged tree exactly as it would at bind time, so an invalid write can never become live intent.
+3. Only after validation succeeds is the staging file promoted by atomic rename.
+4. A reload signal reloads the Codex from the newly inscribed tree.
+
+Every such write is a hard-gated class. It already qualifies under "core logic promotion" in the Autonomy Policy (§10) and therefore requires live HitL or explicit Codex preauthorization; adaptive confidence never satisfies it. The Smith and the Bindings instrument are the only sanctioned writers of live Codex intent; no other component may mutate a rune after load. This is consistent with the frozen Instance Doctrine: the Rite does not mutate a rune in place, it re-inscribes and reloads.
+
 ---
 
 ## 7. Assembly Pipeline
@@ -513,7 +541,7 @@ Privatization policy is configured in the Codex and enforced by runtime dispatch
 - `require_anonymization_workflow`: fail-closed if no sanitization path exists.
 
 Canonical source is Codex (`lychd.toml`).
-Phylactery-backed policy records, when enabled for adaptive tuning, must remain equal or stricter than the Codex baseline.
+Phylactery-backed policy records, when enabled for adaptive tuning, must remain equal or stricter than the Codex baseline; the comparison is enforced by the Policy Ward (§10).
 
 Conceptual shape:
 
@@ -567,6 +595,12 @@ forbidden_scopes = ["core_runtime", "migrations", "secrets", "host_lifecycle"]
 ```
 
 Canonical source is Codex (`lychd.toml`). Phylactery-backed performance records, confidence streaks, and adaptive policy observations may tighten the effective policy or satisfy a Codex-defined predicate, but they must not loosen the Codex baseline.
+
+### The Policy Ward
+
+The tighten-only law shared by the Privatization Policy (§9) and the Autonomy Policy (§10) is not self-enforcing. Comparing a baseline against an adaptive layer requires a named seat that performs the comparison; that seat is the **Policy Ward**.
+
+The ConfigLoader establishes the baseline at bind time. The Policy Ward, a Vessel service, is the seat of the comparison: it must reject any adaptive policy write to the Phylactery whose effective permissiveness exceeds the Codex baseline. The comparison is performed at write time, fail-closed. An adaptive record may only equal or tighten the baseline; a write that would loosen it never lands. This tighten-only enforcement is the deliberate mirror of the Declare-then-Verify probing law in the **[Dispatcher (22)](22-dispatcher.md)**, where live probes may only downgrade a declared capability.
 
 ---
 

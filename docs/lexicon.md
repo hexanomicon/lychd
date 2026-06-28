@@ -13,10 +13,11 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 
 | Term | Technical Definition | Source |
 | :--- | :--- | :--- |
-| **Altar** | The HTMX/Alpine.js web frontend (`http://localhost:7134`). The consecrated interface for communing with the Lich. | Vessel Web Layer |
+| **Altar** | The whole web surface: the Vessel's hypermedia (HTMX/Alpine.js) UI at `http://localhost:7134`. The consecrated interface for communing with the Lich; its chat instrument is the Bridge. | Vessel Web Layer |
 | **Animator** | A live, addressable service that exposes typed capabilities through an adapter. Every Animator is either a Soulstone (local Quadlet-backed service) or a Portal (remote service connection). Model inference is one capability family, not the whole category. | `src/lychd/domain/animation/` |
 | **Autopoiesis** | Self-modifying code generation; the agent editing `src/`. The Great Work of self-creation. | Smith Extension |
 | **Binding** | The `lychd bind` command; transmuting Codex Runes into generated Quadlet manifests and linking configuration intent to the host's init system. | CLI |
+| **Bridge** | The Altar's chat instrument, where natural-language Intent is offered and routed. | Vessel Web Layer |
 | **Codex** | The configuration directory (`~/.config/lychd`). The book of immutable law. | `src/lychd/config/` |
 | **Consecration** | Human-validated RLHF. The act of a Magus elevating a Shadow timeline into Karma — marking a thought as permanent, verified truth. | HitL Protocol |
 | **Coven** | A group of containers sharing an operational state and GPU VRAM. Manifested and banished together. | Orchestrator |
@@ -24,6 +25,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **CTC Governor** | Context window and token limit management. The Warden of Breath. | Context Orchestrator |
 | **Demilich** | The mature Magus-Lich operating condition: a reconstitutable, autopoietic, Phylactery-backed agency where human Will and machine execution act as one extended form. It is neither upload nor erasure. | Transcendence |
 | **Dispatcher** | The Model Router and capability-to-endpoint resolver. The Semantic Cortex. | `src/lychd/domain/cortex/dispatcher.py` |
+| **Distaff** | The DeepFabric dataset-generation engine that feeds training (ADR 33) — formerly called the Loom; renamed to free "Loom" for the Altar instrument. | Soulforge (ADR 33) |
 | **Divination** | Querying the API, viewing traces, or searching the database. The act of interacting with the running daemon. | Vessel API |
 | **Echo** | The Audio Extension (STT/TTS). Grants the Daemon the power to perceive and project sound. | Extension |
 | **Extension Context** | The host-provided registration surface passed to `register(context)` during boot-time extension assembly. It exposes explicit stores such as `runes`, `soulstones`, `portals`, and the reserved `vessel` store. It is not the whole Extension Protocol. | `src/lychd/extensions/context.py` |
@@ -41,6 +43,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Lab** | The `lab/` directory / Development sandbox. The site of Genesis. | Filesystem Layout |
 | **Legion** | The multi-node Thrall coordination extension (ADR 42). The Lich's personal army. | Extension |
 | **Lich** | The emergent system intelligence of LychD: the active reasoning will produced by runtime agents, orchestration, identity, and accumulated state acting together. It is not a single agent object. | `src/lychd/domain/`, `src/lychd/db/` |
+| **Loom** | The Altar's graph instrument for Weaver pattern browsing and Mermaid/pydantic_graph renderings. | Altar + Weaver |
 | **Mentat Protocol** | Similarity threshold check & Hard Refusal logic. The vow of silence when the Archives hold no answer. | RAG Pipeline |
 | **Mirror** | The Identity/Persona Extension. The ego-software that maintains behavioral consistency. | Extension |
 | **Necropolis** | The decentralized peer-to-peer swarm topology built on the A2A Intercom (ADR 26). | Extension |
@@ -57,7 +60,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Rune** | One validated TOML configuration artifact under the Codex `runes/` tree. It declares intent; it is not the running Animator and not the generated Quadlet manifest. | `src/lychd/config/runes/` |
 | **Sepulcher** | The rootless runtime body of LychD: the pod, services, mounts, and execution topology that physically houses the daemon's organs. | Infrastructure |
 | **Semantic Vertex** | A local identity attractor in context and embedding space where related words, tools, memories, roles, priors, and responsibilities cluster around an active Sigil or task identity. | Mirror + Context |
-| **Shadow Realm** | A temporary, sandboxed environment for testing generated code. The plane of Speculative Execution. | Lab + Tomb |
+| **Shadow Realm** | The speculative reality substrate: Jujutsu workspaces under `lab/shadow/` and Phantasma expansion. Shadow branches may dispatch execution *into* the Tomb; the planes are never synonyms. | Lab + Shadow (jj) |
 | **Smith** | The Assimilation / Autopoiesis Extension. The Prime Artificer. | Extension |
 | **Soulforge** | The Fine-Tuning / LoRA training pipeline. The late substrate forge where stable Karma patterns compress into adapter-level instinct after Context and Mirror have already shaped runtime identity-gravity. | Extension |
 | **Soulstone** | A local runtime Animator backed by a Soulstone Rune; a Quadlet/systemd service such as SGLang, vLLM, llama.cpp, Whisper, Playwright, Phoenix, or another local capability engine. A trapped spirit on local iron. | `src/lychd/domain/animation/` |
@@ -66,7 +69,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Spheres** | The strict volume mount and permission topology. Concentric zones of filesystem permission. | Layout (ADR 13) |
 | **Summoning** | The `systemctl --user start lychd` command. The final act of waking the Daemon. | CLI |
 | **Tether** | The VPN Extension (WireGuard). The silver link across distance. | Extension |
-| **The Tomb** | The `lychd-tomb` container / execution plane. The unsafe execution hand: narrow SAQ/Postgres execution credential, disposable workspaces, and `nono` isolation; no agent brain. | Infrastructure |
+| **The Tomb** | The `lychd-tomb` container: the semi-trusted execution plane (SAQ workers, disposable job payloads and workspaces, `nono` sandbox, narrow SAQ/Postgres credential; no agent brain). Shadow branches dispatch execution into it, but it is never a synonym for the Shadow Realm. | Infrastructure |
 | **Thrall** | A LychD node booted with `LYCHD_MODE=thrall`, pointing `DATABASE_URL` to the Master's Postgres. A soulless Vessel. | Legion Extension |
 | **Transcendence** | The project's alchemical roadmap (Nigredo → Albedo → Citrinitas → Rubedo): the progressive calibration of the Lich toward the Magus's Will, culminating in autopoietic extension rather than ontological merger. | `docs/divination/transcendence/` |
 | **Veil** | The Proxy Extension (Caddy). Shields the temple and manages cryptographic trust. | Extension |

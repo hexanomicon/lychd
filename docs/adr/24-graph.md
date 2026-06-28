@@ -61,6 +61,22 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 4. **The Long Sleep:** If the wait must survive process death, reboot, human approval delay, or high-latency peer return, the Graph executes an atomic exit, serializing the `StateT` to the **[Phylactery (ADR 06)](./06-persistence.md)**.
 5. **Awakening:** Once the physical substrate or external result is available, the Graph resumes from Vessel memory or is re-entered via persistence, depending on which boundary was crossed.
 
+!!! note "Live vs Durable Stasis"
+    A pause is described by two orthogonal axes; the mark of Durable Stasis is *who resumes the run*, not *whether state was written*.
+
+    - **Live Stasis:** the run remains a resident in-process loop; resumption is self-directed. A checkpoint MAY be taken opportunistically, and its absence is lawful.
+    - **Durable Stasis:** the run exits the process; a checkpoint MUST be taken; resumption requires **Reanimation**.
+
+    Hardware transitions default to Live Stasis with an opportunistic checkpoint — a Phylactery write taken mid-swap is that opportunistic checkpoint, not a Reanimation boundary. HitL waits, Long Sleep, Vessel lifecycle intents, and deferred peer waits are Durable. Which boundaries *force* Durable is policy (see the **[Orchestrator (ADR 23)](./23-orchestrator.md)** drain and **[HitL (ADR 25)](./25-hitl.md)**), but the default table below is normative.
+
+    | Pause boundary | Default Stasis |
+    | :--- | :--- |
+    | Hardware / VRAM swap | Live (opportunistic checkpoint) |
+    | HitL approval wait | Durable |
+    | Long Sleep | Durable |
+    | Vessel lifecycle intent | Durable |
+    | Deferred peer (A2A) wait | Durable |
+
 !!! note "Graph Binding Boundary"
     Graph and Agent code should describe capability needs and consume granted runtime surfaces. They should not know whether the capability was satisfied by a warm local Soulstone, a runtime-native soft activation, a hard Quadlet swap, a Portal, or a Tomb execution payload. Current object names are allowed to change during R&D; the stable rule is that Graph topology owns cognitive flow, Dispatcher owns runtime binding, and Orchestrator owns physical readiness.
 
@@ -96,7 +112,7 @@ Topology is cognition without ownership: the graph determines process flow, whil
 
 To provide transparency, the system generates real-time visualizations:
 
-- **Mermaid Diagrams:** The graph produces `stateDiagram-v2` code for the **[Altar (ADR 15)](./15-frontend.md)**.
+- **Mermaid Diagrams:** `graph.render()` produces `stateDiagram-v2` source (Mermaid text) for the **[Altar (ADR 15)](./15-frontend.md)**. The source is shipped as text and rendered client-side; there is no server-side image-rendering API.
 - **State Streaming:** Transitions are pushed via Server-Sent Events (SSE), allowing the Magus to monitor the Daemon navigating the complex topology of a task.
 
 ## Consequences

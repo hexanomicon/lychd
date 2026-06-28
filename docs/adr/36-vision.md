@@ -36,31 +36,34 @@ icon: material/eye-settings-outline
     -   **Pros:**
         -   **Hardware Safety:** The Orchestrator ensures the heavy Vision Coven is only resident when needed.
         -   **Logical Parallelism:** Utilizes the **Stasis Protocol** to allow the mind to "pause" while the eyes open, preserving thought continuity across hardware swaps.
-        -   **Unified Interface:** To the Agent, the `vision-analysis` capability works identically whether provided by a local Coven or an OpenAI Portal.
+        -   **Unified Interface:** To the Agent, the `vision` capability works identically whether provided by a local Coven or an OpenAI Portal.
 
 ## Decision Outcome
 
 **The Prism** is adopted as the Vision Extension. It is implemented as the reference implementation of the `vision.coven`—a stateful capability for structural visual reasoning.
 
+!!! note "The Two-Axis Law: Family vs Modality"
+    A **family** names a routable service kind; **modalities** name what a capability admits. The `vision` family is reserved for the **dedicated** vision-analysis provider — the Eye. A general chat model that merely accepts images is not a member of this family and does not conscript the Vision Coven: it is a **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying `image ∈ modalities_in`. Covens exist only for dedicated providers. Intent resolution matches `(family, required_modalities)`; a multimodal chat model satisfies image work in place, without a coven swap.
+
 ### 1. The Vision Coven (Body)
 
 The Prism manifests as a collection of **[Quadlet services (08)](08-containers.md)** managed as a mutually exclusive state.
 
-- **The Eye (`vlm.container`):** The primary model-backed Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision-analysis` capability.
+- **The Eye (`vlm.container`):** The primary model-backed Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision` capability.
 - **The Scribe (`ocr.container`):** An optional, lightweight service for pure text extraction (e.g., Tesseract).
-- **Functional Overlap:** A powerful VLM service may declare both `vision-analysis` (Provider) and `ocr` (Tool) capabilities.
+- **Functional Overlap:** A powerful VLM service may declare both `vision` (Provider) and `ocr` (Tool) capabilities.
 
 ### 2. Optic Dispatching & The Stasis Protocol
 
 The Prism utilizes the **[Dispatcher (22)](22-dispatcher.md)** to manage the physical reality of sight:
 
-- **The Animator (Provider):** When an Agent requires a Vision Model, the Dispatcher resolves the `vision-analysis` capability to a model-backed Animator.
+- **The Animator (Provider):** When an Agent requires a Vision Model, the Dispatcher resolves the `vision` capability to a model-backed Animator.
 - **The Handshake:**
     1. The Dispatcher queries the **Orchestrator**.
     2. If the `vision.coven` is **COLD**, the Dispatcher raises `HardwareTransitionRequired`.
-    3. **The Freeze:** The Agent's state is serialized to the **[Phylactery (06)](06-persistence.md)**.
+    3. **The Freeze:** The Agent's state is serialized to the **[Phylactery (06)](06-persistence.md)**. The Coven swap holds the run in **Live Stasis**; the serialization named here is the opportunistic checkpoint, not a Reanimation boundary — the loop remains resident and resumes itself.
     4. **The Swap:** The Orchestrator banishes the current coven and summons the Vision Coven.
-    5. **The Thaw:** Once the Vision service is warm, the Agent rehydrates and proceeds with the `vision-analysis` model.
+    5. **The Thaw:** Once the Vision service is warm, the Agent rehydrates and proceeds with the `vision` model.
 - **The Tool (Capability):** Specialized tasks (e.g., `extract_text_from_image`) follow the exact same Stasis logic through their own Animator capability declarations, ensuring the Agent never attempts to use a tool that does not physically exist.
 
 ### 3. The Pixel Pipeline (`BinaryContent`)

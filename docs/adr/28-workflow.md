@@ -51,6 +51,8 @@ This is why workflows are not merely scripts. A script runs forward and forgets.
 
 The Weaver translates the strategy of the **[Orchestrator (ADR 23)](./23-orchestrator.md)** into tactical steps. It manages the temporal execution of nodes, coordinating between immediate reflexes and long-term rituals. By registering via the extension hook, the Weaver grafts itself onto the core, ensuring all multi-stage labor follows a disciplined workflow pattern.
 
+New Weavers are Organs; their forging and promotion follow the **[Smith (ADR 35)](./35-assimilation.md)** and the **[Lab→Test→Promote rite (ADR 16)](./16-creation.md)** without exception. The machine's capacity to learn new "Ways of Working" introduces no bespoke mechanism—a generated Weaver enters the body only through the same sanctioned assimilation path as any other Organ.
+
 ### 2. The Archivist (Memory Weaving)
 
 Before a reasoning step wakes in the cortex, the Weaver performs the "Scry" ritual:
@@ -70,6 +72,9 @@ To maintain the "Privacy Veil," the Weaver provides a Censor interceptor:
 - For external rituals (e.g., calling a remote peer), the Censor scrubs sensitive artifacts before they exit the **[Sovereignty Wall (ADR 09)](./09-security.md)**.
 - Re-identification or de-anonymization is performed only upon the result's return to the internal substrate.
 
+!!! note "The Gate-and-Censor Doctrine"
+    The Censor shares the Sovereignty Wall with the **[Dispatcher's (ADR 22)](./22-dispatcher.md)** egress gate, and the two authorities must never be confused. The Dispatcher **gates**: it decides whether egress happens at all (privatization thresholds, fail-closed, `LYCHD_SECURE_MODE`). The Censor **transforms**: it anonymizes what has been permitted to cross and re-identifies on return. The Censor runs strictly downstream of the gate and may only narrow what crosses; it can never widen what the gate admits. The Censor's concrete algorithm remains future work, but its position is now law.
+
 ### 4. The Pattern (Pacing and Joins)
 
 The Weaver utilizes the functional primitives of the graph to enforce the rhythm of thought:
@@ -86,6 +91,15 @@ At each join, the workflow can close a loop: generated branches return to a shar
 ### 5. Interaction with HitL
 
 Every workflow includes a "Decision Point" that triggers the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. When a pattern execution reaches a high-order synapse (e.g., system promotion), the Weaver initiates the stasis event and manifests the scried "Vision" at the interface, awaiting the Magus's signal to resume the tempo.
+
+### 6. The Demarcation of Weaver and Shadow
+
+The Weaver and **[Shadow Simulation (ADR 31)](./31-simulation.md)** both fan out parallel agent labor—the Weaver through Broadcasting, Spreading, and Joins; Phantasma through the Expansion of $N$ timelines. A Pattern author therefore requires an absolute rule for which fan-out belongs where. That rule is the **Demarcation Law**:
+
+!!! important "The Demarcation Law"
+    A branch that may commit an effect into the live Run belongs to the Weaver. A branch that may only produce a Vision belongs to the Shadow. The Weaver consumes Simulation results solely as consecrated Visions or as evidence in joins—never as direct state writes. The Dual-Gate governs only the Shadow's output.
+
+Weaver branches execute inside the live Run, and their joins commit into real state. Shadow branches live in Jujutsu workspaces under `lab/shadow/` and can only ever emit Visions—promotion candidates—never direct effects. The Weaver never treats a Simulation result as an authority to write; it either receives that result already consecrated (ADR 25) or folds it into a join as measured evidence.
 
 ## Consequences
 

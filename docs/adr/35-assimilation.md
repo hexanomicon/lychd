@@ -75,7 +75,7 @@ The Smith automates the creation ritual through a multi-stage process governed b
 2. **Speculation:** The Smith enters the **Shadow Realm**. It creates a Jujutsu workspace or change in the Lab and fabricates the logic, tests, and Quadlet definitions.
 3. **The Rite of Albedo:** The Smith enqueues a job for the **[Ghouls (ADR 14)](./14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against the new creation. It iterates autonomously on any failures.
 4. **The Preemptive Blink:** Upon achieving a "White Truth" (successful tests), the machine executes a system-wide Snapshot.
-5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)** or a Codex-governed preauthorization class, the code is moved to the Crypt and the federated lockfile is updated.
+5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)** or a Codex-governed preauthorization class, the code is moved to the Crypt and the federated lockfile is updated. The Rite of Passage concludes with a **Rite of Inscription** upon the **[Codex (ADR 12)](./12-configuration.md)** — adding the Organ to the `[extensions]` activation list. Until that name is written, a forged Organ is not part of the body; the write is itself hard-gated (ADR 12).
 6. **The Rebirth:** The Smith triggers the **[Packaging (ADR 17)](./17-packaging.md)** ritual. If the "Alembic Bind" (database migration) to the **[Phylactery (ADR 06)](./06-persistence.md)** fails or the container crashes during boot, the system executes an immediate Rehydration Ritual to revert the logic and database.
 
 The Smith workflow therefore spans all three collapse stages: structural validity in Shadow (tests/lint/type-check), identity/architectural congruence in review and persona-guided critique, and final ontological promotion only under Vessel policy and Magus consent.
@@ -106,6 +106,16 @@ The Smith possesses the authority to perform the "Heritage Ritual"—the primary
 2. **Sifting:** The Smith identifies the provider’s schema and initiates a specialized parsing Ghoul.
 3. **Transmutation:** Historical dialogues are decomposed. The Magus’s instructions and preferences are distilled into high-dimensional vectors, while successful reasoning patterns are promoted to the **Karma** chamber.
 4. **Reanimation:** The resulting data is utilized by **[The Mirror (32)](./32-identity.md)** to shift the system’s initial Bayesian Prior toward the Imprint of the Magus’s Will, bypassing the "Amnesia Phase" of standard model deployments.
+
+### 7. The Assimilation Trust Boundary
+
+Assimilated external material — source, protocol manifests, cloud archives — is the highest-injection-risk input the machine ingests, and it enters the most privileged loop the machine runs. Its trust boundary is not a new mechanism but a composition of mechanisms that already exist elsewhere:
+
+- **Vikalpa Until Verified:** Assimilated material is Vikalpa — an unverified construct — until it has passed deterministic verification. It carries no authority on the strength of its own claims.
+- **Data, Never Instruction:** Within the Smith's context, assimilated material enters only as fenced data blocks in the volatile layers of the Stable Floor (**[Context (ADR 21)](./21-context.md)**). It is never concatenated into the instruction layers.
+- **Typed Egress:** The Smith's outputs are typed (**[Agents (ADR 20)](./20-agents.md)**); free-form generation never crosses unshaped into the Crypt.
+- **Deterministic Gate First:** The Deterministic Gate — the mechanical Rite of Albedo (lint, type-check, tests) — precedes any agentic judgment of assimilated code (**[Simulation (ADR 31)](./31-simulation.md)**). Machine reasoning is spent only on material that has already survived mechanical proof.
+- **Hard-Gated Promotion:** Promotion of any Smith-forged Organ is hard-gated without exception (**[Codex (ADR 12)](./12-configuration.md)**, **[Sovereign Consent (ADR 25)](./25-hitl.md)**).
 
 ## Consequences
 
