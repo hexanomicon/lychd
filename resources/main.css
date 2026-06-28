@@ -1,3 +1,629 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.cjs";
+
+/* ══════════════════════════════════════════════════════════════════════
+   LychD · The Altar — design tokens (canonical; fable-v1-spec §10)
+   Original aesthetic. Cold rune-light over obsidian. No borrowed IP.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* substrate */
+  --void:        #131318;   /* page base */
+  --obsidian:    #1a1a20;   /* panel base */
+  --obsidian-2:  #22222b;   /* raised / hover */
+  --engraving:   #2e2b3d;   /* borders, hairlines */
+  /* chrome — necromantic purple */
+  --grimoire:    #4a148c;   /* deep structural purple */
+  --rune:        #7c4dff;   /* interactive chrome, focus rings, links */
+  --rune-dim:    #5a4a8a;   /* inactive chrome, graph edges */
+  /* status */
+  --lich:        #39ff8a;   /* ACTIVE / thinking — sparingly */
+  --lich-deep:   #00ff9c;
+  --frost:       #7fdbff;   /* WARM / ready */
+  --frost-deep:  #4dd0e1;
+  --ash:         #8a8699;   /* cold / sleeping / secondary text */
+  --ember:       #ff6b81;   /* fault / refusal */
+  /* text */
+  --bone:        #d9d7e4;   /* primary text */
+  --parchment:   #b8b4c8;   /* body text */
+  /* glow recipes */
+  --glow-rune:   0 0 0 1px color-mix(in srgb, var(--rune) 45%, transparent),
+                 0 0 18px color-mix(in srgb, var(--rune) 18%, transparent);
+  --glow-lich:   0 0 0 1px color-mix(in srgb, var(--lich) 50%, transparent),
+                 0 0 16px color-mix(in srgb, var(--lich) 22%, transparent);
+  --glow-frost:  0 0 0 1px color-mix(in srgb, var(--frost) 45%, transparent),
+                 0 0 14px color-mix(in srgb, var(--frost) 16%, transparent);
+  /* type */
+  --font-rune:   Georgia, 'Times New Roman', serif;      /* small-caps display headers */
+  --font-body:   system-ui, sans-serif;
+  --font-glyph:  ui-monospace, 'Cascadia Mono', monospace; /* keys, digests, mermaid */
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Component styles — adapted from fable-altar-mockup.html <style> block,
+   named to the spec §7 template contract so templates can rely on them.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Page substrate ───────────────────────────────────────────────── */
+body {
+  background:
+    radial-gradient(1100px 500px at 18% -8%, color-mix(in srgb, var(--grimoire) 16%, transparent), transparent 60%),
+    radial-gradient(900px 520px at 88% 108%, color-mix(in srgb, var(--frost-deep) 7%, transparent), transparent 60%),
+    var(--void);
+  color: var(--parchment);
+  font: 14px/1.55 var(--font-body);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+::selection { background: color-mix(in srgb, var(--rune) 40%, transparent); color: var(--bone); }
+
+/* scrollbars in-theme */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--engraving); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--rune-dim); }
+
+/* ── Display type — rune small-caps headers ───────────────────────── */
+.rune-head {
+  font-family: var(--font-rune);
+  font-variant: small-caps;
+  letter-spacing: 0.14em;
+  color: var(--bone);
+  font-weight: 400;
+}
+.glyph { font-family: var(--font-glyph); font-size: 11.5px; }
+
+/* ── Top bar / instrument map ─────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 28px;
+  padding: 0 22px;
+  height: 52px;
+  background: color-mix(in srgb, var(--obsidian) 82%, transparent);
+  border-bottom: 1px solid var(--engraving);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand .mark {
+  color: var(--rune);
+  font-size: 19px;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--rune) 55%, transparent);
+}
+.brand .name { font-size: 17px; letter-spacing: 0.2em; }
+.brand .sub { color: var(--ash); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; }
+
+nav.instruments { display: flex; gap: 2px; height: 100%; }
+nav.instruments a {
+  display: flex; align-items: center;
+  padding: 0 16px;
+  color: var(--ash);
+  text-decoration: none;
+  font-size: 12.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  transition: color .18s, border-color .18s;
+  cursor: pointer;
+  position: relative;
+}
+nav.instruments a:hover { color: var(--bone); }
+nav.instruments a[aria-current="page"] {
+  color: var(--bone);
+  border-bottom-color: var(--rune);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--rune) 40%, transparent);
+}
+nav.instruments a .dot { /* unbuilt marker */
+  position: absolute; top: 10px; right: 6px;
+  color: var(--engraving); font-size: 8px;
+}
+.topbar .spacer { flex: 1; }
+
+/* ── Global consent sigil (OOB-swappable) ─────────────────────────── */
+.sigil {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px;
+  border: 1px solid var(--engraving);
+  border-radius: 999px;
+  color: var(--ash);
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sigil--lit {
+  color: var(--frost);
+  border-color: color-mix(in srgb, var(--frost) 40%, transparent);
+  box-shadow: var(--glow-frost);
+  animation: sigilPulse 2.6s ease-in-out infinite;
+}
+@keyframes sigilPulse {
+  0%, 100% { box-shadow: var(--glow-frost); }
+  50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--frost) 65%, transparent),
+                    0 0 22px color-mix(in srgb, var(--frost) 30%, transparent); }
+}
+.sigil-identity {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--ash); font-size: 12px;
+}
+.sigil-identity b { color: var(--bone); font-weight: 500; letter-spacing: 0.06em; }
+
+/* ── Shared chrome — panels, frosted overlays, dividers, chips ─────── */
+.panel {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bone) 3%, var(--obsidian)) 0%, var(--obsidian) 42px);
+  border: 1px solid var(--engraving);
+  border-radius: 10px;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--engraving);
+  font-size: 13px;
+}
+.panel-head .rune-head { font-size: 14px; }
+.panel-head::before { content: "◆"; color: var(--rune-dim); font-size: 9px; }
+
+/* frosted-glass overlay chrome (spec §10: overlays only) */
+.frosted {
+  background: color-mix(in srgb, var(--void) 75%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--engraving);
+  border-radius: 10px;
+}
+
+.divider {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--engraving); font-size: 9px;
+  margin: 14px 0;
+}
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--engraving); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: 0.05em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--engraving);
+  color: var(--ash);
+  white-space: nowrap;
+}
+.chip::before { content: "●"; font-size: 7px; }
+.chip.active  { color: var(--lich);  border-color: color-mix(in srgb, var(--lich) 40%, transparent); }
+.chip.warm    { color: var(--frost); border-color: color-mix(in srgb, var(--frost) 38%, transparent); }
+.chip.cold    { color: var(--ash); }
+.chip.fault   { color: var(--ember); border-color: color-mix(in srgb, var(--ember) 40%, transparent); }
+.chip.pending { color: var(--frost); border-color: color-mix(in srgb, var(--frost) 38%, transparent); }
+.chip.thinking {
+  color: var(--lich);
+  border-color: color-mix(in srgb, var(--lich) 45%, transparent);
+  animation: thinkPulse 2.4s ease-in-out infinite;
+}
+@keyframes thinkPulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: var(--glow-lich); }
+}
+
+/* ── Rune buttons ─────────────────────────────────────────────────── */
+.rune-btn {
+  font: 12.5px/1 var(--font-body);
+  letter-spacing: 0.07em;
+  padding: 8px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--rune-dim);
+  background: color-mix(in srgb, var(--rune) 9%, var(--obsidian-2));
+  color: var(--bone);
+  cursor: pointer;
+  transition: box-shadow .18s, border-color .18s;
+}
+.rune-btn:hover { border-color: var(--rune); box-shadow: var(--glow-rune); }
+.rune-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.rune-btn--frost {
+  border-color: color-mix(in srgb, var(--frost) 45%, var(--engraving));
+  background: color-mix(in srgb, var(--frost) 8%, var(--obsidian-2));
+  color: var(--frost);
+}
+.rune-btn--frost:hover { border-color: var(--frost); box-shadow: var(--glow-frost); }
+.rune-btn--ash { border-color: var(--engraving); background: transparent; color: var(--ash); }
+.rune-btn--ash:hover { color: var(--ember); border-color: color-mix(in srgb, var(--ember) 45%, transparent); box-shadow: none; }
+
+kbd.key {
+  font-family: var(--font-glyph); font-size: 11px;
+  color: var(--frost);
+  background: color-mix(in srgb, var(--frost) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--frost) 20%, var(--engraving));
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* ── Instrument page scaffolding ──────────────────────────────────── */
+#altar-main { flex: 1; display: flex; min-height: 0; }
+
+/* ── Bridge ───────────────────────────────────────────────────────── */
+.bridge-rail {
+  width: 232px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.bridge-rail .new-seance { width: 100%; text-align: left; }
+.seance {
+  display: block;
+  padding: 10px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ash);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+.seance:hover { background: var(--obsidian); }
+.seance.current {
+  background: var(--obsidian);
+  border-color: color-mix(in srgb, var(--frost) 26%, var(--engraving));
+  color: var(--bone);
+}
+.seance .t { display: block; font-size: 13px; margin-bottom: 2px; }
+.seance .m { display: block; font-size: 11px; color: var(--ash); }
+.seance.current .t { color: var(--bone); }
+
+.bridge-thread { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.thread-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 4px 6px 14px 2px;
+}
+
+/* turns */
+.turn { max-width: 720px; }
+.turn--user { align-self: flex-end; }
+.turn--user .turn__body {
+  background: color-mix(in srgb, var(--grimoire) 22%, var(--obsidian));
+  border: 1px solid color-mix(in srgb, var(--rune) 26%, var(--engraving));
+  border-radius: 12px 12px 3px 12px;
+  padding: 11px 15px;
+  color: var(--bone);
+}
+.turn--agent { align-self: flex-start; width: 100%; }
+.turn__meta {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11.5px; color: var(--ash);
+  margin-bottom: 6px;
+}
+.turn__meta .who {
+  font-family: var(--font-rune); font-variant: small-caps; letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--rune) 70%, var(--bone)); font-size: 13px;
+}
+.turn--agent .turn__body {
+  background: var(--obsidian);
+  border: 1px solid var(--engraving);
+  border-radius: 3px 12px 12px 12px;
+  padding: 13px 17px;
+  color: var(--parchment);
+}
+.turn--agent.is-streaming .turn__body {
+  border-color: color-mix(in srgb, var(--lich) 22%, var(--engraving));
+}
+.turn__body p + p { margin-top: 9px; }
+.turn__body code { font-family: var(--font-glyph); font-size: 12px; color: var(--frost); }
+.turn__extras:empty { display: none; }
+
+/* streaming caret — blinks while a turn is streaming */
+.caret,
+.turn--agent.is-streaming .turn__body::after {
+  display: inline-block; width: 8px; height: 15px;
+  vertical-align: text-bottom;
+  background: var(--lich);
+  box-shadow: 0 0 8px var(--lich);
+  animation: caretBlink 1.05s steps(1) infinite;
+}
+.turn--agent.is-streaming .turn__body::after { content: ""; margin-left: 2px; }
+@keyframes caretBlink { 50% { opacity: 0; } }
+
+/* status chip (SSE-swapped) */
+.status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: 0.05em;
+  color: var(--ash);
+}
+.status.thinking { color: var(--lich); }
+.status.warm { color: var(--frost); }
+
+/* generative-UI fragment (Projection Law: server-rendered, agent-selected) */
+.genui {
+  margin-top: 11px;
+  border: 1px solid var(--engraving);
+  border-left: 2px solid var(--rune-dim);
+  border-radius: 8px;
+  background: var(--obsidian-2);
+  overflow: hidden;
+}
+.genui-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 13px;
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ash);
+  border-bottom: 1px solid var(--engraving);
+}
+.genui table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.genui th {
+  text-align: left; font-weight: 500; color: var(--ash);
+  font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 7px 13px; border-bottom: 1px solid var(--engraving);
+}
+.genui td { padding: 7px 13px; border-bottom: 1px solid color-mix(in srgb, var(--engraving) 55%, transparent); }
+.genui tr:last-child td { border-bottom: none; }
+
+/* ── Seat of Consent — inline card + verdict states ───────────────── */
+.consent-card {
+  margin-top: 11px;
+  border: 1px solid color-mix(in srgb, var(--frost) 35%, var(--engraving));
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--frost) 6%, var(--obsidian)) 0%, var(--obsidian) 70px);
+  box-shadow: var(--glow-frost);
+  overflow: hidden;
+}
+.consent-card .head {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--frost) 18%, var(--engraving));
+  color: var(--frost);
+  font-size: 13px;
+}
+.consent-card .head .rune-head { color: var(--frost); font-size: 14.5px; }
+.consent-card .vision { padding: 12px 16px 4px; color: var(--parchment); font-size: 13px; }
+.consent-card .vision em { color: var(--bone); font-style: normal; }
+.consent-card dl,
+.consent-card .args {
+  display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px;
+  padding: 10px 16px;
+  font-size: 12px;
+}
+.consent-card dt { color: var(--ash); }
+.consent-card dd { font-family: var(--font-glyph); font-size: 11.5px; color: var(--bone); }
+.consent-card .verdicts {
+  display: flex; gap: 10px; align-items: center;
+  padding: 12px 16px 14px;
+}
+.consent-card .verdicts .note { margin-left: auto; font-size: 11px; color: var(--ash); }
+
+/* resolved verdict states (spec §7.3: data-state consented | refused) */
+.consent-card[data-state="consented"] {
+  border-color: color-mix(in srgb, var(--lich) 35%, var(--engraving));
+  box-shadow: var(--glow-lich);
+}
+.consent-card[data-state="consented"] .head { color: var(--lich); }
+.consent-card[data-state="consented"] .head .rune-head { color: var(--lich); }
+.consent-card[data-state="refused"] {
+  border-color: color-mix(in srgb, var(--ember) 35%, var(--engraving));
+  box-shadow: none;
+  opacity: .85;
+}
+.consent-card[data-state="refused"] .head { color: var(--ember); }
+.consent-card[data-state="refused"] .head .rune-head { color: var(--ember); }
+
+/* composer */
+.composer {
+  margin-top: 12px;
+  display: flex; gap: 10px; align-items: flex-end;
+  border: 1px solid var(--engraving);
+  border-radius: 10px;
+  background: var(--obsidian);
+  padding: 10px 12px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.composer:focus-within { border-color: var(--rune-dim); box-shadow: var(--glow-rune); }
+.composer textarea {
+  flex: 1; resize: none;
+  background: transparent; border: none; outline: none;
+  color: var(--bone);
+  font: 14px/1.5 var(--font-body);
+  min-height: 40px;
+}
+.composer textarea::placeholder { color: var(--ash); }
+
+/* ── HTMX loading states — the thinking-rune ──────────────────────── */
+.thinking-rune { color: var(--lich); }
+/* the indicator is hidden until an htmx request is in flight (idiomatic htmx) */
+.htmx-indicator { opacity: 0; transition: opacity .2s; }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { opacity: 1; }
+.htmx-request .thinking-rune,
+.htmx-request.thinking-rune {
+  color: var(--lich);
+  animation: thinkPulse 2.4s ease-in-out infinite;
+}
+
+/* inspector */
+.bridge-inspector {
+  width: 296px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  overflow-y: auto;
+}
+.kv { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; padding: 12px 16px; font-size: 12px; }
+.kv dt { color: var(--ash); }
+.kv dd { color: var(--bone); overflow-wrap: anywhere; }
+.kv dd.glyph { color: var(--frost); }
+
+.floor { padding: 8px 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.block {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--engraving);
+  border-radius: 7px;
+  background: var(--obsidian-2);
+  font-size: 11.5px;
+}
+.block.stub { opacity: 0.5; border-style: dashed; }
+.block .layer {
+  font-family: var(--font-glyph); font-size: 10px;
+  color: var(--rune);
+  border: 1px solid color-mix(in srgb, var(--rune) 35%, transparent);
+  border-radius: 4px;
+  width: 22px; height: 18px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.block.volatile .layer { color: var(--lich); border-color: color-mix(in srgb, var(--lich) 35%, transparent); }
+.block .k { color: var(--parchment); flex: 1; font-family: var(--font-glyph); font-size: 10.5px; }
+.block .h { color: var(--ash); font-family: var(--font-glyph); font-size: 10px; }
+.floor-digest {
+  margin: 4px 6px 0;
+  padding: 8px 10px;
+  border-top: 1px solid var(--engraving);
+  font-size: 10.5px; color: var(--ash);
+  display: flex; justify-content: space-between;
+}
+.floor-digest b { color: var(--frost); font-family: var(--font-glyph); font-weight: 400; }
+
+/* ── Nexus — coven board ──────────────────────────────────────────── */
+.nexus-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.nexus-strip {
+  display: flex; gap: 22px; align-items: center;
+  padding: 10px 16px;
+  font-size: 12px; color: var(--ash);
+}
+.nexus-strip .stat b { color: var(--bone); font-weight: 500; margin-left: 6px; }
+.nexus-strip .stat b.ok { color: var(--frost); }
+.nexus-strip .stat b.live { color: var(--lich); }
+
+.coven-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+}
+.coven-card { display: flex; flex-direction: column; }
+.coven-card .panel-head { justify-content: space-between; }
+.coven-card .panel-head::before { content: "❖"; color: var(--rune-dim); font-size: 11px; }
+.coven-card.is-active { border-color: color-mix(in srgb, var(--lich) 30%, var(--engraving)); box-shadow: var(--glow-lich); }
+.coven-card.is-warm   { border-color: color-mix(in srgb, var(--frost) 28%, var(--engraving)); }
+.coven-card.is-cold   { border-color: var(--engraving); }
+.coven-card .kind { font-size: 10.5px; color: var(--ash); letter-spacing: 0.1em; text-transform: uppercase; }
+.cap {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--engraving) 60%, transparent);
+  font-size: 12px;
+}
+.cap:last-of-type { border-bottom: none; }
+.cap .key { font-family: var(--font-glyph); font-size: 11px; color: var(--parchment); flex: 1; overflow-wrap: anywhere; }
+.cap .scry {
+  font-size: 11px; color: var(--ash);
+  background: none; border: none; cursor: pointer;
+  border-bottom: 1px dotted var(--ash);
+  padding: 0;
+}
+.cap .scry:hover { color: var(--frost); border-color: var(--frost); }
+.cap .scry:disabled { opacity: .4; border: none; cursor: default; }
+.coven-foot {
+  padding: 8px 14px 10px;
+  font-size: 11px; color: var(--ash);
+  display: flex; justify-content: space-between;
+}
+
+/* ── Nexus — transition-plan drawer ───────────────────────────────── */
+.nexus-plan {
+  width: 330px; flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky; top: 66px;
+}
+.plan-verdict {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 16px 4px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ember) 30%, var(--engraving));
+  background: color-mix(in srgb, var(--ember) 6%, var(--obsidian-2));
+  color: var(--ember);
+  font-size: 12px; letter-spacing: 0.06em;
+}
+.plan-list { padding: 10px 16px 2px; font-size: 12.5px; }
+.plan-list .row { display: flex; justify-content: space-between; padding: 5px 0; }
+.plan-list .row .l { color: var(--ash); }
+.plan-list .row .v { font-family: var(--font-glyph); font-size: 11.5px; color: var(--bone); }
+.plan-list .row .v.evict { color: var(--ember); }
+.plan-list .row .v.launch { color: var(--frost); }
+.plan-act { padding: 12px 16px 15px; display: flex; flex-direction: column; gap: 8px; }
+.plan-act .warn { font-size: 11px; color: var(--ash); }
+
+/* ── Nexus — in-flight swap ticket (self-polling strip) ───────────── */
+.swap-ticket {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 16px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--frost) 30%, var(--engraving));
+  background: color-mix(in srgb, var(--frost) 6%, var(--obsidian-2));
+  color: var(--frost);
+  font-size: 12px; letter-spacing: 0.05em;
+}
+.swap-ticket::before { content: "❄"; animation: thinkPulse 2.4s ease-in-out infinite; }
+.swap-ticket[data-state="settled"] {
+  border-color: color-mix(in srgb, var(--lich) 30%, var(--engraving));
+  background: color-mix(in srgb, var(--lich) 6%, var(--obsidian-2));
+  color: var(--lich);
+  box-shadow: var(--glow-lich);
+}
+.swap-ticket[data-state="settled"]::before { content: "✦"; animation: none; }
+.swap-ticket[data-state="failed"] {
+  border-color: color-mix(in srgb, var(--ember) 35%, var(--engraving));
+  background: color-mix(in srgb, var(--ember) 6%, var(--obsidian-2));
+  color: var(--ember);
+}
+.swap-ticket[data-state="failed"]::before { content: "✕"; animation: none; }
+
+/* ── Loom ─────────────────────────────────────────────────────────── */
+.loom-rail { width: 232px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+.pattern {
+  display: block; padding: 10px 13px;
+  border: 1px solid transparent; border-radius: 8px;
+  color: var(--ash); cursor: pointer; text-decoration: none;
+}
+.pattern:hover { background: var(--obsidian); }
+.pattern.current {
+  background: var(--obsidian);
+  border-color: color-mix(in srgb, var(--rune) 30%, var(--engraving));
+}
+.pattern .t { display: block; font-size: 13px; color: var(--bone); margin-bottom: 2px; }
+.pattern .m { display: block; font-size: 11px; }
+.pattern.stub { opacity: 0.45; }
+
+.loom-canvas { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.graph-stage { padding: 26px 18px; overflow-x: auto; }
+.mermaid { display: block; }
+.mermaid svg { display: block; margin: 0 auto; max-width: 100%; }
+
+.loom-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+.loom-meta .panel { flex: 1; min-width: 260px; }
+.mermaid-src {
+  font-family: var(--font-glyph);
+  font-size: 11px; line-height: 1.65;
+  color: var(--parchment);
+  padding: 12px 16px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.mermaid-src .kw { color: var(--rune); }
+.mermaid-src .st { color: var(--frost); }
+
+/* ── Skeleton shells ──────────────────────────────────────────────── */
+.shell-placeholder {
+  margin: auto;
+  text-align: center;
+  color: var(--ash);
+  max-width: 420px;
+  padding: 40px 20px;
+}
+.shell-placeholder .glyph-big { font-size: 34px; color: var(--engraving); display: block; margin-bottom: 14px; }
+.shell-placeholder .rune-head { font-size: 19px; display: block; margin-bottom: 8px; }
+
+/* ── Bottom status bar (Vessel bar) ───────────────────────────────── */
+.vessel-bar {
+  display: flex; align-items: center; gap: 24px;
+  height: 34px;
+  padding: 0 20px;
+  border-top: 1px solid var(--engraving);
+  background: color-mix(in srgb, var(--obsidian) 88%, transparent);
+  font-size: 11px; color: var(--ash);
+}
+.vessel-bar .item b { font-weight: 400; margin-left: 6px; font-family: var(--font-glyph); font-size: 10.5px; }
+.vessel-bar .risen { color: var(--frost); }
+.vessel-bar .live-run { color: var(--lich); }
+.vessel-bar .spacer { flex: 1; }

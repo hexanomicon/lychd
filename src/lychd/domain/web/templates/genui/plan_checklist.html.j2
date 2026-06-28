@@ -1,0 +1,10 @@
+{# genui.plan_checklist — validated PlanChecklistParams (title, steps). Rendered
+   server-side from the registry; agent output is never markup (Projection Law). #}
+<div class="genui" data-fragment="genui.plan_checklist" data-state="rendered">
+  <div class="genui-head"><span>{{ title }}</span><span class="glyph">fragment · vessel-rendered</span></div>
+  <ol style="margin:0;padding:10px 16px 12px 30px;color:var(--parchment);font-size:12.5px">
+    {% for step in steps %}
+    <li style="padding:3px 0">{{ step }}</li>
+    {% endfor %}
+  </ol>
+</div>

@@ -1,0 +1,25 @@
+{% extends 'altar/base.html.j2' %}
+{% set active = 'nexus' %}
+{% block title %}Nexus — LychD{% endblock %}
+{% block main %}
+<div style="flex:1;display:flex;gap:14px;padding:14px 16px;min-width:0" aria-label="Nexus">
+  <div class="nexus-main">
+    {# The board self-loads and refreshes: on load, every 5s, and once whenever a
+       swap settles (the swap ticket fires nexus:swap-settled on the body). #}
+    <div id="nexus-board" data-fragment="nexus.board" data-state="rendered"
+         hx-get="/nexus/board"
+         hx-trigger="load, every 5s, nexus:swap-settled from:body"
+         hx-swap="innerHTML">
+      {% if board is defined %}{% include 'nexus/board.html.j2' %}{% endif %}
+    </div>
+  </div>
+
+  <aside class="panel nexus-plan" id="nexus-plan" data-fragment="nexus.plan" data-state="rendered"
+         aria-live="polite">
+    <div class="panel-head"><span class="rune-head">Transition Scrying</span></div>
+    <div style="padding:14px 16px;color:var(--ash);font-size:12px">
+      Scry a coven capability to preview its swap.
+    </div>
+  </aside>
+</div>
+{% endblock %}

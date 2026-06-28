@@ -1,0 +1,44 @@
+{% extends 'altar/base.html.j2' %}
+{% set active = 'bridge' %}
+{% block title %}Bridge — LychD{% endblock %}
+{% block main %}
+<div style="flex:1;display:flex;gap:14px;padding:14px 16px;min-width:0" aria-label="Bridge">
+
+  {# ── session rail ────────────────────────────────────────────────── #}
+  <aside class="bridge-rail">
+    <button class="rune-btn new-seance" type="button"
+            hx-post="/bridge/sessions" hx-swap="none">✦ &nbsp;New Séance</button>
+    <div class="divider">◆</div>
+    {% for item in sessions %}
+      {% with current = (session and item.id == session.id) %}
+        {% include 'bridge/session_rail.html.j2' %}
+      {% endwith %}
+    {% else %}
+      <p class="glyph" style="color:var(--ash);padding:8px 4px">No séance yet — open one to speak.</p>
+    {% endfor %}
+  </aside>
+
+  {# ── thread ──────────────────────────────────────────────────────── #}
+  <div class="bridge-thread">
+    {% include 'bridge/thread.html.j2' %}
+
+    {% if session %}
+    <form class="composer" id="bridge-composer"
+          hx-post="/bridge/{{ session.id }}/messages"
+          hx-target="#bridge-thread" hx-swap="beforeend show:bottom"
+          hx-disabled-elt="find button" hx-indicator="#bridge-composer .thinking-rune"
+          x-data @htmx:after-request="$el.reset()">
+      <textarea name="prompt" required rows="2" placeholder="Speak into the Bridge…"></textarea>
+      <button class="rune-btn" type="submit">Offer&ensp;<span class="thinking-rune htmx-indicator">◆</span></button>
+    </form>
+    {% endif %}
+  </div>
+
+  {# ── contextual inspector ────────────────────────────────────────── #}
+  {% if session %}
+  <div hx-get="/bridge/{{ session.id }}/inspector" hx-trigger="load" hx-swap="outerHTML"></div>
+  {% else %}
+  <aside class="bridge-inspector"></aside>
+  {% endif %}
+</div>
+{% endblock %}
