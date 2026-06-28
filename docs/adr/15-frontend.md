@@ -11,7 +11,7 @@ icon: material/language-html5
 ## Requirements
 
 - **Server-Side Verification:** Mandatory logic unification; all validation, state management, and routing must reside on the server to prevent architectural bifurcation.
-- **Multi-Page Instrument Map:** The primary Altar application is an MPA with top-level instruments matching the Hexanomicon map: Altar, Scrying, Nexus, Loom, Reliquary, and Bindings.
+- **Multi-Page Instrument Map:** The primary Altar application is an MPA with top-level instruments matching the Hexanomicon map: Bridge, Scrying, Nexus, Loom, Reliquary, and Bindings.
 - **Hypermedia-Driven Scrying:** Adoption of the HATEOAS pattern, where the server returns HTML fragments representing distilled outcomes rather than raw data.
 - **Generative UI Protocol:** Capability to dynamically render interactive components (forms, diff-views, checklists) based on the schema of an Agent's tool call, allowing the interface to evolve with the machine's capabilities.
 - **Predictive State Streaming:** Support for Server-Sent Events (SSE) to animate the machine’s internal states and "Predictive" drafts in real-time, sharing state between the Python kernel and the DOM.
@@ -51,7 +51,10 @@ icon: material/language-html5
 
 **The Altar** is implemented as a **Server-Rendered Hypermedia** interface. Its primary role is Intent offering, observation, consent, and the **Rite of Consecration**, with control surfaces expressed through typed ritual forms rather than a generic cockpit model.
 
-The Altar application is multi-page by instrument. The top navigation is the canonical user-facing map: **Altar**, **Scrying**, **Nexus**, **Loom**, **Reliquary**, and **Bindings**. Each instrument owns its page and local layout; HTMX provides fragment motion inside those pages rather than collapsing the whole application into one thick client shell.
+The Altar application is multi-page by instrument. The top navigation is the canonical user-facing map: **Bridge**, **Scrying**, **Nexus**, **Loom**, **Reliquary**, and **Bindings**. Each instrument owns its page and local layout; HTMX provides fragment motion inside those pages rather than collapsing the whole application into one thick client shell.
+
+!!! note "The Altar names the whole surface; the chat instrument is the Bridge"
+    Earlier drafts used *Altar* for both the entire web surface and its conversational instrument. That overload is resolved: **Altar** denotes the whole scrying surface, and the natural-language instrument within it is the **Bridge**. The graph instrument remains the **Loom**. Every route, template directory, and doc reference SHALL honor this split.
 
 This decision rejects Svelte as a full Altar application shell, not Svelte as a component compiler. Svelte is permitted as an island runtime when the interface surface is intrinsically interactive enough that Alpine would become a miniature framework by accident.
 
@@ -59,14 +62,25 @@ This decision rejects Svelte as a full Altar application shell, not Svelte as a 
 
 The Altar's top-level pages divide work by responsibility:
 
-- **Altar:** the Bridge where natural-language Intent is offered and routed into direct answers, jobs, workflows, artifacts, approvals, or other instruments.
+- **Bridge:** where natural-language Intent is offered and routed into direct answers, jobs, workflows, artifacts, approvals, or other instruments.
 - **Scrying:** live visualization of active Invocations, workflow progress, logs, trace fragments, and waiting decisions.
 - **Nexus:** visualization of Orchestrator state, queues, Covens, Portals, Animator availability, and hardware pressure.
 - **Loom:** Weaver Pattern browsing and design, including Mermaid, Pydantic AI graph renderings, and future graph-editing islands.
 - **Reliquary:** durable inspection of generated artifacts, reports, retained evidence, and blessed outputs.
 - **Bindings:** user-facing settings, provider references, identity bindings, privacy policy, approval policy, and Altar preferences.
 
-The Altar page itself may use a left session rail for conversation history, session settings, pinned context, and Coven requests. That rail is local to the Bridge, not global navigation. A right-side inspector is optional and contextual; it appears for selected messages, artifacts, approvals, workers, or log lines rather than serving as a permanent dashboard. On narrow screens, these rails collapse into drawers or separate views.
+Each instrument is bound to the subsystem that owns its truth. The correspondence is load-bearing: an instrument never holds authority of its own, it projects the authority of its owning subsystem.
+
+| Instrument | Owning Subsystem ADR | Data Authority |
+| :--- | :--- | :--- |
+| **Bridge** | **[Agents (20)](20-agents.md)** | Agent runs and sessions |
+| **Scrying** | **[Observability (29)](29-observability.md)** | The Oculus and live graph runs (**[Graph (24)](24-graph.md)**) |
+| **Nexus** | **[Orchestrator (23)](23-orchestrator.md)** | Physical Coven, Portal, and hardware state |
+| **Loom** | **[Weaver (28)](28-workflow.md)** / **[Graph (24)](24-graph.md)** | Workflow patterns and graph topology |
+| **Reliquary** | **[Phylactery (06)](06-persistence.md)** / **[Memory (27)](27-memory.md)** | Durable artifacts and consecrated Karma |
+| **Bindings** | **[Codex (12)](12-configuration.md)** | Rune configuration and policy |
+
+The Bridge page itself may use a left session rail for conversation history, session settings, pinned context, and Coven requests. That rail is local to the Bridge, not global navigation. A right-side inspector is optional and contextual; it appears for selected messages, artifacts, approvals, workers, or log lines rather than serving as a permanent dashboard. On narrow screens, these rails collapse into drawers or separate views.
 
 Coven switching is a cross-instrument concern. The Bridge may show active Coven status or accept a request, but availability, background-worker pressure, warming, sleeping, manual swaps, and queue tradeoffs are Nexus responsibilities.
 
@@ -91,6 +105,9 @@ The Altar adopts the **Agentic Generative UI (AG-UI)** philosophy but implements
 - **Tool-Based Interaction:** Approvals use dynamically generated forms based on the Pydantic schema of the pending tool call, allowing precise parameter editing before execution.
 - **Island Hydration:** A Svelte island may receive a typed snapshot and an SSE stream for local rendering. Any mutation that would affect durable state must return to the Vessel as a typed intent and pass server-side validation before the projection changes from speculative to authoritative.
 
+!!! note "The Projection Law"
+    Generative UI means the agent **chooses and parameterizes** server-rendered fragments drawn from a registry the Vessel owns. It never means the model emits markup. Model output is never interpreted as HTML, script, or DOM content swapped into the page. The DOM projects Vessel truth; it never decides it.
+
 !!! note "Runtime Surface Contract"
     Server-rendered fragments may expose stable semantic attributes and roles so agents, tests, and the Magus can verify the visible artifact at runtime. This contract is evidence, not authority: the Vessel and Phylactery own truth; the DOM is a machine-readable projection of that truth.
 
@@ -102,6 +119,10 @@ The Altar is the primary coordinate for high-level deliberation.
 
 - **Visions:** The backend does not present raw log streams. Instead, it sends HTML fragments containing Agent-distilled summaries of speculative processes.
 - **Consecration:** The Magus interacts with "Decision Fragments"—simple, server-validated forms that trigger the system's internal reflex arcs, merging speculative logic into the primary reality.
+
+#### The Seat of Consent
+
+Consent has a fixed home. A pending **`DeferredToolRequests`** raised by the **[Agents (20)](20-agents.md)** layer renders **inline within the Bridge session that raised it**, where the Magus first offered the Intent. A global **pending-consents sigil** is visible from every instrument, so an approval awaiting the Magus is never hidden behind whichever page is active. The **Vision** artifact of **[HitL (25)](25-hitl.md)** is the rendered body of the approval—the distilled evidence on which consent is granted or withheld. Approval and denial are ordinary hypermedia POSTs; the client holds no authority over the decision, only over its presentation.
 
 ### 4. The Extension Lens & Islands
 
@@ -116,7 +137,7 @@ To maintain the **[Federation (05)](05-extensions.md)**, the Altar functions as 
 
 The instrument map provides real-time visibility into the **Orchestrator's Intent Queues** without turning the Bridge into an all-purpose control room.
 
-- **Altar:** Shows the active Coven status and may accept a Coven or capability request for the current session.
+- **Bridge:** Shows the active Coven status and may accept a Coven or capability request for the current session.
 - **Scrying:** Shows which Invocations, Ghoul jobs, and workflow steps are active, paused, failed, or awaiting Magus decision.
 - **Nexus:** Shows queue pressure, "Inertia" weights, "Whim" multipliers, available Covens, Portals, hardware pressure, and why a swap is pending or denied.
 - **Manual Flip:** A privileged Nexus component may trigger a **Coven Swap**, providing the Override required to break logical loops or prioritize specific work when policy allows.

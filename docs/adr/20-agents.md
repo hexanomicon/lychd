@@ -57,6 +57,9 @@ An Agent is the execution atom of cognition, the fundamental unit of labor for b
 
     This is not a relaxation of rigor. It is the typed expression of the Pramāṇa boundary: when direct measurement, sound inference, or trusted testimony is absent, the Agent preserves the state as Vikalpa or returns a bottleneck instead of laundering uncertainty into Pramāṇa-shaped prose. The contract gives uncertainty a valid output channel so status pressure cannot become an implicit success criterion.
 
+!!! note "Stratification of Selves"
+    Three identity-adjacent notions layer rather than compete. A **Posture** is a per-run mechanical configuration—output schema, tool grant, `ModelSettings`, and prompt frame. A **Lens** (**[Simulation (ADR 31)](./31-simulation.md)**) is a Posture template employed for expansion isolation in the Shadow. A **Persona** (**[Mirror (ADR 32)](./32-identity.md)**) is a durable identity that *wears* Postures across runs. Persona chooses; Posture constrains; Lens diversifies.
+
 ### 1. Late-Binding Intelligence
 
 To prevent "Brain-Locking," the Agent's definition is decoupled from its implementation. The `Model` and `FunctionToolset` are resources that must be requested from the system's sovereign controller at runtime.
@@ -87,6 +90,19 @@ To allow the probabilistic mind to interact with the deterministic body, the sys
 
 - **The Bridge:** Tools and prompts receive a strictly typed `RunContext[LychDDeps]`, providing safe access to the **[Phylactery (06)](06-persistence.md)** and system settings without exposing global mutable state.
 - **State Preservation:** This allows the Agent to query the database, consult internal archives, or trigger background labor while remaining isolated within a validated execution context.
+
+#### The LychDDeps Covenant
+
+`LychDDeps` is the keystone dependency contract carried by every `RunContext[LychDDeps]`. It holds, as typed fields (not code):
+
+- the active **Sigil** and its permission scopes;
+- the **`CapabilityGrant`** in force for the step (**[Dispatcher (ADR 22)](./22-dispatcher.md)**);
+- a **Dispatcher handle** for Modality-Zip and deferred sensory tools;
+- a scoped **Phylactery session**, Archive-gated per **[IAM (ADR 38)](./38-iam.md)**;
+- the **Context Orchestrator** handle (**[Context (ADR 21)](./21-context.md)**);
+- the run and step **correlation IDs** (**[Observability (ADR 29)](./29-observability.md)** Trace Correlation Contract).
+
+`LychDDeps` carries **no raw secrets**. Provider and API credentials remain in the control plane and are resolved outside the cognitive context (**[Security (ADR 09)](./09-security.md)**); a Sigil grants authority, it does not ferry the secret itself.
 
 ### 3. Intelligence Tuning (`ModelSettings`)
 

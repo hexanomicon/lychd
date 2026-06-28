@@ -49,8 +49,39 @@ icon: material/directions-fork
 
 **The Dispatcher** is adopted as the system's Semantic Cortex. It functions as the switchboard that assembles the machine's working runtime grant from canonical capability records.
 
-!!! note "Capability Binding Cartography"
-    Current source names such as `CapabilitySpec`, `CapabilityState`, and `CapabilityGrant` are implementation handles, not final ontology. The durable boundary is the flow from declared intent, to discovered capability, to live substrate state, to late-bound runtime grant, to physical transition when required, to graph or worker recovery boundary. Future R&D may rename, split, or collapse classes as long as the authority boundaries remain intact.
+### Capability Binding Cartography
+
+The capability ontology is frozen. Earlier drafts left the class names provisional across the Dispatcher, **[Orchestrator (23)](23-orchestrator.md)**, and **[Graph (24)](24-graph.md)**; for v1 that instability ends. Three classes carry the binding lifecycle, and their authority boundaries are canonical:
+
+- **`CapabilitySpec`** — declared capability identity. Immutable per bind; the routing metadata a candidate advertises.
+- **`CapabilityState`** — the live physical projection. The latest observation of warm/live readiness against real substrate.
+- **`CapabilityGrant`** — the late-bound cognitive binding. A temporary hydration handed to a reasoning step at the moment of thought.
+
+The canonical capability key is `{animator}:{family}:{model_id}`. The rune names the Animator (**[Configuration (12)](12-configuration.md)**); the family and model id complete the identity, so a single multi-model Animator yields several Specs.
+
+#### The Two-Axis Law
+
+A capability is described along two orthogonal axes, and conflating them is forbidden:
+
+- **Family** names a routable *service kind*: `chat`, `vision-analysis`, `embedding`, `stt`, `tts`, `tool_execution`, `rerank`.
+- **Modalities** name what a capability *admits and emits* on a request.
+
+There is no AUDIO family. A chat model that hears is `chat` with `audio ∈ modalities_in`; a chat model that sees is `chat` with `image ∈ modalities_in`. The `vision-analysis` family (the dedicated Eye of **[Vision (36)](36-vision.md)**) is reserved for dedicated vision-analysis providers, not for a multimodal chat model that happens to accept images. Intent resolution matches on `(family, required_modalities)`, where the required modalities must be a subset of the capability's `modalities_in`. When no admitting capability is available, the **Modality Zip** (§5) is the sanctioned degradation path — never a silent family substitution.
+
+#### The Declare-then-Verify Doctrine
+
+Declared capability hints (the `[[models]]` blocks of a Soulstone rune, per **[Configuration (12)](12-configuration.md)**) are authoritative for routing intent. Live probes — `llama-server` `/props` modalities, the `multimodal` flag on `/v1/models` — may only *downgrade*: they mark a declared capability unavailable with a reason. They never invent capability a rune did not declare. Verification tightens; it never loosens. This is the deliberate mirror of the tighten-only Policy Ward in **[Configuration (12)](12-configuration.md)**.
+
+#### The Grant Lease Doctrine
+
+A `CapabilityGrant` is a lease scoped to the step that acquired it. Steps re-acquire per use; a grant is never cached across steps. The Orchestrator's drain honours active leases, but a hardware transition revokes all outstanding leases. A stale grant — one whose substrate moved after the lease was taken — surfaces as a `dependency_unavailable` rejection carrying `required_state` and `observed_state`, and is retryable. This ties to the Swarm Lease of the **[Orchestrator (23)](23-orchestrator.md)**.
+
+#### Portal Capability Synthesis
+
+A Portal yields `CapabilitySpec`s from its declared model list in the Codex or, absent declaration, from a live `/v1/models` probe performed at bind. Portal-born specs are `dedicated=False` and always warm, and they pass through the Privatization and Sovereignty gates before candidacy.
+
+!!! note "Implementation status (stub)"
+    `_build_portal_capability_specs` currently returns an empty list, so no Portal is yet routable. Until the synthesis above is built, the Portal Egress Gate (§9), the Sovereignty Gate (§3), and Economic Dispatching (**[The Toll (41)](41-x402.md)**) gate a path no candidate can take.
 
 
 ### 1. The World Model (Provider Indexing)
@@ -161,6 +192,12 @@ Before any intent is dispatched to an external Portal, the volatility of the con
     - If the weight is between `portal_threshold` and `forbidden_threshold`: An Anonymization Ritual (local scrubbing) is required, and only sanitized output is used for the dispatch.
     - If the weight is at or above `forbidden_threshold` (e.g., internal system passwords, private memory): **Raw portal egress is strictly forbidden.**
 - **The Fallback:** If a Portal route is forbidden, routing is forced to a Local Soulstone (e.g., vLLM), or the request is failed closed. This ensures the Dispatcher acts as an unbypassable firewall against prompt injection exfiltration.
+
+### The Gate-and-Censor Doctrine
+
+The Sovereignty Wall carries two distinct authorities that must not be confused. The Dispatcher **gates**: it decides *whether* content may egress at all, applying the privatization thresholds above and failing closed under `LYCHD_SECURE_MODE`. The Weaver's Censor (**[Workflow (28)](28-workflow.md)**) **transforms**: it anonymizes *what* has been permitted to cross and re-identifies results on return.
+
+The two never substitute for one another. The Censor runs strictly downstream of the gate — only on content the gate has already admitted — and it may only narrow: it can never widen what the gate permitted. The gate answers "may this leave?"; the Censor answers "in what form does the permitted content leave?". The Censor's concrete algorithm remains future work; its position in the pipeline is now law.
 
 ## Consequences
 

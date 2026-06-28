@@ -59,6 +59,9 @@ To exploit KV Cache capabilities, a deterministic ordering of message blocks is 
 
 Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of the **[Lich](../sepulcher/lich.md)**, the context window is the active field of **Citta** (from *cit*: to perceive — the total LLM generation field). The static prefix layers — Identity, Codex, Karma — are the substrate: the settled Saṃskāras, the lake bed. The volatile layers — State, Query — are the active **Vṛttis** (from *vrt*: to whirl): they disturb only the surface. Keeping the bed still while the surface churns is both the KV cache strategy and the cognitive architecture of clear perception.
 
+!!! note "The Cache Meridian"
+    The reuse-stable prefix is layers 1–3. Layer 4 (**Karma**) is **session-pinned by default**: recall is performed once at session open and mutates only at declared boundaries, so intra-session cache reuse is preserved across the whole floor. A **[Codex (ADR 12)](./12-configuration.md)** flag MAY demote Karma to per-turn recall, at the cost of moving the Meridian to after layer 3 — everything from layer 4 down then re-prefills each turn. The point is that the Meridian's position is a stated policy, never an accident: whichever default the Magus prefers, the boundary is declared.
+
 ### 2. The Context Manager (The Heuristic Switch)
 
 Prior to ritual initiation, a Context Manager evaluates the intended payload against the current hardware state:
@@ -77,6 +80,9 @@ To bridge the gap between deterministic state and probabilistic reasoning, a **C
 - **Cache Shielding:** By ensuring the most static blocks lead the sequence, the Orchestrator enables the maximized reuse of KV caches.
 - **Dynamic Gating:** The Orchestrator monitors token pressure and autonomously switches from full-context injection to RAG when model limits are approached.
 
+!!! note "Cache Shielding as a Testable Invariant"
+    Every block enters assembly as a `(layer, key, content-hash)` triple. Assembly is deterministic given the key set, and an identical key set SHALL produce a byte-identical prefix. Volatile data may enter only layers 5–6. This is the testable invariant behind **Quality Drift Injection** and CAG evaluation: an evaluation may toggle a single keyed block and attribute the resulting quality delta to it, which is what makes the CAG measurable rather than merely asserted.
+
 ### 4. The CTC (Context Truncation & Compression) Governor
 
 To ensure substrate stability and prevent VRAM spikes, the manager enforces hard boundary limits:
@@ -85,6 +91,7 @@ To ensure substrate stability and prevent VRAM spikes, the manager enforces hard
 - **Message Depth:** A rolling window of the last $N$ turns to prevent context drift.
 - **Verbatim Priority:** Aggressive pruning of filler while preserving **[Verbatim (ADR 06)](./06-persistence.md)** facts and consecrated entries.
 - **VRAM Safety:** If the calculated cache size exceeds the available buffer in the active container, the governor triggers a condensation ritual to prune non-essential traces before inference begins.
+- **Dynamic Window Source:** The Governor reads `context_window` from the active **`CapabilityGrant`**'s `ModelInfo`, never from static configuration. Under dynamic capability switching the window varies per granted capability (**[Dispatcher (ADR 22)](./22-dispatcher.md)**).
 
 ### 5. Pluggable Context Formatters
 

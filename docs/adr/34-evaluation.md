@@ -73,6 +73,7 @@ The results of the Riddle are serialized into a **Capability Matrix** stored thr
 2. **Metric Aggregation:** The system records `Accuracy`, `Tokens-per-Second`, `VRAM_Occupancy`, `truthful_non_answer_rate`, `over_refusal_rate`, `retry_count`, `precondition_miss_rate`, and `pressure_latency_drift`.
 3. **Primary Selection:** The **[Dispatcher (22)](22-dispatcher.md)** consults this matrix. If a 7B local model passes the "Scout Riddle" with 90% accuracy, it is promoted to the primary provider for that capability, bypassing expensive remote Portals.
 4. **The Headroom Gate:** If the Riddle detects that a model is scoring >90% on the capability matrix (e.g., saturated Tier 1 frontier models), the **[Soulforge (33)](33-training.md)** is explicitly locked for that domain. Self-training yields zero lift when a model is already saturated on standard benchmarks. Skipping the training ritual saves local VRAM and time, as no further headroom exists to mine.
+5. **The Ranking Projection:** Capability Matrix cells project into CapabilitySpec metadata (or an adjoining Phylactery relation) consumed by the **[Dispatcher (22)](22-dispatcher.md)**'s ranking stage, which runs after the Ward, Privatization, and Sovereignty gates have admitted a candidate set. Absent matrix data, the warm-first ordering stands.
 
 ### III. The Shadow Realm Verdict (Physical Truth)
 

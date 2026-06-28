@@ -41,6 +41,9 @@ icon: material/headphones
 
 **The Echo** is adopted as the Audio Extension. It manifests the `audio.coven` and registers streaming and discrete audio capabilities as Animators.
 
+!!! note "The Two-Axis Law: No Audio Family"
+    A **family** names a routable service kind; **modalities** name what a capability admits. There is **no `audio` family**. A chat model that hears is not a distinct family member: it is a **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying `audio ∈ modalities_in`, satisfying spoken input in place. The dedicated audio families remain `stt` (the Ear) and `tts` (the Voice) — routable service kinds for transcription and synthesis, conscripting the Audio Coven only when a dedicated provider is required.
+
 ### 1. The Audio Coven (Body)
 
 The Echo manifests as a collection of **[Quadlet services (08)](08-containers.md)**:
@@ -75,7 +78,7 @@ When a text-based Agent decides to speak:
 
 1. The Agent calls `generate_speech(text)`.
 2. The **[Dispatcher (22)](22-dispatcher.md)** checks the target service.
-3. If **COLD**: It triggers the **Stasis Protocol**. The Agent freezes. The Orchestrator performs the swap. The Agent wakes up and speaks.
+3. If **COLD**: It triggers the **Stasis Protocol**. The Agent freezes. The Orchestrator performs the swap. The Agent wakes up and speaks. The swap holds the run in **Live Stasis**; any checkpoint taken is opportunistic crash insurance, not a Reanimation boundary — the graph loop stays resident and resumes itself.
 
 ### 4. Sensory Dispatching (Portals & Soulstones)
 

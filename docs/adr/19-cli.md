@@ -101,6 +101,30 @@ The **Hand** (CLI) resides on the **Host Substrate**, physically separated from 
 # lychd rebirth              # The manual gate to activate a new forge image.
 ```
 
+### 6. The Arbitration Doctrine
+
+The Hand and the Vessel can both actuate the same Covens. Two wills issuing `systemctl` verbs against the same targets at once would break the **Law of Exclusivity**'s assumption of a single physical will. The Hand therefore distinguishes **observation** from **actuation**.
+
+- **Observation commands** (`list`, `status`, `logs`, `animators`) act directly. Reading the substrate contends with nothing.
+- **Actuation commands** (`start`, `stop`, `promote`, `rebirth`) SHALL first attempt the Vessel API—while the Vessel lives, its Orchestrator is the sole physical will (**[Orchestrator (23)](23-orchestrator.md)**)—and act directly only when the Vessel is provably down.
+- **The Mundane Anchor path** (`restore`, `rollback`) is exempt by design. It exists precisely for the dead-Vessel case (see [§4](#4-the-mundane-anchor-and-elevation-path)) and must never route through a Vessel it may be recovering.
+
+### 7. Implementation Status
+
+xDDD permits doctrine-first specification, but the Logos should state which limbs of the Hand exist today. The following is the current status of the rituals:
+
+| Command | Status | Notes |
+| :--- | :--- | :--- |
+| `init` | Implemented | Inscribes the Codex, discovers `RuneConfig` schemas, writes samples, forges the Crypt. |
+| `bind` | Implemented | Transmutes Codex into Systemd Quadlets and reloads the host daemon. |
+| `animators` | Implemented | Read-only capability probes over declared animators. |
+| `list` | Specified | Observation command; not yet built. |
+| `status` / `logs` | Specified | The Pulse; not yet built. |
+| `start` / `stop` | Specified | Actuation; bound by the Arbitration Doctrine when built. |
+| `promote` | Specified | Actuation; Lab → Crypt move, hard-gated. |
+| `rebirth` | Specified | Actuation; the manual gate to a new forge image. |
+| `restore` / `rollback` | Specified | The Mundane Anchor; must avoid importing `lychd.domain`. |
+
 ### Consequences
 
 !!! success "Positive"

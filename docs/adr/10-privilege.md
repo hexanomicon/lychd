@@ -77,6 +77,29 @@ The host monitors this specific directory utilizing a **Systemd .path unit**.
 
 To maintain the Federation's flexibility, Extensions may propose new Intent IDs. However, these intents are not active until their corresponding host-side logic is synthesized into the Host Reactor during the assembly phase. This ensures the Magus remains the ultimate arbiter of which privileged actions the machine is permitted to perform.
 
+### 5. The Nonce Ledger
+
+The `nonce` carried in every `.intent.json` protects the channel only if its consumption is remembered. The Reactor maintains a **persistent ledger of consumed nonces**, scoped per Intent Token. A nonce is single-use: an intent whose nonce already appears in the ledger, or whose file mtime exceeds the intent TTL, is a replay or a stale signal. The Reactor purges it without execution and journals it as rejected. The ledger survives Reactor restarts, so a replayed intent cannot be re-executed by bouncing the reactor. Without the ledger the nonce protects nothing.
+
+### 6. The Observation Doctrine
+
+The channel remains strictly unidirectional; **no reply file exists**. The Reactor reports only to the journal—the systemd journal, structured—recording each intent as executed or rejected. The Vessel confirms an intent solely by observing its effects: unit states and the Orchestrator's Awakening poll. It MAY read the journal read-only, but the return path is never a file the Reactor writes back into the shared volume, which would itself become an escalation surface. A rejected intent (bad token, bad nonce, malformed payload, stale mtime) is purged and journaled; the Vessel distinguishes "reactor refused" from "reactor slow" by reading that journal, never by a reply.
+
+### 7. The Signal Boundary Invariant
+
+The intent drop directory is itself a privilege boundary, and this ADR is its sole owner:
+
+!!! important "The Signal Boundary Invariant"
+    The intent directory is mounted **writable into the Vessel alone**. It SHALL never be mounted into the Tomb or any Soulstone.
+
+**[Layout (13)](13-layout.md)** (the Tomb must not mount host trigger/signaling paths) and **[Evolution (18)](18-evolution.md)** (the Tomb cannot trigger host intents) restate this boundary from their own vantage. They cross-reference this invariant rather than defining it; the canonical statement lives here.
+
+### 8. Manifestation Modes
+
+The actuation channel is not always the Reactor. While the Vessel runs **uncaged** on the host—the development manifestation of the pre-alpha—the Orchestrator addresses the user Systemd bus directly (`systemctl --user` stop/start), because no cage yet separates it from the host substrate.
+
+Upon **caging**, every `systemctl` verb in the Orchestrator's swap ritual is replaced by its corresponding intent: `INTENT_SWAP_COVEN`, `INTENT_RELOAD_QUADLETS`, `INTENT_RESTART_VESSEL`. The Orchestrator's strategy code SHALL treat the actuation channel as pluggable, so the swap logic is identical in both modes and only the final actuator differs. This ADR is the canonical home of the transition condition; the **[Orchestrator (23)](23-orchestrator.md)** may note it from its own vantage.
+
 ### Consequences
 
 !!! success "Positive"

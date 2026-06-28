@@ -183,7 +183,7 @@ Because the UID matches the invoking host user, the process can interact with us
 The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined.
 
 - **The Vessel:** High-trust plane. Granted the control-plane mount set needed for API, orchestration, persistence, and promotion. Agents live here: graph state, LLM calls, routing, validation, memory access, and promotion policy remain Vessel-side. The Codex is normal runtime configuration; writable Codex mutation remains a host/Magus action or an explicitly authorized ritual, not arbitrary agent labor.
-- **The Tomb:** Low-trust execution hand. Granted no writable Codex. A Tomb profile may receive no Codex mount at all, or only a read-only/sanitized Codex projection for job-safe facts. It receives RW access only to disposable, task-scoped workspaces and artifacts.
+- **The Tomb:** Low-trust execution hand. Granted no Codex mount at all under the No-Codex Law ([ADR 13](13-layout.md)): every job-safe fact it needs travels in the job payload as a task-safe, secret-forbidden runtime envelope ([ADR 11](11-backend.md)). It receives RW access only to disposable, task-scoped workspaces and artifacts.
 
 Native code modification is protected by Git Branching, not by different UIDs. Unsafe execution may manipulate workspaces, but it must not rewrite the trusted running body of the control plane.
 
@@ -362,13 +362,23 @@ This keeps experimentation and codegen possible without normalizing mutation of 
 !!! warning "Untrusted Returns"
     The Tomb `stdout` returned to the Vessel is **untrusted**. If the executed code processed data fetched from the internet, the output may contain adversarial content including indirect prompt injection attempts. Tool outputs returning from the Tomb must be treated as untrusted when injected into agent context.
 
+#### Return Quarantine
+
+The Untrusted Returns warning names the risk; **Return Quarantine** is the doctrine that answers it. Tomb returns are data, never instruction.
+
+- Stdout and artifacts returning from the Tomb enter agent context only as **fenced, provenance-tagged blocks** within the volatile layers (5–6) of the Stable Floor (**[Context (21)](21-context.md)**).
+- They are never concatenated into instruction layers.
+- Any structured interpretation of a return passes through a typed boundary (**[Agents (20)](20-agents.md)**).
+
+The same law governs every input crossing into cognition from a lower-trust plane: assimilated external material (**[Assimilation (35)](35-assimilation.md)**) and A2A peer returns (**[A2A (26)](26-a2a.md)**) are quarantined identically. A return is admitted as fenced data; it is never spoken as command.
+
 ### 5. Authority Matrix
 
 | Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Untrusted Execution Plane)                                   |
 | :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
 | **Identity**       | UID 1000 (Symmetric Identity).                                 | UID 1000 (Symmetric Identity).                                         |
 | **Secrets**        | Accesses control-plane database credentials and high-value API keys. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, signing keys, Codex secrets, or control-plane credentials. |
-| **Mounts**         | Control-plane mount set for configuration, persistence, and authorized promotion. | No writable Codex. Optional read-only/sanitized Codex projection; RW access only to disposable workspaces and artifacts. |
+| **Mounts**         | Control-plane mount set for configuration, persistence, and authorized promotion. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
 | **Network**        | Shared Pod network (Internet + Localhost).                     | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
 | **Queue Control**  | Owns enqueue policy, durable scheduling, and control-plane retries. | Claims, acks, and retries execution-plane SAQ jobs only.               |
 | **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |

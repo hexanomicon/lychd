@@ -88,8 +88,8 @@ Only candidates retained by this review pass deserve physical Shadow branches. I
 
 When a premise is neither confirmed nor refuted by the context at hand, the review may spawn a **bounded inquiry** — a child Agent dispatched against *one named question*, not a feeling, carrying an explicit retrieval budget and stop condition. It has three honest exits: **resolved** (the premise is grounded and seeding proceeds), **refuted** (a `precondition_miss` or contradiction is recorded and routed into the Truthful Dead End shape of §3), or **unknown after exhausted retrieval** (escalated to **[HitL (25)](25-hitl.md)** as a typed bottleneck). On the third exit the truthful non-answer is itself the Pramāṇa — Buddhi refusing to mint Viparyaya — and the Magus's testimony, if given, is its external grounding. The inquiry never blocks on its own fatigue; mere model hesitation is not a refutation, and the boundary must still be witnessed.
 
-!!! note "Open: Where Feasibility Ends and Rationale Begins"
-    Two lines are left deliberately unset for the Magus. **(a)** Exactly where the feasibility reading (which may withhold a candidate) ends and pure rationale seeding (which may only add alternatives, never block) begins. **(b)** The trust and provenance threshold at which an *exhausted retrieval* earns the standing of Pramāṇa rather than mere fatigue. Until both are set, the inquiry escalates to HitL rather than self-authorizing a withhold on weak evidence.
+!!! note "Where Feasibility Ends and Rationale Begins"
+    Two lines that were once left unset are now settled. **(a) Role separation.** The feasibility reader may only *withhold* branches (a subtractive act); the rationale seeder may only *append* lens instructions (an additive act). These are two distinct **[Postures (ADR 20)](20-agents.md)** and are never combined in one run: no single invocation both withholds a candidate and seeds new rationale. **(b) Trust threshold.** An exhausted retrieval earns the standing of **Pramāṇa** rather than mere fatigue when the Solvable-Control false-positive rate — the **[Riddle/Evaluation (34)](34-evaluation.md)** `over_refusal_rate` measured on paired controls — falls below the **[Codex (12)](12-configuration.md)** threshold. Until that rate is below threshold, the inquiry escalates to **[HitL (25)](25-hitl.md)** rather than self-authorizing a withhold on weak evidence.
 
 ### 1.2 Shadow Roles: Expansion, Determination, Neutrality
 
@@ -185,6 +185,13 @@ The Shadow Realm is infrastructural, not just conceptual.
 - The graph runner and agent logic stay in the **Vessel**. **The Tomb** receives only serialized execution payloads (scripts, test suites, linter invocations) via SAQ. It is the hand for unsafe work, not the home of the agent. It does not run agent logic, graph state machines, or make LLM calls.
 - Graph steps declare execution mode (`vessel` or `tomb`); unsafe steps serialize their payload and dispatch to **The Tomb**, then await the `stdout` result.
 - **The Tomb** returns untrusted `stdout`/`stderr` and declared artifacts/traces only.
+
+Both Shadow Simulation and the **[Weaver (28)](28-workflow.md)** fan out parallel agent labor, so the boundary between speculative branching and live workflow must be stated as law. That boundary is the **Demarcation Law**:
+
+!!! important "The Demarcation Law"
+    A branch that may commit an effect into the live Run belongs to the Weaver. A branch that may only produce a Vision belongs to the Shadow. The Weaver consumes Simulation results solely as consecrated Visions or as evidence in joins—never as direct state writes. The Dual-Gate governs only the Shadow's output.
+
+Shadow branches live in Jujutsu workspaces under `lab/shadow/` and can only ever emit Visions—promotion candidates—never direct effects. A Shadow result crosses into real state only after the Dual-Gate measures it and Vessel policy or the Magus consecrates it (§5); it never writes state on its own authority.
 
 Operational summary: Shadow produces possible futures, Mirror filters for congruence, and Vessel authorizes what becomes real.
 

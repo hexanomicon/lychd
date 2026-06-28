@@ -51,6 +51,8 @@ Agentic coherence disintegration is therefore an identity failure before it is a
 
 This vertex is not a costume or style layer. It is the engineered center of gravity that turns linear generation into attributable action. A raw Vṛtti becomes useful only when it can be reflected, measured, attributed, and recalled without dissolving the identity that produced it.
 
+Within the Stratification of Selves defined in **[Agents (20)](20-agents.md)**, the Persona is the durable layer. It is the enduring identity that *wears* Postures—the per-run mechanical configurations of schema, tool grant, and model settings—rather than being one itself. A **[Lens (31)](31-simulation.md)** is a Posture template employed in the Shadow for expansion isolation, diversifying the seed field without asserting identity. Persona chooses; Posture constrains; Lens diversifies. The Mirror governs only the durable layer: Postures and Lenses are worn for a run and discarded, while the semantic vertex persists.
+
 ### 1. Identity as a Filtered Reality
 
 The system treats Persona-manifestation as a diffraction ritual where Identity act as a lens.
