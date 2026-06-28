@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
@@ -11,86 +11,59 @@ from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 class VllmSoulstoneConfig(SoulstoneConfig):
     """Builtin Soulstone profile for vLLM.
 
-    Contract:
-    - ``exec`` present => passthrough mode (command is authoritative)
-    - ``exec`` absent  => managed mode (typed fields synthesize command args)
-    - managed mode requires ``model_path``
-    - container-level toggles (for example ``ipc_host``) still apply in both modes
+    Exec-passthrough-by-default: the operator supplies the full vLLM serve
+    command as the ``exec`` list (权威). Container-level concerns (image,
+    port, GPU device, IPC/security flags, volumes, env vars) remain typed
+    fields on the Soulstone/Quadlet envelope; every framework flag lives in
+    ``exec`` and is never re-typed here.
     """
 
     path_fragment: ClassVar[Path] = Path("vllm")
     sample_template: ClassVar[str | None] = """
-# ~/.config/lychd/runes/animator/soulstones/vllm/glm.toml
+# ~/.config/lychd/runes/animator/soulstones/vllm/qwen35.toml
 
-name = "glm-vllm"
-description = "Static vLLM Soulstone for one OpenAI-compatible local model."
+name = "qwen35"
+description = "Daily-driver vLLM Soulstone."
 groups = ["local-llm"]
-port = 8010
+image = "vllm/vllm-openai:nightly"
+port = 8000
 
-model_path = "/models/GLM-4.7-Flash-AWQ-4bit"
-tensor_parallel_size = 1
-gpu_memory_utilization = 0.90
-max_model_len = 32768
-max_num_seqs = 2
-
-language_model_only = true
-tool_call_parser = "glm47"
-reasoning_parser = "glm45"
-enable_auto_tool_choice = true
-trust_remote_code = true
 ipc_host = true
+network_host = false
+
+devices = ["nvidia.com/gpu=all"]
+# security_label_disable = false  # SELinux stays on for the container (CDI handles GPU access)
+
+volumes = ["/data/models:/models:ro"]
+env_vars = {
+  "NCCL_CUMEM_ENABLE"    = "0",
+  "NCCL_P2P_DISABLE"     = "1",
+  "VLLM_WORKER_MULTIPROC_METHOD" = "spawn",
+  "PYTORCH_CUDA_ALLOC_CONF" = "expandable_segments:True,max_split_size_mb:512",
+}
+
+exec = [
+  "serve", "/models/cyankiwi__Qwen3.5-27B-AWQ-4bit",
+  "--served-model-name", "Qwen3.5-27B",
+  "--host", "0.0.0.0", "--port", "8000",
+  "--tensor-parallel-size", "2",
+  "--disable-custom-all-reduce",
+  "--gpu-memory-utilization", "0.95",
+  "--max-model-len", "163840",
+  "--max-num-seqs", "1",
+  "--max-num-batched-tokens", "4096",
+  "--enable-chunked-prefill",
+  "--enable-prefix-caching",
+  "--reasoning-parser", "qwen3",
+  "--enable-auto-tool-choice",
+  "--tool-call-parser", "qwen3_coder",
+  "--generation-config", "vllm",
+  "--speculative-config", '{"method":"dflash","model":"/models/z-lab__Qwen3.5-27B-DFlash","num_speculative_tokens":4}',
+]
 """
     runtime: str = "vllm"
     image: str = "vllm/vllm-openai:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
 
-    tensor_parallel_size: int = Field(default=1, ge=1)
-    gpu_memory_utilization: float = Field(default=0.9, gt=0.0, le=1.0)
-    language_model_only: bool = False
-    max_model_len: int | None = Field(default=None, ge=1)
-    max_num_seqs: int | None = Field(default=None, ge=1)
-    quantization: str | None = None
-    tool_call_parser: str | None = None
-    reasoning_parser: str | None = None
-    enable_auto_tool_choice: bool = False
-    trust_remote_code: bool = False
     ipc_host: bool = True
-    network_host: bool = False
-    extra_args: list[str] = Field(default_factory=list)
-
-    _PASSTHROUGH_CONFLICT_FIELDS: ClassVar[frozenset[str]] = frozenset(
-        {
-            "model_path",
-            "tensor_parallel_size",
-            "gpu_memory_utilization",
-            "language_model_only",
-            "max_model_len",
-            "max_num_seqs",
-            "quantization",
-            "tool_call_parser",
-            "reasoning_parser",
-            "enable_auto_tool_choice",
-            "trust_remote_code",
-            "extra_args",
-        }
-    )
-
-    @model_validator(mode="after")
-    def _validate_runtime_contract(self) -> VllmSoulstoneConfig:
-        """Reject mixed command authority and enforce managed prerequisites."""
-        if self.exec:
-            conflicting = sorted(field for field in self._PASSTHROUGH_CONFLICT_FIELDS if field in self.model_fields_set)
-            if conflicting:
-                joined = ", ".join(conflicting)
-                msg = (
-                    "VllmSoulstoneConfig uses exec passthrough, but managed fields were also set: "
-                    f"{joined}. Remove managed fields or remove 'exec'."
-                )
-                raise ValueError(msg)
-            return self
-
-        if self.model_path:
-            return self
-
-        msg = "VllmSoulstoneConfig in managed mode requires 'model_path'."
-        raise ValueError(msg)
+    network_host: bool = Field(default=False, description="Emit --network=host on the Quadlet.")

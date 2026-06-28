@@ -43,7 +43,7 @@ class RuntimeAdapterRegistry:
 
     def __init__(
         self,
-        adapters: list[SoulstoneRuntimeAdapter] | None = None,
+        adapters: Sequence[SoulstoneRuntimeAdapter] | None = None,
         *,
         portal_factories: Sequence[PortalRuntimeFactory] | None = None,
     ) -> None:

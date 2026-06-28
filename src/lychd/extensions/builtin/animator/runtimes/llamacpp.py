@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import cast
 
 from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
 from lychd.domain.animation.services.adapters.contracts import LISTEN_HOST, RuntimeAnimator, RuntimePlan
@@ -13,11 +15,11 @@ from lychd.domain.animation.services.adapters.surfaces import (
     LlamacppStone,
     local_link_default,
 )
-from lychd.system.schemas import QuadletContainer
 from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane, LlamaCppControlPlaneError
 from lychd.extensions.builtin.animator.llamacpp.parser import LlamaCppCommandParser, LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
 from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
+from lychd.system.schemas import QuadletContainer
 
 
 class LlamaCppRuntimeAdapter:
@@ -76,50 +78,58 @@ class LlamaCppRuntimeAdapter:
         )
 
     def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
-        """Map llama.cpp connector and optional control-plane data into capability states."""
-        connector = animator.connector
+        """Map live llama.cpp control-plane data into capability states.
+
+        The control-plane probe is always attempted; its outcome is pushed onto
+        the connector link so callers observing ``link.up`` see real
+        reachability instead of the construction-time default.
+        """
+        connector = cast("LlamacppConnector", animator.connector)
         mode = getattr(connector, "mode", "single")
-        if connector.link.up:
-            try:
-                lifecycle = self._control_plane.inspect_animator(animator)
-            except LlamaCppControlPlaneError as exc:
-                return self._fallback_states(
-                    animator=animator,
-                    specs=specs,
-                    mode=mode,
-                    health="error",
-                    reason=str(exc),
-                )
+        try:
+            lifecycle = self._control_plane.inspect_animator(animator)
+        except LlamaCppControlPlaneError as exc:
+            connector.set_link(Link(up=False, activatable=True, reason=str(exc), checked_at=datetime.now(UTC)))
+            return self._fallback_states(
+                animator=animator,
+                specs=specs,
+                mode=mode,
+                health="error",
+                reason=str(exc),
+            )
 
-            loaded_ids = list(lifecycle.loaded_models)
-            active_model = self._normalize_active_model_id(lifecycle, specs)
-            states: list[CapabilityState] = []
-            for spec in specs:
-                is_static = mode != "router"
-                is_active = spec.model_id == active_model if mode == "router" else lifecycle.health == "ok"
-                states.append(
-                    CapabilityState(
-                        capability_key=spec.key,
-                        is_static=is_static,
-                        is_active=is_active,
-                        is_available=True,
-                        warm=lifecycle.health == "ok" and (is_active or is_static),
-                        health=lifecycle.health,
-                        active_model_id=active_model,
-                        loaded_model_ids=loaded_ids,
-                        reason=None if is_active or is_static else "model_not_loaded",
-                        metadata=dict(lifecycle.raw),
-                    )
-                )
-            return states
-
-        return self._fallback_states(
-            animator=animator,
-            specs=specs,
-            mode=mode,
-            health="down",
-            reason=connector.link.reason or "runtime_not_probed",
+        reachable = lifecycle.health in {"ok", "loading"}
+        health_error = lifecycle.raw.get("health_error")
+        connector.set_link(
+            Link(
+                up=reachable,
+                activatable=True,
+                reason=None if reachable else (str(health_error) if health_error else "runtime_unreachable"),
+                checked_at=datetime.now(UTC),
+            )
         )
+
+        loaded_ids = list(lifecycle.loaded_models)
+        active_model = self._normalize_active_model_id(lifecycle, specs)
+        states: list[CapabilityState] = []
+        for spec in specs:
+            is_static = mode != "router"
+            is_active = spec.model_id == active_model if mode == "router" else lifecycle.health == "ok"
+            states.append(
+                CapabilityState(
+                    capability_key=spec.key,
+                    is_static=is_static,
+                    is_active=is_active,
+                    is_available=True,
+                    warm=lifecycle.health == "ok" and (is_active or is_static),
+                    health=lifecycle.health,
+                    active_model_id=active_model,
+                    loaded_model_ids=loaded_ids,
+                    reason=None if is_active or is_static else "model_not_loaded",
+                    metadata=dict(lifecycle.raw),
+                )
+            )
+        return states
 
     def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool:
         """Perform router-native model activation when the runtime supports it."""

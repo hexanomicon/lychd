@@ -7,6 +7,7 @@ from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericStone,
     LlamacppConnector,
@@ -15,11 +16,22 @@ from lychd.domain.animation.services.adapters.surfaces import (
 )
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
-from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
+from lychd.extensions.builtin.animator.runtimes import (
+    LlamaCppRuntimeAdapter,
+    SglangRuntimeAdapter,
+    VllmRuntimeAdapter,
+)
+
+
+def _runtime_registry() -> RuntimeAdapterRegistry:
+    """Build a registry wired with the builtin runtime adapters under test."""
+    return RuntimeAdapterRegistry(
+        adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
+    )
 
 
 def _build_llamacpp_connector(soulstone: LlamaCppSoulstoneConfig) -> tuple[LlamacppConnector, RuntimePlan]:
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
     connector = runtime.connector
@@ -28,7 +40,7 @@ def _build_llamacpp_connector(soulstone: LlamaCppSoulstoneConfig) -> tuple[Llama
 
 
 def _build_vllm_connector(soulstone: VllmSoulstoneConfig) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
     connector = runtime.connector
@@ -37,7 +49,7 @@ def _build_vllm_connector(soulstone: VllmSoulstoneConfig) -> tuple[OpenAICompati
 
 
 def _build_sglang_connector(soulstone: SglangSoulstoneConfig) -> tuple[OpenAICompatibleConnector, RuntimePlan]:
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
     assert runtime is not None
     connector = runtime.connector
@@ -82,12 +94,6 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
             "name": "qwen-router",
             "startup_mode": "router",
             "models_preset": str(preset),
-            "models": {
-                "default": {
-                    "id": "qwen3-64k",
-                    "path": "/models/qwen3-64k.gguf",
-                }
-            },
         }
     )
 
@@ -95,7 +101,8 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
     model_ids = [info.id for info in connector.list_models()]
 
     assert connector.mode == "router"
-    assert connector.router_query_model_id == "qwen3-64k"
+    # Without a models catalog the router query model falls back to the Soulstone name.
+    assert connector.router_query_model_id == "qwen-router"
     assert "qwen3-64k" in model_ids
     assert "qwen3-150k" in model_ids
     assert "--models-preset" in plan.exec_args
@@ -103,92 +110,76 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
 
 
 def test_vllm_openai_compatible_plan() -> None:
+    # vLLM is exec-passthrough: the operator's ``exec`` list is authoritative and
+    # framework flags are never re-typed on the Soulstone.
+    exec_args = [
+        "serve",
+        "/models/glm-flash",
+        "--served-model-name",
+        "glm-flash",
+        "--tensor-parallel-size",
+        "2",
+    ]
     soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "glm47",
-            "model_path": "/models/GLM-4.7-Flash-AWQ-4bit",
-            "models": {
-                "default": {
-                    "id": "glm-4.7-flash",
-                    "path": "/models/GLM-4.7-Flash-AWQ-4bit",
-                }
-            },
-            "tensor_parallel_size": 2,
-            "language_model_only": True,
-            "tool_call_parser": "glm47",
-            "reasoning_parser": "glm45",
-            "enable_auto_tool_choice": True,
-            "trust_remote_code": True,
+            "model_path": "/models/glm-flash",
+            "port": 8000,
             "ipc_host": True,
+            "exec": exec_args,
         }
     )
 
     connector, plan = _build_vllm_connector(soulstone)
 
     assert connector.kind == "vllm"
-    assert [info.id for info in connector.list_models()] == ["glm-4.7-flash"]
-    assert plan.exec_args[0] == "serve"
-    assert "--served-model-name" in plan.exec_args
-    assert "glm-4.7-flash" in plan.exec_args
-    assert "--language-model-only" in plan.exec_args
-    assert "--tool-call-parser" in plan.exec_args
-    assert "glm47" in plan.exec_args
-    assert "--reasoning-parser" in plan.exec_args
-    assert "glm45" in plan.exec_args
-    assert "--enable-auto-tool-choice" in plan.exec_args
-    assert "--trust-remote-code" in plan.exec_args
+    assert [info.id for info in connector.list_models()] == ["glm-flash"]
+    assert plan.exec_args == exec_args
     assert "--ipc=host" in plan.podman_args
     assert connector.list_models()[0].supports_tools is True
     assert connector.metadata["runtime"] == "vllm"
 
 
-def test_vllm_model_capability_hints_override_runtime_defaults() -> None:
+def test_vllm_model_uses_runtime_profile_capabilities() -> None:
+    # The single model is derived from ``model_path`` and its capability surface
+    # comes from the vLLM runtime profile (no per-model capability catalog).
     soulstone = VllmSoulstoneConfig.model_validate(
         {
-            "name": "vllm-capability-overrides",
-            "model_path": "/models/fallback-awq",
-            "capabilities": {
-                "modalities_in": ["text", "image"],
-                "modalities_out": ["text"],
-                "supports_tools": False,
-            },
-            "models": {
-                "default": {
-                    "id": "vision-model",
-                    "path": "/models/vision-awq",
-                    "capabilities": {
-                        "surface": "responses",
-                        "modalities_in": ["image", "text"],
-                        "modalities_out": ["text"],
-                        "supports_streaming": False,
-                    },
-                }
-            },
+            "name": "vllm-defaults",
+            "model_path": "/models/vision-awq",
+            "port": 8000,
         }
     )
 
     connector, _ = _build_vllm_connector(soulstone)
     model = connector.list_models()[0]
 
-    assert model.id == "vision-model"
-    assert model.surface == ModelSurface.RESPONSES
-    assert model.modalities_in == ["image", "text"]
+    assert model.id == "vision-awq"
+    assert model.surface == ModelSurface.CHAT
+    assert model.modalities_in == ["text"]
     assert model.modalities_out == ["text"]
-    assert model.supports_tools is False
-    assert model.supports_streaming is False
+    assert model.supports_tools is True
+    assert model.supports_streaming is True
 
 
 def test_sglang_openai_compatible_plan() -> None:
+    # SGLang is exec-passthrough as well; the container envelope only contributes
+    # deterministic podman flags.
+    exec_args = [
+        "python3",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/models/qwen-awq",
+        "--tp",
+        "2",
+    ]
     soulstone = SglangSoulstoneConfig.model_validate(
         {
             "name": "qwen-sglang",
             "model_path": "/models/qwen-awq",
-            "tensor_parallel_size": 2,
-            "chat_template": "chatml",
-            "attention_backend": "flashinfer",
-            "quantization": "awq",
-            "trust_remote_code": True,
-            "enable_marlin": True,
+            "port": 8011,
+            "exec": exec_args,
         }
     )
 
@@ -196,48 +187,32 @@ def test_sglang_openai_compatible_plan() -> None:
 
     assert connector.kind == "sglang"
     assert [info.id for info in connector.list_models()] == ["qwen-awq"]
-    assert plan.exec_args[:4] == ["python3", "-m", "sglang.launch_server", "--model-path"]
-    assert "/models/qwen-awq" in plan.exec_args
-    assert "--tp" in plan.exec_args
-    assert "2" in plan.exec_args
-    assert "--chat-template" in plan.exec_args
-    assert "chatml" in plan.exec_args
-    assert "--attention-backend" in plan.exec_args
-    assert "flashinfer" in plan.exec_args
-    assert "--quantization" in plan.exec_args
-    assert "awq" in plan.exec_args
-    assert "--trust-remote-code" in plan.exec_args
-    assert "--enable-marlin" in plan.exec_args
+    assert plan.exec_args == exec_args
+    assert "--ipc=host" in plan.podman_args
     assert connector.metadata["runtime"] == "sglang"
 
 
 def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
+    # Capability specs are synthesized from runtime-derived model info with the
+    # default concurrency intent; there is no per-Soulstone capability/concurrency
+    # declaration anymore.
     soulstone = VllmSoulstoneConfig.model_validate(
         {
             "name": "support-vllm",
             "model_path": "/models/embedder-awq",
-            "dedicated": False,
-            "persistent_resident": True,
-            "evict_cost": 7,
-            "matrix_sets": ["support"],
-            "capabilities": {
-                "families": ["embedding"],
-                "modalities_in": ["text"],
-                "modalities_out": ["vector"],
-            },
+            "port": 8000,
         }
     )
 
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     specs = registry.build_capability_specs(soulstone)
 
     assert len(specs) == 1
     spec = specs[0]
-    assert spec.family == CapabilityFamily.EMBEDDING
-    assert spec.concurrency.dedicated is False
-    assert spec.concurrency.persistent_resident is True
-    assert spec.concurrency.evict_cost == 7
-    assert spec.concurrency.matrix_sets == ["support"]
+    assert spec.family == CapabilityFamily.CHAT
+    assert spec.model_id == "embedder-awq"
+    assert spec.concurrency.dedicated is True
+    assert spec.concurrency.persistent_resident is False
     assert spec.metadata["runtime"] == "vllm"
 
 
@@ -259,19 +234,14 @@ def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None
             "name": "router",
             "startup_mode": "router",
             "models_preset": str(preset),
-            "models": {
-                "default": {
-                    "id": "router-main",
-                    "path": "/models/router-main.gguf",
-                }
-            },
         }
     )
 
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     specs = registry.build_capability_specs(soulstone)
 
-    assert {spec.model_id for spec in specs} == {"router-main", "router-vision"}
+    # Preset sections plus the Soulstone-name fallback each yield a dynamic spec.
+    assert {spec.model_id for spec in specs} == {"router", "router-main", "router-vision"}
     assert all(spec.lifecycle_mode == "dynamic_soft" for spec in specs)
 
 
@@ -309,7 +279,8 @@ def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> 
             )
 
     adapter = LlamaCppRuntimeAdapter(control_plane=cast("LlamaCppControlPlane", StubControlPlane()))
-    runtime = adapter.build_runtime(soulstone)
+    quadlet = transmute_single_soulstone_quadlet(soulstone, runtime_planner=adapter)
+    runtime = adapter.build_runtime(soulstone, quadlet)
     assert runtime is not None
     runtime.connector.link.up = True
 
@@ -331,20 +302,16 @@ def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
             "name": "crawler",
             "image": "crawler:latest",
             "runtime": "crawler",
-            "capabilities": {
-                "families": ["tool_execution"],
-                "modalities_in": ["url"],
-                "modalities_out": ["html"],
-            },
+            "port": 18080,
         }
     )
 
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
     assert isinstance(runtime, GenericStone)
     assert runtime.connector.kind == "generic:crawler"
-    specs = registry.build_capability_specs(soulstone)
-    assert [spec.family for spec in specs] == [CapabilityFamily.TOOL_EXECUTION]
+    # An unknown runtime is not assumed to be OpenAI-compatible and invents no specs.
+    assert registry.build_capability_specs(soulstone) == []
 
 
 def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
@@ -354,10 +321,11 @@ def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
             "image": "local-openai:latest",
             "runtime": "openai_compatible",
             "model_path": "/models/qwen.gguf",
+            "port": 18080,
         }
     )
 
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
     assert isinstance(runtime, OpenAICompatibleStone)
     assert runtime.connector.kind == "generic-openai-compatible"
@@ -372,7 +340,7 @@ def test_generic_runtime_without_capability_hints_does_not_invent_chat() -> None
         }
     )
 
-    registry = RuntimeAdapterRegistry()
+    registry = _runtime_registry()
 
     assert registry.build_capability_specs(soulstone) == []
 

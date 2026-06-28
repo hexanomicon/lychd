@@ -37,7 +37,7 @@ def test_load_concrete_soulstone_from_top_level_payload(runes_dir: Path) -> None
     assert len(portals) == 0
     assert type(soulstones[0]).__name__ == "GenericSoulstoneConfig"
     assert soulstones[0].name == "hermes"
-    assert soulstones[0].base_url == "http://localhost:8080/v1"
+    assert str(soulstones[0].base_url) == "http://localhost:8080/v1"
 
 
 def test_animator_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
@@ -148,30 +148,6 @@ def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
     assert soulstones[0].secret_env_files["HF_TOKEN_FILE"] == "hf_runtime_token"  # noqa: S105
 
 
-def test_loader_preserves_dedicated_residency_and_matrix_fields(runes_dir: Path) -> None:
-    _write(
-        runes_dir / "animator" / "soulstones" / "llamacpp" / "resident.toml",
-        """
-        name = "embedder"
-        model_path = "/models/embedder.gguf"
-        dedicated = false
-        persistent_resident = true
-        evict_cost = 9
-        matrix_sets = ["support", "embed"]
-        """,
-    )
-
-    loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
-    soulstones, _ = loader.load_all()
-
-    assert len(soulstones) == 1
-    stone = soulstones[0]
-    assert stone.dedicated is False
-    assert stone.persistent_resident is True
-    assert stone.evict_cost == 9
-    assert stone.matrix_sets == ["support", "embed"]
-
-
 def test_generated_placeholder_samples_are_ignored(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "llamacpp" / "sample.toml",
@@ -221,7 +197,9 @@ def test_llamacpp_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path)
         loader.load_all()
 
 
-def test_vllm_managed_mode_requires_model_source(runes_dir: Path) -> None:
+def test_vllm_rejects_reintroduced_framework_field(runes_dir: Path) -> None:
+    # vLLM is exec-passthrough-only: framework flags belong in `exec`, never as
+    # typed config fields. `extra="forbid"` rejects any reintroduced flag.
     _write(
         runes_dir / "animator" / "soulstones" / "vllm" / "invalid.toml",
         """
@@ -232,11 +210,11 @@ def test_vllm_managed_mode_requires_model_source(runes_dir: Path) -> None:
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
 
-    with pytest.raises(AnimatorConfigError, match="requires 'model_path'"):
+    with pytest.raises(AnimatorConfigError, match="tensor_parallel_size"):
         loader.load_all()
 
 
-def test_vllm_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path) -> None:
+def test_vllm_exec_passthrough_rejects_framework_field(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "vllm" / "invalid-exec.toml",
         """
@@ -248,11 +226,11 @@ def test_vllm_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path) -> 
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
 
-    with pytest.raises(AnimatorConfigError, match="exec passthrough"):
+    with pytest.raises(AnimatorConfigError, match="max_model_len"):
         loader.load_all()
 
 
-def test_sglang_managed_mode_requires_model_source(runes_dir: Path) -> None:
+def test_sglang_rejects_reintroduced_framework_field(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "sglang" / "invalid.toml",
         """
@@ -263,11 +241,11 @@ def test_sglang_managed_mode_requires_model_source(runes_dir: Path) -> None:
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
 
-    with pytest.raises(AnimatorConfigError, match="requires 'model_path'"):
+    with pytest.raises(AnimatorConfigError, match="tensor_parallel_size"):
         loader.load_all()
 
 
-def test_sglang_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path) -> None:
+def test_sglang_exec_passthrough_rejects_framework_field(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "sglang" / "invalid-exec.toml",
         """
@@ -279,7 +257,7 @@ def test_sglang_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path) -
 
     loader = AnimatorLoader(runes_dir=runes_dir, reserved_ports={})
 
-    with pytest.raises(AnimatorConfigError, match="exec passthrough"):
+    with pytest.raises(AnimatorConfigError, match="quantization"):
         loader.load_all()
 
 

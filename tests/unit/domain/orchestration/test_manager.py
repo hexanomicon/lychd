@@ -85,8 +85,6 @@ def _spec(
     family: CapabilityFamily = CapabilityFamily.CHAT,
     lifecycle_mode: str = "static",
     runtime: str = "llamacpp",
-    matrix_sets: list[str] | None = None,
-    evict_cost: int = 1,
     dedicated: bool = True,
     persistent_resident: bool = False,
 ) -> CapabilitySpec:
@@ -99,8 +97,6 @@ def _spec(
         model_id=key.rsplit(":", maxsplit=1)[-1],
         lifecycle_mode=lifecycle_mode,
         concurrency=ConcurrencyIntent(
-            matrix_sets=matrix_sets or [],
-            evict_cost=evict_cost,
             dedicated=dedicated,
             persistent_resident=persistent_resident,
         ),
@@ -135,22 +131,18 @@ def _runtime(name: str, *, up: bool, base_url: str = "http://localhost:8080/v1")
 
 
 @pytest.mark.asyncio
-async def test_calculate_transition_plan_prefers_lowest_cost_matrix_and_keeps_persistent_resident() -> None:
-    titan = _spec(key="titan:chat:titan-70b", animator_name="titan", matrix_sets=["titan_set"], evict_cost=100)
-    coding = _spec(key="coding:chat:coding-8b", animator_name="coding", matrix_sets=["lite_set", "coding_set"], evict_cost=10)
+async def test_calculate_transition_plan_evicts_dedicated_and_keeps_persistent_resident() -> None:
+    titan = _spec(key="titan:chat:titan-70b", animator_name="titan")
+    coding = _spec(key="coding:chat:coding-8b", animator_name="coding")
     vision = _spec(
         key="vision:vision:vision-8b",
         animator_name="vision",
         family=CapabilityFamily.VISION,
-        matrix_sets=["lite_set", "vision_set"],
-        evict_cost=10,
     )
     resident = _spec(
         key="embedder:embedding:embed-1",
         animator_name="embedder",
         family=CapabilityFamily.EMBEDDING,
-        matrix_sets=["support"],
-        evict_cost=1,
         persistent_resident=True,
         dedicated=False,
         runtime="vllm",
@@ -174,8 +166,8 @@ async def test_calculate_transition_plan_prefers_lowest_cost_matrix_and_keeps_pe
     plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
 
     assert plan.action_type == "HARD_SWAP"
-    assert plan.total_metabolic_cost == 100.0
-    assert plan.evict_coven_ids == ["titan"]
+    assert plan.total_metabolic_cost == 2.0
+    assert plan.evict_coven_ids == ["coding", "titan"]
     assert plan.launch_coven_ids == ["vision"]
 
 

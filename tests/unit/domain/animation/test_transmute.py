@@ -40,7 +40,8 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     }
     assert "lychd-vessel" in containers
     assert "lychd-phylactery" in containers
-    assert "lychd-oculus" in containers
+    # The Oculus (Phoenix) is no longer an unconditional core container; it is
+    # emitted only when an observability extension rune is active.
     vessel = containers["lychd-vessel"]
     assert settings.app.secret_key_secret in vessel.secrets
     assert settings.db.password_secret in vessel.secrets
@@ -119,8 +120,8 @@ def test_transmute_merges_runtime_podman_args() -> None:
 
 def test_law_of_exclusivity_solitary(transmuter: Transmuter) -> None:
     """Solitary stones should conflict with each other's services."""
-    stone_a = SoulstoneFactory.build(name="alpha", groups=[], persistent_resident=False)
-    stone_b = SoulstoneFactory.build(name="beta", groups=[], persistent_resident=False)
+    stone_a = SoulstoneFactory.build(name="alpha", groups=[])
+    stone_b = SoulstoneFactory.build(name="beta", groups=[])
 
     manifests = transmuter.transmute_all([stone_a, stone_b])
 
@@ -180,24 +181,3 @@ def test_coven_of_one_no_target(transmuter: Transmuter) -> None:
         if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-hermes"
     )
     assert "logic" not in hermes_manifest.targets
-
-
-def test_persistent_residents_are_not_implicit_conflicts(transmuter: Transmuter) -> None:
-    resident = SoulstoneFactory.build(name="embedder", groups=[], persistent_resident=True)
-    heavyweight = SoulstoneFactory.build(name="planner", groups=[])
-
-    manifests = transmuter.transmute_all([resident, heavyweight])
-
-    resident_manifest = next(
-        manifest
-        for manifest in manifests
-        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-embedder"
-    )
-    heavyweight_manifest = next(
-        manifest
-        for manifest in manifests
-        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-planner"
-    )
-
-    assert "lychd-planner.service" not in resident_manifest.conflicts
-    assert "lychd-embedder.service" not in heavyweight_manifest.conflicts

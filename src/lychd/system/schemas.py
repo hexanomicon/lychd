@@ -102,6 +102,14 @@ class QuadletContainer(QuadletBase):
     run_init: bool = True
     user_ns: str | None = "keep-id"  # ADR 08: Identity Symmetry
     podman_args: list[str] = Field(default_factory=lambda: ["--replace"])
+    devices: list[str] = Field(
+        default_factory=list,
+        description="Host devices passed through to the container (Quadlet AddDevice= lines).",
+    )
+    security_label_disable: bool = Field(
+        default=False,
+        description="When true, emit SecurityLabelDisable=true (SELinux label off, --security-opt label=disable).",
+    )
 
     volumes: list[MountData] = Field(default_factory=list)
     env_vars: dict[str, str] = Field(default_factory=dict)

@@ -2,33 +2,38 @@ from __future__ import annotations
 
 from typing import Any
 
+from pydantic import AnyHttpUrl
+
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo
+from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
 from lychd.domain.animation.services.adapters.surfaces import LlamacppConnector, LlamacppStone
 from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import (
     LlamaCppControlPlane,
     LlamaCppControlPlaneError,
 )
+from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 
 
 def _router_animator() -> LlamacppStone:
     rune = LlamaCppSoulstoneConfig(
         name="router",
         startup_mode=LlamaCppMode.ROUTER,
-        base_url="http://localhost:8080/v1",
+        base_url=AnyHttpUrl("http://localhost:8080/v1"),
         models_preset="/models/models.ini",
     )
     connector = LlamacppConnector(
         link=Link(up=True),
-        base_url=rune.base_url,
+        base_url=str(rune.base_url),
         model_infos=(ModelInfo(id="qwen-next-80b"), ModelInfo(id="qwen-next-7b")),
         default_model_id="qwen-next-80b",
         mode="router",
         router_query_model_id="qwen-next-80b",
         metadata={},
     )
-    return LlamacppStone(rune=rune, connector=connector)
+    quadlet = transmute_single_soulstone_quadlet(rune, runtime_planner=LlamaCppRuntimeAdapter())
+    return LlamacppStone(rune=rune, connector=connector, quadlet=quadlet)
 
 
 def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: Any) -> None:

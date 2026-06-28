@@ -150,4 +150,82 @@ def bind_quadlets() -> None:
     console.print("  [dim]You may now summon the vessel: systemctl --user start lychd-vessel.service[/]")
 
 
-COMMANDS: tuple[click.Command, ...] = (init_codex, bind_quadlets)
+@ritual_command(
+    name="animators",
+    help_text="Inspect loaded animator runes, their capabilities, and live readiness.",
+    start_message="[bold blue]:material-visibility: Opening the Oculus (lych animators)...[/]",
+)
+def inspect_animators() -> None:
+    """Observe the assembled animator registry (II. The Awakening).
+
+    Loads the active Codex Runes via the extension activation list, resolves a
+    runtime animator for each, probes live readiness, and renders the
+    synthesized capability specs alongside their current states.
+    """
+    from rich.table import Table
+
+    from lychd.domain.animation.services.registry import AnimatorRegistry
+
+    console = get_console()
+    registry = AnimatorRegistry()
+    animators = registry.list_runtime_animators()
+
+    if not animators:
+        console.print(
+            "  [yellow]No animators resolved.[/] [dim]Enable animator extensions in "
+            "~/.config/lychd/lychd.toml and add runes under "
+            "~/.config/lychd/runes/animator/.[/]"
+        )
+        return
+
+    table = Table(title="Animators", show_lines=False, expand=False)
+    table.add_column("Animator", style="bold", no_wrap=True)
+    table.add_column("Runtime", no_wrap=True)
+    table.add_column("Family", no_wrap=True)
+    table.add_column("Model", no_wrap=True)
+    table.add_column("Active", justify="center")
+    table.add_column("Warm", justify="center")
+    table.add_column("Health", no_wrap=True)
+    table.add_column("Reason", overflow="fold")
+
+    for animator in animators:
+        specs = registry.list_capabilities_for_animator(animator.name)
+        if not specs:
+            table.add_row(
+                animator.name,
+                getattr(animator.connector, "kind", "-"),
+                "-",
+                "-",
+                "-",
+                "-",
+                "no capabilities",
+                "",
+            )
+            continue
+
+        for spec in specs:
+            state = registry.get_capability_state(spec.key)
+            active = "[green]✓[/]" if state and state.is_active else "[dim]·[/]"
+            warm = "[green]✓[/]" if state and state.warm else "[dim]·[/]"
+            family = spec.family.value if hasattr(spec.family, "value") else str(spec.family)
+            health = state.health if state else "unknown"
+            reason = state.reason if state and state.reason else ""
+            table.add_row(
+                animator.name,
+                spec.runtime,
+                family,
+                spec.model_id,
+                active,
+                warm,
+                health,
+                reason,
+            )
+
+    console.print(table)
+    console.print(
+        "  [dim]Live readiness probed via the OpenAI-compatible /models endpoint (vLLM/SGLang) "
+        "and the llama.cpp control plane. Re-run after `lych bind` + starting a unit.[/]"
+    )
+
+
+COMMANDS: tuple[click.Command, ...] = (init_codex, bind_quadlets, inspect_animators)

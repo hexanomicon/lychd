@@ -44,7 +44,7 @@ def test_registry_binds_model_for_portal(
 
     registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
 
-    model = registry.bind_model("openai-main")
+    model = registry.bind_model("openai-main", model_id="gpt-5")
     toolsets = registry.bind_toolsets("openai-main")
 
     assert isinstance(model, OpenAIChatModel)
@@ -73,32 +73,26 @@ def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> 
     assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
 
 
-def test_registry_indexes_capabilities_and_persistent_residents(tmp_path: Path) -> None:
+def test_registry_indexes_capabilities(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "soulstones" / "vllm" / "embedder.toml",
         """
         name = "embedder"
         model_path = "/models/embedder.gguf"
-        dedicated = false
-        persistent_resident = true
-        matrix_sets = ["support"]
-
-        [capabilities]
-        families = ["embedding"]
-        modalities_out = ["vector"]
         """,
     )
 
     registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
     capabilities = registry.list_capabilities()
-    residents = registry.list_persistent_residents()
 
     assert len(capabilities) == 1
-    assert len(residents) == 1
-    spec = residents[0]
+    spec = capabilities[0]
     assert spec.animator_name == "embedder"
-    assert spec.concurrency.persistent_resident is True
+    # Concurrency is derived with defaults and no rune surface configures
+    # residency, so nothing is indexed as a persistent resident.
+    assert spec.concurrency.persistent_resident is False
+    assert registry.list_persistent_residents() == []
     assert registry.get_capability(spec.key) == spec
     state = registry.get_capability_state(spec.key)
     assert state is not None

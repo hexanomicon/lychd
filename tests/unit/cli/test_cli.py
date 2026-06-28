@@ -93,7 +93,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     mock_loader.load_all.assert_called_once()
 
     mock_transmuter_cls.assert_called_once()
-    mock_transmuter.transmute_all.assert_called_once_with([stone], portals=[portal])
+    mock_transmuter.transmute_all.assert_called_once_with([stone], portals=[portal], extension_runes=[])
 
     mock_scribe_cls.assert_called_once()
     mock_scribe.generate_all.assert_called_once_with(["rune1"])
