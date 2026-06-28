@@ -40,7 +40,7 @@ class GraphRunner[StateT: BaseModel]:
         await self.persistence.mark_job_resumed(self.persistence.job_id)
         return result
 
-    async def _execute_ritual(
+    async def _execute_ritual(  # noqa: C901, PLR0912 - bounded-retry stasis loop is intentionally branchy
         self,
         graph: Graph[StateT, Any, Any],
         *,
@@ -50,6 +50,11 @@ class GraphRunner[StateT: BaseModel]:
     ) -> Any:
         """Execute the graph loop and handle stasis signals iteratively."""
         current_is_resume = is_resume
+        resume_count = 0
+        repeated_key: str | None = None
+        repeated_count = 0
+        max_resumes = 8
+        max_same_key = 3
 
         while True:
             if not current_is_resume:
@@ -79,6 +84,17 @@ class GraphRunner[StateT: BaseModel]:
                             break
 
                     if signal:
+                        resume_count += 1
+                        if signal.spec.key == repeated_key:
+                            repeated_count += 1
+                        else:
+                            repeated_key, repeated_count = signal.spec.key, 1
+                        if resume_count > max_resumes or repeated_count >= max_same_key:
+                            msg = (
+                                f"Stasis did not converge for capability '{signal.spec.key}' after "
+                                f"{resume_count} transition(s); aborting the run."
+                            )
+                            raise RuntimeError(msg) from signal
                         await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
                         await self.orchestrator.handle_transition(signal, signal_priority=100.0)
                         current_is_resume = True

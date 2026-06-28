@@ -1,0 +1,13 @@
+{# The Loom rail: woven patterns from WORKFLOWS. Each item swaps its graph into
+   #loom-canvas and pushes the honest URL. `selected` names the active pattern. #}
+<div class="divider">PATTERNS ◆ WOVEN</div>
+{% for wf in workflows %}
+<a class="pattern{% if selected == wf.name %} current{% endif %}"
+   hx-get="/loom/{{ wf.name }}" hx-target="#loom-canvas" hx-swap="innerHTML"
+   hx-push-url="/loom/{{ wf.name }}"
+   href="/loom/{{ wf.name }}"
+   data-fragment="loom.gallery-item" data-workflow="{{ wf.name }}">
+  <span class="t">{{ wf.title }}</span>
+  <span class="m glyph">{{ wf.graph.get_nodes() | length }} nodes · {{ wf.trigger.hint }}</span>
+</a>
+{% endfor %}

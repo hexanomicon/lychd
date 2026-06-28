@@ -38,6 +38,7 @@ Issues = "https://github.com/hexanomicon/lychd/issues"
 [dependency-groups]
 server = [
     "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0",
+    "litestar-htmx>=0.5.0",
     "litestar-granian>=0.14.2",
     "litestar-vite",
     "litestar-saq[psycopg]>=0.5.3",

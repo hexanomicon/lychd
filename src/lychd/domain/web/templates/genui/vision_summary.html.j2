@@ -1,0 +1,8 @@
+{# genui.vision_summary — validated VisionSummaryParams (title, body, severity). #}
+<div class="genui" data-fragment="genui.vision_summary" data-state="rendered">
+  <div class="genui-head">
+    <span>{{ title }}</span>
+    <span class="chip {{ 'fault' if severity in ('error', 'fault', 'critical') else ('warm' if severity == 'warning' else 'cold') }}">{{ severity }}</span>
+  </div>
+  <div style="padding:11px 16px;color:var(--parchment);font-size:12.5px">{{ body }}</div>
+</div>

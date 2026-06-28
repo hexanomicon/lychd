@@ -18,7 +18,7 @@ DB_MIGRATION_VERSION_TABLE: Final[str] = DEFAULT_MODULE_NAME + "_db_version"
 # --- Vite Frontend Assets ---
 PATH_VITE_BUNDLE_DIR: Final[Path] = BASE_DIR / "public"
 PATH_VITE_RESOURCE_DIR: Final[Path] = Path("resources")
-PATH_HTML_TEMPLATE_DIR: Final[Path] = BASE_DIR / "templates" / "html"
+PATH_HTML_TEMPLATE_DIR: Final[Path] = BASE_DIR / "domain" / "web" / "templates"
 
 # APP SETTINGS
 

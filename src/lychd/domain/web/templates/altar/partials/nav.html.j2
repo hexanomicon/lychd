@@ -1,0 +1,12 @@
+{# The instrument map (ADR 15 order). `active` names the current instrument. #}
+{% set instruments = [
+  ('bridge',    'Bridge',    '/bridge',    false),
+  ('scrying',   'Scrying',   '/scrying',   true),
+  ('nexus',     'Nexus',     '/nexus',     false),
+  ('loom',      'Loom',      '/loom',      false),
+  ('reliquary', 'Reliquary', '/reliquary', true),
+  ('bindings',  'Bindings',  '/bindings',  true),
+] %}
+{% for slug, label, href, unbuilt in instruments %}
+<a href="{{ href }}"{% if active == slug %} aria-current="page"{% endif %}>{{ label }}{% if unbuilt %}<span class="dot">●</span>{% endif %}</a>
+{% endfor %}

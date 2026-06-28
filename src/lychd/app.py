@@ -42,6 +42,7 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         # Lazy import of settings to keep startup fast
         from litestar.config.response_cache import ResponseCacheConfig
         from litestar.contrib.sqlalchemy.plugins import SQLAlchemyPlugin
+        from litestar.plugins.htmx import HTMXPlugin
         from litestar.plugins.problem_details import ProblemDetailsPlugin
         from litestar.plugins.structlog import StructlogPlugin
         from litestar.stores.memory import MemoryStore
@@ -83,6 +84,7 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
                 SAQPlugin(config=saq_config),
                 StructlogPlugin(config=structlog_config),
                 ProblemDetailsPlugin(config=problem_details_config),
+                HTMXPlugin(),
             ],
         )
 
@@ -102,9 +104,26 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
 
         # Routers
         from lychd.interface.api.orchestrator import OrchestratorController
-        app_config.route_handlers.append(OrchestratorController)
+        from lychd.interface.web import (
+            AltarController,
+            BridgeController,
+            LoomController,
+            NexusController,
+        )
+        app_config.route_handlers.extend(
+            [
+                OrchestratorController,
+                AltarController,
+                BridgeController,
+                NexusController,
+                LoomController,
+            ],
+        )
 
         # Dependencies
+        from lychd.interface.web.deps import build_web_singletons, web_dependencies
+        app_config.dependencies.update(web_dependencies)
+        app_config.on_startup.append(build_web_singletons)
 
         # Signatures
 
@@ -127,10 +146,11 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         """
         # Lazy import is CRITICAL here.
         # We don't want to load the whole app just to show --help.
-        from lychd.cli.commands import bind_quadlets, init_codex
+        from lychd.cli.commands import bind_quadlets, init_codex, inspect_animators
 
         cli.add_command(init_codex)
         cli.add_command(bind_quadlets)
+        cli.add_command(inspect_animators)
 
 
 def create_app() -> Litestar:

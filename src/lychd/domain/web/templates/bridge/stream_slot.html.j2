@@ -1,0 +1,14 @@
+{# The SSE-wired agent placeholder (§7.1/§7.2). Connects to the run's stream, tails
+   tokens into the body, and is replaced whole by the settled turn on `done`. #}
+<article id="run-{{ run_id }}" class="turn turn--agent is-streaming"
+         data-fragment="bridge.turn" data-run-id="{{ run_id }}" data-state="streaming"
+         sse-connect="/bridge/runs/{{ run_id }}/stream" sse-close="done"
+         aria-live="polite" aria-busy="true">
+  <header class="turn__meta">
+    <span class="who">The First One</span>
+    <span class="status" role="status" sse-swap="status">summoning…</span>
+  </header>
+  <div class="turn__body" sse-swap="token" hx-swap="beforeend"></div>
+  <div class="turn__extras" sse-swap="fragment,consent" hx-swap="beforeend"></div>
+  <template sse-swap="done" hx-swap="none"></template>
+</article>

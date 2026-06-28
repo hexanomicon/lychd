@@ -1,0 +1,32 @@
+{# The Seat of Consent, inline in the originating session (§7.3). `consent` is a
+   ConsentCard view-model; its `state` drives the pending / consented / refused look. #}
+<section id="consent-{{ consent.id }}" class="consent-card"
+         data-fragment="bridge.consent" data-state="{{ consent.state }}"
+         data-run-id="{{ consent.run_id }}" data-session-id="{{ consent.session_id }}"
+         role="group" aria-label="pending consent">
+  <div class="head">
+    <span class="rune-head">◈ Consent sought</span>
+    <span class="glyph">{{ consent.tool_name }}</span>
+  </div>
+  <div class="vision"><em>Vision:</em> {{ consent.vision }}</div>
+  <dl class="args">
+    {% for name, value in consent.args.items() %}
+    <dt>{{ name }}</dt><dd>{{ value }}</dd>
+    {% endfor %}
+  </dl>
+  {% if consent.state == 'pending_consent' %}
+  <form class="verdicts" hx-post="/bridge/consents/{{ consent.id }}"
+        hx-target="#consent-{{ consent.id }}" hx-swap="outerHTML">
+    <button name="verdict" value="approve" class="rune-btn rune-btn--frost">Consecrate</button>
+    <button name="verdict" value="deny" class="rune-btn rune-btn--ash">Refuse</button>
+    <span class="note">an ordinary POST — the Vessel decides, this card only asks</span>
+  </form>
+  {% else %}
+  <div class="verdicts">
+    <span class="chip {{ 'active' if consent.state == 'consented' else 'fault' }}">
+      {{ 'consecrated' if consent.state == 'consented' else 'refused' }}
+    </span>
+    <span class="note">the Magus has spoken</span>
+  </div>
+  {% endif %}
+</section>
