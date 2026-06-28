@@ -229,6 +229,8 @@ class Transmuter:
             pod="lychd.pod",
             targets=coven_targets,
             env_vars=merged_env,
+            devices=list(stone.devices),
+            security_label_disable=stone.security_label_disable,
             # Merge system mounts, global defaults, user volumes, and adapter volumes.
             volumes=[MountData.from_str(v) for v in merged_mounts],
             exec=shlex.join(runtime_plan.exec_args) if runtime_plan.exec_args else None,

@@ -10,8 +10,8 @@ from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
-from lychd.system.schemas import QuadletContainer
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
+from lychd.system.schemas import QuadletContainer
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -87,6 +87,10 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
     @property
     def link(self) -> Link:
         return self._link
+
+    def set_link(self, link: Link) -> None:
+        """Replace the readiness link after a live reachability probe."""
+        self._link = link
 
     @property
     def base_url(self) -> str:

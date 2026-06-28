@@ -67,6 +67,17 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         description="Host port for the local API. Omit to let the loader allocate one.",
     )
     groups: list[str] = Field(default_factory=list, description="Coven membership labels.")
+    devices: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Host devices passed through to the container (Quadlet AddDevice= lines). "
+            "Use 'nvidia.com/gpu=all' for all NVIDIA GPUs via the CDI device specifier."
+        ),
+    )
+    security_label_disable: bool = Field(
+        default=False,
+        description="Emit SecurityLabelDisable=true (SELinux label off) on the Quadlet.",
+    )
     volumes: list[str] = Field(default_factory=list, description="Extra bind mounts for this soulstone.")
     env_vars: dict[str, str] = Field(default_factory=dict)
     secret_env_files: dict[str, str] = Field(

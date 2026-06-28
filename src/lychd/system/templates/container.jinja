@@ -16,13 +16,20 @@ Image={{ image }}
 ContainerName={{ container_name }}
 {% if user_ns %}UserNS={{ user_ns }}{% endif %}
 {% if run_init %}RunInit=true{% endif %}
+{% if security_label_disable %}SecurityLabelDisable=true{% endif %}
 {% if podman_args %}PodmanArgs={{ podman_args | join(' ') }}{% endif %}
 
 # Covens (Targets): {{ targets | join(', ') }}
 
+# Devices
+{% for dev in devices %}
+AddDevice={{ dev }}
+{% endfor %}
+
+
 # Volumes
 {% for vol in volumes %}
-Volume={{ vol }}
+Volume={% if vol.mirror %}{{ vol.host_path }}:{{ vol.container_path }}{% else %}{{ vol.host_path }}:{{ vol.container_path }}:{% for opt in vol.options %}{{ opt }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
 {% endfor %}
 
 # Environment Variables

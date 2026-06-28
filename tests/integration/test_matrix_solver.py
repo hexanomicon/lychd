@@ -65,9 +65,9 @@ def _spec(
     *,
     key: str,
     animator_name: str,
-    matrix_sets: list[str],
-    evict_cost: int,
     family: CapabilityFamily = CapabilityFamily.CHAT,
+    dedicated: bool = True,
+    persistent_resident: bool = False,
 ) -> CapabilitySpec:
     return CapabilitySpec(
         key=key,
@@ -76,7 +76,7 @@ def _spec(
         source_kind="soulstone",
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
-        concurrency=ConcurrencyIntent(matrix_sets=matrix_sets, evict_cost=evict_cost),
+        concurrency=ConcurrencyIntent(dedicated=dedicated, persistent_resident=persistent_resident),
     )
 
 
@@ -94,14 +94,12 @@ def _state(spec: CapabilitySpec, *, is_active: bool) -> CapabilityState:
 
 
 @pytest.mark.asyncio
-async def test_matrix_solver_lowest_cost_path() -> None:
-    titan = _spec(key="titan:chat:titan-70b", animator_name="titan", matrix_sets=["titan_set"], evict_cost=100)
-    coding = _spec(key="coding:chat:coding-8b", animator_name="coding", matrix_sets=["lite_set", "coding_set"], evict_cost=10)
+async def test_matrix_solver_evicts_all_active_dedicated_animators() -> None:
+    titan = _spec(key="titan:chat:titan-70b", animator_name="titan")
+    coding = _spec(key="coding:chat:coding-8b", animator_name="coding")
     vision = _spec(
         key="vision:vision:vision-8b",
         animator_name="vision",
-        matrix_sets=["lite_set", "vision_set"],
-        evict_cost=10,
         family=CapabilityFamily.VISION,
     )
     registry = StubRegistry(
@@ -115,25 +113,29 @@ async def test_matrix_solver_lowest_cost_path() -> None:
 
     plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
 
-    assert plan.total_metabolic_cost == 100.0
-    assert plan.evict_coven_ids == ["titan"]
+    assert plan.total_metabolic_cost == 2.0
+    assert plan.evict_coven_ids == ["coding", "titan"]
     assert plan.launch_coven_ids == ["vision"]
 
 
 @pytest.mark.asyncio
-async def test_matrix_solver_no_eviction_required() -> None:
-    coding = _spec(key="coding:chat:coding-8b", animator_name="coding", matrix_sets=["lite_set"], evict_cost=10)
+async def test_matrix_solver_keeps_non_dedicated_persistent_resident() -> None:
+    resident = _spec(
+        key="embedder:embedding:embed-1",
+        animator_name="embedder",
+        family=CapabilityFamily.EMBEDDING,
+        dedicated=False,
+        persistent_resident=True,
+    )
     vision = _spec(
         key="vision:vision:vision-8b",
         animator_name="vision",
-        matrix_sets=["lite_set"],
-        evict_cost=10,
         family=CapabilityFamily.VISION,
     )
     registry = StubRegistry(
-        [coding, vision],
+        [resident, vision],
         [
-            _state(coding, is_active=True),
+            _state(resident, is_active=True),
             _state(vision, is_active=False),
         ],
     )
