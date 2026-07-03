@@ -42,6 +42,7 @@ def init_codex() -> None:
     3. Establishes the Intent Registry (Triggers).
     4. Inscribes default configuration files.
     """
+    from lychd.extensions.host import get_extensions
     from lychd.system.services.codex import CodexService
     from lychd.system.services.layout import LayoutService
     from lychd.system.services.privilege import PrivilegeService
@@ -57,7 +58,7 @@ def init_codex() -> None:
 
     # 3. Inscribe the Laws (Settings)
     console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
-    CodexService().inscribe()
+    CodexService(rune_schemas=get_extensions().rune_schemas).inscribe()
 
     console.print("\n[bold green]✓ Initialization complete.[/]")
     console.print("  [dim]You may now edit your scrolls in ~/.config/lychd/[/]")
@@ -86,15 +87,15 @@ def bind_quadlets() -> None:
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.loader import AnimatorLoader
     from lychd.domain.animation.transmute import Transmuter
-    from lychd.extensions.manager import ExtensionManager
+    from lychd.extensions.host import get_extensions
     from lychd.system.services.scribe import ScribeService
     from lychd.system.services.secrets import PodmanSecretStore
 
     console = get_console()
 
-    extensions = ExtensionManager.from_settings().assemble()
+    extensions = get_extensions()
     settings = get_settings()
-    extension_runes = ConfigLoader().load_all(list(extensions.runes.rune_schemas))
+    extension_runes = ConfigLoader().load_all(list(extensions.rune_schemas))
     reserved_ports = dict(settings.reserved_ports_map)
     for rune in extension_runes:
         if type(rune).__name__ == "PhoenixSettings":
@@ -102,7 +103,7 @@ def bind_quadlets() -> None:
             reserved_ports["Oculus (Phoenix OTLP)"] = rune.otlp_port  # type: ignore[attr-defined]
 
     # 1. Summon the Librarian (Loads & Validates Config)
-    loader = AnimatorLoader(rune_schemas=list(extensions.runes.rune_schemas), reserved_ports=reserved_ports)
+    loader = AnimatorLoader(rune_schemas=list(extensions.rune_schemas), reserved_ports=reserved_ports)
     soulstones, portals = loader.load_all()
 
     # 1.5. Ensure required Podman secrets exist before rendering units.
@@ -129,7 +130,7 @@ def bind_quadlets() -> None:
         console.print(f"  [dim]Provisioned secrets: {', '.join(created)}[/]")
 
     # 2. Summon the Alchemist (Transmutes Soulstone Runes into Quadlet manifests)
-    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.soulstones.runtime_adapters)
+    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.runtime_adapters)
     transmuter = Transmuter(runtime_planner=runtime_planner)
     manifests = transmuter.transmute_all(soulstones, portals=portals, extension_runes=extension_runes)
 
@@ -165,9 +166,11 @@ def inspect_animators() -> None:
     from rich.table import Table
 
     from lychd.domain.animation.services.registry import AnimatorRegistry
+    from lychd.extensions.host import get_extensions
 
     console = get_console()
-    registry = AnimatorRegistry()
+    extensions = get_extensions()
+    registry = AnimatorRegistry(rune_schemas=extensions.rune_schemas, runtime_adapters=extensions.runtime_adapters)
     animators = registry.list_runtime_animators()
 
     if not animators:

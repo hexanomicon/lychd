@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Protocol
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.orchestration.schema import TransitionPlan
@@ -57,7 +57,7 @@ class OrchestratorManager:
                     "family": spec.family,
                     "runtime": spec.runtime,
                     "source_kind": spec.source_kind,
-                    "lifecycle_mode": spec.lifecycle_mode,
+                    "lifecycle_mode": spec.lifecycle.value,
                     "model_id": spec.model_id,
                     "is_static": state.is_static,
                     "is_active": state.is_active,
@@ -83,7 +83,7 @@ class OrchestratorManager:
                 action_type="NO_OP",
             )
 
-        if target.lifecycle_mode == "dynamic_soft" and self._is_animator_runtime_warm(target.animator_name):
+        if target.lifecycle is CapabilityLifecycle.DYNAMIC and self._is_animator_runtime_warm(target.animator_name):
             return TransitionPlan(
                 total_metabolic_cost=0.0,
                 evict_coven_ids=[],
@@ -109,7 +109,7 @@ class OrchestratorManager:
     async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
         """Execute the required transition and finish dynamic soft activation when needed."""
         plan = await self.request_transition(exception.spec.key, signal_priority)
-        if exception.spec.lifecycle_mode != "dynamic_soft":
+        if exception.spec.lifecycle is not CapabilityLifecycle.DYNAMIC:
             return
 
         if plan.action_type not in {"SOFT_SWAP", "HARD_SWAP", "NO_OP"}:

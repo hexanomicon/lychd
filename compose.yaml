@@ -1,0 +1,30 @@
+# Development Phylactery (Postgres + pgvector) for the migration gate.
+#
+# Defaults match lychd.config.settings.DatabaseSettings (user=lich, db=lychd,
+# port=5432). The password is a secret at runtime; for local dev export a
+# matching value for the app, e.g.:
+#
+#   export DB_PASSWORD=lychd_dev_password
+#   docker compose up -d   # (or: podman compose up -d)
+#   lych database upgrade
+services:
+  db:
+    image: docker.io/pgvector/pgvector:pg18-trixie
+    container_name: lychd-phylactery-dev
+    environment:
+      POSTGRES_USER: lich
+      POSTGRES_DB: lychd
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lychd_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - lychd_phylactery_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lich -d lychd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  lychd_phylactery_data:

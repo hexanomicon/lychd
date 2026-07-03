@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Final
 
 from lychd.config.runes import RuneConfig
 from lychd.config.settings import get_settings
-from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
     CONTAINER_PHOENIX_OTLP_PORT,
@@ -42,13 +41,8 @@ class Transmuter:
     - Defining the core Quadlet manifests (Pod, Phylactery, Oculus).
     """
 
-    def __init__(self, runtime_planner: SoulstoneRuntimePlanner | None = None) -> None:
-        """Initialize transmuter with a runtime planner dependency."""
-        if runtime_planner is None:
-            from lychd.extensions.manager import ExtensionManager
-
-            extensions = ExtensionManager.from_settings().assemble()
-            runtime_planner = RuntimeAdapterRegistry(adapters=extensions.soulstones.runtime_adapters)
+    def __init__(self, *, runtime_planner: SoulstoneRuntimePlanner) -> None:
+        """Initialize transmuter with an injected runtime planner dependency."""
         self._runtime_planner = runtime_planner
 
     def transmute_all(
@@ -182,11 +176,7 @@ class Transmuter:
 
     def _resolve_phoenix(self, extension_runes: list[RuneConfig]) -> Any | None:
         """Return the active Phoenix rune, if the observability extension configured one."""
-        phoenix_runes = [
-            rune
-            for rune in extension_runes
-            if type(rune).__name__ == "PhoenixSettings"
-        ]
+        phoenix_runes = [rune for rune in extension_runes if type(rune).__name__ == "PhoenixSettings"]
         if len(phoenix_runes) > 1:
             msg = "At most one PhoenixSettings rune may be active."
             raise ValueError(msg)

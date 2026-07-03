@@ -10,6 +10,8 @@ from alembic.operations import ops
 from sqlalchemy import Column, pool
 from sqlalchemy.ext.asyncio import AsyncEngine, async_engine_from_config
 
+import lychd.db.models  # noqa: F401 # pyright: ignore[reportUnusedImport]  — populate orm_registry.metadata
+
 if TYPE_CHECKING:
     from advanced_alchemy.alembic.commands import AlembicCommandConfig
     from alembic.runtime.environment import EnvironmentContext

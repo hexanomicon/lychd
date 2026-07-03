@@ -10,10 +10,10 @@ from pydantic import BaseModel
 
 from lychd.config.runes import ConfigWriter, RuneConfig
 from lychd.config.settings import get_settings
-from lychd.extensions.manager import ExtensionManager
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
 logger = structlog.get_logger()
@@ -30,21 +30,19 @@ class CodexService:
 
     def __init__(
         self,
+        *,
+        rune_schemas: Sequence[type[RuneConfig]],
         toml_path: Path | None = None,
         runes_path: Path | None = None,
         templates_dir: Path | None = None,
         postgres_root_path: Path | None = None,
-        rune_schemas: list[type[RuneConfig]] | None = None,
     ) -> None:
         """Create a codex service bound to concrete codex/runes paths."""
         self.toml_path = toml_path or PATH_LYCHD_TOML
         self.runes_path = runes_path or PATH_RUNES_DIR
         self.templates_dir = templates_dir or PATH_RUNE_TEMPLATES_DIR
         self.postgres_root_path = postgres_root_path or PATH_POSTGRES_ROOT_DIR
-        if rune_schemas is None:
-            self.rune_schemas = list(ExtensionManager.from_settings().assemble().runes.rune_schemas)
-        else:
-            self.rune_schemas = list(rune_schemas)
+        self.rune_schemas = list(rune_schemas)
 
         self._env = Environment(
             loader=FileSystemLoader(self.templates_dir),

@@ -14,6 +14,20 @@ from lychd.lib.exceptions import exception_to_http_response
 if TYPE_CHECKING:
     from click import Group
     from litestar.config.app import AppConfig
+    from litestar.datastructures import State
+
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.extensions.host import AssembledExtensions
+
+
+def provide_extensions(state: State) -> AssembledExtensions:
+    """Provide the process-wide assembled extensions from app state."""
+    return state.extensions
+
+
+def provide_runes(state: State) -> RuneRegistry:
+    """Provide the process-wide validated rune registry from app state."""
+    return state.runes
 
 
 class AppInit(InitPluginProtocol, CLIPluginProtocol):
@@ -40,8 +54,10 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
 
         """
         # Lazy import of settings to keep startup fast
+        from advanced_alchemy.extensions.litestar.providers import create_service_provider
         from litestar.config.response_cache import ResponseCacheConfig
         from litestar.contrib.sqlalchemy.plugins import SQLAlchemyPlugin
+        from litestar.di import Provide
         from litestar.plugins.htmx import HTMXPlugin
         from litestar.plugins.problem_details import ProblemDetailsPlugin
         from litestar.plugins.structlog import StructlogPlugin
@@ -53,19 +69,26 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
 
         from lychd.__about__ import __version__ as current_version
         from lychd.config.components import (
-            cors_config,
-            csrf_config,
-            db_config,
-            problem_details_config,
-            saq_config,
-            structlog_config,
-            template_config,
-            vite_config,
+            build_cors_config,
+            build_csrf_config,
+            build_db_config,
+            build_problem_details_config,
+            build_saq_config,
+            build_structlog_config,
+            build_template_config,
+            build_vite_config,
         )
         from lychd.config.constants import CACHE_EXPIRATION
+        from lychd.config.runes.registry import load_rune_registry
+        from lychd.domain.animation.services.store import SoulstoneRecordService
+        from lychd.domain.cortex.services import KarmaService, RunService, StepService
+        from lychd.domain.web.services import SessionService
+        from lychd.extensions.host import get_extensions
         from lychd.lib.exceptions import ApplicationError
 
         settings = get_settings()
+        extensions = get_extensions()  # THE one assembly for this process
+        runes = load_rune_registry(extensions)  # validated TOML instances, loaded once
 
         app_config.debug = settings.app.debug
 
@@ -79,20 +102,19 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         app_config.plugins.extend(
             [
                 GranianPlugin(),
-                VitePlugin(config=vite_config),
-                SQLAlchemyPlugin(config=db_config),
-                SAQPlugin(config=saq_config),
-                StructlogPlugin(config=structlog_config),
-                ProblemDetailsPlugin(config=problem_details_config),
+                VitePlugin(config=build_vite_config(settings)),
+                SQLAlchemyPlugin(config=build_db_config(settings)),
+                SAQPlugin(config=build_saq_config(settings)),
+                StructlogPlugin(config=build_structlog_config(settings)),
+                ProblemDetailsPlugin(config=build_problem_details_config(settings)),
                 HTMXPlugin(),
             ],
         )
 
-        # CORS
-        app_config.cors_config = cors_config
-        app_config.csrf_config = csrf_config
-        # HTML templates
-        app_config.template_config = template_config
+        # CORS / CSRF / HTML templates
+        app_config.cors_config = build_cors_config(settings)
+        app_config.csrf_config = build_csrf_config(settings)
+        app_config.template_config = build_template_config(settings)
 
         # --- 6. Memory Stores ---
         app_config.stores = StoreRegistry(default_factory=lambda _: MemoryStore())
@@ -102,7 +124,7 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         }
         app_config.response_cache_config = ResponseCacheConfig(default_expiration=CACHE_EXPIRATION)
 
-        # Routers
+        # Routers (core product surfaces)
         from lychd.interface.api.orchestrator import OrchestratorController
         from lychd.interface.web import (
             AltarController,
@@ -110,6 +132,7 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
             LoomController,
             NexusController,
         )
+
         app_config.route_handlers.extend(
             [
                 OrchestratorController,
@@ -120,16 +143,26 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
             ],
         )
 
+        # State: the one assembly + validated runes
+        app_config.state.update({"extensions": extensions, "runes": runes})
+
         # Dependencies
         from lychd.interface.web.deps import build_web_singletons, web_dependencies
+
         app_config.dependencies.update(web_dependencies)
+        app_config.dependencies.update(
+            {
+                "extensions": Provide(provide_extensions, sync_to_thread=False),
+                "runes": Provide(provide_runes, sync_to_thread=False),
+                "runs_service": create_service_provider(RunService),
+                "steps_service": create_service_provider(StepService),
+                "sessions_service": create_service_provider(SessionService),
+                "karma_service": create_service_provider(KarmaService),
+                "soulstone_records_service": create_service_provider(SoulstoneRecordService),
+            }
+        )
+        # Kept until Agent 2's DI rework lands (web builder removes it later).
         app_config.on_startup.append(build_web_singletons)
-
-        # Signatures
-
-        # Shutdownappend
-
-        # Listeners
 
         return app_config
 

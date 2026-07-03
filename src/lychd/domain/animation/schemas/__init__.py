@@ -19,8 +19,6 @@ from lychd.domain.animation.schemas.runes.animators import (
     SoulstoneConfig,
 )
 from lychd.domain.animation.schemas.runes.models import (
-    LLMGenerationConfig,
-    LLMGenerationDefaults,
     LocalLLMModelConfig,
     LocalModelConfig,
     ModelCapabilityHints,
@@ -34,8 +32,6 @@ __all__ = [
     "GenerationProfile",
     "GenericSoulstoneConfig",
     "GoogleGeminiPortalConfig",
-    "LLMGenerationConfig",
-    "LLMGenerationDefaults",
     "LocalLLMModelConfig",
     "LocalModelConfig",
     "ModelCapabilityHints",

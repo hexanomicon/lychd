@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import cast
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
@@ -74,11 +74,17 @@ class LlamaCppRuntimeAdapter:
             descriptor.model_infos,
             runtime_metadata=descriptor.metadata,
             runtime_defaults=self._runtime_defaults(descriptor),
-            lifecycle_mode="dynamic_soft" if descriptor.mode == "router" else "static",
+            lifecycle=CapabilityLifecycle.DYNAMIC if descriptor.mode == "router" else CapabilityLifecycle.STATIC,
         )
 
     def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
         """Map live llama.cpp control-plane data into capability states.
+
+        TODO(A3-U4): CapabilityState is now phase-canonical (lifecycle/phase
+        fields; is_static/is_active/warm/is_available are derived properties).
+        The CapabilityState(...) constructions below still pass the removed
+        boolean kwargs and must be reshaped to lifecycle=/phase= by A3-U4.
+
 
         The control-plane probe is always attempted; its outcome is pushed onto
         the connector link so callers observing ``link.up`` see real
