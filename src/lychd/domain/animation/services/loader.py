@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast, overload
@@ -38,17 +39,12 @@ class AnimatorLoader:
 
     def __init__(
         self,
-        runes_dir: Path | None = None,
         *,
-        rune_schemas: list[type[RuneConfig]] | None = None,
+        rune_schemas: Sequence[type[RuneConfig]],
         reserved_ports: dict[str, int] | None = None,
+        runes_dir: Path | None = None,
     ) -> None:
-        """Initialize loader with rune root and reserved host ports."""
-        if rune_schemas is None:
-            from lychd.extensions.manager import ExtensionManager
-
-            rune_schemas = list(ExtensionManager.from_settings().assemble().runes.rune_schemas)
-
+        """Initialize loader with required rune schemas and reserved host ports."""
         self._runes_dir = runes_dir or PATH_RUNES_DIR
         self._rune_schemas = list(rune_schemas)
         self._reserved_ports = reserved_ports or get_settings().reserved_ports_map
@@ -133,9 +129,7 @@ class AnimatorLoader:
                 and base_url_port is not None
                 and stone.port != base_url_port
             ):
-                msg = (
-                    f"Soulstone '{stone.name}' declares port {stone.port} but base_url uses port {base_url_port}."
-                )
+                msg = f"Soulstone '{stone.name}' declares port {stone.port} but base_url uses port {base_url_port}."
                 raise AnimatorConfigError(msg)
             if stone.port is not None:
                 used_ports.add(stone.port)

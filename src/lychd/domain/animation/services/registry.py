@@ -17,7 +17,8 @@ if TYPE_CHECKING:
     from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
 
-    from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+    from lychd.config.runes import RuneConfig
+    from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimeAdapter
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
     from lychd.system.schemas import QuadletContainer
@@ -45,41 +46,21 @@ class AnimatorRegistry:
 
     def __init__(
         self,
-        loader: AnimatorLoader | None = None,
         *,
+        rune_schemas: Sequence[type[RuneConfig]],
+        runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
         binder: AnimatorBinder | None = None,
-        runtime_factories: Sequence[AnimatorFactory] | None = None,
-        runtime_adapters: RuntimeAdapterRegistry | None = None,
-        llamacpp_control: LlamaCppControlPlane | None = None,
     ) -> None:
-        """Initialize loader/binder plus runtime factories and optional llama.cpp control."""
-        extensions = None
-        if loader is None or runtime_adapters is None:
-            from lychd.extensions.manager import ExtensionManager
-
-            extensions = ExtensionManager.from_settings().assemble()
-
-        self._loader = loader or AnimatorLoader(
-            rune_schemas=list(extensions.runes.rune_schemas) if extensions is not None else None
+        """Initialize with required rune schemas and runtime adapters (injected by the host)."""
+        from lychd.domain.animation.services.adapters.registry import (
+            RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
         )
+
+        self._loader = AnimatorLoader(rune_schemas=list(rune_schemas))
         self._binder = binder or AnimatorBinder()
-
-        if runtime_adapters is None:
-            from lychd.domain.animation.services.adapters.registry import (
-                RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
-            )
-
-            runtime_adapters = _RuntimeAdapterRegistry(
-                adapters=extensions.soulstones.runtime_adapters if extensions is not None else None,
-            )
-        self._runtime_adapters = runtime_adapters
-
-        if runtime_factories is None:
-            self._runtime_factories: list[AnimatorFactory] = [self._runtime_adapters.runtime_factory]
-        else:
-            self._runtime_factories = list(runtime_factories)
-
-        self._llamacpp_control = llamacpp_control
+        self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(adapters=list(runtime_adapters))
+        self._runtime_factories: list[AnimatorFactory] = [self._runtime_adapters.runtime_factory]
+        self._llamacpp_control: LlamaCppControlPlane | None = None
 
         self._soulstones: dict[str, SoulstoneConfig] = {}
         self._portals: dict[str, PortalConfig] = {}

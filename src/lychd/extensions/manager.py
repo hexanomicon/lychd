@@ -35,14 +35,20 @@ class ExtensionManager:
         return cls(builtins=active.builtins, crypt=active.crypt)
 
     def assemble(self) -> ExtensionContext:
-        """Import selected extensions and return their registered contributions."""
+        """Import selected extensions and return their registered contributions.
+
+        Each ``register()`` call runs inside a provenance bracket so stores can
+        attribute contributions to the extension that made them.
+        """
         context = ExtensionContext()
 
         for extension_id in self._builtins:
-            self._register_builtin(extension_id, context)
+            with context.provenance(extension_id):
+                self._register_builtin(extension_id, context)
 
         for extension_id in self._crypt:
-            self._register_crypt(extension_id, context)
+            with context.provenance(extension_id):
+                self._register_crypt(extension_id, context)
 
         return context
 

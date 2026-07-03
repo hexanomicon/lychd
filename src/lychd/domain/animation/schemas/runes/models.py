@@ -5,42 +5,9 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.model_info import ModelSurface
 from lychd.domain.animation.schemas.shared import ModelFormat
-
-
-class LLMGenerationConfig(BaseModel):
-    """Concrete LLM/chat generation settings.
-
-    Use this only when a fully specified generation profile is required.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    max_context: int = Field(default=4096, ge=1)
-    max_tokens: int = Field(default=4096, ge=1)
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    top_p: float = Field(default=0.9, ge=0.0, le=1.0)
-    top_k: int = Field(default=40, ge=0)
-    repetition_penalty: float = Field(default=1.0, ge=0.0)
-
-
-class LLMGenerationDefaults(BaseModel):
-    """Partial LLM/chat generation overlay.
-
-    This is a merge-only schema. All fields are optional so it can be used for
-    defaults (animator-level, Soulstone-level, or model-level) without forcing a
-    fake "complete" configuration when the runtime/connector will infer values.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    max_context: int | None = Field(default=None, ge=1)
-    max_tokens: int | None = Field(default=None, ge=1)
-    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
-    top_p: float | None = Field(default=None, ge=0.0, le=1.0)
-    top_k: int | None = Field(default=None, ge=0)
-    repetition_penalty: float | None = Field(default=None, ge=0.0)
 
 
 class ModelCapabilityHints(BaseModel):
@@ -70,9 +37,9 @@ class LocalModelConfig(BaseModel):
     path: Path = Field(description="Folder path containing the local model artifact(s).")
     description: str | None = None
     format: ModelFormat | None = Field(default=None, description="Model weight format.")
-    llm_defaults: LLMGenerationDefaults | None = Field(
+    generation: GenerationProfile | None = Field(
         default=None,
-        description="Optional LLM generation defaults overlay for this specific local model.",
+        description="Optional generation profile overlay for this specific local model.",
     )
     capabilities: ModelCapabilityHints | None = Field(
         default=None,

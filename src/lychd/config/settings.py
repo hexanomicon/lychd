@@ -94,6 +94,11 @@ class DatabaseSettings(BaseSettings):
     def url(self) -> str:
         return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
+    @property
+    def saq_dsn(self) -> str:
+        """Driverless Postgres DSN for SAQ/psycopg (no ``+asyncpg`` driver suffix)."""
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+
 
 class LogSettings(BaseSettings):
     """The Scrying Mirror: Configuration for Structlog and observability."""
@@ -348,6 +353,7 @@ class Settings(BaseSettings):
         codex_issues = codex_permission_issues(PATH_LYCHD_TOML)
         if codex_issues:
             import warnings
+
             warnings.warn(
                 f"codex_permissions_policy_violation: path={PATH_LYCHD_TOML} issues={codex_issues}",
                 UserWarning,

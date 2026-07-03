@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilitySpec
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle, CapabilitySpec
 from lychd.domain.animation.schemas import (
     ConcurrencyIntent,
     GenerationProfile,
@@ -86,7 +86,7 @@ def capability_specs_from_soulstone(
     *,
     runtime_metadata: dict[str, object] | None = None,
     runtime_defaults: dict[str, object] | None = None,
-    lifecycle_mode: str = "static",
+    lifecycle: CapabilityLifecycle = CapabilityLifecycle.STATIC,
 ) -> list[CapabilitySpec]:
     """Build capability specs from runtime-derived model info."""
     return capability_specs_from_model_infos(
@@ -94,7 +94,7 @@ def capability_specs_from_soulstone(
         model_infos_from_soulstone(soulstone),
         runtime_metadata=runtime_metadata,
         runtime_defaults=runtime_defaults,
-        lifecycle_mode=lifecycle_mode,
+        lifecycle=lifecycle,
     )
 
 
@@ -104,7 +104,7 @@ def capability_specs_from_model_infos(
     *,
     runtime_metadata: dict[str, object] | None = None,
     runtime_defaults: dict[str, object] | None = None,
-    lifecycle_mode: str = "static",
+    lifecycle: CapabilityLifecycle = CapabilityLifecycle.STATIC,
 ) -> list[CapabilitySpec]:
     """Build capability specs from adapter-discovered model info."""
     profile = _RUNTIME_PROFILES.get(soulstone.runtime_name, _DEFAULT_PROFILE)
@@ -119,7 +119,7 @@ def capability_specs_from_model_infos(
                 soulstone=soulstone,
                 info=hydrated_info,
                 generation_defaults=generation_defaults,
-                lifecycle_mode=lifecycle_mode,
+                lifecycle=lifecycle,
                 runtime_metadata=runtime_meta,
             )
         )
@@ -170,7 +170,7 @@ def _capability_specs_from_model_info(
     soulstone: SoulstoneConfig,
     info: ModelInfo,
     generation_defaults: GenerationProfile,
-    lifecycle_mode: str,
+    lifecycle: CapabilityLifecycle,
     runtime_metadata: dict[str, object],
 ) -> list[CapabilitySpec]:
     concurrency = ConcurrencyIntent()
@@ -188,7 +188,7 @@ def _capability_specs_from_model_info(
             supports_tools=info.supports_tools,
             supports_streaming=info.supports_streaming,
             generation_profile=generation_defaults,
-            lifecycle_mode=lifecycle_mode,
+            lifecycle=lifecycle,
             concurrency=concurrency,
             metadata={**runtime_metadata, **dict(info.metadata)},
         )
