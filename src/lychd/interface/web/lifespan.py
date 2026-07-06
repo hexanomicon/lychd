@@ -12,7 +12,7 @@ This module is a composition root — importing `extensions.host` here is allowe
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, cast
 
 import structlog
@@ -33,21 +33,22 @@ _RUN_QUEUE_NAMES = ("runs", "rites")
 
 
 def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
-    """Return the SAQ queues the engine enqueues onto (empty if SAQ is absent).
+    """Return the SAQ queues the engine enqueues onto.
 
-    Runtime seam: in the web test client (no SAQ plugin) this is empty and the real
-    engine is never exercised — the web tests use the fake engine. Production always
-    carries the SAQ plugin.
+    Runtime seam: in the web test client (no SAQ plugin) this returns empty and the
+    real engine is never exercised — the web tests use the fake engine. Production
+    always carries the SAQ plugin, and every routed queue name MUST resolve: a
+    missing queue raises loudly here (F3/H2) rather than silently returning a partial
+    map that would black-hole every intent routed to the absent queue.
     """
     from litestar_saq import SAQPlugin
 
-    queues: dict[str, RunQueue] = {}
-    with suppress(Exception):
+    try:
         plugin = app.plugins.get(SAQPlugin)
-        for name in _RUN_QUEUE_NAMES:
-            with suppress(Exception):
-                queues[name] = cast("RunQueue", plugin.get_queue(name))
-    return queues
+    except Exception:  # noqa: BLE001 - SAQ plugin genuinely absent (non-server contexts)
+        return {}
+    # No inner suppress: an unregistered queue name is a wiring bug, not a shrug.
+    return {name: cast("RunQueue", plugin.get_queue(name)) for name in _RUN_QUEUE_NAMES}
 
 
 @asynccontextmanager
@@ -93,8 +94,15 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
 
 
 async def _reconcile_at_startup() -> None:
-    """Run the orphan-run reconcile once, guarded (never blocks startup)."""
+    """Run the orphan-run reconcile once at startup.
+
+    Must not block startup on a transient DB hiccup, but the old silent `suppress`
+    hid real reconcile failures (F9/H2). Log loudly instead — the failure is
+    visible, startup still proceeds.
+    """
     from lychd.ghouls.runs import reconcile_runs
 
-    with suppress(Exception):
+    try:
         await reconcile_runs({})
+    except Exception:
+        logger.exception("reconcile_at_startup_failed")

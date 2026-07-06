@@ -1,4 +1,6 @@
 """InMemoryRunLedger: the QUEUED→RUNNING→DONE trail, Step rows, transition guard."""
+# Profile-switch test reaches the _build_run_ledger seam.
+# pyright: reportPrivateUsage=false
 
 from __future__ import annotations
 
@@ -14,6 +16,17 @@ def _intent(run_id: str = "run_1") -> Intent:
     return Intent(session_id="sess_1", run_id=run_id, prompt="hello", source="bridge")
 
 
+def test_profile_switch_selects_ledger_impl() -> None:
+    """H5/S3: the persistence profile selects the RunLedger impl (DB-free construction)."""
+    from lychd.domain.cortex.ledger import DbRunLedger
+    from lychd.domain.web.altar_services import _build_run_ledger
+
+    assert isinstance(_build_run_ledger("memory"), InMemoryRunLedger)
+    # `postgres` builds the durable ledger; constructing a session factory opens no
+    # connection, so this stays DB-free.
+    assert isinstance(_build_run_ledger("postgres"), DbRunLedger)
+
+
 @pytest.mark.asyncio
 async def test_create_persists_queued_run() -> None:
     """create() persists a fresh run as QUEUED keyed by intent.run_id."""
@@ -25,6 +38,17 @@ async def test_create_persists_queued_run() -> None:
     assert run.queue_name == "runs"
     assert run.priority == 70
     assert (await ledger.get("run_1")) is run
+
+
+@pytest.mark.asyncio
+async def test_create_mints_canonical_id_when_intent_run_id_is_none() -> None:
+    """S3: with no advisory intent.run_id, the ledger assigns the canonical run identity."""
+    ledger = InMemoryRunLedger()
+    intent = Intent(session_id="sess_1", prompt="hello", source="bridge")  # run_id defaults None
+    run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
+    assert run.run_id  # a real id was minted
+    assert run.run_id != "None"
+    assert (await ledger.get(run.run_id)) is run
 
 
 @pytest.mark.asyncio

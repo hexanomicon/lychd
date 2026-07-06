@@ -1,16 +1,25 @@
-"""SSE stream shape: server-projected payloads, event names, ids, terminal close.
+"""SSE stream shape + the ledger-first, never-hang contract (F5/H4).
 
-The channel is fully pre-seeded (terminal `done` emitted before subscribing), so the
-generator drains its replay buffer and completes — the read can never hang. Channels
-now live on the `RunEventBus` (shed from `BridgeSessionStore` in Wave 2).
+The SSE handler consults the run ledger BEFORE subscribing (`bridge.stream`):
+- unknown run → 404 (never an auto-minted channel that hangs on keepalives);
+- already-terminal run → a synthetic STATUS + DONE, then end;
+- live run → subscribe to its channel.
+
+Every test seeds the run in the ledger so the handler takes the intended branch, and
+pre-closes the channel (terminal `done`) so reads can never hang. Tests stay sync (the
+`TestClient` owns its own loop); ledger seeding runs the loop-confined coroutines via
+`asyncio.run` (the `InMemoryRunLedger` is a plain dict with no loop affinity).
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING
 
+from lychd.agents.router import Intent
 from lychd.domain.cortex.events import RunEventKind
+from lychd.domain.cortex.runs import RunStatus
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -19,11 +28,43 @@ if TYPE_CHECKING:
     from litestar.testing import TestClient
 
 
+def _seed_live_run(services: SimpleNamespace, run_id: str) -> None:
+    """Persist a RUNNING run row so the stream takes the live-subscribe branch."""
+
+    async def _seed() -> None:
+        await services.ledger.create(
+            Intent(session_id="s", run_id=run_id, prompt="p", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await services.ledger.set_status(run_id, RunStatus.RUNNING)
+
+    asyncio.run(_seed())
+
+
+def _seed_terminal_run(services: SimpleNamespace, run_id: str, status: RunStatus) -> None:
+    """Persist a run row already in a terminal status (synthetic-replay branch)."""
+
+    async def _seed() -> None:
+        await services.ledger.create(
+            Intent(session_id="s", run_id=run_id, prompt="p", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await services.ledger.set_status(run_id, RunStatus.RUNNING)
+        await services.ledger.set_status(run_id, status)
+
+    asyncio.run(_seed())
+
+
 def test_stream_projects_every_event_kind(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
-    """A scripted status/token/fragment/consent/done sequence frames correctly."""
+    """A scripted status/token/fragment/consent/done sequence frames correctly (live run)."""
     sessions = fake_services.bridge_sessions
     bus = fake_services.bus
     run_id = "run_sse"
+    _seed_live_run(fake_services, run_id)
     session = sessions.create_session()
     consent_id = sessions.park_consent(
         run_id=run_id, session_id=session.id, tool_name="request_coven_swap", args={}, requests=None
@@ -63,16 +104,43 @@ def test_stream_projects_every_event_kind(altar_client: TestClient[Litestar], fa
 
 
 def test_stream_closes_after_done(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
-    """A channel closed by `done` yields a finite stream (no hang)."""
+    """A live run whose channel is closed by `done` yields a finite stream (no hang)."""
     bus = fake_services.bus
-    channel = bus.open("run_done")
+    run_id = "run_done"
+    _seed_live_run(fake_services, run_id)
+    channel = bus.open(run_id)
     channel.emit(RunEventKind.STATUS, "settling")
     channel.emit(RunEventKind.DONE, "done")
     assert channel.closed is True
 
-    response = altar_client.get("/bridge/runs/run_done/stream")
+    response = altar_client.get(f"/bridge/runs/{run_id}/stream")
     assert response.status_code == 200
     assert "event: done" in response.text
+
+
+def test_stream_unknown_run_is_404(altar_client: TestClient[Litestar]) -> None:
+    """Never-hang matrix: an unknown run id → 404, never a minted-empty channel."""
+    response = altar_client.get("/bridge/runs/does-not-exist/stream")
+    assert response.status_code == 404
+
+
+def test_stream_terminal_run_synthesizes_status_and_done(
+    altar_client: TestClient[Litestar], fake_services: SimpleNamespace
+) -> None:
+    """Never-hang matrix: a reconnect onto an already-DONE run replays STATUS+DONE, then ends.
+
+    No channel exists (it was closed and dropped after the run settled); the handler
+    must synthesize from the ledger instead of hanging on an empty/absent channel.
+    """
+    run_id = "run_terminal"
+    _seed_terminal_run(fake_services, run_id, RunStatus.DONE)
+    # No channel is opened for this run — proving the synthetic path needs no channel.
+
+    response = altar_client.get(f"/bridge/runs/{run_id}/stream")
+    assert response.status_code == 200
+    body = response.text
+    assert "event: status" in body
+    assert "event: done" in body
 
 
 def _agent_turn(*, run_id: str) -> object:

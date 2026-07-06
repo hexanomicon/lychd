@@ -80,7 +80,11 @@ class Projector:
         if kind == "token":
             return html.escape(event.data)
         if kind in {"status", "node"}:
-            return event.data
+            # F8/H7: status is a RunStatus/progress keyword and node is a node key —
+            # controlled vocabularies today, but escape them at the render boundary so
+            # any future model-derived value routed through `emit.status()/emit.node()`
+            # can never reflect raw HTML into the SSE stream.
+            return html.escape(event.data)
         if kind == "log":
             return html.escape(event.data)
         if kind == "fragment":

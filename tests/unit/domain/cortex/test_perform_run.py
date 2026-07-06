@@ -3,6 +3,9 @@
 Offline floor: no real model request is permitted (`ALLOW_MODEL_REQUESTS = False`);
 the graph runs on a `TestModel` handed through the fake dispatcher's grant.
 """
+# White-box assertions + structural fakes for GrantPort/registry.
+# pyright: reportPrivateUsage=false
+# pyright: reportArgumentType=false
 
 from __future__ import annotations
 
@@ -70,6 +73,10 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))
     await _seed_run(ledger, sessions, "run_1")
 
+    # Hold the channel ref BEFORE the run: perform_run's finally closes + drops it
+    # (H4), so a post-run `bus.open` would mint a fresh empty channel.
+    channel = substrate.bus.open("run_1")
+
     result = await perform_run({"run_substrate": substrate}, run_id="run_1")
     assert result["status"] == "done"
 
@@ -79,7 +86,6 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     assert run.started_at is not None
     assert run.finished_at is not None
 
-    channel = substrate.bus.open("run_1")
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
     assert dones[0].data == "done"
@@ -105,6 +111,9 @@ async def test_perform_run_failure_marks_failed_and_emits_done() -> None:
     """A node failure marks FAILED, writes a fault turn, and still emits a terminal DONE."""
     substrate, ledger, sessions = _substrate(dispatcher=_RaisingDispatcher())
     await _seed_run(ledger, sessions, "run_3")
+    channel = substrate.bus.open("run_3")  # hold the ref before the finally drops it (H4)
+    # H6: seed a cached context floor; the failure path must release it (no leak).
+    substrate.context._cache["run_3"] = object()
 
     with pytest.raises(RuntimeError):
         await perform_run({"run_substrate": substrate}, run_id="run_3")
@@ -114,10 +123,92 @@ async def test_perform_run_failure_marks_failed_and_emits_done() -> None:
     assert run.status is RunStatus.FAILED
     assert run.error is not None
 
-    channel = substrate.bus.open("run_3")
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
     assert dones[0].data == "failed"
+    # H6: the context floor was released on the failure path (no per-run leak).
+    assert "run_3" not in substrate.context._cache
+
+
+@pytest.mark.asyncio
+async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> None:
+    """Cancel racing completion resolves to exactly ONE terminal event + a CANCELLED row (F2/H3).
+
+    The race: the ghoul finishes its graph while `engine.cancel` has already written
+    the terminal CANCELLED. The completion tail's DONE write hits the CAS/transition
+    guard, is caught as benign (cancel won), and the finally's terminal re-emit is
+    dropped by the channel's closed-guard — so the channel carries a single terminal
+    (DONE carrying the CANCELLED status) and the row stays CANCELLED.
+    """
+    from lychd.domain.cortex.engine import QueueRouter, RunEngine
+    from lychd.ghouls.runs import _settle_terminal
+
+    class _CancelQueue:
+        async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+            _ = (job_or_func, kwargs)
+
+        async def job(self, job_key: str, /) -> Any:
+            return {"key": job_key}
+
+        async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+            _ = (job, error, ttl)
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "race")
+    channel = substrate.bus.open("race")  # hold the ref before it is closed + dropped
+
+    # The ghoul has claimed the run (QUEUED→RUNNING).
+    await ledger.set_status("race", RunStatus.RUNNING)
+
+    # Cancel WINS the race: writes CANCELLED, emits the terminal DONE, closes the channel.
+    engine = RunEngine(
+        ledger=ledger,
+        bus=substrate.bus,
+        workflows=substrate.workflows,
+        queue_router=QueueRouter(),
+        queues={"runs": _CancelQueue()},
+    )
+    await engine.cancel("race")
+
+    # The ghoul's completion tail loses: the DONE write is caught as benign, and the
+    # finally's terminal re-emit is dropped by the closed-guard.
+    await _settle_terminal(ledger, "race", RunStatus.DONE)
+    terminal = await ledger.get("race")
+    assert terminal is not None
+    substrate.bus.emitter("race").done(terminal.status.value)  # finally's re-emit → dropped
+
+    run = await ledger.get("race")
+    assert run is not None
+    assert run.status is RunStatus.CANCELLED
+    dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
+    assert len(dones) == 1  # exactly one terminal event
+    assert dones[0].data == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_runs_sweeps_aged_queued() -> None:
+    """reconcile_runs fails a QUEUED row older than the sweep window (F3/F9/H2)."""
+    from datetime import UTC, datetime, timedelta
+
+    from lychd.ghouls.runs import RECONCILE_QUEUED_AFTER_S
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "fresh")  # young QUEUED — must survive
+    await _seed_run(ledger, sessions, "stale")  # aged QUEUED — must be swept
+    stale = await ledger.get("stale")
+    assert stale is not None
+    stale.created_at = datetime.now(UTC) - timedelta(seconds=RECONCILE_QUEUED_AFTER_S + 60)
+
+    result = await reconcile_runs({"run_substrate": substrate})
+    assert result["count"] == 1
+
+    swept = await ledger.get("stale")
+    assert swept is not None
+    assert swept.status is RunStatus.FAILED
+    assert swept.error == "enqueue lost"
+    fresh = await ledger.get("fresh")
+    assert fresh is not None
+    assert fresh.status is RunStatus.QUEUED  # untouched
 
 
 @pytest.mark.asyncio

@@ -30,8 +30,7 @@ from lychd.config.constants import (
     PATH_VITE_RESOURCE_DIR,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
-from lychd.config.settings import get_settings
-from lychd.db.engine import get_engine, get_session_factory
+from lychd.db.engine import get_engine
 
 if TYPE_CHECKING:
     from litestar.plugins.structlog import StructlogConfig
@@ -56,35 +55,45 @@ def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
 def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> SAQConfig:
     """Build the Ghoul-queue (SAQ) config: the ``runs`` + ``rites`` queues (A4-U4).
 
-    Topology A (v1): ``use_server_lifespan=True`` runs the worker in-process on the
-    web loop, so the ghoul (`perform_run`) and the SSE handler share one event bus.
-    ``runs`` carries interactive graph runs; ``rites`` carries background rites.
-    ``extra_tasks`` still extends the rite task list (Wave-1 contract kept).
+    Topology A (v1, F1 hardening): ``separate_process=False`` on BOTH queues is the
+    ONE switch (litestar_saq 0.5.3) that routes each worker through
+    ``Worker.on_app_startup`` onto the *web* event loop instead of forking a
+    ``multiprocessing.Process``. The in-process ghoul (`perform_run`) and the SSE
+    handler therefore share one ``RunEventBus`` — a run's events reach its open
+    stream. ``use_server_lifespan=False`` completes the topology: it stops the SAQ
+    plugin's ``server_lifespan`` from spawning the (now no-op) forked worker
+    processes. No forked workers remain; the substrate is built ONCE in
+    ``altar_services_lifespan`` and read from the process memo by `perform_run`.
 
-    Note (PG/SAQ runtime seam): per-queue concurrency uses `settings.saq.concurrency`
-    until the `[orchestration.queues]` settings surface lands (A7).
+    ``runs`` carries interactive graph runs; ``rites`` carries background rites.
+    Both register `perform_run` so rite-routed intents (`source="rite"` → ``rites``)
+    are claimable. ``extra_tasks`` still extends the rite task list (Wave-1 contract).
     """
-    rite_tasks = ["lychd.ghouls.rites.perform_rite", "lychd.ghouls.runs.reconcile_runs", *extra_tasks]
+    rite_tasks = [
+        "lychd.ghouls.runs.perform_run",
+        "lychd.ghouls.rites.perform_rite",
+        "lychd.ghouls.runs.reconcile_runs",
+        *extra_tasks,
+    ]
     return SAQConfig(
         web_enabled=settings.saq.web_enabled,
-        worker_processes=settings.saq.processes,
-        use_server_lifespan=settings.saq.use_server_lifespan,
+        use_server_lifespan=False,  # Topology A: no forked workers — on_app_startup owns the loop.
         queue_configs=[
             QueueConfig(
                 name="runs",
                 dsn=settings.db.saq_dsn,
                 tasks=["lychd.ghouls.runs.perform_run", "lychd.ghouls.runs.reconcile_runs"],
                 concurrency=settings.saq.concurrency,
+                separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
-                shutdown=worker_shutdown,
             ),
             QueueConfig(
                 name="rites",
                 dsn=settings.db.saq_dsn,
                 tasks=rite_tasks,
                 concurrency=settings.saq.concurrency,
+                separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
-                shutdown=worker_shutdown,
             ),
         ],
     )
@@ -138,22 +147,14 @@ def build_problem_details_config(settings: Settings) -> ProblemDetailsConfig:  #
 
 
 async def worker_startup(ctx: dict[str, Any]) -> None:
-    """Initialize a forked SAQ worker process.
+    """Topology-A worker startup: no per-worker construction (F1/S7).
 
-    Forked workers cannot reuse the parent's asyncpg connections, so a fresh
-    engine is built via the process-memoized ``db.engine`` seat. Workers also
-    receive the assembled extensions so they see the same surface as the app.
+    Under Topology A the worker runs *in the web process on the web loop*
+    (`separate_process=False`), so there are no forked children to build a fresh
+    engine/session-factory/extensions for — those live on the shared process and
+    the run collaborators are read from the ONE `RunSubstrate` the web lifespan
+    (`altar_services_lifespan`) publishes via `set_run_substrate`. `perform_run`
+    reads that memo through `_substrate(ctx)`. This hook is retained only as the
+    documented seam; it deliberately does nothing.
     """
-    from lychd.extensions.host import get_extensions
-
-    engine = get_engine(get_settings().db, fresh=True)
-    ctx["db_engine"] = engine
-    ctx["db_session_factory"] = get_session_factory()
-    ctx["extensions"] = get_extensions()
-
-
-async def worker_shutdown(ctx: dict[str, Any]) -> None:
-    """Dispose the worker's database engine on shutdown."""
-    engine = ctx.get("db_engine")
-    if engine is not None:
-        await engine.dispose()
+    _ = ctx

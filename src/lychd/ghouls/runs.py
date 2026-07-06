@@ -3,7 +3,7 @@
 `perform_run` is the SAQ task and the ONLY place a workflow graph executes: claim →
 RUNNING → build `WorkflowServices` + `GraphRunner` → iterate → events on the shared
 `RunEventBus` → single terminal `DONE` (or FAILED as a DONE carrying the terminal
-status). Topology A: it runs in-process on the web loop (`use_server_lifespan=True`),
+status). Topology A: it runs in-process on the web loop (`separate_process=False`),
 so the SSE handler and this task share one `RunEventBus`.
 
 `reconcile_runs` is a startup/periodic rite: a process that dies mid-run leaves a
@@ -17,16 +17,19 @@ open SSE stream. Honest park-and-resume is Wave 4 (spec-00-FINAL C3).
 
 from __future__ import annotations
 
+import asyncio
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from lychd.domain.cortex.graph_runner import GraphRunner
-from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunStatus
+from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunStatus
 from lychd.domain.cortex.stasis import LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
 
 if TYPE_CHECKING:
+    from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.substrate import RunSubstrate
 
 logger = structlog.get_logger()
@@ -35,9 +38,22 @@ _FAILURE_MESSAGE = (
     "The summoning faltered — no capability answered. Ensure a chat Soulstone is bound and warm, then speak again."
 )
 
+# A QUEUED row older than this at reconcile time lost its enqueue (F3/F9/H2): the
+# `_enqueue` compensation should have failed it, but a crash between `create` and
+# `_enqueue` can strand it QUEUED with no live job. Sweep it to FAILED.
+RECONCILE_QUEUED_AFTER_S = 900
+
 
 def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
-    """Return the run substrate from the SAQ ctx, falling back to the process memo."""
+    """Return the run substrate for this job.
+
+    Topology A invariant (F1/S7): there is exactly ONE substrate per process, built
+    and published (`set_run_substrate`) once by `altar_services_lifespan`. Because
+    the worker runs in-process on the web loop, `perform_run`/`reconcile_runs` read
+    THAT substrate from the process memo (`get_run_substrate`) — same `RunEventBus`,
+    same `RunLedger` the SSE handler sees. The `ctx["run_substrate"]` branch is a
+    TEST-ONLY injection seam; production never populates it.
+    """
     injected = ctx.get("run_substrate")
     if injected is not None:
         return injected
@@ -80,32 +96,71 @@ async def perform_run(
             workflow.make_state(run.to_intent()),
             deps=services,
         )
+    except asyncio.CancelledError:
+        # Cancel path (F6/H6): free the assembled context floor and let the cancel
+        # propagate. `engine.cancel` already wrote CANCELLED + emitted the terminal;
+        # the finally's re-emit is dropped by the channel's closed-guard (F2/H3).
+        substrate.context.release(run_id)
+        raise
     except Exception as exc:
         logger.exception("perform_run_failed", run_id=run_id, workflow=run.workflow_name)
         _write_failed_turn(substrate, run_id=run_id, session_id=run.session_id)
-        await ledger.set_status(run_id, RunStatus.FAILED, error=str(exc))
+        substrate.context.release(run_id)  # F6/H6: free the floor on failure
+        await _settle_terminal(ledger, run_id, RunStatus.FAILED, error=str(exc))
         raise
     else:
         parked = substrate.sessions.pending_consent_for_run(run_id)
         if parked is not None:
-            # Placeholder consent park: end AWAITING_CONSENT, emit NO done (card stays live).
+            # Placeholder consent park: end AWAITING_CONSENT, emit NO done (card stays
+            # live). The context floor is deliberately NOT released here — Wave 4 adds
+            # release-on-park once AwaitConsent's re-assemble guard makes it safe (H6).
             await ledger.set_consent(run_id, parked.id)
             await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
             return {"status": "awaiting_consent", "run_id": run_id}
-        await ledger.set_status(run_id, RunStatus.DONE)
+        await _settle_terminal(ledger, run_id, RunStatus.DONE)
         return {"status": "done", "run_id": run_id}
     finally:
+        # The never-hang guarantee, one place: emit the single terminal DONE from the
+        # AUTHORITATIVE row status (cancel may have won the race), then close the
+        # channel (F5/H4). A non-terminal park leaves the channel open on purpose.
         terminal = await ledger.get(run_id)
         if terminal is not None and terminal.status in TERMINAL_STATUSES:
-            emitter.done(terminal.status.value)  # the never-hang guarantee, one place
+            emitter.done(terminal.status.value)
+            substrate.bus.close(run_id)
+
+
+async def _settle_terminal(ledger: RunLedger, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
+    """Write a terminal status race-tolerantly (F2/H3: one terminal writer in practice).
+
+    If a competing writer (`engine.cancel`) already drove the row terminal, the write
+    raises `IllegalRunTransitionError`; re-read, and if the row is now terminal treat
+    it as benign (the other writer won) rather than exploding — the finally emits the
+    single terminal from the settled truth.
+    """
+    try:
+        await ledger.set_status(run_id, status, error=error)
+    except IllegalRunTransitionError:
+        fresh = await ledger.get(run_id)
+        if fresh is not None and fresh.status in TERMINAL_STATUSES:
+            logger.info("terminal_write_lost_race", run_id=run_id, attempted=status.value, settled=fresh.status.value)
+            return
+        raise
 
 
 async def reconcile_runs(ctx: dict[str, Any]) -> dict[str, Any]:
-    """Fail orphaned RUNNING/AWAITING_HARDWARE runs left by a dead process.
+    """Fail runs stranded non-terminal by a dead process (F3/F9/H2).
 
-    A crash mid-run leaves the row RUNNING with no live task. On startup (and
-    periodically) mark such orphans FAILED and emit their terminal `DONE`, so no run
-    survives a restart stuck in a non-terminal, unclaimed state.
+    Two orphan classes are swept to FAILED (each emitting its terminal `DONE`):
+
+    - RUNNING / AWAITING_HARDWARE: a crash mid-run leaves the row non-terminal with
+      no live task. Blanket-failing every RUNNING row is CORRECT under Topology A —
+      there is a single process and a single loop, so ANY RUNNING row at boot is by
+      definition orphaned (its owning task died with the process; there is no live
+      heartbeat to check). Revisit ONLY if a multi-process Topology B ever lands.
+    - QUEUED older than `RECONCILE_QUEUED_AFTER_S`: `engine.submit` compensates a
+      failed `_enqueue`, but a crash between `create` and `_enqueue` (or a lost
+      broker job) can strand a QUEUED row with no job. An aged QUEUED row is failed
+      with "enqueue lost" so it never keeps a stream on keepalives forever.
     """
     substrate = _substrate(ctx)
     ledger = substrate.ledger
@@ -115,6 +170,15 @@ async def reconcile_runs(ctx: dict[str, Any]) -> dict[str, Any]:
             await ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
             substrate.bus.emitter(run.run_id).done(RunStatus.FAILED.value)
             reconciled.append(run.run_id)
+
+    now = datetime.now(UTC)
+    for run in await ledger.list_by_status(RunStatus.QUEUED):
+        if (now - run.created_at).total_seconds() < RECONCILE_QUEUED_AFTER_S:
+            continue
+        await ledger.set_status(run.run_id, RunStatus.FAILED, error="enqueue lost")
+        substrate.bus.emitter(run.run_id).done(RunStatus.FAILED.value)
+        reconciled.append(run.run_id)
+
     if reconciled:
         logger.warning("reconcile_runs", count=len(reconciled), run_ids=reconciled)
     return {"status": "reconciled", "count": len(reconciled)}

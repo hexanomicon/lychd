@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 
 from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
+from lychd.config.settings import get_settings
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.dispatcher import Dispatcher
@@ -153,18 +154,37 @@ class AltarServices:
         await self.tickets.aclose()
 
 
+def _build_run_ledger(profile: str) -> RunLedger:
+    """Select the `RunLedger` implementation from the persistence profile (F4/H5, S3).
+
+    ``postgres`` (default) → the durable `DbRunLedger` over the run/step tables;
+    ``memory`` → the loop-confined `InMemoryRunLedger` used by DB-free tests. This is
+    the one profile flag Wave 4 later extends to the ConsentLedger + SessionStore.
+    """
+    if profile == "memory":
+        return InMemoryRunLedger()
+    from lychd.db.engine import get_session_factory
+    from lychd.domain.cortex.ledger import DbRunLedger
+
+    return DbRunLedger(session_factory=get_session_factory())
+
+
 def build_altar_services(
     *,
     template_engine: JinjaTemplateEngine,
     rune_schemas: Sequence[type],
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
+    profile: str | None = None,
 ) -> AltarServices:
     """Assemble the `AltarServices` container (the sole construction site).
 
-    The run ledger defaults to the in-memory impl (loop-confined, matches the
-    still-in-memory session store). Switching to `DbRunLedger` (durable Postgres
-    run/step rows) is the PG/SAQ runtime-validation seam — see `domain/cortex/ledger`.
+    The run ledger is chosen by the persistence ``profile`` (defaults to
+    ``settings.db.profile`` — ``postgres`` in production, ``memory`` in DB-free
+    tests). The bus tees non-TOKEN events into whichever ledger is selected, so the
+    choice MUST happen here, before the bus is built.
     """
+    if profile is None:
+        profile = get_settings().db.profile
     registry = AnimatorRegistry(rune_schemas=rune_schemas, runtime_adapters=runtime_adapters)
     dispatcher = Dispatcher(registry=registry)
     orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry)
@@ -173,7 +193,7 @@ def build_altar_services(
     bridge_sessions = BridgeSessionStore()
     tickets = TicketStore()
     projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions)
-    ledger = InMemoryRunLedger()
+    ledger = _build_run_ledger(profile)
     bus = InProcessEventBus(ledger=ledger)
     return AltarServices(
         registry=registry,

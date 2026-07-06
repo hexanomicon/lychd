@@ -20,17 +20,26 @@ from __future__ import annotations
 import asyncio
 import json
 from collections import deque
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+import structlog
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from lychd.domain.cortex.ledger import RunLedger
+
+logger = structlog.get_logger()
+
+# Grace window for dropping a closed channel that still has attached subscribers
+# (F5/H4): the channel is removed when its last subscriber detaches, or after this
+# ceiling, whichever comes first.
+_CLOSE_GRACE_S = 60.0
 
 __all__ = [
     "InProcessEventBus",
@@ -110,9 +119,23 @@ class RunChannel:
     _subscribers: set[asyncio.Queue[RunEvent]] = field(default_factory=set)
     _closed: bool = False
     _last_status: RunEvent | None = None
+    _drained: asyncio.Event = field(default_factory=asyncio.Event)
+
+    def __post_init__(self) -> None:
+        """Start a fresh channel drained (no subscribers attached)."""
+        self._drained.set()
 
     def emit(self, kind: RunEventKind, data: str, **meta: str) -> RunEvent:
-        """Publish one event to the replay buffer and every live subscriber."""
+        """Publish one event to the replay buffer and every live subscriber.
+
+        Closed-guard (F2/H3): once a terminal `DONE` has been emitted the channel is
+        closed; any further emit (a second terminal from the cancel/completion race,
+        or a late token) is logged and dropped WITHOUT touching the buffer, the seq
+        counter, or subscribers — so a run yields exactly one terminal event.
+        """
+        if self._closed:
+            logger.debug("run_channel_emit_after_close", run_id=self.run_id, kind=str(kind))
+            return RunEvent(run_id=self.run_id, seq=max(self._seq - 1, 0), kind=kind, data=data, meta=dict(meta))
         event = RunEvent(run_id=self.run_id, seq=self._seq, kind=kind, data=data, meta=dict(meta))
         self._seq += 1
         self._replay.append(event)
@@ -123,6 +146,19 @@ class RunChannel:
         if kind is RunEventKind.DONE:
             self._closed = True
         return event
+
+    def mark_closed(self) -> None:
+        """Force the closed flag (used when a run ends without a terminal emit)."""
+        self._closed = True
+
+    @property
+    def has_subscribers(self) -> bool:
+        """Whether any live subscriber is currently attached."""
+        return bool(self._subscribers)
+
+    async def wait_drained(self) -> None:
+        """Block until the last subscriber detaches (used by the close grace)."""
+        await self._drained.wait()
 
     @property
     def closed(self) -> bool:
@@ -135,10 +171,23 @@ class RunChannel:
         return self._seq
 
     def _resync_event(self) -> RunEvent:
-        """Synthetic `STATUS` emitted when a reconnect cursor was already evicted."""
+        """Synthetic `STATUS` emitted when a reconnect cursor does not align."""
         if self._last_status is not None:
             return self._last_status
         return RunEvent(run_id=self.run_id, seq=max(self._seq - 1, 0), kind=RunEventKind.STATUS, data="running")
+
+    def _cursor_aligned(self, from_seq: int, replay: list[RunEvent]) -> bool:
+        """Whether a reconnect `from_seq` continues the stream without a gap.
+
+        Per-run seqs are contiguous (emit increments by one; eviction only trims the
+        deque's front), so the retained window is ``replay[0].seq .. self._seq - 1``.
+        The client's next expected seq is ``from_seq + 1``; it aligns iff that seq is
+        the head (`self._seq`, caught up) or sits within the retained window.
+        """
+        expected = from_seq + 1
+        if replay:
+            return replay[0].seq <= expected <= self._seq
+        return expected == self._seq
 
     async def subscribe(self, from_seq: int | None = None) -> AsyncIterator[RunEvent]:
         """Backfill (after ``from_seq``), then live-tail until `DONE`.
@@ -147,10 +196,16 @@ class RunChannel:
         """
         queue: asyncio.Queue[RunEvent] = asyncio.Queue()
         self._subscribers.add(queue)
+        self._drained.clear()
         try:
             replay = list(self._replay)
-            # Gap ruling: the requested cursor precedes the oldest retained event.
-            if from_seq is not None and replay and (from_seq + 1) < replay[0].seq:
+            # Gap ruling (F5/H4): a reconnect cursor that does not line up with the
+            # live head ALWAYS fires the resync STATUS first, then continues live.
+            # "Lines up" means the next event the client expects (from_seq + 1) is
+            # either the head (fully caught up) or still inside the retained buffer.
+            # This covers every hang case the old `replay-only` check missed: an
+            # empty/fresh channel after restart, and a cursor above the head.
+            if from_seq is not None and not self._cursor_aligned(from_seq, replay):
                 yield self._resync_event()
 
             backfilled_seq = -1
@@ -174,6 +229,8 @@ class RunChannel:
                     return
         finally:
             self._subscribers.discard(queue)
+            if not self._subscribers:
+                self._drained.set()
 
 
 @dataclass
@@ -189,9 +246,16 @@ class RunEmitter:
     persist: Callable[[RunEvent], None] = lambda _event: None
 
     def emit(self, kind: RunEventKind, data: str, **meta: str) -> RunEvent:
-        """Publish one event to the channel and tee it to the ledger sink."""
+        """Publish one event to the channel and tee it to the ledger sink.
+
+        If the channel was already closed this emit is a dropped no-op (F2/H3), so it
+        is NOT teed to the ledger — persisting a dropped duplicate would collide with
+        the already-persisted terminal (verbatim seq, H5) or double a Step row.
+        """
+        already_closed = self.channel.closed
         event = self.channel.emit(kind, data, **meta)
-        self.persist(event)
+        if not already_closed:
+            self.persist(event)
         return event
 
     def status(self, status: str) -> RunEvent:
@@ -232,9 +296,11 @@ class InProcessEventBus:
     """A `dict[str, RunChannel]` bus for Topology A (one process, one loop).
 
     Owns the run/channel bookkeeping that used to live on `BridgeSessionStore`.
-    The emitter tees every non-`TOKEN` event to the injected `RunLedger` via a
-    fire-and-forget task (Step rows are observability; the SSE path is authoritative
-    and stays synchronous).
+    The emitter tees every non-`TOKEN` event to the injected `RunLedger` through a
+    per-run ORDERED writer chain (F4/H5): each append awaits the prior one for the
+    same run, so Step rows land in emit order (never reordered by the scheduler) and
+    a persistence failure is logged loudly rather than silently swallowed. The SSE
+    path itself stays synchronous and authoritative.
     """
 
     def __init__(self, *, ledger: RunLedger | None = None) -> None:
@@ -242,6 +308,7 @@ class InProcessEventBus:
         self._channels: dict[str, RunChannel] = {}
         self._ledger = ledger
         self._pending: set[asyncio.Task[None]] = set()
+        self._writer_tails: dict[str, asyncio.Task[None]] = {}  # run_id -> chain tail
 
     def open(self, run_id: str) -> RunChannel:
         """Return the run's channel, creating it on first access."""
@@ -256,21 +323,80 @@ class InProcessEventBus:
         return RunEmitter(channel=self.open(run_id), persist=self._persist)
 
     def subscribe(self, run_id: str, *, from_seq: int | None = None) -> AsyncIterator[RunEvent]:
-        """Subscribe to a run's channel, optionally replaying after ``from_seq``."""
-        return self.open(run_id).subscribe(from_seq)
+        """Subscribe to a KNOWN run's channel, optionally replaying after ``from_seq``.
+
+        No auto-mint (F5/H4): unlike the old bus, this never conjures an empty channel
+        for an arbitrary id (which then hangs on keepalives forever). A missing channel
+        yields an empty, immediately-terminating stream; the SSE handler consults the
+        ledger FIRST (unknown → 404, terminal → synthetic replay) so it only subscribes
+        to a live run whose channel exists.
+        """
+        channel = self._channels.get(run_id)
+        if channel is None:
+            return _empty_stream()
+        return channel.subscribe(from_seq)
 
     def close(self, run_id: str) -> None:
-        """Drop the run's channel (call after DONE + subscriber linger)."""
-        self._channels.pop(run_id, None)
+        """Mark a run's channel closed and drop it once its subscribers drain (H4).
+
+        Removal is deferred until the last subscriber detaches (so an in-flight SSE
+        reader still drains the terminal), or `_CLOSE_GRACE_S` elapses — whichever
+        comes first. With no subscribers (or no running loop) the channel is dropped
+        immediately.
+        """
+        channel = self._channels.get(run_id)
+        if channel is None:
+            return
+        channel.mark_closed()
+        if not channel.has_subscribers:
+            self._channels.pop(run_id, None)
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._channels.pop(run_id, None)
+            return
+        task = loop.create_task(self._drop_after_drain(run_id, channel))
+        self._pending.add(task)
+        task.add_done_callback(self._pending.discard)
+
+    async def _drop_after_drain(self, run_id: str, channel: RunChannel) -> None:
+        """Wait for subscribers to detach (bounded by the grace), then drop the channel."""
+        with suppress(TimeoutError):
+            await asyncio.wait_for(channel.wait_drained(), timeout=_CLOSE_GRACE_S)
+        if self._channels.get(run_id) is channel:
+            self._channels.pop(run_id, None)
 
     def _persist(self, event: RunEvent) -> None:
-        """Fire-and-forget the ledger append for non-TOKEN events."""
+        """Chain the ledger append for non-TOKEN events (per-run ordered, error-logged)."""
         if self._ledger is None or event.kind is RunEventKind.TOKEN:
             return
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             return  # no loop (sync test context): the ledger tee is best-effort
-        task = loop.create_task(self._ledger.append_event(event))
+        prev = self._writer_tails.get(event.run_id)
+        task = loop.create_task(self._append_chained(prev, event))
+        self._writer_tails[event.run_id] = task
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
+        if event.kind is RunEventKind.DONE:
+            self._writer_tails.pop(event.run_id, None)  # chain ends at the terminal
+
+    async def _append_chained(self, prev: asyncio.Task[None] | None, event: RunEvent) -> None:
+        """Await the prior same-run append (ordering), then persist this one."""
+        if prev is not None:
+            with suppress(Exception):  # prev logged its own failure; we only need ordering
+                await prev
+        if self._ledger is None:
+            return
+        try:
+            await self._ledger.append_event(event)
+        except Exception:
+            logger.exception("run_event_persist_failed", run_id=event.run_id, kind=str(event.kind), seq=event.seq)
+
+
+async def _empty_stream() -> AsyncIterator[RunEvent]:
+    """Yield nothing — the stream for an unknown/closed-and-dropped channel."""
+    return
+    yield  # pragma: no cover - marks this a generator

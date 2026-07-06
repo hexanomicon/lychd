@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from lychd.domain.cortex.events import RunEventKind
 from lychd.domain.cortex.runs import (
@@ -33,6 +33,7 @@ from lychd.domain.cortex.runs import (
 )
 
 if TYPE_CHECKING:
+    from sqlalchemy import CursorResult
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
     from lychd.agents.router import Intent
@@ -120,9 +121,15 @@ class InMemoryRunLedger:
         queue_name: str,
         priority: int,
     ) -> RunRecord:
-        """Persist a fresh run as QUEUED keyed by ``intent.run_id``."""
+        """Persist a fresh run as QUEUED under a ledger-assigned canonical id.
+
+        S3 (run_id duality dies): identity is the LEDGER's to mint, mirroring
+        `DbRunLedger` (whose id is the row UUID). `intent.run_id` is advisory
+        client-correlation only; if a caller supplies one (tests, or a client
+        correlation id) it is honored as the id, otherwise a fresh UUID is minted.
+        """
         record = RunRecord(
-            run_id=intent.run_id,
+            run_id=intent.run_id or str(uuid4()),
             session_id=intent.session_id,
             workflow_name=workflow_name,
             source=intent.source,
@@ -204,7 +211,11 @@ class DbRunLedger:
     def __init__(self, *, session_factory: async_sessionmaker[AsyncSession]) -> None:
         """Bind the ledger to a session factory (typically `get_session_factory()`)."""
         self._session_factory = session_factory
-        self._consent_index: dict[str, str] = {}  # consent_id -> run_id (Wave-4 seam)
+        # WAVE4-CONSENT-TABLE: this consent index is in-process memory. COHERENT under
+        # Topology A (one process — engine.approve and the ghoul share it) but it does
+        # NOT survive a restart. Wave 4 §3.6 (S8) replaces it with a durable consent
+        # table read (`get_by_consent` selects from the consent table).
+        self._consent_index: dict[str, str] = {}  # consent_id -> run_id
 
     async def create(
         self,
@@ -250,7 +261,18 @@ class DbRunLedger:
             return self._to_record(row) if row is not None else None
 
     async def set_status(self, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
-        """Advance a run's status, validated against the state machine."""
+        """Advance a run's status with COMPARE-AND-SWAP concurrency (F4/H5).
+
+        The state machine is validated against the row read at the top, then the write
+        is a conditional ``UPDATE ... WHERE id = :id AND status = :expected``. If a
+        competing writer moved the row in the window, 0 rows update: re-read the FRESH
+        truth and raise `IllegalRunTransitionError` against it (unless the concurrent
+        write already reached this same target, which is a benign idempotent no-op).
+        This is what keeps CANCELLED from ever landing over a DONE that won the race.
+        """
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
         from lychd.domain.cortex.services import RunService
 
         async with self._session_factory() as session:
@@ -259,19 +281,40 @@ class DbRunLedger:
             if row is None:
                 msg = f"Unknown run: {run_id}"
                 raise KeyError(msg)
+            expected = RunStatus(str(row.status))
+            if status is expected:
+                return  # idempotent no-op (re-claim / duplicate terminal write)
             record = self._to_record(row)
-            _apply_status(record, status, error=error)
-            await svc.update(
-                {
-                    "status": record.status.value,
-                    "error": record.error,
-                    "attempt": record.attempt,
-                    "started_at": record.started_at,
-                    "finished_at": record.finished_at,
-                },
-                item_id=UUID(run_id),
-                auto_commit=True,
+            _apply_status(record, status, error=error)  # raises on an illegal edge
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(Run.id == UUID(run_id), Run.status == expected.value)
+                    .values(
+                        status=record.status.value,
+                        error=record.error,
+                        attempt=record.attempt,
+                        started_at=record.started_at,
+                        finished_at=record.finished_at,
+                    )
+                ),
             )
+            await session.commit()
+            if result.rowcount == 0:
+                await self._raise_on_lost_cas(svc, run_id, status)
+
+    @staticmethod
+    async def _raise_on_lost_cas(svc: Any, run_id: str, target: RunStatus) -> None:
+        """Re-read the fresh truth and rule on it after a CAS write matched 0 rows."""
+        fresh = await svc.get_one_or_none(id=UUID(run_id))
+        current = RunStatus(str(fresh.status)) if fresh is not None else None
+        if current is target:
+            return  # a concurrent writer reached the same target — benign
+        if current is None:
+            msg = f"Unknown run: {run_id}"
+            raise KeyError(msg)
+        raise IllegalRunTransitionError(run_id, current, target)
 
     async def bump_enqueue_seq(self, run_id: str) -> int:
         """Increment and return the run's enqueue seq."""
@@ -302,19 +345,30 @@ class DbRunLedger:
             await svc.update({"stasis_path": path}, item_id=UUID(run_id), auto_commit=True)
 
     async def append_event(self, event: RunEvent) -> None:
-        """Append one non-TOKEN event as a Step row."""
+        """Append one non-TOKEN event as a Step row, persisting `event.seq` VERBATIM.
+
+        Seq fidelity (F4/H5, Wave-6 Scrying): the Step's `seq` IS the channel event's
+        seq — no insert-time `max(seq)+1` allocation, no retry-on-collision. Ordering
+        is guaranteed upstream by the bus's per-run writer chain, so Step.seq equals
+        emit order. The `uq_step_run_seq` constraint is now a pure integrity check.
+        """
         if event.kind is RunEventKind.TOKEN:
             return
+        from lychd.db.models import Step
         from lychd.domain.cortex.services import StepService
 
         node_key = event.data if event.kind is RunEventKind.NODE else None
         async with self._session_factory() as session:
             svc = StepService(session=session)
-            await svc.append(
-                run_id=UUID(event.run_id),
-                kind=event.kind.value,
-                payload={"data": event.data, "meta": event.meta},
-                node_key=node_key,
+            await svc.create(
+                Step(
+                    run_id=UUID(event.run_id),
+                    seq=event.seq,
+                    kind=event.kind.value,
+                    payload={"data": event.data, "meta": event.meta},
+                    node_key=node_key,
+                ),
+                auto_commit=True,
             )
 
     async def list_by_status(self, status: RunStatus) -> list[RunRecord]:
@@ -354,6 +408,7 @@ class DbRunLedger:
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]
             stasis_path=row.stasis_path,  # type: ignore[attr-defined]
+            created_at=row.created_at,  # type: ignore[attr-defined]  # UUIDAuditBase; feeds the QUEUED-age sweep
             started_at=row.started_at,  # type: ignore[attr-defined]
             finished_at=row.finished_at,  # type: ignore[attr-defined]
         )
