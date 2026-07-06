@@ -16,6 +16,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Altar** | The whole web surface: the Vessel's hypermedia (HTMX/Alpine.js) UI at `http://localhost:7134`. The consecrated interface for communing with the Lich; its chat instrument is the Bridge. | Vessel Web Layer |
 | **Animator** | A live, addressable service that exposes typed capabilities through an adapter. Every Animator is either a Soulstone (local Quadlet-backed service) or a Portal (remote service connection). Model inference is one capability family, not the whole category. | `src/lychd/domain/animation/` |
 | **Autopoiesis** | Self-modifying code generation; the agent editing `src/`. The Great Work of self-creation. | Smith Extension |
+| **awaited** | A projector token in the Nexus capability board (`CovenState`): a `DYNAMIC` capability that is reachable but not yet loaded (phase `ACTIVATABLE`). Requesting it drives a soft activation. It is a view-model word only — no template or CSS ever sees a raw `CapabilityPhase`/`CapabilityLifecycle` enum. | `src/lychd/domain/web/schemas.py` |
 | **Binding** | The `lychd bind` command; transmuting Codex Runes into generated Quadlet manifests and linking configuration intent to the host's init system. | CLI |
 | **Bridge** | The Altar's chat instrument, where natural-language Intent is offered and routed. | Vessel Web Layer |
 | **Codex** | The configuration directory (`~/.config/lychd`). The book of immutable law. | `src/lychd/config/` |
@@ -33,15 +34,19 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Extensions** | Core System Extensions / Reference Implementations. Built-in and private Crypt organs that extend the Daemon's body. | `src/lychd/extensions/` |
 | **Forge** | The Container Build / Image Construction process. Where manifests are synthesized. | Build Pipeline |
 | **Ghouls** | Asynchronous background workers (SAQ). Mindless, ephemeral servants summoned by the Vessel. | `src/lychd/domain/cortex/` + SAQ integration |
+| **GrantLease** | The identity and accounting record for one issued `CapabilityGrant`: a unique `grant_id`, the holder (`run:<id>` or `cli:<command>`), the issue time, and a scope (per-step by default). It is the row the LeaseLedger counts to know an animator is in live use. | `src/lychd/domain/animation/capabilities.py` |
 | **Hexanomicon** | The project documentation (Zensical + Material). The grimoire of prophecy. | `docs/` |
 | **Incantation** | Writing Documentation/Specs before implementation (xDDD). Defining reality through the written word. | Doctrine |
 | **Intent** | A structured prompt or job submission object. A focused desire submitted by the Magus. | Domain Model |
 | **Imprint** | The durable residue of the Magus's Will after HitL, correction, and consecration. Stored as Karma, then bound by Mirror into identity-gravity. | Phylactery Archive + Mirror |
 | **Invocation** | Submitting a form or API request to trigger an Agent workflow. The runtime act of calling upon the Lich. | Vessel API |
 | **Iron Pact** | The MPL 2.0 License and Implicit DCA policy. The unbreakable ward. | Repository Root |
+| **issue_grant** | The AnimatorRegistry method that assembles a `CapabilityGrant` for a WARM capability — spec, state snapshot, resolved generation profile, bound model and toolsets, and a fresh GrantLease. Mechanics only: it never drives warm-up (the Dispatcher owns the phase decision). Formerly named `resolve_capability_grant`. | `src/lychd/domain/animation/services/registry.py` |
 | **Karma** | The dataset of user-accepted code/responses (RLHF data). Crystallized residue of the Magus's judgment. | Phylactery Archive |
 | **Kit** | Packed specialist competence — instructions, tools, and model choice bundled as one equippable unit. An agent **equips** a Kit to become a **Specialist**. The **kit sheet** is its instruction file (the `SKILL.md` analog); a Kit is stamped via `lych kit stamp`. Formerly named *Craft*. Roadmap term (capability-packing, Wave 5); not yet built. | Agents (roadmap) |
 | **Lab** | The `lab/` directory / Development sandbox. The site of Genesis. | Filesystem Layout |
+| **lease drain** | The Orchestrator's wait, before a hardware swap, for every GrantLease held on the animators it must evict to be released. Drain truth comes from the LeaseLedger, never from queue or job counts: a leased animator is never evicted, the swap waits for it, and the wait is bounded by `drain_timeout_s`. | `src/lychd/domain/orchestration/` |
+| **LeaseLedger** | The in-process, loop-confined registry of live capability grants (GrantLeases). The single source of drain truth: a hardware swap proceeds only once no lease remains on the animators being evicted. A run parked awaiting its own transition holds no lease, so it never blocks its own swap. | `src/lychd/domain/cortex/leases.py` |
 | **Legion** | The multi-node Thrall coordination extension (ADR 42). The Lich's personal army. | Extension |
 | **Lich** | The emergent system intelligence of LychD: the active reasoning will produced by runtime agents, orchestration, identity, and accumulated state acting together. It is not a single agent object. | `src/lychd/domain/`, `src/lychd/db/` |
 | **Loom** | The Altar's graph instrument for Weaver pattern browsing and Mermaid/pydantic_graph renderings. | Altar + Weaver |

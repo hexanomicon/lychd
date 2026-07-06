@@ -83,12 +83,17 @@ Declared capability hints (the `[[models]]` blocks of a Soulstone rune, per **[C
 
 A `CapabilityGrant` is a lease scoped to the step that acquired it. Steps re-acquire per use; a grant is never cached across steps. The Orchestrator's drain honours active leases, but a hardware transition revokes all outstanding leases. A stale grant — one whose substrate moved after the lease was taken — surfaces as a `dependency_unavailable` rejection carrying `required_state` and `observed_state`, and is retryable. This ties to the Swarm Lease of the **[Orchestrator (23)](23-orchestrator.md)**.
 
+!!! note "Wave 3 rulings: the grant/lease surface"
+    - **HTR decoupling (seam S5).** `HardwareTransitionRequired` is now handle-free — it carries only `capability_key`, `animator_name`, and a nullable `estimated_ready_ms`. It is JSON-loggable and park-safe; consumers re-fetch the spec from the registry by key (the registry is the only truth for records).
+    - **The lease context manager.** A grant is acquired through `Dispatcher.lease_grant(...)`, an async context manager that resolves the family, drives the phase decision table to WARM, registers a GrantLease, yields the grant for the step body, and releases the lease on exit (including on exception). `lease_grant_key(key, ...)` is the key-addressed form for CLI, tests, and manual orchestrator paths — same machinery, spec resolved by explicit key.
+    - **`issue_grant` (formerly `resolve_capability_grant`).** Grant assembly for a WARM capability moved onto the AnimatorRegistry as `issue_grant` (mechanics only); the Dispatcher owns the phase decision, the registry owns the handoff assembly.
+
 #### Portal Capability Synthesis
 
 A Portal yields `CapabilitySpec`s from its declared model list in the Codex or, absent declaration, from a live `/v1/models` probe performed at bind. Portal-born specs are `dedicated=False` and always warm, and they pass through the Privatization and Sovereignty gates before candidacy.
 
-!!! note "Implementation status (stub)"
-    `_build_portal_capability_specs` currently returns an empty list, so no Portal is yet routable. Until the synthesis above is built, the Portal Egress Gate (§9), the Sovereignty Gate (§3), and Economic Dispatching (**[The Toll (41)](41-x402.md)**) gate a path no candidate can take.
+!!! note "Wave 3 ruling: Portal synthesis is live"
+    Portal capability synthesis is built (Wave 3). A Portal now yields one `CapabilitySpec` per declared `[[models]]` block — key `{portal}:{family}:{model_id}`, always `STATIC`. A Portal with zero declared models yields zero specs (honest: reachable but unadvertised). The live `/v1/models` probe is opt-in per rune (`probe = true`, default `false`) so binding a Portal performs no egress by default. The Portal Egress, Sovereignty, and Economic (**[The Toll (41)](41-x402.md)**) gates now guard a routable path.
 
 
 ### 1. The World Model (Provider Indexing)

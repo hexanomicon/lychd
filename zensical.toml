@@ -19,7 +19,28 @@ extra_javascript = [
 # Until then have to do it like this
 nav = [
     { "Prophecy" = "index.md" },
-    { "Summoning" = "summoning.md" },
+    { "Summoning" = [
+        "summoning/index.md",
+        "summoning/grounds.md",
+        "summoning/desecration.md",
+        "summoning/inscription.md",
+        "summoning/first-soulstone.md",
+        "summoning/first-breath.md"
+    ]},
+    { "The Praxis" = [
+        "praxis/index.md",
+        { "Rites" = [
+            "praxis/rites/open-a-portal.md",
+            "praxis/rites/manage-covens.md"
+        ]},
+        { "Runes" = [
+            "praxis/runes/index.md",
+            "praxis/runes/soulstones.md",
+            "praxis/runes/portals.md",
+            "praxis/runes/orchestration.md"
+        ]},
+        "praxis/exorcism.md"
+    ]},
     { "Sepulcher" = [
         "sepulcher/index.md",
         { "Lich" = "sepulcher/lich.md" },
@@ -36,7 +57,8 @@ nav = [
         { "Animator" = [
             "sepulcher/animator/index.md",
             "sepulcher/animator/portal.md",
-            "sepulcher/animator/soulstone.md"
+            "sepulcher/animator/soulstone.md",
+            "sepulcher/animator/capabilities.md"
         ]},
         { "Extensions" = [
             "sepulcher/extensions/index.md",

@@ -49,7 +49,7 @@ A modern alchemical grimoire built on the ancient secrets of transmutation.
 
 To master LychD, pass through four gates of knowledge.
 
-- **[The Summoning](./summoning.md):** The Rite of Binding. Tether the daemon to your local iron.
+- **[The Summoning](./summoning/index.md):** The Rite of Binding. Tether the daemon to your local iron.
 - **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**, and **[Animator](./sepulcher/animator/index.md)**.
 - **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will through the **[Altar](./divination/altar/)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
 - **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
@@ -57,4 +57,4 @@ To master LychD, pass through four gates of knowledge.
 !!! tip "The Tongue of the Construct"
     The Prophecy employs strict arcane terminology. Keep the **[Lexicon](./lexicon.md)** at hand to decipher the meanings of terms like _Soulstone_, _Quadlet_, and _Autopoiesis_.
 
-> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning.md)_
+> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning/index.md)_
