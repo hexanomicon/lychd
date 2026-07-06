@@ -35,11 +35,11 @@ async def test_happy_path_settles_turn() -> None:
 
     status_payloads = [payload for _, kind, payload in events.events if kind == "status"]
     assert status_payloads == ["weaving", "thinking", "settling"]
-    assert events.kinds()[-1] == "done"
+    # The graph no longer emits `done` — the ghoul (perform_run) owns the terminal DONE.
+    assert "done" not in events.kinds()
     assert "token" not in events.kinds()  # TestModel emits structured output, not text deltas
 
     assert services.dispatcher.calls == ["chat"]  # type: ignore[attr-defined]
-    assert turns.statuses["run_1"] == "done"
     assert turns.added
     assert turns.added[0][1].state == "settled"
     assert services.context.get("run_1") is None  # floor released after settle
@@ -61,6 +61,6 @@ async def test_consent_parks_without_done() -> None:
     assert consents.parked[0]["tool_name"] == "request_coven_swap"
     assert "consent" in events.kinds()
     assert "done" not in events.kinds()  # parked runs must NOT close the stream
-    assert turns.statuses["run_1"] == "awaiting_consent"
+    # Run status (awaiting_consent) is now the ledger's — the ghoul sets it, not the node.
     # The tool body did not execute pre-approval, so no transition was requested.
     assert orch.calls == []

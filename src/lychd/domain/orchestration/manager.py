@@ -1,38 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Protocol
+from typing import Any
 
 from lychd.domain.animation.capabilities import (
-    ActivationResult,
     CapabilityLifecycle,
     CapabilitySpec,
     CapabilityState,
 )
 from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.orchestration.schema import TransitionPlan
-
-
-class OrchestratorRegistry(Protocol):
-    """Registry surface required by transition planning and activation."""
-
-    def list_capabilities(self) -> list[CapabilitySpec]: ...
-
-    def get_capability(self, key: str, /) -> CapabilitySpec | None: ...
-
-    def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
-
-    def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...
-
-    def list_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
-
-    def refresh_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
-
-    def get_runtime(self, name: str, /) -> Any | None: ...
-
-    def get_soulstone_rune(self, name: str, /) -> Any | None: ...
-
-    def activate_capability(self, key: str, /) -> ActivationResult: ...
 
 
 class OrchestratorManager:
@@ -41,7 +19,7 @@ class OrchestratorManager:
     def __init__(
         self,
         worker_broker: Any,
-        registry: OrchestratorRegistry,
+        registry: CapabilityRegistry,
     ) -> None:
         """Initialize orchestration against the injected canonical registry."""
         self.worker_broker = worker_broker
@@ -174,16 +152,7 @@ class OrchestratorManager:
         return sorted(spec.animator_name for spec in specs)
 
     def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
-        spec = self.registry.get_capability(key)
-        if spec is None:
-            msg = f"Unknown capability: {key}"
-            raise ValueError(msg)
-
-        state = self.registry.refresh_capability_state(key) or self.registry.get_capability_state(key)
-        if state is None:
-            msg = f"Capability state is unavailable for '{key}'."
-            raise ValueError(msg)
-        return spec, state
+        return require_capability_record(self.registry, key)
 
     def _is_animator_runtime_warm(self, animator_name: str) -> bool:
         for state in self.registry.list_capability_states_for_animator(animator_name):

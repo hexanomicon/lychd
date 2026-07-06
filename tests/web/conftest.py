@@ -25,6 +25,8 @@ from litestar.template.config import TemplateConfig
 from litestar.testing import create_test_client
 
 from lychd.domain.animation.services.registry import AnimatorRegistry
+from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.domain.web.altar_services import RunEngine
@@ -77,27 +79,23 @@ SAMPLE_STATUSES: list[dict[str, Any]] = [
 
 
 class FakeRunEngine(RunEngine):
-    """A scripted run engine: records submitted intents, opens a live channel.
+    """A scripted run engine: records submitted intents, opens a live channel on the bus.
 
-    Subclasses the real `RunEngine` so Litestar's dependency-value validation
+    Subclasses the real `RunEngine` facade so Litestar's dependency-value validation
     (isinstance-based) accepts it; the parent `__init__` is intentionally bypassed.
     """
 
-    def __init__(self, sessions: BridgeSessionStore) -> None:
-        self.sessions = sessions
+    def __init__(self, bus: InProcessEventBus) -> None:
+        self.bus = bus
         self.submitted: list[Any] = []
 
-    def bind(self, state: Any) -> None:
-        """No-op: the fake needs no app state."""
-
     async def submit(self, intent: Any) -> RunHandle:
-        """Record the intent and register a run channel for the stream to tail."""
+        """Record the intent and open a run channel on the bus for the stream to tail."""
         self.submitted.append(intent)
-        self.sessions.record_route(intent.run_id, "bridge_chat")
         return RunHandle(
             run_id=intent.run_id,
             workflow_name="bridge_chat",
-            channel=self.sessions.channel(intent.run_id),
+            channel=self.bus.open(intent.run_id),
         )
 
 
@@ -155,6 +153,8 @@ def fake_services() -> SimpleNamespace:
     sessions = BridgeSessionStore()
     fragments = build_fragment_registry()
     tickets = TicketStore()
+    ledger = InMemoryRunLedger()
+    bus = InProcessEventBus(ledger=ledger)
     return SimpleNamespace(
         registry=FakeRegistry(),
         dispatcher=None,
@@ -163,8 +163,10 @@ def fake_services() -> SimpleNamespace:
         fragments=fragments,
         bridge_sessions=sessions,
         tickets=tickets,
-        run_engine=FakeRunEngine(sessions),
+        run_engine=FakeRunEngine(bus),
         projector=None,  # built in the lifespan against the app's template engine
+        ledger=ledger,
+        bus=bus,
     )
 
 
@@ -172,14 +174,6 @@ def _static_lifespan(services: SimpleNamespace) -> Any:
     @asynccontextmanager
     async def _lifespan(app: Litestar) -> AsyncIterator[None]:
         app.state.services = services
-        app.state.registry = services.registry
-        app.state.dispatcher = services.dispatcher
-        app.state.orchestrator = services.orchestrator
-        app.state.context_orchestrator = services.context_orchestrator
-        app.state.fragments = services.fragments
-        app.state.bridge_sessions = services.bridge_sessions
-        app.state.tickets = services.tickets
-        services.run_engine.bind(app.state)
 
         engine = app.template_engine
         engine.engine.globals["route_path"] = app.route_reverse

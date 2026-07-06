@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Protocol
-
 from lychd.domain.animation.capabilities import CapabilityGrant, CapabilitySpec, CapabilityState
 from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.services.binder import AnimatorBindingError
 
@@ -21,24 +19,6 @@ _INTENT_FAMILY_MAP = {
     "tool-execution": CapabilityFamily.TOOL_EXECUTION,
     "rerank": CapabilityFamily.RERANK,
 }
-
-
-class CapabilityRegistry(Protocol):
-    """Registry surface required by dispatch resolution."""
-
-    def list_capabilities(self) -> list[CapabilitySpec]: ...
-
-    def get_capability(self, key: str, /) -> CapabilitySpec | None: ...
-
-    def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
-
-    def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...
-
-    def get_runtime(self, name: str, /) -> Any | None: ...
-
-    def bind_model(self, name: str, /, *, model_id: str | None = None) -> Any | None: ...
-
-    def bind_toolsets(self, name: str, /) -> Sequence[Any]: ...
 
 
 class Dispatcher:
@@ -70,11 +50,8 @@ class Dispatcher:
 
     def request_capability_grant(self, capability: CapabilitySpec | str) -> CapabilityGrant:
         """Grant one capability binding or raise a canonical transition signal."""
-        spec = self._resolve_spec(capability)
-        state = self._registry.refresh_capability_state(spec.key) or self._registry.get_capability_state(spec.key)
-        if state is None:
-            msg = f"Capability state is unavailable for '{spec.key}'."
-            raise ValueError(msg)
+        key = capability.key if isinstance(capability, CapabilitySpec) else capability
+        spec, state = require_capability_record(self._registry, key)
 
         animator = self._registry.get_runtime(spec.animator_name)
         if animator is None:
@@ -102,16 +79,6 @@ class Dispatcher:
     def resolve_capability_grant(self, intent_type: str) -> CapabilityGrant:
         """Resolve an intent and immediately request its binding grant."""
         return self.request_capability_grant(self.resolve_intent(intent_type))
-
-    def _resolve_spec(self, capability: CapabilitySpec | str) -> CapabilitySpec:
-        if isinstance(capability, CapabilitySpec):
-            return capability
-
-        spec = self._registry.get_capability(capability)
-        if spec is None:
-            msg = f"Unknown capability: {capability}"
-            raise ValueError(msg)
-        return spec
 
     def _normalize_family(self, intent_type: str) -> CapabilityFamily:
         normalized = intent_type.strip().lower()

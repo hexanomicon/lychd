@@ -40,7 +40,7 @@ def stop_polling(html_body: str, *, trigger_after_settle: str | None = None) -> 
 if TYPE_CHECKING:
     from litestar.contrib.jinja import JinjaTemplateEngine
 
-    from lychd.domain.cortex.stasis import RunEvent
+    from lychd.domain.cortex.events import RunEvent
     from lychd.domain.web.fragments import FragmentRegistry
     from lychd.domain.web.sessions import BridgeSessionStore, ConsentRecord
     from lychd.domain.web.tickets import TicketRecord
@@ -72,24 +72,35 @@ class Projector:
     def project(self, event: RunEvent) -> str:
         """Render one run event's SSE payload to HTML.
 
-        token → escaped text passthrough; status → controlled keyword; fragment →
-        validated genUI render; consent → card + OOB sigil; done → settled turn (OOB).
+        token → escaped text passthrough; status/node → controlled keyword; fragment →
+        validated genUI render; consent → card + OOB sigil; log → escaped line; done →
+        settled turn (OOB). The `Projector` is the sole escaper (emitter emits raw).
         """
-        if event.kind == "token":
-            return html.escape(event.payload)
-        if event.kind == "status":
-            return event.payload
-        if event.kind == "fragment":
-            return self._project_fragment(event.payload)
-        if event.kind == "consent":
-            record = self._sessions.get_consent(event.payload)
-            return self.consent_update(record) if record is not None else ""
+        kind = str(event.kind)
+        if kind == "token":
+            return html.escape(event.data)
+        if kind in {"status", "node"}:
+            return event.data
+        if kind == "log":
+            return html.escape(event.data)
+        if kind == "fragment":
+            return self._project_fragment(event.data)
+        if kind == "consent":
+            return self._project_consent(event.data)
         # done: replace the whole streaming slot with the settled turn (OOB).
         return self._project_done(event.run_id)
 
+    def _project_consent(self, data: str) -> str:
+        consent_id = data
+        if data.startswith("{"):
+            parsed: dict[str, Any] = json.loads(data)
+            consent_id = str(parsed.get("consent_id", ""))
+        record = self._sessions.get_consent(consent_id)
+        return self.consent_update(record) if record is not None else ""
+
     def _project_fragment(self, payload: str) -> str:
         parsed = json.loads(payload)
-        definition = self._fragments.get(str(parsed.get("key", "")))
+        definition = self._fragments.get(str(parsed.get("fragment", "")))
         if definition is None:
             return ""
         params = definition.params_model.model_validate(parsed.get("params", {}))

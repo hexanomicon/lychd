@@ -25,7 +25,7 @@ from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
 from lychd.agents.deps import LychDDeps
 from lychd.agents.outputs import Bottleneck, BridgeReply, FragmentCall
-from lychd.agents.services import RunEmitter, WorkflowServices, default_sigil
+from lychd.agents.services import WorkflowServices, default_sigil
 from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
 from lychd.agents.workflows.base import Trigger, Workflow
 
@@ -128,7 +128,6 @@ def settle_turn(
             fragments=tuple(fragment.key for fragment in validated),
         ),
     )
-    turns.set_run_status(state.run_id, "done")
     context.release(state.run_id)
 
 
@@ -143,7 +142,7 @@ class WeaveContext(BaseNode[BridgeChatState, WorkflowServices]):
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> Converse:
         """Assemble the floor, stamp the prefix digest, and hand off to Converse."""
-        emit = RunEmitter(ctx.deps.events, ctx.state.run_id)
+        emit = ctx.deps.events.emitter(ctx.state.run_id)
         emit.status("weaving")
         assembled = ctx.deps.context.assemble(
             run_id=ctx.state.run_id,
@@ -162,7 +161,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> ProjectReply:
         """Resolve the grant, stream The First One, and capture reply or consent."""
-        emit = RunEmitter(ctx.deps.events, ctx.state.run_id)
+        emit = ctx.deps.events.emitter(ctx.state.run_id)
         grant = ctx.deps.dispatcher.resolve_capability_grant("chat")
         agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
         deps = LychDDeps(
@@ -193,7 +192,8 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
         output = result_event.result.output if result_event is not None else None
         if isinstance(output, DeferredToolRequests):
             ctx.state.pending_consent_id = park_consent(ctx.state, output, ctx.deps.consents)
-            emit.consent(ctx.state.pending_consent_id)
+            tool_name = output.approvals[0].tool_name if output.approvals else ""
+            emit.consent(ctx.state.pending_consent_id, tool_name=tool_name)
         elif isinstance(output, BridgeReply):
             ctx.state.reply = output
         return ProjectReply()
@@ -208,20 +208,20 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
 
         When a consent is parked the run does NOT settle or emit ``done``: the live
         consent card must stay actionable in the streaming slot (a ``done`` event
-        OOB-replaces the whole slot and would destroy the card). Honest deferred-tool
-        resume and a clean non-destructive terminal are a later wave.
+        OOB-replaces the whole slot and would destroy the card). The ghoul
+        (`perform_run`) sees the parked consent and ends the run AWAITING_CONSENT,
+        emitting no ``DONE``. Run status is the ledger's — never written here.
+        Honest deferred-tool resume is a later wave (spec-00-FINAL C3).
         """
         if ctx.state.pending_consent_id is not None:
-            ctx.deps.turns.set_run_status(ctx.state.run_id, "awaiting_consent")
             return End(consent_placeholder())
-        emit = RunEmitter(ctx.deps.events, ctx.state.run_id)
+        emit = ctx.deps.events.emitter(ctx.state.run_id)
         emit.status("settling")
         reply = ctx.state.reply or consent_placeholder()
         validated = ctx.deps.fragments.validate_calls(reply.fragments)
         for fragment in validated:
-            emit.fragment(fragment)
+            emit.fragment(fragment.key, fragment.params.model_dump(mode="json"))
         settle_turn(ctx.state, reply, validated, turns=ctx.deps.turns, context=ctx.deps.context)
-        emit.done()
         return End(reply)
 
 

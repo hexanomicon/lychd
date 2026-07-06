@@ -13,8 +13,6 @@ deps — that is what keeps durable snapshots clean and workers generic.
 
 from __future__ import annotations
 
-import html
-import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -28,9 +26,9 @@ if TYPE_CHECKING:
     from lychd.agents.factory import AgentForge
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.cortex.context import ContextOrchestrator
-    from lychd.domain.cortex.stasis import RunChannel
+    from lychd.domain.cortex.events import RunEmitter, RunEventBus
     from lychd.domain.orchestration.schema import TransitionPlan
-    from lychd.domain.web.fragments import FragmentRegistry, ValidatedFragment
+    from lychd.domain.web.fragments import FragmentRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -39,17 +37,23 @@ if TYPE_CHECKING:
 
 
 class RunEventPort(Protocol):
-    """The run event surface. Today: `BridgeSessionStore.channel(run_id)`."""
+    """The run event surface: hands a run its bus-backed `RunEmitter`.
 
-    def channel(self, run_id: str) -> RunChannel: ...
+    Today an `InProcessEventBus`; later a `PostgresEventBus` — the emitter tees
+    non-TOKEN events to the `RunLedger` and pushes to the run's channel.
+    """
+
+    def emitter(self, run_id: str) -> RunEmitter: ...
 
 
 class TurnLedgerPort(Protocol):
-    """Session/turn writes. Today: `BridgeSessionStore`; later a DB-backed store."""
+    """Session/turn writes. Today: `BridgeSessionStore`; later a DB-backed store.
+
+    Run *status* is NOT written here — the `RunLedger` owns it (single-writer
+    discipline, A4 §2). This port carries only settled turns + history reads.
+    """
 
     def add_turn(self, session_id: str, turn: Any) -> None: ...
-
-    def set_run_status(self, run_id: str, status: str) -> None: ...
 
     def get_session(self, session_id: str) -> Any | None: ...
 
@@ -102,48 +106,9 @@ class WorkflowServices:
     fragments: FragmentRegistry
     turns: TurnLedgerPort
     consents: ConsentLedgerPort
-    events: RunEventPort
+    events: RunEventBus
     forge: AgentForge
     sigil_provider: Callable[[], Sigil]
-
-
-# ---------------------------------------------------------------------------
-# RunEmitter — the five event helpers, re-homed off the ports
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class RunEmitter:
-    """Server-side event emitter bound to one run.
-
-    Payload contract is byte-identical to the pre-rework `emit_*` helpers (Agent 2's
-    SSE renderer depends on it).
-    """
-
-    events: RunEventPort
-    run_id: str
-
-    def status(self, status: str) -> None:
-        """Emit a status chip keyword (e.g. weaving/thinking/settling)."""
-        self.events.channel(self.run_id).emit("status", status)
-
-    def token(self, text: str) -> None:
-        """Emit an escaped token delta appended to the streaming turn body."""
-        if text:
-            self.events.channel(self.run_id).emit("token", html.escape(text))
-
-    def fragment(self, fragment: ValidatedFragment) -> None:
-        """Emit a validated generative-UI fragment as `{key, params}` JSON."""
-        payload = json.dumps({"key": fragment.key, "params": fragment.params.model_dump(mode="json")})
-        self.events.channel(self.run_id).emit("fragment", payload)
-
-    def consent(self, consent_id: str) -> None:
-        """Emit the id of a parked consent awaiting the Magus's verdict."""
-        self.events.channel(self.run_id).emit("consent", consent_id)
-
-    def done(self) -> None:
-        """Emit the terminal event that settles the turn and closes the SSE stream."""
-        self.events.channel(self.run_id).emit("done", self.run_id)
 
 
 # ---------------------------------------------------------------------------
@@ -169,14 +134,16 @@ def build_workflow_services(
     context: ContextOrchestrator,
     fragments: FragmentRegistry,
     sessions: Any,
+    events: RunEventBus,
     forge: AgentForge,
     sigil_provider: Callable[[], Sigil] = default_sigil,
 ) -> WorkflowServices:
     """Assemble `WorkflowServices` from run-scoped service handles.
 
     `sessions` (today a `BridgeSessionStore`) structurally satisfies the
-    `RunEventPort`/`TurnLedgerPort`/`ConsentLedgerPort` triad, so one store object
-    is presented under three port views.
+    `TurnLedgerPort`/`ConsentLedgerPort` pair (turns + consents). `events` is the
+    shared `RunEventBus` — the event plane now lives on the bus, not the session
+    store (channels were shed to the bus in Wave 2).
     """
     return WorkflowServices(
         dispatcher=dispatcher,
@@ -185,7 +152,7 @@ def build_workflow_services(
         fragments=fragments,
         turns=sessions,
         consents=sessions,
-        events=sessions,
+        events=events,
         forge=forge,
         sigil_provider=sigil_provider,
     )
@@ -194,7 +161,6 @@ def build_workflow_services(
 __all__ = [
     "ConsentLedgerPort",
     "GrantPort",
-    "RunEmitter",
     "RunEventPort",
     "TransitionPort",
     "TurnLedgerPort",

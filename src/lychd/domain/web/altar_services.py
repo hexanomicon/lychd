@@ -5,8 +5,11 @@ Everything the Altar's web surface needs, built once per app lifespan and placed
 (`bridge_chat.wire()` and `nexus._TICKETS`). `deps.py` provides only pure readers of
 this container; the sole assembly site is `interface/web/lifespan.py`.
 
-`RunEngine` is the transitional facade Wave 2 swaps internals behind (C2): it keeps
-the `submit()` shape so controllers never thread `state=` themselves.
+Wave 2 keystone: the transitional `RunEngine` facade now delegates to the REAL
+`domain/cortex/engine.RunEngine` (swapped internals; `submit()` shape unchanged so
+controllers never thread `state=`). The bus/ledger are built here; the real engine
+and the process `RunSubstrate` are wired in the lifespan (`wire_runtime`) once the
+SAQ queues exist.
 """
 
 from __future__ import annotations
@@ -14,9 +17,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from lychd.agents.the_first_one import default_forge
+from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.dispatcher import Dispatcher
+from lychd.domain.cortex.engine import QueueRouter
+from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
+from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.substrate import RunSubstrate, set_run_substrate
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import Projector
@@ -24,32 +34,34 @@ from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.domain.web.tickets import TicketStore
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from litestar.contrib.jinja import JinjaTemplateEngine
-    from litestar.datastructures import State
 
+    from lychd.agents.router import Intent
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimeAdapter
+    from lychd.domain.cortex.engine import RunQueue
+    from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.runs import RunHandle
     from lychd.domain.web.fragments import FragmentRegistry
-    from lychd.domain.web.sessions import RunHandle
 
 
 class QuiescentBroker:
     """A no-op worker broker satisfying `OrchestratorManager`'s drain protocol.
 
-    The slice has no background workers, so draining is instantaneous and the
-    active-worker count is always zero. Agent 4's SAQ-backed broker replaces this
-    later without touching the manager.
+    The v1 in-process profile drains via leases (Wave 3); this stand-in keeps the
+    manager happy until the honest `GhoulBroker` lands. Draining is instantaneous
+    and the active-worker count is always zero.
     """
 
     async def pause_queues(self) -> None:
-        """Pause intake queues (no-op: no workers in the slice)."""
+        """Pause intake queues (no-op: lease-drain is Wave 3)."""
 
     async def broadcast_soft_stop(self) -> None:
-        """Ask workers to finish their current job (no-op: no workers)."""
+        """Ask workers to finish their current job (no-op)."""
 
     async def unpause_queues(self) -> None:
-        """Resume intake queues (no-op: no workers)."""
+        """Resume intake queues (no-op)."""
 
     async def get_active_worker_count(self) -> int:
         """Return the number of still-draining workers (always zero here)."""
@@ -57,32 +69,38 @@ class QuiescentBroker:
 
 
 class RunEngine:
-    """Transitional facade over `agents.router.submit` (C2: Wave 2 swaps internals).
+    """Transitional facade over the real `domain/cortex/engine.RunEngine` (C2).
 
-    Controllers call `submit(intent)`; the `state=` threading is confined here.
-    Bound to `app.state` in the lifespan so the run-scoped collaborators the graph
-    needs (dispatcher, orchestrator, context, fragments, sessions) resolve there.
+    Controllers call `submit(intent)`; Wave 2 swaps the internals to the real engine
+    (`wire_runtime` binds it in the lifespan once the SAQ queues exist), keeping the
+    `submit()` shape so the web never changes its call.
     """
 
     def __init__(self) -> None:
-        """Create an unbound engine (the lifespan calls `bind`)."""
-        self._state: State | None = None
+        """Create an unbound facade (the lifespan calls `bind_engine`)."""
+        self._engine: CortexRunEngine | None = None
 
-    def bind(self, state: State) -> None:
-        """Bind the engine to the populated app state."""
-        self._state = state
+    def bind_engine(self, engine: CortexRunEngine) -> None:
+        """Bind the facade to the real, queue-wired engine."""
+        self._engine = engine
 
-    async def submit(self, intent: object) -> RunHandle:
-        """Route, persist the choice, and launch the run on a background task."""
-        from lychd.agents.router import Intent, submit
-
-        if self._state is None:  # pragma: no cover - lifespan always binds
-            msg = "RunEngine is not bound to app state."
+    def _require(self) -> CortexRunEngine:
+        if self._engine is None:  # pragma: no cover - lifespan always wires
+            msg = "RunEngine facade is not wired to the real engine."
             raise RuntimeError(msg)
-        if not isinstance(intent, Intent):  # pragma: no cover - typed callers only
-            msg = "RunEngine.submit expects an Intent."
-            raise TypeError(msg)
-        return await submit(intent, state=self._state)
+        return self._engine
+
+    async def submit(self, intent: Intent) -> RunHandle:
+        """Route, persist QUEUED, and enqueue the run onto SAQ (real engine)."""
+        return await self._require().submit(intent)
+
+    async def approve(self, consent_id: str, *, approved: bool) -> None:
+        """Consent verdict seam: re-enqueue the parked run (Wave-4 honest resume)."""
+        await self._require().approve(consent_id, approved=approved)
+
+    async def cancel(self, run_id: str) -> None:
+        """Cancel a run: abort the SAQ job, mark CANCELLED, emit the terminal DONE."""
+        await self._require().cancel(run_id)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -98,6 +116,37 @@ class AltarServices:
     tickets: TicketStore
     run_engine: RunEngine
     projector: Projector
+    ledger: RunLedger
+    bus: InProcessEventBus
+
+    def wire_runtime(self, queues: Mapping[str, RunQueue]) -> CortexRunEngine:
+        """Build + publish the run substrate and the real engine (lifespan seam).
+
+        Called once the SAQ queues exist (Topology A: same process). Publishes the
+        process `RunSubstrate` (so the in-process ghoul shares this bus) and binds
+        the real engine onto the facade.
+        """
+        substrate = RunSubstrate(
+            ledger=self.ledger,
+            bus=self.bus,
+            workflows=builtin_workflow_registry(),
+            orchestrator=self.orchestrator,
+            dispatcher=self.dispatcher,
+            context=self.context_orchestrator,
+            fragments=self.fragments,
+            sessions=self.bridge_sessions,
+            forge=default_forge(),
+        )
+        set_run_substrate(substrate)
+        engine = CortexRunEngine(
+            ledger=self.ledger,
+            bus=self.bus,
+            workflows=substrate.workflows,
+            queue_router=QueueRouter(),
+            queues=queues,
+        )
+        self.run_engine.bind_engine(engine)
+        return engine
 
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain per-run resources on shutdown."""
@@ -110,7 +159,12 @@ def build_altar_services(
     rune_schemas: Sequence[type],
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
 ) -> AltarServices:
-    """Assemble the `AltarServices` container (the sole construction site)."""
+    """Assemble the `AltarServices` container (the sole construction site).
+
+    The run ledger defaults to the in-memory impl (loop-confined, matches the
+    still-in-memory session store). Switching to `DbRunLedger` (durable Postgres
+    run/step rows) is the PG/SAQ runtime-validation seam — see `domain/cortex/ledger`.
+    """
     registry = AnimatorRegistry(rune_schemas=rune_schemas, runtime_adapters=runtime_adapters)
     dispatcher = Dispatcher(registry=registry)
     orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry)
@@ -119,6 +173,8 @@ def build_altar_services(
     bridge_sessions = BridgeSessionStore()
     tickets = TicketStore()
     projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions)
+    ledger = InMemoryRunLedger()
+    bus = InProcessEventBus(ledger=ledger)
     return AltarServices(
         registry=registry,
         dispatcher=dispatcher,
@@ -129,4 +185,6 @@ def build_altar_services(
         tickets=tickets,
         run_engine=RunEngine(),
         projector=projector,
+        ledger=ledger,
+        bus=bus,
     )

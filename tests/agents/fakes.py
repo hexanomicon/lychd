@@ -56,22 +56,32 @@ class FakeOrchestrator:
 
 
 @dataclass
-class _FakeChannel:
-    parent: FakeEvents
-    run_id: str
-
-    def emit(self, kind: str, payload: str) -> None:
-        self.parent.events.append((self.run_id, kind, payload))
-
-
-@dataclass
 class FakeEvents:
-    """`RunEventPort` fake: flat list of `(run_id, kind, payload)` tuples."""
+    """`RunEventBus` fake: real `RunEmitter`/`RunChannel`, recording a flat event list.
+
+    Exercises the real event plane (the emitter pushes to a real `RunChannel`) while
+    teeing every event into `events` as `(run_id, kind, data)` tuples for assertions.
+    """
 
     events: list[tuple[str, str, str]] = field(default_factory=list)
+    _channels: dict[str, Any] = field(default_factory=dict)
 
-    def channel(self, run_id: str) -> _FakeChannel:
-        return _FakeChannel(self, run_id)
+    def emitter(self, run_id: str) -> Any:
+        from lychd.domain.cortex.events import RunEmitter
+
+        return RunEmitter(channel=self._channel(run_id), persist=self._record)
+
+    def _channel(self, run_id: str) -> Any:
+        from lychd.domain.cortex.events import RunChannel
+
+        channel = self._channels.get(run_id)
+        if channel is None:
+            channel = RunChannel(run_id=run_id)
+            self._channels[run_id] = channel
+        return channel
+
+    def _record(self, event: Any) -> None:
+        self.events.append((event.run_id, str(event.kind), event.data))
 
     def kinds(self) -> list[str]:
         return [kind for _, kind, _ in self.events]

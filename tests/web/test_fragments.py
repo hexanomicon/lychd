@@ -6,7 +6,7 @@ import json
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from lychd.domain.cortex.stasis import RunEvent
+from lychd.domain.cortex.events import RunEvent
 from lychd.domain.web.fragments import build_fragment_registry
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def _event(kind: str, payload: str, seq: int = 0) -> RunEvent:
-    return RunEvent(run_id="run_f", seq=seq, kind=kind, payload=payload)  # type: ignore[arg-type]
+    return RunEvent(run_id="run_f", seq=seq, kind=kind, data=payload)  # type: ignore[arg-type]
 
 
 def test_project_token_escapes(projector: Projector) -> None:
@@ -29,7 +29,9 @@ def test_project_status_passthrough(projector: Projector) -> None:
 
 def test_project_fragment_renders_genui(projector: Projector) -> None:
     """A fragment event renders the validated genUI server-side (not JSON)."""
-    payload = json.dumps({"key": "genui.vision_summary", "params": {"title": "T", "body": "hello", "severity": "info"}})
+    payload = json.dumps(
+        {"fragment": "genui.vision_summary", "params": {"title": "T", "body": "hello", "severity": "info"}}
+    )
     out = projector.project(_event("fragment", payload))
     assert 'data-fragment="genui.vision_summary"' in out
     assert "hello" in out
@@ -38,13 +40,16 @@ def test_project_fragment_renders_genui(projector: Projector) -> None:
 
 def test_project_fragment_unknown_key_empty(projector: Projector) -> None:
     """An unknown fragment key projects to the empty string (dropped)."""
-    assert projector.project(_event("fragment", json.dumps({"key": "nope", "params": {}}))) == ""
+    assert projector.project(_event("fragment", json.dumps({"fragment": "nope", "params": {}}))) == ""
 
 
 def test_project_fragment_autoescapes_params(projector: Projector) -> None:
     """Fragment params are autoescaped — injected markup never renders as HTML."""
     payload = json.dumps(
-        {"key": "genui.vision_summary", "params": {"title": "T", "body": "<script>evil</script>", "severity": "info"}}
+        {
+            "fragment": "genui.vision_summary",
+            "params": {"title": "T", "body": "<script>evil</script>", "severity": "info"},
+        }
     )
     out = projector.project(_event("fragment", payload))
     assert "<script>evil</script>" not in out
