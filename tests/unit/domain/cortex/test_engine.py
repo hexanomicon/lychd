@@ -1,4 +1,6 @@
 """RunEngine.submit routing + enqueue-key discipline + cancel; QueueRouter resolution."""
+# White-box assertions read RunChannel._replay directly.
+# pyright: reportPrivateUsage=false
 
 from __future__ import annotations
 
@@ -10,7 +12,7 @@ import pytest
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.cortex.engine import QueueRouter, RunEngine, run_job_key
-from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
 
@@ -37,6 +39,23 @@ class _FakeQueue:
     async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
         _ = (error, ttl)
         self.aborted.append(job.key)
+
+
+@dataclass
+class _FailingQueue:
+    """A queue whose enqueue always raises (broker down / unknown function)."""
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = (job_or_func, kwargs)
+        msg = "broker down"
+        raise RuntimeError(msg)
+
+    async def job(self, job_key: str, /) -> Any:
+        _ = job_key
+        return None
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (job, error, ttl)
 
 
 def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
@@ -86,6 +105,39 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     assert job["key"] == run_job_key("run_1", 1)  # enqueue_seq bumped to 1
     assert job["retries"] == 0
     assert job["priority"] == 70
+
+
+@pytest.mark.asyncio
+async def test_submit_compensates_enqueue_failure() -> None:
+    """A failed `_enqueue` fails the QUEUED row, emits ONE terminal DONE, and re-raises (F3/H2).
+
+    Without compensation the run would rot QUEUED forever and its stream keepalive
+    into eternity. With it: FAILED row + a single terminal DONE(failed) so any open
+    stream ends, and the original broker error surfaces to the caller.
+    """
+    ledger = InMemoryRunLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    queues: dict[str, Any] = {"runs": _FailingQueue(), "rites": _FakeQueue()}
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues=queues,
+    )
+    channel = bus.open("efail")  # hold the ref before compensation closes + drops it
+
+    with pytest.raises(RuntimeError, match="broker down"):
+        await engine.submit(Intent(session_id="s", run_id="efail", prompt="hi", source="bridge"))
+
+    run = await ledger.get("efail")
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert "enqueue failed" in (run.error or "")
+    dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
+    assert len(dones) == 1
+    assert dones[0].data == "failed"
+    assert channel.closed is True
 
 
 @pytest.mark.asyncio

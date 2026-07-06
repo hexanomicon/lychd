@@ -60,6 +60,12 @@ class DatabaseSettings(BaseSettings):
     image: str = "docker.io/pgvector/pgvector:pg18-trixie"
     password_secret: str = "lychd_db_password"  # noqa: S105 - Podman secret name, not secret value.
 
+    # Persistence profile (F4/H5, S3): selects the RunLedger implementation. Default
+    # is the durable Postgres substrate; tests set ``memory`` for the loop-confined,
+    # DB-free `InMemoryRunLedger`. This is the SAME flag Wave 4 extends to the
+    # ConsentLedger + SessionStore — one profile, never mixed.
+    profile: Literal["memory", "postgres"] = "postgres"
+
     # --- Logging ---
     echo: bool = False
     echo_pool: bool | str = False
@@ -150,13 +156,18 @@ class ExtensionSettings(BaseSettings):
 
 # --- 6. The Worker ---
 class SaqSettings(BaseSettings):
-    """The Ghoul Labor: Configuration for the SAQ background worker swarm."""
+    """The Ghoul Labor: Configuration for the SAQ background worker swarm.
+
+    Topology A (F1/S7): workers run in-process on the web loop
+    (`QueueConfig.separate_process=False`), so there are no forked processes to
+    size — the old ``processes`` and ``use_server_lifespan`` knobs are gone.
+    ``concurrency`` bounds per-queue in-loop job concurrency (aligns early with
+    Wave-3's `[orchestration.queues]`).
+    """
 
     model_config = SettingsConfigDict(env_prefix="SAQ_")
-    processes: int = 4
     web_enabled: bool = True
     concurrency: int = 10
-    use_server_lifespan: bool = True
 
 
 class LychdSettings(BaseSettings):

@@ -12,10 +12,11 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import uuid
 from typing import TYPE_CHECKING, Any
 
 from litestar import Controller, get, post
+from litestar.datastructures import State
+from litestar.exceptions import NotFoundException
 from litestar.plugins.htmx import HTMXRequest, HTMXTemplate, HXLocation
 from litestar.response import Redirect, Response, ServerSentEvent, ServerSentEventMessage, Template
 from litestar.status_codes import (
@@ -28,7 +29,8 @@ from litestar.status_codes import (
 from lychd.agents.router import Intent
 
 # Runtime imports: Litestar resolves handler param/return annotations at registration.
-from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
+from lychd.domain.cortex.runs import TERMINAL_STATUSES
 from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.schemas import BridgeTurn
@@ -44,11 +46,6 @@ if TYPE_CHECKING:
 _SSE_KEEPALIVE_S = 15.0
 
 
-def _new_run_id() -> str:
-    """Return a fresh run id."""
-    return f"run_{uuid.uuid4().hex[:12]}"
-
-
 def _parse_last_event_id(raw: str | None) -> int | None:
     """Parse a `Last-Event-ID` header (an event seq) to an int, or `None`."""
     if raw is None:
@@ -57,6 +54,19 @@ def _parse_last_event_id(raw: str | None) -> int | None:
         return int(raw)
     except ValueError:
         return None
+
+
+async def _terminal_stream(projector: Projector, run_id: str, status: str) -> AsyncIterator[ServerSentEventMessage]:
+    """Synthesize a finite STATUS+DONE stream for an already-terminal run (F5/H4).
+
+    A client that (re)connects after the run finished and its channel was dropped
+    gets an immediate, honest resync — the settled status then the terminal — and the
+    stream ends. It never subscribes to a minted-empty channel and never hangs.
+    """
+    status_event = RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data=status)
+    done_event = RunEvent(run_id=run_id, seq=1, kind=RunEventKind.DONE, data=status)
+    yield ServerSentEventMessage(event="status", data=projector.project(status_event), id="0")
+    yield ServerSentEventMessage(event="done", data=projector.project(done_event), id="1")
 
 
 class BridgeController(Controller):
@@ -112,9 +122,11 @@ class BridgeController(Controller):
         if not prompt:
             return Response(content="An empty offering cannot be spoken.", status_code=HTTP_400_BAD_REQUEST)
 
-        run_id = _new_run_id()
+        # S3: the bridge no longer mints a `run_…` id. The run identity is the
+        # ledger's to assign; `engine.submit` returns the canonical id on the handle,
+        # and every downstream surface (this SSE slot, Step rows, stasis) uses it.
         bridge_sessions.add_turn(session_id, BridgeTurn(role="user", content=prompt))
-        handle = await run_engine.submit(Intent(session_id=session_id, run_id=run_id, prompt=prompt, source="bridge"))
+        handle = await run_engine.submit(Intent(session_id=session_id, prompt=prompt, source="bridge"))
         return HTMXTemplate(
             template_name="bridge/message_accepted.html.j2",
             context={
@@ -133,15 +145,30 @@ class BridgeController(Controller):
         run_id: str,
         run_bus: InProcessEventBus,
         projector: Projector,
+        state: State,
     ) -> ServerSentEvent:
         """Stream the run's events as SSE, rendered through the Projector.
 
-        Reconnect (A2-U5): a `Last-Event-ID` header replays events strictly after
-        that seq over `RunChannel.subscribe(from_seq)` (an evicted cursor yields a
-        fresh STATUS resync, never an error). A keepalive comment fires on idle since
-        litestar's `ServerSentEvent` has no `ping_interval`.
+        Ledger-first (F5/H4): consult the run ledger BEFORE subscribing so the stream
+        never mints an empty channel that hangs on keepalives forever.
+        - unknown run → 404;
+        - already-terminal run → synthetic STATUS + DONE, then end;
+        - live run → subscribe to its channel.
+
+        Reconnect (A2-U5): a `Last-Event-ID` header replays events strictly after that
+        seq over `RunChannel.subscribe(from_seq)`; a cursor that does not align with
+        the live head yields a fresh STATUS resync (never silence, never an error). A
+        keepalive comment fires on idle since litestar's `ServerSentEvent` has no
+        `ping_interval`.
         """
         from_seq = _parse_last_event_id(request.headers.get("Last-Event-ID"))
+
+        ledger = state.services.ledger
+        run = await ledger.get(run_id)
+        if run is None:
+            raise NotFoundException(detail="Unknown run.")
+        if run.status in TERMINAL_STATUSES:
+            return ServerSentEvent(_terminal_stream(projector, run_id, run.status.value))
 
         async def events() -> AsyncIterator[ServerSentEventMessage]:
             source = run_bus.subscribe(run_id, from_seq=from_seq)
@@ -166,8 +193,13 @@ class BridgeController(Controller):
                         id=str(event.seq),
                     )
             finally:
+                # F10: await the cancelled pending task before closing the generator, so
+                # its subscriber queue is discarded (in `subscribe`'s finally) before we
+                # walk away — no lingering entry in `RunChannel._subscribers`.
                 if pending is not None:
                     pending.cancel()
+                    with contextlib.suppress(BaseException):
+                        await pending
                 aclose = getattr(source, "aclose", None)
                 if aclose is not None:
                     with contextlib.suppress(Exception):

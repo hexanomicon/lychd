@@ -90,12 +90,19 @@ class FakeRunEngine(RunEngine):
         self.submitted: list[Any] = []
 
     async def submit(self, intent: Any) -> RunHandle:
-        """Record the intent and open a run channel on the bus for the stream to tail."""
+        """Record the intent and open a run channel on the bus for the stream to tail.
+
+        S3: mirror the real engine — the run id is minted here (the ledger's job),
+        not carried in on `intent.run_id` (which is advisory/None from the bridge).
+        """
+        import uuid
+
         self.submitted.append(intent)
+        run_id = intent.run_id or f"run_{uuid.uuid4().hex[:12]}"
         return RunHandle(
-            run_id=intent.run_id,
+            run_id=run_id,
             workflow_name="bridge_chat",
-            channel=self.bus.open(intent.run_id),
+            channel=self.bus.open(run_id),
         )
 
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -98,7 +99,18 @@ class RunEngine:
     queues: Mapping[str, RunQueue]
 
     async def submit(self, intent: Intent) -> RunHandle:
-        """Route once, persist QUEUED, open the channel, and enqueue `perform_run`."""
+        """Route once, persist QUEUED, open the channel, and enqueue `perform_run`.
+
+        S3: the run id is the LEDGER's canonical id (`run.run_id`); `intent.run_id`
+        is advisory client-correlation only (stashed in the intent JSONB). The
+        handle and every downstream surface (SSE URL, Step rows, stasis path, lease
+        holder) key on `run.run_id`.
+
+        Compensation (F3/H2): if `_enqueue` raises (broker down, or an unknown
+        physical queue) the QUEUED row is not left to rot — it is failed, a terminal
+        `DONE` is emitted so any open stream never hangs, the channel is closed, and
+        the original error re-raises for the caller.
+        """
         workflow = self.workflows.route(intent)
         queue_name, priority = self.queue_router.resolve(intent)
         run = await self.ledger.create(
@@ -108,8 +120,19 @@ class RunEngine:
             priority=priority,
         )
         channel = self.bus.open(run.run_id)
-        await self._enqueue(run)
+        try:
+            await self._enqueue(run)
+        except Exception as exc:
+            await self._compensate_enqueue_failure(run.run_id, exc)
+            raise
         return RunHandle(run_id=run.run_id, workflow_name=workflow.name, channel=channel)
+
+    async def _compensate_enqueue_failure(self, run_id: str, exc: Exception) -> None:
+        """Fail an un-enqueued QUEUED run, emit its terminal DONE, and close it."""
+        with suppress(Exception):  # compensation must never mask the enqueue error
+            await self.ledger.set_status(run_id, RunStatus.FAILED, error=f"enqueue failed: {exc}")
+            self.bus.emitter(run_id).done(RunStatus.FAILED.value)
+            self.bus.close(run_id)
 
     async def cancel(self, run_id: str) -> None:
         """Abort the run's SAQ job (by key), mark CANCELLED, emit the terminal DONE."""

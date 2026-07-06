@@ -236,7 +236,10 @@ BRIDGE_CHAT_GRAPH: Graph[BridgeChatState, WorkflowServices, BridgeReply] = Graph
 
 
 def _make_state(intent: Intent) -> BridgeChatState:
-    return BridgeChatState(session_id=intent.session_id, run_id=intent.run_id, prompt=intent.prompt)
+    # S3: `perform_run` rebuilds the intent from the run row via `RunRecord.to_intent`,
+    # so `intent.run_id` here is always the canonical ledger id; the `or ""` only
+    # satisfies the type for the advisory-None client-correlation shape.
+    return BridgeChatState(session_id=intent.session_id, run_id=intent.run_id or "", prompt=intent.prompt)
 
 
 BRIDGE_CHAT = Workflow(

@@ -52,7 +52,10 @@ TERMINAL_STATUSES: frozenset[RunStatus] = frozenset(
 
 # Legal transitions (A4 §2). Anything else is a bug and must raise in the ledger.
 LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
-    RunStatus.QUEUED: frozenset({RunStatus.RUNNING, RunStatus.CANCELLED}),
+    # QUEUED→FAILED is the uncompensated-enqueue escape (F3/H2): if `_enqueue`
+    # raises, `engine.submit` fails the QUEUED row instead of black-holing it, and
+    # `reconcile_runs` sweeps QUEUED rows whose enqueue was lost across a restart.
+    RunStatus.QUEUED: frozenset({RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLED}),
     RunStatus.RUNNING: frozenset(
         {
             RunStatus.AWAITING_HARDWARE,
