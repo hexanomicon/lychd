@@ -60,6 +60,20 @@ def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
     return get_run_substrate()
 
 
+async def _await_claim_gate(substrate: RunSubstrate) -> None:
+    """Park on the broker's claim gate while intake is paused for a transition.
+
+    Drain honesty is the LeaseLedger's; pausing merely stops NEW runs from claiming
+    while a physical transition is in flight. The gate lives on the honest
+    `GhoulBroker` (`wire_runtime`); the pre-wire `QuiescentBroker`/test fakes expose
+    none, so the wait is skipped when absent.
+    """
+    broker = getattr(substrate.orchestrator, "worker_broker", None)
+    gate = getattr(broker, "claim_gate", None)
+    if gate is not None:
+        await gate.wait()
+
+
 async def perform_run(
     ctx: dict[str, Any],
     *,
@@ -70,6 +84,7 @@ async def perform_run(
     """Execute one run's workflow graph. The ONLY graph-execution site."""
     _ = (resume, payload)  # honest consent resume is Wave 4; placeholder ignores these
     substrate = _substrate(ctx)
+    await _await_claim_gate(substrate)
     ledger = substrate.ledger
     run = await ledger.get(run_id)
     if run is None or run.status is not RunStatus.QUEUED:
@@ -84,7 +99,22 @@ async def perform_run(
         return {"status": "failed", "run_id": run_id}
 
     persistence = LiveStasisPhylactery(job_id=run_id)
-    runner: GraphRunner[Any] = GraphRunner(orchestrator=substrate.orchestrator, persistence=persistence)
+
+    async def _on_stasis_enter() -> None:
+        # The run parks while the orchestrator transitions hardware (C7). It holds no
+        # lease while parked, so it never blocks its own drain (requester-not-counted).
+        await ledger.set_status(run_id, RunStatus.AWAITING_HARDWARE)
+
+    async def _on_stasis_exit() -> None:
+        await ledger.set_status(run_id, RunStatus.RUNNING)
+
+    runner: GraphRunner[Any] = GraphRunner(
+        orchestrator=substrate.orchestrator,
+        persistence=persistence,
+        signal_priority=float(run.priority),
+        on_stasis_enter=_on_stasis_enter,
+        on_stasis_exit=_on_stasis_exit,
+    )
     services = substrate.build_services()
 
     await ledger.set_status(run_id, RunStatus.RUNNING)

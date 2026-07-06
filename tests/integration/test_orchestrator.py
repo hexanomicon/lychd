@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from lychd.config.settings import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
     CapabilityLifecycle,
@@ -18,7 +19,20 @@ from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.orchestration.policies import EvictIdlePolicy
+
+
+def _make_manager(broker: object, registry: object) -> OrchestratorManager:
+    return OrchestratorManager(
+        worker_broker=broker,
+        registry=registry,  # type: ignore[arg-type]
+        leases=LeaseLedger(),
+        policy=EvictIdlePolicy(),
+        arbiter=TransitionArbiter(),
+        switching=SwitchingSettings(),
+    )
 
 
 @dataclass
@@ -103,7 +117,7 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     registry = StubRegistry(spec, state, runtime)
     broker = AsyncMock()
     broker.get_active_worker_count.return_value = 0
-    manager = OrchestratorManager(worker_broker=broker, registry=registry, leases=LeaseLedger())
+    manager = _make_manager(broker, registry)
 
     process = AsyncMock()
     process.wait.return_value = None
@@ -146,7 +160,7 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
 
     registry = WarmRegistry(spec, state, runtime)
     broker = AsyncMock()
-    manager = OrchestratorManager(worker_broker=broker, registry=registry, leases=LeaseLedger())
+    manager = _make_manager(broker, registry)
 
     with patch("asyncio.create_subprocess_exec") as mock_exec:
         await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200.0)

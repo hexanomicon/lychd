@@ -138,6 +138,92 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         await services.aclose()
 
 
+class _InfoQueue:
+    """A SAQ-queue stand-in exposing `info()` — for the queues-API production-root test."""
+
+    def __init__(self, *, queued: int, active: int) -> None:
+        self._info = {"queued": queued, "active": active, "name": "runs"}
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = (job_or_func, kwargs)
+
+    async def job(self, job_key: str, /) -> Any:
+        _ = job_key
+        return None
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (job, error, ttl)
+
+    async def info(self, jobs: bool = False, offset: int = 0, limit: int = 10) -> dict[str, Any]:  # noqa: FBT001, FBT002
+        _ = (jobs, offset, limit)
+        return dict(self._info)
+
+
+@pytest.mark.asyncio
+async def test_queues_api_reads_real_substrate_zero_injection() -> None:
+    """GET /orchestrator/queues through the REAL composition root — zero substrate injection.
+
+    Exit-gate item 9 (the F1 lesson made structural): `build_altar_services` +
+    `wire_runtime` publish the substrate via `set_run_substrate`; the controller reads
+    the queues from that process memo (NOT an injected value) and the leases from the
+    services container, returning real SAQ numbers + live lease rows.
+    """
+    from contextlib import asynccontextmanager
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from litestar import Litestar
+    from litestar.testing import create_test_client
+
+    from lychd.domain.animation.capabilities import GrantLease
+    from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+    from lychd.domain.cortex.substrate import reset_run_substrate as _reset
+    from lychd.interface.api.orchestrator import OrchestratorController
+    from lychd.interface.web.deps import web_dependencies
+
+    engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
+    services = build_altar_services(
+        template_engine=engine_template,
+        rune_schemas=[],
+        runtime_adapters=[],
+        profile="memory",
+    )
+    queues = {"runs": _InfoQueue(queued=3, active=1), "rites": _InfoQueue(queued=0, active=0)}
+    services.wire_runtime(queues)  # the ONE publish site: set_run_substrate + GhoulBroker late-bind
+
+    # A live lease so the API's lease view is exercised.
+    spec = SimpleNamespace(key="titan:chat:m", animator_name="titan")
+    grant = SimpleNamespace(
+        lease=GrantLease(grant_id="lease-1", holder="run:z", issued_at=datetime.now(UTC)), spec=spec
+    )
+    services.leases.acquire(grant, priority=70)  # type: ignore[arg-type]
+    _ = CapabilityFamily  # imported for parity with the rest of the suite
+
+    @asynccontextmanager
+    async def _lifespan(app: Litestar) -> Any:
+        app.state.services = services
+        yield
+
+    try:
+        with create_test_client(
+            route_handlers=[OrchestratorController],
+            dependencies=web_dependencies,
+            lifespan=[_lifespan],
+        ) as client:
+            resp = client.get("/orchestrator/queues")
+        assert resp.status_code == 200
+        body = resp.json()
+        depths = {q["name"]: q for q in body["queues"]}
+        assert depths["runs"]["depth"] == 3
+        assert depths["runs"]["active"] == 1
+        assert depths["runs"]["paused"] is False  # GhoulBroker claim gate open
+        assert [row["grant_id"] for row in body["leases"]] == ["lease-1"]
+        assert body["leases"][0]["capability_key"] == "titan:chat:m"
+    finally:
+        _reset()
+        await services.aclose()
+
+
 @pytest.mark.integration
 def test_production_wiring_real_factory_over_postgres() -> None:
     """[LINUX] End-to-end through the REAL `create_app()` factory on Postgres.

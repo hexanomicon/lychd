@@ -191,6 +191,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 build_user_prompt(ctx.state),
                 deps=deps,
                 model=grant.model,
+                model_settings=grant.model_settings(),
                 toolsets=list(grant.toolsets),
             ):
                 if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
@@ -250,7 +251,13 @@ def _make_state(intent: Intent) -> BridgeChatState:
     # S3: `perform_run` rebuilds the intent from the run row via `RunRecord.to_intent`,
     # so `intent.run_id` here is always the canonical ledger id; the `or ""` only
     # satisfies the type for the advisory-None client-correlation shape.
-    return BridgeChatState(session_id=intent.session_id, run_id=intent.run_id or "", prompt=intent.prompt)
+    # C6: per-run data (priority) lives in graph State, never deps.
+    return BridgeChatState(
+        session_id=intent.session_id,
+        run_id=intent.run_id or "",
+        prompt=intent.prompt,
+        priority=intent.priority if intent.priority is not None else 50,
+    )
 
 
 BRIDGE_CHAT = Workflow(

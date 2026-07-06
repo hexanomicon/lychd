@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, Graph
@@ -8,6 +8,9 @@ from pydantic_graph.persistence import BaseStatePersistence
 
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.extensions.protocols import PhylacteryProtocol
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 
 class TransitionOrchestrator(Protocol):
@@ -19,10 +22,27 @@ class TransitionOrchestrator(Protocol):
 class GraphRunner[StateT: BaseModel]:
     """Execute Pydantic Graph loops with LychD stasis and rehydration support."""
 
-    def __init__(self, *, orchestrator: TransitionOrchestrator, persistence: PhylacteryProtocol) -> None:
-        """Initialize graph runner dependencies."""
+    def __init__(
+        self,
+        *,
+        orchestrator: TransitionOrchestrator,
+        persistence: PhylacteryProtocol,
+        signal_priority: float = 100.0,
+        on_stasis_enter: Callable[[], Awaitable[None]] | None = None,
+        on_stasis_exit: Callable[[], Awaitable[None]] | None = None,
+    ) -> None:
+        """Initialize graph runner dependencies.
+
+        ``signal_priority`` is threaded to ``handle_transition`` (the run's priority,
+        C7). The stasis callbacks (spec-00 C7) fire around a transition so the ledger
+        can flip ``RUNNING → AWAITING_HARDWARE → RUNNING`` — ``on_stasis_enter`` after
+        rehydration, ``on_stasis_exit`` after ``handle_transition`` returns.
+        """
         self.orchestrator = orchestrator
         self.persistence = persistence
+        self.signal_priority = signal_priority
+        self._on_stasis_enter = on_stasis_enter
+        self._on_stasis_exit = on_stasis_exit
 
     async def run_graph(
         self,
@@ -106,7 +126,13 @@ class GraphRunner[StateT: BaseModel]:
                             )
                             raise RuntimeError(msg) from signal
                         await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
-                        await self.orchestrator.handle_transition(signal, signal_priority=100.0)
+                        if self._on_stasis_enter is not None:
+                            await self._on_stasis_enter()
+                        await self.orchestrator.handle_transition(signal, signal_priority=self.signal_priority)
+                        # Exceptions from handle_transition skip the exit callback: the
+                        # run is failing, and reconcile owns the row.
+                        if self._on_stasis_exit is not None:
+                            await self._on_stasis_exit()
                         current_is_resume = True
                         continue
 

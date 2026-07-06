@@ -18,3 +18,5 @@ class TransitionPlan(BaseModel):
     action_type: Literal["HARD_SWAP", "SOFT_SWAP", "NO_OP"] = Field(
         description="The physical intensity of the transition"
     )
+    policy: str = Field(default="", description="Name of the switch policy that produced this plan")
+    reason: str | None = Field(default=None, description="Optional human-readable rationale for the plan")

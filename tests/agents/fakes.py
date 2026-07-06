@@ -23,9 +23,11 @@ class FakeGrant:
 
     model: Any
     toolsets: tuple[Any, ...] = ()
+    settings: Any = None
 
-    def model_settings(self) -> None:
-        """No generation overlay in the fake (Track O extends for capture asserts)."""
+    def model_settings(self) -> Any:
+        """Return the recordable model_settings sentinel (None unless one was injected)."""
+        return self.settings
 
 
 @dataclass
@@ -34,6 +36,7 @@ class FakeDispatcher:
 
     model: Any
     toolsets: tuple[Any, ...] = ()
+    settings: Any = None
     calls: list[str] = field(default_factory=list)
 
     @asynccontextmanager
@@ -48,7 +51,7 @@ class FakeDispatcher:
     ) -> AsyncIterator[FakeGrant]:
         _ = (model_name, run_id, priority, require_modalities)
         self.calls.append(str(family))
-        yield FakeGrant(model=self.model, toolsets=self.toolsets)
+        yield FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings)
 
 
 @dataclass

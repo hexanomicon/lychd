@@ -16,6 +16,7 @@ from litestar.di import Provide
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.fragments import FragmentRegistry
@@ -37,6 +38,11 @@ def provide_dispatcher(state: State) -> Dispatcher:
 def provide_orchestrator(state: State) -> OrchestratorManager:
     """Return the process-wide orchestrator manager."""
     return state.services.orchestrator
+
+
+def provide_leases(state: State) -> LeaseLedger:
+    """Return the process-wide lease ledger (the drain-truth seam)."""
+    return state.services.leases
 
 
 def provide_fragments(state: State) -> FragmentRegistry:
@@ -73,6 +79,7 @@ web_dependencies: dict[str, Provide] = {
     "registry": Provide(provide_registry, sync_to_thread=False),
     "dispatcher": Provide(provide_dispatcher, sync_to_thread=False),
     "orchestrator": Provide(provide_orchestrator, sync_to_thread=False),
+    "leases": Provide(provide_leases, sync_to_thread=False),
     "fragments": Provide(provide_fragments, sync_to_thread=False),
     "bridge_sessions": Provide(provide_bridge_sessions, sync_to_thread=False),
     "tickets": Provide(provide_tickets, sync_to_thread=False),

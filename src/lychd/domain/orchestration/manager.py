@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
 from lychd.domain.animation.capabilities import (
     CapabilityLifecycle,
@@ -11,28 +10,15 @@ from lychd.domain.animation.capabilities import (
 )
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
+from lychd.domain.orchestration.arbiter import TransitionArbiter, TransitionDeclined
 from lychd.domain.orchestration.schema import TransitionPlan
 
 if TYPE_CHECKING:
+    from lychd.config.settings import SwitchingSettings
     from lychd.domain.cortex.leases import LeaseLedger
+    from lychd.domain.orchestration.policies import SwitchPolicy
 
-# D14: keel-phase drain/convergence timeout. Track O replaces this module constant
-# with ``self._switching.drain_timeout_s`` in O4.
-_DRAIN_TIMEOUT_S: Final[float] = 120.0
-
-
-@dataclass(frozen=True, slots=True)
-class _AnimatorRecord:
-    """Animator-level projection the solver reasons over. Built from registry truth.
-
-    Keel-private; Track O extracts it VERBATIM as ``policies.AnimatorRecord``.
-    """
-
-    name: str
-    dedicated: bool  # rune.concurrency.dedicated
-    persistent_resident: bool  # rune.concurrency.persistent_resident
-    active: bool  # any state.phase in {WARM, WARMING} on it
-    leased: bool  # LeaseLedger.active(animator_name=name) != []
+__all__ = ["OrchestratorManager", "TransitionDeclined"]
 
 
 class OrchestratorManager:
@@ -44,11 +30,22 @@ class OrchestratorManager:
         registry: CapabilityRegistry,
         *,
         leases: LeaseLedger,
+        policy: SwitchPolicy,
+        arbiter: TransitionArbiter,
+        switching: SwitchingSettings,
     ) -> None:
-        """Initialize orchestration against the injected canonical registry + leases."""
+        """Initialize orchestration against the injected registry, leases, and policy.
+
+        ``worker_broker`` is a plain attribute: the lifespan late-binds the honest
+        ``GhoulBroker`` onto it once the SAQ queues exist (`wire_runtime`); before
+        that it is the `QuiescentBroker` stand-in.
+        """
         self.worker_broker = worker_broker
         self.registry = registry
         self._leases = leases
+        self._policy = policy
+        self._arbiter = arbiter
+        self._switching = switching
 
     def list_capability_statuses(self) -> list[dict[str, Any]]:
         """Return a canonical status snapshot for the orchestrator API."""
@@ -106,17 +103,21 @@ class OrchestratorManager:
             )
             raise RuntimeError(msg)
 
-        evict_ids, launch_ids, total_cost = self._solve_transition(target)
+        decision = self._policy.solve(target, self.registry, self._leases)
         return TransitionPlan(
-            total_metabolic_cost=float(total_cost),
-            evict_coven_ids=evict_ids,
-            launch_coven_ids=launch_ids,
+            total_metabolic_cost=decision.metabolic_cost,
+            evict_coven_ids=decision.evict_animator_names,
+            launch_coven_ids=decision.launch_animator_names,
             action_type="HARD_SWAP",
+            policy=self._policy.name,
+            reason=decision.reason,
         )
 
     async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
         """Execute the required transition and converge deterministically on WARM.
 
+        ``TransitionDeclined`` (a priority-gated HARD_SWAP) propagates to `perform_run`
+        and fails the run with the plan in the message — an honest refusal, not a hang.
         The terminal ``await_warm`` fails the transition loudly (``ActivationTimeout``)
         instead of handing a cold capability back to the stasis loop.
         """
@@ -125,76 +126,42 @@ class OrchestratorManager:
         dynamic = spec.lifecycle is CapabilityLifecycle.DYNAMIC
         if dynamic and plan.action_type in {"SOFT_SWAP", "HARD_SWAP", "NO_OP"}:
             await self._activate_dynamic_capability(spec)
-        await self.registry.await_warm(spec.key, timeout_s=_DRAIN_TIMEOUT_S)
+        await self.registry.await_warm(spec.key, timeout_s=self._switching.drain_timeout_s)
 
     async def request_transition(self, target_capability_key: str, priority: float) -> TransitionPlan:
-        """Calculate and execute the physical transition plan."""
-        _ = priority
-        plan = await self.calculate_transition_plan(target_capability_key)
+        """Calculate and (if a HARD_SWAP) execute the physical transition plan.
 
+        A HARD_SWAP below ``min_priority_for_hard_swap`` is declined loudly.
+        SOFT_SWAP / NO_OP are NEVER gated (they return before the gate). The physical
+        eviction/launch runs inside the arbiter's single-owner section, and drain
+        honesty is the LeaseLedger's — never the (lying) broker job count.
+        """
+        plan = await self.calculate_transition_plan(target_capability_key)
         if plan.action_type != "HARD_SWAP":
             return plan
 
-        await self.worker_broker.pause_queues()
-        await self.worker_broker.broadcast_soft_stop()
-        await self._await_active_drain()
+        threshold = self._switching.min_priority_for_hard_swap
+        if priority < threshold:
+            raise TransitionDeclined(plan, priority, threshold)
 
-        try:
-            for animator_name in plan.evict_coven_ids:
-                await self._stop_animator_runtime(animator_name)
+        async def _executor() -> TransitionPlan:
+            await self.worker_broker.pause_queues()
+            await self.worker_broker.broadcast_soft_stop()
+            drained = await self._leases.drained(plan.evict_coven_ids, timeout=self._switching.drain_timeout_s)
+            if not drained:
+                msg = f"Lease drain timed out on: {plan.evict_coven_ids}"
+                raise RuntimeError(msg)
 
-            for animator_name in plan.launch_coven_ids:
-                await self._start_animator_runtime(animator_name)
-        finally:
-            await self.worker_broker.unpause_queues()
+            try:
+                for animator_name in plan.evict_coven_ids:
+                    await self._stop_animator_runtime(animator_name)
+                for animator_name in plan.launch_coven_ids:
+                    await self._start_animator_runtime(animator_name)
+            finally:
+                await self.worker_broker.unpause_queues()
+            return plan
 
-        return plan
-
-    def _animator_records(self) -> list[_AnimatorRecord]:
-        """Project one record per soulstone-backed animator over registry truth.
-
-        Portals are excluded (not lifecycle-managed: ``get_soulstone_rune(name) is
-        None``). Concurrency comes from THE RUNE (``rune.concurrency``), NEVER from
-        an arbitrary spec.
-        """
-        records: list[_AnimatorRecord] = []
-        seen: set[str] = set()
-        for spec in self.registry.list_capabilities():
-            name = spec.animator_name
-            if name in seen:
-                continue
-            rune = self.registry.get_soulstone_rune(name)
-            if rune is None:
-                continue
-            seen.add(name)
-            states = self.registry.list_capability_states_for_animator(name)
-            records.append(
-                _AnimatorRecord(
-                    name=name,
-                    dedicated=rune.concurrency.dedicated,
-                    persistent_resident=rune.concurrency.persistent_resident,
-                    active=any(state.is_active for state in states),
-                    leased=bool(self._leases.active(animator_name=name)),
-                )
-            )
-        return records
-
-    def _solve_transition(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
-        """Select the eviction set honestly over the lease-aware animator records."""
-        records = self._animator_records()
-        if any(record.name == target.animator_name and record.active for record in records):
-            return ([], [], 0)
-
-        evictees = sorted(
-            record.name
-            for record in records
-            if record.dedicated
-            and not record.persistent_resident
-            and record.active
-            and not record.leased
-            and record.name != target.animator_name
-        )
-        return (evictees, [target.animator_name], len(evictees))
+        return await self._arbiter.run(target_capability_key, priority, _executor)
 
     async def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
         return await require_capability_record(self.registry, key)
@@ -242,8 +209,3 @@ class OrchestratorManager:
         if soulstone is None:
             return None
         return f"{soulstone.service_name}.service"
-
-    async def _await_active_drain(self) -> None:
-        """Poll the worker broker until the active job count reaches zero."""
-        while await self.worker_broker.get_active_worker_count() > 0:  # noqa: ASYNC110
-            await asyncio.sleep(1)
