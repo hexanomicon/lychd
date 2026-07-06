@@ -1,4 +1,4 @@
-"""`LoomController` — workflow gallery and mermaid projections (routes 15-16).
+"""`LoomController` — the Loom page, workflow gallery, and mermaid projections.
 
 The Loom projects each registered `Workflow` as a client-rendered mermaid
 stateDiagram-v2. Graph *source* only ever leaves the process as text — rendering
@@ -17,6 +17,9 @@ from lychd.agents.workflows import WORKFLOWS
 from lychd.agents.workflows.base import Workflow
 from lychd.domain.web.schemas import build_loom_view
 
+# Runtime import: Litestar resolves handler param annotations at registration.
+from lychd.domain.web.sessions import BridgeSessionStore
+
 
 def _find_workflow(name: str) -> Workflow | None:
     """Return the workflow with the given slug, or `None`."""
@@ -27,11 +30,26 @@ def _find_workflow(name: str) -> Workflow | None:
 
 
 class LoomController(Controller):
-    """Serve the Loom's workflow graphs and their mermaid source."""
+    """Serve the Loom's page, workflow graphs, and their mermaid source."""
 
     path = "/loom"
 
-    @get("/{workflow:str}")
+    @get("/", name="loom:page")
+    async def page(self, bridge_sessions: BridgeSessionStore) -> Template:
+        """Render the Loom with the first workflow pre-selected."""
+        workflow = WORKFLOWS[0]
+        return Template(
+            template_name="altar/pages/loom.html.j2",
+            context={
+                "active": "loom",
+                "pending": bridge_sessions.pending_consent_count(),
+                "workflows": WORKFLOWS,
+                "view": build_loom_view(workflow),
+                "selected": workflow.name,
+            },
+        )
+
+    @get("/{workflow:str}", name="loom:view")
     async def view(self, request: HTMXRequest, workflow: str) -> Template | Response[str]:
         """Return the graph fragment (htmx, push_url) or the full Loom page."""
         found = _find_workflow(workflow)
@@ -55,7 +73,7 @@ class LoomController(Controller):
             },
         )
 
-    @get("/{workflow:str}/source")
+    @get("/{workflow:str}/source", name="loom:source")
     async def source(self, workflow: str) -> Response[str]:
         """Return the mermaid stateDiagram-v2 source as plain text (curl-able)."""
         found = _find_workflow(workflow)

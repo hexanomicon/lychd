@@ -1,14 +1,14 @@
 {# The in-flight swap ticket strip (§7.5). `ticket` is a SwapTicket. It self-polls
-   while in flight; on settle the server returns it with HTTP 286 (stop polling)
-   and no trigger, so polling ceases and the board hears nexus:swap-settled. #}
+   while warming; on settle the server returns it with HTTP 286 (stop polling) and no
+   `every` trigger, so polling ceases and the board hears nexus:swap-settled. #}
 <div id="swap-{{ ticket.id }}" class="swap-ticket"
      data-fragment="nexus.swap-ticket" data-state="{{ ticket.state }}"
      data-ticket-id="{{ ticket.id }}"
-     {% if ticket.state == 'in_flight' %}hx-get="/nexus/swap/{{ ticket.id }}"
+     {% if ticket.state == 'warming' %}hx-get="{{ route_path('nexus:ticket', ticket_id=ticket.id) }}"
      hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}
      role="status" aria-live="polite">
-  {% if ticket.state == 'in_flight' %}
-    Transmuting… {{ ticket.phase }} · {{ ticket.action_type }} → {{ ticket.target }}
+  {% if ticket.state == 'warming' %}
+    Transmuting… {{ ticket.action_type }} → {{ ticket.target }}
   {% elif ticket.state == 'settled' %}
     Swap consecrated · {{ ticket.target }} risen
   {% else %}

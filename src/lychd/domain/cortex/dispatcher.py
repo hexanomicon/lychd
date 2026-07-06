@@ -4,9 +4,11 @@ from collections.abc import Sequence
 from typing import Any, Protocol
 
 from lychd.domain.animation.capabilities import CapabilityGrant, CapabilitySpec, CapabilityState
+from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.services.binder import AnimatorBindingError
-from lychd.domain.animation.services.registry import AnimatorRegistry
+
+__all__ = ["CapabilityRegistry", "Dispatcher", "HardwareTransitionRequired"]
 
 _INTENT_FAMILY_MAP = {
     "reasoning": CapabilityFamily.CHAT,
@@ -39,23 +41,12 @@ class CapabilityRegistry(Protocol):
     def bind_toolsets(self, name: str, /) -> Sequence[Any]: ...
 
 
-class HardwareTransitionRequired(Exception):  # noqa: N818
-    """Raised when a requested capability exists but the substrate is not warm."""
-
-    def __init__(self, spec: CapabilitySpec, state: CapabilityState, animator: Any) -> None:
-        """Store the canonical capability record that requires a transition."""
-        super().__init__(f"Hardware transition required for capability: {spec.key}")
-        self.spec = spec
-        self.state = state
-        self.animator = animator
-
-
 class Dispatcher:
     """Resolve abstract intent onto the canonical capability registry."""
 
-    def __init__(self, registry: CapabilityRegistry | None = None) -> None:
-        """Initialize the dispatcher against the canonical runtime registry."""
-        self._registry = registry or AnimatorRegistry()
+    def __init__(self, registry: CapabilityRegistry) -> None:
+        """Initialize the dispatcher against the injected canonical runtime registry."""
+        self._registry = registry
 
     def resolve_intent(self, intent_type: str) -> CapabilitySpec:
         """Resolve a semantic intent into one canonical capability spec."""

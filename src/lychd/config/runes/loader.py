@@ -65,7 +65,9 @@ class ConfigLoader:
         files = self._candidate_files(cls)
         if cls.__subclasses__():
             if files:
-                msg = f"Branch rune class '{cls.__name__}' cannot own TOML files in '{cls.anchor_dir(self._runes_dir)}'."
+                msg = (
+                    f"Branch rune class '{cls.__name__}' cannot own TOML files in '{cls.anchor_dir(self._runes_dir)}'."
+                )
                 raise ValueError(msg)
             return []
 

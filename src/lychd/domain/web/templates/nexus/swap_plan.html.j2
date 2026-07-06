@@ -1,8 +1,8 @@
 {# The transition-plan dry-run drawer (§7.5). `plan` is a TransitionPlan; `target`
    is the requested capability key. Swapped into #nexus-plan (innerHTML). #}
-<div data-fragment="nexus.plan" data-state="rendered">
+<div data-fragment="nexus.plan">
   <div class="panel-head"><span class="rune-head">Transition Scrying</span></div>
-  <div class="plan-verdict">✦ {{ plan.action_type }}
+  <div class="plan-verdict" data-state="{{ 'evicting' if plan.evict_coven_ids else 'clean' }}">✦ {{ plan.action_type }}
     {% if plan.action_type == 'HARD_SWAP' %}— the substrate must be reclaimed
     {% elif plan.action_type == 'SOFT_SWAP' %}— a warm reshuffle
     {% else %}— nothing to reclaim{% endif %}
@@ -19,7 +19,7 @@
     <div class="row"><span class="l">drain</span><span class="v">pause queues → soft stop → await</span></div>
   </div>
   {% if plan.action_type != 'NO_OP' %}
-  <form class="plan-act" hx-post="/nexus/swap" hx-target="#nexus-plan" hx-swap="innerHTML"
+  <form class="plan-act" hx-post="{{ route_path('nexus:swap') }}" hx-target="#nexus-plan" hx-swap="innerHTML"
         hx-confirm="Consecrate this coven swap? Active covens will be drained.">
     <input type="hidden" name="target" value="{{ target }}">
     <button class="rune-btn rune-btn--frost" type="submit">❄ Consecrate the Swap</button>

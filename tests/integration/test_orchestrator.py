@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
@@ -72,7 +72,7 @@ def _dynamic_spec() -> CapabilitySpec:
         source_kind="soulstone",
         family=CapabilityFamily.CHAT,
         model_id="router-main",
-        lifecycle_mode="dynamic_soft",
+        lifecycle=CapabilityLifecycle.DYNAMIC,
     )
 
 

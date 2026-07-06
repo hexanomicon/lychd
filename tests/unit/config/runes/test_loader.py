@@ -335,4 +335,3 @@ def test_path_fragment_rejects_long_parts() -> None:
 
     with pytest.raises(ValueError, match="invalid path_fragment part"):
         define_bad_schema()
-

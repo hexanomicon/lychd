@@ -16,10 +16,33 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.manager import OrchestratorManager
 
 TurnRole = Literal["user", "agent"]
+# Internal turn state written by the graph; mapped to the frozen run-state
+# `data-state` vocabulary (queued/streaming/consent/done/failed) by `run_data_state`.
 TurnState = Literal["settled", "streaming", "pending_consent", "consented", "refused", "failed"]
-CovenState = Literal["active", "warm", "cold"]
+# Capability `data-state` vocabulary (spec-web-design §5). `build_nexus_board`
+# currently only materialises active/warm/cold; awaited/warming/fault land with A3.
+CovenState = Literal["active", "warm", "awaited", "warming", "cold", "fault"]
 ConsentState = Literal["pending_consent", "consented", "refused"]
-TicketState = Literal["in_flight", "settled", "failed"]
+# Swap-ticket trio (spec-web-design §5): warming → settled → failed.
+TicketState = Literal["warming", "settled", "failed"]
+
+# Frozen run-state `data-state` vocabulary (spec-00-FINAL C5 / spec-web-design §5).
+_RUN_DATA_STATE: dict[str, str] = {
+    "settled": "done",
+    "done": "done",
+    "failed": "failed",
+    "streaming": "streaming",
+    "queued": "queued",
+    "consent": "consent",
+    "pending_consent": "consent",
+    "consented": "done",
+    "refused": "done",
+}
+
+
+def run_data_state(turn_state: str) -> str:
+    """Map an internal turn/run state to the frozen run `data-state` token."""
+    return _RUN_DATA_STATE.get(turn_state, "done")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -80,7 +103,6 @@ class SwapTicket:
     id: str
     target: str
     state: TicketState
-    phase: str
     action_type: str
     total_metabolic_cost: float
 
@@ -131,9 +153,7 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             continue
         grouped.setdefault(_coven_name(registry, row.animator_name), []).append(row)
 
-    covens = tuple(
-        (name, tuple(rows)) for name, rows in sorted(grouped.items(), key=lambda item: item[0])
-    )
+    covens = tuple((name, tuple(rows)) for name, rows in sorted(grouped.items(), key=lambda item: item[0]))
     return NexusBoard(covens=covens, portals=tuple(portals))
 
 

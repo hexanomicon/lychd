@@ -1,6 +1,6 @@
 {# genui.capability_table — validated CapabilityTableParams (rows of
    capability_key / family / state). #}
-<div class="genui" data-fragment="genui.capability_table" data-state="rendered">
+<div class="genui" data-fragment="genui.capability_table">
   <div class="genui-head"><span>Capability census</span><span class="glyph">fragment · vessel-rendered</span></div>
   <table>
     <thead><tr><th>Capability key</th><th>Family</th><th>State</th></tr></thead>
@@ -9,7 +9,7 @@
       <tr>
         <td class="glyph">{{ row.capability_key }}</td>
         <td>{{ row.family }}</td>
-        <td><span class="chip">{{ row.state }}</span></td>
+        <td><span class="chip" data-state="{{ row.state }}">{{ row.state }}</span></td>
       </tr>
       {% endfor %}
     </tbody>

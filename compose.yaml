@@ -18,7 +18,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - lychd_phylactery_data:/var/lib/postgresql/data
+      - lychd_phylactery_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lich -d lychd"]
       interval: 5s

@@ -6,6 +6,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from lychd.config.settings import get_settings
 from lychd.domain.animation.schemas import GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget
 
@@ -19,7 +20,7 @@ class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
 
 @pytest.fixture
 def transmuter() -> Transmuter:
-    return Transmuter()
+    return Transmuter(runtime_planner=RuntimeAdapterRegistry())
 
 
 def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
@@ -33,11 +34,7 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     assert pods[0].pod_name == "lychd"
 
     # 2. Check Core Containers
-    containers = {
-        manifest.container_name: manifest
-        for manifest in manifests
-        if isinstance(manifest, QuadletContainer)
-    }
+    containers = {manifest.container_name: manifest for manifest in manifests if isinstance(manifest, QuadletContainer)}
     assert "lychd-vessel" in containers
     assert "lychd-phylactery" in containers
     # The Oculus (Phoenix) is no longer an unconditional core container; it is
@@ -167,11 +164,7 @@ def test_coven_of_one_no_target(transmuter: Transmuter) -> None:
     manifests = transmuter.transmute_all([stone])
 
     # No Quadlet target named 'logic'
-    targets = [
-        manifest
-        for manifest in manifests
-        if isinstance(manifest, QuadletTarget) and manifest.name == "logic"
-    ]
+    targets = [manifest for manifest in manifests if isinstance(manifest, QuadletTarget) and manifest.name == "logic"]
     assert len(targets) == 0
 
     # Hermes manifest should not have targets list set to 'logic' if it's not a real coven

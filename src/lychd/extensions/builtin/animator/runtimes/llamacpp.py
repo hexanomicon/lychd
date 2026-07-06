@@ -2,30 +2,43 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
-from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
-from lychd.domain.animation.services.adapters.contracts import LISTEN_HOST, RuntimeAnimator, RuntimePlan
-from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
-from lychd.domain.animation.services.adapters.surfaces import (
-    LlamacppConnector,
-    LlamacppStone,
-    local_link_default,
+from lychd.domain.animation.services.adapters.contracts import (
+    LISTEN_HOST,
+    AnimatorControlPlane,
+    RuntimeAnimator,
+    RuntimePlan,
 )
+from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
+from lychd.domain.animation.services.adapters.surfaces import local_link_default
+from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppStone
 from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane, LlamaCppControlPlaneError
 from lychd.extensions.builtin.animator.llamacpp.parser import LlamaCppCommandParser, LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
 from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
-from lychd.system.schemas import QuadletContainer
+
+if TYPE_CHECKING:
+    from lychd.domain.animation.lifecycle import AnimatorLifecycle
+    from lychd.system.schemas import QuadletContainer
+
+_REACHABLE_HEALTH = {"ok", "loading"}
 
 
 class LlamaCppRuntimeAdapter:
     """llama.cpp planner and runtime animator factory."""
 
-    runtime = "llamacpp"
+    runtime: ClassVar[str] = "llamacpp"
 
     def __init__(
         self,
@@ -40,6 +53,12 @@ class LlamaCppRuntimeAdapter:
 
     def supports(self, runtime: str) -> bool:
         return runtime == self.runtime
+
+    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
+        """Expose the llama.cpp lifecycle control plane for llama.cpp animators."""
+        if getattr(animator.connector, "kind", None) != "llamacpp":
+            return None
+        return self._control_plane
 
     def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
         """Build llama.cpp runtime handle with control-plane metadata attached."""
@@ -77,72 +96,151 @@ class LlamaCppRuntimeAdapter:
             lifecycle=CapabilityLifecycle.DYNAMIC if descriptor.mode == "router" else CapabilityLifecycle.STATIC,
         )
 
-    def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
-        """Map live llama.cpp control-plane data into capability states.
+    async def probe_capability_states(
+        self,
+        animator: RuntimeAnimator,
+        specs: list[CapabilitySpec],
+    ) -> list[CapabilityState]:
+        """Map live llama.cpp control-plane data into phase-canonical states.
 
-        TODO(A3-U4): CapabilityState is now phase-canonical (lifecycle/phase
-        fields; is_static/is_active/warm/is_available are derived properties).
-        The CapabilityState(...) constructions below still pass the removed
-        boolean kwargs and must be reshaped to lifecycle=/phase= by A3-U4.
-
-
-        The control-plane probe is always attempted; its outcome is pushed onto
-        the connector link so callers observing ``link.up`` see real
-        reachability instead of the construction-time default.
+        Phase mapping (spec §2): single ``/health`` 503-loading → WARMING, 200 →
+        WARM; router ``/models`` status → ACTIVATABLE/WARM; unreachable → COLD;
+        control-plane exception → ERROR with reason.
         """
         connector = cast("LlamacppConnector", animator.connector)
         mode = getattr(connector, "mode", "single")
-        try:
-            lifecycle = self._control_plane.inspect_animator(animator)
-        except LlamaCppControlPlaneError as exc:
-            connector.set_link(Link(up=False, activatable=True, reason=str(exc), checked_at=datetime.now(UTC)))
-            return self._fallback_states(
-                animator=animator,
-                specs=specs,
-                mode=mode,
-                health="error",
-                reason=str(exc),
-            )
+        lifecycle_mode = CapabilityLifecycle.DYNAMIC if mode == "router" else CapabilityLifecycle.STATIC
+        checked_at = datetime.now(UTC)
 
-        reachable = lifecycle.health in {"ok", "loading"}
+        try:
+            lifecycle = await self._control_plane.inspect_animator(animator)
+        except LlamaCppControlPlaneError as exc:
+            connector.set_link(Link(up=False, activatable=True, reason=str(exc), checked_at=checked_at))
+            return [
+                CapabilityState(
+                    capability_key=spec.key,
+                    lifecycle=lifecycle_mode,
+                    phase=CapabilityPhase.ERROR,
+                    health="error",
+                    reason=str(exc),
+                    checked_at=checked_at,
+                )
+                for spec in specs
+            ]
+
+        health = lifecycle.health
+        reachable = health in _REACHABLE_HEALTH or lifecycle.supports_router
         health_error = lifecycle.raw.get("health_error")
         connector.set_link(
             Link(
-                up=reachable,
+                up=health in _REACHABLE_HEALTH,
                 activatable=True,
-                reason=None if reachable else (str(health_error) if health_error else "runtime_unreachable"),
-                checked_at=datetime.now(UTC),
+                reason=None
+                if health in _REACHABLE_HEALTH
+                else (str(health_error) if health_error else "runtime_unreachable"),
+                checked_at=checked_at,
             )
         )
 
         loaded_ids = list(lifecycle.loaded_models)
         active_model = self._normalize_active_model_id(lifecycle, specs)
-        states: list[CapabilityState] = []
-        for spec in specs:
-            is_static = mode != "router"
-            is_active = spec.model_id == active_model if mode == "router" else lifecycle.health == "ok"
-            states.append(
-                CapabilityState(
-                    capability_key=spec.key,
-                    is_static=is_static,
-                    is_active=is_active,
-                    is_available=True,
-                    warm=lifecycle.health == "ok" and (is_active or is_static),
-                    health=lifecycle.health,
-                    active_model_id=active_model,
-                    loaded_model_ids=loaded_ids,
-                    reason=None if is_active or is_static else "model_not_loaded",
-                    metadata=dict(lifecycle.raw),
-                )
+        return [
+            self._state_for_spec(
+                spec=spec,
+                mode=mode,
+                lifecycle_mode=lifecycle_mode,
+                health=health,
+                reachable=reachable,
+                loaded_ids=loaded_ids,
+                active_model=active_model,
+                raw=dict(lifecycle.raw),
+                checked_at=checked_at,
             )
-        return states
+            for spec in specs
+        ]
 
-    def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool:
+    def _state_for_spec(
+        self,
+        *,
+        spec: CapabilitySpec,
+        mode: str,
+        lifecycle_mode: CapabilityLifecycle,
+        health: str,
+        reachable: bool,
+        loaded_ids: list[str],
+        active_model: str | None,
+        raw: dict[str, object],
+        checked_at: datetime,
+    ) -> CapabilityState:
+        phase = self._phase_for(
+            mode=mode,
+            health=health,
+            reachable=reachable,
+            model_id=spec.model_id,
+            loaded_ids=loaded_ids,
+        )
+        reason: str | None = None
+        if phase is CapabilityPhase.ERROR:
+            reason = str(raw.get("health_error") or "runtime_error")
+        elif phase is CapabilityPhase.ACTIVATABLE:
+            reason = "model_not_loaded"
+        elif phase is CapabilityPhase.COLD:
+            reason = "runtime_unreachable"
+        return CapabilityState(
+            capability_key=spec.key,
+            lifecycle=lifecycle_mode,
+            phase=phase,
+            health=health,
+            active_model_id=active_model,
+            loaded_model_ids=loaded_ids,
+            reason=reason,
+            checked_at=checked_at,
+            metadata=raw,
+        )
+
+    def _phase_for(
+        self,
+        *,
+        mode: str,
+        health: str,
+        reachable: bool,
+        model_id: str,
+        loaded_ids: list[str],
+    ) -> CapabilityPhase:
+        if health == "error":
+            return CapabilityPhase.ERROR
+        if health == "loading":
+            return CapabilityPhase.WARMING
+        if mode == "router":
+            if not reachable:
+                return CapabilityPhase.COLD
+            loaded = model_id in loaded_ids and health == "ok"
+            return CapabilityPhase.WARM if loaded else CapabilityPhase.ACTIVATABLE
+        # single mode is FIXED: reachable health "ok" ⇒ WARM, else COLD.
+        return CapabilityPhase.WARM if health == "ok" else CapabilityPhase.COLD
+
+    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
         """Perform router-native model activation when the runtime supports it."""
         connector = animator.connector
         if getattr(connector, "mode", "single") != "router":
-            return False
-        return self._control_plane.load_model(animator.connector.base_url, spec.model_id)
+            return ActivationResult(
+                accepted=False,
+                phase=CapabilityPhase.WARM if connector.link.up else CapabilityPhase.COLD,
+                reason="fixed capability; lifecycle owned by unit",
+            )
+
+        try:
+            lifecycle = await self._control_plane.inspect_animator(animator)
+            if spec.model_id not in lifecycle.available_models:
+                return ActivationResult(
+                    accepted=False,
+                    phase=CapabilityPhase.COLD,
+                    reason="model not in /models",
+                )
+            await self._control_plane.load_model(connector.base_url, spec.model_id)
+        except LlamaCppControlPlaneError as exc:
+            return ActivationResult(accepted=False, phase=CapabilityPhase.ERROR, reason=str(exc))
+        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Plan llama.cpp command args from passthrough or managed fields."""
@@ -215,46 +313,11 @@ class LlamaCppRuntimeAdapter:
             defaults["reasoning_format"] = reasoning_format
         return defaults
 
-    def _fallback_states(
-        self,
-        *,
-        animator: RuntimeAnimator,
-        specs: list[CapabilitySpec],
-        mode: str,
-        health: str,
-        reason: str | None,
-    ) -> list[CapabilityState]:
-        """Create conservative capability states when live probes are unavailable."""
-        is_static = mode != "router"
-        active_model_id = getattr(animator.connector, "default_model_id", None) if is_static else None
-        loaded_ids = [active_model_id] if active_model_id is not None and is_static else []
-        return [
-            CapabilityState(
-                capability_key=spec.key,
-                is_static=is_static,
-                is_active=is_static and animator.connector.link.up,
-                is_available=True,
-                warm=is_static and animator.connector.link.up,
-                health=health,
-                active_model_id=active_model_id,
-                loaded_model_ids=loaded_ids,
-                reason=reason,
-                metadata=getattr(animator.connector, "metadata", {}),
-            )
-            for spec in specs
-        ]
-
-    def _normalize_active_model_id(self, lifecycle: object, specs: list[CapabilitySpec]) -> str | None:
+    def _normalize_active_model_id(self, lifecycle: AnimatorLifecycle, specs: list[CapabilitySpec]) -> str | None:
         """Map lifecycle active model payloads back onto capability model ids."""
-        active_model = getattr(lifecycle, "active_model", None)
+        active_model = lifecycle.active_model
         if not isinstance(active_model, str) or not active_model:
-            loaded = getattr(lifecycle, "loaded_models", None)
-            if isinstance(loaded, list) and loaded:
-                loaded_candidates = cast("list[object]", loaded)
-                for candidate in loaded_candidates:
-                    if isinstance(candidate, str):
-                        return candidate
-            return None
+            return lifecycle.loaded_models[0] if lifecycle.loaded_models else None
 
         for spec in specs:
             metadata_path = spec.metadata.get("path")

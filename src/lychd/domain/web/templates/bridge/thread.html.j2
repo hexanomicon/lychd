@@ -1,6 +1,6 @@
 {# The message column: the send composer appends new turns here (beforeend). #}
 <div id="bridge-thread" class="thread-scroll" role="log" aria-label="Conversation"
-     data-fragment="bridge.thread" data-state="rendered">
+     data-fragment="bridge.thread" x-data="autoscroll">
   {% for turn in turns %}
     {% if turn.role == 'user' %}
       {% include 'bridge/turn_user.html.j2' %}

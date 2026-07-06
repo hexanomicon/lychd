@@ -3,19 +3,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
-from lychd.domain.animation.capabilities import CapabilityFamily
+import pytest
+
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle, CapabilityPhase
 from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericStone,
-    LlamacppConnector,
     OpenAICompatibleConnector,
     OpenAICompatibleStone,
 )
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
-from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
+from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamaCppControlPlane, LlamaCppLifecycle
 from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
     SglangRuntimeAdapter,
@@ -242,10 +243,11 @@ def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None
 
     # Preset sections plus the Soulstone-name fallback each yield a dynamic spec.
     assert {spec.model_id for spec in specs} == {"router", "router-main", "router-vision"}
-    assert all(spec.lifecycle_mode == "dynamic_soft" for spec in specs)
+    assert all(spec.lifecycle is CapabilityLifecycle.DYNAMIC for spec in specs)
 
 
-def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> None:
     preset = tmp_path / "models.ini"
     preset.write_text(
         (
@@ -267,8 +269,9 @@ def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> 
     )
 
     class StubControlPlane:
-        def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
+        async def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
             return LlamaCppLifecycle(
+                runtime="llamacpp",
                 base_url="http://localhost:8080/v1",
                 mode="router",
                 health="ok",
@@ -285,13 +288,16 @@ def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Path) -> 
     runtime.connector.link.up = True
 
     specs = adapter.build_capability_specs(soulstone)
-    states = {state.capability_key: state for state in adapter.probe_capability_states(runtime, specs)}
+    states = {state.capability_key: state for state in await adapter.probe_capability_states(runtime, specs)}
 
     main = next(spec for spec in specs if spec.model_id == "router-main")
     vision = next(spec for spec in specs if spec.model_id == "router-vision")
 
+    # router-main is loaded + health ok ⇒ WARM; router-vision unloaded ⇒ ACTIVATABLE.
     assert states[main.key].is_static is False
+    assert states[main.key].phase is CapabilityPhase.WARM
     assert states[main.key].is_active is True
+    assert states[vision.key].phase is CapabilityPhase.ACTIVATABLE
     assert states[vision.key].is_active is False
     assert states[main.key].active_model_id == "router-main"
 

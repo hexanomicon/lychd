@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from pydantic import AnyHttpUrl
 
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo
 from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
-from lychd.domain.animation.services.adapters.surfaces import LlamacppConnector, LlamacppStone
 from lychd.extensions.builtin.animator import LlamaCppMode, LlamaCppSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import (
+    LlamacppConnector,
     LlamaCppControlPlane,
     LlamaCppControlPlaneError,
+    LlamacppStone,
 )
 from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 
@@ -36,11 +38,12 @@ def _router_animator() -> LlamacppStone:
     return LlamacppStone(rune=rune, connector=connector, quadlet=quadlet)
 
 
-def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: Any) -> None:
+@pytest.mark.asyncio
+async def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: Any) -> None:
     control = LlamaCppControlPlane()
     calls: list[tuple[str, str, dict[str, str] | None]] = []
 
-    def fake_request_json(
+    async def fake_request_json(
         _uri: str,
         method: str,
         path: str,
@@ -64,7 +67,7 @@ def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: Any) ->
         return {}
 
     monkeypatch.setattr(control, "_request_json", fake_request_json)
-    lifecycle = control.inspect_animator(_router_animator())
+    lifecycle = await control.inspect_animator(_router_animator())
 
     assert lifecycle.health == "ok"
     assert lifecycle.supports_router is True
@@ -75,10 +78,11 @@ def test_llamacpp_control_inspect_animator_router_lifecycle(monkeypatch: Any) ->
     assert ("GET", "/props", {"model": "qwen-next-80b"}) in calls
 
 
-def test_llamacpp_control_inspect_degrades_on_endpoint_error(monkeypatch: Any) -> None:
+@pytest.mark.asyncio
+async def test_llamacpp_control_inspect_degrades_on_endpoint_error(monkeypatch: Any) -> None:
     control = LlamaCppControlPlane()
 
-    def fake_request_json(
+    async def fake_request_json(
         _uri: str,
         _method: str,
         path: str,
@@ -93,18 +97,19 @@ def test_llamacpp_control_inspect_degrades_on_endpoint_error(monkeypatch: Any) -
         raise LlamaCppControlPlaneError(error_msg)
 
     monkeypatch.setattr(control, "_request_json", fake_request_json)
-    lifecycle = control.inspect(base_url="http://localhost:8080/v1", mode="router", model_id="qwen-next-80b")
+    lifecycle = await control.inspect(base_url="http://localhost:8080/v1", mode="router", model_id="qwen-next-80b")
 
     assert lifecycle.health == "loading"
     assert "props_error" in lifecycle.raw
     assert "models_error" in lifecycle.raw
 
 
-def test_llamacpp_control_load_and_unload_model(monkeypatch: Any) -> None:
+@pytest.mark.asyncio
+async def test_llamacpp_control_load_and_unload_model(monkeypatch: Any) -> None:
     control = LlamaCppControlPlane()
     seen: list[tuple[str, str, dict[str, Any] | None]] = []
 
-    def fake_request_json(
+    async def fake_request_json(
         _uri: str,
         method: str,
         path: str,
@@ -118,7 +123,7 @@ def test_llamacpp_control_load_and_unload_model(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(control, "_request_json", fake_request_json)
 
-    assert control.load_model("http://localhost:8080/v1", "qwen-next-80b") is True
-    assert control.unload_model("http://localhost:8080/v1", "qwen-next-80b") is True
+    assert await control.load_model("http://localhost:8080/v1", "qwen-next-80b") is True
+    assert await control.unload_model("http://localhost:8080/v1", "qwen-next-80b") is True
     assert ("POST", "/models/load", {"model": "qwen-next-80b"}) in seen
     assert ("POST", "/models/unload", {"model": "qwen-next-80b"}) in seen

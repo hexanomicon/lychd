@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, cast
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan, SoulstoneRuntimeAdapter
 from lychd.domain.animation.services.adapters.runtimes.generic import GenericRuntimeAdapter
@@ -64,6 +71,13 @@ class RuntimeAdapterRegistry:
                 return adapter
         return self._fallback
 
+    def adapter_for_animator(self, animator: RuntimeAnimator) -> SoulstoneRuntimeAdapter | None:
+        """Return the runtime adapter backing a resolved soulstone animator."""
+        rune = animator.rune
+        if isinstance(rune, PortalConfig):
+            return None
+        return self.adapter_for(rune)
+
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Build a host-facing runtime plan for a Soulstone."""
         adapter = self.adapter_for(soulstone)
@@ -103,23 +117,31 @@ class RuntimeAdapterRegistry:
         adapter = self.adapter_for(rune)
         return adapter.build_capability_specs(rune)
 
-    def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
+    async def probe_capability_states(
+        self,
+        animator: RuntimeAnimator,
+        specs: list[CapabilitySpec],
+    ) -> list[CapabilityState]:
         """Probe capability states for either a soulstone or portal runtime."""
         rune = animator.rune
         if isinstance(rune, PortalConfig):
             return self._probe_portal_capability_states(animator, specs)
 
         adapter = self.adapter_for(rune)
-        return adapter.probe_capability_states(animator, specs)
+        return await adapter.probe_capability_states(animator, specs)
 
-    def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool:
+    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
         """Delegate runtime-specific capability activation when supported."""
         rune = animator.rune
         if isinstance(rune, PortalConfig):
-            return False
+            return ActivationResult(
+                accepted=False,
+                phase=CapabilityPhase.WARM if animator.connector.link.up else CapabilityPhase.COLD,
+                reason="fixed capability; lifecycle owned by unit",
+            )
 
         adapter = self.adapter_for(rune)
-        return adapter.activate_capability(animator, spec)
+        return await adapter.activate_capability(animator, spec)
 
     def _build_portal_runtime(self, portal: PortalConfig) -> RuntimeAnimator:
         """Resolve portal runtime by custom factories, then passive fallback."""
@@ -170,22 +192,25 @@ class RuntimeAdapterRegistry:
         _ = runtime
         return []
 
-    def _probe_portal_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
-        """Project passive portal readiness into capability states."""
+    def _probe_portal_capability_states(
+        self, animator: RuntimeAnimator, specs: list[CapabilitySpec]
+    ) -> list[CapabilityState]:
+        """Project passive portal readiness into phase-canonical capability states."""
         link = animator.connector.link
-        health = "ok" if link.up else "down"
+        up = link.up
+        health = "ok" if up else "down"
+        checked_at = datetime.now(UTC)
         return [
             CapabilityState(
                 capability_key=spec.key,
-                is_static=True,
-                is_active=link.up,
-                is_available=bool(animator.connector.base_url),
-                warm=link.up,
+                lifecycle=CapabilityLifecycle.STATIC,
+                phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
                 health=health,
-                active_model_id=spec.model_id if link.up else None,
-                loaded_model_ids=[spec.model_id] if link.up else [],
-                reason=None if link.up else link.reason,
-                metadata=animator.connector.metadata,
+                active_model_id=spec.model_id if up else None,
+                loaded_model_ids=[spec.model_id] if up else [],
+                reason=None if up else link.reason,
+                checked_at=checked_at,
+                metadata=cast("dict[str, object]", getattr(animator.connector, "metadata", {})),
             )
             for spec in specs
         ]

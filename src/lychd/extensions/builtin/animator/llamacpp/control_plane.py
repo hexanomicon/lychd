@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, cast
-from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit, urlunsplit
-from urllib.request import Request, urlopen
 
-from pydantic import BaseModel, ConfigDict, Field
+from lychd.domain.animation.lifecycle import AnimatorLifecycle
+from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, request_json
 
 if TYPE_CHECKING:
     from lychd.config.runes import RuneConfig
@@ -17,43 +15,33 @@ if TYPE_CHECKING:
 
 type RuntimeAnimator = Animator[Connector, RuneConfig]
 
+# Back-compat alias: the control plane now returns the runtime-neutral domain DTO
+# (spec §5). ``LlamaCppLifecycle`` remains importable for one release.
+LlamaCppLifecycle = AnimatorLifecycle
+
 
 class LlamaCppControlPlaneError(RuntimeError):
     """Raised when llama.cpp control-plane calls fail."""
 
 
-class LlamaCppLifecycle(BaseModel):
-    """Observed runtime lifecycle state from llama.cpp control-plane endpoints."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    runtime: str = "llamacpp"
-    base_url: str
-    mode: str
-    health: str = "unknown"
-    sleeping: bool | None = None
-    supports_router: bool = False
-    active_model: str | None = None
-    loaded_models: list[str] = Field(default_factory=list)
-    available_models: list[str] = Field(default_factory=list)
-    total_slots: int | None = None
-    raw: dict[str, Any] = Field(default_factory=dict)
-
-
 class LlamaCppControlPlane:
-    """Minimal HTTP client for llama.cpp health/router lifecycle operations.
+    """Async HTTP client for llama.cpp health/router lifecycle operations.
 
     The control plane is intentionally decoupled from old resolved-binding DTOs.
     It can inspect:
     - a runtime animator whose connector exposes llama.cpp metadata, or
     - an explicit ``(base_url, mode, model_id)`` target.
+
+    All I/O is async httpx (A3-U3: no blocking ``urlopen``). Endpoint logic
+    (``/health`` / ``/props`` / ``/models`` / ``/models/load`` / ``/models/unload``)
+    is preserved verbatim.
     """
 
-    def __init__(self, *, timeout_seconds: float = 5.0) -> None:
+    def __init__(self, *, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> None:
         """Initialize HTTP timeout used for llama.cpp control-plane probes."""
         self._timeout = timeout_seconds
 
-    def inspect_animator(self, animator: RuntimeAnimator) -> LlamaCppLifecycle:
+    async def inspect_animator(self, animator: RuntimeAnimator) -> AnimatorLifecycle:
         """Inspect llama.cpp runtime state for a runtime animator.
 
         The animator must expose a connector with ``kind == 'llamacpp'`` and the
@@ -70,23 +58,27 @@ class LlamaCppControlPlane:
             raise LlamaCppControlPlaneError(msg)
 
         model_id = getattr(connector, "router_query_model_id", None)
-        return self.inspect(base_url=connector.base_url, mode=cast("str", mode), model_id=cast("str | None", model_id))
+        return await self.inspect(
+            base_url=connector.base_url,
+            mode=cast("str", mode),
+            model_id=cast("str | None", model_id),
+        )
 
-    def inspect(self, *, base_url: str, mode: str, model_id: str | None = None) -> LlamaCppLifecycle:
+    async def inspect(self, *, base_url: str, mode: str, model_id: str | None = None) -> AnimatorLifecycle:
         """Inspect runtime state from llama.cpp health/props/models endpoints."""
-        lifecycle = LlamaCppLifecycle(base_url=base_url, mode=mode)
+        lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url=base_url, mode=mode)
 
         model_query = model_id if mode == "router" else None
 
         try:
-            health = self._request_json(base_url, "GET", "/health", query=self._query_model(model_query))
+            health = await self._request_json(base_url, "GET", "/health", query=self._query_model(model_query))
             lifecycle.raw["health"] = health
             lifecycle.health = self._coerce_health(health)
         except LlamaCppControlPlaneError as exc:
             lifecycle.raw["health_error"] = str(exc)
 
         try:
-            props = self._request_json(base_url, "GET", "/props", query=self._query_model(model_query))
+            props = await self._request_json(base_url, "GET", "/props", query=self._query_model(model_query))
             lifecycle.raw["props"] = props
             lifecycle.sleeping = self._as_bool(props.get("is_sleeping"))
             lifecycle.total_slots = self._as_int(props.get("total_slots"))
@@ -96,7 +88,7 @@ class LlamaCppControlPlane:
 
         if mode == "router":
             try:
-                models = self._request_json(base_url, "GET", "/models")
+                models = await self._request_json(base_url, "GET", "/models")
                 lifecycle.raw["models"] = models
                 lifecycle.supports_router = True
                 self._populate_router_models(lifecycle, models)
@@ -105,19 +97,19 @@ class LlamaCppControlPlane:
 
         return lifecycle
 
-    def load_model(self, base_url: str, model: str) -> bool:
+    async def load_model(self, base_url: str, model: str) -> bool:
         """Request router to load a model by id."""
         payload = {"model": model}
-        response = self._request_json(base_url, "POST", "/models/load", payload=payload)
+        response = await self._request_json(base_url, "POST", "/models/load", payload=payload)
         return bool(response.get("success"))
 
-    def unload_model(self, base_url: str, model: str) -> bool:
+    async def unload_model(self, base_url: str, model: str) -> bool:
         """Request router to unload a model by id."""
         payload = {"model": model}
-        response = self._request_json(base_url, "POST", "/models/unload", payload=payload)
+        response = await self._request_json(base_url, "POST", "/models/unload", payload=payload)
         return bool(response.get("success"))
 
-    def _request_json(
+    async def _request_json(
         self,
         base_url: str,
         method: str,
@@ -126,38 +118,18 @@ class LlamaCppControlPlane:
         query: dict[str, str] | None = None,
         payload: dict[str, Any] | None = None,
     ) -> dict[str, object]:
-        request_url = self._build_url(base_url, path, query=query)
-        body = json.dumps(payload).encode("utf-8") if payload is not None else None
-        headers = {"Content-Type": "application/json"} if payload is not None else {}
-        request = Request(request_url, data=body, headers=headers, method=method)  # noqa: S310
-
+        request_url = self._build_url(base_url, path)
         try:
-            with urlopen(request, timeout=self._timeout) as response:  # noqa: S310
-                raw = response.read().decode("utf-8")
-        except HTTPError as exc:
-            message = exc.read().decode("utf-8", errors="replace")
-            error_msg = f"{method} {path} failed with status {exc.code}: {message}"
+            return await request_json(
+                method,
+                request_url,
+                query=query,
+                payload=payload,
+                timeout=self._timeout,
+            )
+        except HttpJsonError as exc:
+            error_msg = f"{method} {path} failed: {exc}"
             raise LlamaCppControlPlaneError(error_msg) from exc
-        except URLError as exc:
-            error_msg = f"{method} {path} failed: {exc.reason}"
-            raise LlamaCppControlPlaneError(error_msg) from exc
-
-        if not raw.strip():
-            return {}
-
-        try:
-            parsed: object = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            error_msg = f"{method} {path} returned invalid JSON: {raw[:120]}"
-            raise LlamaCppControlPlaneError(error_msg) from exc
-
-        parsed_map = self._as_map(parsed)
-        if parsed_map is not None:
-            return parsed_map
-        if isinstance(parsed, list):
-            return {"data": cast("list[object]", parsed)}
-        error_msg = f"{method} {path} returned unsupported payload type: {type(parsed)}"
-        raise LlamaCppControlPlaneError(error_msg)
 
     def _build_url(self, base_url: str, path: str, *, query: dict[str, str] | None = None) -> str:
         split = urlsplit(base_url)
@@ -182,7 +154,7 @@ class LlamaCppControlPlane:
             return "error"
         return "unknown"
 
-    def _populate_router_models(self, lifecycle: LlamaCppLifecycle, payload: dict[str, object]) -> None:
+    def _populate_router_models(self, lifecycle: AnimatorLifecycle, payload: dict[str, object]) -> None:
         entries = payload.get("data")
         if not isinstance(entries, list):
             return
