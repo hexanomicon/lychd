@@ -40,6 +40,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Invocation** | Submitting a form or API request to trigger an Agent workflow. The runtime act of calling upon the Lich. | Vessel API |
 | **Iron Pact** | The MPL 2.0 License and Implicit DCA policy. The unbreakable ward. | Repository Root |
 | **Karma** | The dataset of user-accepted code/responses (RLHF data). Crystallized residue of the Magus's judgment. | Phylactery Archive |
+| **Kit** | Packed specialist competence — instructions, tools, and model choice bundled as one equippable unit. An agent **equips** a Kit to become a **Specialist**. The **kit sheet** is its instruction file (the `SKILL.md` analog); a Kit is stamped via `lych kit stamp`. Formerly named *Craft*. Roadmap term (capability-packing, Wave 5); not yet built. | Agents (roadmap) |
 | **Lab** | The `lab/` directory / Development sandbox. The site of Genesis. | Filesystem Layout |
 | **Legion** | The multi-node Thrall coordination extension (ADR 42). The Lich's personal army. | Extension |
 | **Lich** | The emergent system intelligence of LychD: the active reasoning will produced by runtime agents, orchestration, identity, and accumulated state acting together. It is not a single agent object. | `src/lychd/domain/`, `src/lychd/db/` |
@@ -50,6 +51,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Oculus** | Arize Phoenix (LLM Tracing & Observability). The Great Seer. | Extension |
 | **Orchestrator** | The state machine managing VRAM and container lifecycles. The runtime governor. | `src/lychd/domain/orchestration/` |
 | **Ouroboros** | The self-reference loop by which generated outputs return through workflow state, Shadow execution, Riddle measurement, Mirror attribution, memory inscription, and consent before shaping future runs. The mechanism that turns linear generation into coherent inertia. | Evolution + Lich |
+| **Persona** | The durable identity layer — the *voice and style* an agent wears across runs, maintained by the Mirror (ADR 32). A Persona wears Postures; it is not itself a per-run Posture. In the identity triad it answers *voice*, distinct from the Sigil (*who*) and the Kit (*what-it-can-do*). | Mirror (ADR 32) |
 | **Phylactery** | The PostgreSQL database (with `pgvector`). The anchor of the Lich's soul-data: Karma, Smṛti, Saṃskāra, traces, queues, and durable state. | `src/lychd/db/` |
 | **Portal** | A runtime Animator backed by a Portal Rune; a connection to a remote API, hosted tool, cloud model, observability endpoint, or peer service. A rift to distant capability. | `src/lychd/domain/animation/` |
 | **Portal Rune** | A Codex TOML declaration that describes a remote Portal endpoint, provider identity, optional model defaults, tools/capabilities, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
@@ -61,11 +63,14 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Sepulcher** | The rootless runtime body of LychD: the pod, services, mounts, and execution topology that physically houses the daemon's organs. | Infrastructure |
 | **Semantic Vertex** | A local identity attractor in context and embedding space where related words, tools, memories, roles, priors, and responsibilities cluster around an active Sigil or task identity. | Mirror + Context |
 | **Shadow Realm** | The speculative reality substrate: Jujutsu workspaces under `lab/shadow/` and Phantasma expansion. Shadow branches may dispatch execution *into* the Tomb; the planes are never synonyms. | Lab + Shadow (jj) |
+| **Shed** | The registry of **Kits** — the store the agent layer equips competence from. Formerly named *Grimoire*. Roadmap term (capability-packing, Wave 5); not yet built. | Agents (roadmap) |
+| **Sigil** | The active identity token — *who* is acting. It carries permission scopes and grants authority (never ferrying the secret itself); identity-scoped memory reads and writes with `entity_id = Sigil.id`. In the identity triad it answers *who*, distinct from the Persona (*voice*) and the Kit (*what-it-can-do*). | `src/lychd/agents/deps.py`; ADR 09/32/38 |
 | **Smith** | The Assimilation / Autopoiesis Extension. The Prime Artificer. | Extension |
 | **Soulforge** | The Fine-Tuning / LoRA training pipeline. The late substrate forge where stable Karma patterns compress into adapter-level instinct after Context and Mirror have already shaped runtime identity-gravity. | Extension |
 | **Soulstone** | A local runtime Animator backed by a Soulstone Rune; a Quadlet/systemd service such as SGLang, vLLM, llama.cpp, Whisper, Playwright, Phoenix, or another local capability engine. A trapped spirit on local iron. | `src/lychd/domain/animation/` |
 | **Soulstone Rune** | A Codex TOML declaration that describes local runtime intent for a Soulstone, including image, runtime family, port, coven membership, optional models, mounts, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
 | **Sovereignty Wall** | The privacy and egress policy boundary that prevents sensitive intents from leaking to the cloud. Defined by Security policy and enforced by Dispatcher routing. | Security + Dispatcher |
+| **Specialist** | A running agent instance carrying a specialized competence within a workflow run — the live, task-scoped face of a **Kit** once an agent has **equipped** it. The running instance is always the Specialist; the Kit is the packed form. | `src/lychd/agents/` |
 | **Spheres** | The strict volume mount and permission topology. Concentric zones of filesystem permission. | Layout (ADR 13) |
 | **Summoning** | The `systemctl --user start lychd` command. The final act of waking the Daemon. | CLI |
 | **Tether** | The VPN Extension (WireGuard). The silver link across distance. | Extension |

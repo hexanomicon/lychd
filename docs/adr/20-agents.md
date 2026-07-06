@@ -60,6 +60,9 @@ An Agent is the execution atom of cognition, the fundamental unit of labor for b
 !!! note "Stratification of Selves"
     Three identity-adjacent notions layer rather than compete. A **Posture** is a per-run mechanical configuration—output schema, tool grant, `ModelSettings`, and prompt frame. A **Lens** (**[Simulation (ADR 31)](./31-simulation.md)**) is a Posture template employed for expansion isolation in the Shadow. A **Persona** (**[Mirror (ADR 32)](./32-identity.md)**) is a durable identity that *wears* Postures across runs. Persona chooses; Posture constrains; Lens diversifies.
 
+!!! note "The identity triad: who / voice / what-it-can-do"
+    Three orthogonal axes name an acting agent and must not be conflated. The **Sigil** is *who* (identity and permission scope, **[Security (09)](./09-security.md)**). The **Persona** is *voice* (durable style, **[Mirror (ADR 32)](./32-identity.md)**). The **Kit** is *what-it-can-do* — the packed Arsenal (instructions + tools + model choice) an agent **equips** to become a **Specialist**. `Kit` and its registry the `Shed` (formerly *Craft* / *Grimoire*) are the locked terms for the capability-packing model; it is roadmap (Wave 5) and not yet built. The running instance is always the Specialist; the Kit is the packed form.
+
 ### 1. Late-Binding Intelligence
 
 To prevent "Brain-Locking," the Agent's definition is decoupled from its implementation. The `Model` and `FunctionToolset` are resources that must be requested from the system's sovereign controller at runtime.

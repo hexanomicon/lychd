@@ -59,6 +59,13 @@ The capability ontology is frozen. Earlier drafts left the class names provision
 
 The canonical capability key is `{animator}:{family}:{model_id}`. The rune names the Animator (**[Configuration (12)](12-configuration.md)**); the family and model id complete the identity, so a single multi-model Animator yields several Specs.
 
+#### Lifecycle and Phase
+
+A `CapabilitySpec` carries a `CapabilityLifecycle`; a `CapabilityState` projects a `CapabilityPhase`. The two are orthogonal: lifecycle is a *fixed property of the runtime* (how it becomes ready), phase is the *live observation* (whether it is ready now).
+
+- **`CapabilityLifecycle`** — `STATIC` (resident whenever the Animator unit is up — the server binds its port only after the model loads, so a reachable endpoint is warm) or `DYNAMIC` (the unit is up but the model needs an in-runtime activation step, e.g. the `llama.cpp` router `/models/load`). These are the canonical doctrine words; an earlier `FIXED/AWAITED` proposal was rejected, and the legacy `dynamic_soft` string normalizes to `DYNAMIC`.
+- **`CapabilityPhase`** — the six-value readiness ladder: `COLD` (unit down / endpoint unreachable), `ACTIVATABLE` (unit up, a `DYNAMIC` model not yet loaded), `WARMING` (activation in flight), `WARM` (requests accepted now), `ERROR`, and `UNKNOWN`. Intent resolution drives its decision table off the phase, not a boolean.
+
 #### The Two-Axis Law
 
 A capability is described along two orthogonal axes, and conflating them is forbidden:
@@ -98,8 +105,8 @@ The runtime registry is the canonical handshake surface. It exposes:
 - `CapabilityState`: the latest live observation
 - `CapabilityGrant`: the late-bound dispatch handoff
 
-- **The Substrate Check:** When an Agent requests a capability, the Dispatcher reads `CapabilityState`.
-- **The Physical Check:** If `warm=False`, the physical substrate supports the capability but it is not presently ready.
+- **The Substrate Check:** When an Agent requests a capability, the Dispatcher reads `CapabilityState.phase`.
+- **The Physical Check:** Any phase below `WARM` (`COLD`, `ACTIVATABLE`, `WARMING`) means the substrate supports the capability but it is not presently ready — `ACTIVATABLE` invites a `DYNAMIC` soft activation, `COLD` invites a hard swap.
 - **The Residency Boundary:** `persistent_resident=True` keeps a support runtime out of the default eviction set, but it does not create a second conflict law or a second activation path.
 - **The Lifecycle Boundary:** `dedicated=False` means the runtime is routable but not lifecycle-managed by LychD.
 - **The Stasis Signal:** In this scenario, the Dispatcher raises `HardwareTransitionRequired`. This freezes the Agent Graph and hands control to the Orchestrator.

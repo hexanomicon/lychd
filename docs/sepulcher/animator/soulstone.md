@@ -105,12 +105,12 @@ Mode/argument precedence is deterministic:
 
 In router mode, a single llama.cpp Soulstone can serve different models over its lifetime without the container restarting. Each model load/unload transitions the Animator's capability state:
 
-- Container boots → `is_static=True` for all capabilities the current model supports.
-- Model swap triggered (via llama.cpp API) → old model's capabilities flip `is_active=False`.
-- New model loads and warms → new model's capabilities flip `is_active=True`.
+- Container boots → the router is up, so its `DYNAMIC` capabilities sit at phase `ACTIVATABLE` until a model is loaded.
+- Model swap triggered (via llama.cpp API) → the old model's capabilities fall back toward `ACTIVATABLE`/`COLD`.
+- New model loads and warms → its capabilities pass through `WARMING` and reach `WARM`.
 - The **[Orchestrator](../../adr/23-orchestrator.md)** manages these transitions; no coven swap (Systemd restart) is required.
 
-This means a single llama.cpp Soulstone can dynamically expose `chat`, `vision`, or `embedding` capability families as different models are loaded. The **[Dispatcher](../../adr/22-dispatcher.md)** tracks `is_active` state and routes accordingly.
+This means a single llama.cpp Soulstone can dynamically expose `chat`, `vision`, or `embedding` capability families as different models are loaded. The **[Dispatcher](../../adr/22-dispatcher.md)** tracks each capability's `CapabilityPhase` (its position on the `COLD → ACTIVATABLE → WARMING → WARM` ladder) and routes accordingly.
 
 ## :material-scale-balance: The Ritual of Compression (Quantization)
 

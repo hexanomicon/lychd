@@ -52,6 +52,19 @@ The Worker (Ghoul) is executed as a separate operating system process from the W
 - **Async Efficiency:** Because the Ghouls run on an asynchronous event loop, a single process can manage thousands of concurrent tasks (e.g., awaiting a response from a remote A2A peer or a slow local model) without exhausting system threads.
 - **Worker Profile Binding (Topology Split):** To enforce the Dual-Plane Trust Delta, queue *definitions* are maintained globally, but worker *execution loops* are conditionally bound. Environment variables such as `LYCHD_WORKER_PROFILE` decide which queues a process may claim at boot. The Vessel boots under the `core` profile for trusted orchestration tasks, while the Tomb boots under the `tomb` profile for untrusted code-execution tasks. This separation prevents a malicious payload from jumping execution queues by overwhelming a trusted worker.
 
+!!! note "Topology A (v1): the in-process ghoul"
+    The separate-OS-process split above is the target form; the untrusted `tomb` plane still requires it. For v1, the cognitive `runs` worker runs **in-process** on the Vessel's event loop via `use_server_lifespan=True` (Topology A). The in-process ghoul (`perform_run`) and the SSE handler therefore share one `RunEventBus` instance, so a run's tokens reach its open stream byte-for-byte. The multi-process split (Topology B, `RunEventBus` behind a `PostgresEventBus`) is a config-era follow-up; no v1 code assumes it.
+
+### 1a. The Run Substrate (Every Workflow Is a SAQ Job)
+
+Every workflow run is a SAQ job, not a fire-and-forget in-process coroutine. The old `asyncio.create_task` submission path is gone; a single `RunEngine.submit(intent)` is the one entry for every surface (Bridge now; CLI and A2A later):
+
+1. Route once via the `WorkflowRegistry`; resolve `(queue_name, priority)` via the `QueueRouter` (`[orchestration.routing]`).
+2. Persist a `QUEUED` `Run` through the **`RunLedger`** — the run truth store (in-memory for DB-free tests; Postgres `run`/`step` tables in the durable substrate).
+3. Open the run's channel on the **`RunEventBus`** and enqueue `perform_run` onto the `runs` queue.
+
+The ghoul (`perform_run`) claims the job, writes `RUNNING`, drives the graph, and writes the terminal status. Events are **semantic** `RunEvent`s (`STATUS/NODE/TOKEN/FRAGMENT/CONSENT/LOG/DONE`); the web `Projector` renders them. Non-`TOKEN` events tee into the `RunLedger` as `Step` rows (`TOKEN` is too chatty — settled text lands on the session turn). A `reconcile_runs` rite sweeps runs left `RUNNING` by a crash back to a safe state on restart.
+
 ### 2. The Doctrine: Brain in the Vessel, Hands in the Tomb
 
 All cognitive labor—agent graph runners, LLM inference orchestration, Dispatcher resolution, memory curation—executes exclusively in the Vessel. The Tomb is a **brainless executor**. It receives serialized script payloads (Python code, CLI commands) via SAQ, runs them inside the `nono` sandbox, and returns `stdout`. It does not run agent logic, graph state machines, or make LLM provider calls.
