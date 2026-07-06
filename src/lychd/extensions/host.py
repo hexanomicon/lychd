@@ -22,6 +22,7 @@ if TYPE_CHECKING:
         SoulstoneDefinition,
         SoulstoneRuntimeAdapter,
     )
+    from lychd.domain.animation.transmute import QuadletContributor
     from lychd.extensions.context import ExtensionContext
 
 
@@ -47,6 +48,10 @@ class AssembledExtensions:
     @property
     def portal_factories(self) -> tuple[PortalRuntimeFactory, ...]:
         return self.context.portals.factories
+
+    @property
+    def quadlet_contributors(self) -> tuple[QuadletContributor, ...]:
+        return self.context.transmutation.contributors
 
 
 def assemble_extensions(settings: Settings | None = None) -> AssembledExtensions:

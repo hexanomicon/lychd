@@ -7,14 +7,13 @@ no filesystem writes or host mutations.
 from __future__ import annotations
 
 import shlex
-from typing import TYPE_CHECKING, Any, Final
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Final, Protocol
 
-from lychd.config.runes import RuneConfig
 from lychd.config.settings import get_settings
+from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
-    CONTAINER_PHOENIX_OTLP_PORT,
-    CONTAINER_PHOENIX_UI_PORT,
     CONTAINER_POSTGRES_PORT,
     PATH_CODEX_ROOT,
     PATH_CORE_DIR,
@@ -25,11 +24,61 @@ from lychd.system.constants import (
 from lychd.system.schemas import MountData, QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings import Settings
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 MIN_COVEN_MEMBERS: Final[int] = 2
+
+
+@dataclass(frozen=True)
+class QuadletContribution:
+    """What one extension adds to the transmuted pod.
+
+    By type this can add ONLY containers and pod ports -- it cannot mutate
+    soulstone containers, core manifests, or targets (brief §8, property 4).
+    """
+
+    containers: list[QuadletContainer] = field(default_factory=list)
+    pod_ports: list[str] = field(default_factory=list)  # "host:container"
+
+
+@dataclass(frozen=True)
+class TransmutationContext:
+    """Everything a contributor may read. No mutation surface (frozen)."""
+
+    settings: Settings
+    soulstones: Sequence[SoulstoneConfig]
+    portals: Sequence[PortalConfig]
+    runes: RuneRegistry  # contributors find their own rune: runes.one_or_none(X)
+
+
+class QuadletContributor(Protocol):
+    """A contributor that appends containers/pod-ports to the transmuted pod."""
+
+    def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
+        """Return this extension's additive contribution to the pod."""
+        ...
+
+
+class TransmutationStore(ExtensionStore):
+    """Store for Quadlet contributions from extensions."""
+
+    def __init__(self) -> None:
+        """Create an empty contributor store."""
+        self._contributors: list[QuadletContributor] = []
+
+    def add_contributor(self, contributor: QuadletContributor) -> None:
+        """Register one Quadlet contributor."""
+        self._contributors.append(contributor)
+
+    @property
+    def contributors(self) -> tuple[QuadletContributor, ...]:
+        """Registered Quadlet contributors, in registration order."""
+        return tuple(self._contributors)
 
 
 class Transmuter:
@@ -41,36 +90,65 @@ class Transmuter:
     - Defining the core Quadlet manifests (Pod, Phylactery, Oculus).
     """
 
-    def __init__(self, *, runtime_planner: SoulstoneRuntimePlanner) -> None:
-        """Initialize transmuter with an injected runtime planner dependency."""
+    def __init__(
+        self,
+        *,
+        runtime_planner: SoulstoneRuntimePlanner,
+        contributors: Sequence[QuadletContributor] = (),
+    ) -> None:
+        """Initialize transmuter with an injected runtime planner and contributors.
+
+        INVARIANT (brief §8, property 4): ``QuadletContribution`` can add ONLY
+        containers and pod ports; it can never mutate soulstone containers, core
+        manifests, or targets. That is why ``AnimatorRegistry`` may build a
+        Transmuter with NO contributors to extract soulstone containers -- a
+        contribution cannot alter a soulstone container by type.
+        """
         self._runtime_planner = runtime_planner
+        self._contributors = tuple(contributors)
 
     def transmute_all(
         self,
         soulstones: list[SoulstoneConfig],
         *,
         portals: list[PortalConfig] | None = None,
-        extension_runes: list[RuneConfig] | None = None,
+        runes: RuneRegistry | None = None,
     ) -> list[QuadletBase]:
         """Convert Soulstone Runes into a complete Quadlet manifest set."""
+        from lychd.config.runes.registry import RuneRegistry
+
         settings = get_settings()
-        manifests: list[QuadletBase] = []
         resolved_portals = portals or []
-        phoenix = self._resolve_phoenix(extension_runes or [])
+        resolved_runes = runes if runes is not None else RuneRegistry(())
 
-        # 1. The Sepulcher (Pod)
-        manifests.append(self._create_pod(settings, phoenix))
+        ctx = TransmutationContext(
+            settings=settings,
+            soulstones=soulstones,
+            portals=resolved_portals,
+            runes=resolved_runes,
+        )
+        contributions = [contributor.contribute(ctx) for contributor in self._contributors]
 
-        # 2. The Core Rituals (Core Quadlet manifests)
-        manifests.extend(self._create_core_manifests(settings, resolved_portals, phoenix))
+        manifests: list[QuadletBase] = []
 
-        # 3. Calculate Covens
+        # 1. The Sepulcher (Pod): core ports + contribution ports (contributor order).
+        contribution_ports = [port for contribution in contributions for port in contribution.pod_ports]
+        manifests.append(self._create_pod(settings, contribution_ports))
+
+        # 2. The Core Rituals (Vessel, Phylactery).
+        manifests.extend(self._create_core_manifests(settings, resolved_portals))
+
+        # 3. Contribution containers (contributor order) -- e.g. the Oculus.
+        for contribution in contributions:
+            manifests.extend(contribution.containers)
+
+        # 4. Calculate Covens.
         covens: dict[str, list[SoulstoneConfig]] = {}
         for stone in soulstones:
             for group in stone.groups:
                 covens.setdefault(group, []).append(stone)
 
-        # 4. Generate Coven Targets
+        # 5. Generate Coven Targets.
         for group, members in covens.items():
             if len(members) >= MIN_COVEN_MEMBERS:
                 manifests.append(
@@ -80,7 +158,7 @@ class Transmuter:
                     )
                 )
 
-        # 5. Transmute Extension Soulstones
+        # 6. Transmute Extension Soulstones.
         alliances = settings.lychd.alliances
         manifests.extend(
             self._transmute_soulstone(stone, soulstones, covens, alliances, settings) for stone in soulstones
@@ -88,28 +166,25 @@ class Transmuter:
 
         return manifests
 
-    def _create_pod(self, settings: Settings, phoenix: Any | None = None) -> QuadletPod:
-        """Define the physical boundary of the Sepulcher."""
+    def _create_pod(self, settings: Settings, extra_ports: list[str]) -> QuadletPod:
+        """Define the physical boundary of the Sepulcher.
+
+        Core ports come first, then contribution ports append in contributor
+        order -- a contributor can never reorder or shadow a core port.
+        """
         ports = [
             f"{settings.server.port}:{CONTAINER_LYCHD_PORT}",
             f"{settings.db.port}:{CONTAINER_POSTGRES_PORT}",
+            *extra_ports,
         ]
-        if phoenix is not None:
-            ports.extend(
-                [
-                    f"{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
-                    f"{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
-                ]
-            )
         return QuadletPod(publish_ports=ports)
 
     def _create_core_manifests(
         self,
         settings: Settings,
         portals: list[PortalConfig],
-        phoenix: Any | None = None,
     ) -> list[QuadletContainer]:
-        """Define the persistent services (Vessel, Phylactery, and optional Phoenix).
+        """Define the persistent core services (Vessel, Phylactery).
 
         The Vessel mounts all internal and portal-referenced Podman secrets so
         runtime connectors can resolve credentials from ``/run/secrets``.
@@ -154,33 +229,7 @@ class Transmuter:
             after=["lychd.pod"],
         )
 
-        manifests = [vessel, phylactery]
-        if phoenix is not None:
-            db_url = f"postgresql://{settings.db.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
-            manifests.append(
-                QuadletContainer(
-                    description="The Oculus (Arize Phoenix)",
-                    image=phoenix.image,
-                    container_name=f"lychd-{phoenix.name}",
-                    pod="lychd.pod",
-                    env_vars={
-                        "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
-                        "PHOENIX_SQL_DATABASE_URL": db_url,
-                    },
-                    wants=["lychd-phylactery.service"],
-                    after=["lychd-phylactery.service"],
-                )
-            )
-
-        return manifests
-
-    def _resolve_phoenix(self, extension_runes: list[RuneConfig]) -> Any | None:
-        """Return the active Phoenix rune, if the observability extension configured one."""
-        phoenix_runes = [rune for rune in extension_runes if type(rune).__name__ == "PhoenixSettings"]
-        if len(phoenix_runes) > 1:
-            msg = "At most one PhoenixSettings rune may be active."
-            raise ValueError(msg)
-        return phoenix_runes[0] if phoenix_runes else None
+        return [vessel, phylactery]
 
     def _transmute_soulstone(
         self,

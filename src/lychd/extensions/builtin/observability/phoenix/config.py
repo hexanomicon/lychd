@@ -10,6 +10,11 @@ from lychd.config.runes import RuneConfig
 PORT_PHOENIX_UI: Final[int] = 6006
 PORT_PHOENIX_OTLP: Final[int] = 4317
 
+# Internal container ports the Phoenix image binds to (extension-private now:
+# moved out of system/constants.py, which is core-only).
+CONTAINER_PHOENIX_UI_PORT: Final[int] = 6006
+CONTAINER_PHOENIX_OTLP_PORT: Final[int] = 4317
+
 
 class ObservabilityConfig(RuneConfig):
     """Abstract branch Rune for observability-owned configuration."""
@@ -34,6 +39,10 @@ otlp_port = 4317
     host: str = Field(default="localhost", description="Host used when presenting Phoenix URLs.")
     ui_port: int = Field(default=PORT_PHOENIX_UI, ge=1, le=65535, description="Host port for the Phoenix UI.")
     otlp_port: int = Field(default=PORT_PHOENIX_OTLP, ge=1, le=65535, description="Host port for OTLP ingestion.")
+
+    def reserved_ports(self) -> dict[str, int]:
+        """Host port claims (satisfies ``config.runes.protocols.PortReserver``)."""
+        return {"Oculus (Phoenix UI)": self.ui_port, "Oculus (Phoenix OTLP)": self.otlp_port}
 
     @property
     def service_name(self) -> str:

@@ -1,0 +1,343 @@
+"""Golden-manifest parity test for the container/Quadlet transmutation layer.
+
+This is the crown-jewel parity net for the self-generating container structure
+(Magus's #1 worry). It pins the FOUR load-bearing properties of the transmuted
+pod (brief §8) as a byte-stable golden serialization of ``transmute_all(...)``,
+for BOTH scenarios: Phoenix-active and Phoenix-absent.
+
+Written FIRST (before the QuadletContributor refactor) so the refactor is proven
+behaviour-preserving: after P3 lands, these goldens must pass UNCHANGED.
+
+Machine stability: every settings-/host-derived value the manifests embed is
+normalised through the SAME ``get_settings()`` / constant reads at load time
+(never frozen as a literal), so the committed golden is identical on any host.
+Regenerate the goldens with ``LYCHD_REGEN_GOLDEN=1 pytest ...`` after an
+INTENTIONAL manifest change (a golden diff is then a reviewed, deliberate act).
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
+from lychd.config.settings import get_settings
+from lychd.domain.animation.schemas import (
+    ConcurrencyIntent,
+    GenericSoulstoneConfig,
+    OpenAIPortalConfig,
+)
+from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+from lychd.domain.animation.transmute import Transmuter
+from lychd.system import constants
+from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
+
+from lychd.extensions.builtin.observability.phoenix.config import (
+    CONTAINER_PHOENIX_OTLP_PORT,
+    CONTAINER_PHOENIX_UI_PORT,
+    PhoenixSettings,
+)
+
+GOLDEN_DIR = Path(__file__).parents[3] / "fixtures" / "golden" / "quadlets"
+_REGEN = os.getenv("LYCHD_REGEN_GOLDEN") == "1"
+
+
+# --------------------------------------------------------------------------- #
+# Deterministic fixture set (no random factory fields — a golden must be exact) #
+# --------------------------------------------------------------------------- #
+def _soulstones() -> list[SoulstoneConfig]:
+    """A deterministic stone set covering every conflict/target/boot property.
+
+    - ``alpha`` + ``beta``: a >= 2-member coven ("logic") -> a real target.
+    - ``gamma``: a solitary stone -> conflicts by service, not target.
+    - ``resident``: a persistent resident -> WantedBy=default.target.
+    """
+    return [
+        GenericSoulstoneConfig(
+            name="alpha",
+            image="registry.example/alpha:1",
+            groups=["logic"],
+            env_vars={"CTX": "4096"},
+        ),
+        GenericSoulstoneConfig(
+            name="beta",
+            image="registry.example/beta:1",
+            groups=["logic"],
+        ),
+        GenericSoulstoneConfig(
+            name="gamma",
+            image="registry.example/gamma:1",
+            groups=[],
+            secret_env_files={"HF_TOKEN_FILE": "gamma_hf_token"},
+        ),
+        GenericSoulstoneConfig(
+            name="resident",
+            image="registry.example/resident:1",
+            groups=[],
+            concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
+        ),
+    ]
+
+
+def _portals() -> list[PortalConfig]:
+    """One portal with an API-key secret (pins the vessel portal-secret merge)."""
+    return [
+        OpenAIPortalConfig(
+            name="openai-main",
+            api_key_secret_name="openai_api_key",  # noqa: S106 - Podman secret name, not a secret value
+        )
+    ]
+
+
+# --------------------------------------------------------------------------- #
+# Normalisation: replace host-/settings-derived substrings with stable tokens  #
+# --------------------------------------------------------------------------- #
+def _replacements() -> list[tuple[str, str]]:
+    settings = get_settings()
+    pairs = [
+        (str(constants.PATH_POSTGRES_ROOT_DIR), "${PATH_POSTGRES_ROOT_DIR}"),
+        (str(constants.PATH_CORE_DIR), "${PATH_CORE_DIR}"),
+        (str(constants.PATH_EXTENSIONS_DIR), "${PATH_EXTENSIONS_DIR}"),
+        (str(constants.PATH_CODEX_ROOT), "${PATH_CODEX_ROOT}"),
+        (str(constants.PATH_CRYPT_ROOT), "${PATH_CRYPT_ROOT}"),
+        (str(Path.home()), "${HOME}"),
+        (settings.app.image, "${APP_IMAGE}"),
+        (settings.db.image, "${DB_IMAGE}"),
+        (settings.app.secret_key_secret, "${APP_SECRET}"),
+        (settings.db.password_secret, "${DB_SECRET}"),
+    ]
+    # Longest source first so nested paths (CORE/EXTENSIONS under CRYPT) win.
+    return sorted(pairs, key=lambda pair: len(pair[0]), reverse=True)
+
+
+def _normalize(value: Any) -> Any:
+    """Recursively replace machine-/settings-derived substrings with tokens."""
+    if isinstance(value, str):
+        for actual, token in _replacements():
+            if actual:
+                value = value.replace(actual, token)
+        return value
+    if isinstance(value, list):
+        return [_normalize(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _normalize(item) for key, item in value.items()}
+    return value
+
+
+def _unit_identity(manifest: QuadletBase) -> str:
+    if isinstance(manifest, QuadletContainer):
+        return manifest.container_name
+    if isinstance(manifest, QuadletPod):
+        return manifest.pod_name
+    if isinstance(manifest, QuadletTarget):
+        return manifest.name
+    msg = f"Unknown manifest kind: {type(manifest)!r}"
+    raise TypeError(msg)
+
+
+def _serialize(manifests: Sequence[QuadletBase]) -> list[dict[str, Any]]:
+    """Deterministic, machine-stable serialization of a manifest sequence."""
+    return [
+        {
+            "type": type(manifest).__name__,
+            "id": _unit_identity(manifest),
+            "dump": _normalize(manifest.model_dump(mode="json")),
+        }
+        for manifest in manifests
+    ]
+
+
+def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
+    """Drive the Transmuter through the QuadletContributor seam for one scenario.
+
+    The committed goldens were captured PRE-refactor against the old
+    ``extension_runes=`` path; this contributor-based path must reproduce them
+    byte-identically -- that equality is the refactor's parity proof.
+    """
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.extensions.builtin.observability.phoenix.config import PhoenixSettings
+    from lychd.extensions.builtin.observability.phoenix.contributor import PhoenixQuadletContributor
+
+    transmuter = Transmuter(
+        runtime_planner=RuntimeAdapterRegistry(),
+        contributors=[PhoenixQuadletContributor()],
+    )
+    runes = RuneRegistry([PhoenixSettings()] if phoenix_active else [])
+    return transmuter.transmute_all(_soulstones(), portals=_portals(), runes=runes)
+
+
+def _golden_path(scenario: str) -> Path:
+    return GOLDEN_DIR / f"{scenario}.json"
+
+
+def _check_golden(scenario: str, *, phoenix_active: bool) -> list[dict[str, Any]]:
+    actual = _serialize(_transmute(phoenix_active=phoenix_active))
+    path = _golden_path(scenario)
+    if _REGEN:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert path.exists(), f"Missing golden {path}; regenerate with LYCHD_REGEN_GOLDEN=1."
+    expected = json.loads(path.read_text(encoding="utf-8"))
+    assert actual == expected, (
+        f"Golden-manifest parity broke for scenario '{scenario}'. "
+        "If intentional, regenerate with LYCHD_REGEN_GOLDEN=1 and review the diff."
+    )
+    return actual
+
+
+# --------------------------------------------------------------------------- #
+# The two golden scenarios (the headline exit-gate item)                       #
+# --------------------------------------------------------------------------- #
+def test_golden_manifest_phoenix_active() -> None:
+    """Full byte-stable parity for the Phoenix-active pod."""
+    _check_golden("phoenix_active", phoenix_active=True)
+
+
+def test_golden_manifest_phoenix_absent() -> None:
+    """Full byte-stable parity for the Phoenix-absent pod."""
+    _check_golden("phoenix_absent", phoenix_active=False)
+
+
+# --------------------------------------------------------------------------- #
+# §8 property pins (human-readable; asserted against get_settings()/constants)  #
+# --------------------------------------------------------------------------- #
+def _by_id(manifests: Sequence[QuadletBase]) -> dict[str, QuadletBase]:
+    return {_unit_identity(m): m for m in manifests}
+
+
+def test_property1_pod_network_truth() -> None:
+    """§8.1 — the pod publishes core ports, then phoenix ports (active) in order."""
+    settings = get_settings()
+    core = [
+        f"{settings.server.port}:{constants.CONTAINER_LYCHD_PORT}",
+        f"{settings.db.port}:{constants.CONTAINER_POSTGRES_PORT}",
+    ]
+
+    active = _transmute(phoenix_active=True)
+    absent = _transmute(phoenix_active=False)
+    active_pod = next(m for m in active if isinstance(m, QuadletPod))
+    absent_pod = next(m for m in absent if isinstance(m, QuadletPod))
+
+    assert absent_pod.publish_ports == core
+    phoenix = PhoenixSettings()
+    assert active_pod.publish_ports == [
+        *core,
+        f"{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
+        f"{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
+    ]
+
+
+def test_property2_manifest_sequence() -> None:
+    """§8 — sequence: pod -> vessel -> phylactery -> oculus(active) -> targets -> stones."""
+    active = _transmute(phoenix_active=True)
+    absent = _transmute(phoenix_active=False)
+
+    active_seq = [(type(m).__name__, _unit_identity(m)) for m in active]
+    assert active_seq == [
+        ("QuadletPod", "lychd"),
+        ("QuadletContainer", "lychd-vessel"),
+        ("QuadletContainer", "lychd-phylactery"),
+        ("QuadletContainer", "lychd-oculus"),
+        ("QuadletTarget", "logic"),
+        ("QuadletContainer", "lychd-alpha"),
+        ("QuadletContainer", "lychd-beta"),
+        ("QuadletContainer", "lychd-gamma"),
+        ("QuadletContainer", "lychd-resident"),
+    ]
+
+    absent_seq = [(type(m).__name__, _unit_identity(m)) for m in absent]
+    assert "lychd-oculus" not in [ident for _, ident in absent_seq]
+    assert absent_seq == [
+        ("QuadletPod", "lychd"),
+        ("QuadletContainer", "lychd-vessel"),
+        ("QuadletContainer", "lychd-phylactery"),
+        ("QuadletTarget", "logic"),
+        ("QuadletContainer", "lychd-alpha"),
+        ("QuadletContainer", "lychd-beta"),
+        ("QuadletContainer", "lychd-gamma"),
+        ("QuadletContainer", "lychd-resident"),
+    ]
+
+
+def test_property3_oculus_and_core_lattice() -> None:
+    """§8.2/§8.3 — Oculus verbatim + the unit dependency lattice (Wants/After)."""
+    settings = get_settings()
+    active = _by_id(_transmute(phoenix_active=True))
+
+    oculus = active["lychd-oculus"]
+    assert isinstance(oculus, QuadletContainer)
+    assert oculus.pod == "lychd.pod"
+    db_url = f"postgresql://{settings.db.user}@localhost:{constants.CONTAINER_POSTGRES_PORT}/phoenix"
+    assert oculus.env_vars == {
+        "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
+        "PHOENIX_SQL_DATABASE_URL": db_url,
+    }
+    assert oculus.wants == ["lychd-phylactery.service"]
+    assert oculus.after == ["lychd-phylactery.service"]
+
+    vessel = active["lychd-vessel"]
+    phylactery = active["lychd-phylactery"]
+    assert isinstance(vessel, QuadletContainer)
+    assert isinstance(phylactery, QuadletContainer)
+    # Vessel env + secrets (incl. the portal secret).
+    assert vessel.env_vars["APP__SECRET_KEY_FILE"] == f"/run/secrets/{settings.app.secret_key_secret}"
+    assert vessel.env_vars["DB__HOST"] == "localhost"
+    assert vessel.env_vars["DB__PORT"] == str(constants.CONTAINER_POSTGRES_PORT)
+    assert vessel.env_vars["DB__PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert "openai_api_key" in vessel.secrets
+    assert settings.app.secret_key_secret in vessel.secrets
+    assert settings.db.password_secret in vessel.secrets
+    assert vessel.wants == ["lychd-phylactery.service"]
+    assert vessel.after == ["lychd-phylactery.service"]
+    # Phylactery hangs off the pod.
+    assert phylactery.wants == ["lychd.pod"]
+    assert phylactery.after == ["lychd.pod"]
+
+
+def test_property3_law_of_exclusivity_and_boot() -> None:
+    """§8.3 — sorted Conflicts=, targets membership, WantedBy boot-survivor rule."""
+    active = _by_id(_transmute(phoenix_active=True))
+
+    alpha = active["lychd-alpha"]
+    gamma = active["lychd-gamma"]
+    resident = active["lychd-resident"]
+    assert isinstance(alpha, QuadletContainer)
+    assert isinstance(gamma, QuadletContainer)
+    assert isinstance(resident, QuadletContainer)
+
+    # alpha (coven "logic") conflicts with the solitary services, not its coven-mate.
+    assert alpha.targets == ["logic"]
+    assert alpha.conflicts == sorted(alpha.conflicts)
+    assert "lychd-gamma.service" in alpha.conflicts
+    assert "lychd-resident.service" in alpha.conflicts
+    assert "lychd-beta.service" not in alpha.conflicts
+
+    # gamma (solitary) conflicts with the "logic" coven target and the other stones.
+    assert "lychd-coven-logic.target" in gamma.conflicts
+    assert gamma.targets == []
+
+    # Boot-survivor determinism (F4): only the persistent resident is auto-wanted.
+    assert resident.wanted_by == ["default.target"]
+    assert alpha.wanted_by == []
+    assert gamma.wanted_by == []
+
+
+def test_property4_coven_targets_only_for_real_covens() -> None:
+    """§8 — only groups with >= 2 members forge a target."""
+    active = _transmute(phoenix_active=True)
+    targets = {m.name for m in active if isinstance(m, QuadletTarget)}
+    assert targets == {"logic"}
+
+
+@pytest.mark.parametrize("scenario", ["phoenix_active", "phoenix_absent"])
+def test_golden_files_are_committed(scenario: str) -> None:
+    """Guard: the goldens exist as committed fixtures (not regenerated silently)."""
+    assert _golden_path(scenario).exists()

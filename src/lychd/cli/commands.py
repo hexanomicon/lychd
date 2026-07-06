@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING
 
 from lychd.cli.base import get_console, ritual_command
@@ -17,6 +17,28 @@ def _raise_missing_portal_secrets_error(secret_names: list[str]) -> None:
     missing = ", ".join(secret_names)
     msg = f"Missing required Podman secrets: {missing}. Create them with `podman secret create <name> -` before bind."
     raise RuntimeError(msg)
+
+
+def _merge_reserved_ports(core: Mapping[str, int], extension: Mapping[str, int]) -> dict[str, int]:
+    """Merge core-service and extension-rune port claims across the boundary.
+
+    Extends the settings-level ``check_port_conflicts`` across the core/extension
+    boundary: a port claimed by BOTH a core service and an extension rune fails
+    loudly at bind, naming both claimants (before any unit file is written).
+
+    Raises:
+        ValueError: If a core service and an extension rune claim the same port.
+
+    """
+    by_port = {port: label for label, port in core.items()}
+    merged: dict[str, int] = dict(core)
+    for label, port in extension.items():
+        if port in by_port and by_port[port] != label:
+            msg = f"Port {port} is claimed by both '{by_port[port]}' (core) and '{label}' (extension)."
+            raise ValueError(msg)
+        by_port[port] = label
+        merged[label] = port
+    return merged
 
 
 def _required_secret_names_from_soulstones(soulstones: Sequence[SoulstoneConfig]) -> list[str]:
@@ -82,7 +104,7 @@ def bind_quadlets() -> None:
     import shutil
     import subprocess
 
-    from lychd.config.runes import ConfigLoader
+    from lychd.config.runes.registry import load_rune_registry
     from lychd.config.settings import get_settings
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.loader import AnimatorLoader
@@ -95,12 +117,10 @@ def bind_quadlets() -> None:
 
     extensions = get_extensions()
     settings = get_settings()
-    extension_runes = ConfigLoader().load_all(list(extensions.rune_schemas))
-    reserved_ports = dict(settings.reserved_ports_map)
-    for rune in extension_runes:
-        if type(rune).__name__ == "PhoenixSettings":
-            reserved_ports["Oculus (Phoenix UI)"] = rune.ui_port  # type: ignore[attr-defined]
-            reserved_ports["Oculus (Phoenix OTLP)"] = rune.otlp_port  # type: ignore[attr-defined]
+    # ONE ConfigLoader pass, reused for both reserved-port honesty and the
+    # transmute context (D5): no second load, no duck-typing.
+    runes = load_rune_registry(extensions)
+    reserved_ports = _merge_reserved_ports(settings.reserved_ports_map, runes.reserved_ports())
 
     # 1. Summon the Librarian (Loads & Validates Config)
     loader = AnimatorLoader(rune_schemas=list(extensions.rune_schemas), reserved_ports=reserved_ports)
@@ -131,8 +151,8 @@ def bind_quadlets() -> None:
 
     # 2. Summon the Alchemist (Transmutes Soulstone Runes into Quadlet manifests)
     runtime_planner = RuntimeAdapterRegistry(adapters=extensions.runtime_adapters)
-    transmuter = Transmuter(runtime_planner=runtime_planner)
-    manifests = transmuter.transmute_all(soulstones, portals=portals, extension_runes=extension_runes)
+    transmuter = Transmuter(runtime_planner=runtime_planner, contributors=extensions.quadlet_contributors)
+    manifests = transmuter.transmute_all(soulstones, portals=portals, runes=runes)
 
     # 3. Summon the Scribe (Writes Quadlet manifests with Atomic Inscription)
     scribe = ScribeService()
@@ -170,7 +190,11 @@ def inspect_animators() -> None:
 
     console = get_console()
     extensions = get_extensions()
-    registry = AnimatorRegistry(rune_schemas=extensions.rune_schemas, runtime_adapters=extensions.runtime_adapters)
+    registry = AnimatorRegistry(
+        rune_schemas=extensions.rune_schemas,
+        runtime_adapters=extensions.runtime_adapters,
+        portal_factories=extensions.portal_factories,
+    )
     animators = registry.list_runtime_animators()
 
     if not animators:

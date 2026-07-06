@@ -4,8 +4,10 @@ from lychd.extensions.context import ExtensionContext
 
 
 def register(context: ExtensionContext) -> None:
-    """Register the built-in Phoenix observability rune schema."""
+    """Register the built-in Phoenix observability rune schema + Quadlet contributor."""
     from lychd.extensions.builtin.observability.phoenix.config import ObservabilityConfig, PhoenixSettings
+    from lychd.extensions.builtin.observability.phoenix.contributor import PhoenixQuadletContributor
 
     context.runes.add_schema(ObservabilityConfig)
     context.runes.add_schema(PhoenixSettings)
+    context.transmutation.add_contributor(PhoenixQuadletContributor())
