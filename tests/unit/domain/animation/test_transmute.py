@@ -4,7 +4,7 @@ import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 from lychd.config.settings import get_settings
-from lychd.domain.animation.schemas import GenericSoulstoneConfig, SoulstoneConfig
+from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
@@ -155,6 +155,36 @@ def test_law_of_exclusivity_covens(transmuter: Transmuter) -> None:
     targets = {manifest.name: manifest for manifest in manifests if isinstance(manifest, QuadletTarget)}
     assert "logic" in targets
     assert "creative" in targets
+
+
+def test_dedicated_soulstone_not_wanted_at_boot(transmuter: Transmuter) -> None:
+    """F4: dedicated stones must not be auto-WantedBy=default.target (nondeterministic boot)."""
+    dedicated = SoulstoneFactory.build(name="loner", groups=[], concurrency=ConcurrencyIntent(dedicated=True))
+
+    manifests = transmuter.transmute_all([dedicated])
+    manifest = next(m for m in manifests if isinstance(m, QuadletContainer) and m.container_name == "lychd-loner")
+    assert manifest.wanted_by == []
+
+
+def test_persistent_resident_soulstone_wanted_at_boot(transmuter: Transmuter) -> None:
+    """F4: persistent-resident stones keep WantedBy=default.target."""
+    resident = SoulstoneFactory.build(
+        name="resident",
+        groups=[],
+        concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
+    )
+
+    manifests = transmuter.transmute_all([resident])
+    manifest = next(m for m in manifests if isinstance(m, QuadletContainer) and m.container_name == "lychd-resident")
+    assert manifest.wanted_by == ["default.target"]
+
+
+def test_core_containers_remain_wanted_at_boot(transmuter: Transmuter) -> None:
+    """F4 guard: vessel/phylactery core units must stay WantedBy=default.target."""
+    manifests = transmuter.transmute_all([])
+    containers = {m.container_name: m for m in manifests if isinstance(m, QuadletContainer)}
+    assert containers["lychd-vessel"].wanted_by == ["default.target"]
+    assert containers["lychd-phylactery"].wanted_by == ["default.target"]
 
 
 def test_coven_of_one_no_target(transmuter: Transmuter) -> None:

@@ -1,23 +1,39 @@
 [Unit]
 Description={{ description }}
-{% if pod %}BindsTo={{ pod }}{% endif %}
-{% if targets %}
+{% if pod %}
+BindsTo={{ pod }}
+{% endif %}
 {% for target in targets %}
 PartOf=lychd-coven-{{ target }}.target
 {% endfor %}
+{% if wants %}
+Wants={{ wants | join(' ') }}
 {% endif %}
-{% if wants %}Wants={{ wants | join(' ') }}{% endif %}
-{% if after %}After={{ after | join(' ') }}{% endif %}
-{% if conflicts %}Conflicts={{ conflicts | join(' ') }}{% endif %}
+{% if after %}
+After={{ after | join(' ') }}
+{% endif %}
+{% if conflicts %}
+Conflicts={{ conflicts | join(' ') }}
+{% endif %}
 
 [Container]
-{% if pod %}Pod={{ pod }}{% endif %}
+{% if pod %}
+Pod={{ pod }}
+{% endif %}
 Image={{ image }}
 ContainerName={{ container_name }}
-{% if user_ns %}UserNS={{ user_ns }}{% endif %}
-{% if run_init %}RunInit=true{% endif %}
-{% if security_label_disable %}SecurityLabelDisable=true{% endif %}
-{% if podman_args %}PodmanArgs={{ podman_args | join(' ') }}{% endif %}
+{% if user_ns %}
+UserNS={{ user_ns }}
+{% endif %}
+{% if run_init %}
+RunInit=true
+{% endif %}
+{% if security_label_disable %}
+SecurityLabelDisable=true
+{% endif %}
+{% if podman_args %}
+PodmanArgs={{ podman_args | join(' ') }}
+{% endif %}
 
 # Covens (Targets): {{ targets | join(', ') }}
 
@@ -26,10 +42,13 @@ ContainerName={{ container_name }}
 AddDevice={{ dev }}
 {% endfor %}
 
-
 # Volumes
 {% for vol in volumes %}
-Volume={% if vol.mirror %}{{ vol.host_path }}:{{ vol.container_path }}{% else %}{{ vol.host_path }}:{{ vol.container_path }}:{% for opt in vol.options %}{{ opt }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+{% if vol.options %}
+Volume={{ vol.host_path }}:{{ vol.container_path }}:{{ vol.options | join(',') }}
+{% else %}
+Volume={{ vol.host_path }}:{{ vol.container_path }}
+{% endif %}
 {% endfor %}
 
 # Environment Variables
@@ -51,7 +70,9 @@ Exec={{ exec }}
 Restart={{ restart_policy | default('always') }}
 
 [Install]
-{% if wanted_by %}WantedBy={{ wanted_by | join(' ') }}{% endif %}
+{% if wanted_by %}
+WantedBy={{ wanted_by | join(' ') }}
+{% endif %}
 {% for target in targets %}
 WantedBy=lychd-coven-{{ target }}.target
 {% endfor %}

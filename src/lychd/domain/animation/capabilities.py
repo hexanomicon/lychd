@@ -96,7 +96,7 @@ class ActivationResult:
 
     ``accepted`` reports whether the runtime took the activation request;
     ``phase`` is the capability phase observed immediately after the request;
-    ``reason`` explains a rejection (e.g. a FIXED-lifecycle capability whose
+    ``reason`` explains a rejection (e.g. a STATIC-lifecycle capability whose
     warmth is owned by the animator unit, not an in-runtime load).
     """
 

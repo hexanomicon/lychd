@@ -9,10 +9,22 @@ from pathlib import Path
 import structlog
 from jinja2 import Environment, FileSystemLoader
 
-from lychd.system.constants import PATH_RUNE_TEMPLATES_DIR, PATH_SYSTEMD_UNITS_DIR
+from lychd.system.constants import (
+    PATH_RUNE_TEMPLATES_DIR,
+    PATH_SYSTEMD_UNITS_DIR,
+    PATH_SYSTEMD_USER_UNITS_DIR,
+)
 from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
 
 logger = structlog.get_logger()
+
+# Quadlet-managed unit suffixes (processed by the Quadlet generator in the
+# containers/systemd dir). Coven `.target` units are NOT here -- they are plain
+# systemd units and live in the systemd user unit dir instead.
+_QUADLET_SUFFIXES: frozenset[str] = frozenset(
+    {".container", ".pod", ".volume", ".network", ".kube", ".image", ".build"}
+)
+_SYSTEMD_SUFFIXES: frozenset[str] = frozenset({".target"})
 
 
 class ScribeService:
@@ -28,13 +40,23 @@ class ScribeService:
         self,
         templates_dir: Path | None = None,
         output_dir: Path | None = None,
+        systemd_dir: Path | None = None,
     ) -> None:
-        """Initialize ScribeService."""
+        """Initialize ScribeService.
+
+        ``output_dir`` is the Quadlet dir (``.container``/``.pod``/``.volume``);
+        ``systemd_dir`` is the systemd user unit dir where plain units (Coven
+        ``.target`` files) are written so systemd can actually load them.
+        """
         self._output_dir = output_dir or PATH_SYSTEMD_UNITS_DIR
+        self._systemd_dir = systemd_dir or PATH_SYSTEMD_USER_UNITS_DIR
         self._templates_dir = templates_dir or PATH_RUNE_TEMPLATES_DIR
+        # autoescape MUST be False: these are systemd unit files, not HTML. HTML
+        # autoescaping corrupts Exec=/Environment= lines that carry shell-quoted
+        # args (shlex uses `'`, `&`, etc.) into `&#39;`/`&amp;`.
         self._env = Environment(
             loader=FileSystemLoader(self._templates_dir),
-            autoescape=True,
+            autoescape=False,  # noqa: S701 - unit files are not HTML; see comment above
             trim_blocks=True,
             lstrip_blocks=True,
         )
@@ -74,33 +96,61 @@ class ScribeService:
                 logger.warning("git_init_failed", error=error_msg)
 
     def generate_all(self, manifests: Sequence[QuadletBase]) -> None:
-        """Generate all Quadlet manifests via the Rite of Atomic Inscription (ADR 08)."""
+        """Generate all Quadlet manifests via the Rite of Atomic Inscription (ADR 08).
+
+        Design choice (F1): units are routed by kind. Quadlet-managed units
+        (``.container``/``.pod``/``.volume``) go to the Quadlet dir; plain
+        systemd units (Coven ``.target``) go to the systemd user unit dir where
+        systemd will actually load them. Writing ``.target`` into the Quadlet dir
+        (the previous behaviour) left them dead -- Quadlet ignores them and the
+        ``WantedBy=``/``Conflicts=`` edges pointing at them never resolved.
+        """
         logger.info("beginning_inscription", count=len(manifests))
 
-        # Ensure output directory exists (The Binding Site)
+        # Ensure both binding sites exist.
         self._output_dir.mkdir(parents=True, exist_ok=True)
+        self._systemd_dir.mkdir(parents=True, exist_ok=True)
         self.initialize_git_sentinel()
 
         with tempfile.TemporaryDirectory(prefix="lychd-scribe-") as staging_dir:
-            staging_path = Path(staging_dir)
-            # Render all manifests into the staging directory.
+            staging_root = Path(staging_dir)
+            quadlet_staging = staging_root / "quadlet"
+            systemd_staging = staging_root / "systemd"
+            quadlet_staging.mkdir()
+            systemd_staging.mkdir()
+
+            # Render each manifest into the staging dir for its destination.
             for manifest in manifests:
-                self._write_manifest(manifest, target_dir=staging_path)
-            self._atomic_swap(staging_path)
+                dest = self._destination_for(manifest)
+                staging = quadlet_staging if dest == self._output_dir else systemd_staging
+                self._write_manifest(manifest, target_dir=staging)
+
+            self._atomic_swap(quadlet_staging, self._output_dir, _QUADLET_SUFFIXES)
+            self._atomic_swap(systemd_staging, self._systemd_dir, _SYSTEMD_SUFFIXES)
             self._sentinel_commit()
 
         logger.info("inscription_complete")
 
-    def _atomic_swap(self, staging_path: Path) -> None:
-        """Move files from staging directory to the Binding Site."""
-        if self._output_dir.exists():
-            for item in self._output_dir.iterdir():
-                if item.is_file() and item.suffix in [".container", ".pod", ".target", ".volume"]:
+    def _destination_for(self, manifest: QuadletBase) -> Path:
+        """Route a manifest to its physical directory by unit kind (F1)."""
+        if isinstance(manifest, QuadletTarget):
+            return self._systemd_dir
+        return self._output_dir
+
+    def _atomic_swap(self, staging_path: Path, dest_dir: Path, managed_suffixes: frozenset[str]) -> None:
+        """Move rendered files from a staging directory to a destination Binding Site.
+
+        Only files whose suffix this Scribe manages are cleared from the
+        destination, so unrelated units in the systemd user dir are preserved.
+        """
+        if dest_dir.exists():
+            for item in dest_dir.iterdir():
+                if item.is_file() and item.suffix in managed_suffixes:
                     item.unlink()
 
         # Move new ones
         for manifest in staging_path.iterdir():
-            shutil.move(str(manifest), str(self._output_dir / manifest.name))
+            shutil.move(str(manifest), str(dest_dir / manifest.name))
 
     def _sentinel_commit(self) -> None:
         """Commit the new state to the Git Sentinel."""

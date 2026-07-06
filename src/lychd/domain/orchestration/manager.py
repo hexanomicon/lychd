@@ -9,7 +9,7 @@ from lychd.domain.animation.capabilities import (
     CapabilitySpec,
     CapabilityState,
 )
-from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.orchestration.schema import TransitionPlan
 
 
@@ -61,7 +61,7 @@ class OrchestratorManager:
                     "family": spec.family,
                     "runtime": spec.runtime,
                     "source_kind": spec.source_kind,
-                    "lifecycle_mode": spec.lifecycle.value,
+                    "lifecycle": spec.lifecycle.value,
                     "model_id": spec.model_id,
                     "is_static": state.is_static,
                     "is_active": state.is_active,

@@ -26,8 +26,15 @@ def output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def scribe(templates_dir: Path, output_dir: Path) -> ScribeService:
-    return ScribeService(templates_dir=templates_dir, output_dir=output_dir)
+def systemd_dir(tmp_path: Path) -> Path:
+    d = tmp_path / "systemd"
+    d.mkdir()
+    return d
+
+
+@pytest.fixture
+def scribe(templates_dir: Path, output_dir: Path, systemd_dir: Path) -> ScribeService:
+    return ScribeService(templates_dir=templates_dir, output_dir=output_dir, systemd_dir=systemd_dir)
 
 
 @patch("lychd.system.services.scribe.shutil.which")
@@ -37,6 +44,7 @@ def test_scribe_atomic_inscription(
     mock_which: MagicMock,
     scribe: ScribeService,
     output_dir: Path,
+    systemd_dir: Path,
 ) -> None:
     """Verify that ScribeService performs an atomic swap and git commit."""
     mock_which.return_value = "/usr/bin/git"
@@ -49,13 +57,17 @@ def test_scribe_atomic_inscription(
     # Perform inscription
     scribe.generate_all([pod, container, target])
 
-    # 1. Verify files exist in output_dir
+    # 1. Quadlet units live in the Quadlet dir.
     assert (output_dir / "lychd.pod").exists()
     assert (output_dir / "hermes.container").exists()
-    assert (output_dir / "lychd-coven-logic.target").exists()
     assert "PodName=lychd" in (output_dir / "lychd.pod").read_text()
     assert "ContainerName=hermes" in (output_dir / "hermes.container").read_text()
-    assert "Description=Logic Coven" in (output_dir / "lychd-coven-logic.target").read_text()
+
+    # F1: the Coven `.target` is a plain systemd unit and MUST be routed to the
+    # systemd user unit dir (not the Quadlet dir, where Quadlet would ignore it).
+    assert not (output_dir / "lychd-coven-logic.target").exists()
+    assert (systemd_dir / "lychd-coven-logic.target").exists()
+    assert "Description=Logic Coven" in (systemd_dir / "lychd-coven-logic.target").read_text()
 
     # 2. Verify git was called (init and commit)
     assert mock_run.call_count >= 2

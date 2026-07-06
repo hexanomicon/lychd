@@ -81,7 +81,7 @@ class Transmuter:
                 )
 
         # 5. Transmute Extension Soulstones
-        alliances = getattr(settings.lychd, "alliances", [])
+        alliances = settings.lychd.alliances
         manifests.extend(
             self._transmute_soulstone(stone, soulstones, covens, alliances, settings) for stone in soulstones
         )
@@ -212,6 +212,13 @@ class Transmuter:
         merged_mounts = list(dict.fromkeys(mount_strings))
         merged_secrets = list(dict.fromkeys(stone.secret_env_files.values()))
 
+        # Boot survivor determinism (F4): dedicated stones are mutually exclusive
+        # (pairwise Conflicts=), so pulling them all via WantedBy=default.target
+        # lets systemd drop Wants edges in arbitrary order -> nondeterministic boot.
+        # Only persistent residents are auto-wanted; dedicated stones are started
+        # on demand (by their coven target or the Orchestrator), never at boot.
+        wanted_by = ["default.target"] if stone.concurrency.persistent_resident else []
+
         return QuadletContainer(
             description=stone.description or f"LychD Soulstone: {stone.name}",
             image=stone.image,
@@ -229,6 +236,7 @@ class Transmuter:
             conflicts=conflicts,
             wants=["lychd.pod"],
             after=["lychd.pod"],
+            wanted_by=wanted_by,
         )
 
     def _system_mount_strings(self) -> list[str]:

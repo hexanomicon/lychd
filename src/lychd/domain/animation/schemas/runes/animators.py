@@ -7,6 +7,7 @@ from typing import ClassVar
 from pydantic import AnyHttpUrl, Field, model_validator
 
 from lychd.config.runes import RuneConfig
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.shared import ModelFormat
 
 
@@ -88,6 +89,14 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         ),
     )
     exec: list[str] = Field(default_factory=list, description="Explicit container command arguments.")
+    concurrency: ConcurrencyIntent = Field(
+        default_factory=ConcurrencyIntent,
+        description=(
+            "Lifecycle intent for this Soulstone. Dedicated (LychD-owned, mutually exclusive) "
+            "stones must not be auto-started at boot; only persistent residents are wanted by "
+            "default.target. Threaded into Quadlet WantedBy= at transmute time."
+        ),
+    )
 
     @property
     def service_name(self) -> str:
