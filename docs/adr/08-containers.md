@@ -74,10 +74,10 @@ The Sepulcher is organized into a strict hierarchy managed by the host's init sy
 
 Metadata for routing lives with logical animator rune schemas/runtime animators, not in the generated Quadlet manifests. The **[Dispatcher (22)](22-dispatcher.md)** consumes that logical layer while this ADR governs the physical container topology.
 
-Capabilities define what an Animator can do (for example `chat`, `vision`, `tts`, or adapter-defined families), and are tracked with two critical state attributes:
+Capabilities define what an Animator can do (for example `chat`, `vision`, `tts`, or adapter-defined families). Each carries a **lifecycle** and projects a live **phase**, defined canonically in the **[Dispatcher (22)](22-dispatcher.md)**:
 
-- **`is_static: bool`**: Indicates if the capability is permanently baked into the container. If static, it is always available as soon as the container boots.
-- **`is_active: bool`**: Indicates if the capability is currently ready to receive requests. For dynamic containers (like `llama.cpp` or vLLM) that can swap models internally without restarting, a capability might not be static—meaning the Orchestrator must invoke a model load before that specific capability flips to `is_active`.
+- **`CapabilityLifecycle`**: `STATIC` (ready as soon as the container's endpoint is reachable) or `DYNAMIC` (the container is up but the model needs an in-runtime activation step). For dynamic containers (like a `llama.cpp` router) that swap models internally without restarting, the Orchestrator invokes a model load before that capability reaches `WARM`.
+- **`CapabilityPhase`**: the live readiness ladder — `COLD`, `ACTIVATABLE`, `WARMING`, `WARM`, `ERROR`, `UNKNOWN`.
 
 ### 3. Covens: The Law of Exclusivity
 

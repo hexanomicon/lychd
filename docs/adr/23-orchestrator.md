@@ -93,11 +93,11 @@ Snapshot note: this drain/swap ritual protects live work during transitions. "Dr
 
 ### Soft Activation Contract
 
-Not every transition is a container swap. When the target runtime is already warm and its adapter exposes a native activation seam, the Orchestrator performs `dynamic_soft` activation without a Systemd transition.
+Not every transition is a container swap. When the target runtime's Animator unit is already up and its capability carries the `DYNAMIC` lifecycle (**[Dispatcher (22)](22-dispatcher.md)**), the Orchestrator performs a soft activation — an in-runtime load without a Systemd transition. `STATIC`-lifecycle capabilities have no such seam: a reachable endpoint already means `WARM`, so their only path from `COLD` is a hard swap.
 
 - **Activate:** for the `llama.cpp` router, activation is `POST /models/load` against the running router.
-- **State projection:** `CapabilityState` projects `loaded_model_ids` and `estimated_ready_ms` from the router's reported `status`, which is one of `unloaded`, `loading`, or `loaded`.
-- **Readiness:** the capability is grantable once its model id appears in `loaded_model_ids` with `status = loaded`.
+- **Phase projection:** the router's reported `status` (`unloaded`, `loading`, `loaded`) maps to the `CapabilityPhase` ladder — `ACTIVATABLE`, `WARMING`, `WARM` respectively — alongside `loaded_model_ids` and `estimated_ready_ms`.
+- **Readiness:** the capability is grantable once its model id appears in `loaded_model_ids` and its phase is `WARM`.
 
 !!! note "Implementation status"
     Soft activation is doctrine ahead of code. Current adapters return `False` from `activate_capability`; the `llama.cpp` router lifecycle is modelled but not yet driven. Until it is, every activation resolves to a Hard Swap or a `dependency_unavailable` rejection.

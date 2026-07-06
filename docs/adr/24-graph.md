@@ -44,12 +44,15 @@ icon: material/graph-outline
 The graph topology models cognitive process and fluctuation patterns, not identity. It captures how candidate paths branch, compete, and converge without assigning ownership of outcomes.
 
 
-### 1. The Cognitive Units: Steps and State
+### 1. The Cognitive Units: Nodes and State
 
-The cortex is constructed using the **`GraphBuilder`** pattern, defining the mind as a sequence of atomic **Steps**:
+The cortex is built on the installed `pydantic_graph` **`BaseNode`** API — the mind is a set of typed nodes composed into a `Graph`:
 
-- **Steps:** Asynchronous functions decorated with `@g.step` that receive a `StepContext` and return values to determine the next station of thought.
-- **The State (`StateT`):** A mutable Pydantic model representing the "Working Memory." It is built up as it passes through each synapse, ensuring total recall across the entire ritual.
+- **Nodes:** Subclasses of `BaseNode[StateT, DepsT, ...]` implementing an async `run(self, ctx)` that returns the next node (or `End`) to determine the next station of thought. A `Workflow` binds such a graph to its routing metadata.
+- **The State (`StateT`):** A mutable, JSON-serializable Pydantic model representing the "Working Memory." It is built up as it passes through each synapse, ensuring total recall across the entire ritual; per-run handles (grants, models, toolsets) live in `deps`, never in state, so durable snapshots stay clean.
+
+!!! note "Node-style API, not a functional DSL"
+    v1 stays on the installed `BaseNode` API (the `GraphBuilder` DSL is not installed). The functional `@g.step` sugar and the parallel/decision primitives sketched in §3–§4 (`g.join`, `g.decision`, `g.match`, `ReduceFirstValue`) describe the *intended* topology vocabulary and are roadmap ergonomics; today routing is expressed as a node's typed return union and branches are ordinary nodes.
 
 ### 2. The Orchestrated Handshake (Deferred Logic)
 
@@ -112,7 +115,7 @@ Topology is cognition without ownership: the graph determines process flow, whil
 
 To provide transparency, the system generates real-time visualizations:
 
-- **Mermaid Diagrams:** `graph.render()` produces `stateDiagram-v2` source (Mermaid text) for the **[Altar (ADR 15)](./15-frontend.md)**. The source is shipped as text and rendered client-side; there is no server-side image-rendering API.
+- **Mermaid Diagrams:** `graph.mermaid_code()` (surfaced as `Workflow.mermaid()`) produces `stateDiagram-v2` source (Mermaid text) for the **[Altar (ADR 15)](./15-frontend.md)**. The source is shipped as text and rendered client-side; there is no server-side image-rendering API.
 - **State Streaming:** Transitions are pushed via Server-Sent Events (SSE), allowing the Magus to monitor the Daemon navigating the complex topology of a task.
 
 ## Consequences

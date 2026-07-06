@@ -70,6 +70,9 @@ To maintain organizational purity, the Phylactery is divided into logical chambe
 
 The database is configured to support atomic task distribution. By utilizing `SKIP LOCKED`, the system can manifest background ghouls that claim and execute pending labor without the risk of duplicate work or the need for an external broker.
 
+!!! success "First Light (delivered)"
+    The Phylactery's first real tables exist. Migration `0001_phylactery_first_light` creates seven models on a `pgvector` Postgres — `session`, `run`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization` — alongside the `vector` extension. This replaces the earlier "all in-memory" posture: the **`RunLedger`** (**[Workers (14)](14-workers.md)**) writes `run`/`step` rows as the run truth, with `step` carrying the semantic `RunEvent` trail (excluding chatty `TOKEN` deltas). Unit tests keep an in-memory `RunLedger` so the DB is not a hard dependency for DB-free suites. Session/turn persistence and the durable consent record land behind the same interfaces in later waves; until then those stores keep a single-writer in-memory adapter to avoid double truth.
+
 ### 5. Schema-Level Privatization Tainting (The Radioactive Tag)
 
 To support the system's strict egress policies (foreshadowing **[The Dispatcher (22)](22-dispatcher.md)**), the persistence layer mandates explicit data classification at the schema level.

@@ -11,6 +11,9 @@ Ghouls are the tireless, undead servitors of the Vessel: worker bodies that carr
 
 Technically, Ghouls are **SAQ Workers**, a legion of background task executors spawned, scheduled, or resumed to handle the asynchronous rites submitted by the Magus.
 
+!!! note "The run ghoul (v1)"
+    In v1 the cognitive `runs` worker is not a separate process but an **in-process ghoul** sharing the Vessel's event loop (Topology A, `use_server_lifespan=True`). Every workflow run is a SAQ job: `RunEngine.submit` enqueues `perform_run`, which is the only place a workflow graph executes. The **`RunLedger`** (the `run`/`step` tables) is the run's truth, and a semantic **`RunEvent`** bus carries its live trace to the Altar. See **[Workers (ADR 14)](../../adr/14-workers.md)**.
+
 !!! abstract "The Summons"
     A Ghoul's existence is a simple and brutal cycle, initiated by an **Intent** from the Altar:
 
