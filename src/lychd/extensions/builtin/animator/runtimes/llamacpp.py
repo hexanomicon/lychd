@@ -12,7 +12,7 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.schemas import ModelInfo, SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
 from lychd.domain.animation.services.adapters.contracts import (
     LISTEN_HOST,
@@ -88,12 +88,21 @@ class LlamaCppRuntimeAdapter:
             runtime=self.runtime,
         )
         descriptor = self._describe_runtime(stone)
+        hints_by_id = {model.id: model.capabilities for model in stone.models if model.capabilities is not None}
+        # Operator-declared [[models]] ARE the catalog when present (matched, no
+        # spurious name-fallback spec); otherwise fall back to runtime discovery.
+        model_infos = (
+            tuple(ModelInfo(id=model.id, description=model.description) for model in stone.models)
+            if stone.models
+            else descriptor.model_infos
+        )
         return capability_specs_from_model_infos(
             stone,
-            descriptor.model_infos,
+            model_infos,
             runtime_metadata=descriptor.metadata,
             runtime_defaults=self._runtime_defaults(descriptor),
             lifecycle=CapabilityLifecycle.DYNAMIC if descriptor.mode == "router" else CapabilityLifecycle.STATIC,
+            hints_by_id=hints_by_id,
         )
 
     async def probe_capability_states(

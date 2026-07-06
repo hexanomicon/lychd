@@ -35,7 +35,11 @@ if TYPE_CHECKING:
 
     from lychd.config.runes import RuneConfig
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
-    from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimeAdapter
+    from lychd.domain.animation.services.adapters.contracts import (
+        PortalRuntimeFactory,
+        RuntimePlan,
+        SoulstoneRuntimeAdapter,
+    )
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.system.schemas import QuadletContainer
 
@@ -69,6 +73,7 @@ class AnimatorRegistry:
         runes_dir: Path | None = None,
         reserved_ports: dict[str, int] | None = None,
         runtime_factories: Sequence[AnimatorFactory] | None = None,
+        portal_factories: Sequence[PortalRuntimeFactory] = (),
     ) -> None:
         """Initialize with required rune schemas and runtime adapters (injected by the host).
 
@@ -87,7 +92,10 @@ class AnimatorRegistry:
             reserved_ports=reserved_ports,
         )
         self._binder = binder or AnimatorBinder()
-        self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(adapters=list(runtime_adapters))
+        self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(
+            adapters=list(runtime_adapters),
+            portal_factories=list(portal_factories),
+        )
         self._runtime_factories: list[AnimatorFactory] = (
             list(runtime_factories) if runtime_factories is not None else [self._runtime_adapters.runtime_factory]
         )

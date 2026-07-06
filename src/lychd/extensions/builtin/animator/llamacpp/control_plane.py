@@ -170,6 +170,10 @@ class LlamaCppControlPlane:
                 continue
             available.append(model_id)
 
+            markers = self._extract_markers(entry_map)
+            if markers:
+                lifecycle.model_capabilities[model_id] = markers
+
             status = entry_map.get("status")
             status_map = self._as_map(status)
             if status_map is not None and self._as_str(status_map.get("value")) == "loaded":
@@ -177,6 +181,13 @@ class LlamaCppControlPlane:
 
         lifecycle.available_models = available
         lifecycle.loaded_models = loaded
+
+    def _extract_markers(self, entry_map: dict[str, object]) -> list[str]:
+        """Read tolerant capability markers from one ``/models`` entry (absent → empty)."""
+        raw = entry_map.get("capabilities")
+        if not isinstance(raw, list):
+            return []
+        return [str(item) for item in cast("list[object]", raw) if isinstance(item, str) and item.strip()]
 
     def _query_model(self, model: str | None) -> dict[str, str] | None:
         if model is None:

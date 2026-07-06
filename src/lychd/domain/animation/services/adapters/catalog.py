@@ -6,17 +6,34 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import structlog
+
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle, CapabilitySpec
 from lychd.domain.animation.schemas import (
-    ConcurrencyIntent,
     GenerationProfile,
+    ModelCapabilityHints,
     ModelInfo,
     ModelSurface,
     SoulstoneConfig,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
+
+    from lychd.domain.animation.schemas import LocalModelConfig
+
+logger = structlog.get_logger()
+
+
+@dataclass(frozen=True, slots=True)
+class ProbedModelFacts:
+    """What a live runtime probe learned about one model."""
+
+    modalities_in: tuple[str, ...] = ()
+    modalities_out: tuple[str, ...] = ()
+    embedding: bool = False
+    rerank: bool = False
+    max_context: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,25 +122,109 @@ def capability_specs_from_model_infos(
     runtime_metadata: dict[str, object] | None = None,
     runtime_defaults: dict[str, object] | None = None,
     lifecycle: CapabilityLifecycle = CapabilityLifecycle.STATIC,
+    hints_by_id: Mapping[str, ModelCapabilityHints] | None = None,
+    probed_by_id: Mapping[str, ProbedModelFacts] | None = None,
 ) -> list[CapabilitySpec]:
-    """Build capability specs from adapter-discovered model info."""
+    """Build capability specs from adapter-discovered model info.
+
+    Merges three sources per model id (rune hints > live probe > runtime profile
+    default) and synthesizes families under the two-axis law. Rune ``[[models]]``
+    entries matching no discovered model still synthesize a spec from the rune
+    declaration alone (with a ``model_hint_unmatched`` warning).
+    """
     profile = _RUNTIME_PROFILES.get(soulstone.runtime_name, _DEFAULT_PROFILE)
     runtime_meta = runtime_metadata or {}
-    generation_defaults = GenerationProfile.model_validate(runtime_defaults or {})
+    base_generation = GenerationProfile.model_validate(runtime_defaults or {}).overlay(soulstone.generation)
+
+    models_by_id: dict[str, LocalModelConfig] = {model.id: model for model in soulstone.models}
+    resolved_hints: dict[str, ModelCapabilityHints] = (
+        dict(hints_by_id)
+        if hints_by_id is not None
+        else {model.id: model.capabilities for model in soulstone.models if model.capabilities is not None}
+    )
+    resolved_probed = dict(probed_by_id or {})
 
     specs: list[CapabilitySpec] = []
+    seen_ids: set[str] = set()
     for info in model_infos:
-        hydrated_info = _hydrate_model_info(info=info, profile=profile)
+        seen_ids.add(info.id)
         specs.extend(
-            _capability_specs_from_model_info(
+            _specs_for_model(
                 soulstone=soulstone,
-                info=hydrated_info,
-                generation_defaults=generation_defaults,
+                info=info,
+                hints=resolved_hints.get(info.id),
+                probed=resolved_probed.get(info.id),
+                profile=profile,
+                base_generation=base_generation,
+                model_generation=models_by_id[info.id].generation if info.id in models_by_id else None,
                 lifecycle=lifecycle,
                 runtime_metadata=runtime_meta,
             )
         )
+
+    for model_id, hints in resolved_hints.items():
+        if model_id in seen_ids:
+            continue
+        logger.warning("model_hint_unmatched", model_id=model_id, animator=soulstone.name)
+        local = models_by_id.get(model_id)
+        info = _build_model_info(
+            model_id=model_id,
+            profile=profile,
+            description=local.description if local is not None else None,
+        )
+        specs.extend(
+            _specs_for_model(
+                soulstone=soulstone,
+                info=info,
+                hints=hints,
+                probed=resolved_probed.get(model_id),
+                profile=profile,
+                base_generation=base_generation,
+                model_generation=local.generation if local is not None else None,
+                lifecycle=lifecycle,
+                runtime_metadata=runtime_meta,
+            )
+        )
+
     return specs
+
+
+def _specs_for_model(
+    *,
+    soulstone: SoulstoneConfig,
+    info: ModelInfo,
+    hints: ModelCapabilityHints | None,
+    probed: ProbedModelFacts | None,
+    profile: _CapabilityProfile,
+    base_generation: GenerationProfile,
+    model_generation: GenerationProfile | None,
+    lifecycle: CapabilityLifecycle,
+    runtime_metadata: dict[str, object],
+) -> list[CapabilitySpec]:
+    hydrated = hydrate_model_info(info=info, hints=hints, probed=probed, profile=profile)
+    families = synthesize_families(hydrated, hints, probed)
+    generation = base_generation.overlay(model_generation)
+    concurrency = soulstone.concurrency
+    return [
+        CapabilitySpec(
+            key=f"{soulstone.name}:{family}:{hydrated.id}",
+            animator_name=soulstone.name,
+            runtime=soulstone.runtime_name,
+            source_kind="soulstone",
+            family=family,
+            model_id=hydrated.id,
+            surface=hydrated.surface,
+            modalities_in=list(hydrated.modalities_in),
+            modalities_out=list(hydrated.modalities_out),
+            supports_tools=hydrated.supports_tools,
+            supports_streaming=hydrated.supports_streaming,
+            generation_profile=generation,
+            lifecycle=lifecycle,
+            concurrency=concurrency,
+            metadata={**runtime_metadata, **dict(hydrated.metadata)},
+        )
+        for family in families
+    ]
 
 
 def _build_model_info(
@@ -148,65 +249,97 @@ def _build_model_info(
     )
 
 
-def _hydrate_model_info(*, info: ModelInfo, profile: _CapabilityProfile) -> ModelInfo:
-    """Fill missing model-info fields from runtime profile defaults."""
+def hydrate_model_info(
+    *,
+    info: ModelInfo,
+    hints: ModelCapabilityHints | None,
+    probed: ProbedModelFacts | None,
+    profile: _CapabilityProfile,
+) -> ModelInfo:
+    """Field-wise merge of one model's facts: rune hints > live probe > runtime default.
+
+    Modalities union the discovered/profile base with any probed additions unless
+    a rune hint explicitly declares them (an operator override replaces).
+    ``surface``/``supports_*`` follow strict precedence.
+    """
+    surface = (hints.surface if hints is not None else None) or info.surface or profile.surface
+    modalities_in = _resolve_modalities(
+        hint=hints.modalities_in if hints is not None else None,
+        base=list(info.modalities_in) or list(profile.modalities_in),
+        probed=list(probed.modalities_in) if probed is not None else [],
+    )
+    modalities_out = _resolve_modalities(
+        hint=hints.modalities_out if hints is not None else None,
+        base=list(info.modalities_out) or list(profile.modalities_out),
+        probed=list(probed.modalities_out) if probed is not None else [],
+    )
+    supports_tools = _resolve_optional_bool(
+        hint=hints.supports_tools if hints is not None else None,
+        base=info.supports_tools,
+        fallback=profile.supports_tools,
+    )
+    supports_streaming = _resolve_optional_bool(
+        hint=hints.supports_streaming if hints is not None else None,
+        base=info.supports_streaming,
+        fallback=profile.supports_streaming,
+    )
+    max_context = info.max_context
+    if max_context is None and probed is not None:
+        max_context = probed.max_context
     return ModelInfo(
         id=info.id,
         description=info.description,
-        surface=info.surface or profile.surface,
-        modalities_in=list(info.modalities_in or profile.modalities_in),
-        modalities_out=list(info.modalities_out or profile.modalities_out),
-        supports_tools=info.supports_tools if info.supports_tools is not None else profile.supports_tools,
-        supports_streaming=(
-            info.supports_streaming if info.supports_streaming is not None else profile.supports_streaming
-        ),
-        max_context=info.max_context,
+        surface=surface,
+        modalities_in=modalities_in,
+        modalities_out=modalities_out,
+        supports_tools=supports_tools,
+        supports_streaming=supports_streaming,
+        max_context=max_context,
         metadata=dict(info.metadata),
     )
 
 
-def _capability_specs_from_model_info(
-    *,
-    soulstone: SoulstoneConfig,
+def _resolve_modalities(*, hint: list[str] | None, base: list[str], probed: list[str]) -> list[str]:
+    if hint is not None:
+        return list(dict.fromkeys(hint))
+    return list(dict.fromkeys([*base, *probed]))
+
+
+def _resolve_optional_bool(*, hint: bool | None, base: bool | None, fallback: bool | None) -> bool | None:
+    if hint is not None:
+        return hint
+    return base if base is not None else fallback
+
+
+def synthesize_families(
     info: ModelInfo,
-    generation_defaults: GenerationProfile,
-    lifecycle: CapabilityLifecycle,
-    runtime_metadata: dict[str, object],
-) -> list[CapabilitySpec]:
-    concurrency = ConcurrencyIntent()
-    return [
-        CapabilitySpec(
-            key=f"{soulstone.name}:{family}:{info.id}",
-            animator_name=soulstone.name,
-            runtime=soulstone.runtime_name,
-            source_kind="soulstone",
-            family=family,
-            model_id=info.id,
-            surface=info.surface,
-            modalities_in=list(info.modalities_in),
-            modalities_out=list(info.modalities_out),
-            supports_tools=info.supports_tools,
-            supports_streaming=info.supports_streaming,
-            generation_profile=generation_defaults,
-            lifecycle=lifecycle,
-            concurrency=concurrency,
-            metadata={**runtime_metadata, **dict(info.metadata)},
-        )
-        for family in _infer_families_from_model_info(info)
-    ]
+    hints: ModelCapabilityHints | None,
+    probed: ProbedModelFacts | None,
+) -> list[CapabilityFamily]:
+    """Synthesize routable families under the two-axis law (spec §2.4).
 
-
-def _infer_families_from_model_info(info: ModelInfo) -> list[CapabilityFamily]:
+    Explicit rune ``families`` win verbatim. Otherwise CHAT is synthesized from a
+    chat surface / text-in, EMBEDDING/RERANK from probed facts. VISION/STT/TTS/
+    TOOL_EXECUTION are NEVER inferred — image/audio in ``modalities_in`` only
+    enrich the CHAT spec's admission filter.
+    """
+    if hints is not None and hints.families is not None:
+        return list(dict.fromkeys(hints.families))
     families: list[CapabilityFamily] = []
-    if info.surface is not None or "text" in info.modalities_in or "text" in info.modalities_out:
+    if info.surface is not None or "text" in info.modalities_in:
         families.append(CapabilityFamily.CHAT)
-    if "image" in info.modalities_in:
-        families.append(CapabilityFamily.VISION)
-    return list(dict.fromkeys(families or [CapabilityFamily.CHAT]))
+    if probed is not None and probed.embedding:
+        families.append(CapabilityFamily.EMBEDDING)
+    if probed is not None and probed.rerank:
+        families.append(CapabilityFamily.RERANK)
+    return families or [CapabilityFamily.CHAT]
 
 
 __all__ = [
+    "ProbedModelFacts",
     "capability_specs_from_soulstone",
     "default_model_id_for_soulstone",
+    "hydrate_model_info",
     "model_infos_from_soulstone",
+    "synthesize_families",
 ]

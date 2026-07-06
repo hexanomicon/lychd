@@ -15,6 +15,8 @@ from lychd.domain.animation.schemas.runes.animators import (
 from lychd.domain.animation.schemas.runes.models import (
     LocalLLMModelConfig,
     LocalModelConfig,
+    ModelCapabilityHints,
+    PortalModelConfig,
 )
 
 __all__ = [
@@ -23,7 +25,9 @@ __all__ = [
     "GoogleGeminiPortalConfig",
     "LocalLLMModelConfig",
     "LocalModelConfig",
+    "ModelCapabilityHints",
     "OpenAIPortalConfig",
     "PortalConfig",
+    "PortalModelConfig",
     "SoulstoneConfig",
 ]

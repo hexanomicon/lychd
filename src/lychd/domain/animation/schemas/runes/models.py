@@ -56,3 +56,25 @@ class LocalLLMModelConfig(LocalModelConfig):
     soup. Additional capability-specific local model subclasses can be added
     alongside this class.
     """
+
+
+class PortalModelConfig(BaseModel):
+    """Remote/API model declaration owned by a Portal.
+
+    A Portal exposes zero or more models it is allowed to route to. Unlike a
+    local model there is no artifact path — only the provider-facing model id,
+    optional capability hints, and an optional per-model generation overlay.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, description="Provider-facing model id routed by this Portal.")
+    description: str | None = None
+    capabilities: ModelCapabilityHints | None = Field(
+        default=None,
+        description="Optional model-level capability hints (surface/modalities/tool support).",
+    )
+    generation: GenerationProfile | None = Field(
+        default=None,
+        description="Optional generation profile overlay for this specific portal model.",
+    )

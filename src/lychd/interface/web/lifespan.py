@@ -62,6 +62,7 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
         template_engine=engine,
         rune_schemas=exts.rune_schemas,
         runtime_adapters=exts.runtime_adapters,
+        portal_factories=exts.portal_factories,
     )
 
     app.state.services = services

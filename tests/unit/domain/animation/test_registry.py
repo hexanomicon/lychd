@@ -16,6 +16,7 @@ from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleCo
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, VllmSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
+from lychd.extensions.builtin.animator.register import build_openai_portal
 from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
     SglangRuntimeAdapter,
@@ -30,6 +31,7 @@ def _builtin_adapters() -> list[Any]:
 
 
 def _registry(runes_dir: Path, **kwargs: Any) -> AnimatorRegistry:
+    kwargs.setdefault("portal_factories", [build_openai_portal])
     return AnimatorRegistry(
         rune_schemas=list(_SOULSTONE_SCHEMAS),
         runtime_adapters=_builtin_adapters(),

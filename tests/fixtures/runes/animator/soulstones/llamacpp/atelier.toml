@@ -1,0 +1,42 @@
+name = "atelier"
+description = "Reference multi-model atelier soulstone (llama.cpp router ⇒ DYNAMIC)."
+groups = ["atelier"]
+startup_mode = "router"
+models_dir = "/models"
+
+[concurrency]
+dedicated = true
+persistent_resident = false
+
+[generation]
+max_tokens = 2048
+temperature = 0.7
+
+[[models]]
+id = "qwen3-vl-8b"
+path = "/models/qwen3-vl-8b"
+description = "Multimodal chat model (image-in enriches the CHAT admission filter)."
+
+[models.capabilities]
+modalities_in = ["text", "image"]
+supports_tools = true
+
+[[models]]
+id = "bge-m3"
+path = "/models/bge-m3"
+description = "Embedding model (explicit family)."
+
+[models.capabilities]
+families = ["embedding"]
+
+[[models]]
+id = "the-eye"
+path = "/models/the-eye"
+description = "Explicit VISION capability (the Eye)."
+
+[models.capabilities]
+families = ["vision"]
+modalities_in = ["text", "image"]
+
+[models.generation]
+max_tokens = 512

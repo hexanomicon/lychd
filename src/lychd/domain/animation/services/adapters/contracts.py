@@ -33,6 +33,20 @@ class SoulstoneDefinition:
     runtime_adapter: SoulstoneRuntimeAdapter
 
 
+class PortalRuntimeFactory(Protocol):
+    """Callable that builds a runtime animator for a Portal rune, or ``None``."""
+
+    def __call__(self, portal: PortalConfig) -> RuntimeAnimator | None: ...
+
+
+@dataclass(frozen=True)
+class PortalDefinition:
+    """Registration-time definition of one Portal provider family."""
+
+    rune_schema: type[PortalConfig]
+    factory: PortalRuntimeFactory
+
+
 class AnimatorControlPlane(Protocol):
     """Optional per-runtime lifecycle surface returned by an adapter (spec §5).
 
@@ -80,6 +94,8 @@ class SoulstoneRuntimePlanner(Protocol):
 __all__ = [
     "LISTEN_HOST",
     "AnimatorControlPlane",
+    "PortalDefinition",
+    "PortalRuntimeFactory",
     "RuntimeAnimator",
     "RuntimePlan",
     "SoulstoneDefinition",
