@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from lychd.config.settings import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
     CapabilityLifecycle,
@@ -17,7 +18,20 @@ from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.orchestration.policies import EvictIdlePolicy
+
+
+def _make_manager(broker: object, registry: object) -> OrchestratorManager:
+    return OrchestratorManager(
+        broker,
+        registry=registry,  # type: ignore[arg-type]
+        leases=LeaseLedger(),
+        policy=EvictIdlePolicy(),
+        arbiter=TransitionArbiter(),
+        switching=SwitchingSettings(),
+    )
 
 
 @dataclass
@@ -121,9 +135,7 @@ async def test_matrix_solver_evicts_all_active_dedicated_animators() -> None:
         ],
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
-        vision.key
-    )
+    plan = await _make_manager(AsyncMock(), registry).calculate_transition_plan(vision.key)
 
     assert plan.total_metabolic_cost == 2.0
     assert plan.evict_coven_ids == ["coding", "titan"]
@@ -152,9 +164,7 @@ async def test_matrix_solver_keeps_non_dedicated_persistent_resident() -> None:
         ],
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
-        vision.key
-    )
+    plan = await _make_manager(AsyncMock(), registry).calculate_transition_plan(vision.key)
 
     assert plan.total_metabolic_cost == 0.0
     assert plan.evict_coven_ids == []

@@ -83,7 +83,7 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
                 name="runs",
                 dsn=settings.db.saq_dsn,
                 tasks=["lychd.ghouls.runs.perform_run", "lychd.ghouls.runs.reconcile_runs"],
-                concurrency=settings.saq.concurrency,
+                concurrency=settings.orchestration.queues["runs"].concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
             ),
@@ -91,7 +91,7 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
                 name="rites",
                 dsn=settings.db.saq_dsn,
                 tasks=rite_tasks,
-                concurrency=settings.saq.concurrency,
+                concurrency=settings.orchestration.queues["rites"].concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
             ),

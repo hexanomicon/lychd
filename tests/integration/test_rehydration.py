@@ -125,3 +125,34 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     assert result == "victory"
     mock_orchestrator.handle_transition_mock.assert_called_once()
     assert len(persistence.history) > 0
+
+
+@pytest.mark.asyncio
+async def test_graph_runner_threads_signal_priority_and_fires_stasis_callbacks() -> None:
+    """O5: the run's priority reaches handle_transition; callbacks bracket the park."""
+    persistence = LychDTestPersistence()
+    graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
+    mock_orchestrator = SimpleMockOrchestrator()
+    order: list[str] = []
+
+    async def _enter() -> None:
+        order.append("enter")
+
+    async def _exit() -> None:
+        order.append("exit")
+
+    runner = GraphRunner[MockState](
+        orchestrator=mock_orchestrator,
+        persistence=persistence,
+        signal_priority=42.0,
+        on_stasis_enter=_enter,
+        on_stasis_exit=_exit,
+    )
+
+    result = await runner.run_graph(graph, StasisNode(), MockState())
+
+    assert result == "victory"
+    _, kwargs = mock_orchestrator.handle_transition_mock.call_args
+    assert kwargs["signal_priority"] == 42.0  # the run's priority, not the hardcoded 100.0
+    # enter (RUNNING→AWAITING_HARDWARE) precedes the transition; exit (→RUNNING) follows it.
+    assert order == ["enter", "exit"]

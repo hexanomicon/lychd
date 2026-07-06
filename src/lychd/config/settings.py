@@ -167,7 +167,56 @@ class SaqSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="SAQ_")
     web_enabled: bool = True
-    concurrency: int = 10
+
+
+# --- 6b. The Orchestration Doctrine ([orchestration]) ---
+class QueueSettings(BaseSettings):
+    """Per-queue in-loop job concurrency (sizes SAQ's `QueueConfig.concurrency`)."""
+
+    concurrency: int = 2
+
+
+class RoutingRule(BaseSettings):
+    """One `[orchestration.routing]` entry: which physical queue, at what priority."""
+
+    queue: str = "runs"
+    priority: int = Field(default=50, ge=0, le=100)
+
+
+class SwitchingSettings(BaseSettings):
+    """`[orchestration.switching]`: the honest hard-swap gate + lease-drain timeout."""
+
+    policy: str = "evict-idle"
+    min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
+    drain_timeout_s: float = 120.0
+
+
+class WhimSettings(BaseSettings):
+    """`[orchestration.whim]`: idle-eviction + preload shape (consumers land Wave 6)."""
+
+    idle_evict_after_s: int = 0  # 0 = disabled; whim RITES land Wave 6 (A4-U8)
+    preload: list[str] = Field(default_factory=list)
+
+
+class OrchestrationSettings(BaseSettings):
+    """The `[orchestration]` doctrine: queues, routing, switching, and whim."""
+
+    queues: dict[str, QueueSettings] = Field(
+        default_factory=lambda: {
+            "runs": QueueSettings(concurrency=2),
+            "rites": QueueSettings(concurrency=4),
+        }
+    )
+    routing: dict[str, RoutingRule] = Field(
+        default_factory=lambda: {
+            "default": RoutingRule(queue="runs", priority=50),
+            "cli": RoutingRule(queue="runs", priority=50),
+            "bridge": RoutingRule(queue="runs", priority=70),
+            "rite": RoutingRule(queue="rites", priority=20),
+        }
+    )
+    switching: SwitchingSettings = Field(default_factory=SwitchingSettings)
+    whim: WhimSettings = Field(default_factory=WhimSettings)  # shape now; consumers Wave 6
 
 
 class LychdSettings(BaseSettings):
@@ -315,6 +364,7 @@ class Settings(BaseSettings):
     saq: SaqSettings = Field(default_factory=SaqSettings)
     vite: ViteSettings = Field(default_factory=ViteSettings)
     extensions: ExtensionSettings = Field(default_factory=ExtensionSettings)
+    orchestration: OrchestrationSettings = Field(default_factory=OrchestrationSettings)
 
     @classmethod
     def settings_customise_sources(

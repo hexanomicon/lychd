@@ -19,14 +19,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from lychd.domain.cortex.leases import LeaseLedger
+
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from lychd.agents.deps import Sigil
     from lychd.agents.factory import AgentForge
     from lychd.agents.services import GrantPort, WorkflowServices
     from lychd.agents.workflows import WorkflowRegistry
     from lychd.domain.cortex.context import ContextOrchestrator
+    from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.web.fragments import FragmentRegistry
@@ -45,6 +48,10 @@ def _default_sigil_provider() -> Callable[[], Sigil]:
     return default_sigil
 
 
+def _empty_queues() -> dict[str, RunQueue]:
+    return {}
+
+
 @dataclass
 class RunSubstrate:
     """The run collaborators `perform_run`/`reconcile_runs` execute against."""
@@ -59,6 +66,10 @@ class RunSubstrate:
     sessions: Any  # BridgeSessionStore (turns + consents; presented via the ledger ports)
     forge: AgentForge
     sigil_provider: Callable[[], Sigil] = field(default_factory=_default_sigil_provider)
+    # Wave 3: the lease ledger + SAQ queues, shared per process. Defaulted so existing
+    # test construction sites keep compiling; wire_runtime threads the real ones.
+    leases: LeaseLedger = field(default_factory=LeaseLedger)
+    queues: Mapping[str, RunQueue] = field(default_factory=_empty_queues)
 
     def build_services(self) -> WorkflowServices:
         """Assemble the run's `WorkflowServices` (events = the shared bus)."""

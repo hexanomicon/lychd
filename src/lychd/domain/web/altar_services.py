@@ -23,13 +23,16 @@ from lychd.config.settings import get_settings
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.dispatcher import Dispatcher
-from lychd.domain.cortex.engine import QueueRouter
+from lychd.domain.cortex.engine import QueueRouter, RouteRule
 from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.substrate import RunSubstrate, set_run_substrate
+from lychd.domain.orchestration.arbiter import TransitionArbiter
+from lychd.domain.orchestration.broker import GhoulBroker, QuiescentBroker
 from lychd.domain.orchestration.manager import OrchestratorManager
+from lychd.domain.orchestration.policies import resolve_switch_policy
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.sessions import BridgeSessionStore
@@ -46,28 +49,6 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunHandle
     from lychd.domain.web.fragments import FragmentRegistry
-
-
-class QuiescentBroker:
-    """A no-op worker broker satisfying `OrchestratorManager`'s drain protocol.
-
-    The v1 in-process profile drains via leases (Wave 3); this stand-in keeps the
-    manager happy until the honest `GhoulBroker` lands. Draining is instantaneous
-    and the active-worker count is always zero.
-    """
-
-    async def pause_queues(self) -> None:
-        """Pause intake queues (no-op: lease-drain is Wave 3)."""
-
-    async def broadcast_soft_stop(self) -> None:
-        """Ask workers to finish their current job (no-op)."""
-
-    async def unpause_queues(self) -> None:
-        """Resume intake queues (no-op)."""
-
-    async def get_active_worker_count(self) -> int:
-        """Return the number of still-draining workers (always zero here)."""
-        return 0
 
 
 class RunEngine:
@@ -125,10 +106,14 @@ class AltarServices:
     def wire_runtime(self, queues: Mapping[str, RunQueue]) -> CortexRunEngine:
         """Build + publish the run substrate and the real engine (lifespan seam).
 
-        Called once the SAQ queues exist (Topology A: same process). Publishes the
-        process `RunSubstrate` (so the in-process ghoul shares this bus) and binds
-        the real engine onto the facade.
+        Called once the SAQ queues exist (Topology A: same process). The queues are
+        born HERE, so this is where the honest `GhoulBroker` late-binds onto the
+        orchestrator's plain `worker_broker` attribute (the `QuiescentBroker` was the
+        pre-wire stand-in; with an empty queue map `GhoulBroker` is inert and drain
+        still answers from leases). Publishes the process `RunSubstrate` (so the
+        in-process ghoul shares this bus + lease ledger) and binds the real engine.
         """
+        self.orchestrator.worker_broker = GhoulBroker(queues=queues, leases=self.leases)
         substrate = RunSubstrate(
             ledger=self.ledger,
             bus=self.bus,
@@ -139,13 +124,15 @@ class AltarServices:
             fragments=self.fragments,
             sessions=self.bridge_sessions,
             forge=default_forge(),
+            leases=self.leases,
+            queues=queues,
         )
         set_run_substrate(substrate)
         engine = CortexRunEngine(
             ledger=self.ledger,
             bus=self.bus,
             workflows=substrate.workflows,
-            queue_router=QueueRouter(),
+            queue_router=QueueRouter(routing=_routing_from_settings()),
             queues=queues,
         )
         self.run_engine.bind_engine(engine)
@@ -159,6 +146,12 @@ class AltarServices:
         """
         await self.tickets.aclose()
         await self.bus.aclose()
+
+
+def _routing_from_settings() -> dict[str, RouteRule]:
+    """Convert the `[orchestration.routing]` settings table into engine `RouteRule`s."""
+    routing = get_settings().orchestration.routing
+    return {source: RouteRule(queue=rule.queue, priority=rule.priority) for source, rule in routing.items()}
 
 
 def _build_run_ledger(profile: str) -> RunLedger:
@@ -191,16 +184,25 @@ def build_altar_services(
     tests). The bus tees non-TOKEN events into whichever ledger is selected, so the
     choice MUST happen here, before the bus is built.
     """
+    settings = get_settings()
     if profile is None:
-        profile = get_settings().db.profile
+        profile = settings.db.profile
     registry = AnimatorRegistry(
         rune_schemas=rune_schemas,
         runtime_adapters=runtime_adapters,
         portal_factories=portal_factories,
     )
-    leases = LeaseLedger()  # one per process; Track O threads it onto the substrate + broker
+    leases = LeaseLedger()  # one per process; threaded onto the substrate + broker in wire_runtime
     dispatcher = Dispatcher(registry=registry, leases=leases)
-    orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry, leases=leases)
+    switching = settings.orchestration.switching
+    orchestrator = OrchestratorManager(
+        QuiescentBroker(),  # pre-wire stand-in; wire_runtime late-binds the GhoulBroker
+        registry,
+        leases=leases,
+        policy=resolve_switch_policy(switching.policy),
+        arbiter=TransitionArbiter(),
+        switching=switching,
+    )
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
     bridge_sessions = BridgeSessionStore()

@@ -26,6 +26,7 @@ from litestar.testing import create_test_client
 
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
@@ -172,6 +173,7 @@ def fake_services() -> SimpleNamespace:
         registry=FakeRegistry(),
         dispatcher=None,
         orchestrator=FakeOrchestrator(),
+        leases=LeaseLedger(),
         context_orchestrator=None,
         fragments=fragments,
         bridge_sessions=sessions,

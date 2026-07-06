@@ -64,3 +64,50 @@ async def test_consent_parks_without_done() -> None:
     # Run status (awaiting_consent) is now the ledger's — the ghoul sets it, not the node.
     # The tool body did not execute pre-approval, so no transition was requested.
     assert orch.calls == []
+
+
+@pytest.mark.asyncio
+async def test_converse_forwards_grant_model_settings() -> None:
+    """O5: Converse passes `model_settings=grant.model_settings()` to run_stream_events."""
+    from types import SimpleNamespace
+    from typing import Any
+
+    from pydantic_ai.run import AgentRunResultEvent
+
+    from lychd.agents.services import WorkflowServices, default_sigil
+    from lychd.domain.cortex.context import ContextOrchestrator
+    from lychd.domain.web.fragments import build_fragment_registry
+    from tests.agents.fakes import FakeDispatcher, FakeRegistry
+
+    captured: dict[str, Any] = {}
+    sentinel = {"temperature": 0.42, "max_tokens": 128}
+
+    class _CaptureAgent:
+        async def run_stream_events(self, _prompt: str, **kwargs: Any) -> Any:
+            captured.update(kwargs)
+            yield AgentRunResultEvent(result=SimpleNamespace(output=BridgeReply(answer="ok", fragments=[])))
+
+    class _CaptureForge:
+        def agent_for(self, _spec: Any) -> _CaptureAgent:
+            return _CaptureAgent()
+
+    events, turns, consents, orch = FakeEvents(), FakeTurns(), FakeConsents(), FakeOrchestrator()
+    services = WorkflowServices(
+        dispatcher=FakeDispatcher(model=None, settings=sentinel),
+        orchestrator=orch,
+        context=ContextOrchestrator(registry=FakeRegistry()),
+        fragments=build_fragment_registry(),
+        turns=turns,
+        consents=consents,
+        events=events,
+        forge=_CaptureForge(),  # type: ignore[arg-type]
+        sigil_provider=default_sigil,
+    )
+    state = BridgeChatState(session_id="sess_1", run_id="run_1", prompt="hello")
+    persistence: FullStatePersistence = FullStatePersistence()
+
+    async with BRIDGE_CHAT_GRAPH.iter(WeaveContext(), state=state, deps=services, persistence=persistence) as run:
+        async for _ in run:
+            pass
+
+    assert captured["model_settings"] == sentinel  # grant.model_settings() forwarded through

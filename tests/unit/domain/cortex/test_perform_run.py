@@ -204,6 +204,48 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
 
 
 @pytest.mark.asyncio
+async def test_perform_run_threads_run_priority_and_parks_ledger_around_transition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """O5: perform_run threads float(run.priority) and writes RUNNING→AWAITING_HARDWARE→RUNNING.
+
+    A GraphRunner spy captures the signal_priority + stasis callbacks and drives one
+    park, observing the ledger flip AWAITING_HARDWARE while parked, then RUNNING again.
+    """
+    import lychd.ghouls.runs as runs_mod
+    from lychd.domain.cortex.runs import RunStatus
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "prio")  # seeded with priority=70
+
+    captured: dict[str, Any] = {}
+
+    class _SpyRunner:
+        def __init__(self, *, orchestrator: Any, persistence: Any, signal_priority: float = 100.0, **cbs: Any) -> None:
+            _ = (orchestrator, persistence)
+            captured["signal_priority"] = signal_priority
+            captured["on_enter"] = cbs["on_stasis_enter"]
+            captured["on_exit"] = cbs["on_stasis_exit"]
+
+        async def run_graph(self, *_a: Any, **_k: Any) -> None:
+            await captured["on_enter"]()
+            parked = await ledger.get("prio")
+            captured["parked_status"] = parked.status if parked else None
+            await captured["on_exit"]()
+            resumed = await ledger.get("prio")
+            captured["resumed_status"] = resumed.status if resumed else None
+
+    monkeypatch.setattr(runs_mod, "GraphRunner", _SpyRunner)
+
+    result = await perform_run({"run_substrate": substrate}, run_id="prio")
+
+    assert result["status"] == "done"
+    assert captured["signal_priority"] == 70.0  # == float(run.priority)
+    assert captured["parked_status"] is RunStatus.AWAITING_HARDWARE  # RUNNING → AWAITING_HARDWARE
+    assert captured["resumed_status"] is RunStatus.RUNNING  # AWAITING_HARDWARE → RUNNING
+
+
+@pytest.mark.asyncio
 async def test_reconcile_runs_sweeps_aged_queued() -> None:
     """reconcile_runs fails a QUEUED row older than the sweep window (F3/F9/H2)."""
     from datetime import UTC, datetime, timedelta
