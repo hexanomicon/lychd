@@ -1,26 +1,37 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Sequence
 from inspect import Parameter, signature
 from typing import TYPE_CHECKING
 
+import anyio
 import structlog
 
 from lychd.domain.animation.animators import Animator
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.connectors import Connector, ModelConnector
+from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.binder import AnimatorBinder
 from lychd.domain.animation.services.loader import AnimatorLoader
+from lychd.lib.http import run_sync
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
 
     from lychd.config.runes import RuneConfig
+    from lychd.domain.animation.lifecycle import AnimatorLifecycle
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimeAdapter
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
-    from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
     from lychd.system.schemas import QuadletContainer
 
 
@@ -50,17 +61,31 @@ class AnimatorRegistry:
         rune_schemas: Sequence[type[RuneConfig]],
         runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
         binder: AnimatorBinder | None = None,
+        runes_dir: Path | None = None,
+        reserved_ports: dict[str, int] | None = None,
+        runtime_factories: Sequence[AnimatorFactory] | None = None,
     ) -> None:
-        """Initialize with required rune schemas and runtime adapters (injected by the host)."""
+        """Initialize with required rune schemas and runtime adapters (injected by the host).
+
+        ``runes_dir``/``reserved_ports`` are optional overrides threaded to the
+        internally-built ``AnimatorLoader`` (used by tests to load fixtures from a
+        temporary directory); production composition roots pass only the injected
+        schemas + adapters.
+        """
         from lychd.domain.animation.services.adapters.registry import (
             RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
         )
 
-        self._loader = AnimatorLoader(rune_schemas=list(rune_schemas))
+        self._loader = AnimatorLoader(
+            rune_schemas=list(rune_schemas),
+            runes_dir=runes_dir,
+            reserved_ports=reserved_ports,
+        )
         self._binder = binder or AnimatorBinder()
         self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(adapters=list(runtime_adapters))
-        self._runtime_factories: list[AnimatorFactory] = [self._runtime_adapters.runtime_factory]
-        self._llamacpp_control: LlamaCppControlPlane | None = None
+        self._runtime_factories: list[AnimatorFactory] = (
+            list(runtime_factories) if runtime_factories is not None else [self._runtime_adapters.runtime_factory]
+        )
 
         self._soulstones: dict[str, SoulstoneConfig] = {}
         self._portals: dict[str, PortalConfig] = {}
@@ -92,7 +117,6 @@ class AnimatorRegistry:
         quadlets = self._transmute_soulstone_quadlets(raw_soulstones, raw_portals)
         new_animators: dict[str, RuntimeAnimator] = {}
         new_capabilities: dict[str, CapabilitySpec] = {}
-        new_capability_states: dict[str, CapabilityState] = {}
         for rune in [*raw_soulstones, *raw_portals]:
             resolved = False
             for factory in self._runtime_factories:
@@ -104,11 +128,8 @@ class AnimatorRegistry:
                 if runtime is None:
                     continue
                 new_animators[runtime.id] = runtime
-                specs = self._runtime_adapters.build_capability_specs(rune, runtime)
-                for spec in specs:
+                for spec in self._runtime_adapters.build_capability_specs(rune, runtime):
                     new_capabilities[spec.key] = spec
-                for state in self._runtime_adapters.probe_capability_states(runtime, specs):
-                    new_capability_states[state.capability_key] = state
                 resolved = True
                 break
             if not resolved:
@@ -123,8 +144,14 @@ class AnimatorRegistry:
         self._groups = new_groups
         self._animators = new_animators
         self._capabilities = new_capabilities
-        self._capability_states = new_capability_states
+        self._capability_states = {}
         self._loaded = True
+
+        # Rune parse + transmute + spec synthesis is CPU-bound and stays sync;
+        # the initial capability probe is async (A3-U3) and bridged here so the
+        # state cache is warm after load. Composition roots that want an explicit
+        # off-loop probe can call ``await probe_all()`` instead.
+        run_sync(self._probe_all_async())
 
         logger.info(
             "registry_loaded",
@@ -265,9 +292,8 @@ class AnimatorRegistry:
         keys = {spec.key for spec in self.list_capabilities_for_animator(name)}
         return [state for state in self._capability_states.values() if state.capability_key in keys]
 
-    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
-        """Re-probe and cache capability states for one resolved runtime animator."""
-        self.ensure_loaded()
+    async def _refresh_states_for_animator_async(self, name: str) -> list[CapabilityState]:
+        """Async core: probe and cache capability states for one runtime animator."""
         animator = self._animators.get(name)
         if animator is None:
             return []
@@ -276,39 +302,100 @@ class AnimatorRegistry:
         if not specs:
             return []
 
-        states = self._runtime_adapters.probe_capability_states(animator, specs)
+        states = await self._runtime_adapters.probe_capability_states(animator, specs)
         for state in states:
             self._capability_states[state.capability_key] = state
         return states
 
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
-        """Re-probe and return the latest cached state for one capability key."""
-        self.ensure_loaded()
+    async def _refresh_capability_state_async(self, key: str) -> CapabilityState | None:
+        """Async core: re-probe and return the latest cached state for one key."""
         spec = self._capabilities.get(key)
         if spec is None:
             return None
-
-        self.refresh_capability_states_for_animator(spec.animator_name)
+        await self._refresh_states_for_animator_async(spec.animator_name)
         return self._capability_states.get(key)
 
-    def activate_capability(self, key: str) -> bool:
-        """Request runtime-specific activation for a single capability key."""
+    async def _probe_all_async(self) -> None:
+        """Async core: refresh capability states for every resolved animator."""
+        for name in list(self._animators):
+            await self._refresh_states_for_animator_async(name)
+
+    async def probe_all(self) -> None:
+        """Refresh capability states for every animator (startup async probe)."""
+        self.ensure_loaded()
+        await self._probe_all_async()
+
+    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        """Re-probe and cache capability states for one resolved runtime animator.
+
+        Synchronous surface retained for Dispatcher/Orchestrator call sites; it
+        bridges to the async probe via ``run_sync`` (transitional shim).
+        """
+        self.ensure_loaded()
+        return run_sync(self._refresh_states_for_animator_async(name))
+
+    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+        """Re-probe and return the latest cached state for one capability key."""
+        self.ensure_loaded()
+        return run_sync(self._refresh_capability_state_async(key))
+
+    def activate_capability(self, key: str) -> ActivationResult:
+        """Request runtime-specific activation for a single capability key.
+
+        Returns an ``ActivationResult`` (A3-U4); on acceptance the animator's
+        states are re-probed so the phase reflects the activation in flight.
+        """
         self.ensure_loaded()
         spec = self._capabilities.get(key)
         if spec is None:
-            return False
+            return ActivationResult(accepted=False, phase=CapabilityPhase.UNKNOWN, reason="unknown capability")
 
         animator = self._animators.get(spec.animator_name)
         if animator is None:
-            return False
+            return ActivationResult(accepted=False, phase=CapabilityPhase.UNKNOWN, reason="animator not registered")
 
-        activated = self._runtime_adapters.activate_capability(animator, spec)
-        if not activated:
-            return False
+        result = run_sync(self._runtime_adapters.activate_capability(animator, spec))
+        if result.accepted:
+            self.refresh_capability_states_for_animator(spec.animator_name)
+        return result
 
-        animator.connector.link.up = True
-        self.refresh_capability_states_for_animator(spec.animator_name)
-        return True
+    async def await_warm(
+        self,
+        key: str,
+        *,
+        timeout_s: float = 120.0,
+        interval_s: float = 0.75,
+    ) -> CapabilityState:
+        """Poll ``refresh_capability_state`` until the capability phase is WARM.
+
+        Raises ``ActivationFailed`` immediately on phase ERROR and
+        ``ActivationTimeout`` (carrying the last observed state) on deadline.
+        ``Link.estimated_ready_ms`` seeds an adaptive first sleep when present.
+        """
+        self.ensure_loaded()
+        spec = self._capabilities.get(key)
+        if spec is None:
+            raise CapabilityUnavailable(key, "unknown capability")
+
+        animator = self._animators.get(spec.animator_name)
+        estimated_ready_ms = getattr(animator.connector.link, "estimated_ready_ms", None) if animator else None
+        if estimated_ready_ms:
+            await anyio.sleep(min(estimated_ready_ms / 1000.0, timeout_s))
+
+        deadline = time.monotonic() + timeout_s
+        last_state: CapabilityState | None = None
+        while True:
+            state = await self._refresh_capability_state_async(key)
+            if state is None:
+                raise CapabilityUnavailable(key, "capability state unavailable")
+            last_state = state
+            if state.phase is CapabilityPhase.WARM:
+                return state
+            if state.phase is CapabilityPhase.ERROR:
+                raise ActivationFailed(key, reason=state.reason)
+            if time.monotonic() >= deadline:
+                raise ActivationTimeout(key, last_state)
+            await anyio.sleep(interval_s)
 
     def list_persistent_residents(self) -> list[CapabilitySpec]:
         """List capabilities declared on persistent-resident animators."""
@@ -334,21 +421,22 @@ class AnimatorRegistry:
             return None
         return self._runtime_adapters.plan(soulstone)
 
-    def inspect_lifecycle(self, name: str) -> LlamaCppLifecycle | None:
-        """Inspect llama.cpp lifecycle for a runtime animator when applicable."""
+    async def inspect_lifecycle(self, name: str) -> AnimatorLifecycle | None:
+        """Inspect runtime lifecycle for an animator via its adapter control plane.
+
+        Generic (spec §5): the domain no longer imports a concrete runtime nor
+        branches on ``connector.kind``; it delegates to the optional
+        ``AnimatorControlPlane`` an adapter may expose.
+        """
         animator = self.get_runtime(name)
         if animator is None:
             return None
 
-        if getattr(animator.connector, "kind", None) != "llamacpp":
+        adapter = self._runtime_adapters.adapter_for_animator(animator)
+        if adapter is None:
             return None
 
-        control = self._get_llamacpp_control()
-        return control.inspect_animator(animator)
-
-    def _get_llamacpp_control(self) -> LlamaCppControlPlane:
-        if self._llamacpp_control is None:
-            from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
-
-            self._llamacpp_control = LlamaCppControlPlane()
-        return self._llamacpp_control
+        control = adapter.control_plane(animator)
+        if control is None:
+            return None
+        return await control.inspect_animator(animator)

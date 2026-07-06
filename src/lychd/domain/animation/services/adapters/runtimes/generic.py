@@ -1,9 +1,18 @@
 from __future__ import annotations
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from datetime import UTC, datetime
+from typing import ClassVar
+
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_soulstone
-from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
+from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.runtimes.shared import (
     build_openai_connector,
     resolved_soulstone_base_url,
@@ -20,7 +29,7 @@ from lychd.system.schemas import QuadletContainer
 class GenericRuntimeAdapter:
     """Fallback Soulstone planner/runtime builder for unknown runtimes."""
 
-    runtime = "generic"
+    runtime: ClassVar[str] = "generic"
     openai_compatible_runtimes = frozenset(
         {
             "openai_compatible",
@@ -59,30 +68,44 @@ class GenericRuntimeAdapter:
             return []
         return capability_specs_from_soulstone(soulstone)
 
-    def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]:
-        """Project connector readiness into conservative capability states."""
+    async def probe_capability_states(
+        self,
+        animator: RuntimeAnimator,
+        specs: list[CapabilitySpec],
+    ) -> list[CapabilityState]:
+        """Project connector readiness into conservative FIXED capability states."""
+        up = animator.connector.link.up
         active_model_id = getattr(animator.connector, "default_model_id", None)
-        loaded_model_ids = [spec.model_id for spec in specs] if animator.connector.link.up else []
+        loaded_model_ids = [spec.model_id for spec in specs] if up else []
+        checked_at = datetime.now(UTC)
         return [
             CapabilityState(
                 capability_key=spec.key,
-                is_static=True,
-                is_active=animator.connector.link.up,
-                is_available=True,
-                warm=animator.connector.link.up,
-                health="ok" if animator.connector.link.up else "down",
+                lifecycle=CapabilityLifecycle.STATIC,
+                phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
+                health="ok" if up else "down",
                 active_model_id=active_model_id,
                 loaded_model_ids=loaded_model_ids,
-                reason=None if animator.connector.link.up else "connector_down",
+                reason=None if up else "connector_down",
+                checked_at=checked_at,
             )
             for spec in specs
         ]
 
-    def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool:
-        """Return ``False`` because generic runtimes have no canonical activation path."""
-        _ = animator
+    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
+        """Report that generic runtimes have no in-runtime activation path."""
         _ = spec
-        return False
+        up = animator.connector.link.up
+        return ActivationResult(
+            accepted=False,
+            phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
+            reason="fixed capability; lifecycle owned by unit",
+        )
+
+    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
+        """Return ``None``; generic runtimes expose no lifecycle control plane."""
+        _ = animator
+        return None
 
 
 __all__ = ["GenericRuntimeAdapter"]

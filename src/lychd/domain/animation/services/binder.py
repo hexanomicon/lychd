@@ -9,10 +9,32 @@ from lychd.domain.animation.connectors import Connector, ModelConnector, ToolCon
 
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
+    from pydantic_ai.settings import ModelSettings
     from pydantic_ai.toolsets import AbstractToolset
+
+    from lychd.domain.animation.schemas.generation import GenerationProfile
 
 
 type RuntimeAnimator = Animator[Connector, RuneConfig]
+
+
+def generation_to_model_settings(profile: GenerationProfile) -> ModelSettings | None:
+    """Bridge a resolved ``GenerationProfile`` to pydantic-ai ``ModelSettings``.
+
+    Only the fields pydantic-ai's ``ModelSettings`` understands are mapped; unset
+    (``None``) fields are omitted, and ``None`` is returned when nothing is set.
+    ``max_tokens`` is the adw-kit runaway guard sourced from runes.
+    """
+    settings: ModelSettings = {}
+    if profile.max_tokens is not None:
+        settings["max_tokens"] = profile.max_tokens
+    if profile.temperature is not None:
+        settings["temperature"] = profile.temperature
+    if profile.top_p is not None:
+        settings["top_p"] = profile.top_p
+    if not settings:
+        return None
+    return settings
 
 
 class AnimatorBindingError(ValueError):

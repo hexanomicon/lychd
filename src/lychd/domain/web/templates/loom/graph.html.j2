@@ -1,7 +1,7 @@
 {# The Loom graph projection (§7.6). `view` is a LoomView. The <pre class="mermaid">
    holds stateDiagram-v2 source; client-side mermaid.js renders it after every
    htmx swap. Source text only — never a remote render (Sovereignty Wall). #}
-<section data-fragment="loom.graph" data-workflow="{{ view.name }}" data-state="rendered">
+<section data-fragment="loom.graph" data-workflow="{{ view.name }}">
   <div class="panel graph-stage">
     <pre class="mermaid">{{ view.mermaid_source }}</pre>
   </div>
@@ -13,12 +13,12 @@
         <dt>title</dt><dd>{{ view.title }}</dd>
         <dt>trigger</dt><dd>{{ view.trigger_hint }}</dd>
         <dt>nodes</dt><dd class="glyph">{{ view.node_names | join(' → ') }}</dd>
-        <dt>source</dt><dd><a href="/loom/{{ view.name }}/source">stateDiagram-v2 ↗</a></dd>
+        <dt>source</dt><dd><a href="{{ route_path('loom:source', workflow=view.name) }}">stateDiagram-v2 ↗</a></dd>
       </dl>
     </div>
     <div class="panel">
       <div class="panel-head"><span class="rune-head">Description</span></div>
-      <div style="padding:12px 16px;color:var(--parchment);font-size:12.5px">{{ view.description }}</div>
+      <div class="loom-desc">{{ view.description }}</div>
     </div>
   </div>
 </section>

@@ -32,5 +32,16 @@
     {% block main %}{% endblock %}
   </main>
 
+  {# ══ Omen toast stack — disconnect / error feedback (§6.3) ═════════ #}
+  <div class="omen-stack" role="status" aria-live="polite"
+       x-data="omens" @altar:omen.window="add($event.detail.text, $event.detail.fault)">
+    <template x-for="omen in items" :key="omen.id">
+      <div class="omen" :data-state="omen.fault ? 'fault' : 'info'">
+        <span x-text="omen.text"></span>
+        <button class="dismiss" type="button" @click="dismiss(omen.id)" aria-label="Dismiss">✕</button>
+      </div>
+    </template>
+  </div>
+
 </body>
 </html>

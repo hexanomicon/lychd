@@ -54,9 +54,7 @@ class AssembledContext:
     def floor_text(self) -> str:
         """Render layers 2-4 in (layer, key) order for the dynamic instructions hook."""
         return "\n\n".join(
-            block.text
-            for block in self.blocks
-            if _FLOOR_LAYER_MIN <= block.layer <= _FLOOR_LAYER_MAX and block.text
+            block.text for block in self.blocks if _FLOOR_LAYER_MIN <= block.layer <= _FLOOR_LAYER_MAX and block.text
         )
 
 
@@ -189,9 +187,7 @@ class ContextOrchestrator:
 
     def _warm_capability_keys(self) -> list[str]:
         return sorted(
-            state.capability_key
-            for state in self.registry.list_capability_states()
-            if state.warm or state.is_active
+            state.capability_key for state in self.registry.list_capability_states() if state.warm or state.is_active
         )
 
     def _context_window(self, grant: CapabilityGrant | None) -> int | None:

@@ -81,6 +81,7 @@ class BridgeSessionStore:
         self._sessions: dict[str, SessionRecord] = {}
         self._runs: dict[str, RunRecord] = {}
         self._consents: dict[str, ConsentRecord] = {}
+        self._run_to_session: dict[str, str] = {}
 
     # -- sessions ---------------------------------------------------------
 
@@ -104,10 +105,36 @@ class BridgeSessionStore:
         return sorted(self._sessions.values(), key=lambda record: record.created_at, reverse=True)
 
     def add_turn(self, session_id: str, turn: BridgeTurn) -> None:
-        """Append a settled turn to a session."""
+        """Append a settled turn to a session, indexing it by run for O(1) lookup."""
         session = self._sessions.get(session_id)
         if session is not None:
             session.turns.append(turn)
+            if turn.run_id:
+                self._run_to_session[turn.run_id] = session_id
+
+    def session_for_run(self, run_id: str) -> SessionRecord | None:
+        """Return the session that owns a run (O(1) index), or `None`."""
+        session_id = self._run_to_session.get(run_id)
+        if session_id is None:
+            record = self._consents_by_run(run_id)
+            session_id = record.session_id if record is not None else None
+        return self._sessions.get(session_id) if session_id is not None else None
+
+    def settled_turn_for_run(self, run_id: str) -> BridgeTurn | None:
+        """Return the newest settled agent turn for a run, or `None`."""
+        session = self.session_for_run(run_id)
+        if session is None:
+            return None
+        for turn in reversed(session.turns):
+            if turn.run_id == run_id and turn.role == "agent":
+                return turn
+        return None
+
+    def _consents_by_run(self, run_id: str) -> ConsentRecord | None:
+        for record in self._consents.values():
+            if record.run_id == run_id:
+                return record
+        return None
 
     # -- runs -------------------------------------------------------------
 
@@ -184,6 +211,7 @@ class BridgeSessionStore:
             args=args,
             requests=requests,
         )
+        self._run_to_session[run_id] = session_id
         self.set_run_status(run_id, "awaiting_consent")
         return consent_id
 

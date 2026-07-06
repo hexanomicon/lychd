@@ -1,6 +1,7 @@
 {# The coven board fragment: soulstone covens plus a Portals column. `board` is a
    NexusBoard view-model. Swapped into #nexus-board (innerHTML). #}
-<div data-fragment="nexus.board" data-state="rendered">
+<div data-fragment="nexus.board">
+  {% if board.covens or board.portals %}
   <div class="coven-grid">
     {% for coven_name, rows in board.covens %}
       {% with name = coven_name, is_portal = False %}
@@ -13,4 +14,7 @@
       {% endwith %}
     {% endif %}
   </div>
+  {% else %}
+  <p class="nexus-empty glyph">No covens risen.</p>
+  {% endif %}
 </div>

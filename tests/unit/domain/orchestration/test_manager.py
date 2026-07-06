@@ -6,7 +6,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
@@ -65,17 +71,16 @@ class StubRegistry:
             return None
         return SimpleNamespace(service_name=f"lychd-{name}")
 
-    def activate_capability(self, key: str) -> bool:
+    def activate_capability(self, key: str) -> ActivationResult:
         spec = self._specs[key]
         runtime = self._runtimes[spec.animator_name]
         runtime.connector.link.up = True
         state = self._states[key]
         state.health = "ok"
-        state.warm = True
-        state.is_active = True
+        state.phase = CapabilityPhase.WARM
         state.active_model_id = spec.model_id
         state.loaded_model_ids = [spec.model_id]
-        return True
+        return ActivationResult(accepted=True, phase=CapabilityPhase.WARM)
 
 
 def _spec(
@@ -95,7 +100,7 @@ def _spec(
         source_kind="soulstone",
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
-        lifecycle_mode=lifecycle_mode,
+        lifecycle=CapabilityLifecycle("dynamic" if lifecycle_mode == "dynamic_soft" else lifecycle_mode),
         concurrency=ConcurrencyIntent(
             dedicated=dedicated,
             persistent_resident=persistent_resident,
@@ -110,12 +115,16 @@ def _state(
     is_active: bool = False,
     warm: bool = False,
 ) -> CapabilityState:
+    if warm:
+        phase = CapabilityPhase.WARM
+    elif is_active:
+        phase = CapabilityPhase.WARMING
+    else:
+        phase = CapabilityPhase.COLD
     return CapabilityState(
         capability_key=spec.key,
-        is_static=is_static,
-        is_active=is_active,
-        is_available=True,
-        warm=warm,
+        lifecycle=CapabilityLifecycle.STATIC if is_static else CapabilityLifecycle.DYNAMIC,
+        phase=phase,
         health="ok" if warm else "down",
         active_model_id=spec.model_id if is_active else None,
         loaded_model_ids=[spec.model_id] if is_active else [],

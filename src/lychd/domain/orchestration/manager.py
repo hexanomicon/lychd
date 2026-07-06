@@ -3,8 +3,12 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Protocol
 
-from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
-from lychd.domain.animation.services.registry import AnimatorRegistry
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.orchestration.schema import TransitionPlan
 
@@ -28,7 +32,7 @@ class OrchestratorRegistry(Protocol):
 
     def get_soulstone_rune(self, name: str, /) -> Any | None: ...
 
-    def activate_capability(self, key: str, /) -> bool: ...
+    def activate_capability(self, key: str, /) -> ActivationResult: ...
 
 
 class OrchestratorManager:
@@ -37,11 +41,11 @@ class OrchestratorManager:
     def __init__(
         self,
         worker_broker: Any,
-        registry: OrchestratorRegistry | None = None,
+        registry: OrchestratorRegistry,
     ) -> None:
-        """Initialize orchestration against the canonical registry."""
+        """Initialize orchestration against the injected canonical registry."""
         self.worker_broker = worker_broker
-        self.registry = registry or AnimatorRegistry()
+        self.registry = registry
 
     def list_capability_statuses(self) -> list[dict[str, Any]]:
         """Return a canonical status snapshot for the orchestrator API."""
@@ -188,8 +192,10 @@ class OrchestratorManager:
         return False
 
     async def _activate_dynamic_capability(self, target: CapabilitySpec) -> None:
-        if not self.registry.activate_capability(target.key):
-            msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'."
+        result = self.registry.activate_capability(target.key)
+        if not result.accepted:
+            reason = f": {result.reason}" if result.reason else ""
+            msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'{reason}."
             raise RuntimeError(msg)
 
     async def _start_animator_runtime(self, animator_name: str) -> None:

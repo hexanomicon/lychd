@@ -9,6 +9,7 @@ from pydantic_graph.persistence import NodeSnapshot
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
 
+
 @runtime_checkable
 class PhylacteryProtocol(Protocol):
     """Persistence contract for graph state and resumable jobs."""

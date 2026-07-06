@@ -1,26 +1,27 @@
 {# One coven card. `name` is the coven label; `rows` is a tuple of NexusCovenRow;
    `is_portal` disables the (unmanaged) scry action. The card's aggregate state is
-   the hottest of its rows. #}
+   the hottest of its rows (capability `data-state` vocabulary, §5). #}
 {% set ns = namespace(state='cold') %}
 {% for cap in rows %}
   {% if cap.is_active %}{% set ns.state = 'active' %}
   {% elif cap.warm and ns.state != 'active' %}{% set ns.state = 'warm' %}{% endif %}
 {% endfor %}
 {% set runtime = rows[0].runtime if rows else 'remote' %}
-<div class="panel coven-card is-{{ ns.state }}" data-fragment="nexus.coven" data-state="{{ ns.state }}">
+<div class="panel coven-card" data-fragment="nexus.coven" data-state="{{ ns.state }}">
   <div class="panel-head">
     <span class="rune-head">{{ name }}</span>
     <span class="kind">{{ 'portal · remote' if is_portal else 'soulstone · ' ~ runtime }}</span>
-    <span style="margin-left:auto"><span class="chip {{ ns.state }}">{{ ns.state }}</span></span>
+    <span class="chip-slot"><span class="chip" data-state="{{ ns.state }}">{{ ns.state }}</span></span>
   </div>
   {% for cap in rows %}
   <div class="cap" data-capability="{{ cap.capability_key }}">
     <span class="key">{{ cap.capability_key }}</span>
-    <span class="chip {{ cap.state }}">{{ 'active' if cap.is_active else ('warm' if cap.warm else 'sleeping') }}</span>
+    <span class="chip" data-state="{{ cap.state }}">{{ 'active' if cap.is_active else ('warm' if cap.warm else 'sleeping') }}</span>
     {% if is_portal %}
     <button class="scry" disabled title="not lifecycle-managed">scry swap</button>
     {% else %}
-    <button class="scry" hx-get="/nexus/plan?target={{ cap.capability_key }}"
+    <button class="scry"
+            hx-get="{{ route_path('nexus:plan') }}?target={{ cap.capability_key | urlencode }}"
             hx-target="#nexus-plan" hx-swap="innerHTML"
             data-fragment="nexus.plan-trigger">scry swap</button>
     {% endif %}

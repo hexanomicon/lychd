@@ -86,10 +86,7 @@ def test_writer_prefers_custom_sample_template(tmp_path: Path) -> None:
     # Custom sample templates are wrapped with the placeholder marker too, so a
     # generated sample stays inert until the operator removes the marker.
     assert content == (
-        "# lychd: sample-rune\n"
-        "# Edit this file, then remove this marker to activate it.\n"
-        "\n"
-        'name = "custom"\n'
+        '# lychd: sample-rune\n# Edit this file, then remove this marker to activate it.\n\nname = "custom"\n'
     )
     assert "required_value" not in content
 

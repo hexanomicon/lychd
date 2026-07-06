@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import path from "path";
 import litestar from "litestar-vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 
 const ASSET_URL = process.env.ASSET_URL || "/static/";
 const VITE_PORT = process.env.VITE_PORT || "5173";
@@ -18,6 +19,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    tailwindcss(),
     litestar({
       input: ["resources/main.css", "resources/main.js"],
       assetUrl: ASSET_URL,

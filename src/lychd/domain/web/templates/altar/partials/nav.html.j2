@@ -1,12 +1,13 @@
-{# The instrument map (ADR 15 order). `active` names the current instrument. #}
+{# The instrument map (ADR 15 order). `active` names the current instrument.
+   Routes are reversed via `route_path` (a named-handler global) — no hardcoded paths. #}
 {% set instruments = [
-  ('bridge',    'Bridge',    '/bridge',    false),
-  ('scrying',   'Scrying',   '/scrying',   true),
-  ('nexus',     'Nexus',     '/nexus',     false),
-  ('loom',      'Loom',      '/loom',      false),
-  ('reliquary', 'Reliquary', '/reliquary', true),
-  ('bindings',  'Bindings',  '/bindings',  true),
+  ('bridge',    'Bridge',    'bridge:page',     false),
+  ('scrying',   'Scrying',   'altar:scrying',   true),
+  ('nexus',     'Nexus',     'nexus:page',      false),
+  ('loom',      'Loom',      'loom:page',       false),
+  ('reliquary', 'Reliquary', 'altar:reliquary', true),
+  ('bindings',  'Bindings',  'altar:bindings',  true),
 ] %}
-{% for slug, label, href, unbuilt in instruments %}
-<a href="{{ href }}"{% if active == slug %} aria-current="page"{% endif %}>{{ label }}{% if unbuilt %}<span class="dot">●</span>{% endif %}</a>
+{% for slug, label, route, unbuilt in instruments %}
+<a href="{{ route_path(route) }}"{% if active == slug %} aria-current="page"{% endif %}>{{ label }}{% if unbuilt %}<span class="dot">◇</span>{% endif %}</a>
 {% endfor %}

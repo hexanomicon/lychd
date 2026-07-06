@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
@@ -66,7 +71,7 @@ def _spec(
         source_kind="soulstone",
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
-        lifecycle_mode=lifecycle_mode,
+        lifecycle=CapabilityLifecycle("dynamic" if lifecycle_mode == "dynamic_soft" else lifecycle_mode),
         concurrency=concurrency or ConcurrencyIntent(),
     )
 
@@ -78,12 +83,16 @@ def _state(
     is_active: bool = True,
     warm: bool = True,
 ) -> CapabilityState:
+    if warm:
+        phase = CapabilityPhase.WARM
+    elif is_active:
+        phase = CapabilityPhase.WARMING
+    else:
+        phase = CapabilityPhase.COLD
     return CapabilityState(
         capability_key=spec.key,
-        is_static=is_static,
-        is_active=is_active,
-        is_available=True,
-        warm=warm,
+        lifecycle=CapabilityLifecycle.STATIC if is_static else CapabilityLifecycle.DYNAMIC,
+        phase=phase,
         health="ok" if warm else "down",
         active_model_id=spec.model_id if is_active else None,
         loaded_model_ids=[spec.model_id] if is_active else [],

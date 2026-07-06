@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, cast
 
 from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
-from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 from lychd.system.schemas import QuadletContainer
 
 if TYPE_CHECKING:
@@ -178,47 +177,13 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         return value
 
 
-class LlamacppConnector(OpenAICompatibleConnector):
-    """OpenAI-compatible connector with llama.cpp router/single lifecycle metadata."""
+class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
+    """Concrete generic Soulstone runtime with immutable rune + connector references.
 
-    def __init__(
-        self,
-        *,
-        link: Link,
-        base_url: str,
-        model_infos: Sequence[ModelInfo],
-        default_model_id: str | None,
-        mode: Literal["single", "router"],
-        router_query_model_id: str | None,
-        metadata: dict[str, object] | None = None,
-    ) -> None:
-        """Initialize llama.cpp connector with runtime lifecycle metadata."""
-        super().__init__(
-            kind="llamacpp",
-            link=link,
-            base_url=base_url,
-            model_infos=model_infos,
-            default_model_id=default_model_id,
-        )
-        self._mode: Literal["single", "router"] = mode
-        self._router_query_model_id = router_query_model_id
-        self._metadata = dict(metadata or {})
-
-    @property
-    def mode(self) -> Literal["single", "router"]:
-        return self._mode
-
-    @property
-    def router_query_model_id(self) -> str | None:
-        return self._router_query_model_id
-
-    @property
-    def metadata(self) -> dict[str, object]:
-        return dict(self._metadata)
-
-
-class _BaseSoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
-    """Concrete Soulstone runtime base with immutable rune + connector references."""
+    Extensions may subclass this for connector typing (e.g. llama.cpp) but the
+    base is fully usable on its own; per-runtime stone subclasses are no longer
+    domain types (spec §5).
+    """
 
     def __init__(self, *, rune: R, connector: C, quadlet: QuadletContainer) -> None:
         """Store immutable rune, connector, and generated Quadlet references."""
@@ -243,8 +208,8 @@ class _BaseSoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
         return self._connector
 
 
-class _BasePortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
-    """Concrete Portal runtime base with immutable rune + connector references."""
+class PortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
+    """Concrete generic Portal runtime with immutable rune + connector references."""
 
     def __init__(self, *, rune: R, connector: C) -> None:
         """Store immutable rune + connector references."""
@@ -264,31 +229,19 @@ class _BasePortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
         return self._connector
 
 
-class GenericStone(_BaseSoulstoneAnimator[Connector, SoulstoneConfig]):
+class GenericStone(SoulstoneAnimator[Connector, SoulstoneConfig]):
     """Fallback local animator when no runtime-specific connector exists yet."""
 
 
-class OpenAICompatibleStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, SoulstoneConfig]):
+class OpenAICompatibleStone(SoulstoneAnimator[OpenAICompatibleConnector, SoulstoneConfig]):
     """Local Soulstone exposing an OpenAI-compatible connector surface."""
 
 
-class LlamacppStone(_BaseSoulstoneAnimator[LlamacppConnector, LlamaCppSoulstoneConfig]):
-    """Concrete llama.cpp Soulstone runtime handle."""
-
-
-class VllmStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, VllmSoulstoneConfig]):
-    """Concrete vLLM Soulstone runtime handle (OpenAI-compatible surface)."""
-
-
-class SglangStone(_BaseSoulstoneAnimator[OpenAICompatibleConnector, SglangSoulstoneConfig]):
-    """Concrete SGLang Soulstone runtime handle (OpenAI-compatible surface)."""
-
-
-class GenericPortal(_BasePortalAnimator[Connector, PortalConfig]):
+class GenericPortal(PortalAnimator[Connector, PortalConfig]):
     """Fallback Portal runtime when provider-specific connector is not implemented."""
 
 
-class OpenAIPortal(_BasePortalAnimator[OpenAICompatibleConnector, PortalConfig]):
+class OpenAIPortal(PortalAnimator[OpenAICompatibleConnector, PortalConfig]):
     """Portal runtime using an OpenAI-compatible connector surface."""
 
 
@@ -312,14 +265,12 @@ def portal_link_default(*, base_url: str) -> Link:
 __all__ = [
     "GenericPortal",
     "GenericStone",
-    "LlamacppConnector",
-    "LlamacppStone",
     "OpenAICompatibleConnector",
     "OpenAICompatibleStone",
     "OpenAIPortal",
     "PassiveConnector",
-    "SglangStone",
-    "VllmStone",
+    "PortalAnimator",
+    "SoulstoneAnimator",
     "local_link_default",
     "portal_link_default",
 ]

@@ -1,0 +1,7 @@
+{# The single consent render seam (§TD-4): the consent card + the OOB topbar sigil.
+   Used by both BridgeController.consent (as HTMXTemplate; the card replaces itself by
+   id) and Projector.project(consent) (rendered to a string for the SSE stream, where
+   the card is appended into .turn__extras). Replaces the two duplicated blocks. #}
+{% include 'bridge/consent_card.html.j2' %}
+{% set oob = True %}
+{% include 'altar/partials/consent_sigil.html.j2' %}

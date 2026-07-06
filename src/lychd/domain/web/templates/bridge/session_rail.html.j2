@@ -1,9 +1,9 @@
 {# One séance rail item. `item` is a SessionRecord; `current` marks the active
-   session; `oob=True` returns it as an out-of-band update after a send. #}
+   session (navigational, so it stays a class — not lifecycle); `oob=True` returns
+   it as an out-of-band update after a send. #}
 <a class="seance{% if current %} current{% endif %}" id="rail-item-{{ item.id }}"
-   href="/bridge/{{ item.id }}"
-   data-fragment="bridge.rail-item" data-state="{{ 'active' if current else 'settled' }}"
-   data-session-id="{{ item.id }}"
+   href="{{ route_path('bridge:session', session_id=item.id) }}"
+   data-fragment="bridge.rail-item" data-session-id="{{ item.id }}"
    {% if oob %}hx-swap-oob="outerHTML:#rail-item-{{ item.id }}"{% endif %}>
   <span class="t">{{ item.title }}</span>
   <span class="m glyph">bridge_chat · {{ item.turns | length }} turns</span>

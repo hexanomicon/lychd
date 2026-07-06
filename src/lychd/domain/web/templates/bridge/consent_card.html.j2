@@ -15,15 +15,15 @@
     {% endfor %}
   </dl>
   {% if consent.state == 'pending_consent' %}
-  <form class="verdicts" hx-post="/bridge/consents/{{ consent.id }}"
-        hx-target="#consent-{{ consent.id }}" hx-swap="outerHTML">
+  <form class="verdicts" hx-post="{{ route_path('bridge:consent', consent_id=consent.id) }}"
+        hx-target="#consent-{{ consent.id }}" hx-swap="outerHTML" hx-disabled-elt="find button">
     <button name="verdict" value="approve" class="rune-btn rune-btn--frost">Consecrate</button>
     <button name="verdict" value="deny" class="rune-btn rune-btn--ash">Refuse</button>
     <span class="note">an ordinary POST — the Vessel decides, this card only asks</span>
   </form>
   {% else %}
   <div class="verdicts">
-    <span class="chip {{ 'active' if consent.state == 'consented' else 'fault' }}">
+    <span class="chip" data-state="{{ 'active' if consent.state == 'consented' else 'fault' }}">
       {{ 'consecrated' if consent.state == 'consented' else 'refused' }}
     </span>
     <span class="note">the Magus has spoken</span>

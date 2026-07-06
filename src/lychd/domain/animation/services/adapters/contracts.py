@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from lychd.domain.animation.animators import Animator
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
 from lychd.domain.animation.connectors import Connector
+from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
 from lychd.system.schemas import QuadletContainer
 
@@ -32,10 +33,24 @@ class SoulstoneDefinition:
     runtime_adapter: SoulstoneRuntimeAdapter
 
 
+class AnimatorControlPlane(Protocol):
+    """Optional per-runtime lifecycle surface returned by an adapter (spec §5).
+
+    Generic seam: the domain talks to it via ``inspect_animator`` and, when a
+    runtime supports in-place model loading, ``load_model``/``unload_model``.
+    """
+
+    async def inspect_animator(self, animator: RuntimeAnimator) -> AnimatorLifecycle: ...
+
+    async def load_model(self, base_url: str, model: str) -> bool: ...
+
+    async def unload_model(self, base_url: str, model: str) -> bool: ...
+
+
 class SoulstoneRuntimeAdapter(Protocol):
     """Contract for Soulstone runtime planners/builders."""
 
-    runtime: str
+    runtime: ClassVar[str]
 
     def supports(self, runtime: str) -> bool: ...
 
@@ -45,9 +60,15 @@ class SoulstoneRuntimeAdapter(Protocol):
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]: ...
 
-    def probe_capability_states(self, animator: RuntimeAnimator, specs: list[CapabilitySpec]) -> list[CapabilityState]: ...
+    async def probe_capability_states(
+        self,
+        animator: RuntimeAnimator,
+        specs: list[CapabilitySpec],
+    ) -> list[CapabilityState]: ...
 
-    def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> bool: ...
+    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult: ...
+
+    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None: ...
 
 
 class SoulstoneRuntimePlanner(Protocol):
@@ -58,6 +79,7 @@ class SoulstoneRuntimePlanner(Protocol):
 
 __all__ = [
     "LISTEN_HOST",
+    "AnimatorControlPlane",
     "RuntimeAnimator",
     "RuntimePlan",
     "SoulstoneDefinition",

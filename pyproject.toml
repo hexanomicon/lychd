@@ -57,6 +57,8 @@ test = [
   "pytest-cov",
   "polyfactory",
   "pytest-sugar",
+  "respx",
+  "selectolax",
 ]
 lint = [
     "ruff>=0.1.0",

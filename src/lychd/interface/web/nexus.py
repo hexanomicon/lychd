@@ -1,47 +1,30 @@
-"""`NexusController` — coven board, transition plan, and swaps (routes 10-13).
+"""`NexusController` — Nexus page, coven board, transition plan, and swaps.
 
 The board is a read-only projection of the orchestrator's capability statuses; a
-swap is a long mutation surfaced as a self-polling ticket that settles with an
-HTTP 286 (stop-polling) plus a body event that the board hears to refresh once.
+swap is a long mutation surfaced as a self-polling ticket (tracked in the
+`TicketStore`, not a module global) that settles with an HTTP 286 (stop-polling)
+plus a body event the board hears to refresh once.
 """
 
 from __future__ import annotations
 
 import asyncio
-import uuid
-from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 from litestar import Controller, get, post
-from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.enums import MediaType
 from litestar.exceptions import NotFoundException
 from litestar.plugins.htmx import HTMXRequest, HTMXTemplate
 from litestar.response import Response, Template
 from litestar.status_codes import HTTP_202_ACCEPTED
 
+# Runtime imports: Litestar resolves handler param/return annotations at registration.
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
-from lychd.domain.web.schemas import SwapTicket, build_nexus_board
-
-# HTMX swaps the response body *and* stops the element polling on this code.
-_HTTP_286_STOP_POLLING = 286
-
-
-@dataclass
-class _TicketRecord:
-    """An in-flight coven transition tracked for the polling ticket strip."""
-
-    id: str
-    target: str
-    action_type: str
-    total_metabolic_cost: float
-    task: asyncio.Task[Any]
-
-
-# Loop-confined, process-local: the slice has no durable ticket store yet.
-_TICKETS: dict[str, _TicketRecord] = {}
+from lychd.domain.web.projection import Projector, stop_polling
+from lychd.domain.web.schemas import build_nexus_board
+from lychd.domain.web.sessions import BridgeSessionStore
+from lychd.domain.web.tickets import TicketStore
 
 
 class NexusController(Controller):
@@ -49,21 +32,29 @@ class NexusController(Controller):
 
     path = "/nexus"
 
-    @get("/board")
+    @get("/", name="nexus:page")
+    async def page(self, bridge_sessions: BridgeSessionStore) -> Template:
+        """Render the Nexus page; the coven board self-loads over HTMX."""
+        return Template(
+            template_name="altar/pages/nexus.html.j2",
+            context={"active": "nexus", "pending": bridge_sessions.pending_consent_count()},
+        )
+
+    @get("/board", name="nexus:board")
     async def board(
         self,
         request: HTMXRequest,
         orchestrator: OrchestratorManager,
         registry: AnimatorRegistry,
     ) -> Template:
-        """Return the coven board fragment (htmx) or the full Nexus page."""
+        """Return the coven board fragment (htmx) or the full Nexus page (dual-render)."""
         ctx: dict[str, Any] = {"board": build_nexus_board(orchestrator, registry)}
         if request.htmx:
             return HTMXTemplate(template_name="nexus/board.html.j2", context=ctx)
         ctx["active"] = "nexus"
         return Template(template_name="altar/pages/nexus.html.j2", context=ctx)
 
-    @get("/plan")
+    @get("/plan", name="nexus:plan")
     async def plan(
         self,
         request: HTMXRequest,
@@ -83,11 +74,13 @@ class NexusController(Controller):
             )
         return transition_plan
 
-    @post("/swap", status_code=HTTP_202_ACCEPTED)
+    @post("/swap", status_code=HTTP_202_ACCEPTED, name="nexus:swap")
     async def swap(
         self,
         request: HTMXRequest,
         orchestrator: OrchestratorManager,
+        tickets: TicketStore,
+        projector: Projector,
     ) -> Response[str] | Template:
         """Launch a transition and return the self-polling ticket strip (202)."""
         if not request.htmx:
@@ -103,13 +96,12 @@ class NexusController(Controller):
         except ValueError as exc:
             msg = f"Unknown capability target: {target}"
             raise NotFoundException(msg) from exc
-        ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+
         task = asyncio.create_task(
             orchestrator.request_transition(target, priority=100.0),
-            name=f"swap:{ticket_id}",
+            name=f"swap:{target}",
         )
-        _TICKETS[ticket_id] = _TicketRecord(
-            id=ticket_id,
+        record = tickets.open(
             target=target,
             action_type=transition_plan.action_type,
             total_metabolic_cost=transition_plan.total_metabolic_cost,
@@ -117,54 +109,32 @@ class NexusController(Controller):
         )
         return HTMXTemplate(
             template_name="nexus/swap_ticket.html.j2",
-            context={"ticket": self._ticket_view(_TICKETS[ticket_id])},
+            context={"ticket": projector.ticket_view(record)},
             re_target="#nexus-plan",
             re_swap="innerHTML",
+            status_code=HTTP_202_ACCEPTED,
         )
 
-    @get("/swap/{ticket_id:str}")
-    async def swap_status(self, request: HTMXRequest, ticket_id: str) -> Template | Response[str]:
+    @get("/swap/{ticket_id:str}", name="nexus:ticket")
+    async def swap_status(
+        self,
+        ticket_id: str,
+        tickets: TicketStore,
+        projector: Projector,
+    ) -> Template | Response[str]:
         """Return the ticket strip; settle with 286 + a board-refresh trigger."""
-        record = _TICKETS.get(ticket_id)
+        record = tickets.get(ticket_id)
         if record is None:
             return Response(content="Unknown ticket.", status_code=404)
 
         if not record.task.done():
             return HTMXTemplate(
                 template_name="nexus/swap_ticket.html.j2",
-                context={"ticket": self._ticket_view(record)},
+                context={"ticket": projector.ticket_view(record)},
             )
 
-        failed = record.task.exception() is not None
-        ticket = self._ticket_view(record, settled=True, failed=failed)
-        _TICKETS.pop(ticket_id, None)
-
-        engine = cast("JinjaTemplateEngine | None", request.app.template_engine)
-        if engine is None:  # pragma: no cover - template config is always present
-            msg = "Template engine is not configured."
-            raise RuntimeError(msg)
-        html = engine.get_template("nexus/swap_ticket.html.j2").render({"ticket": ticket})
-        return Response(
-            content=html,
-            status_code=_HTTP_286_STOP_POLLING,
-            media_type=MediaType.HTML,
-            headers={"HX-Trigger-After-Settle": "nexus:swap-settled"},
-        )
-
-    # -- helpers ----------------------------------------------------------
-
-    def _ticket_view(self, record: _TicketRecord, *, settled: bool = False, failed: bool = False) -> SwapTicket:
-        if failed:
-            state, phase = "failed", "faulted"
-        elif settled:
-            state, phase = "settled", "risen"
-        else:
-            state, phase = "in_flight", "transmuting"
-        return SwapTicket(
-            id=record.id,
-            target=record.target,
-            state=state,
-            phase=phase,
-            action_type=record.action_type,
-            total_metabolic_cost=record.total_metabolic_cost,
-        )
+        failed = record.task.cancelled() or record.task.exception() is not None
+        ticket = projector.ticket_view(record, settled=True, failed=failed)
+        tickets.settle(ticket_id)
+        html = projector.render("nexus/swap_ticket.html.j2", {"ticket": ticket})
+        return stop_polling(html, trigger_after_settle="nexus:swap-settled")

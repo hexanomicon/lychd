@@ -19,24 +19,31 @@ class TransitionOrchestrator(Protocol):
 class GraphRunner[StateT: BaseModel]:
     """Execute Pydantic Graph loops with LychD stasis and rehydration support."""
 
-    def __init__(self, dispatcher: object, orchestrator: TransitionOrchestrator, persistence: PhylacteryProtocol) -> None:
+    def __init__(self, *, orchestrator: TransitionOrchestrator, persistence: PhylacteryProtocol) -> None:
         """Initialize graph runner dependencies."""
-        self.dispatcher = dispatcher
         self.orchestrator = orchestrator
         self.persistence = persistence
 
-    async def run_graph(self, graph: Graph[StateT, Any, Any], start_node: BaseNode[StateT, Any, Any], state: StateT) -> Any:
+    async def run_graph(
+        self,
+        graph: Graph[StateT, Any, Any],
+        start_node: BaseNode[StateT, Any, Any],
+        state: StateT,
+        *,
+        deps: Any = None,
+    ) -> Any:
         """Execute a fresh Pydantic Graph run with native stasis support."""
         return await self._execute_ritual(
             graph,
             is_resume=False,
             start_node=start_node,
             state=state,
+            deps=deps,
         )
 
-    async def resume_graph(self, graph: Graph[StateT, Any, Any]) -> Any:
+    async def resume_graph(self, graph: Graph[StateT, Any, Any], *, deps: Any = None) -> Any:
         """Resume a persisted graph run with stasis support."""
-        result = await self._execute_ritual(graph, is_resume=True)
+        result = await self._execute_ritual(graph, is_resume=True, deps=deps)
         await self.persistence.mark_job_resumed(self.persistence.job_id)
         return result
 
@@ -47,6 +54,7 @@ class GraphRunner[StateT: BaseModel]:
         is_resume: bool,
         start_node: BaseNode[StateT, Any, Any] | None = None,
         state: StateT | None = None,
+        deps: Any = None,
     ) -> Any:
         """Execute the graph loop and handle stasis signals iteratively."""
         current_is_resume = is_resume
@@ -64,11 +72,13 @@ class GraphRunner[StateT: BaseModel]:
                 context_manager = graph.iter(
                     start_node,
                     state=state,
+                    deps=deps,
                     persistence=cast("BaseStatePersistence[StateT, Any]", self.persistence),
                 )
             else:
                 context_manager = graph.iter_from_persistence(
-                    cast("BaseStatePersistence[StateT, Any]", self.persistence)
+                    cast("BaseStatePersistence[StateT, Any]", self.persistence),
+                    deps=deps,
                 )
 
             async with context_manager as graph_run:

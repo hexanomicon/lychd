@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -87,6 +88,21 @@ class CapabilityState(BaseModel):
     @property
     def is_available(self) -> bool:
         return self.phase is not CapabilityPhase.ERROR
+
+
+@dataclass(frozen=True, slots=True)
+class ActivationResult:
+    """Outcome of a runtime-native capability activation request (A3-U4 §2).
+
+    ``accepted`` reports whether the runtime took the activation request;
+    ``phase`` is the capability phase observed immediately after the request;
+    ``reason`` explains a rejection (e.g. a FIXED-lifecycle capability whose
+    warmth is owned by the animator unit, not an in-runtime load).
+    """
+
+    accepted: bool
+    phase: CapabilityPhase
+    reason: str | None = None
 
 
 class CapabilityGrant(BaseModel):

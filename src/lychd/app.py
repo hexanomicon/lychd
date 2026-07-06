@@ -8,16 +8,17 @@ from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.plugins import CLIPluginProtocol, InitPluginProtocol
 from litestar.repository.exceptions import RepositoryError
 
+# Runtime imports: Litestar evaluates the `provide_*` return annotations below at
+# app-init to type the injected dependencies, so these must resolve at runtime.
+from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings import get_settings
+from lychd.extensions.host import AssembledExtensions
 from lychd.lib.exceptions import exception_to_http_response
 
 if TYPE_CHECKING:
     from click import Group
     from litestar.config.app import AppConfig
     from litestar.datastructures import State
-
-    from lychd.config.runes.registry import RuneRegistry
-    from lychd.extensions.host import AssembledExtensions
 
 
 def provide_extensions(state: State) -> AssembledExtensions:
@@ -147,7 +148,8 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         app_config.state.update({"extensions": extensions, "runes": runes})
 
         # Dependencies
-        from lychd.interface.web.deps import build_web_singletons, web_dependencies
+        from lychd.interface.web.deps import web_dependencies
+        from lychd.interface.web.lifespan import altar_services_lifespan
 
         app_config.dependencies.update(web_dependencies)
         app_config.dependencies.update(
@@ -161,8 +163,9 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
                 "soulstone_records_service": create_service_provider(SoulstoneRecordService),
             }
         )
-        # Kept until Agent 2's DI rework lands (web builder removes it later).
-        app_config.on_startup.append(build_web_singletons)
+        # The ONE web-layer assembly site: build AltarServices, warm the registry,
+        # publish on app.state, drain on shutdown.
+        app_config.lifespan.append(altar_services_lifespan)  # pyright: ignore[reportUnknownMemberType]
 
         return app_config
 

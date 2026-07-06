@@ -6,13 +6,36 @@ from typing import Any, ClassVar
 import pytest
 from pydantic_ai.models.openai import OpenAIChatModel
 
+from lychd.domain.animation.capabilities import CapabilityPhase
+from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, PortalConfig
+from lychd.domain.animation.schemas import ModelInfo, OpenAIPortalConfig, PortalConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
-from lychd.domain.animation.services.loader import AnimatorLoader
 from lychd.domain.animation.services.registry import AnimatorRegistry
-from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane, LlamaCppLifecycle
+from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, VllmSoulstoneConfig
+from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
+from lychd.extensions.builtin.animator.runtimes import (
+    LlamaCppRuntimeAdapter,
+    SglangRuntimeAdapter,
+    VllmRuntimeAdapter,
+)
+
+_SOULSTONE_SCHEMAS = (LlamaCppSoulstoneConfig, VllmSoulstoneConfig, OpenAIPortalConfig)
+
+
+def _builtin_adapters() -> list[Any]:
+    return [LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()]
+
+
+def _registry(runes_dir: Path, **kwargs: Any) -> AnimatorRegistry:
+    return AnimatorRegistry(
+        rune_schemas=list(_SOULSTONE_SCHEMAS),
+        runtime_adapters=_builtin_adapters(),
+        runes_dir=runes_dir,
+        reserved_ports={},
+        **kwargs,
+    )
 
 
 def _write(path: Path, content: str) -> None:
@@ -42,7 +65,7 @@ def test_registry_binds_model_for_portal(
         """,
     )
 
-    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    registry = _registry(runes_dir)
 
     model = registry.bind_model("openai-main", model_id="gpt-5")
     toolsets = registry.bind_toolsets("openai-main")
@@ -66,7 +89,7 @@ def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> 
         """,
     )
 
-    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    registry = _registry(runes_dir)
     plan = registry.prepare("qwen-local")
 
     assert plan is not None
@@ -83,7 +106,7 @@ def test_registry_indexes_capabilities(tmp_path: Path) -> None:
         """,
     )
 
-    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    registry = _registry(runes_dir)
     capabilities = registry.list_capabilities()
 
     assert len(capabilities) == 1
@@ -96,15 +119,17 @@ def test_registry_indexes_capabilities(tmp_path: Path) -> None:
     assert registry.get_capability(spec.key) == spec
     state = registry.get_capability_state(spec.key)
     assert state is not None
+    # A vLLM soulstone is FIXED and unreachable at rest ⇒ static, cold.
     assert state.is_static is True
     assert state.is_active is False
+    assert state.phase is CapabilityPhase.COLD
 
 
 def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     (runes_dir / "animator" / "soulstones").mkdir(parents=True, exist_ok=True)
     (runes_dir / "animator" / "portals").mkdir(parents=True, exist_ok=True)
-    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    registry = _registry(runes_dir)
 
     assert registry.get_runtime("missing") is None
     assert registry.bind_model("missing") is None
@@ -115,7 +140,7 @@ def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> Non
     assert registry.list_models("missing") == ()
 
 
-def test_registry_activate_capability_returns_false_for_static_runtime(tmp_path: Path) -> None:
+def test_registry_activate_capability_returns_result_for_static_runtime(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "soulstones" / "vllm" / "embedder.toml",
@@ -125,13 +150,16 @@ def test_registry_activate_capability_returns_false_for_static_runtime(tmp_path:
         """,
     )
 
-    registry = AnimatorRegistry(loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}))
+    registry = _registry(runes_dir)
     spec = registry.list_capabilities()[0]
 
-    assert registry.activate_capability(spec.key) is False
+    result = registry.activate_capability(spec.key)
+    assert result.accepted is False
+    assert result.reason == "fixed capability; lifecycle owned by unit"
 
 
-def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_registry_inspect_lifecycle_delegates_to_control_plane(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "soulstones" / "llamacpp" / "qwen.toml",
@@ -146,9 +174,10 @@ def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path
             super().__init__()
             self.seen_animator_id: str | None = None
 
-        def inspect_animator(self, animator: Any) -> LlamaCppLifecycle:
+        async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
             self.seen_animator_id = animator.id
-            return LlamaCppLifecycle(
+            return AnimatorLifecycle(
+                runtime="llamacpp",
                 base_url=animator.connector.base_url,
                 mode="single",
                 health="ok",
@@ -156,11 +185,13 @@ def test_registry_inspect_lifecycle_delegates_to_llamacpp_control(tmp_path: Path
 
     control = StubControl()
     registry = AnimatorRegistry(
-        loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}),
-        llamacpp_control=control,
+        rune_schemas=[LlamaCppSoulstoneConfig],
+        runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
+        runes_dir=runes_dir,
+        reserved_ports={},
     )
 
-    lifecycle = registry.inspect_lifecycle("qwen-local")
+    lifecycle = await registry.inspect_lifecycle("qwen-local")
 
     assert lifecycle is not None
     assert lifecycle.health == "ok"
@@ -225,13 +256,16 @@ def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest
         """,
     )
 
-    def unresolved(_rune: object) -> None:
+    def unresolved(_rune: object, _quadlet: object = None) -> None:
         return None
 
     caplog.set_level("WARNING")
 
     registry = AnimatorRegistry(
-        loader=AnimatorLoader(runes_dir=runes_dir, reserved_ports={}),
+        rune_schemas=[LlamaCppSoulstoneConfig],
+        runtime_adapters=_builtin_adapters(),
+        runes_dir=runes_dir,
+        reserved_ports={},
         runtime_factories=[unresolved],
     )
     registry.load()

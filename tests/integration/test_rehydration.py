@@ -95,10 +95,6 @@ class LychDTestPersistence(FullStatePersistence[MockState, str]):
         await self.mark_job_resumed_mock(job_id)
 
 
-class SimpleMockDispatcher:
-    pass
-
-
 class SimpleMockOrchestrator:
     def __init__(self) -> None:
         self.handle_transition_mock = AsyncMock()
@@ -115,7 +111,6 @@ async def test_graph_runner_native_rehydration_ritual() -> None:
     await graph.initialize(MockNode(), state=MockState(data="frozen"), persistence=persistence)
 
     runner = GraphRunner[MockState](
-        dispatcher=SimpleMockDispatcher(),
         orchestrator=SimpleMockOrchestrator(),
         persistence=persistence,
     )
@@ -134,7 +129,6 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     mock_orchestrator = SimpleMockOrchestrator()
 
     runner = GraphRunner[MockState](
-        dispatcher=SimpleMockDispatcher(),
         orchestrator=mock_orchestrator,
         persistence=persistence,
     )
