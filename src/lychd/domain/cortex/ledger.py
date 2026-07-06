@@ -80,6 +80,10 @@ class RunLedger(Protocol):
         """Append one non-TOKEN event to the run's Step ledger."""
         ...
 
+    async def next_seq(self, run_id: str) -> int:
+        """Return the next unused Step seq for a run (max(seq)+1, or 0 if none)."""
+        ...
+
     async def list_by_status(self, status: RunStatus) -> list[RunRecord]:
         """Return every run currently in ``status`` (feeds `reconcile_runs`)."""
         ...
@@ -108,10 +112,18 @@ def _apply_status(record: RunRecord, status: RunStatus, *, error: str | None) ->
 class InMemoryRunLedger:
     """Loop-confined, DB-free run ledger (unit tests + the Wave-2 in-process profile)."""
 
-    def __init__(self) -> None:
-        """Create an empty ledger."""
+    def __init__(self, *, honor_intent_run_id: bool = False) -> None:
+        """Create an empty ledger.
+
+        `honor_intent_run_id` is a TEST-ONLY seam (default off): when set, `create`
+        adopts `intent.run_id` as the canonical id so unit tests can key off stable
+        ids. Production NEVER sets it — identity is always ledger-minted (R4/S3),
+        mirroring `DbRunLedger` (whose id is always the row UUID). Do NOT overload
+        the advisory `Intent.run_id` field to route identity in production.
+        """
         self._runs: dict[str, RunRecord] = {}
         self._events: dict[str, list[RunEvent]] = {}
+        self._honor_intent_run_id = honor_intent_run_id
 
     async def create(
         self,
@@ -123,13 +135,14 @@ class InMemoryRunLedger:
     ) -> RunRecord:
         """Persist a fresh run as QUEUED under a ledger-assigned canonical id.
 
-        S3 (run_id duality dies): identity is the LEDGER's to mint, mirroring
-        `DbRunLedger` (whose id is the row UUID). `intent.run_id` is advisory
-        client-correlation only; if a caller supplies one (tests, or a client
-        correlation id) it is honored as the id, otherwise a fresh UUID is minted.
+        S3/R4 (run_id duality dies): identity is ALWAYS the LEDGER's to mint,
+        mirroring `DbRunLedger` (whose id is the row UUID). `intent.run_id` is
+        advisory client-correlation ONLY and is never adopted as the identity —
+        except under the test-only `honor_intent_run_id` constructor seam.
         """
+        run_id = intent.run_id if (self._honor_intent_run_id and intent.run_id) else str(uuid4())
         record = RunRecord(
-            run_id=intent.run_id or str(uuid4()),
+            run_id=run_id,
             session_id=intent.session_id,
             workflow_name=workflow_name,
             source=intent.source,
@@ -171,6 +184,10 @@ class InMemoryRunLedger:
         if event.kind is RunEventKind.TOKEN:
             return
         self._events.setdefault(event.run_id, []).append(event)
+
+    async def next_seq(self, run_id: str) -> int:
+        """Return the next unused Step seq for a run (max(seq)+1, or 0 if none)."""
+        return max((e.seq for e in self._events.get(run_id, [])), default=-1) + 1
 
     async def list_by_status(self, status: RunStatus) -> list[RunRecord]:
         """Return every run currently in ``status``."""
@@ -260,15 +277,22 @@ class DbRunLedger:
             row = await svc.get_one_or_none(id=UUID(run_id))
             return self._to_record(row) if row is not None else None
 
+    # One bounded re-read+retry under a lost CAS is enough under Topology A (a single
+    # process, a single competing writer — R3): the fresh row can only have moved once.
+    _CAS_RETRIES = 1
+
     async def set_status(self, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
-        """Advance a run's status with COMPARE-AND-SWAP concurrency (F4/H5).
+        """Advance a run's status with COMPARE-AND-SWAP concurrency (F4/H5, R3).
 
         The state machine is validated against the row read at the top, then the write
         is a conditional ``UPDATE ... WHERE id = :id AND status = :expected``. If a
-        competing writer moved the row in the window, 0 rows update: re-read the FRESH
-        truth and raise `IllegalRunTransitionError` against it (unless the concurrent
-        write already reached this same target, which is a benign idempotent no-op).
-        This is what keeps CANCELLED from ever landing over a DONE that won the race.
+        competing writer moved the row in the window, 0 rows update. Rather than
+        blindly raise, we RE-READ the fresh truth and, if ``current → target`` is a
+        LEGAL edge (e.g. a cancel losing to a concurrent QUEUED→RUNNING claim, then
+        RUNNING→CANCELLED), retry the CAS against the fresh expected status (bounded,
+        one loop). We raise `IllegalRunTransitionError` only when the fresh edge is
+        genuinely illegal (e.g. CANCELLED over a DONE that won the race), and treat a
+        concurrent writer that already reached this same target as a benign no-op.
         """
         from sqlalchemy import update
 
@@ -277,36 +301,42 @@ class DbRunLedger:
 
         async with self._session_factory() as session:
             svc = RunService(session=session)
-            row = await svc.get_one_or_none(id=UUID(run_id))
-            if row is None:
-                msg = f"Unknown run: {run_id}"
-                raise KeyError(msg)
-            expected = RunStatus(str(row.status))
-            if status is expected:
-                return  # idempotent no-op (re-claim / duplicate terminal write)
-            record = self._to_record(row)
-            _apply_status(record, status, error=error)  # raises on an illegal edge
-            result = cast(
-                "CursorResult[Any]",
-                await session.execute(
-                    update(Run)
-                    .where(Run.id == UUID(run_id), Run.status == expected.value)
-                    .values(
-                        status=record.status.value,
-                        error=record.error,
-                        attempt=record.attempt,
-                        started_at=record.started_at,
-                        finished_at=record.finished_at,
-                    )
-                ),
-            )
-            await session.commit()
-            if result.rowcount == 0:
-                await self._raise_on_lost_cas(svc, run_id, status)
+            for _ in range(self._CAS_RETRIES + 1):
+                row = await svc.get_one_or_none(id=UUID(run_id))
+                if row is None:
+                    msg = f"Unknown run: {run_id}"
+                    raise KeyError(msg)
+                expected = RunStatus(str(row.status))
+                if status is expected:
+                    return  # idempotent no-op (re-claim / duplicate terminal write)
+                record = self._to_record(row)
+                _apply_status(record, status, error=error)  # raises on an illegal edge
+                result = cast(
+                    "CursorResult[Any]",
+                    await session.execute(
+                        update(Run)
+                        .where(Run.id == UUID(run_id), Run.status == expected.value)
+                        .values(
+                            status=record.status.value,
+                            error=record.error,
+                            attempt=record.attempt,
+                            started_at=record.started_at,
+                            finished_at=record.finished_at,
+                        )
+                    ),
+                )
+                await session.commit()
+                if result.rowcount != 0:
+                    return  # CAS won
+                # Lost the CAS: loop re-reads the fresh row. If the fresh edge is legal
+                # the retry lands it; if illegal, `_apply_status` raises on the re-read;
+                # if the fresh row already IS the target, the top-of-loop check returns.
+            # Retries exhausted (the row kept moving under us): rule on the fresh truth.
+            await self._raise_on_lost_cas(svc, run_id, status)
 
     @staticmethod
     async def _raise_on_lost_cas(svc: Any, run_id: str, target: RunStatus) -> None:
-        """Re-read the fresh truth and rule on it after a CAS write matched 0 rows."""
+        """Re-read the fresh truth and rule on it after the bounded CAS retry ran out."""
         fresh = await svc.get_one_or_none(id=UUID(run_id))
         current = RunStatus(str(fresh.status)) if fresh is not None else None
         if current is target:
@@ -370,6 +400,23 @@ class DbRunLedger:
                 ),
                 auto_commit=True,
             )
+
+    async def next_seq(self, run_id: str) -> int:
+        """Return the next unused Step seq for a run (max(seq)+1, or 0 if none).
+
+        Feeds the R1 channel-seq seeding: reconcile/resume open a fresh channel with
+        `from_seq=next_seq(run_id)` so the terminal (and any resumed) emit lands past
+        the persisted Step history instead of colliding with `uq_step_run_seq`.
+        """
+        from sqlalchemy import func, select
+
+        from lychd.db.models import Step
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(func.coalesce(func.max(Step.seq), -1) + 1).where(Step.run_id == UUID(run_id))
+            )
+            return int(result.scalar_one())
 
     async def list_by_status(self, status: RunStatus) -> list[RunRecord]:
         """Return every run currently in ``status``."""

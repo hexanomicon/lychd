@@ -42,7 +42,9 @@ class _RaisingDispatcher:
 
 
 def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, BridgeSessionStore]:
-    ledger = InMemoryRunLedger()
+    # honor_intent_run_id: test-only seam so these tests can key off stable seeded ids
+    # (R4: production always mints; identity is the ledger's, not the advisory field).
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     sessions = BridgeSessionStore()
     substrate = RunSubstrate(
@@ -156,6 +158,10 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "race")
     channel = substrate.bus.open("race")  # hold the ref before it is closed + dropped
+    # perform_run captures its emitter EARLY (bound to this channel object); the
+    # finally re-emits through that same emitter, so a re-emit after cancel closed the
+    # channel is dropped by the closed-guard even though cancel dropped it from _channels.
+    ghoul_emitter = substrate.bus.emitter("race")
 
     # The ghoul has claimed the run (QUEUED→RUNNING).
     await ledger.set_status("race", RunStatus.RUNNING)
@@ -175,7 +181,7 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
     await _settle_terminal(ledger, "race", RunStatus.DONE)
     terminal = await ledger.get("race")
     assert terminal is not None
-    substrate.bus.emitter("race").done(terminal.status.value)  # finally's re-emit → dropped
+    ghoul_emitter.done(terminal.status.value)  # finally's re-emit → dropped by closed-guard
 
     run = await ledger.get("race")
     assert run is not None
@@ -217,6 +223,10 @@ async def test_reconcile_runs_fails_orphaned_running() -> None:
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "orphan")
     await ledger.set_status("orphan", RunStatus.RUNNING)  # crash left it here
+    # Hold the channel ref BEFORE the sweep: R2 now closes + drops the reconciled
+    # channel (it used to leak), so a post-sweep `bus.open` would mint a fresh
+    # unclosed one and hide the close.
+    channel = substrate.bus.open("orphan")
 
     result = await reconcile_runs({"run_substrate": substrate})
     assert result["count"] == 1
@@ -225,5 +235,6 @@ async def test_reconcile_runs_fails_orphaned_running() -> None:
     assert run is not None
     assert run.status is RunStatus.FAILED
     assert run.error == "ghoul lost"
-    channel = substrate.bus.open("orphan")
     assert channel.closed is True
+    # R2: the reconciled channel was dropped, not leaked — reopening mints a fresh one.
+    assert substrate.bus.open("orphan") is not channel

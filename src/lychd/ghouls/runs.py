@@ -168,20 +168,45 @@ async def reconcile_runs(ctx: dict[str, Any]) -> dict[str, Any]:
     for status in (RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE):
         for run in await ledger.list_by_status(status):
             await ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
-            substrate.bus.emitter(run.run_id).done(RunStatus.FAILED.value)
+            await _emit_terminal(substrate, run.run_id)
             reconciled.append(run.run_id)
 
+    # R8 (Wave-3 follow-up): two gaps left open here on purpose.
+    #  1) This rite runs ONCE at web startup (lifespan) — it is not scheduled. Wave 3
+    #     should register it as a saq CronJob (~300s) so a run stranded QUEUED mid
+    #     process-lifetime is healed without waiting for a restart.
+    #  2) saq's PG queue is durable, so an aged (>RECONCILE_QUEUED_AFTER_S) QUEUED row
+    #     surviving a restart may still have a live job. The correct guard is a
+    #     `queue.job(run_job_key(run.run_id, run.enqueue_seq))`-exists check before
+    #     sweeping — deferred because reconcile's substrate carries no queue handle
+    #     yet (adding one is Wave-3 wiring, not a half-build here).
     now = datetime.now(UTC)
     for run in await ledger.list_by_status(RunStatus.QUEUED):
         if (now - run.created_at).total_seconds() < RECONCILE_QUEUED_AFTER_S:
             continue
         await ledger.set_status(run.run_id, RunStatus.FAILED, error="enqueue lost")
-        substrate.bus.emitter(run.run_id).done(RunStatus.FAILED.value)
+        await _emit_terminal(substrate, run.run_id)
         reconciled.append(run.run_id)
 
     if reconciled:
         logger.warning("reconcile_runs", count=len(reconciled), run_ids=reconciled)
     return {"status": "reconciled", "count": len(reconciled)}
+
+
+async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
+    """Emit a reconciled run's terminal DONE onto a correctly-seeded, closed channel.
+
+    R1: a fresh process restarts channel seqs at 0, but a swept run already has Step
+    rows (it reached RUNNING → persisted seq 0), so a verbatim seq-0 terminal would
+    collide with `uq_step_run_seq` and be dropped. Seed the freshly minted channel
+    from the run's persisted next-seq so the terminal lands past the history.
+    R2: close the channel after the emit — reconcile mints a channel per orphan and
+    would otherwise leak one per startup sweep.
+    """
+    next_seq = await substrate.ledger.next_seq(run_id)
+    substrate.bus.open(run_id, from_seq=next_seq)
+    substrate.bus.emitter(run_id).done(RunStatus.FAILED.value)
+    substrate.bus.close(run_id)
 
 
 def _write_failed_turn(substrate: RunSubstrate, *, run_id: str, session_id: str) -> None:

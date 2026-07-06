@@ -59,7 +59,9 @@ class _FailingQueue:
 
 
 def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
-    ledger = InMemoryRunLedger()
+    # honor_intent_run_id: test-only seam so these assertions can key off stable ids
+    # (R4: production always mints; identity is the ledger's, not the advisory field).
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     queues = {"runs": _FakeQueue(), "rites": _FakeQueue()}
     engine = RunEngine(
@@ -104,7 +106,22 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     assert job["run_id"] == "run_1"
     assert job["key"] == run_job_key("run_1", 1)  # enqueue_seq bumped to 1
     assert job["retries"] == 0
-    assert job["priority"] == 70
+    # R9 wire inversion: doctrine bridge=70 → saq priority number 100-70=30 (saq
+    # dequeues lowest-first, so a hotter run gets a LOWER number on the wire).
+    assert job["priority"] == 30
+
+
+@pytest.mark.asyncio
+async def test_enqueue_inverts_priority_on_the_wire() -> None:
+    """R9: a hotter doctrine priority (bridge 70) enqueues at a LOWER saq number than cli (50)."""
+    engine, _ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="hot", prompt="hi", source="bridge"))  # doctrine 70
+    await engine.submit(Intent(session_id="s", run_id="warm", prompt="hi", source="cli"))  # doctrine 50
+
+    by_run = {e["run_id"]: e["priority"] for e in queues["runs"].enqueued}
+    assert by_run["hot"] == 30  # 100 - 70
+    assert by_run["warm"] == 50  # 100 - 50
+    assert by_run["hot"] < by_run["warm"]  # bridge dequeues before cli
 
 
 @pytest.mark.asyncio
@@ -115,7 +132,7 @@ async def test_submit_compensates_enqueue_failure() -> None:
     into eternity. With it: FAILED row + a single terminal DONE(failed) so any open
     stream ends, and the original broker error surfaces to the caller.
     """
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     queues: dict[str, Any] = {"runs": _FailingQueue(), "rites": _FakeQueue()}
     engine = RunEngine(
@@ -145,6 +162,9 @@ async def test_cancel_aborts_and_marks_cancelled() -> None:
     """cancel aborts the SAQ job by key, marks CANCELLED, and emits a terminal DONE."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_c", prompt="hi", source="bridge"))
+    # Hold the channel ref BEFORE cancel: R2 closes + drops it, so a post-cancel
+    # `bus.open` would mint a fresh unclosed channel and hide the close.
+    channel = engine.bus.open("run_c")
 
     await engine.cancel("run_c")
 
@@ -153,8 +173,9 @@ async def test_cancel_aborts_and_marks_cancelled() -> None:
     assert run.status is RunStatus.CANCELLED
     assert queues["runs"].aborted == [run_job_key("run_c", 1)]
     # a single terminal DONE landed on the channel (carrying the terminal status)
-    channel = engine.bus.open("run_c")
     assert channel.closed is True
+    # R2: cancel closed AND dropped the channel — reopening mints a fresh one.
+    assert engine.bus.open("run_c") is not channel
 
 
 @pytest.mark.asyncio

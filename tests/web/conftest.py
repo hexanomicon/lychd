@@ -160,7 +160,9 @@ def fake_services() -> SimpleNamespace:
     sessions = BridgeSessionStore()
     fragments = build_fragment_registry()
     tickets = TicketStore()
-    ledger = InMemoryRunLedger()
+    # honor_intent_run_id: test-only seam so SSE tests can seed runs keyed by a stable
+    # id (R4: production always mints; identity is the ledger's, not the advisory field).
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     return SimpleNamespace(
         registry=FakeRegistry(),

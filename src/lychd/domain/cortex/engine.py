@@ -20,7 +20,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
-from lychd.domain.cortex.runs import RunHandle, RunStatus
+from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunHandle, RunStatus
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
@@ -63,6 +63,12 @@ class RouteRule:
 
 # [orchestration.routing] — intent source → (queue, default priority 0..100).
 # Agent 7 wires TOML loading of this shape; these are the doctrine defaults (A4 §0).
+#
+# Priority direction (R9): doctrine keeps HIGHER = more important everywhere these
+# numbers are read or tuned (bridge=70 is hotter than cli=50). saq's postgres queue,
+# however, dequeues `ORDER BY priority ASC` (lowest number first), so the doctrine
+# number is INVERTED once, at the single enqueue site (`_enqueue`: `100 - run.priority`).
+# Keep these numbers intuitive here; only the wire is flipped.
 DEFAULT_ROUTING: dict[str, RouteRule] = {
     "default": RouteRule(queue="runs", priority=50),
     "bridge": RouteRule(queue="runs", priority=70),
@@ -135,13 +141,29 @@ class RunEngine:
             self.bus.close(run_id)
 
     async def cancel(self, run_id: str) -> None:
-        """Abort the run's SAQ job (by key), mark CANCELLED, emit the terminal DONE."""
+        """Abort the run's SAQ job (by key), mark CANCELLED, emit the terminal DONE.
+
+        Race tolerance (R2/R3/R7): the CAS `set_status` retries a lost cancel against
+        a legal fresh edge (e.g. losing a QUEUED→RUNNING claim, then RUNNING→CANCELLED).
+        If completion WON the race instead (the fresh row is already terminal, so
+        DONE→CANCELLED is genuinely illegal), that is a benign no-op — the run is
+        already terminal and `perform_run`'s finally emitted its DONE and closed the
+        channel — not a 500 to the caller. On the winning path the channel is CLOSED
+        after the terminal emit (R2: cancel must close what it will never re-enter).
+        """
         run = await self.ledger.get(run_id)
-        if run is None or run.status in {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED}:
+        if run is None or run.status in TERMINAL_STATUSES:
             return
         await self._abort_job(run)
-        await self.ledger.set_status(run_id, RunStatus.CANCELLED)
+        try:
+            await self.ledger.set_status(run_id, RunStatus.CANCELLED)
+        except IllegalRunTransitionError:
+            fresh = await self.ledger.get(run_id)
+            if fresh is not None and fresh.status in TERMINAL_STATUSES:
+                return  # completion won the race — already terminal, cancel is a no-op
+            raise
         self.bus.emitter(run_id).done(RunStatus.CANCELLED.value)
+        self.bus.close(run_id)
 
     async def approve(self, consent_id: str, *, approved: bool) -> None:
         """Consent seam (Wave-4 honest resume): re-enqueue the parked run.
@@ -169,7 +191,9 @@ class RunEngine:
             payload=payload,
             key=run_job_key(run.run_id, seq),
             retries=0,  # graph retries are GraphRunner's job, not SAQ's
-            priority=run.priority,
+            # Wire inversion (R9): doctrine is higher=hotter, saq dequeues lowest-first,
+            # so a higher `run.priority` must map to a LOWER saq priority number.
+            priority=100 - run.priority,
         )
 
     async def _abort_job(self, run: RunRecord) -> None:
