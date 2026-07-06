@@ -1,0 +1,29 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "qwen3-vl-8b",
+      "object": "model",
+      "created": 1735689600,
+      "owned_by": "llamacpp",
+      "capabilities": ["completion", "vision", "multimodal"],
+      "status": {"value": "loaded"}
+    },
+    {
+      "id": "bge-m3",
+      "object": "model",
+      "created": 1735689600,
+      "owned_by": "llamacpp",
+      "capabilities": ["embedding"],
+      "status": {"value": "unloaded"}
+    },
+    {
+      "id": "qwen3-8b",
+      "object": "model",
+      "created": 1735689600,
+      "owned_by": "llamacpp",
+      "capabilities": ["completion"],
+      "status": {"value": "unloaded"}
+    }
+  ]
+}

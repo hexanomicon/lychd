@@ -1,0 +1,17 @@
+name = "openai-main"
+description = "Reference OpenAI portal (STATIC; image admission + tool support)."
+api_key_secret_name = "portal_openai_main"
+
+[generation]
+temperature = 0.5
+
+[[models]]
+id = "gpt-5.2"
+description = "Frontier chat model with vision admission and tool support."
+
+[models.capabilities]
+supports_tools = true
+modalities_in = ["text", "image"]
+
+[models.generation]
+max_tokens = 4096

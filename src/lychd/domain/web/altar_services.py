@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from litestar.contrib.jinja import JinjaTemplateEngine
 
     from lychd.agents.router import Intent
-    from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimeAdapter
+    from lychd.domain.animation.services.adapters.contracts import PortalRuntimeFactory, SoulstoneRuntimeAdapter
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunHandle
@@ -181,6 +181,7 @@ def build_altar_services(
     template_engine: JinjaTemplateEngine,
     rune_schemas: Sequence[type],
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
+    portal_factories: Sequence[PortalRuntimeFactory] = (),
     profile: str | None = None,
 ) -> AltarServices:
     """Assemble the `AltarServices` container (the sole construction site).
@@ -192,7 +193,11 @@ def build_altar_services(
     """
     if profile is None:
         profile = get_settings().db.profile
-    registry = AnimatorRegistry(rune_schemas=rune_schemas, runtime_adapters=runtime_adapters)
+    registry = AnimatorRegistry(
+        rune_schemas=rune_schemas,
+        runtime_adapters=runtime_adapters,
+        portal_factories=portal_factories,
+    )
     leases = LeaseLedger()  # one per process; Track O threads it onto the substrate + broker
     dispatcher = Dispatcher(registry=registry, leases=leases)
     orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry, leases=leases)

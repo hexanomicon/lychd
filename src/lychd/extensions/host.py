@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from lychd.config.runes.base import RuneConfig
     from lychd.config.settings import Settings
     from lychd.domain.animation.services.adapters.contracts import (
+        PortalRuntimeFactory,
         SoulstoneDefinition,
         SoulstoneRuntimeAdapter,
     )
@@ -42,6 +43,10 @@ class AssembledExtensions:
     @property
     def soulstone_definitions(self) -> tuple[SoulstoneDefinition, ...]:
         return self.context.soulstones.definitions
+
+    @property
+    def portal_factories(self) -> tuple[PortalRuntimeFactory, ...]:
+        return self.context.portals.factories
 
 
 def assemble_extensions(settings: Settings | None = None) -> AssembledExtensions:

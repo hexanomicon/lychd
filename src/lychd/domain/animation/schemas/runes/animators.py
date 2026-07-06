@@ -8,6 +8,8 @@ from pydantic import AnyHttpUrl, Field, model_validator
 
 from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
+from lychd.domain.animation.schemas.generation import GenerationProfile
+from lychd.domain.animation.schemas.runes.models import LocalModelConfig, PortalModelConfig
 from lychd.domain.animation.schemas.shared import ModelFormat
 
 
@@ -97,6 +99,21 @@ class SoulstoneConfig(AnimatorConfig, ABC):
             "default.target. Threaded into Quadlet WantedBy= at transmute time."
         ),
     )
+    models: list[LocalModelConfig] = Field(
+        default_factory=list,
+        description=(
+            "Operator-declared local models this Soulstone serves. Entries provide capability "
+            "hints (families/modalities/tool support) and per-model generation overlays; they "
+            "match discovered models by id (llama.cpp router: file stem)."
+        ),
+    )
+    generation: GenerationProfile | None = Field(
+        default=None,
+        description=(
+            "Soulstone-level generation overlay applied over runtime-derived defaults and under "
+            "any per-model [[models]].generation overlay."
+        ),
+    )
 
     @property
     def service_name(self) -> str:
@@ -144,6 +161,21 @@ class PortalConfig(AnimatorConfig, ABC):
     api_key_secret_name: str | None = Field(
         default=None,
         description="Podman secret name for provider API key injection inside the Vessel runtime.",
+    )
+    models: list[PortalModelConfig] = Field(
+        default_factory=list,
+        description=(
+            "Operator-declared remote models this Portal is allowed to route to. Zero models "
+            "means the Portal advertises no capabilities (reachable but unadvertised)."
+        ),
+    )
+    generation: GenerationProfile | None = Field(
+        default=None,
+        description="Portal-level generation overlay applied under any per-model overlay.",
+    )
+    probe: bool = Field(
+        default=False,
+        description="Opt-in live reachability probe (no surprise egress by default).",
     )
 
 

@@ -22,6 +22,7 @@ from lychd.domain.animation.schemas.runes.models import (
     LocalLLMModelConfig,
     LocalModelConfig,
     ModelCapabilityHints,
+    PortalModelConfig,
 )
 from lychd.domain.animation.schemas.shared import ModelFormat, is_placeholder
 
@@ -40,6 +41,7 @@ __all__ = [
     "ModelSurface",
     "OpenAIPortalConfig",
     "PortalConfig",
+    "PortalModelConfig",
     "SoulstoneConfig",
     "is_placeholder",
 ]

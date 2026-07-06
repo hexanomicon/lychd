@@ -19,8 +19,8 @@ TurnRole = Literal["user", "agent"]
 # Internal turn state written by the graph; mapped to the frozen run-state
 # `data-state` vocabulary (queued/streaming/consent/done/failed) by `run_data_state`.
 TurnState = Literal["settled", "streaming", "pending_consent", "consented", "refused", "failed"]
-# Capability `data-state` vocabulary (spec-web-design §5). `build_nexus_board`
-# currently only materialises active/warm/cold; awaited/warming/fault land with A3.
+# Capability `data-state` vocabulary (spec-web-design §5). `_coven_state` maps the
+# phase-by-lifecycle table (S9); "warm" stays reserved vocabulary (Wave 6 W6-a may refine).
 CovenState = Literal["active", "warm", "awaited", "warming", "cold", "fault"]
 ConsentState = Literal["pending_consent", "consented", "refused"]
 # Swap-ticket trio (spec-web-design §5): warming → settled → failed.
@@ -119,12 +119,21 @@ class LoomView:
     mermaid_source: str
 
 
-def _coven_state(*, is_active: bool, warm: bool) -> CovenState:
-    """Collapse the boolean state flags to the display-state literal."""
-    if is_active:
+def _coven_state(*, lifecycle: str, phase: str) -> CovenState:
+    """Map a capability's phase + lifecycle to its data-state literal (seam S9).
+
+    No template or CSS ever sees a ``CapabilityPhase``/``CapabilityLifecycle``
+    enum value. A DYNAMIC capability observed ACTIVATABLE is ``"awaited"`` (the
+    S9 row); a STATIC one there degrades honestly to ``"cold"``.
+    """
+    if phase == "warm":
         return "active"
-    if warm:
-        return "warm"
+    if phase == "warming":
+        return "warming"
+    if phase == "activatable":
+        return "awaited" if lifecycle == "dynamic" else "cold"
+    if phase == "error":
+        return "fault"
     return "cold"
 
 
@@ -140,7 +149,7 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             family=str(status["family"]),
             runtime=str(status["runtime"]),
             model_id=str(status["model_id"]),
-            state=_coven_state(is_active=bool(status["is_active"]), warm=bool(status["warm"])),
+            state=_coven_state(lifecycle=str(status["lifecycle"]), phase=str(status["phase"])),
             is_active=bool(status["is_active"]),
             warm=bool(status["warm"]),
             health=str(status["health"]),

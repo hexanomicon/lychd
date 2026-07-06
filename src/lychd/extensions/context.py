@@ -31,7 +31,7 @@ class ExtensionContext:
         self._current_extension_id: str | None = None
         self.runes = RuneConfigStore()
         self.soulstones = SoulstoneStore(self.runes)
-        self.portals = PortalStore()
+        self.portals = PortalStore(self.runes)
         self.vessel = VesselStore()
 
     @contextmanager

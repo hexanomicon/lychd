@@ -6,6 +6,7 @@ import pytest
 
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
+    CapabilityFamily,
     GenericSoulstoneConfig,
     GoogleGeminiPortalConfig,
     OpenAIPortalConfig,
@@ -311,6 +312,70 @@ def test_duplicate_soulstone_names_are_rejected(runes_dir: Path) -> None:
 
     with pytest.raises(AnimatorConfigError, match="duplicate soulstone name"):
         loader.load_all()
+
+
+def test_soulstone_models_and_generation_round_trip(runes_dir: Path) -> None:
+    _write(
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "multi.toml",
+        """
+        name = "multi"
+        startup_mode = "router"
+        models_dir = "/models"
+
+        [generation]
+        max_tokens = 1024
+
+        [[models]]
+        id = "chat-a"
+        path = "/models/chat-a"
+        [models.capabilities]
+        modalities_in = ["text", "image"]
+
+        [[models]]
+        id = "embed-a"
+        path = "/models/embed-a"
+        [models.capabilities]
+        families = ["embedding"]
+        """,
+    )
+
+    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    soulstones, _ = loader.load_all()
+
+    assert len(soulstones) == 1
+    stone = soulstones[0]
+    assert [model.id for model in stone.models] == ["chat-a", "embed-a"]
+    assert stone.generation is not None
+    assert stone.generation.max_tokens == 1024
+    assert stone.models[0].capabilities is not None
+    assert stone.models[0].capabilities.modalities_in == ["text", "image"]
+    assert stone.models[1].capabilities is not None
+    assert stone.models[1].capabilities.families == [CapabilityFamily.EMBEDDING]
+
+
+def test_portal_models_and_probe_round_trip(runes_dir: Path) -> None:
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "main.toml",
+        """
+        name = "portal-main"
+        probe = true
+
+        [[models]]
+        id = "gpt-x"
+        [models.capabilities]
+        supports_tools = true
+        """,
+    )
+
+    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    _, portals = loader.load_all()
+
+    assert len(portals) == 1
+    portal = portals[0]
+    assert portal.probe is True
+    assert [model.id for model in portal.models] == ["gpt-x"]
+    assert portal.models[0].capabilities is not None
+    assert portal.models[0].capabilities.supports_tools is True
 
 
 def test_duplicate_name_across_soulstone_and_portal_is_rejected(runes_dir: Path) -> None:
