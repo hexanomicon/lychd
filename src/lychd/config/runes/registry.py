@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, TypeVar
 
 from lychd.config.runes.base import RuneConfig
 from lychd.config.runes.loader import ConfigLoader
+from lychd.config.runes.protocols import PortReserver
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
     from pathlib import Path
 
     from lychd.extensions.host import AssembledExtensions
@@ -59,7 +60,7 @@ class RuneRegistry:
         return matches[0] if matches else None
 
     def reserved_ports(self) -> dict[str, int]:
-        """Merge port claims from every rune exposing ``reserved_ports()``.
+        """Merge port claims from every rune implementing ``PortReserver``.
 
         Raises:
             ValueError: If two rune port claims collide on the same port.
@@ -68,11 +69,9 @@ class RuneRegistry:
         merged: dict[str, int] = {}
         seen: dict[int, str] = {}
         for rune in self._runes:
-            claim = getattr(rune, "reserved_ports", None)
-            if not callable(claim):
+            if not isinstance(rune, PortReserver):
                 continue
-            ports = cast("Mapping[str, int]", claim())
-            for label, port in ports.items():
+            for label, port in rune.reserved_ports().items():
                 if port in seen and seen[port] != label:
                     msg = f"Port {port} is claimed by both '{seen[port]}' and '{label}'."
                     raise ValueError(msg)

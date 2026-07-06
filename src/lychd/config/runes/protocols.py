@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from lychd.config.runes.base import RuneConfig
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @runtime_checkable
@@ -25,4 +28,13 @@ class Runic[T: RuneConfig](Protocol):
             provenance.
 
         """
+        ...
+
+
+@runtime_checkable
+class PortReserver(Protocol):
+    """A rune that claims host ports which must not collide with core services."""
+
+    def reserved_ports(self) -> Mapping[str, int]:
+        """Return this rune's ``{service label: host port}`` claims."""
         ...

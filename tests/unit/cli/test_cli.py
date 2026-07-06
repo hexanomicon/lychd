@@ -6,10 +6,31 @@ from typing import TYPE_CHECKING
 import pytest
 from click.testing import CliRunner
 
-from lychd.cli.commands import bind_quadlets, init_codex
+from lychd.cli.commands import _merge_reserved_ports, bind_quadlets, init_codex
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
+
+
+def test_merge_reserved_ports_disjoint() -> None:
+    core = {"LychD Server": 8000, "Phylactery (Postgres)": 5432}
+    extension = {"Oculus (Phoenix UI)": 6006}
+    assert _merge_reserved_ports(core, extension) == {
+        "LychD Server": 8000,
+        "Phylactery (Postgres)": 5432,
+        "Oculus (Phoenix UI)": 6006,
+    }
+
+
+def test_merge_reserved_ports_core_extension_collision_names_both() -> None:
+    """An extension rune claiming a core service port fails at bind, naming both."""
+    core = {"LychD Server": 8000}
+    extension = {"Oculus (Phoenix UI)": 8000}
+    with pytest.raises(ValueError, match="8000") as exc:
+        _merge_reserved_ports(core, extension)
+    message = str(exc.value)
+    assert "LychD Server" in message
+    assert "Oculus (Phoenix UI)" in message
 
 
 @pytest.fixture
@@ -93,7 +114,12 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     mock_loader.load_all.assert_called_once()
 
     mock_transmuter_cls.assert_called_once()
-    mock_transmuter.transmute_all.assert_called_once_with([stone], portals=[portal], extension_runes=[])
+    from lychd.config.runes.registry import RuneRegistry
+
+    transmute_call = mock_transmuter.transmute_all.call_args
+    assert transmute_call.args == ([stone],)
+    assert transmute_call.kwargs["portals"] == [portal]
+    assert isinstance(transmute_call.kwargs["runes"], RuneRegistry)
 
     mock_scribe_cls.assert_called_once()
     mock_scribe.generate_all.assert_called_once_with(["rune1"])

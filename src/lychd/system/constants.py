@@ -25,10 +25,10 @@ from lychd.config.constants import BASE_DIR, DEFAULT_MODULE_NAME
 
 # --- Core Network Blueprint (Internal Container Ports) ---
 # The hardcoded ports the applications bind to INSIDE the container.
+# Phoenix container ports are extension-private now: see
+# extensions/builtin/observability/phoenix/config.py.
 CONTAINER_LYCHD_PORT: Final[int] = 8000
 CONTAINER_POSTGRES_PORT: Final[int] = 5432
-CONTAINER_PHOENIX_UI_PORT: Final[int] = 6006
-CONTAINER_PHOENIX_OTLP_PORT: Final[int] = 4317
 
 
 # ==============================================================================

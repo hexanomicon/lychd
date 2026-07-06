@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from lychd.config.runes.extension import RuneConfigStore
 from lychd.domain.animation.extension import PortalStore, SoulstoneStore
+from lychd.domain.animation.transmute import TransmutationStore
 from lychd.extensions.base import ExtensionStore
 
 if TYPE_CHECKING:
@@ -32,6 +33,7 @@ class ExtensionContext:
         self.runes = RuneConfigStore()
         self.soulstones = SoulstoneStore(self.runes)
         self.portals = PortalStore(self.runes)
+        self.transmutation = TransmutationStore()
         self.vessel = VesselStore()
 
     @contextmanager

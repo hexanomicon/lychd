@@ -1,0 +1,485 @@
+[
+  {
+    "dump": {
+      "description": "The Sepulcher (LychD Pod)",
+      "pod_name": "lychd",
+      "publish_ports": [
+        "7134:8000",
+        "5432:5432"
+      ],
+      "wanted_by": [
+        "default.target"
+      ]
+    },
+    "id": "lychd",
+    "type": "QuadletPod"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd-phylactery.service"
+      ],
+      "conflicts": [],
+      "container_name": "lychd-vessel",
+      "description": "The Vessel (LychD Application Kernel)",
+      "devices": [],
+      "env_vars": {
+        "APP__SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
+        "DB__HOST": "localhost",
+        "DB__PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
+        "DB__PORT": "5432"
+      },
+      "exec": null,
+      "image": "${APP_IMAGE}",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [
+        "${APP_SECRET}",
+        "${DB_SECRET}",
+        "openai_api_key"
+      ],
+      "security_label_disable": false,
+      "targets": [],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}",
+          "host_path": "${PATH_CRYPT_ROOT}",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [
+        "default.target"
+      ],
+      "wants": [
+        "lychd-phylactery.service"
+      ]
+    },
+    "id": "lychd-vessel",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd.pod"
+      ],
+      "conflicts": [],
+      "container_name": "lychd-phylactery",
+      "description": "The Phylactery (Postgres & PgVector)",
+      "devices": [],
+      "env_vars": {
+        "POSTGRES_DB": "lychd",
+        "POSTGRES_USER": "lich"
+      },
+      "exec": null,
+      "image": "${DB_IMAGE}",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [],
+      "security_label_disable": false,
+      "targets": [],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "/var/lib/postgresql/data",
+          "host_path": "${PATH_POSTGRES_ROOT_DIR}",
+          "mirror": false,
+          "options": [
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [
+        "default.target"
+      ],
+      "wants": [
+        "lychd.pod"
+      ]
+    },
+    "id": "lychd-phylactery",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "description": "LychD Coven: logic",
+      "name": "logic",
+      "part_of": "lychd-pod.service",
+      "wanted_by": [
+        "default.target"
+      ]
+    },
+    "id": "logic",
+    "type": "QuadletTarget"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd.pod"
+      ],
+      "conflicts": [
+        "lychd-gamma.service",
+        "lychd-resident.service"
+      ],
+      "container_name": "lychd-alpha",
+      "description": "LychD Soulstone: alpha",
+      "devices": [],
+      "env_vars": {
+        "CTX": "4096"
+      },
+      "exec": null,
+      "image": "registry.example/alpha:1",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [],
+      "security_label_disable": false,
+      "targets": [
+        "logic"
+      ],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}",
+          "host_path": "${PATH_CRYPT_ROOT}",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "/models",
+          "host_path": "${HOME}/models",
+          "mirror": false,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [],
+      "wants": [
+        "lychd.pod"
+      ]
+    },
+    "id": "lychd-alpha",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd.pod"
+      ],
+      "conflicts": [
+        "lychd-gamma.service",
+        "lychd-resident.service"
+      ],
+      "container_name": "lychd-beta",
+      "description": "LychD Soulstone: beta",
+      "devices": [],
+      "env_vars": {},
+      "exec": null,
+      "image": "registry.example/beta:1",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [],
+      "security_label_disable": false,
+      "targets": [
+        "logic"
+      ],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}",
+          "host_path": "${PATH_CRYPT_ROOT}",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "/models",
+          "host_path": "${HOME}/models",
+          "mirror": false,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [],
+      "wants": [
+        "lychd.pod"
+      ]
+    },
+    "id": "lychd-beta",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd.pod"
+      ],
+      "conflicts": [
+        "lychd-coven-logic.target",
+        "lychd-resident.service"
+      ],
+      "container_name": "lychd-gamma",
+      "description": "LychD Soulstone: gamma",
+      "devices": [],
+      "env_vars": {
+        "HF_TOKEN_FILE": "/run/secrets/gamma_hf_token"
+      },
+      "exec": null,
+      "image": "registry.example/gamma:1",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [
+        "gamma_hf_token"
+      ],
+      "security_label_disable": false,
+      "targets": [],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}",
+          "host_path": "${PATH_CRYPT_ROOT}",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "/models",
+          "host_path": "${HOME}/models",
+          "mirror": false,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [],
+      "wants": [
+        "lychd.pod"
+      ]
+    },
+    "id": "lychd-gamma",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd.pod"
+      ],
+      "conflicts": [
+        "lychd-coven-logic.target",
+        "lychd-gamma.service"
+      ],
+      "container_name": "lychd-resident",
+      "description": "LychD Soulstone: resident",
+      "devices": [],
+      "env_vars": {},
+      "exec": null,
+      "image": "registry.example/resident:1",
+      "pod": "lychd.pod",
+      "podman_args": [
+        "--replace"
+      ],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [],
+      "security_label_disable": false,
+      "targets": [],
+      "user_ns": "keep-id",
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}",
+          "host_path": "${PATH_CRYPT_ROOT}",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "/models",
+          "host_path": "${HOME}/models",
+          "mirror": false,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [
+        "default.target"
+      ],
+      "wants": [
+        "lychd.pod"
+      ]
+    },
+    "id": "lychd-resident",
+    "type": "QuadletContainer"
+  }
+]

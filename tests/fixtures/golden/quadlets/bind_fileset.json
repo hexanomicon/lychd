@@ -1,0 +1,31 @@
+{
+  "phoenix_absent": {
+    "quadlet": [
+      "lychd-alpha.container",
+      "lychd-beta.container",
+      "lychd-gamma.container",
+      "lychd-phylactery.container",
+      "lychd-resident.container",
+      "lychd-vessel.container",
+      "lychd.pod"
+    ],
+    "systemd": [
+      "lychd-coven-logic.target"
+    ]
+  },
+  "phoenix_active": {
+    "quadlet": [
+      "lychd-alpha.container",
+      "lychd-beta.container",
+      "lychd-gamma.container",
+      "lychd-oculus.container",
+      "lychd-phylactery.container",
+      "lychd-resident.container",
+      "lychd-vessel.container",
+      "lychd.pod"
+    ],
+    "systemd": [
+      "lychd-coven-logic.target"
+    ]
+  }
+}
