@@ -1,4 +1,4 @@
-"""Shared base for OpenAI-compatible, FIXED-lifecycle runtime adapters.
+"""Shared base for OpenAI-compatible, STATIC-lifecycle runtime adapters.
 
 vLLM and SGLang were ~90% identical exec-passthrough adapters. This base folds
 the shared planning/probe/activation plumbing into one place (A3-U2 cheap dedup;
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 class OpenAICompatibleRuntimeAdapter:
     """Base adapter for a local runtime that serves an OpenAI-compatible API.
 
-    Lifecycle is always FIXED: the server binds its port only after the model is
+    Lifecycle is always STATIC: the server binds its port only after the model is
     loaded, so a reachable endpoint means WARM and an unreachable one means COLD.
     Subclasses set two class attributes; hooks may be overridden as needed.
     """
@@ -77,7 +77,7 @@ class OpenAICompatibleRuntimeAdapter:
         return SoulstoneAnimator(rune=stone, connector=connector, quadlet=quadlet)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-        """Synthesize FIXED capability specs from runtime-derived model info."""
+        """Synthesize STATIC capability specs from runtime-derived model info."""
         stone = self._narrow(soulstone)
         return capability_specs_from_soulstone(
             stone,
@@ -91,7 +91,7 @@ class OpenAICompatibleRuntimeAdapter:
         animator: RuntimeAnimator,
         specs: list[CapabilitySpec],
     ) -> list[CapabilityState]:
-        """Probe the OpenAI-compatible endpoint and project FIXED phase states.
+        """Probe the OpenAI-compatible endpoint and project STATIC phase states.
 
         Reachable ⇒ WARM, unreachable ⇒ COLD (spec §2 phase table).
         """
@@ -119,14 +119,14 @@ class OpenAICompatibleRuntimeAdapter:
         ]
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
-        """Report that FIXED runtimes expose no in-runtime activation (unit-owned)."""
+        """Report that STATIC runtimes expose no in-runtime activation (unit-owned)."""
         _ = spec
         up = animator.connector.link.up
         phase = CapabilityPhase.WARM if up else CapabilityPhase.COLD
         return ActivationResult(accepted=False, phase=phase, reason="fixed capability; lifecycle owned by unit")
 
     def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
-        """Return ``None``; FIXED OpenAI-compatible runtimes have no control plane."""
+        """Return ``None``; STATIC OpenAI-compatible runtimes have no control plane."""
         _ = animator
         return None
 

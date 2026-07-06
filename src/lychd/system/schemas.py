@@ -149,7 +149,10 @@ class QuadletTarget(QuadletBase):
 
     name: str  # e.g. 'vision' -> lychd-coven-vision.target
     description: str
-    part_of: str = "lychd.pod"
+    # The generated pod service unit name. Quadlet turns `lychd.pod` (PodName=lychd)
+    # into `lychd-pod.service`; `PartOf=` in a real systemd unit must reference that
+    # service, NOT the Quadlet source name `lychd.pod`.
+    part_of: str = "lychd-pod.service"
 
     # [Install] section
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])

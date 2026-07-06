@@ -111,7 +111,19 @@ PATH_ASSEMBLY_DIR: Final[Path] = PATH_CACHE_ROOT / "assembly"  # ~/.cache/lychd/
 # --- D. The Binding (Host Integration) ---
 
 PATH_SYSTEMD_UNITS_DIR: Final[Path] = _config_root / "containers" / "systemd"  # ~/.config/containers/systemd
-"""The anchor where Quadlets are inscribed to interface with the Host OS."""
+"""The anchor where Quadlets are inscribed to interface with the Host OS.
+
+Quadlet's generator ONLY processes ``.container/.volume/.network/.kube/.image/
+.build/.pod`` files here. Plain systemd units (e.g. ``.target``) dropped in this
+directory are silently ignored, so they must live in ``PATH_SYSTEMD_USER_UNITS_DIR``.
+"""
+
+PATH_SYSTEMD_USER_UNITS_DIR: Final[Path] = _config_root / "systemd" / "user"  # ~/.config/systemd/user
+"""The systemd user unit directory (loaded directly by ``systemctl --user``).
+
+Non-Quadlet units the Scribe generates -- the Coven ``.target`` files -- are
+inscribed here so systemd can actually load them and resolve the
+``WantedBy=``/``Conflicts=`` edges that reference them (the Law of Exclusivity)."""
 
 PATH_RUNE_TEMPLATES_DIR: Final[Path] = BASE_DIR / "system" / "templates"
 """Jinja2 source templates used to generate Systemd Quadlet files."""
@@ -135,6 +147,7 @@ HOST_LAYOUT: Final[tuple[Path,...]] = (
 
     # --- The Binding ---
     PATH_SYSTEMD_UNITS_DIR,    # ~/.config/containers/systemd/ (The Anchor)
+    PATH_SYSTEMD_USER_UNITS_DIR, # ~/.config/systemd/user/ (Coven .target units)
 
     # --- The Body ---
     PATH_CRYPT_ROOT,           # ~/.local/share/lychd/

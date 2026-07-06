@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +21,9 @@ class Run(UUIDAuditBase):
 
     workflow_name: Mapped[str] = mapped_column(String(100), index=True)
     source: Mapped[str] = mapped_column(String(20))  # bridge|cli|api|rite
-    status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
+    status: Mapped[str] = mapped_column(String(20), default="queued", server_default=text("'queued'"), index=True)
     #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|done|failed|cancelled
-    priority: Mapped[int] = mapped_column(default=50)
+    priority: Mapped[int] = mapped_column(default=50, server_default=text("50"))
     sigil_name: Mapped[str] = mapped_column(String(100))
     intent: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)  # serialized Intent
     capability_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
@@ -36,8 +36,8 @@ class Run(UUIDAuditBase):
 
     # C4 additions (A4 durable-run substrate fields):
     queue_name: Mapped[str] = mapped_column(String(50))
-    attempt: Mapped[int] = mapped_column(default=0)
-    enqueue_seq: Mapped[int] = mapped_column(default=0)
+    attempt: Mapped[int] = mapped_column(default=0, server_default=text("0"))
+    enqueue_seq: Mapped[int] = mapped_column(default=0, server_default=text("0"))
     stasis_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     #   Durable Stasis v1 seat: FileStatePersistence path. No state_snapshot JSONB (C4).
 

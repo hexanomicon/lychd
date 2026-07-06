@@ -73,7 +73,7 @@ class GenericRuntimeAdapter:
         animator: RuntimeAnimator,
         specs: list[CapabilitySpec],
     ) -> list[CapabilityState]:
-        """Project connector readiness into conservative FIXED capability states."""
+        """Project connector readiness into conservative STATIC capability states."""
         up = animator.connector.link.up
         active_model_id = getattr(animator.connector, "default_model_id", None)
         loaded_model_ids = [spec.model_id for spec in specs] if up else []
