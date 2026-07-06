@@ -29,8 +29,9 @@ def test_profile_switch_selects_ledger_impl() -> None:
 
 @pytest.mark.asyncio
 async def test_create_persists_queued_run() -> None:
-    """create() persists a fresh run as QUEUED keyed by intent.run_id."""
-    ledger = InMemoryRunLedger()
+    """create() persists a fresh run as QUEUED; the test-only seam keys it by intent.run_id."""
+    # honor_intent_run_id is a TEST-ONLY seam; production never adopts intent.run_id (R4).
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     run = await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=70)
     assert run.run_id == "run_1"
     assert run.status is RunStatus.QUEUED
@@ -38,6 +39,17 @@ async def test_create_persists_queued_run() -> None:
     assert run.queue_name == "runs"
     assert run.priority == 70
     assert (await ledger.get("run_1")) is run
+
+
+@pytest.mark.asyncio
+async def test_create_always_mints_canonical_id_ignoring_intent_run_id() -> None:
+    """R4/S3: by default the ledger ALWAYS mints (mirrors DbRunLedger); intent.run_id is advisory only."""
+    ledger = InMemoryRunLedger()  # no test seam → production behavior
+    run = await ledger.create(_intent("client-corr-id"), workflow_name="bridge_chat", queue_name="runs", priority=70)
+    assert run.run_id != "client-corr-id"  # the advisory field was NOT adopted as identity
+    assert run.run_id  # a real id was minted
+    assert (await ledger.get(run.run_id)) is run
+    assert (await ledger.get("client-corr-id")) is None
 
 
 @pytest.mark.asyncio
@@ -54,7 +66,7 @@ async def test_create_mints_canonical_id_when_intent_run_id_is_none() -> None:
 @pytest.mark.asyncio
 async def test_queued_running_done_trail() -> None:
     """The lifecycle trail QUEUED→RUNNING→DONE sets started/finished timestamps."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
 
     await ledger.set_status("run_1", RunStatus.RUNNING)
@@ -73,7 +85,7 @@ async def test_queued_running_done_trail() -> None:
 @pytest.mark.asyncio
 async def test_illegal_transition_raises() -> None:
     """An illegal edge (QUEUED→DONE) raises IllegalRunTransitionError."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
     with pytest.raises(IllegalRunTransitionError):
         await ledger.set_status("run_1", RunStatus.DONE)  # must pass through RUNNING
@@ -82,7 +94,7 @@ async def test_illegal_transition_raises() -> None:
 @pytest.mark.asyncio
 async def test_same_status_is_idempotent_noop() -> None:
     """Re-setting the current status is a no-op (duplicate claim / terminal write)."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.set_status("run_1", RunStatus.RUNNING)
     await ledger.set_status("run_1", RunStatus.RUNNING)  # no raise
@@ -92,7 +104,7 @@ async def test_same_status_is_idempotent_noop() -> None:
 @pytest.mark.asyncio
 async def test_failed_retry_bumps_attempt() -> None:
     """FAILED→QUEUED (explicit retry) increments attempt."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.set_status("run_1", RunStatus.RUNNING)
     await ledger.set_status("run_1", RunStatus.FAILED, error="boom")
@@ -106,7 +118,7 @@ async def test_failed_retry_bumps_attempt() -> None:
 @pytest.mark.asyncio
 async def test_bump_enqueue_seq_is_monotonic() -> None:
     """bump_enqueue_seq yields a fresh, increasing seq per resume hop."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
     assert await ledger.bump_enqueue_seq("run_1") == 1
     assert await ledger.bump_enqueue_seq("run_1") == 2
@@ -115,7 +127,7 @@ async def test_bump_enqueue_seq_is_monotonic() -> None:
 @pytest.mark.asyncio
 async def test_append_event_excludes_tokens() -> None:
     """append_event records non-TOKEN events only (tokens are too chatty for Steps)."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.append_event(RunEvent(run_id="run_1", seq=0, kind=RunEventKind.STATUS, data="running"))
     await ledger.append_event(RunEvent(run_id="run_1", seq=1, kind=RunEventKind.TOKEN, data="chatty"))
@@ -125,9 +137,21 @@ async def test_append_event_excludes_tokens() -> None:
 
 
 @pytest.mark.asyncio
+async def test_next_seq_tracks_persisted_history() -> None:
+    """R1: next_seq is max(persisted seq)+1 (0 with no history) — seeds a reconciled channel."""
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
+    assert await ledger.next_seq("run_1") == 0  # no history yet
+    await ledger.append_event(RunEvent(run_id="run_1", seq=0, kind=RunEventKind.STATUS, data="running"))
+    await ledger.append_event(RunEvent(run_id="run_1", seq=1, kind=RunEventKind.NODE, data="n"))
+    assert await ledger.next_seq("run_1") == 2  # past the persisted max
+    assert await ledger.next_seq("unknown") == 0  # unknown run → 0
+
+
+@pytest.mark.asyncio
 async def test_list_by_status_and_get_by_consent() -> None:
     """list_by_status feeds reconcile; get_by_consent feeds engine.approve."""
-    ledger = InMemoryRunLedger()
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent("a"), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.create(_intent("b"), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.set_status("a", RunStatus.RUNNING)

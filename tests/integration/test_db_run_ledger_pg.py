@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -33,9 +34,10 @@ from testcontainers.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
 from lychd.db.models import Run, Step
-from lychd.domain.cortex.events import RunEvent, RunEventKind
+from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import DbRunLedger
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunStatus
+from lychd.domain.cortex.services import RunService
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -94,6 +96,127 @@ async def test_cas_concurrent_same_target_is_benign(pg_factory: async_sessionmak
     row = await ledger.get(run_id)
     assert row is not None
     assert row.status is RunStatus.DONE
+
+
+@pytest.mark.asyncio
+async def test_cas_retries_lost_cancel_against_legal_fresh_edge(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """R3: a cancel losing a QUEUED→RUNNING claim retries against the fresh RUNNING and lands CANCELLED.
+
+    We force the CAS window deterministically: a one-shot hook on the ledger's first
+    row read commits a concurrent QUEUED→RUNNING claim, so the cancel's first CAS
+    (`WHERE status='queued'`) matches 0 rows. The re-read sees RUNNING; RUNNING→CANCELLED
+    is legal, so the bounded retry lands it instead of raising.
+    """
+    ledger = DbRunLedger(session_factory=pg_factory)
+    claimant = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+
+    original = RunService.get_one_or_none
+    fired = {"done": False}
+
+    async def racing_read(self: RunService, *args: object, **kwargs: object) -> object:
+        row = await original(self, *args, **kwargs)  # reads the still-QUEUED row
+        if not fired["done"]:
+            fired["done"] = True
+            await claimant.set_status(run_id, RunStatus.RUNNING)  # concurrent claim wins the window
+        return row
+
+    with mock.patch.object(RunService, "get_one_or_none", racing_read):
+        await ledger.set_status(run_id, RunStatus.CANCELLED)  # must NOT raise — legal fresh edge
+
+    row = await ledger.get(run_id)
+    assert row is not None
+    assert row.status is RunStatus.CANCELLED
+
+
+@pytest.mark.asyncio
+async def test_cancel_losing_to_completion_is_benign(pg_factory: async_sessionmaker[AsyncSession]) -> None:
+    """R7: engine.cancel losing to completion (fresh DONE, DONE→CANCELLED illegal) is a benign no-op, not a 500."""
+    from lychd.domain.cortex.engine import QueueRouter
+    from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
+
+    ledger = DbRunLedger(session_factory=pg_factory)
+    completer = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    await ledger.set_status(run_id, RunStatus.RUNNING)
+
+    class _Queue:
+        async def enqueue(self, job_or_func: str, /, **kwargs: object) -> object:
+            _ = (job_or_func, kwargs)
+            return None
+
+        async def job(self, job_key: str, /) -> object:
+            _ = job_key
+            return None
+
+        async def abort(self, job: object, error: str, /, ttl: float = 5) -> None:
+            _ = (job, error, ttl)
+
+    engine = CortexRunEngine(
+        ledger=ledger,
+        bus=InProcessEventBus(ledger=ledger),
+        workflows=None,
+        queue_router=QueueRouter(),
+        queues={"runs": _Queue()},
+    )
+
+    original = RunService.get_one_or_none
+    fired = {"done": False}
+
+    async def racing_read(self: RunService, *args: object, **kwargs: object) -> object:
+        row = await original(self, *args, **kwargs)  # cancel's top read sees RUNNING
+        if not fired["done"]:
+            fired["done"] = True
+            await completer.set_status(run_id, RunStatus.DONE)  # completion wins the race
+        return row
+
+    with mock.patch.object(RunService, "get_one_or_none", racing_read):
+        await engine.cancel(run_id)  # must NOT raise — run already terminal → no-op
+
+    row = await ledger.get(run_id)
+    assert row is not None
+    assert row.status is RunStatus.DONE  # completion won; cancel was a benign no-op
+
+
+@pytest.mark.asyncio
+async def test_reconcile_orphaned_running_lands_terminal_step(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """R1: a reconciled orphan (with a persisted Step) lands its terminal Step instead of colliding.
+
+    Restart shape: the run reached RUNNING and persisted Step(seq=0); the process
+    died; a FRESH bus restarts channel seqs at 0. Without seeding, reconcile's terminal
+    emit would write Step(seq=0) → `uq_step_run_seq` violation → dropped. With the R1
+    seed (`open(from_seq=next_seq)`), the terminal lands at seq 1.
+    """
+    from types import SimpleNamespace
+    from uuid import UUID
+
+    from sqlalchemy import select
+
+    from lychd.ghouls.runs import reconcile_runs
+
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    await ledger.set_status(run_id, RunStatus.RUNNING)
+    await ledger.append_event(RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data="running"))
+
+    # Fresh process: a brand-new bus (channel seqs restart at 0). reconcile only needs
+    # the substrate's ledger + bus, so a namespace stand-in is sufficient here.
+    bus = InProcessEventBus(ledger=ledger)
+    substrate = SimpleNamespace(ledger=ledger, bus=bus)
+    result = await reconcile_runs({"run_substrate": substrate})
+    assert result["count"] >= 1
+
+    for _ in range(50):  # drain the per-run ORDERED writer chain (the terminal persist)
+        await asyncio.sleep(0)
+
+    async with pg_factory() as session:
+        rows = (await session.execute(select(Step.seq).where(Step.run_id == UUID(run_id)).order_by(Step.seq))).scalars()
+        seqs = list(rows)
+    assert seqs == [0, 1]  # pre-existing status + the reconciled terminal — no collision, nothing dropped
 
 
 @pytest.mark.asyncio

@@ -150,8 +150,13 @@ class AltarServices:
         return engine
 
     async def aclose(self) -> None:
-        """Cancel tracked tasks and drain per-run resources on shutdown."""
+        """Cancel tracked tasks and drain per-run resources on shutdown.
+
+        R10: drain the bus's in-flight ledger-tee/close tasks before returning so a
+        tail Step write scheduled just before shutdown is not dropped.
+        """
         await self.tickets.aclose()
+        await self.bus.aclose()
 
 
 def _build_run_ledger(profile: str) -> RunLedger:

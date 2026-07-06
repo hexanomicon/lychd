@@ -83,8 +83,13 @@ class RunEvent(BaseModel):
 class RunEventBus(Protocol):
     """The run→channel surface consumed by the engine, the ghoul, and the web."""
 
-    def open(self, run_id: str) -> RunChannel:
-        """Idempotent get-or-create of a run's channel."""
+    def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
+        """Idempotent get-or-create of a run's channel.
+
+        `from_seq` seeds a NEWLY minted channel's seq counter (reconcile/resume of a
+        run that already has persisted Step history — see R1); it is ignored for a
+        channel that already exists.
+        """
         ...
 
     def emitter(self, run_id: str) -> RunEmitter:
@@ -310,11 +315,19 @@ class InProcessEventBus:
         self._pending: set[asyncio.Task[None]] = set()
         self._writer_tails: dict[str, asyncio.Task[None]] = {}  # run_id -> chain tail
 
-    def open(self, run_id: str) -> RunChannel:
-        """Return the run's channel, creating it on first access."""
+    def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
+        """Return the run's channel, creating it on first access.
+
+        Seq seeding (R1): a fresh `RunChannel` restarts its seq at 0, which collides
+        with existing Step rows when a run with persisted history is reconciled or
+        resumed after a restart (`append_event` writes `event.seq` verbatim against
+        `uq_step_run_seq`). Reconcile/resume paths pass `from_seq=next_seq` so the
+        newly minted channel picks up where the persisted history left off. An
+        already-live channel keeps its own counter (the arg is ignored).
+        """
         channel = self._channels.get(run_id)
         if channel is None:
-            channel = RunChannel(run_id=run_id)
+            channel = RunChannel(run_id=run_id, _seq=from_seq or 0)
             self._channels[run_id] = channel
         return channel
 
@@ -359,6 +372,19 @@ class InProcessEventBus:
         task = loop.create_task(self._drop_after_drain(run_id, channel))
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
+
+    async def aclose(self) -> None:
+        """Await in-flight persist/close tasks before shutdown (R10).
+
+        The ledger tee and the close-grace run as fire-and-scheduled tasks; without a
+        drain, a tail Step write (or a terminal persist) in flight when the lifespan
+        unwinds is dropped. Snapshot the pending set and await it (each task already
+        logs its own failure) so the durable Step history is complete at shutdown.
+        """
+        pending = [task for task in self._pending if not task.done()]
+        for task in pending:
+            with suppress(Exception):
+                await task
 
     async def _drop_after_drain(self, run_id: str, channel: RunChannel) -> None:
         """Wait for subscribers to detach (bounded by the grace), then drop the channel."""
