@@ -6,10 +6,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 
 
@@ -42,23 +49,28 @@ class StubRegistry:
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
     def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         return [state for key, state in self._states.items() if self._specs[key].animator_name == name]
 
-    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+    async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         return self.list_capability_states_for_animator(name)
 
     def get_runtime(self, name: str) -> StubRuntime | None:
         return self._runtimes.get(name)
 
     def get_soulstone_rune(self, name: str) -> SimpleNamespace | None:
-        return SimpleNamespace(service_name=f"lychd-{name}")
+        concurrency = next(
+            (spec.concurrency for spec in self._specs.values() if spec.animator_name == name),
+            ConcurrencyIntent(),
+        )
+        return SimpleNamespace(service_name=f"lychd-{name}", concurrency=concurrency)
 
-    def activate_capability(self, key: str) -> bool:
-        return key in self._states
+    async def activate_capability(self, key: str) -> ActivationResult:
+        phase = self._states[key].phase if key in self._states else CapabilityPhase.UNKNOWN
+        return ActivationResult(accepted=key in self._states, phase=phase)
 
 
 def _spec(
@@ -83,10 +95,8 @@ def _spec(
 def _state(spec: CapabilitySpec, *, is_active: bool) -> CapabilityState:
     return CapabilityState(
         capability_key=spec.key,
-        is_static=True,
-        is_active=is_active,
-        is_available=True,
-        warm=is_active,
+        lifecycle=CapabilityLifecycle.STATIC,
+        phase=CapabilityPhase.WARM if is_active else CapabilityPhase.COLD,
         health="ok" if is_active else "down",
         active_model_id=spec.model_id if is_active else None,
         loaded_model_ids=[spec.model_id] if is_active else [],
@@ -111,7 +121,9 @@ async def test_matrix_solver_evicts_all_active_dedicated_animators() -> None:
         ],
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
+    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
+        vision.key
+    )
 
     assert plan.total_metabolic_cost == 2.0
     assert plan.evict_coven_ids == ["coding", "titan"]
@@ -140,7 +152,9 @@ async def test_matrix_solver_keeps_non_dedicated_persistent_resident() -> None:
         ],
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
+    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
+        vision.key
+    )
 
     assert plan.total_metabolic_cost == 0.0
     assert plan.evict_coven_ids == []

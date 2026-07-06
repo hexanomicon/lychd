@@ -33,12 +33,24 @@ pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
 
 @dataclass
-class _RaisingDispatcher:
-    """A GrantPort that always fails to resolve a grant (forces a run failure)."""
+class _RaisingLease:
+    family: Any
 
-    def resolve_capability_grant(self, intent_type: str) -> Any:
-        msg = f"no capability for {intent_type}"
+    async def __aenter__(self) -> Any:
+        msg = f"no capability for {self.family}"
         raise RuntimeError(msg)
+
+    async def __aexit__(self, *exc: object) -> None:
+        """No-op teardown (entry always raised)."""
+
+
+@dataclass
+class _RaisingDispatcher:
+    """A GrantPort whose lease CM always fails on entry (forces a run failure)."""
+
+    def lease_grant(self, *, family: Any, run_id: str, **_kwargs: Any) -> _RaisingLease:
+        _ = (run_id, _kwargs)
+        return _RaisingLease(family)
 
 
 def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, BridgeSessionStore]:

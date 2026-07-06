@@ -20,11 +20,13 @@ from lychd.agents.deps import Sigil
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from contextlib import AbstractAsyncContextManager
 
     from pydantic_ai import DeferredToolRequests
 
     from lychd.agents.factory import AgentForge
     from lychd.domain.animation.capabilities import CapabilityGrant
+    from lychd.domain.animation.schemas.capability_family import CapabilityFamily
     from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.cortex.events import RunEmitter, RunEventBus
     from lychd.domain.orchestration.schema import TransitionPlan
@@ -81,9 +83,20 @@ class TransitionPort(Protocol):
 
 
 class GrantPort(Protocol):
-    """The narrow slice of `Dispatcher` a node needs (A3 owns `CapabilityGrant`)."""
+    """The narrow slice of `Dispatcher` a node needs — the C1 lease CM.
 
-    def resolve_capability_grant(self, intent_type: str) -> CapabilityGrant: ...
+    ``@asynccontextmanager``-decorated methods satisfy this structurally.
+    """
+
+    def lease_grant(
+        self,
+        *,
+        family: CapabilityFamily | str,
+        model_name: str | None = None,
+        run_id: str,
+        priority: int = 50,
+        require_modalities: tuple[str, ...] = (),
+    ) -> AbstractAsyncContextManager[CapabilityGrant]: ...
 
 
 # ---------------------------------------------------------------------------

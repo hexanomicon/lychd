@@ -1,23 +1,38 @@
+# White-box access to Dispatcher._resolve_spec for the filter matrix.
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import FrozenInstanceError, dataclass, field
+from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 
 from lychd.domain.animation.capabilities import (
+    CapabilityGrant,
     CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
+    GrantLease,
 )
+from lychd.domain.animation.errors import CapabilityUnavailable
+from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
-from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
+from lychd.domain.animation.schemas.generation import GenerationProfile
+from lychd.domain.cortex.dispatcher import Dispatcher
+from lychd.domain.cortex.leases import LeaseLedger
+
+
+def _stub_connector() -> SimpleNamespace:
+    return SimpleNamespace(link=Link(up=False, activatable=True, estimated_ready_ms=2000))
 
 
 @dataclass
 class StubRuntime:
     id: str
+    connector: SimpleNamespace = field(default_factory=_stub_connector)
 
 
 class StubRegistry:
@@ -42,7 +57,7 @@ class StubRegistry:
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
     def get_runtime(self, name: str) -> StubRuntime | None:
@@ -63,6 +78,7 @@ def _spec(
     animator_name: str = "local-chat",
     lifecycle_mode: str = "static",
     concurrency: ConcurrencyIntent | None = None,
+    modalities_in: list[str] | None = None,
 ) -> CapabilitySpec:
     return CapabilitySpec(
         key=key,
@@ -71,6 +87,7 @@ def _spec(
         source_kind="soulstone",
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
+        modalities_in=modalities_in or [],
         lifecycle=CapabilityLifecycle("dynamic" if lifecycle_mode == "dynamic_soft" else lifecycle_mode),
         concurrency=concurrency or ConcurrencyIntent(),
     )
@@ -99,39 +116,18 @@ def _state(
     )
 
 
-def test_request_capability_grant_returns_capability_grant_for_warm_capability() -> None:
-    spec = _spec(key="local-chat:chat:qwen")
-    state = _state(spec)
-    runtime = StubRuntime(id="local-chat")
-    registry = StubRegistry([spec], [state], {"local-chat": runtime})
-    registry.bound_toolsets = ("toolset",)
-
-    grant = Dispatcher(registry=registry).request_capability_grant(spec.key)
-
-    assert grant.spec == spec
-    assert grant.state == state
-    assert grant.animator == runtime
-    assert grant.toolsets == ("toolset",)
-
-
-def test_request_capability_grant_raises_transition_for_cold_dynamic_capability() -> None:
-    spec = _spec(key="router:vision:router-vision", animator_name="router", lifecycle_mode="dynamic_soft")
-    state = _state(spec, is_static=False, is_active=False, warm=False)
-    runtime = StubRuntime(id="router")
-    dispatcher = Dispatcher(registry=StubRegistry([spec], [state], {"router": runtime}))
-
-    with pytest.raises(HardwareTransitionRequired) as exc_info:
-        dispatcher.request_capability_grant(spec.key)
-
-    assert exc_info.value.spec == spec
-    assert exc_info.value.state == state
-    assert exc_info.value.animator == runtime
+def _dispatcher(
+    specs: list[CapabilitySpec],
+    states: list[CapabilityState],
+    runtimes: dict[str, StubRuntime],
+) -> Dispatcher:
+    return Dispatcher(registry=StubRegistry(specs, states, runtimes), leases=LeaseLedger())
 
 
 def test_resolve_intent_prefers_warm_capability() -> None:
     cold = _spec(key="router:chat:router-main", animator_name="router", lifecycle_mode="dynamic_soft")
     warm = _spec(key="portal:chat:gpt-5", animator_name="portal", lifecycle_mode="static")
-    registry = StubRegistry(
+    dispatcher = _dispatcher(
         [cold, warm],
         [
             _state(cold, is_static=False, is_active=False, warm=False),
@@ -143,6 +139,63 @@ def test_resolve_intent_prefers_warm_capability() -> None:
         },
     )
 
-    resolved = Dispatcher(registry=registry).resolve_intent("reasoning")
+    assert dispatcher.resolve_intent("reasoning") == warm
 
-    assert resolved == warm
+
+def test_resolve_spec_pins_model_name() -> None:
+    qwen = _spec(key="local:chat:qwen", animator_name="local")
+    llama = _spec(key="local:chat:llama", animator_name="local")
+    dispatcher = _dispatcher(
+        [qwen, llama],
+        [_state(qwen), _state(llama)],
+        {"local": StubRuntime(id="local")},
+    )
+
+    resolved = dispatcher._resolve_spec("chat", model_name="llama", require_modalities=())
+
+    assert resolved == llama
+
+
+def test_resolve_spec_require_modalities_excludes_text_only() -> None:
+    text_only = _spec(key="local:chat:qwen", animator_name="local", modalities_in=["text"])
+    dispatcher = _dispatcher([text_only], [_state(text_only)], {"local": StubRuntime(id="local")})
+
+    with pytest.raises(CapabilityUnavailable):
+        dispatcher._resolve_spec("chat", model_name=None, require_modalities=("image",))
+
+
+def test_resolve_spec_no_candidate_raises_capability_unavailable() -> None:
+    dispatcher = _dispatcher([], [], {})
+
+    with pytest.raises(CapabilityUnavailable):
+        dispatcher._resolve_spec("chat", model_name=None, require_modalities=())
+
+
+def _grant(*, generation: GenerationProfile) -> CapabilityGrant:
+    spec = _spec(key="local-chat:chat:qwen")
+    return CapabilityGrant(
+        spec=spec,
+        state=_state(spec),
+        lease=GrantLease(grant_id="grant-1", holder="run:r1", issued_at=datetime.now(UTC)),
+        generation=generation,
+        animator=StubRuntime(id="local-chat"),
+        model=None,
+    )
+
+
+def test_capability_grant_is_frozen() -> None:
+    grant = _grant(generation=GenerationProfile())
+    with pytest.raises(FrozenInstanceError):
+        grant.model = object()  # type: ignore[misc]
+
+
+def test_capability_grant_model_settings_reflects_generation() -> None:
+    grant = _grant(generation=GenerationProfile(max_tokens=256))
+    settings = grant.model_settings()
+
+    assert settings is not None
+    assert settings.get("max_tokens") == 256
+
+
+def test_capability_grant_model_settings_none_for_empty_profile() -> None:
+    assert _grant(generation=GenerationProfile()).model_settings() is None

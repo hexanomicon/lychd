@@ -6,10 +6,18 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import (
+    ActivationResult,
+    CapabilityLifecycle,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+)
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 
 
@@ -35,33 +43,35 @@ class StubRegistry:
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self._state if key == self._spec.key else None
 
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         return self.get_capability_state(key)
 
     def list_capability_states_for_animator(self, _name: str) -> list[CapabilityState]:
         return [self._state]
 
-    def refresh_capability_states_for_animator(self, _name: str) -> list[CapabilityState]:
+    async def refresh_capability_states_for_animator(self, _name: str) -> list[CapabilityState]:
         self._state.health = "ok" if self._runtime.connector.link.up else "down"
-        self._state.warm = self._runtime.connector.link.up and self._state.is_active
         return [self._state]
 
     def get_runtime(self, _name: str) -> StubRuntime:
         return self._runtime
 
     def get_soulstone_rune(self, _name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name="lychd-router")
+        return SimpleNamespace(service_name="lychd-router", concurrency=ConcurrencyIntent())
 
-    def activate_capability(self, key: str) -> bool:
+    async def activate_capability(self, key: str) -> ActivationResult:
         if key != self._spec.key:
-            return False
+            return ActivationResult(accepted=False, phase=CapabilityPhase.UNKNOWN, reason="unknown capability")
         self._runtime.connector.link.up = True
         self._state.health = "ok"
-        self._state.warm = True
-        self._state.is_active = True
+        self._state.phase = CapabilityPhase.WARM
         self._state.active_model_id = self._spec.model_id
         self._state.loaded_model_ids = [self._spec.model_id]
-        return True
+        return ActivationResult(accepted=True, phase=CapabilityPhase.WARM)
+
+    async def await_warm(self, key: str, *, timeout_s: float = 120.0, interval_s: float = 0.75) -> CapabilityState:
+        _ = (key, timeout_s, interval_s)
+        return self._state
 
 
 def _dynamic_spec() -> CapabilitySpec:
@@ -81,10 +91,8 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     spec = _dynamic_spec()
     state = CapabilityState(
         capability_key=spec.key,
-        is_static=False,
-        is_active=False,
-        is_available=True,
-        warm=False,
+        lifecycle=CapabilityLifecycle.DYNAMIC,
+        phase=CapabilityPhase.COLD,
         health="down",
     )
     runtime = StubRuntime(
@@ -95,14 +103,14 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     registry = StubRegistry(spec, state, runtime)
     broker = AsyncMock()
     broker.get_active_worker_count.return_value = 0
-    manager = OrchestratorManager(worker_broker=broker, registry=registry)
+    manager = OrchestratorManager(worker_broker=broker, registry=registry, leases=LeaseLedger())
 
     process = AsyncMock()
     process.wait.return_value = None
     process.returncode = 0
 
     with patch("asyncio.create_subprocess_exec", return_value=process) as mock_exec:
-        await manager.handle_transition(HardwareTransitionRequired(spec, state, runtime), signal_priority=200.0)
+        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200.0)
 
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
@@ -116,10 +124,8 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
     spec = _dynamic_spec()
     state = CapabilityState(
         capability_key=spec.key,
-        is_static=False,
-        is_active=False,
-        is_available=True,
-        warm=False,
+        lifecycle=CapabilityLifecycle.DYNAMIC,
+        phase=CapabilityPhase.COLD,
         health="ok",
     )
     runtime = StubRuntime(
@@ -129,10 +135,8 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
     )
     active_peer = CapabilityState(
         capability_key="router:vision:router-vision",
-        is_static=False,
-        is_active=True,
-        is_available=True,
-        warm=True,
+        lifecycle=CapabilityLifecycle.DYNAMIC,
+        phase=CapabilityPhase.WARM,
         health="ok",
     )
 
@@ -142,10 +146,10 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
 
     registry = WarmRegistry(spec, state, runtime)
     broker = AsyncMock()
-    manager = OrchestratorManager(worker_broker=broker, registry=registry)
+    manager = OrchestratorManager(worker_broker=broker, registry=registry, leases=LeaseLedger())
 
     with patch("asyncio.create_subprocess_exec") as mock_exec:
-        await manager.handle_transition(HardwareTransitionRequired(spec, state, runtime), signal_priority=200.0)
+        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200.0)
 
     broker.pause_queues.assert_not_called()
     broker.broadcast_soft_stop.assert_not_called()

@@ -7,6 +7,7 @@ import pytest
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from lychd.domain.animation.capabilities import CapabilityPhase
+from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, OpenAIPortalConfig, PortalConfig
@@ -140,7 +141,8 @@ def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> Non
     assert registry.list_models("missing") == ()
 
 
-def test_registry_activate_capability_returns_result_for_static_runtime(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_registry_activate_capability_returns_result_for_static_runtime(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "soulstones" / "vllm" / "embedder.toml",
@@ -153,7 +155,7 @@ def test_registry_activate_capability_returns_result_for_static_runtime(tmp_path
     registry = _registry(runes_dir)
     spec = registry.list_capabilities()[0]
 
-    result = registry.activate_capability(spec.key)
+    result = await registry.activate_capability(spec.key)
     assert result.accepted is False
     assert result.reason == "fixed capability; lifecycle owned by unit"
 
@@ -244,6 +246,72 @@ def test_passive_portal_without_declared_capabilities_does_not_invent_chat_capab
     specs = adapters.build_capability_specs(portal, runtime)
 
     assert specs == []
+
+
+class _HealthControl(LlamaCppControlPlane):
+    """Stub control plane reporting a fixed single-mode health for issue_grant tests."""
+
+    def __init__(self, health: str) -> None:
+        super().__init__()
+        self._health = health
+
+    async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
+        return AnimatorLifecycle(
+            runtime="llamacpp",
+            base_url=animator.connector.base_url,
+            mode="single",
+            health=self._health,
+        )
+
+
+def _warm_registry(runes_dir: Path, *, health: str) -> tuple[AnimatorRegistry, str]:
+    _write(
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "qwen.toml",
+        """
+        name = "qwen-local"
+        model_path = "/models/qwen.gguf"
+        """,
+    )
+    registry = AnimatorRegistry(
+        rune_schemas=[LlamaCppSoulstoneConfig],
+        runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=_HealthControl(health))],
+        runes_dir=runes_dir,
+        reserved_ports={},
+    )
+    registry.ensure_loaded()
+    return registry, registry.list_capabilities()[0].key
+
+
+@pytest.mark.asyncio
+async def test_issue_grant_returns_grant_for_warm_capability(tmp_path: Path) -> None:
+    registry, key = _warm_registry(tmp_path / "runes", health="ok")
+
+    grant = await registry.issue_grant(key, holder="run:r1")
+
+    assert grant.spec.key == key
+    assert grant.state.phase is CapabilityPhase.WARM
+    assert grant.lease.holder == "run:r1"
+    assert grant.generation == grant.spec.generation_profile
+    assert isinstance(grant.model, OpenAIChatModel)
+
+    again = await registry.issue_grant(key, holder="run:r1")
+    assert again.lease.grant_id != grant.lease.grant_id  # unique per issue
+
+
+@pytest.mark.asyncio
+async def test_issue_grant_raises_for_non_warm_capability(tmp_path: Path) -> None:
+    registry, key = _warm_registry(tmp_path / "runes", health="loading")
+
+    with pytest.raises(CapabilityUnavailable):
+        await registry.issue_grant(key, holder="run:r1")
+
+
+@pytest.mark.asyncio
+async def test_issue_grant_raises_for_unknown_capability(tmp_path: Path) -> None:
+    registry, _ = _warm_registry(tmp_path / "runes", health="ok")
+
+    with pytest.raises(CapabilityUnavailable):
+        await registry.issue_grant("nope:chat:nope", holder="run:r1")
 
 
 def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
