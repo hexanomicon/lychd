@@ -15,6 +15,7 @@ from litestar.di import Provide
 # annotation at app-init to type the injected dependency.
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import Dispatcher
+from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.fragments import FragmentRegistry
@@ -58,6 +59,11 @@ def provide_run_engine(state: State) -> RunEngine:
     return state.services.run_engine
 
 
+def provide_run_bus(state: State) -> InProcessEventBus:
+    """Return the process run-event bus (SSE subscribe + reconnect replay)."""
+    return state.services.bus
+
+
 def provide_projector(state: State) -> Projector:
     """Return the engine-bound Projector (the sole renderer)."""
     return state.services.projector
@@ -71,5 +77,6 @@ web_dependencies: dict[str, Provide] = {
     "bridge_sessions": Provide(provide_bridge_sessions, sync_to_thread=False),
     "tickets": Provide(provide_tickets, sync_to_thread=False),
     "run_engine": Provide(provide_run_engine, sync_to_thread=False),
+    "run_bus": Provide(provide_run_bus, sync_to_thread=False),
     "projector": Provide(provide_projector, sync_to_thread=False),
 }

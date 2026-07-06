@@ -35,9 +35,12 @@ def test_pending_consent_count_tracks_verdicts() -> None:
     assert store.pending_consent_count() == 0
 
 
-def test_channel_opened_on_demand_and_reused() -> None:
-    """A run channel is created on first access and returned identically thereafter."""
+def test_pending_consent_for_run_probe() -> None:
+    """The ghoul's park probe returns a run's still-pending consent, else None."""
     store = BridgeSessionStore()
-    channel = store.channel("run_new")
-    assert channel.run_id == "run_new"
-    assert store.channel("run_new") is channel
+    session = store.create_session()
+    consent_id = store.park_consent(run_id="rp", session_id=session.id, tool_name="t", args={}, requests=None)
+    assert store.pending_consent_for_run("rp") is not None
+    store.resolve_consent(consent_id, approved=True)
+    assert store.pending_consent_for_run("rp") is None
+    assert store.pending_consent_for_run("unknown") is None

@@ -1,0 +1,159 @@
+"""`RunEngine` + `QueueRouter` — the single run entry point (A4 §6, C2).
+
+`RunEngine.submit(intent)` is the one law for every surface (Bridge now; CLI and
+A2A later): route ONCE via the `WorkflowRegistry`, resolve `(queue_name, priority)`
+via the `QueueRouter` (the `[orchestration.routing]` map), persist a QUEUED `Run`
+via the `RunLedger`, open the run's channel on the `RunEventBus`, and enqueue
+`perform_run` onto the SAQ `runs` queue. The `asyncio.create_task` path in
+`agents/router.submit` is gone — its logic lives here and in `ghouls/runs.py`.
+
+Consent is a Wave-1 placeholder: `approve` exists as the AWAITING_CONSENT re-enqueue
+seam, but honest HitL resume is Wave 4. `cancel` aborts the SAQ job by key and
+writes the terminal `CANCELLED` + `DONE`.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Protocol
+
+from lychd.domain.cortex.runs import RunHandle, RunStatus
+
+if TYPE_CHECKING:
+    from lychd.agents.router import Intent
+    from lychd.domain.cortex.events import RunEventBus
+    from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.runs import RunRecord
+
+__all__ = [
+    "DEFAULT_ROUTING",
+    "QueueRouter",
+    "RouteRule",
+    "RunEngine",
+    "RunQueue",
+    "run_job_key",
+]
+
+
+def run_job_key(run_id: str, enqueue_seq: int) -> str:
+    """Return the SAQ job key: unique per (run, resume-hop); idempotent within a hop."""
+    return f"run:{run_id}:{enqueue_seq}"
+
+
+class RunQueue(Protocol):
+    """The narrow SAQ-queue surface the engine needs (`saq.Queue` satisfies it)."""
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any | None: ...
+
+    async def job(self, job_key: str, /) -> Any | None: ...
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None: ...
+
+
+@dataclass(frozen=True)
+class RouteRule:
+    """One `[orchestration.routing]` entry: which physical queue, at what priority."""
+
+    queue: str
+    priority: int
+
+
+# [orchestration.routing] — intent source → (queue, default priority 0..100).
+# Agent 7 wires TOML loading of this shape; these are the doctrine defaults (A4 §0).
+DEFAULT_ROUTING: dict[str, RouteRule] = {
+    "default": RouteRule(queue="runs", priority=50),
+    "bridge": RouteRule(queue="runs", priority=70),
+    "cli": RouteRule(queue="runs", priority=50),
+    "rite": RouteRule(queue="rites", priority=20),
+}
+
+
+@dataclass(frozen=True)
+class QueueRouter:
+    """Resolve `(queue_name, priority)` for an intent from the routing table.
+
+    Priority precedence: an explicit `Intent.priority` overrides the per-source
+    default; an unknown source falls back to the ``default`` rule.
+    """
+
+    routing: Mapping[str, RouteRule] = field(default_factory=lambda: dict(DEFAULT_ROUTING))
+
+    def resolve(self, intent: Intent) -> tuple[str, int]:
+        """Return ``(queue_name, priority)`` for ``intent``."""
+        rule = self.routing.get(intent.source) or self.routing["default"]
+        priority = intent.priority if intent.priority is not None else rule.priority
+        return rule.queue, priority
+
+
+@dataclass
+class RunEngine:
+    """The single run entry point. Routes once, persists, enqueues onto SAQ."""
+
+    ledger: RunLedger
+    bus: RunEventBus
+    workflows: Any  # WorkflowRegistry (structural; avoids an agents→cortex import cycle)
+    queue_router: QueueRouter
+    queues: Mapping[str, RunQueue]
+
+    async def submit(self, intent: Intent) -> RunHandle:
+        """Route once, persist QUEUED, open the channel, and enqueue `perform_run`."""
+        workflow = self.workflows.route(intent)
+        queue_name, priority = self.queue_router.resolve(intent)
+        run = await self.ledger.create(
+            intent,
+            workflow_name=workflow.name,
+            queue_name=queue_name,
+            priority=priority,
+        )
+        channel = self.bus.open(run.run_id)
+        await self._enqueue(run)
+        return RunHandle(run_id=run.run_id, workflow_name=workflow.name, channel=channel)
+
+    async def cancel(self, run_id: str) -> None:
+        """Abort the run's SAQ job (by key), mark CANCELLED, emit the terminal DONE."""
+        run = await self.ledger.get(run_id)
+        if run is None or run.status in {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED}:
+            return
+        await self._abort_job(run)
+        await self.ledger.set_status(run_id, RunStatus.CANCELLED)
+        self.bus.emitter(run_id).done(RunStatus.CANCELLED.value)
+
+    async def approve(self, consent_id: str, *, approved: bool) -> None:
+        """Consent seam (Wave-4 honest resume): re-enqueue the parked run.
+
+        Both verdicts re-enqueue (C3): AWAITING_CONSENT → QUEUED, then a resume hop.
+        The honest graph resume (verdict via `DeferredToolResults`) lands in Wave 4;
+        here the state machine + re-enqueue edge exist so the web/CLI seam is real.
+        """
+        run = await self.ledger.get_by_consent(consent_id)
+        if run is None or run.status is not RunStatus.AWAITING_CONSENT:
+            return
+        await self.ledger.set_status(run.run_id, RunStatus.QUEUED)
+        refreshed = await self.ledger.get(run.run_id) or run
+        payload = json.dumps({"consent_id": consent_id, "approved": approved})
+        await self._enqueue(refreshed, resume=True, payload=payload)
+
+    async def _enqueue(self, run: RunRecord, *, resume: bool = False, payload: str | None = None) -> None:
+        """Enqueue `perform_run` for the run on its physical queue (unique key)."""
+        seq = await self.ledger.bump_enqueue_seq(run.run_id)
+        queue = self.queues[run.queue_name]
+        await queue.enqueue(
+            "perform_run",
+            run_id=run.run_id,
+            resume=resume,
+            payload=payload,
+            key=run_job_key(run.run_id, seq),
+            retries=0,  # graph retries are GraphRunner's job, not SAQ's
+            priority=run.priority,
+        )
+
+    async def _abort_job(self, run: RunRecord) -> None:
+        """Abort the run's current SAQ job if still present."""
+        queue = self.queues.get(run.queue_name)
+        if queue is None:
+            return
+        job = await queue.job(run_job_key(run.run_id, run.enqueue_seq))
+        if job is not None:
+            await queue.abort(job, "cancelled by the Magus")

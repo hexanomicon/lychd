@@ -54,17 +54,34 @@ def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
 
 
 def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> SAQConfig:
-    """Build the Ghoul-queue (SAQ) config. ``extra_tasks`` extends core rite tasks."""
-    tasks = ["lychd.ghouls.rites.perform_rite", *extra_tasks]
+    """Build the Ghoul-queue (SAQ) config: the ``runs`` + ``rites`` queues (A4-U4).
+
+    Topology A (v1): ``use_server_lifespan=True`` runs the worker in-process on the
+    web loop, so the ghoul (`perform_run`) and the SSE handler share one event bus.
+    ``runs`` carries interactive graph runs; ``rites`` carries background rites.
+    ``extra_tasks`` still extends the rite task list (Wave-1 contract kept).
+
+    Note (PG/SAQ runtime seam): per-queue concurrency uses `settings.saq.concurrency`
+    until the `[orchestration.queues]` settings surface lands (A7).
+    """
+    rite_tasks = ["lychd.ghouls.rites.perform_rite", "lychd.ghouls.runs.reconcile_runs", *extra_tasks]
     return SAQConfig(
         web_enabled=settings.saq.web_enabled,
         worker_processes=settings.saq.processes,
         use_server_lifespan=settings.saq.use_server_lifespan,
         queue_configs=[
             QueueConfig(
+                name="runs",
+                dsn=settings.db.saq_dsn,
+                tasks=["lychd.ghouls.runs.perform_run", "lychd.ghouls.runs.reconcile_runs"],
+                concurrency=settings.saq.concurrency,
+                startup=worker_startup,
+                shutdown=worker_shutdown,
+            ),
+            QueueConfig(
                 name="rites",
                 dsn=settings.db.saq_dsn,
-                tasks=tasks,
+                tasks=rite_tasks,
                 concurrency=settings.saq.concurrency,
                 startup=worker_startup,
                 shutdown=worker_shutdown,

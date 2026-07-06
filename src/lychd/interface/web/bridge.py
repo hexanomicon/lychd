@@ -10,6 +10,8 @@ the card (the honest park-and-resume seam lands in Wave 4).
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +28,7 @@ from litestar.status_codes import (
 from lychd.agents.router import Intent
 
 # Runtime imports: Litestar resolves handler param/return annotations at registration.
+from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.schemas import BridgeTurn
@@ -36,10 +39,24 @@ if TYPE_CHECKING:
 
     from lychd.domain.web.sessions import SessionRecord
 
+# Keepalive cadence: litestar's `ServerSentEvent` has NO `ping_interval` param
+# (verified in .venv, saq/litestar), so a comment-event fallback keeps proxies open.
+_SSE_KEEPALIVE_S = 15.0
+
 
 def _new_run_id() -> str:
     """Return a fresh run id."""
     return f"run_{uuid.uuid4().hex[:12]}"
+
+
+def _parse_last_event_id(raw: str | None) -> int | None:
+    """Parse a `Last-Event-ID` header (an event seq) to an int, or `None`."""
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 class BridgeController(Controller):
@@ -112,20 +129,49 @@ class BridgeController(Controller):
     @get("/runs/{run_id:str}/stream", name="bridge:stream")
     async def stream(
         self,
+        request: HTMXRequest,
         run_id: str,
-        bridge_sessions: BridgeSessionStore,
+        run_bus: InProcessEventBus,
         projector: Projector,
     ) -> ServerSentEvent:
-        """Stream the run's channel as SSE, rendering every payload through the Projector."""
-        channel = bridge_sessions.channel(run_id)
+        """Stream the run's events as SSE, rendered through the Projector.
+
+        Reconnect (A2-U5): a `Last-Event-ID` header replays events strictly after
+        that seq over `RunChannel.subscribe(from_seq)` (an evicted cursor yields a
+        fresh STATUS resync, never an error). A keepalive comment fires on idle since
+        litestar's `ServerSentEvent` has no `ping_interval`.
+        """
+        from_seq = _parse_last_event_id(request.headers.get("Last-Event-ID"))
 
         async def events() -> AsyncIterator[ServerSentEventMessage]:
-            async for event in channel.subscribe():
-                yield ServerSentEventMessage(
-                    event=event.kind,
-                    data=projector.project(event),
-                    id=str(event.seq),
-                )
+            source = run_bus.subscribe(run_id, from_seq=from_seq)
+            pending: asyncio.Task[Any] | None = None
+            try:
+                while True:
+                    if pending is None:
+                        pending = asyncio.ensure_future(source.__anext__())
+                    done, _ = await asyncio.wait({pending}, timeout=_SSE_KEEPALIVE_S)
+                    if not done:  # idle: keep proxies open without dropping the queued item
+                        yield ServerSentEventMessage(comment="keepalive")
+                        continue
+                    try:
+                        event = pending.result()
+                    except StopAsyncIteration:
+                        return
+                    finally:
+                        pending = None
+                    yield ServerSentEventMessage(
+                        event=str(event.kind),
+                        data=projector.project(event),
+                        id=str(event.seq),
+                    )
+            finally:
+                if pending is not None:
+                    pending.cancel()
+                aclose = getattr(source, "aclose", None)
+                if aclose is not None:
+                    with contextlib.suppress(Exception):
+                        await aclose()
 
         return ServerSentEvent(events())
 

@@ -1,8 +1,13 @@
-"""`BridgeSessionStore` — in-memory sessions, runs, and parked consents (§5.6).
+"""`BridgeSessionStore` — in-memory sessions, turns, and parked consents (§5.6).
 
 Loop-confined: every mutation is synchronous and only ever touched from a single
 event loop, so no locks are needed. Written against ids, not objects, so a
 Phylactery-backed implementation can replace it without changing callers.
+
+Wave 2: run records and event channels were **shed** to the run substrate — the
+`RunLedger` owns run truth/status and the `RunEventBus` owns channels. This store
+keeps only sessions, settled turns, and parked consents (the consent record is the
+Wave-4 HitL seam). `RunHandle` is re-exported from `domain/cortex/runs`.
 """
 
 from __future__ import annotations
@@ -12,15 +17,13 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
-from lychd.domain.cortex.stasis import RunChannel
+from lychd.domain.cortex.runs import RunHandle
 
 if TYPE_CHECKING:
-    import asyncio
-
-    from lychd.agents.workflows.base import Workflow
     from lychd.domain.web.schemas import BridgeTurn
 
-RunStatus = Literal["routed", "running", "awaiting_consent", "done", "failed"]
+__all__ = ["BridgeSessionStore", "ConsentRecord", "RunHandle", "SessionRecord"]
+
 ConsentStatus = Literal["pending_consent", "consented", "refused"]
 
 
@@ -40,17 +43,6 @@ class SessionRecord:
 
 
 @dataclass
-class RunRecord:
-    """One graph run: its event channel, task handle, and lifecycle status."""
-
-    run_id: str
-    channel: RunChannel
-    workflow_name: str
-    status: RunStatus
-    task: asyncio.Task[Any] | None = None
-
-
-@dataclass
 class ConsentRecord:
     """One parked, approval-bearing tool call awaiting the Magus's verdict."""
 
@@ -63,23 +55,12 @@ class ConsentRecord:
     status: ConsentStatus = "pending_consent"
 
 
-@dataclass(frozen=True, kw_only=True)
-class RunHandle:
-    """The handle `submit()` returns: run id, workflow, live channel, task."""
-
-    run_id: str
-    workflow_name: str
-    channel: RunChannel
-    task: asyncio.Task[Any] | None = None
-
-
 class BridgeSessionStore:
-    """In-memory store for Bridge sessions, runs, and parked consents."""
+    """In-memory store for Bridge sessions, settled turns, and parked consents."""
 
     def __init__(self) -> None:
         """Initialize the empty, loop-confined store."""
         self._sessions: dict[str, SessionRecord] = {}
-        self._runs: dict[str, RunRecord] = {}
         self._consents: dict[str, ConsentRecord] = {}
         self._run_to_session: dict[str, str] = {}
 
@@ -136,56 +117,6 @@ class BridgeSessionStore:
                 return record
         return None
 
-    # -- runs -------------------------------------------------------------
-
-    def record_route(self, run_id: str, workflow_name: str) -> RunRecord:
-        """Persist the router's choice and open the run's event channel."""
-        record = RunRecord(
-            run_id=run_id,
-            channel=RunChannel(run_id=run_id),
-            workflow_name=workflow_name,
-            status="routed",
-        )
-        self._runs[run_id] = record
-        return record
-
-    def register_run(self, run_id: str, workflow: Workflow, task: asyncio.Task[Any]) -> RunHandle:
-        """Attach the launched task to the run and return its handle."""
-        record = self._runs.get(run_id)
-        if record is None:
-            record = self.record_route(run_id, workflow.name)
-        record.task = task
-        record.status = "running"
-        return RunHandle(
-            run_id=run_id,
-            workflow_name=record.workflow_name,
-            channel=record.channel,
-            task=task,
-        )
-
-    def channel(self, run_id: str) -> RunChannel:
-        """Return the run's event channel, opening one on demand."""
-        record = self._runs.get(run_id)
-        if record is None:
-            record = RunRecord(
-                run_id=run_id,
-                channel=RunChannel(run_id=run_id),
-                workflow_name="",
-                status="routed",
-            )
-            self._runs[run_id] = record
-        return record.channel
-
-    def get_run(self, run_id: str) -> RunRecord | None:
-        """Return the run record, or `None` if unknown."""
-        return self._runs.get(run_id)
-
-    def set_run_status(self, run_id: str, status: RunStatus) -> None:
-        """Update a run's lifecycle status."""
-        record = self._runs.get(run_id)
-        if record is not None:
-            record.status = status
-
     # -- consents ---------------------------------------------------------
 
     def park_consent(
@@ -200,7 +131,8 @@ class BridgeSessionStore:
         """Park a deferred tool request for approval and return its consent id.
 
         Live path only: this records enough to resume the run within the current
-        process lifetime. The Durable/HitL path (Phylactery-backed) is future work.
+        process lifetime. The Durable/HitL path (Phylactery-backed) is Wave 4. Run
+        status (AWAITING_CONSENT) is written by the ghoul via the `RunLedger`.
         """
         consent_id = _new_id("consent")
         self._consents[consent_id] = ConsentRecord(
@@ -212,12 +144,16 @@ class BridgeSessionStore:
             requests=requests,
         )
         self._run_to_session[run_id] = session_id
-        self.set_run_status(run_id, "awaiting_consent")
         return consent_id
 
     def get_consent(self, consent_id: str) -> ConsentRecord | None:
         """Return the parked consent record, or `None` if unknown."""
         return self._consents.get(consent_id)
+
+    def pending_consent_for_run(self, run_id: str) -> ConsentRecord | None:
+        """Return the run's still-pending consent, or `None` (the ghoul park probe)."""
+        record = self._consents_by_run(run_id)
+        return record if record is not None and record.status == "pending_consent" else None
 
     def resolve_consent(self, consent_id: str, *, approved: bool) -> ConsentRecord | None:
         """Mark a parked consent consented or refused; return the updated record."""
