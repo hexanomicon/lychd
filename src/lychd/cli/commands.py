@@ -54,7 +54,7 @@ def _required_secret_names_from_soulstones(soulstones: Sequence[SoulstoneConfig]
 @ritual_command(
     name="init",
     help_text="Initialize the Codex config files and system layout.",
-    start_message="[bold blue]🕯️  Beginning the Inscription (lych init)...[/]",
+    start_message="[bold blue]🕯️  Beginning the Inscription (lychd init)...[/]",
 )
 def init_codex() -> None:
     """Perform the Initialization Ritual (I. The Inscription).
@@ -89,7 +89,7 @@ def init_codex() -> None:
 @ritual_command(
     name="bind",
     help_text="Transmute configs into Systemd units.",
-    start_message="[bold blue]🔮 Beginning the Transmutation (lych bind)...[/]",
+    start_message="[bold blue]🔮 Beginning the Transmutation (lychd bind)...[/]",
 )
 def bind_quadlets() -> None:
     """Perform the Binding Ritual (III. The Transmutation).
@@ -174,7 +174,7 @@ def bind_quadlets() -> None:
 @ritual_command(
     name="animators",
     help_text="Inspect loaded animator runes, their capabilities, and live readiness.",
-    start_message="[bold blue]:material-visibility: Opening the Oculus (lych animators)...[/]",
+    start_message="[bold blue]:material-visibility: Opening the Oculus (lychd animators)...[/]",
 )
 def inspect_animators() -> None:
     """Observe the assembled animator registry (II. The Awakening).
@@ -251,7 +251,7 @@ def inspect_animators() -> None:
     console.print(table)
     console.print(
         "  [dim]Live readiness probed via the OpenAI-compatible /models endpoint (vLLM/SGLang) "
-        "and the llama.cpp control plane. Re-run after `lych bind` + starting a unit.[/]"
+        "and the llama.cpp control plane. Re-run after `lychd bind` + starting a unit.[/]"
     )
 
 

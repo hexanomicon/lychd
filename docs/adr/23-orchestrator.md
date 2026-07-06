@@ -91,6 +91,9 @@ Snapshot note: this drain/swap ritual protects live work during transitions. "Dr
 
     A cold capability whose Animator is not dedicated (`dedicated=False`) lies outside the Orchestrator's authority entirely: the Orchestrator cannot move a runtime it does not own. The **[Dispatcher (22)](22-dispatcher.md)** must exclude such candidates or reject them with `dependency_unavailable`; the transition planner never crashes on a capability it has no power to manifest.
 
+!!! note "Wave 3 ruling: lease-truth drain"
+    Before a hard swap, the Orchestrator waits for `LeaseLedger.drained(evict_animators, timeout=drain_timeout_s)` — drain is the absence of live leases on the animators being evicted, **never** a queue or job count. A leased animator is never placed in the evict set, and a run parked awaiting its own transition holds no lease, so it never blocks its own swap. Drain timeout fails the transition loudly (naming the animators) rather than lobotomizing live work; the eviction candidate set is computed by the `evict-idle` switch policy over per-animator records (dedicated, non-resident, active, **unleased**).
+
 ### Soft Activation Contract
 
 Not every transition is a container swap. When the target runtime's Animator unit is already up and its capability carries the `DYNAMIC` lifecycle (**[Dispatcher (22)](22-dispatcher.md)**), the Orchestrator performs a soft activation — an in-runtime load without a Systemd transition. `STATIC`-lifecycle capabilities have no such seam: a reachable endpoint already means `WARM`, so their only path from `COLD` is a hard swap.

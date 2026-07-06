@@ -36,6 +36,9 @@ icon: material/console-line
 
 An **Integrated CLI Framework** is adopted as "The Hand"—the physical interface that manipulates the system's body.
 
+!!! note "Wave 3 ruling: the binary is `lychd` (DOC-R1)"
+    The installed command is **`lychd`** everywhere — `lychd init`, `lychd bind`, `lychd animators`. This settles the doc-time split (`lych` vs `lychd`): the entry point shipped in `pyproject.toml` is `lychd`, and all documentation, examples, and Praxis references use `lychd` verbatim. No `lych` alias is promised.
+
 ### 1. Dual-Mode Manifestation
 
 The CLI leverages the initialization protocols established in the **[Backend](11-backend.md)**.

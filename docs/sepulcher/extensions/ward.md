@@ -15,7 +15,7 @@ While **[The Veil](./veil.md)** secures the perimeter, The Ward secures the soul
 
 In the philosophy of the Ward, a user is not a "User"; they are a bearer of a **Sigil**. A Sigil is a cryptographic token (API Key or JWT) bound to a specific identity in the **[Phylactery](../phylactery/index.md)**.
 
-- **The Master Sigil:** Created during the **[Summoning](../../summoning.md)**. It possesses the `*` (Universal) scope, granting total dominion over the Sepulcher.
+- **The Master Sigil:** Created during the **[Summoning](../../summoning/index.md)**. It possesses the `*` (Universal) scope, granting total dominion over the Sepulcher.
 - **Guest Sigils:** Created by the Master for specific entities. Each is bound to a restrictive list of **Scopes**.
     - `chat.read`: Can read history but not speak.
     - `chat.write`: Can interact with Agents.
