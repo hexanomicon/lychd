@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from pydantic_graph import BaseNode, End, FullStatePersistence, Graph, GraphRunContext
 from pydantic_graph.persistence import NodeSnapshot
 
-from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import CapabilitySpec
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.cortex.graph_runner import GraphRunner
@@ -21,12 +21,6 @@ class MockState(BaseModel):
     warm: bool = False
 
 
-@dataclass
-class MockAnim:
-    id: str = "mock-anim"
-    base_url: str = "http://localhost:8080/v1"
-
-
 MOCK_SPEC = CapabilitySpec(
     key="mock-anim:chat:mock-cap",
     animator_name="mock-anim",
@@ -34,13 +28,6 @@ MOCK_SPEC = CapabilitySpec(
     source_kind="soulstone",
     family=CapabilityFamily.CHAT,
     model_id="mock-cap",
-)
-MOCK_STATE = CapabilityState(
-    capability_key=MOCK_SPEC.key,
-    is_static=False,
-    is_active=False,
-    is_available=True,
-    warm=False,
 )
 
 
@@ -69,7 +56,7 @@ class StasisNode(BaseNode[MockState, None, str]):
     async def run(self, ctx: GraphRunContext[MockState, None]) -> SuccessNode:
         if not ctx.state.warm:
             ctx.state.warm = True
-            raise HardwareTransitionRequired(MOCK_SPEC, MOCK_STATE, MockAnim())
+            raise HardwareTransitionRequired(MOCK_SPEC.key, MOCK_SPEC.animator_name)
         return SuccessNode()
 
 

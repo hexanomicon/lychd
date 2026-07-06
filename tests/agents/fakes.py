@@ -7,10 +7,14 @@ None of them touches the network or a model — the whole suite runs with
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic_ai import DeferredToolRequests
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 @dataclass
@@ -20,18 +24,31 @@ class FakeGrant:
     model: Any
     toolsets: tuple[Any, ...] = ()
 
+    def model_settings(self) -> None:
+        """No generation overlay in the fake (Track O extends for capture asserts)."""
+
 
 @dataclass
 class FakeDispatcher:
-    """`GrantPort` fake: hands back a grant carrying the injected TestModel."""
+    """`GrantPort` fake: leases a grant carrying the injected TestModel (C1 CM shape)."""
 
     model: Any
     toolsets: tuple[Any, ...] = ()
     calls: list[str] = field(default_factory=list)
 
-    def resolve_capability_grant(self, intent_type: str) -> FakeGrant:
-        self.calls.append(intent_type)
-        return FakeGrant(model=self.model, toolsets=self.toolsets)
+    @asynccontextmanager
+    async def lease_grant(
+        self,
+        *,
+        family: Any,
+        model_name: Any = None,
+        run_id: str,
+        priority: int = 50,
+        require_modalities: tuple[str, ...] = (),
+    ) -> AsyncIterator[FakeGrant]:
+        _ = (model_name, run_id, priority, require_modalities)
+        self.calls.append(str(family))
+        yield FakeGrant(model=self.model, toolsets=self.toolsets)
 
 
 @dataclass

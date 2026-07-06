@@ -61,6 +61,7 @@ class BridgeChatState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
+    priority: int = 50
     history: list[dict[str, str]] = Field(default_factory=list)
     prefix_digest: str | None = None
     reply: BridgeReply | None = None
@@ -160,42 +161,52 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
     """The thinking station. The grant is acquired HERE — the per-step lease."""
 
     async def run(self, ctx: GraphRunContext[BridgeChatState, WorkflowServices]) -> ProjectReply:
-        """Resolve the grant, stream The First One, and capture reply or consent."""
+        """Lease the grant (per-step), stream The First One, and capture reply or consent.
+
+        The whole stream runs INSIDE the lease CM (Converse holds it across the
+        stream — design risk 3, accepted). A ``HardwareTransitionRequired`` raised by
+        the decision table propagates BEFORE lease acquisition by construction, and
+        rides the GraphRunner stasis loop unchanged.
+        """
         emit = ctx.deps.events.emitter(ctx.state.run_id)
-        grant = ctx.deps.dispatcher.resolve_capability_grant("chat")
-        agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
-        deps = LychDDeps(
-            sigil=ctx.deps.sigil_provider(),
-            grant=grant,
-            dispatcher=ctx.deps.dispatcher,
-            orchestrator=ctx.deps.orchestrator,
-            context=ctx.deps.context,
+        async with ctx.deps.dispatcher.lease_grant(
+            family="chat",
             run_id=ctx.state.run_id,
-            step_id=new_step_id(),
-        )
-        emit.status("thinking")
+            priority=ctx.state.priority,
+        ) as grant:
+            agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
+            deps = LychDDeps(
+                sigil=ctx.deps.sigil_provider(),
+                grant=grant,
+                dispatcher=ctx.deps.dispatcher,
+                orchestrator=ctx.deps.orchestrator,
+                context=ctx.deps.context,
+                run_id=ctx.state.run_id,
+                step_id=new_step_id(),
+            )
+            emit.status("thinking")
 
-        result_event: AgentRunResultEvent[Any] | None = None
-        async for event in agent.run_stream_events(
-            build_user_prompt(ctx.state),
-            deps=deps,
-            model=grant.model,
-            toolsets=list(grant.toolsets),
-        ):
-            if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
-                emit.token(event.delta.content_delta)
-            elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
-                emit.token(event.part.content)
-            elif isinstance(event, AgentRunResultEvent):
-                result_event = event
+            result_event: AgentRunResultEvent[Any] | None = None
+            async for event in agent.run_stream_events(
+                build_user_prompt(ctx.state),
+                deps=deps,
+                model=grant.model,
+                toolsets=list(grant.toolsets),
+            ):
+                if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
+                    emit.token(event.delta.content_delta)
+                elif isinstance(event, PartStartEvent) and isinstance(event.part, TextPart):
+                    emit.token(event.part.content)
+                elif isinstance(event, AgentRunResultEvent):
+                    result_event = event
 
-        output = result_event.result.output if result_event is not None else None
-        if isinstance(output, DeferredToolRequests):
-            ctx.state.pending_consent_id = park_consent(ctx.state, output, ctx.deps.consents)
-            tool_name = output.approvals[0].tool_name if output.approvals else ""
-            emit.consent(ctx.state.pending_consent_id, tool_name=tool_name)
-        elif isinstance(output, BridgeReply):
-            ctx.state.reply = output
+            output = result_event.result.output if result_event is not None else None
+            if isinstance(output, DeferredToolRequests):
+                ctx.state.pending_consent_id = park_consent(ctx.state, output, ctx.deps.consents)
+                tool_name = output.approvals[0].tool_name if output.approvals else ""
+                emit.consent(ctx.state.pending_consent_id, tool_name=tool_name)
+            elif isinstance(output, BridgeReply):
+                ctx.state.reply = output
         return ProjectReply()
 
 

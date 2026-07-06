@@ -95,13 +95,13 @@ class GraphRunner[StateT: BaseModel]:
 
                     if signal:
                         resume_count += 1
-                        if signal.spec.key == repeated_key:
+                        if signal.capability_key == repeated_key:
                             repeated_count += 1
                         else:
-                            repeated_key, repeated_count = signal.spec.key, 1
+                            repeated_key, repeated_count = signal.capability_key, 1
                         if resume_count > max_resumes or repeated_count >= max_same_key:
                             msg = (
-                                f"Stasis did not converge for capability '{signal.spec.key}' after "
+                                f"Stasis did not converge for capability '{signal.capability_key}' after "
                                 f"{resume_count} transition(s); aborting the run."
                             )
                             raise RuntimeError(msg) from signal

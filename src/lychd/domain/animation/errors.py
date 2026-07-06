@@ -9,10 +9,10 @@ canonical type instead of the dispatcher-local copy.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
+    from lychd.domain.animation.capabilities import ActivationResult, CapabilityState
 
 
 class CapabilityUnavailable(Exception):  # noqa: N818
@@ -27,22 +27,23 @@ class CapabilityUnavailable(Exception):  # noqa: N818
 
 
 class HardwareTransitionRequired(Exception):  # noqa: N818
-    """Raised when a capability exists but its substrate needs a hard transition.
+    """A capability exists but its substrate needs a hard transition (COLD + activatable).
 
-    Canonical home (spec §9). Wave 1 keeps the handle-bearing
-    ``(spec, state, animator)`` signature the ``OrchestratorManager`` transition
-    solver consumes (``exception.spec``/``.state``/``.animator``). The decoupled
-    ``(capability_key, animator_name, estimated_ready_ms)`` shape lands in Wave 3
-    (A3-U7 / A4-U5) alongside the grant-lease dispatcher surface and the matching
-    solver refactor.
+    Deliberately handle-free: JSON-loggable, park-safe. Consumers re-fetch the spec
+    from the registry by key — the registry is the only truth for records.
     """
 
-    def __init__(self, spec: CapabilitySpec, state: CapabilityState, animator: Any) -> None:
-        """Store the canonical capability record that requires a transition."""
-        super().__init__(f"Hardware transition required for capability: {spec.key}")
-        self.spec = spec
-        self.state = state
-        self.animator = animator
+    def __init__(
+        self,
+        capability_key: str,
+        animator_name: str,
+        estimated_ready_ms: int | None = None,
+    ) -> None:
+        """Store the decoupled transition signal (key + animator name + optional ETA)."""
+        super().__init__(f"Hardware transition required for capability: {capability_key}")
+        self.capability_key = capability_key
+        self.animator_name = animator_name
+        self.estimated_ready_ms = estimated_ready_ms
 
 
 class ActivationTimeout(CapabilityUnavailable):

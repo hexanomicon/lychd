@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Final
 
 from lychd.domain.animation.capabilities import (
     CapabilityLifecycle,
@@ -12,6 +13,27 @@ from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.orchestration.schema import TransitionPlan
 
+if TYPE_CHECKING:
+    from lychd.domain.cortex.leases import LeaseLedger
+
+# D14: keel-phase drain/convergence timeout. Track O replaces this module constant
+# with ``self._switching.drain_timeout_s`` in O4.
+_DRAIN_TIMEOUT_S: Final[float] = 120.0
+
+
+@dataclass(frozen=True, slots=True)
+class _AnimatorRecord:
+    """Animator-level projection the solver reasons over. Built from registry truth.
+
+    Keel-private; Track O extracts it VERBATIM as ``policies.AnimatorRecord``.
+    """
+
+    name: str
+    dedicated: bool  # rune.concurrency.dedicated
+    persistent_resident: bool  # rune.concurrency.persistent_resident
+    active: bool  # any state.phase in {WARM, WARMING} on it
+    leased: bool  # LeaseLedger.active(animator_name=name) != []
+
 
 class OrchestratorManager:
     """Plan and execute local runtime transitions from the canonical registry."""
@@ -20,10 +42,13 @@ class OrchestratorManager:
         self,
         worker_broker: Any,
         registry: CapabilityRegistry,
+        *,
+        leases: LeaseLedger,
     ) -> None:
-        """Initialize orchestration against the injected canonical registry."""
+        """Initialize orchestration against the injected canonical registry + leases."""
         self.worker_broker = worker_broker
         self.registry = registry
+        self._leases = leases
 
     def list_capability_statuses(self) -> list[dict[str, Any]]:
         """Return a canonical status snapshot for the orchestrator API."""
@@ -40,6 +65,7 @@ class OrchestratorManager:
                     "runtime": spec.runtime,
                     "source_kind": spec.source_kind,
                     "lifecycle": spec.lifecycle.value,
+                    "phase": state.phase.value,
                     "model_id": spec.model_id,
                     "is_static": state.is_static,
                     "is_active": state.is_active,
@@ -55,7 +81,7 @@ class OrchestratorManager:
 
     async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
         """Calculate the transition for a requested capability key."""
-        target, target_state = self._get_capability_record(target_capability_key)
+        target, target_state = await self._get_capability_record(target_capability_key)
 
         if target_state.warm:
             return TransitionPlan(
@@ -89,14 +115,17 @@ class OrchestratorManager:
         )
 
     async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
-        """Execute the required transition and finish dynamic soft activation when needed."""
-        plan = await self.request_transition(exception.spec.key, signal_priority)
-        if exception.spec.lifecycle is not CapabilityLifecycle.DYNAMIC:
-            return
+        """Execute the required transition and converge deterministically on WARM.
 
-        if plan.action_type not in {"SOFT_SWAP", "HARD_SWAP", "NO_OP"}:
-            return
-        await self._activate_dynamic_capability(exception.spec)
+        The terminal ``await_warm`` fails the transition loudly (``ActivationTimeout``)
+        instead of handing a cold capability back to the stasis loop.
+        """
+        spec, _state = await self._get_capability_record(exception.capability_key)
+        plan = await self.request_transition(spec.key, signal_priority)
+        dynamic = spec.lifecycle is CapabilityLifecycle.DYNAMIC
+        if dynamic and plan.action_type in {"SOFT_SWAP", "HARD_SWAP", "NO_OP"}:
+            await self._activate_dynamic_capability(spec)
+        await self.registry.await_warm(spec.key, timeout_s=_DRAIN_TIMEOUT_S)
 
     async def request_transition(self, target_capability_key: str, priority: float) -> TransitionPlan:
         """Calculate and execute the physical transition plan."""
@@ -121,47 +150,61 @@ class OrchestratorManager:
 
         return plan
 
-    def _solve_transition(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
-        """Select the local eviction set from lifecycle ownership hints."""
-        local_specs = self._local_animator_specs()
-        active_specs = {
-            spec.animator_name: spec
-            for spec in local_specs.values()
-            if (state := self.registry.get_capability_state(spec.key)) is not None and state.is_active
-        }
+    def _animator_records(self) -> list[_AnimatorRecord]:
+        """Project one record per soulstone-backed animator over registry truth.
 
-        if target.animator_name in active_specs:
+        Portals are excluded (not lifecycle-managed: ``get_soulstone_rune(name) is
+        None``). Concurrency comes from THE RUNE (``rune.concurrency``), NEVER from
+        an arbitrary spec.
+        """
+        records: list[_AnimatorRecord] = []
+        seen: set[str] = set()
+        for spec in self.registry.list_capabilities():
+            name = spec.animator_name
+            if name in seen:
+                continue
+            rune = self.registry.get_soulstone_rune(name)
+            if rune is None:
+                continue
+            seen.add(name)
+            states = self.registry.list_capability_states_for_animator(name)
+            records.append(
+                _AnimatorRecord(
+                    name=name,
+                    dedicated=rune.concurrency.dedicated,
+                    persistent_resident=rune.concurrency.persistent_resident,
+                    active=any(state.is_active for state in states),
+                    leased=bool(self._leases.active(animator_name=name)),
+                )
+            )
+        return records
+
+    def _solve_transition(self, target: CapabilitySpec) -> tuple[list[str], list[str], int]:
+        """Select the eviction set honestly over the lease-aware animator records."""
+        records = self._animator_records()
+        if any(record.name == target.animator_name and record.active for record in records):
             return ([], [], 0)
 
-        evictees = [
-            spec
-            for spec in active_specs.values()
-            if spec.concurrency.dedicated and not spec.concurrency.persistent_resident
-        ]
-        return (self._sorted_animator_ids(evictees), [target.animator_name], len(evictees))
+        evictees = sorted(
+            record.name
+            for record in records
+            if record.dedicated
+            and not record.persistent_resident
+            and record.active
+            and not record.leased
+            and record.name != target.animator_name
+        )
+        return (evictees, [target.animator_name], len(evictees))
 
-    def _local_animator_specs(self) -> dict[str, CapabilitySpec]:
-        specs: dict[str, CapabilitySpec] = {}
-        for spec in self.registry.list_capabilities():
-            if spec.source_kind != "soulstone":
-                continue
-            specs.setdefault(spec.animator_name, spec)
-        return specs
-
-    def _sorted_animator_ids(self, specs: list[CapabilitySpec]) -> list[str]:
-        return sorted(spec.animator_name for spec in specs)
-
-    def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
-        return require_capability_record(self.registry, key)
+    async def _get_capability_record(self, key: str) -> tuple[CapabilitySpec, CapabilityState]:
+        return await require_capability_record(self.registry, key)
 
     def _is_animator_runtime_warm(self, animator_name: str) -> bool:
-        for state in self.registry.list_capability_states_for_animator(animator_name):
-            if state.is_active or state.warm:
-                return True
-        return False
+        # Re-reads observed activity: is_active already means phase in {WARM, WARMING}.
+        return any(state.is_active for state in self.registry.list_capability_states_for_animator(animator_name))
 
     async def _activate_dynamic_capability(self, target: CapabilitySpec) -> None:
-        result = self.registry.activate_capability(target.key)
+        result = await self.registry.activate_capability(target.key)
         if not result.accepted:
             reason = f": {result.reason}" if result.reason else ""
             msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'{reason}."
@@ -179,10 +222,10 @@ class OrchestratorManager:
             msg = f"Physical manifestation failed: systemctl returned {process.returncode} for {unit_name}"
             raise RuntimeError(msg)
 
-        runtime = self.registry.get_runtime(animator_name)
-        if runtime is not None:
-            runtime.connector.link.up = True
-        self.registry.refresh_capability_states_for_animator(animator_name)
+        # LAW: the ONLY writer of ``Link.up`` is the adapter probe path. We never
+        # fabricate readiness here — the freshly started server is re-probed and
+        # honestly reads COLD/WARMING; convergence is handle_transition's await_warm.
+        await self.registry.refresh_capability_states_for_animator(animator_name)
 
     async def _stop_animator_runtime(self, animator_name: str) -> None:
         unit_name = self._runtime_unit(animator_name)
@@ -192,10 +235,7 @@ class OrchestratorManager:
         process = await asyncio.create_subprocess_exec("systemctl", "--user", "stop", unit_name)
         await process.wait()
 
-        runtime = self.registry.get_runtime(animator_name)
-        if runtime is not None:
-            runtime.connector.link.up = False
-        self.registry.refresh_capability_states_for_animator(animator_name)
+        await self.registry.refresh_capability_states_for_animator(animator_name)
 
     def _runtime_unit(self, animator_name: str) -> str | None:
         soulstone = self.registry.get_soulstone_rune(animator_name)

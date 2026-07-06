@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from inspect import Parameter, signature
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
+from uuid import uuid4
 
 import anyio
 import structlog
@@ -11,14 +13,17 @@ import structlog
 from lychd.domain.animation.animators import Animator
 from lychd.domain.animation.capabilities import (
     ActivationResult,
+    CapabilityGrant,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
+    GrantLease,
 )
 from lychd.domain.animation.connectors import Connector, ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
-from lychd.domain.animation.services.binder import AnimatorBinder
+from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
 from lychd.domain.animation.services.loader import AnimatorLoader
 from lychd.lib.http import run_sync
 
@@ -148,9 +153,10 @@ class AnimatorRegistry:
         self._loaded = True
 
         # Rune parse + transmute + spec synthesis is CPU-bound and stays sync;
-        # the initial capability probe is async (A3-U3) and bridged here so the
-        # state cache is warm after load. Composition roots that want an explicit
-        # off-loop probe can call ``await probe_all()`` instead.
+        # the initial capability probe is async and bridged here so the state cache
+        # is warm after load. This is the ONLY sanctioned ``run_sync`` in this
+        # module — every other probe/activate surface is async. Composition roots
+        # that want an explicit off-loop probe can call ``await probe_all()``.
         run_sync(self._probe_all_async())
 
         logger.info(
@@ -292,8 +298,9 @@ class AnimatorRegistry:
         keys = {spec.key for spec in self.list_capabilities_for_animator(name)}
         return [state for state in self._capability_states.values() if state.capability_key in keys]
 
-    async def _refresh_states_for_animator_async(self, name: str) -> list[CapabilityState]:
-        """Async core: probe and cache capability states for one runtime animator."""
+    async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+        """Probe and cache capability states for one resolved runtime animator."""
+        self.ensure_loaded()
         animator = self._animators.get(name)
         if animator is None:
             return []
@@ -307,39 +314,26 @@ class AnimatorRegistry:
             self._capability_states[state.capability_key] = state
         return states
 
-    async def _refresh_capability_state_async(self, key: str) -> CapabilityState | None:
-        """Async core: re-probe and return the latest cached state for one key."""
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
+        """Re-probe and return the latest cached state for one capability key."""
+        self.ensure_loaded()
         spec = self._capabilities.get(key)
         if spec is None:
             return None
-        await self._refresh_states_for_animator_async(spec.animator_name)
+        await self.refresh_capability_states_for_animator(spec.animator_name)
         return self._capability_states.get(key)
 
     async def _probe_all_async(self) -> None:
         """Async core: refresh capability states for every resolved animator."""
         for name in list(self._animators):
-            await self._refresh_states_for_animator_async(name)
+            await self.refresh_capability_states_for_animator(name)
 
     async def probe_all(self) -> None:
         """Refresh capability states for every animator (startup async probe)."""
         self.ensure_loaded()
         await self._probe_all_async()
 
-    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
-        """Re-probe and cache capability states for one resolved runtime animator.
-
-        Synchronous surface retained for Dispatcher/Orchestrator call sites; it
-        bridges to the async probe via ``run_sync`` (transitional shim).
-        """
-        self.ensure_loaded()
-        return run_sync(self._refresh_states_for_animator_async(name))
-
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
-        """Re-probe and return the latest cached state for one capability key."""
-        self.ensure_loaded()
-        return run_sync(self._refresh_capability_state_async(key))
-
-    def activate_capability(self, key: str) -> ActivationResult:
+    async def activate_capability(self, key: str) -> ActivationResult:
         """Request runtime-specific activation for a single capability key.
 
         Returns an ``ActivationResult`` (A3-U4); on acceptance the animator's
@@ -354,10 +348,58 @@ class AnimatorRegistry:
         if animator is None:
             return ActivationResult(accepted=False, phase=CapabilityPhase.UNKNOWN, reason="animator not registered")
 
-        result = run_sync(self._runtime_adapters.activate_capability(animator, spec))
+        result = await self._runtime_adapters.activate_capability(animator, spec)
         if result.accepted:
-            self.refresh_capability_states_for_animator(spec.animator_name)
+            await self.refresh_capability_states_for_animator(spec.animator_name)
         return result
+
+    async def issue_grant(
+        self,
+        key: str,
+        *,
+        holder: str,
+        scope: Literal["step", "run"] = "step",
+    ) -> CapabilityGrant:
+        """Assemble a grant for a WARM capability.
+
+        Mechanics only — NO warm-up driving here (that is the Dispatcher's decision
+        table). Raises ``CapabilityUnavailable`` if the capability is unknown, its
+        animator is not registered, or it is not observed WARM at issue time.
+        """
+        self.ensure_loaded()
+        spec = self._capabilities.get(key)
+        if spec is None:
+            raise CapabilityUnavailable(key, "unknown capability")
+
+        state = self._capability_states.get(key)
+        if state is None:
+            state = await self.refresh_capability_state(key)
+        if state is None or state.phase is not CapabilityPhase.WARM:
+            reason = f"phase={state.phase.value}" if state else "capability state unavailable"
+            raise CapabilityUnavailable(key, reason)
+
+        animator = self._animators.get(spec.animator_name)
+        if animator is None:
+            raise CapabilityUnavailable(key, "animator not registered")
+
+        model = None
+        if spec.family is not CapabilityFamily.TOOL_EXECUTION:
+            try:
+                model = self._binder.bind_model(animator, model_id=spec.model_id)
+            except AnimatorBindingError:
+                model = None
+        toolsets = tuple(self._binder.bind_toolsets(animator))
+
+        lease = GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC), scope=scope)
+        return CapabilityGrant(
+            spec=spec,
+            state=state,
+            lease=lease,
+            generation=spec.generation_profile,
+            animator=animator,
+            model=model,
+            toolsets=toolsets,
+        )
 
     async def await_warm(
         self,
@@ -385,7 +427,7 @@ class AnimatorRegistry:
         deadline = time.monotonic() + timeout_s
         last_state: CapabilityState | None = None
         while True:
-            state = await self._refresh_capability_state_async(key)
+            state = await self.refresh_capability_state(key)
             if state is None:
                 raise CapabilityUnavailable(key, "capability state unavailable")
             last_state = state

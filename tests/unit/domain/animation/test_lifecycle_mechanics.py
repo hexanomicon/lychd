@@ -124,17 +124,19 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
 # --- ActivationResult -------------------------------------------------------
 
 
-def test_activate_fixed_single_mode_returns_not_accepted(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_activate_fixed_single_mode_returns_not_accepted(tmp_path: Path) -> None:
     registry, key = _single_registry(tmp_path, _SingleControl("ok"))
-    result = registry.activate_capability(key)
+    result = await registry.activate_capability(key)
     assert isinstance(result, ActivationResult)
     assert result.accepted is False
     assert result.reason == "fixed capability; lifecycle owned by unit"
 
 
-def test_activate_unknown_capability(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_activate_unknown_capability(tmp_path: Path) -> None:
     registry, _ = _single_registry(tmp_path, _SingleControl("ok"))
-    result = registry.activate_capability("does-not-exist")
+    result = await registry.activate_capability("does-not-exist")
     assert result.accepted is False
     assert result.phase is CapabilityPhase.UNKNOWN
 

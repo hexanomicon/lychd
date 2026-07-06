@@ -26,6 +26,7 @@ from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.engine import QueueRouter
 from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
 from lychd.domain.cortex.events import InProcessEventBus
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.substrate import RunSubstrate, set_run_substrate
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -111,6 +112,7 @@ class AltarServices:
     registry: AnimatorRegistry
     dispatcher: Dispatcher
     orchestrator: OrchestratorManager
+    leases: LeaseLedger
     context_orchestrator: ContextOrchestrator
     fragments: FragmentRegistry
     bridge_sessions: BridgeSessionStore
@@ -191,8 +193,9 @@ def build_altar_services(
     if profile is None:
         profile = get_settings().db.profile
     registry = AnimatorRegistry(rune_schemas=rune_schemas, runtime_adapters=runtime_adapters)
-    dispatcher = Dispatcher(registry=registry)
-    orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry)
+    leases = LeaseLedger()  # one per process; Track O threads it onto the substrate + broker
+    dispatcher = Dispatcher(registry=registry, leases=leases)
+    orchestrator = OrchestratorManager(worker_broker=QuiescentBroker(), registry=registry, leases=leases)
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
     bridge_sessions = BridgeSessionStore()
@@ -204,6 +207,7 @@ def build_altar_services(
         registry=registry,
         dispatcher=dispatcher,
         orchestrator=orchestrator,
+        leases=leases,
         context_orchestrator=context_orchestrator,
         fragments=fragments,
         bridge_sessions=bridge_sessions,

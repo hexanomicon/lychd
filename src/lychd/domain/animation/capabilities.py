@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from pydantic_ai.settings import ModelSettings
 
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
@@ -105,13 +108,40 @@ class ActivationResult:
     reason: str | None = None
 
 
-class CapabilityGrant(BaseModel):
-    """Canonical dispatch handoff for one granted capability."""
+@dataclass(frozen=True, slots=True)
+class GrantLease:
+    """Identity + accounting for one issued grant. THE row the LeaseLedger counts."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+    grant_id: str  # uuid4().hex — unique per issue
+    holder: str  # "run:<run_id>" | "cli:<command>"
+    issued_at: datetime  # aware UTC
+    scope: Literal["step", "run"] = "step"  # doctrine today: per-step lease
+    expires_at: datetime | None = None  # None = until released/superseded
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityGrant:
+    """Canonical dispatch handoff for one granted capability (spec-00-FINAL C1).
+
+    Frozen dataclass (not pydantic): carries live runtime handles. ``model`` and
+    ``toolsets`` are typed ``Any`` so the module stays import-light — at runtime
+    they are a hydrated pydantic-ai ``Model`` and a tuple of ``AbstractToolset``.
+    """
 
     spec: CapabilitySpec
-    state: CapabilityState
-    animator: Any
-    model: Any | None = None
-    toolsets: tuple[Any, ...] = ()
+    state: CapabilityState  # snapshot at issue time (phase == WARM)
+    lease: GrantLease
+    generation: GenerationProfile  # RESOLVED (runtime < animator < model)
+    animator: Any  # RuntimeAnimator live handle
+    model: Any | None  # hydrated pydantic-ai Model (None: tool-only)
+    toolsets: tuple[Any, ...] = field(default_factory=tuple)
+
+    @property
+    def key(self) -> str:
+        return self.spec.key
+
+    def model_settings(self) -> ModelSettings | None:
+        """Bridge the resolved generation profile to pydantic-ai ModelSettings."""
+        from lychd.domain.animation.services.binder import generation_to_model_settings
+
+        return generation_to_model_settings(self.generation)

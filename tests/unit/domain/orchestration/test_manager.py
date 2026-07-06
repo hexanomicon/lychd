@@ -17,6 +17,7 @@ from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 
 
@@ -37,6 +38,7 @@ class StubRegistry:
         self._specs = {spec.key: spec for spec in specs}
         self._states = {state.capability_key: state for state in states}
         self._runtimes = runtimes
+        self.await_warm_calls: list[str] = []
 
     def list_capabilities(self) -> list[CapabilitySpec]:
         return list(self._specs.values())
@@ -47,20 +49,19 @@ class StubRegistry:
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
-    def refresh_capability_state(self, key: str) -> CapabilityState | None:
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         return self._states.get(key)
 
     def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         return [state for key, state in self._states.items() if self._specs[key].animator_name == name]
 
-    def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+    async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         states = self.list_capability_states_for_animator(name)
         runtime = self._runtimes[name]
         for state in states:
             state.health = "ok" if runtime.connector.link.up else "down"
             if not runtime.connector.link.up:
-                state.warm = False
-                state.is_active = False
+                state.phase = CapabilityPhase.COLD
         return states
 
     def get_runtime(self, name: str) -> StubRuntime | None:
@@ -69,9 +70,13 @@ class StubRegistry:
     def get_soulstone_rune(self, name: str) -> SimpleNamespace | None:
         if name not in self._runtimes:
             return None
-        return SimpleNamespace(service_name=f"lychd-{name}")
+        concurrency = next(
+            (spec.concurrency for spec in self._specs.values() if spec.animator_name == name),
+            ConcurrencyIntent(),
+        )
+        return SimpleNamespace(service_name=f"lychd-{name}", concurrency=concurrency)
 
-    def activate_capability(self, key: str) -> ActivationResult:
+    async def activate_capability(self, key: str) -> ActivationResult:
         spec = self._specs[key]
         runtime = self._runtimes[spec.animator_name]
         runtime.connector.link.up = True
@@ -81,6 +86,13 @@ class StubRegistry:
         state.active_model_id = spec.model_id
         state.loaded_model_ids = [spec.model_id]
         return ActivationResult(accepted=True, phase=CapabilityPhase.WARM)
+
+    async def await_warm(self, key: str, *, timeout_s: float = 120.0, interval_s: float = 0.75) -> CapabilityState:
+        _ = (timeout_s, interval_s)
+        self.await_warm_calls.append(key)
+        state = self._states[key]
+        state.phase = CapabilityPhase.WARM
+        return state
 
 
 def _spec(
@@ -172,7 +184,9 @@ async def test_calculate_transition_plan_evicts_dedicated_and_keeps_persistent_r
         },
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(vision.key)
+    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
+        vision.key
+    )
 
     assert plan.action_type == "HARD_SWAP"
     assert plan.total_metabolic_cost == 2.0
@@ -198,7 +212,9 @@ async def test_calculate_transition_plan_returns_soft_swap_for_warm_dynamic_runt
         {"router": _runtime("router", up=True)},
     )
 
-    plan = await OrchestratorManager(AsyncMock(), registry=registry).calculate_transition_plan(target.key)
+    plan = await OrchestratorManager(AsyncMock(), registry=registry, leases=LeaseLedger()).calculate_transition_plan(
+        target.key
+    )
 
     assert plan.action_type == "SOFT_SWAP"
     assert plan.evict_coven_ids == []
@@ -217,17 +233,43 @@ async def test_handle_transition_starts_runtime_then_loads_dynamic_capability() 
     registry = StubRegistry([target], [state], {"router": runtime})
     broker = AsyncMock()
     broker.get_active_worker_count.return_value = 0
-    manager = OrchestratorManager(broker, registry=registry)
+    manager = OrchestratorManager(broker, registry=registry, leases=LeaseLedger())
 
     process = AsyncMock()
     process.wait.return_value = None
     process.returncode = 0
 
     with patch("asyncio.create_subprocess_exec", return_value=process) as mock_exec:
-        await manager.handle_transition(HardwareTransitionRequired(target, state, runtime), signal_priority=100.0)
+        await manager.handle_transition(
+            HardwareTransitionRequired(target.key, target.animator_name), signal_priority=100.0
+        )
 
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
     broker.unpause_queues.assert_called_once()
     mock_exec.assert_called_once_with("systemctl", "--user", "start", "lychd-router.service")
     assert state.is_active is True
+    assert registry.await_warm_calls == [target.key]  # terminal convergence (DYNAMIC)
+
+
+@pytest.mark.asyncio
+async def test_handle_transition_converges_via_await_warm_for_static_capability() -> None:
+    target = _spec(key="titan:chat:titan-70b", animator_name="titan", lifecycle_mode="static")
+    state = _state(target, is_static=True, is_active=False, warm=False)
+    runtime = _runtime("titan", up=False)
+    registry = StubRegistry([target], [state], {"titan": runtime})
+    broker = AsyncMock()
+    broker.get_active_worker_count.return_value = 0
+    manager = OrchestratorManager(broker, registry=registry, leases=LeaseLedger())
+
+    process = AsyncMock()
+    process.wait.return_value = None
+    process.returncode = 0
+
+    with patch("asyncio.create_subprocess_exec", return_value=process):
+        await manager.handle_transition(
+            HardwareTransitionRequired(target.key, target.animator_name), signal_priority=100.0
+        )
+
+    # STATIC lifecycle: no in-runtime activation, but convergence still awaits WARM.
+    assert registry.await_warm_calls == [target.key]
