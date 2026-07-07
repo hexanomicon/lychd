@@ -73,7 +73,18 @@ class TransitionArbiter:
         future.add_done_callback(_swallow)
         self._inflight[key] = future
 
-        await self._acquire(priority)
+        try:
+            await self._acquire(priority)
+        except BaseException as exc:
+            # Cancelled/failed BEFORE owning the section: _acquire has already
+            # withdrawn us from the heap (or handed our slot on). Pop the in-flight
+            # future we registered above so same-key retries don't hang on a future
+            # that will never resolve, and relay to any coalesced waiters (F2).
+            self._inflight.pop(key, None)
+            if not future.done():
+                future.set_exception(exc)
+            raise
+
         try:
             result = await executor()
         except BaseException as exc:  # relayed to coalesced waiters via the future
@@ -89,14 +100,31 @@ class TransitionArbiter:
             self._release()
 
     async def _acquire(self, priority: float) -> None:
-        """Enter the critical section, or park in the priority heap until admitted."""
+        """Enter the critical section, or park in the priority heap until admitted.
+
+        Cancellation-safe: a contender cancelled while parked withdraws its own heap
+        entry so a later ``_release`` can't ghost-hand the section to a dead waiter
+        (which would wedge ``_busy`` True forever); a contender cancelled AFTER the
+        handoff already reached it passes the section straight on (F2).
+        """
         if not self._busy:
             self._busy = True
             return
         self._seq += 1
         event = anyio.Event()
-        heapq.heappush(self._waiters, (-priority, self._seq, event))
-        await event.wait()  # admitted by _release (which keeps _busy True — a handoff)
+        entry = (-priority, self._seq, event)
+        heapq.heappush(self._waiters, entry)
+        try:
+            await event.wait()  # admitted by _release (which keeps _busy True — a handoff)
+        except BaseException:
+            if event.is_set():
+                # The handoff already reached us — we now own the section; pass it on.
+                self._release()
+            else:
+                # Still parked: withdraw so _release won't set a dead waiter's event.
+                self._waiters.remove(entry)
+                heapq.heapify(self._waiters)
+            raise
 
     def _release(self) -> None:
         """Hand the section to the highest-priority waiter, or go idle."""

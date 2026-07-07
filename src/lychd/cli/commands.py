@@ -23,16 +23,25 @@ def _merge_reserved_ports(core: Mapping[str, int], extension: Mapping[str, int])
     """Merge core-service and extension-rune port claims across the boundary.
 
     Extends the settings-level ``check_port_conflicts`` across the core/extension
-    boundary: a port claimed by BOTH a core service and an extension rune fails
-    loudly at bind, naming both claimants (before any unit file is written).
+    boundary: a port — or a LABEL — claimed by BOTH a core service and an extension
+    rune fails loudly at bind, naming both claimants (before any unit file is
+    written). A repeated label must raise too: silently overwriting ``merged[label]``
+    would drop an earlier reservation and evade the §8.1 fail-at-bind guarantee.
 
     Raises:
-        ValueError: If a core service and an extension rune claim the same port.
+        ValueError: If a core service and an extension rune claim the same port,
+            or reuse the same label.
 
     """
     by_port = {port: label for label, port in core.items()}
     merged: dict[str, int] = dict(core)
     for label, port in extension.items():
+        if label in merged:
+            msg = (
+                f"Port label '{label}' is claimed by both a core service (port {merged[label]}) "
+                f"and an extension rune (port {port})."
+            )
+            raise ValueError(msg)
         if port in by_port and by_port[port] != label:
             msg = f"Port {port} is claimed by both '{by_port[port]}' (core) and '{label}' (extension)."
             raise ValueError(msg)

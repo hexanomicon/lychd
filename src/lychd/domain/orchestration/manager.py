@@ -145,14 +145,18 @@ class OrchestratorManager:
             raise TransitionDeclined(plan, priority, threshold)
 
         async def _executor() -> TransitionPlan:
+            # The claim gate MUST reopen on EVERY exit path — drain-timeout RuntimeError,
+            # a CancelledError raised mid-drain (the up-to-120s wait), or a raising
+            # broadcast_soft_stop — or a paused GhoulBroker gate stays closed for the
+            # process's life and every future perform_run wedges at intake (F1, P1).
             await self.worker_broker.pause_queues()
-            await self.worker_broker.broadcast_soft_stop()
-            drained = await self._leases.drained(plan.evict_coven_ids, timeout=self._switching.drain_timeout_s)
-            if not drained:
-                msg = f"Lease drain timed out on: {plan.evict_coven_ids}"
-                raise RuntimeError(msg)
-
             try:
+                await self.worker_broker.broadcast_soft_stop()
+                drained = await self._leases.drained(plan.evict_coven_ids, timeout=self._switching.drain_timeout_s)
+                if not drained:
+                    msg = f"Lease drain timed out on: {plan.evict_coven_ids}"
+                    raise RuntimeError(msg)
+
                 for animator_name in plan.evict_coven_ids:
                     await self._stop_animator_runtime(animator_name)
                 for animator_name in plan.launch_coven_ids:
