@@ -14,7 +14,8 @@ from litestar.response import Redirect, Response, Template
 from litestar.status_codes import HTTP_302_FOUND
 
 # Runtime import: Litestar resolves handler param annotations at registration.
-from lychd.domain.web.sessions import BridgeSessionStore
+from lychd.domain.codex.guards import requires_scopes
+from lychd.domain.codex.ledger import ConsentLedger
 
 
 class AltarController(Controller):
@@ -25,23 +26,23 @@ class AltarController(Controller):
         """Redirect the bare root to the Bridge (the resident instrument)."""
         return Redirect("/bridge", status_code=HTTP_302_FOUND)
 
-    @get("/scrying", name="altar:scrying")
-    async def scrying(self, bridge_sessions: BridgeSessionStore) -> Template:
+    @get("/scrying", name="altar:scrying", guards=[requires_scopes("altar:read")])
+    async def scrying(self, consents: ConsentLedger) -> Template:
         """Render the Scrying skeleton shell."""
-        return self._skeleton("scrying", bridge_sessions)
+        return await self._skeleton("scrying", consents)
 
-    @get("/reliquary", name="altar:reliquary")
-    async def reliquary(self, bridge_sessions: BridgeSessionStore) -> Template:
+    @get("/reliquary", name="altar:reliquary", guards=[requires_scopes("altar:read")])
+    async def reliquary(self, consents: ConsentLedger) -> Template:
         """Render the Reliquary skeleton shell."""
-        return self._skeleton("reliquary", bridge_sessions)
+        return await self._skeleton("reliquary", consents)
 
-    @get("/bindings", name="altar:bindings")
-    async def bindings(self, bridge_sessions: BridgeSessionStore) -> Template:
+    @get("/bindings", name="altar:bindings", guards=[requires_scopes("altar:read")])
+    async def bindings(self, consents: ConsentLedger) -> Template:
         """Render the Bindings skeleton shell."""
-        return self._skeleton("bindings", bridge_sessions)
+        return await self._skeleton("bindings", consents)
 
-    def _skeleton(self, slug: str, bridge_sessions: BridgeSessionStore) -> Template:
+    async def _skeleton(self, slug: str, consents: ConsentLedger) -> Template:
         return Template(
             template_name=f"altar/pages/{slug}.html.j2",
-            context={"active": slug, "pending": bridge_sessions.pending_consent_count()},
+            context={"active": slug, "pending": await consents.pending_count()},
         )

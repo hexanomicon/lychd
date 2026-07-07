@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from pydantic_ai import DeferredToolRequests
+from lychd.domain.codex.schemas import ConsentDecision
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -120,43 +120,49 @@ class FakeTurns:
     statuses: dict[str, str] = field(default_factory=dict)
     sessions: dict[str, _FakeSession] = field(default_factory=dict)
 
-    def add_turn(self, session_id: str, turn: Any) -> None:
+    async def add_turn(self, session_id: str, turn: Any) -> None:
         self.added.append((session_id, turn))
 
     def set_run_status(self, run_id: str, status: str) -> None:
         self.statuses[run_id] = status
 
-    def get_session(self, session_id: str) -> _FakeSession | None:
+    async def get_session(self, session_id: str) -> _FakeSession | None:
         return self.sessions.get(session_id)
 
 
 @dataclass
 class FakeConsents:
-    """`ConsentLedgerPort` fake: dict-backed park with a deterministic id."""
+    """`ConsentLedgerPort` v2 fake: async park/verdict with a scriptable verdict map."""
 
     parked: list[dict[str, Any]] = field(default_factory=list)
+    verdicts: dict[str, bool | None] = field(default_factory=dict)
 
-    def park_consent(
+    async def park(
         self,
         *,
         run_id: str,
-        session_id: str,
         tool_name: str,
+        tool_call_id: str,
+        call_ids: tuple[str, ...],
         args: dict[str, Any],
-        requests: DeferredToolRequests,
-    ) -> str:
+        sigil: Any,
+    ) -> ConsentDecision:
+        _ = sigil
         consent_id = f"consent_{len(self.parked)}"
         self.parked.append(
             {
                 "id": consent_id,
                 "run_id": run_id,
-                "session_id": session_id,
                 "tool_name": tool_name,
+                "tool_call_id": tool_call_id,
+                "call_ids": call_ids,
                 "args": args,
-                "requests": requests,
             }
         )
-        return consent_id
+        return ConsentDecision(status="pending", consent_id=consent_id)
+
+    async def verdict(self, consent_id: str) -> bool | None:
+        return self.verdicts.get(consent_id)
 
 
 class FakeRegistry:

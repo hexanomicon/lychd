@@ -22,11 +22,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from contextlib import AbstractAsyncContextManager
 
-    from pydantic_ai import DeferredToolRequests
-
     from lychd.agents.factory import AgentForge
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+    from lychd.domain.codex.schemas import ConsentDecision
     from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.cortex.events import RunEmitter, RunEventBus
     from lychd.domain.orchestration.schema import TransitionPlan
@@ -53,25 +52,35 @@ class TurnLedgerPort(Protocol):
 
     Run *status* is NOT written here — the `RunLedger` owns it (single-writer
     discipline, A4 §2). This port carries only settled turns + history reads.
+    Async (4C-2): the DB-backed `SessionStore` awaits; in-memory bodies are trivially
+    async.
     """
 
-    def add_turn(self, session_id: str, turn: Any) -> None: ...
+    async def add_turn(self, session_id: str, turn: Any) -> None: ...
 
-    def get_session(self, session_id: str) -> Any | None: ...
+    async def get_session(self, session_id: str) -> Any | None: ...
 
 
 class ConsentLedgerPort(Protocol):
-    """Parked-consent records. Today: `BridgeSessionStore._consents`; later a Consent table."""
+    """The consent surface the graph parks into (v2 — the verdict lives in the ledger).
 
-    def park_consent(
+    `park` records the pause (returning the ledger's decision); `verdict` reads the
+    tri-state (True granted / False denied|expired / None pending). The non-serializable
+    `DeferredToolRequests` is NEVER stored — only its `tool_call_id`s (in graph state).
+    """
+
+    async def park(
         self,
         *,
         run_id: str,
-        session_id: str,
         tool_name: str,
+        tool_call_id: str,
+        call_ids: tuple[str, ...],
         args: dict[str, Any],
-        requests: DeferredToolRequests,
-    ) -> str: ...
+        sigil: Sigil,
+    ) -> ConsentDecision: ...
+
+    async def verdict(self, consent_id: str) -> bool | None: ...
 
 
 class TransitionPort(Protocol):
@@ -128,16 +137,28 @@ class WorkflowServices:
 # Sigil provider (v1 single-identity stand-in for the Ward)
 # ---------------------------------------------------------------------------
 
-_DEFAULT_SIGIL = Sigil(name="magus", scopes=frozenset({"bridge:send", "nexus:swap", "consent:grant"}))
+# Test/dev fallback only: the §3.2 grammar (a held `"*"` grants every scope). The
+# composition root threads `settings_sigil_provider` in production (4C-1 tail).
+_DEFAULT_SIGIL = Sigil(name="magus", scopes=frozenset({"*"}))
 
 
 def default_sigil() -> Sigil:
-    """Return the process default Sigil (v1 single-identity stand-in for the Ward).
+    """Return the process default Sigil (test fallback stand-in for the Ward).
 
     A frozen constant, not mutable module state: the Ward replaces this callable
     at app startup by overriding `WorkflowServices.sigil_provider`.
     """
     return _DEFAULT_SIGIL
+
+
+def settings_sigil_provider(settings: Any) -> Callable[[], Sigil]:
+    """Build a `sigil_provider` from settings (built once at the composition root)."""
+    sigil = Sigil(name=settings.sigil.name, scopes=frozenset(settings.sigil.scopes))
+
+    def provider() -> Sigil:
+        return sigil
+
+    return provider
 
 
 def build_workflow_services(
@@ -146,25 +167,26 @@ def build_workflow_services(
     orchestrator: TransitionPort,
     context: ContextOrchestrator,
     fragments: FragmentRegistry,
-    sessions: Any,
+    turns: Any,
+    consents: ConsentLedgerPort,
     events: RunEventBus,
     forge: AgentForge,
     sigil_provider: Callable[[], Sigil] = default_sigil,
 ) -> WorkflowServices:
     """Assemble `WorkflowServices` from run-scoped service handles.
 
-    `sessions` (today a `BridgeSessionStore`) structurally satisfies the
-    `TurnLedgerPort`/`ConsentLedgerPort` pair (turns + consents). `events` is the
-    shared `RunEventBus` — the event plane now lives on the bus, not the session
-    store (channels were shed to the bus in Wave 2).
+    The graph parks into the SAME `consents` ledger the web reads (C3's one-record
+    rule). `turns` (a `SessionStore`) supplies the `TurnLedgerPort`. `events` is the
+    shared `RunEventBus`. The two ledger ports are threaded from DISTINCT sources — the
+    old single-`sessions` alias is gone.
     """
     return WorkflowServices(
         dispatcher=dispatcher,
         orchestrator=orchestrator,
         context=context,
         fragments=fragments,
-        turns=sessions,
-        consents=sessions,
+        turns=turns,
+        consents=consents,
         events=events,
         forge=forge,
         sigil_provider=sigil_provider,
@@ -180,4 +202,5 @@ __all__ = [
     "WorkflowServices",
     "build_workflow_services",
     "default_sigil",
+    "settings_sigil_provider",
 ]

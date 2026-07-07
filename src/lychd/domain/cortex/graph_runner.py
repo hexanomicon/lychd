@@ -7,6 +7,7 @@ from pydantic_graph import BaseNode, Graph
 from pydantic_graph.persistence import BaseStatePersistence
 
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.extensions.protocols import PhylacteryProtocol
 
 if TYPE_CHECKING:
@@ -62,9 +63,14 @@ class GraphRunner[StateT: BaseModel]:
         )
 
     async def resume_graph(self, graph: Graph[StateT, Any, Any], *, deps: Any = None) -> Any:
-        """Resume a persisted graph run with stasis support."""
+        """Resume a persisted graph run with stasis support.
+
+        A chained re-park (the resumed run parked AGAIN) must keep its durable file:
+        `mark_job_resumed` (the tombstone) fires only on a non-parked resume.
+        """
         result = await self._execute_ritual(graph, is_resume=True, deps=deps)
-        await self.persistence.mark_job_resumed(self.persistence.job_id)
+        if not isinstance(result, RunParked):
+            await self.persistence.mark_job_resumed(self.persistence.job_id)
         return result
 
     async def _execute_ritual(  # noqa: C901, PLR0912 - bounded-retry stasis loop is intentionally branchy
@@ -107,6 +113,18 @@ class GraphRunner[StateT: BaseModel]:
                         pass
 
                 except Exception as exc:
+                    # Consent park (C3): a Gate raised ConsentPending. Snapshot the
+                    # parked node (fresh id) and return the RunParked sentinel — the run
+                    # SUSPENDS (it does not fail, and it is not a hardware transition).
+                    park: ConsentPending | None = None
+                    for candidate in (exc, getattr(exc, "__cause__", None)):
+                        if isinstance(candidate, ConsentPending):
+                            park = candidate
+                            break
+                    if park is not None:
+                        await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        return RunParked(consent_id=park.consent_id, tool_name=park.tool_name)
+
                     signal: HardwareTransitionRequired | None = None
                     for candidate in (exc, getattr(exc, "__cause__", None)):
                         if isinstance(candidate, HardwareTransitionRequired):

@@ -19,11 +19,12 @@ from litestar.status_codes import HTTP_202_ACCEPTED
 
 # Runtime imports: Litestar resolves handler param/return annotations at registration.
 from lychd.domain.animation.services.registry import AnimatorRegistry
+from lychd.domain.codex.guards import requires_scopes
+from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.domain.web.projection import Projector, stop_polling
 from lychd.domain.web.schemas import build_nexus_board
-from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.domain.web.tickets import TicketStore
 
 
@@ -32,12 +33,12 @@ class NexusController(Controller):
 
     path = "/nexus"
 
-    @get("/", name="nexus:page")
-    async def page(self, bridge_sessions: BridgeSessionStore) -> Template:
+    @get("/", name="nexus:page", guards=[requires_scopes("altar:read")])
+    async def page(self, consents: ConsentLedger) -> Template:
         """Render the Nexus page; the coven board self-loads over HTMX."""
         return Template(
             template_name="altar/pages/nexus.html.j2",
-            context={"active": "nexus", "pending": bridge_sessions.pending_consent_count()},
+            context={"active": "nexus", "pending": await consents.pending_count()},
         )
 
     @get("/board", name="nexus:board")

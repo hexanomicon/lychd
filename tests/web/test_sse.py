@@ -62,14 +62,27 @@ def _seed_terminal_run(services: SimpleNamespace, run_id: str, status: RunStatus
 def test_stream_projects_every_event_kind(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
     """A scripted status/token/fragment/consent/done sequence frames correctly (live run)."""
     sessions = fake_services.bridge_sessions
+    consents = fake_services.consents
     bus = fake_services.bus
     run_id = "run_sse"
     _seed_live_run(fake_services, run_id)
-    session = sessions.create_session()
-    consent_id = sessions.park_consent(
-        run_id=run_id, session_id=session.id, tool_name="request_coven_swap", args={}, requests=None
-    )
-    sessions.add_turn(session.id, _agent_turn(run_id=run_id))
+
+    async def _seed() -> tuple[str, str]:
+        from lychd.domain.codex.sigil import Sigil
+
+        session = await sessions.create_session()
+        decision = await consents.park(
+            run_id=run_id,
+            tool_name="request_coven_swap",
+            tool_call_id="c1",
+            call_ids=("c1",),
+            args={},
+            sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+        )
+        await sessions.add_turn(session.id, _agent_turn(run_id=run_id))
+        return session.id, decision.consent_id
+
+    _, consent_id = asyncio.run(_seed())
 
     emitter = bus.emitter(run_id)
     emitter.emit(RunEventKind.STATUS, "weaving")

@@ -1,0 +1,42 @@
+"""`requires_scopes` — a Litestar guard over the connection Sigil's scopes (§3.3).
+
+No-ops when `settings.sigil.enforce` is False (the test/dev floor); otherwise raises
+`PermissionDeniedException` unless the connection carries a `Sigil` whose scopes
+satisfy every required scope (per the §3.2 grammar).
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from litestar.exceptions import PermissionDeniedException
+
+from lychd.config.settings import get_settings
+from lychd.domain.codex.scopes import scopes_satisfied
+from lychd.domain.codex.sigil import Sigil
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from litestar.connection import ASGIConnection
+    from litestar.handlers.base import BaseRouteHandler
+
+    # A Litestar guard: called with (connection, handler); raises to deny. Typed
+    # concretely (litestar's own `Guard` alias is partially unknown to the checker).
+    _Guard = Callable[[ASGIConnection[Any, Any, Any, Any], BaseRouteHandler], None]
+
+__all__ = ["requires_scopes"]
+
+
+def requires_scopes(*required: str) -> _Guard:
+    """Build a guard requiring every named scope on the connection Sigil."""
+
+    def guard(connection: ASGIConnection[Any, Any, Any, Any], _handler: BaseRouteHandler) -> None:
+        if not get_settings().sigil.enforce:
+            return
+        sigil: Any = connection.user
+        if not isinstance(sigil, Sigil) or not scopes_satisfied(sigil.scopes, required):
+            msg = f"This sigil lacks the required scope(s): {', '.join(required)}."
+            raise PermissionDeniedException(detail=msg)
+
+    return guard

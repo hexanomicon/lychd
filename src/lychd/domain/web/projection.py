@@ -40,10 +40,22 @@ def stop_polling(html_body: str, *, trigger_after_settle: str | None = None) -> 
 if TYPE_CHECKING:
     from litestar.contrib.jinja import JinjaTemplateEngine
 
+    from lychd.domain.codex.ledger import ConsentLedger
+    from lychd.domain.codex.schemas import ConsentView
     from lychd.domain.cortex.events import RunEvent
     from lychd.domain.web.fragments import FragmentRegistry
-    from lychd.domain.web.sessions import BridgeSessionStore, ConsentRecord
+    from lychd.domain.web.sessions import SessionStorePort
     from lychd.domain.web.tickets import TicketRecord
+
+# ConsentView.status vocabulary → the frozen ConsentState the card template reads
+# (so `bridge/consent_update.html.j2` ships unchanged). "expired" renders as a refusal,
+# consistent with `verdict()` reading expired as False.
+_CONSENT_STATE: dict[str, str] = {
+    "pending": "pending_consent",
+    "granted": "consented",
+    "denied": "refused",
+    "expired": "refused",
+}
 
 
 class Projector:
@@ -54,12 +66,14 @@ class Projector:
         *,
         engine: JinjaTemplateEngine,
         fragments: FragmentRegistry,
-        sessions: BridgeSessionStore,
+        sessions: SessionStorePort,
+        consents: ConsentLedger,
     ) -> None:
-        """Bind the projector to the app's template engine, registry, and sessions."""
+        """Bind the projector to the app's template engine, registry, sessions, consents."""
         self._engine = engine
         self._fragments = fragments
         self._sessions = sessions
+        self._consents = consents
 
     # -- generic render seam ---------------------------------------------
 
@@ -69,12 +83,12 @@ class Projector:
 
     # -- SSE event projection --------------------------------------------
 
-    def project(self, event: RunEvent) -> str:
+    async def project(self, event: RunEvent) -> str:
         """Render one run event's SSE payload to HTML.
 
         token → escaped text passthrough; status/node → controlled keyword; fragment →
-        validated genUI render; consent → card + OOB sigil; log → escaped line; done →
-        settled turn (OOB). The `Projector` is the sole escaper (emitter emits raw).
+        validated genUI render; consent → card + OOB sigil (from the ConsentLedger);
+        log → escaped line; done → settled turn (OOB). The `Projector` is the sole escaper.
         """
         kind = str(event.kind)
         if kind == "token":
@@ -90,17 +104,19 @@ class Projector:
         if kind == "fragment":
             return self._project_fragment(event.data)
         if kind == "consent":
-            return self._project_consent(event.data)
+            return await self._project_consent(event.data)
         # done: replace the whole streaming slot with the settled turn (OOB).
-        return self._project_done(event.run_id)
+        return await self._project_done(event.run_id)
 
-    def _project_consent(self, data: str) -> str:
+    async def _project_consent(self, data: str) -> str:
         consent_id = data
         if data.startswith("{"):
             parsed: dict[str, Any] = json.loads(data)
             consent_id = str(parsed.get("consent_id", ""))
-        record = self._sessions.get_consent(consent_id)
-        return self.consent_update(record) if record is not None else ""
+        view = await self._consents.get(consent_id)
+        return (
+            self.render("bridge/consent_update.html.j2", await self.consent_context(view)) if view is not None else ""
+        )
 
     def _project_fragment(self, payload: str) -> str:
         parsed = json.loads(payload)
@@ -111,10 +127,10 @@ class Projector:
         validated = ValidatedFragment(key=definition.key, template=definition.template, params=params)
         return self._fragments.render(validated, engine=self._engine)
 
-    def _project_done(self, run_id: str) -> str:
+    async def _project_done(self, run_id: str) -> str:
         from lychd.domain.web.schemas import BridgeTurn
 
-        turn = self._sessions.settled_turn_for_run(run_id)
+        turn = await self._sessions.settled_turn_for_run(run_id)
         if turn is None:
             turn = BridgeTurn(role="agent", content="The turn has settled.", run_id=run_id, state="settled")
         # `run_data_state` is registered as a Jinja filter (lifespan/conftest), so the
@@ -123,29 +139,25 @@ class Projector:
 
     # -- consent ----------------------------------------------------------
 
-    def consent_card_view(self, record: ConsentRecord) -> ConsentCard:
-        """Build the Seat-of-Consent view-model from a parked consent record."""
-        vision = str(record.args.get("reason") or "This action requires the Magus's consent before it may proceed.")
+    def consent_card_view(self, view: ConsentView) -> ConsentCard:
+        """Build the Seat-of-Consent view-model from a `ConsentView` (status-mapped)."""
+        vision = str(view.args.get("reason") or "This action requires the Magus's consent before it may proceed.")
+        state: Any = _CONSENT_STATE.get(view.status, "refused")
         return ConsentCard(
-            id=record.id,
-            run_id=record.run_id,
-            session_id=record.session_id,
-            tool_name=record.tool_name,
-            args=record.args,
+            id=view.id,
+            run_id=view.run_id,
+            tool_name=view.tool_name,
+            args=view.args,
             vision=vision,
-            state=record.status,
+            state=state,
         )
 
-    def consent_context(self, record: ConsentRecord) -> dict[str, Any]:
-        """Build the `bridge/consent_update.html.j2` context for a consent record."""
+    async def consent_context(self, view: ConsentView) -> dict[str, Any]:
+        """Build the `bridge/consent_update.html.j2` context for a consent view."""
         return {
-            "consent": self.consent_card_view(record),
-            "pending": self._sessions.pending_consent_count(),
+            "consent": self.consent_card_view(view),
+            "pending": await self._consents.pending_count(),
         }
-
-    def consent_update(self, record: ConsentRecord) -> str:
-        """Render the consent card + OOB sigil (the single de-duplicated block)."""
-        return self.render("bridge/consent_update.html.j2", self.consent_context(record))
 
     # -- swap tickets -----------------------------------------------------
 

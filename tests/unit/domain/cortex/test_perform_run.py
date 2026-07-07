@@ -9,7 +9,9 @@ the graph runs on a `TestModel` handed through the fake dispatcher's grant.
 
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pydantic_ai.models
@@ -67,14 +69,15 @@ def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, Bri
         dispatcher=dispatcher,
         context=ContextOrchestrator(registry=FakeRegistry()),
         fragments=build_fragment_registry(),
-        sessions=sessions,
+        turns=sessions,
         forge=default_forge(),
+        stasis_dir=Path(tempfile.mkdtemp()),  # bridge_chat is a Gate (durable) workflow (Wave 4)
     )
     return substrate, ledger, sessions
 
 
 async def _seed_run(ledger: InMemoryRunLedger, sessions: BridgeSessionStore, run_id: str) -> Intent:
-    session = sessions.create_session(title="t")
+    session = await sessions.create_session(title="t")
     intent = Intent(session_id=session.id, run_id=run_id, prompt="hello", source="bridge")
     await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
     return intent
@@ -104,7 +107,9 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     assert len(dones) == 1
     assert dones[0].data == "done"
     # the settled agent turn landed on the session
-    settled = [t for t in sessions.get_session(run.session_id).turns if t.state == "settled"]  # type: ignore[union-attr]
+    session_rec = await sessions.get_session(run.session_id)
+    assert session_rec is not None
+    settled = [t for t in session_rec.turns if t.state == "settled"]
     assert settled
     assert settled[0].content == "risen"
 

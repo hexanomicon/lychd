@@ -62,7 +62,6 @@ class _InProcessQueue:
                 {},  # NO ctx["run_substrate"] — reads the published process memo
                 run_id=kwargs["run_id"],
                 resume=bool(kwargs.get("resume", False)),
-                payload=kwargs.get("payload"),
             )
         )
         self.tasks.append(task)
@@ -97,7 +96,7 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         dispatcher=FakeDispatcher(model=model),
         context=ContextOrchestrator(registry=FakeRegistry()),
         fragments=services.fragments,
-        sessions=services.bridge_sessions,
+        turns=services.bridge_sessions,
         forge=default_forge(),
     )
     set_run_substrate(substrate)
@@ -110,7 +109,7 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
     )
 
     try:
-        session = services.bridge_sessions.create_session()
+        session = await services.bridge_sessions.create_session()
         handle = await engine.submit(Intent(session_id=session.id, prompt="raise the dead", source="bridge"))
 
         # The run was persisted QUEUED before the ghoul claimed it (canonical id, S3).
