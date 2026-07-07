@@ -156,3 +156,47 @@ class QuadletTarget(QuadletBase):
 
     # [Install] section
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])
+
+
+class SystemdService(BaseModel):
+    """A plain systemd --user unit (uncaged daemonhood) — deliberately NOT a Quadlet.
+
+    The uncaged vessel runs the LychD server directly on the host (no Podman pod,
+    no Quadlet generator), so this is a hand-rendered ``.service`` unit written
+    straight into the systemd user unit dir. It shares nothing with the Quadlet
+    ``render``/template machinery on purpose.
+    """
+
+    name: str = "lychd-vessel"
+    description: str = "LychD Vessel (uncaged)"
+    exec_start: str  # "<sys.prefix>/bin/lychd run --host 127.0.0.1 --port <port>"
+    environment: dict[str, str] = Field(default_factory=lambda: {"LYCHD_MODE": "uncaged"})
+    restart: str = "on-failure"
+    wanted_by: str = "default.target"
+
+    @property
+    def filename(self) -> str:
+        """The on-disk unit filename (e.g. ``lychd-vessel.service``)."""
+        return f"{self.name}.service"
+
+    def render(self) -> str:
+        """Render the [Unit]/[Service]/[Install] text with deterministic key order.
+
+        Environment keys are emitted sorted so the output is diff-stable across
+        rewrites (Scribe idempotency); the section order is fixed.
+        """
+        env_lines = [f'Environment="{key}={value}"' for key, value in sorted(self.environment.items())]
+        lines = [
+            "[Unit]",
+            f"Description={self.description}",
+            "",
+            "[Service]",
+            f"ExecStart={self.exec_start}",
+            *env_lines,
+            f"Restart={self.restart}",
+            "",
+            "[Install]",
+            f"WantedBy={self.wanted_by}",
+            "",
+        ]
+        return "\n".join(lines)
