@@ -117,6 +117,12 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         app_config.csrf_config = build_csrf_config(settings)
         app_config.template_config = build_template_config(settings)
 
+        # The Ward (4C-1): stamp every request's connection.user with the settings Sigil
+        # so the scope guards can rule. Excludes /static + /schema (unauthenticated assets).
+        from lychd.domain.codex.middleware import sigil_auth_middleware
+
+        app_config.middleware.append(sigil_auth_middleware())
+
         # --- 6. Memory Stores ---
         app_config.stores = StoreRegistry(default_factory=lambda _: MemoryStore())
         app_config.exception_handlers = {
@@ -182,11 +188,12 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
         """
         # Lazy import is CRITICAL here.
         # We don't want to load the whole app just to show --help.
-        from lychd.cli.commands import bind_quadlets, init_codex, inspect_animators
+        from lychd.cli.commands import bind_quadlets, init_codex, inspect_animators, runs_group
 
         cli.add_command(init_codex)
         cli.add_command(bind_quadlets)
         cli.add_command(inspect_animators)
+        cli.add_command(runs_group)
 
 
 def create_app() -> Litestar:

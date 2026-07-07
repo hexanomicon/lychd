@@ -228,11 +228,6 @@ class DbRunLedger:
     def __init__(self, *, session_factory: async_sessionmaker[AsyncSession]) -> None:
         """Bind the ledger to a session factory (typically `get_session_factory()`)."""
         self._session_factory = session_factory
-        # WAVE4-CONSENT-TABLE: this consent index is in-process memory. COHERENT under
-        # Topology A (one process — engine.approve and the ghoul share it) but it does
-        # NOT survive a restart. Wave 4 §3.6 (S8) replaces it with a durable consent
-        # table read (`get_by_consent` selects from the consent table).
-        self._consent_index: dict[str, str] = {}  # consent_id -> run_id
 
     async def create(
         self,
@@ -242,10 +237,19 @@ class DbRunLedger:
         queue_name: str,
         priority: int,
     ) -> RunRecord:
-        """Insert a QUEUED `Run` row and return its record (run_id = str(row.id))."""
+        """Insert a QUEUED `Run` row and return its record (run_id = str(row.id)).
+
+        Session FK (4C-6): set the real `session_id` when the intent's session id parses
+        as a UUID (it always does once `DbBridgeSessionStore` mints UUID ids); otherwise
+        leave it NULL. The FK is for joins; the `intent` JSONB stays the Intent record.
+        """
         from lychd.db.models import Run
         from lychd.domain.cortex.services import RunService
 
+        try:
+            session_fk: UUID | None = UUID(intent.session_id)
+        except ValueError:
+            session_fk = None
         async with self._session_factory() as session:
             svc = RunService(session=session)
             row = await svc.create(
@@ -255,6 +259,7 @@ class DbRunLedger:
                     status=RunStatus.QUEUED.value,
                     priority=priority,
                     sigil_name="magus",
+                    session_id=session_fk,
                     intent={
                         "session_id": intent.session_id,
                         "run_id": intent.run_id,
@@ -361,10 +366,12 @@ class DbRunLedger:
             return next_seq
 
     async def set_consent(self, run_id: str, consent_id: str | None) -> None:
-        """Record (or clear) the consent id in the best-effort side map (Wave-4 seam)."""
-        self._consent_index = {cid: rid for cid, rid in self._consent_index.items() if rid != run_id}
-        if consent_id is not None:
-            self._consent_index[consent_id] = run_id
+        """Record nothing (S8): the Consent row IS the durable record.
+
+        The ghoul still calls this in `perform_run`; the DB impl needs no side map
+        because `get_by_consent` reads the consent table directly.
+        """
+        _ = (run_id, consent_id)
 
     async def set_stasis_path(self, run_id: str, path: str | None) -> None:
         """Record (or clear) the durable-stasis path on the run row."""
@@ -429,9 +436,18 @@ class DbRunLedger:
             return [self._to_record(row) for row in rows]
 
     async def get_by_consent(self, consent_id: str) -> RunRecord | None:
-        """Return the run parked on ``consent_id`` (best-effort side map, Wave-4 seam)."""
-        run_id = self._consent_index.get(consent_id)
-        return await self.get(run_id) if run_id is not None else None
+        """Return the run parked on ``consent_id`` (S8: a direct consent-table select)."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Consent
+
+        try:
+            cid = UUID(consent_id)
+        except ValueError:
+            return None  # malformed id → unknown (mirror get()'s do-not-invent-a-run stance)
+        async with self._session_factory() as session:
+            run_id = await session.scalar(select(Consent.run_id).where(Consent.id == cid))
+        return await self.get(str(run_id)) if run_id is not None else None
 
     @staticmethod
     def _to_record(row: object) -> RunRecord:

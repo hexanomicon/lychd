@@ -35,7 +35,6 @@ from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import resolve_switch_policy
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import Projector
-from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.domain.web.tickets import TicketStore
 
 if TYPE_CHECKING:
@@ -45,10 +44,12 @@ if TYPE_CHECKING:
 
     from lychd.agents.router import Intent
     from lychd.domain.animation.services.adapters.contracts import PortalRuntimeFactory, SoulstoneRuntimeAdapter
+    from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunHandle
     from lychd.domain.web.fragments import FragmentRegistry
+    from lychd.domain.web.sessions import SessionStorePort
 
 
 class RunEngine:
@@ -96,7 +97,8 @@ class AltarServices:
     leases: LeaseLedger
     context_orchestrator: ContextOrchestrator
     fragments: FragmentRegistry
-    bridge_sessions: BridgeSessionStore
+    bridge_sessions: SessionStorePort
+    consents: ConsentLedger
     tickets: TicketStore
     run_engine: RunEngine
     projector: Projector
@@ -122,10 +124,12 @@ class AltarServices:
             dispatcher=self.dispatcher,
             context=self.context_orchestrator,
             fragments=self.fragments,
-            sessions=self.bridge_sessions,
+            turns=self.bridge_sessions,
+            consents=self.consents,
             forge=default_forge(),
             leases=self.leases,
             queues=queues,
+            stasis_dir=get_settings().stasis.dir,
         )
         set_run_substrate(substrate)
         engine = CortexRunEngine(
@@ -159,7 +163,7 @@ def _build_run_ledger(profile: str) -> RunLedger:
 
     ``postgres`` (default) → the durable `DbRunLedger` over the run/step tables;
     ``memory`` → the loop-confined `InMemoryRunLedger` used by DB-free tests. This is
-    the one profile flag Wave 4 later extends to the ConsentLedger + SessionStore.
+    the one profile flag Wave 4 extends to the ConsentLedger + SessionStore.
     """
     if profile == "memory":
         return InMemoryRunLedger()
@@ -167,6 +171,38 @@ def _build_run_ledger(profile: str) -> RunLedger:
     from lychd.domain.cortex.ledger import DbRunLedger
 
     return DbRunLedger(session_factory=get_session_factory())
+
+
+def _build_session_store(profile: str) -> SessionStorePort:
+    """Select the `SessionStore` from the SAME persistence profile (§3.5; third leg).
+
+    ``memory`` → the loop-confined `BridgeSessionStore`; ``postgres`` →
+    `DbBridgeSessionStore` over the `session` table (survives a restart).
+    """
+    from lychd.domain.web.sessions import BridgeSessionStore
+
+    if profile == "memory":
+        return BridgeSessionStore()
+    from lychd.db.engine import get_session_factory
+    from lychd.domain.web.sessions import DbBridgeSessionStore
+
+    return DbBridgeSessionStore(get_session_factory(), sigil_name=get_settings().sigil.name)
+
+
+def _build_consent_ledger(profile: str) -> ConsentLedger:
+    """Select the `ConsentLedger` from the SAME persistence profile (§3.5; no second flag).
+
+    ``memory`` → `InMemoryConsentLedger` (process-local, pairs with the in-memory run
+    ledger); ``postgres`` → `CodexConsentLedger` over the consent/preauth tables.
+    """
+    from lychd.domain.codex.ledger import InMemoryConsentLedger
+
+    if profile == "memory":
+        return InMemoryConsentLedger()
+    from lychd.db.engine import get_session_factory
+    from lychd.domain.codex.ledger import CodexConsentLedger
+
+    return CodexConsentLedger(session_factory=get_session_factory())
 
 
 def build_altar_services(
@@ -205,9 +241,10 @@ def build_altar_services(
     )
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
-    bridge_sessions = BridgeSessionStore()
+    bridge_sessions = _build_session_store(profile)
+    consents = _build_consent_ledger(profile)
     tickets = TicketStore()
-    projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions)
+    projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions, consents=consents)
     ledger = _build_run_ledger(profile)
     bus = InProcessEventBus(ledger=ledger)
     return AltarServices(
@@ -218,6 +255,7 @@ def build_altar_services(
         context_orchestrator=context_orchestrator,
         fragments=fragments,
         bridge_sessions=bridge_sessions,
+        consents=consents,
         tickets=tickets,
         run_engine=RunEngine(),
         projector=projector,

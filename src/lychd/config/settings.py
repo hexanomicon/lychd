@@ -106,6 +106,28 @@ class DatabaseSettings(BaseSettings):
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
+class SigilSettings(BaseSettings):
+    """The Ward: the process identity + scope grammar (ADR-09, wave4-design §3.1).
+
+    ``scopes=["*"]`` is the ADR-10 §8 uncaged-localhost default (full authority on a
+    single-user loopback bind). ``enforce=False`` makes the guards no-op (tests/dev).
+    """
+
+    model_config = SettingsConfigDict(env_prefix="SIGIL_")
+
+    name: str = "magus"
+    scopes: list[str] = Field(default_factory=lambda: ["*"])
+    enforce: bool = True
+
+
+class StasisSettings(BaseSettings):
+    """Durable Stasis checkpoint root (wave4-design §2.3)."""
+
+    model_config = SettingsConfigDict(env_prefix="STASIS_")
+
+    dir: Path = Field(default_factory=lambda: Path.home() / ".local" / "state" / "lychd" / "stasis")
+
+
 class LogSettings(BaseSettings):
     """The Scrying Mirror: Configuration for Structlog and observability."""
 
@@ -365,6 +387,8 @@ class Settings(BaseSettings):
     vite: ViteSettings = Field(default_factory=ViteSettings)
     extensions: ExtensionSettings = Field(default_factory=ExtensionSettings)
     orchestration: OrchestrationSettings = Field(default_factory=OrchestrationSettings)
+    sigil: SigilSettings = Field(default_factory=SigilSettings)
+    stasis: StasisSettings = Field(default_factory=StasisSettings)
 
     @classmethod
     def settings_customise_sources(

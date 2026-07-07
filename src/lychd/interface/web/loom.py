@@ -15,10 +15,11 @@ from litestar.status_codes import HTTP_404_NOT_FOUND
 
 from lychd.agents.workflows import WORKFLOWS
 from lychd.agents.workflows.base import Workflow
+from lychd.domain.codex.guards import requires_scopes
+from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.web.schemas import build_loom_view
 
 # Runtime import: Litestar resolves handler param annotations at registration.
-from lychd.domain.web.sessions import BridgeSessionStore
 
 
 def _find_workflow(name: str) -> Workflow | None:
@@ -34,15 +35,15 @@ class LoomController(Controller):
 
     path = "/loom"
 
-    @get("/", name="loom:page")
-    async def page(self, bridge_sessions: BridgeSessionStore) -> Template:
+    @get("/", name="loom:page", guards=[requires_scopes("altar:read")])
+    async def page(self, consents: ConsentLedger) -> Template:
         """Render the Loom with the first workflow pre-selected."""
         workflow = WORKFLOWS[0]
         return Template(
             template_name="altar/pages/loom.html.j2",
             context={
                 "active": "loom",
-                "pending": bridge_sessions.pending_consent_count(),
+                "pending": await consents.pending_count(),
                 "workflows": WORKFLOWS,
                 "view": build_loom_view(workflow),
                 "selected": workflow.name,

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
@@ -69,7 +69,7 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
 
     # Wire the real run engine + publish the process RunSubstrate (Topology A: the
     # in-process ghoul and the SSE handler share this event bus).
-    services.wire_runtime(_collect_run_queues(app))
+    run_engine = services.wire_runtime(_collect_run_queues(app))
 
     # Request-independent url reversal for every template (works in SSE too), plus
     # the frozen run-state `data-state` mapping as a Jinja filter.
@@ -82,9 +82,16 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
     # synchronous disk IO, so force it at startup instead of stalling the first handler.
     await asyncio.to_thread(services.registry.ensure_loaded)
 
+    # Preauthorization startup sync (DB profile only): upsert the loaded Codex preauth
+    # runes so standing approvals are live before the first park.
+    await _sync_preauths_at_startup(exts)
+
     # Reconcile orphaned RUNNING runs a dead process left behind (durable ledger only;
     # a no-op under the in-memory ledger, which starts empty each process).
     await _reconcile_at_startup()
+    # Re-fire consent verdicts recorded while the process was down (a crash between the
+    # verdict write and the re-enqueue). Needs the engine the substrate deliberately lacks.
+    await _reconcile_consents_at_startup(run_engine)
     try:
         yield
     finally:
@@ -92,6 +99,37 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
 
         await services.aclose()
         reset_run_substrate()
+
+
+async def _reconcile_consents_at_startup(engine: Any) -> None:
+    """Re-fire decided-but-unenqueued consent verdicts once at startup (loud on failure)."""
+    from lychd.ghouls.runs import reconcile_consents
+
+    try:
+        await reconcile_consents({}, engine=engine)
+    except Exception:
+        logger.exception("reconcile_consents_at_startup_failed")
+
+
+async def _sync_preauths_at_startup(exts: Any) -> None:
+    """Upsert loaded Codex preauthorization runes (DB profile only; loud on failure)."""
+    from lychd.config.settings import get_settings
+
+    if get_settings().db.profile != "postgres":
+        return
+    try:
+        from lychd.config.runes.registry import load_rune_registry
+        from lychd.db.engine import get_session_factory
+        from lychd.domain.codex.runes import CodexPreauthRune
+        from lychd.domain.codex.services import PreauthService
+
+        runes = list(load_rune_registry(exts).of(CodexPreauthRune))
+        factory = get_session_factory()
+        async with factory() as session:
+            count = await PreauthService(session=session).sync_from_runes(runes)
+        logger.info("preauth_sync_at_startup", count=count)
+    except Exception:
+        logger.exception("preauth_sync_at_startup_failed")
 
 
 async def _reconcile_at_startup() -> None:

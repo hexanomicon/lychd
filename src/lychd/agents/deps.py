@@ -14,18 +14,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+# The frozen `Sigil` lives in `domain/codex/sigil.py` (the identity floor). Re-exported
+# here VERBATIM so every historical `from lychd.agents.deps import Sigil` still resolves.
+from lychd.domain.codex.sigil import Sigil
+
 if TYPE_CHECKING:
     from lychd.agents.services import GrantPort, TransitionPort
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.cortex.context import ContextOrchestrator
-
-
-@dataclass(frozen=True, kw_only=True)
-class Sigil:
-    """The Magus's authority handle: a name and a set of scopes, never the secret."""
-
-    name: str
-    scopes: frozenset[str]
 
 
 @dataclass(frozen=True, kw_only=True)

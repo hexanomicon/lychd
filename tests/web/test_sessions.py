@@ -1,46 +1,32 @@
-"""BridgeSessionStore semantics: run index, settled-turn lookup, consents, channels."""
+"""BridgeSessionStore semantics: run index + settled-turn lookup (async, consent-free)."""
 
 from __future__ import annotations
+
+import pytest
 
 from lychd.domain.web.schemas import BridgeTurn
 from lychd.domain.web.sessions import BridgeSessionStore
 
 
-def test_session_for_run_indexed_by_turn() -> None:
+@pytest.mark.asyncio
+async def test_session_for_run_indexed_by_turn() -> None:
     """A settled agent turn indexes its run for O(1) session lookup."""
     store = BridgeSessionStore()
-    session = store.create_session()
-    store.add_turn(session.id, BridgeTurn(role="agent", content="risen", run_id="r1", state="settled"))
-    assert store.session_for_run("r1") is session
-    assert store.settled_turn_for_run("r1").content == "risen"
-    assert store.session_for_run("missing") is None
-    assert store.settled_turn_for_run("missing") is None
+    session = await store.create_session()
+    await store.add_turn(session.id, BridgeTurn(role="agent", content="risen", run_id="r1", state="settled"))
+    assert (await store.session_for_run("r1")) is session
+    settled = await store.settled_turn_for_run("r1")
+    assert settled is not None
+    assert settled.content == "risen"
+    assert (await store.session_for_run("missing")) is None
+    assert (await store.settled_turn_for_run("missing")) is None
 
 
-def test_session_for_run_via_consent_index() -> None:
-    """Parking a consent also indexes its run to the session."""
+@pytest.mark.asyncio
+async def test_list_sessions_newest_first() -> None:
+    """Sessions list newest-first."""
     store = BridgeSessionStore()
-    session = store.create_session()
-    store.park_consent(run_id="rc", session_id=session.id, tool_name="t", args={}, requests=None)
-    assert store.session_for_run("rc") is session
-
-
-def test_pending_consent_count_tracks_verdicts() -> None:
-    """Pending count reflects unresolved consents only."""
-    store = BridgeSessionStore()
-    session = store.create_session()
-    consent_id = store.park_consent(run_id="r", session_id=session.id, tool_name="t", args={}, requests=None)
-    assert store.pending_consent_count() == 1
-    store.resolve_consent(consent_id, approved=True)
-    assert store.pending_consent_count() == 0
-
-
-def test_pending_consent_for_run_probe() -> None:
-    """The ghoul's park probe returns a run's still-pending consent, else None."""
-    store = BridgeSessionStore()
-    session = store.create_session()
-    consent_id = store.park_consent(run_id="rp", session_id=session.id, tool_name="t", args={}, requests=None)
-    assert store.pending_consent_for_run("rp") is not None
-    store.resolve_consent(consent_id, approved=True)
-    assert store.pending_consent_for_run("rp") is None
-    assert store.pending_consent_for_run("unknown") is None
+    first = await store.create_session(title="first")
+    second = await store.create_session(title="second")
+    listed = await store.list_sessions()
+    assert [s.id for s in listed[:2]] == [second.id, first.id]

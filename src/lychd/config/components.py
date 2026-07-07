@@ -99,6 +99,18 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
     )
 
 
+def saq_queue_from_settings(settings: Settings, name: str) -> Any:
+    """Build a standalone SAQ `PostgresQueue` for ``name`` from the SAME DSN the daemon uses.
+
+    Used by the CLI's `lychd runs approve|deny` (a separate process from the vessel): the
+    verdict re-enqueue must land on the queue/tables the daemon's worker claims. Derives
+    the DSN from `settings.db.saq_dsn` (never string surgery).
+    """
+    from saq.queue.postgres import PostgresQueue
+
+    return PostgresQueue.from_url(settings.db.saq_dsn, name=name)
+
+
 def build_vite_config(settings: Settings) -> ViteConfig:
     """Build the Vite asset-bundler config."""
     return ViteConfig(

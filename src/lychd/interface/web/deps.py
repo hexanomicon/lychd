@@ -14,6 +14,7 @@ from litestar.di import Provide
 # Runtime imports (not TYPE_CHECKING): Litestar evaluates each provider's return
 # annotation at app-init to type the injected dependency.
 from lychd.domain.animation.services.registry import AnimatorRegistry
+from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
@@ -21,7 +22,7 @@ from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.fragments import FragmentRegistry
 from lychd.domain.web.projection import Projector
-from lychd.domain.web.sessions import BridgeSessionStore
+from lychd.domain.web.sessions import SessionStorePort
 from lychd.domain.web.tickets import TicketStore
 
 
@@ -50,9 +51,14 @@ def provide_fragments(state: State) -> FragmentRegistry:
     return state.services.fragments
 
 
-def provide_bridge_sessions(state: State) -> BridgeSessionStore:
-    """Return the Bridge session store."""
+def provide_bridge_sessions(state: State) -> SessionStorePort:
+    """Return the Bridge session store (in-memory or DB-backed, per the profile)."""
     return state.services.bridge_sessions
+
+
+def provide_consent_ledger(state: State) -> ConsentLedger:
+    """Return the process consent ledger (the graph parks/reads verdicts here)."""
+    return state.services.consents
 
 
 def provide_tickets(state: State) -> TicketStore:
@@ -82,6 +88,7 @@ web_dependencies: dict[str, Provide] = {
     "leases": Provide(provide_leases, sync_to_thread=False),
     "fragments": Provide(provide_fragments, sync_to_thread=False),
     "bridge_sessions": Provide(provide_bridge_sessions, sync_to_thread=False),
+    "consents": Provide(provide_consent_ledger, sync_to_thread=False),
     "tickets": Provide(provide_tickets, sync_to_thread=False),
     "run_engine": Provide(provide_run_engine, sync_to_thread=False),
     "run_bus": Provide(provide_run_bus, sync_to_thread=False),

@@ -23,6 +23,7 @@ from lychd.domain.cortex.leases import LeaseLedger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+    from pathlib import Path
 
     from lychd.agents.deps import Sigil
     from lychd.agents.factory import AgentForge
@@ -52,6 +53,12 @@ def _empty_queues() -> dict[str, RunQueue]:
     return {}
 
 
+def _default_stasis_dir() -> Path:
+    from lychd.config.settings import get_settings
+
+    return get_settings().stasis.dir
+
+
 @dataclass
 class RunSubstrate:
     """The run collaborators `perform_run`/`reconcile_runs` execute against."""
@@ -63,13 +70,22 @@ class RunSubstrate:
     dispatcher: GrantPort
     context: ContextOrchestrator
     fragments: FragmentRegistry
-    sessions: Any  # BridgeSessionStore (turns + consents; presented via the ledger ports)
+    turns: Any  # SessionStore (settled turns; presented via TurnLedgerPort)
     forge: AgentForge
     sigil_provider: Callable[[], Sigil] = field(default_factory=_default_sigil_provider)
+    # Wave 4: the ConsentLedger the graph parks into + the web reads (one-record rule).
+    # Cortex must NOT import codex (import law), so this is an opaque handle: the
+    # composition root (wire_runtime) and the consent tests thread the real ledger.
+    # A run that never parks (a linear/non-Gate workflow) never touches it.
+    consents: Any = None
     # Wave 3: the lease ledger + SAQ queues, shared per process. Defaulted so existing
     # test construction sites keep compiling; wire_runtime threads the real ones.
     leases: LeaseLedger = field(default_factory=LeaseLedger)
     queues: Mapping[str, RunQueue] = field(default_factory=_empty_queues)
+    # Wave 4: the Durable Stasis checkpoint root (consent tier). Defaulted from
+    # settings so existing test construction sites keep compiling; wire_runtime
+    # threads settings.stasis.dir explicitly.
+    stasis_dir: Path = field(default_factory=_default_stasis_dir)
 
     def build_services(self) -> WorkflowServices:
         """Assemble the run's `WorkflowServices` (events = the shared bus)."""
@@ -80,7 +96,8 @@ class RunSubstrate:
             orchestrator=self.orchestrator,
             context=self.context,
             fragments=self.fragments,
-            sessions=self.sessions,
+            turns=self.turns,
+            consents=self.consents,
             events=self.bus,
             forge=self.forge,
             sigil_provider=self.sigil_provider,

@@ -1,8 +1,12 @@
-"""Bridge chat surface: session create, send flow, consent verdict, inspector."""
+"""Bridge chat surface: session create, send flow, inspector.
+
+Consent-endpoint tests live in `test_consent_endpoint.py` (the real ConsentLedger).
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import asyncio
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -11,6 +15,10 @@ if TYPE_CHECKING:
     from litestar.testing import TestClient
 
 _HX = {"HX-Request": "true"}
+
+
+def _session(fake_services: SimpleNamespace) -> Any:
+    return asyncio.run(fake_services.bridge_sessions.create_session())
 
 
 def test_create_session_htmx_returns_hx_location(altar_client: TestClient[Litestar]) -> None:
@@ -29,7 +37,7 @@ def test_create_session_non_htmx_redirects(altar_client: TestClient[Litestar]) -
 
 def test_send_requires_htmx(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
     """Send is HTMX-only: a plain POST is rejected 400."""
-    session = fake_services.bridge_sessions.create_session()
+    session = _session(fake_services)
     response = altar_client.post(f"/bridge/{session.id}/messages", data={"prompt": "hi"})
     assert response.status_code == 400
 
@@ -42,14 +50,14 @@ def test_send_unknown_session_404(altar_client: TestClient[Litestar]) -> None:
 
 def test_send_empty_prompt_400(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
     """An empty offering cannot be spoken (400)."""
-    session = fake_services.bridge_sessions.create_session()
+    session = _session(fake_services)
     response = altar_client.post(f"/bridge/{session.id}/messages", headers=_HX, data={"prompt": "   "})
     assert response.status_code == 400
 
 
 def test_send_happy_path(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
     """A valid send returns the user turn, the SSE stream slot, and the OOB rail."""
-    session = fake_services.bridge_sessions.create_session()
+    session = _session(fake_services)
     response = altar_client.post(f"/bridge/{session.id}/messages", headers=_HX, data={"prompt": "raise the dead"})
     assert response.status_code == 200
     body = response.text
@@ -64,42 +72,7 @@ def test_send_happy_path(altar_client: TestClient[Litestar], fake_services: Simp
 
 def test_inspector_renders(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
     """The inspector fragment renders for a known session."""
-    session = fake_services.bridge_sessions.create_session()
+    session = _session(fake_services)
     response = altar_client.get(f"/bridge/{session.id}/inspector")
     assert response.status_code == 200
     assert 'data-fragment="bridge.inspector"' in response.text
-
-
-def test_consent_verdict_renders_card_and_oob_sigil(
-    altar_client: TestClient[Litestar], fake_services: SimpleNamespace
-) -> None:
-    """Approving a parked consent re-renders the consented card + OOB sigil."""
-    sessions = fake_services.bridge_sessions
-    session = sessions.create_session()
-    consent_id = sessions.park_consent(
-        run_id="run_x", session_id=session.id, tool_name="request_coven_swap", args={}, requests=None
-    )
-    response = altar_client.post(f"/bridge/consents/{consent_id}", headers=_HX, data={"verdict": "approve"})
-    assert response.status_code == 200
-    assert 'data-state="consented"' in response.text
-    assert 'id="consent-sigil"' in response.text
-    assert "hx-swap-oob" in response.text
-    assert sessions.get_consent(consent_id).status == "consented"
-
-
-def test_consent_idempotent_rerender(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:
-    """A second verdict POST re-renders without re-resolving."""
-    sessions = fake_services.bridge_sessions
-    session = sessions.create_session()
-    consent_id = sessions.park_consent(run_id="run_y", session_id=session.id, tool_name="t", args={}, requests=None)
-    altar_client.post(f"/bridge/consents/{consent_id}", headers=_HX, data={"verdict": "deny"})
-    again = altar_client.post(f"/bridge/consents/{consent_id}", headers=_HX, data={"verdict": "approve"})
-    assert again.status_code == 200
-    # the first verdict (refused) stands — the second POST does not overturn it
-    assert sessions.get_consent(consent_id).status == "refused"
-
-
-def test_consent_unknown_404(altar_client: TestClient[Litestar]) -> None:
-    """An unknown consent id is 404."""
-    response = altar_client.post("/bridge/consents/nope", headers=_HX, data={"verdict": "approve"})
-    assert response.status_code == 404

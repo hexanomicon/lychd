@@ -26,8 +26,10 @@ if TYPE_CHECKING:
 __all__ = [
     "LEGAL_TRANSITIONS",
     "TERMINAL_STATUSES",
+    "ConsentPending",
     "IllegalRunTransitionError",
     "RunHandle",
+    "RunParked",
     "RunRecord",
     "RunStatus",
     "can_transition",
@@ -85,6 +87,33 @@ class IllegalRunTransitionError(RuntimeError):
         self.current = current
         self.target = target
         super().__init__(f"Illegal run transition for {run_id}: {current} → {target}")
+
+
+class ConsentPending(Exception):  # noqa: N818 - a control-flow suspension signal, not an error
+    """A Gate node parked on a consent verdict; the run must suspend, not fail.
+
+    Carries `tool_name` (S4) so `perform_run` can emit the `CONSENT` event AFTER the
+    status write, without a codex read.
+    """
+
+    def __init__(self, consent_id: str, run_id: str, tool_name: str) -> None:
+        """Record the parked consent, its run, and the parked tool name."""
+        self.consent_id = consent_id
+        self.run_id = run_id
+        self.tool_name = tool_name
+        super().__init__(f"run {run_id} parked on consent {consent_id}")
+
+
+@dataclass(frozen=True, kw_only=True)
+class RunParked:
+    """Graph→substrate sentinel: the run suspended on a consent. NOT a terminal.
+
+    Carries `tool_name` (S4) so `perform_run` emits `CONSENT` only after the status
+    is written — a verdict can never race the `engine.approve` status guard.
+    """
+
+    consent_id: str
+    tool_name: str
 
 
 def can_transition(current: RunStatus, target: RunStatus) -> bool:

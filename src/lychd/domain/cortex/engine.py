@@ -14,7 +14,6 @@ writes the terminal `CANCELLED` + `DONE`.
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -166,21 +165,22 @@ class RunEngine:
         self.bus.close(run_id)
 
     async def approve(self, consent_id: str, *, approved: bool) -> None:
-        """Consent seam (Wave-4 honest resume): re-enqueue the parked run.
+        """Consent verdict seam (C3): re-enqueue the parked run for a resume hop.
 
-        Both verdicts re-enqueue (C3): AWAITING_CONSENT → QUEUED, then a resume hop.
-        The honest graph resume (verdict via `DeferredToolResults`) lands in Wave 4;
-        here the state machine + re-enqueue edge exist so the web/CLI seam is real.
+        Both verdicts re-enqueue: AWAITING_CONSENT → QUEUED, then a resume hop reads
+        the verdict from the ConsentLedger (never a payload). ``approved`` is kept for
+        the seam signature + logging only — the row IS the durable verdict.
+        Idempotent: a double-click / replayed CLI over a non-parked run is a no-op.
         """
+        _ = approved
         run = await self.ledger.get_by_consent(consent_id)
         if run is None or run.status is not RunStatus.AWAITING_CONSENT:
             return
         await self.ledger.set_status(run.run_id, RunStatus.QUEUED)
         refreshed = await self.ledger.get(run.run_id) or run
-        payload = json.dumps({"consent_id": consent_id, "approved": approved})
-        await self._enqueue(refreshed, resume=True, payload=payload)
+        await self._enqueue(refreshed, resume=True)
 
-    async def _enqueue(self, run: RunRecord, *, resume: bool = False, payload: str | None = None) -> None:
+    async def _enqueue(self, run: RunRecord, *, resume: bool = False) -> None:
         """Enqueue `perform_run` for the run on its physical queue (unique key)."""
         seq = await self.ledger.bump_enqueue_seq(run.run_id)
         queue = self.queues[run.queue_name]
@@ -188,7 +188,6 @@ class RunEngine:
             "perform_run",
             run_id=run.run_id,
             resume=resume,
-            payload=payload,
             key=run_job_key(run.run_id, seq),
             retries=0,  # graph retries are GraphRunner's job, not SAQ's
             # Wire inversion (R9): doctrine is higher=hotter, saq dequeues lowest-first,

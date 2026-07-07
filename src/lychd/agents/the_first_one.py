@@ -21,6 +21,7 @@ from pydantic_ai.toolsets import FunctionToolset
 from lychd.agents.deps import LychDDeps
 from lychd.agents.factory import AgentForge, AgentSpec, build_agent
 from lychd.agents.outputs import BridgeReply
+from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.cortex.context import IDENTITY_BLOCK_KEY, IDENTITY_BLOCK_TEXT
 
 if TYPE_CHECKING:
@@ -52,8 +53,8 @@ async def request_coven_swap(ctx: RunContext[LychDDeps], capability_key: str, re
     a `DeferredToolRequests`; this body executes only after the Seat of Consent
     resumes the run with an approval.
     """
-    if "nexus:swap" not in ctx.deps.sigil.scopes:
-        msg = "This sigil lacks the nexus:swap scope; a coven swap may not be proposed."
+    if not scopes_satisfied(ctx.deps.sigil.scopes, ("orchestrator:transition",)):
+        msg = "This sigil lacks orchestrator:transition; a coven swap may not be proposed."
         raise ModelRetry(msg)
 
     plan = await ctx.deps.orchestrator.calculate_transition_plan(capability_key)

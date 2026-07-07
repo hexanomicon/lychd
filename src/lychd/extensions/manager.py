@@ -42,6 +42,13 @@ class ExtensionManager:
         """
         context = ExtensionContext()
 
+        # Core pre-pass (wave4-design §3.4d): the Codex preauthorization schema is
+        # registered by CORE, before any extension registrant runs, so the loaded
+        # RuneRegistry always carries CodexPreauthRune instances.
+        from lychd.domain.codex.runes import CodexPreauthRune
+
+        context.runes.add_schema(CodexPreauthRune)
+
         for extension_id in self._builtins:
             with context.provenance(extension_id):
                 self._register_builtin(extension_id, context)

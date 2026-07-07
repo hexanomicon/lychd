@@ -38,9 +38,8 @@ class Bottleneck(BaseModel):
 class ConsentPointer(BaseModel):
     """What a parked turn projects while awaiting the Magus (A5 §2).
 
-    Replaces the `consent_placeholder()` prose. The honest consent-resume path
-    (a `ConsentPending` signal + `AwaitConsent` node) is a later wave; this type
-    is defined now so the projected shape is stable across that rework.
+    The honest consent-resume path (a `ConsentPending` signal + `AwaitConsent`
+    node) landed in Wave 4; this type keeps the projected shape stable.
     """
 
     consent_id: str

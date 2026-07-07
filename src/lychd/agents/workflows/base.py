@@ -22,6 +22,14 @@ if TYPE_CHECKING:
 HIGHLIGHT_CSS = "fill:#39ff8a33,stroke:#39ff8a,stroke-width:2px"
 
 
+class Gate:
+    """Marker mixin: a node that can park the run on an external verdict (consent/HitL).
+
+    Any workflow whose graph contains a Gate node is assigned the Durable Stasis tier
+    (`_workflow_parks` scans `graph.get_nodes()` for `issubclass(node, Gate)`).
+    """
+
+
 @dataclass(frozen=True, kw_only=True)
 class Trigger:
     """Deterministic route predicate. Adding a workflow never edits the router."""

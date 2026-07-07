@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import click
 
@@ -312,4 +312,77 @@ def inspect_animators() -> None:
     )
 
 
-COMMANDS: tuple[click.Command, ...] = (init_codex, bind_quadlets, inspect_animators)
+@click.group(name="runs")
+def runs_group() -> None:
+    """Manage runs: approve or deny a parked consent (Human-in-the-Loop)."""
+
+
+@runs_group.command(name="approve")
+@click.argument("consent_id")
+def runs_approve(consent_id: str) -> None:
+    """Approve a parked consent by id (resumes the run with the tool granted)."""
+    import asyncio
+
+    asyncio.run(_decide_consent(consent_id, approved=True))
+
+
+@runs_group.command(name="deny")
+@click.argument("consent_id")
+def runs_deny(consent_id: str) -> None:
+    """Deny a parked consent by id (the run resumes and settles honestly without the action)."""
+    import asyncio
+
+    asyncio.run(_decide_consent(consent_id, approved=False))
+
+
+async def _decide_consent(consent_id: str, *, approved: bool) -> None:
+    """Record a consent verdict + re-enqueue the parked run (register-shim doctrine)."""
+    import sys
+
+    from lychd.config.settings import get_settings
+
+    console = get_console()
+    settings = get_settings()
+    if settings.db.profile == "memory":
+        console.print(
+            "  [red]✗[/] consent verdicts require the postgres profile (an in-memory ledger is process-local)."
+        )
+        sys.exit(1)
+
+    from lychd.db.engine import get_session_factory
+    from lychd.domain.codex.ledger import CodexConsentLedger
+
+    factory = get_session_factory()
+    ledger = CodexConsentLedger(session_factory=factory)
+    view = await ledger.get(consent_id)
+    if view is None:
+        console.print(f"  [red]✗[/] Unknown consent id: {consent_id}")
+        sys.exit(1)
+    if view.status != "pending":
+        console.print(f"  [dim]Consent {consent_id} is already {view.status} — nothing to do.[/]")
+        return
+
+    await ledger.decide(consent_id, approved=approved, decided_by=settings.sigil.name)
+    engine = _build_cli_engine(settings, factory)
+    await engine.approve(consent_id, approved=approved)
+    verdict = "approved" if approved else "denied"
+    console.print(f"  [bold green]✓[/] Consent {consent_id} {verdict}; the run has been re-enqueued.")
+
+
+def _build_cli_engine(settings: Settings, factory: Any) -> Any:
+    """Build an inert-bus RunEngine whose `approve` touches only the ledger + queues."""
+    from lychd.config.components import saq_queue_from_settings
+    from lychd.domain.cortex.engine import QueueRouter, RunEngine
+    from lychd.domain.cortex.events import InProcessEventBus
+    from lychd.domain.cortex.ledger import DbRunLedger
+
+    return RunEngine(
+        ledger=DbRunLedger(session_factory=factory),
+        bus=InProcessEventBus(),
+        workflows=None,  # approve does not route; the inert workflows handle is unused
+        queue_router=QueueRouter(),
+        queues={name: saq_queue_from_settings(settings, name) for name in ("runs", "rites")},
+    )
+
+
+COMMANDS: tuple[click.Command, ...] = (init_codex, bind_quadlets, inspect_animators, runs_group)

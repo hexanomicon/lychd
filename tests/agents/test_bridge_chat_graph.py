@@ -47,21 +47,28 @@ async def test_happy_path_settles_turn() -> None:
 
 @pytest.mark.asyncio
 async def test_consent_parks_without_done() -> None:
-    """A deferred (approval) turn parks: consent event, awaiting_consent, no `done`."""
+    """A deferred (approval) turn parks: RunParked sentinel, no `done`, no in-graph `consent` (S4)."""
+    from lychd.domain.cortex.graph_runner import GraphRunner
+    from lychd.domain.cortex.runs import RunParked
+    from lychd.domain.cortex.stasis import LiveStasisPhylactery
+
     events, turns, consents, orch = FakeEvents(), FakeTurns(), FakeConsents(), FakeOrchestrator()
     services = make_services(model=TestModel(), events=events, turns=turns, consents=consents, orchestrator=orch)
     state = BridgeChatState(session_id="sess_1", run_id="run_1", prompt="swap the coven")
-    persistence: FullStatePersistence = FullStatePersistence()
 
-    async with BRIDGE_CHAT_GRAPH.iter(WeaveContext(), state=state, deps=services, persistence=persistence) as run:
-        async for _ in run:
-            pass
+    runner = GraphRunner[BridgeChatState](
+        orchestrator=orch,  # pyright: ignore[reportArgumentType]
+        persistence=LiveStasisPhylactery(job_id="run_1"),
+    )
+    result = await runner.run_graph(BRIDGE_CHAT_GRAPH, WeaveContext(), state, deps=services)
 
+    assert isinstance(result, RunParked)
+    assert result.tool_name == "request_coven_swap"
     assert consents.parked
     assert consents.parked[0]["tool_name"] == "request_coven_swap"
-    assert "consent" in events.kinds()
+    # S4: the graph does NOT emit `consent` — that moves to perform_run (after status write).
+    assert "consent" not in events.kinds()
     assert "done" not in events.kinds()  # parked runs must NOT close the stream
-    # Run status (awaiting_consent) is now the ledger's — the ghoul sets it, not the node.
     # The tool body did not execute pre-approval, so no transition was requested.
     assert orch.calls == []
 
@@ -85,7 +92,13 @@ async def test_converse_forwards_grant_model_settings() -> None:
     class _CaptureAgent:
         async def run_stream_events(self, _prompt: str, **kwargs: Any) -> Any:
             captured.update(kwargs)
-            yield AgentRunResultEvent(result=SimpleNamespace(output=BridgeReply(answer="ok", fragments=[])))
+
+            def _no_messages() -> list[Any]:
+                return []
+
+            yield AgentRunResultEvent(
+                result=SimpleNamespace(output=BridgeReply(answer="ok", fragments=[]), all_messages=_no_messages)
+            )
 
     class _CaptureForge:
         def agent_for(self, _spec: Any) -> _CaptureAgent:

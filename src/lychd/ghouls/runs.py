@@ -19,18 +19,22 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
 
 from lychd.domain.cortex.graph_runner import GraphRunner
-from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunStatus
-from lychd.domain.cortex.stasis import LiveStasisPhylactery
+from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunParked, RunStatus
+from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
 
 if TYPE_CHECKING:
+    from lychd.agents.workflows.base import Workflow
     from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.runs import RunRecord
     from lychd.domain.cortex.substrate import RunSubstrate
+    from lychd.extensions.protocols import PhylacteryProtocol
 
 logger = structlog.get_logger()
 
@@ -60,6 +64,29 @@ def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
     return get_run_substrate()
 
 
+def _workflow_parks(workflow: Workflow) -> bool:
+    """Whether a workflow's graph contains a `Gate` node (⇒ Durable Stasis tier)."""
+    from lychd.agents.workflows.base import Gate
+
+    return any(issubclass(node, Gate) for node in workflow.graph.get_nodes())
+
+
+def _phylactery_for(run: RunRecord, workflow: Workflow, stasis_dir: Path) -> PhylacteryProtocol:
+    """Select the stasis tier: resume the durable file, else Durable for Gate workflows.
+
+    A run with a persisted `stasis_path` resumes from THAT file (durable). A fresh
+    Gate-bearing workflow gets a Durable phylactery; a purely linear workflow gets
+    the Live (in-memory) tier.
+    """
+    from pathlib import Path
+
+    if run.stasis_path is not None:
+        return DurableStasisPhylactery(job_id=run.run_id, json_file=Path(run.stasis_path))
+    if _workflow_parks(workflow):
+        return DurableStasisPhylactery.for_run(run.run_id, stasis_dir=stasis_dir)
+    return LiveStasisPhylactery(job_id=run.run_id)
+
+
 async def _await_claim_gate(substrate: RunSubstrate) -> None:
     """Park on the broker's claim gate while intake is paused for a transition.
 
@@ -74,15 +101,18 @@ async def _await_claim_gate(substrate: RunSubstrate) -> None:
         await gate.wait()
 
 
-async def perform_run(
+async def perform_run(  # noqa: C901, PLR0912, PLR0915 - fresh/resume/park/fail branches are the honest run path
     ctx: dict[str, Any],
     *,
     run_id: str,
     resume: bool = False,
-    payload: str | None = None,
 ) -> dict[str, Any]:
-    """Execute one run's workflow graph. The ONLY graph-execution site."""
-    _ = (resume, payload)  # honest consent resume is Wave 4; placeholder ignores these
+    """Execute one run's workflow graph. The ONLY graph-execution site.
+
+    A fresh hop iterates from the start node; a ``resume`` hop (a re-enqueued
+    consent verdict) resumes the durable checkpoint. The verdict is read from the
+    ConsentLedger inside `AwaitConsent` — never carried in a payload (C3).
+    """
     substrate = _substrate(ctx)
     await _await_claim_gate(substrate)
     ledger = substrate.ledger
@@ -91,6 +121,11 @@ async def perform_run(
         return {"status": "skipped", "run_id": run_id}  # stale / duplicate claim guard
 
     workflow = substrate.workflows.get(run.workflow_name)
+    if resume:
+        # R1-safe channel seeding: a durable resume after restart mints a fresh channel
+        # that MUST continue the persisted seq, never restart at 0 (else re-collided,
+        # silently-shed Step rows). Seed BEFORE any emitter opens the channel.
+        substrate.bus.open(run_id, from_seq=await ledger.next_seq(run_id))
     emitter = substrate.bus.emitter(run_id)
     if workflow is None:
         await ledger.set_status(run_id, RunStatus.RUNNING)
@@ -98,7 +133,13 @@ async def perform_run(
         emitter.done(RunStatus.FAILED.value)
         return {"status": "failed", "run_id": run_id}
 
-    persistence = LiveStasisPhylactery(job_id=run_id)
+    if resume and (run.stasis_path is None or not Path(run.stasis_path).exists()):
+        # Honest failure: never a silent re-run of a run whose checkpoint is gone.
+        await _settle_terminal(ledger, run_id, RunStatus.FAILED, error="stasis lost")
+        substrate.context.release(run_id)
+        return {"status": "failed", "run_id": run_id}
+
+    persistence = _phylactery_for(run, workflow, substrate.stasis_dir)
 
     async def _on_stasis_enter() -> None:
         # The run parks while the orchestrator transitions hardware (C7). It holds no
@@ -120,12 +161,15 @@ async def perform_run(
     await ledger.set_status(run_id, RunStatus.RUNNING)
     emitter.status(RunStatus.RUNNING.value)
     try:
-        await runner.run_graph(
-            workflow.graph,
-            workflow.start_node(),
-            workflow.make_state(run.to_intent()),
-            deps=services,
-        )
+        if resume:
+            result = await runner.resume_graph(workflow.graph, deps=services)
+        else:
+            result = await runner.run_graph(
+                workflow.graph,
+                workflow.start_node(),
+                workflow.make_state(run.to_intent()),
+                deps=services,
+            )
     except asyncio.CancelledError:
         # Cancel path (F6/H6): free the assembled context floor and let the cancel
         # propagate. `engine.cancel` already wrote CANCELLED + emitted the terminal;
@@ -134,20 +178,23 @@ async def perform_run(
         raise
     except Exception as exc:
         logger.exception("perform_run_failed", run_id=run_id, workflow=run.workflow_name)
-        _write_failed_turn(substrate, run_id=run_id, session_id=run.session_id)
+        await _write_failed_turn(substrate, run_id=run_id, session_id=run.session_id)
         substrate.context.release(run_id)  # F6/H6: free the floor on failure
         await _settle_terminal(ledger, run_id, RunStatus.FAILED, error=str(exc))
         raise
     else:
-        parked = substrate.sessions.pending_consent_for_run(run_id)
-        if parked is not None:
-            # Placeholder consent park: end AWAITING_CONSENT, emit NO done (card stays
-            # live). The context floor is deliberately NOT released here — Wave 4 adds
-            # release-on-park once AwaitConsent's re-assemble guard makes it safe (H6).
-            await ledger.set_consent(run_id, parked.id)
+        if isinstance(result, RunParked):
+            # S4: persist-park → status → emit. The row is already committed (park
+            # returned post-commit); write the durable path + status, THEN emit CONSENT
+            # last, so a fast verdict can never race the engine.approve status guard.
+            await ledger.set_consent(run_id, result.consent_id)
+            if isinstance(persistence, DurableStasisPhylactery):
+                await ledger.set_stasis_path(run_id, str(persistence.json_file))
             await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+            emitter.consent(result.consent_id, tool_name=result.tool_name)
             return {"status": "awaiting_consent", "run_id": run_id}
         await _settle_terminal(ledger, run_id, RunStatus.DONE)
+        await _cleanup_stasis(ledger, run_id, persistence)
         return {"status": "done", "run_id": run_id}
     finally:
         # The never-hang guarantee, one place: emit the single terminal DONE from the
@@ -157,6 +204,17 @@ async def perform_run(
         if terminal is not None and terminal.status in TERMINAL_STATUSES:
             emitter.done(terminal.status.value)
             substrate.bus.close(run_id)
+
+
+async def _cleanup_stasis(ledger: RunLedger, run_id: str, persistence: PhylacteryProtocol) -> None:
+    """Clear the run's stasis path and unlink the durable file on a terminal DONE.
+
+    Covers fresh durable runs that finish without ever parking (and the resumed run
+    that settles): the checkpoint is no longer needed once the run is terminal.
+    """
+    await ledger.set_stasis_path(run_id, None)
+    if isinstance(persistence, DurableStasisPhylactery):
+        persistence.json_file.unlink(missing_ok=True)
 
 
 async def _settle_terminal(ledger: RunLedger, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
@@ -223,6 +281,34 @@ async def reconcile_runs(ctx: dict[str, Any]) -> dict[str, Any]:
     return {"status": "reconciled", "count": len(reconciled)}
 
 
+class ConsentApprover(Protocol):
+    """The narrow slice of `RunEngine` `reconcile_consents` needs."""
+
+    async def approve(self, consent_id: str, *, approved: bool) -> None: ...
+
+
+async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentApprover) -> dict[str, Any]:
+    """Re-fire verdicts recorded while the process was down (B10, design §1.4).
+
+    A crash between `ConsentService.grant/deny` and `engine.approve` leaves a decided
+    consent row with no enqueue. This sweep re-fires those verdicts; still-pending
+    parks (and orphans with no consent row) are LEFT ALONE. Idempotent via `approve`'s
+    AWAITING_CONSENT status guard. `"expired"` counts as decided-denied (refusal-resumes).
+    Lifespan-only this wave (not a SAQ cron).
+    """
+    substrate = _substrate(ctx)
+    refired: list[str] = []
+    for run in await substrate.ledger.list_by_status(RunStatus.AWAITING_CONSENT):
+        view = await substrate.consents.latest_for_run(run.run_id)
+        if view is None or view.status == "pending":
+            continue  # still parked (or an orphan) — leave it alone
+        await engine.approve(view.id, approved=(view.status == "granted"))
+        refired.append(run.run_id)
+    if refired:
+        logger.warning("reconcile_consents", count=len(refired), run_ids=refired)
+    return {"status": "reconciled", "count": len(refired)}
+
+
 async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
     """Emit a reconciled run's terminal DONE onto a correctly-seeded, closed channel.
 
@@ -239,12 +325,12 @@ async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
     substrate.bus.close(run_id)
 
 
-def _write_failed_turn(substrate: RunSubstrate, *, run_id: str, session_id: str) -> None:
+async def _write_failed_turn(substrate: RunSubstrate, *, run_id: str, session_id: str) -> None:
     """Write a friendly failed agent turn so the settled slot renders the fault."""
     from lychd.domain.web.schemas import BridgeTurn
 
     try:
-        substrate.sessions.add_turn(
+        await substrate.turns.add_turn(
             session_id,
             BridgeTurn(role="agent", content=_FAILURE_MESSAGE, run_id=run_id, state="failed"),
         )
