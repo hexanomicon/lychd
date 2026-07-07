@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -14,7 +15,7 @@ from lychd.system.constants import (
     PATH_SYSTEMD_UNITS_DIR,
     PATH_SYSTEMD_USER_UNITS_DIR,
 )
-from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
+from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget, SystemdService
 
 logger = structlog.get_logger()
 
@@ -172,6 +173,35 @@ class ScribeService:
                 logger.info("sentinel_updated", message="Sentinels updated. Inscription versioned.")
         except (subprocess.CalledProcessError, OSError):
             logger.exception("sentinel_commit_failed")
+
+    def write_user_unit(self, service: SystemdService) -> Path:
+        """Inscribe a plain systemd ``--user`` unit (uncaged daemonhood).
+
+        A deliberately SEPARATE path from :meth:`generate_all`: plain units do
+        NOT touch the Quadlet staging dir, the Git Sentinel, or the
+        managed-suffix atomic swap. They are written straight into the systemd
+        user unit dir with the same atomic-write discipline (temp file in the
+        same directory -> ``os.replace`` rename), so a rewrite is byte-stable
+        and never disturbs any ``.container``/``.target``/sentinel state.
+
+        Returns the path of the written unit.
+        """
+        self._systemd_dir.mkdir(parents=True, exist_ok=True)
+        target = self._systemd_dir / service.filename
+        content = service.render()
+
+        fd, tmp_name = tempfile.mkstemp(dir=self._systemd_dir, prefix=".lychd-unit-", suffix=".tmp")
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(content)
+            tmp_path.replace(target)
+        except BaseException:
+            tmp_path.unlink(missing_ok=True)
+            raise
+
+        logger.info("user_unit_inscribed", path=str(target))
+        return target
 
     def _write_manifest(self, manifest: QuadletBase, target_dir: Path) -> None:
         """Render a single Quadlet manifest into its physical file."""

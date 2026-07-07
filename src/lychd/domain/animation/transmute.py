@@ -7,7 +7,9 @@ no filesystem writes or host mutations.
 from __future__ import annotations
 
 import shlex
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
 from lychd.config.settings import get_settings
@@ -21,7 +23,14 @@ from lychd.system.constants import (
     PATH_EXTENSIONS_DIR,
     PATH_POSTGRES_ROOT_DIR,
 )
-from lychd.system.schemas import MountData, QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
+from lychd.system.schemas import (
+    MountData,
+    QuadletBase,
+    QuadletContainer,
+    QuadletPod,
+    QuadletTarget,
+    SystemdService,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -32,6 +41,17 @@ if TYPE_CHECKING:
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 MIN_COVEN_MEMBERS: Final[int] = 2
+
+
+def transmute_uncaged_vessel(settings: Settings) -> SystemdService:
+    """Build the uncaged vessel unit from settings.
+
+    Emits a :class:`SystemdService` model; writes nothing (pure domain). The
+    exec line boots the server directly on the host via the venv ``lychd``
+    entrypoint (``lychd run`` == litestar's ``run`` subcommand), NOT a Quadlet.
+    """
+    exec_start = f"{Path(sys.prefix) / 'bin' / 'lychd'} run --host 127.0.0.1 --port {settings.server.port}"
+    return SystemdService(exec_start=exec_start)
 
 
 @dataclass(frozen=True)

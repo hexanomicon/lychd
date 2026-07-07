@@ -5,12 +5,16 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING
 
+import click
+
 from lychd.cli.base import get_console, ritual_command
 
 if TYPE_CHECKING:
-    import click
+    from rich.console import Console
 
+    from lychd.config.settings import Settings
     from lychd.domain.animation.schemas import SoulstoneConfig
+    from lychd.system.services.scribe import ScribeService
 
 
 def _raise_missing_portal_secrets_error(secret_names: list[str]) -> None:
@@ -100,7 +104,13 @@ def init_codex() -> None:
     help_text="Transmute configs into Systemd units.",
     start_message="[bold blue]🔮 Beginning the Transmutation (lychd bind)...[/]",
 )
-def bind_quadlets() -> None:
+@click.option(
+    "--uncaged",
+    is_flag=True,
+    default=False,
+    help="Also inscribe the uncaged vessel systemd --user unit (runs lychd directly on the host, no Podman).",
+)
+def bind_quadlets(uncaged: bool) -> None:  # noqa: FBT001 - click passes flags as kwargs; the option owns the bool contract
     """Perform the Binding Ritual (III. The Transmutation).
 
     1. Loads Settings and Soulstones from the Codex.
@@ -108,6 +118,7 @@ def bind_quadlets() -> None:
     3. Calculates the Law of Exclusivity (Animation Domain).
     4. Generates Systemd Quadlet manifest files with Git versioning (System Domain).
     5. Reloads the Systemd User Daemon.
+    6. If ``--uncaged``: also inscribe the plain systemd --user vessel unit.
     """
     import secrets
     import shutil
@@ -178,6 +189,43 @@ def bind_quadlets() -> None:
 
     console.print("\n[bold green]✓ The circle is bound.[/]")
     console.print("  [dim]You may now summon the vessel: systemctl --user start lychd-vessel.service[/]")
+
+    # 5. (Optional) Uncaged daemonhood — a plain systemd --user unit that runs
+    # lychd directly on the host, bypassing the Podman pod entirely. Separate,
+    # obvious path: no Quadlet staging/sentinel involved.
+    if uncaged:
+        _inscribe_uncaged_vessel(scribe=scribe, settings=settings, systemctl=systemctl, console=console)
+
+
+def _inscribe_uncaged_vessel(
+    *,
+    scribe: ScribeService,
+    settings: Settings,
+    systemctl: str | None,
+    console: Console,
+) -> None:
+    """Inscribe the uncaged vessel systemd ``--user`` unit and hint the enable step.
+
+    A deliberately separate path from the Quadlet bind: the vessel runs ``lychd``
+    directly on the host. We reload the daemon (when systemd is present) but NEVER
+    auto-enable — the Magus flips the switch. Without systemd, the unit is still
+    written and daemon-reload is skipped with a warning.
+    """
+    import subprocess
+
+    from lychd.domain.animation.transmute import transmute_uncaged_vessel
+
+    service = transmute_uncaged_vessel(settings)
+    unit_path = scribe.write_user_unit(service)
+    console.print(f"\n  [dim]Uncaged vessel unit inscribed: {unit_path}[/]")
+    if systemctl:
+        console.print("  [dim]Invoking systemd daemon-reload...[/]")
+        subprocess.run([systemctl, "--user", "daemon-reload"], check=True)  # noqa: S603
+    else:
+        console.print("  [yellow]![/] [dim]Systemctl not found. daemon-reload skipped.[/]")
+    console.print("  [bold green]✓ The uncaged vessel is inscribed.[/]")
+    console.print("  [dim]To awaken it (you flip the switch):[/]")
+    console.print("  [bold]systemctl --user enable --now lychd-vessel.service[/]")
 
 
 @ritual_command(
