@@ -165,7 +165,7 @@ Within `docs/`, authority is divided by purpose:
   vocabulary of the body.
 - **docs/divination/** defines operator interaction, interface doctrine, and
   transcendence-facing workflows.
-- **docs/summoning.md** is the practical user ritual for bringing the daemon up.
+- **docs/summoning/** is the practical user ritual for bringing the daemon up.
 
 Directory `index.md` files inside `docs/` are parent pages in the published
 site. They are reflective maps, not passive listings: an index names the local

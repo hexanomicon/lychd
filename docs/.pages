@@ -1,6 +1,7 @@
 nav:
   - Prophecy: index.md
-  - Summoning: summoning.md
+  - Summoning: summoning
+  - The Praxis: praxis
   - Sepulcher: sepulcher
   - Divination: divination
   - Covenants: adr
