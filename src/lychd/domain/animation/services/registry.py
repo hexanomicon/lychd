@@ -149,7 +149,7 @@ class AnimatorRegistry:
                 logger.warning(
                     "runtime_unresolved",
                     rune_name=rune.name,
-                    rune_type=type(rune).__name__,
+                    rune_type=rune.__class__.__name__,
                 )
 
         self._soulstones = new_soulstones

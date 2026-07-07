@@ -459,3 +459,85 @@ async def test_requesting_run_not_counted_empty_ledger_drains_immediately() -> N
     with patch("asyncio.create_subprocess_exec", return_value=process):
         plan = await manager.request_transition(target.key, 100.0)
     assert plan.action_type == "HARD_SWAP"  # no lease held → no wait, no timeout
+
+
+# ---------------------------------------------------------------------------
+# F1 (P1): the claim gate MUST reopen on drain-timeout AND cancellation, or every
+# future perform_run wedges at intake. QuiescentBroker.pause_queues is a no-op, so
+# these use a broker fake that records the gate state.
+# ---------------------------------------------------------------------------
+
+
+class _RecordingBroker:
+    """A broker fake that records claim-gate state (QuiescentBroker's is a no-op)."""
+
+    def __init__(self) -> None:
+        self.paused = False
+        self.soft_stop_calls = 0
+
+    async def pause_queues(self) -> None:
+        self.paused = True
+
+    async def broadcast_soft_stop(self) -> None:
+        self.soft_stop_calls += 1
+
+    async def unpause_queues(self) -> None:
+        self.paused = False
+
+    async def get_active_worker_count(self) -> int:
+        return 0
+
+
+def _swap_manager_with_broker(broker: object, *, leases: LeaseLedger, switching: SwitchingSettings) -> tuple[Any, Any]:
+    target = _spec(key="vision:vision:vision-8b", animator_name="vision", family=CapabilityFamily.VISION)
+    evictee = _spec(key="titan:chat:titan-70b", animator_name="titan")
+    registry = StubRegistry(
+        [target, evictee],
+        [_state(target), _state(evictee, is_active=True, warm=True)],
+        {"vision": _runtime("vision", up=False), "titan": _runtime("titan", up=True)},
+    )
+    manager = OrchestratorManager(
+        broker,
+        registry=registry,  # type: ignore[arg-type]
+        leases=leases,
+        policy=_FixedPolicy(["titan"]),
+        arbiter=TransitionArbiter(),
+        switching=switching,
+    )
+    return manager, target
+
+
+@pytest.mark.asyncio
+async def test_drain_timeout_reopens_claim_gate() -> None:
+    """A drain that times out fails the run loudly but leaves the queues UNPAUSED (F1)."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker, leases=leases, switching=SwitchingSettings(drain_timeout_s=0.05)
+    )
+    _acquire(leases, _spec(key="titan:chat:titan-70b", animator_name="titan"), grant_id="stuck")
+
+    with pytest.raises(RuntimeError, match="Lease drain timed out"):
+        await manager.request_transition(target.key, 100.0)
+
+    assert broker.soft_stop_calls == 1  # we did pass the pause and enter the drain
+    assert broker.paused is False  # gate reopened on the timeout path
+
+
+@pytest.mark.asyncio
+async def test_cancel_mid_drain_reopens_claim_gate() -> None:
+    """Cancellation during the (up-to-120s) drain wait still leaves the queues UNPAUSED (F1)."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(broker, leases=leases, switching=SwitchingSettings(drain_timeout_s=5.0))
+    _acquire(leases, _spec(key="titan:chat:titan-70b", animator_name="titan"), grant_id="held")  # never released
+
+    task = asyncio.create_task(manager.request_transition(target.key, 100.0))
+    await asyncio.sleep(0.02)  # let it pause + park on the live lease drain
+    assert broker.paused is True  # gate closed while draining
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert broker.paused is False  # gate reopened on the cancellation path

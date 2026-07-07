@@ -33,6 +33,18 @@ def test_merge_reserved_ports_core_extension_collision_names_both() -> None:
     assert "Oculus (Phoenix UI)" in message
 
 
+def test_merge_reserved_ports_repeated_label_raises() -> None:
+    """An extension reusing a core service's label (different port) must not silently
+    overwrite the core reservation — it fails at bind, naming both ports."""
+    core = {"Oculus (Phoenix UI)": 6006}
+    extension = {"Oculus (Phoenix UI)": 7007}
+    with pytest.raises(ValueError, match="Oculus") as exc:
+        _merge_reserved_ports(core, extension)
+    message = str(exc.value)
+    assert "6006" in message
+    assert "7007" in message
+
+
 @pytest.fixture
 def runner() -> CliRunner:
     """Fixture for invoking command-line interfaces."""

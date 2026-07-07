@@ -63,19 +63,31 @@ class RuneRegistry:
         """Merge port claims from every rune implementing ``PortReserver``.
 
         Raises:
-            ValueError: If two rune port claims collide on the same port.
+            ValueError: If two rune claims collide on the same PORT (even under an
+                equal label — two distinct claimants for one port is a real conflict)
+                or on the same LABEL (a repeated label would silently overwrite an
+                earlier reservation and evade the §8.1 fail-at-bind guarantee).
 
         """
         merged: dict[str, int] = {}
-        seen: dict[int, str] = {}
+        by_label: dict[str, str] = {}  # label -> claimant type name
+        by_port: dict[int, tuple[str, str]] = {}  # port -> (label, claimant type name)
         for rune in self._runes:
             if not isinstance(rune, PortReserver):
                 continue
+            claimant = rune.__class__.__name__
             for label, port in rune.reserved_ports().items():
-                if port in seen and seen[port] != label:
-                    msg = f"Port {port} is claimed by both '{seen[port]}' and '{label}'."
+                if label in by_label:
+                    msg = f"Port label '{label}' is claimed by both '{by_label[label]}' and '{claimant}'."
                     raise ValueError(msg)
-                seen[port] = label
+                if port in by_port:
+                    other_label, other_claimant = by_port[port]
+                    msg = (
+                        f"Port {port} is claimed by both '{other_label}' ({other_claimant}) and '{label}' ({claimant})."
+                    )
+                    raise ValueError(msg)
+                by_label[label] = claimant
+                by_port[port] = (label, claimant)
                 merged[label] = port
         return merged
 

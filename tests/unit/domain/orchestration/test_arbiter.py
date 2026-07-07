@@ -105,3 +105,67 @@ async def test_executor_exception_releases_section_and_reaches_all_same_key_wait
 
     # the section was released — a fresh transition can still run
     assert (await arbiter.run("k2", 50.0, lambda: _await_plan([], "after"))).reason == "after"
+
+
+# ---------------------------------------------------------------------------
+# F2 (P1): a parked waiter that is cancelled must NOT wedge the arbiter — neither
+# a ghost handoff (_busy stuck True) nor a leaked in-flight future may survive.
+# The PoC that proved the pre-fix deadlock: after cancelling a parked waiter, a
+# third transition hangs and a same-key retry hangs. asyncio.wait_for fails loudly.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_cancelled_parked_waiter_does_not_wedge_a_later_transition() -> None:
+    """Cancel a parked waiter → the section still frees, so a later transition runs."""
+    arbiter = TransitionArbiter()
+    release_owner = asyncio.Event()
+
+    async def _owner() -> TransitionPlan:
+        await release_owner.wait()  # hold the section so the next caller parks
+        return _plan("owner")
+
+    owner = asyncio.create_task(arbiter.run("key-a", 50.0, _owner))
+    await asyncio.sleep(0)  # owner claims the section
+
+    waiter = asyncio.create_task(arbiter.run("key-b", 50.0, lambda: _await_plan([], "b")))
+    await asyncio.sleep(0)  # waiter parks in the priority heap
+
+    waiter.cancel()  # cancelled WHILE parked (plausible during a 120s drain)
+    with pytest.raises(asyncio.CancelledError):
+        await waiter
+
+    release_owner.set()
+    assert (await asyncio.wait_for(owner, timeout=1.0)).reason == "owner"
+
+    # A subsequent, different-key transition must proceed — no ghost-handoff wedge.
+    third = await asyncio.wait_for(arbiter.run("key-c", 50.0, lambda: _await_plan([], "third")), timeout=1.0)
+    assert third.reason == "third"
+
+
+@pytest.mark.asyncio
+async def test_cancelled_parked_waiter_frees_inflight_for_same_key_retry() -> None:
+    """Cancel a parked waiter → a same-key retry executes, not hangs on a leaked future."""
+    arbiter = TransitionArbiter()
+    release_owner = asyncio.Event()
+
+    async def _owner() -> TransitionPlan:
+        await release_owner.wait()
+        return _plan("owner")
+
+    owner = asyncio.create_task(arbiter.run("key-a", 50.0, _owner))
+    await asyncio.sleep(0)
+
+    waiter = asyncio.create_task(arbiter.run("key-b", 50.0, lambda: _await_plan([], "b1")))
+    await asyncio.sleep(0)
+    waiter.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await waiter
+
+    release_owner.set()
+    await asyncio.wait_for(owner, timeout=1.0)
+
+    # Retrying the cancelled waiter's OWN key must execute — the leaked in-flight
+    # future was popped, so `run` does not `return await` a never-resolving future.
+    retry = await asyncio.wait_for(arbiter.run("key-b", 50.0, lambda: _await_plan([], "b2")), timeout=1.0)
+    assert retry.reason == "b2"

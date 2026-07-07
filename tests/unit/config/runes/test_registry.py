@@ -20,6 +20,10 @@ class _Claimer:
         return {self._label: self._port}
 
 
+class _OtherClaimer(_Claimer):
+    """A DISTINCT PortReserver type (so a collision names two different claimants)."""
+
+
 class _Bystander:
     """A rune-like object that is NOT a PortReserver (no reserved_ports)."""
 
@@ -51,6 +55,31 @@ def test_reserved_ports_duplicate_claim_names_both() -> None:
     message = str(exc.value)
     assert "Oculus (Phoenix UI)" in message
     assert "Intruder" in message
+
+
+def test_reserved_ports_distinct_labels_and_ports_merge() -> None:
+    """The legitimate path: two runes with disjoint labels AND ports merge cleanly."""
+    registry = RuneRegistry([_Claimer("UI", 6006), _OtherClaimer("OTLP", 4317)])  # type: ignore[list-item]
+    assert registry.reserved_ports() == {"UI": 6006, "OTLP": 4317}
+
+
+def test_reserved_ports_repeated_label_names_both() -> None:
+    """A second rune REUSING a label (different port) fails — a silent overwrite would
+    drop the earlier reservation and evade the fail-at-bind guarantee. Names both."""
+    registry = RuneRegistry([_Claimer("UI", 6006), _OtherClaimer("UI", 7007)])  # type: ignore[list-item]
+    with pytest.raises(ValueError, match="'UI'") as exc:
+        registry.reserved_ports()
+    message = str(exc.value)
+    assert "_Claimer" in message
+    assert "_OtherClaimer" in message
+
+
+def test_reserved_ports_same_label_same_port_two_distinct_runes_raises() -> None:
+    """Two DISTINCT runes with an identical label+port is a real conflict — must raise
+    (the old label-equality escape hatch let this pass silently)."""
+    registry = RuneRegistry([_Claimer("UI", 6006), _OtherClaimer("UI", 6006)])  # type: ignore[list-item]
+    with pytest.raises(ValueError, match="'UI'"):
+        registry.reserved_ports()
 
 
 def test_one_ambiguity_names_schema_and_count() -> None:
