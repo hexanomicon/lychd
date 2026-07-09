@@ -24,13 +24,16 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
 
+from lychd.domain.cortex.engine import admit_consent_resume, run_job_key
 from lychd.domain.cortex.graph_runner import GraphRunner
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunParked, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
+from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
     from lychd.agents.workflows.base import Workflow
+    from lychd.domain.cortex.events import RunEmitter
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunRecord
     from lychd.domain.cortex.substrate import RunSubstrate
@@ -64,13 +67,6 @@ def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
     return get_run_substrate()
 
 
-def _workflow_parks(workflow: Workflow) -> bool:
-    """Whether a workflow's graph contains a `Gate` node (⇒ Durable Stasis tier)."""
-    from lychd.agents.workflows.base import Gate
-
-    return any(issubclass(node, Gate) for node in workflow.graph.get_nodes())
-
-
 def _phylactery_for(run: RunRecord, workflow: Workflow, stasis_dir: Path) -> PhylacteryProtocol:
     """Select the stasis tier: resume the durable file, else Durable for Gate workflows.
 
@@ -82,7 +78,7 @@ def _phylactery_for(run: RunRecord, workflow: Workflow, stasis_dir: Path) -> Phy
 
     if run.stasis_path is not None:
         return DurableStasisPhylactery(job_id=run.run_id, json_file=Path(run.stasis_path))
-    if _workflow_parks(workflow):
+    if workflow.durable:
         return DurableStasisPhylactery.for_run(run.run_id, stasis_dir=stasis_dir)
     return LiveStasisPhylactery(job_id=run.run_id)
 
@@ -91,9 +87,8 @@ async def _await_claim_gate(substrate: RunSubstrate) -> None:
     """Park on the broker's claim gate while intake is paused for a transition.
 
     Drain honesty is the LeaseLedger's; pausing merely stops NEW runs from claiming
-    while a physical transition is in flight. The gate lives on the honest
-    `GhoulBroker` (`wire_runtime`); the pre-wire `QuiescentBroker`/test fakes expose
-    none, so the wait is skipped when absent.
+    while a physical transition is in flight. The gate lives on the production
+    `GhoulBroker`; narrow test fakes may expose none, so the wait is skipped then.
     """
     broker = getattr(substrate.orchestrator, "worker_broker", None)
     gate = getattr(broker, "claim_gate", None)
@@ -101,11 +96,12 @@ async def _await_claim_gate(substrate: RunSubstrate) -> None:
         await gate.wait()
 
 
-async def perform_run(  # noqa: C901, PLR0912, PLR0915 - fresh/resume/park/fail branches are the honest run path
+async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/park/fail path
     ctx: dict[str, Any],
     *,
     run_id: str,
     resume: bool = False,
+    enqueue_seq: int | None = None,
 ) -> dict[str, Any]:
     """Execute one run's workflow graph. The ONLY graph-execution site.
 
@@ -117,50 +113,113 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - fresh/resume/park/fail 
     await _await_claim_gate(substrate)
     ledger = substrate.ledger
     run = await ledger.get(run_id)
-    if run is None or run.status is not RunStatus.QUEUED:
+    delivery_seq = run.enqueue_seq if run is not None and enqueue_seq is None else enqueue_seq
+    if run is None or delivery_seq is None or run.status is not RunStatus.QUEUED or run.enqueue_seq != delivery_seq:
         return {"status": "skipped", "run_id": run_id}  # stale / duplicate claim guard
-
-    workflow = substrate.workflows.get(run.workflow_name)
-    if resume:
-        # R1-safe channel seeding: a durable resume after restart mints a fresh channel
-        # that MUST continue the persisted seq, never restart at 0 (else re-collided,
-        # silently-shed Step rows). Seed BEFORE any emitter opens the channel.
-        substrate.bus.open(run_id, from_seq=await ledger.next_seq(run_id))
-    emitter = substrate.bus.emitter(run_id)
-    if workflow is None:
-        await ledger.set_status(run_id, RunStatus.RUNNING)
-        await ledger.set_status(run_id, RunStatus.FAILED, error=f"unknown workflow: {run.workflow_name}")
-        emitter.done(RunStatus.FAILED.value)
-        return {"status": "failed", "run_id": run_id}
-
-    if resume and (run.stasis_path is None or not Path(run.stasis_path).exists()):
-        # Honest failure: never a silent re-run of a run whose checkpoint is gone.
-        await _settle_terminal(ledger, run_id, RunStatus.FAILED, error="stasis lost")
-        substrate.context.release(run_id)
-        return {"status": "failed", "run_id": run_id}
-
-    persistence = _phylactery_for(run, workflow, substrate.stasis_dir)
-
-    async def _on_stasis_enter() -> None:
-        # The run parks while the orchestrator transitions hardware (C7). It holds no
-        # lease while parked, so it never blocks its own drain (requester-not-counted).
-        await ledger.set_status(run_id, RunStatus.AWAITING_HARDWARE)
-
-    async def _on_stasis_exit() -> None:
-        await ledger.set_status(run_id, RunStatus.RUNNING)
-
-    runner: GraphRunner[Any] = GraphRunner(
-        orchestrator=substrate.orchestrator,
-        persistence=persistence,
-        signal_priority=float(run.priority),
-        on_stasis_enter=_on_stasis_enter,
-        on_stasis_exit=_on_stasis_exit,
-    )
-    services = substrate.build_services()
-
-    await ledger.set_status(run_id, RunStatus.RUNNING)
-    emitter.status(RunStatus.RUNNING.value)
+    claim_enqueue_seq = delivery_seq
+    claim_task = asyncio.ensure_future(ledger.try_claim_run(run_id, enqueue_seq=claim_enqueue_seq))
     try:
+        claimed = await asyncio.shield(claim_task)
+    except asyncio.CancelledError:
+        claimed = await complete_under_cancellation(claim_task)
+        if claimed:
+            settled = await complete_under_cancellation(
+                _settle_interrupted_claim(
+                    substrate,
+                    run,
+                    enqueue_seq=claim_enqueue_seq,
+                    error="run worker cancelled",
+                    persistence=None,
+                )
+            )
+            if settled:
+                await complete_under_cancellation(_emit_terminal(substrate, run_id))
+        raise
+    if not claimed:
+        return {"status": "skipped", "run_id": run_id}  # atomic redelivery fence
+
+    emitter: RunEmitter | None = None
+    persistence: PhylacteryProtocol | None = None
+    terminal_owned = False
+
+    async def settle_terminal(status: RunStatus, *, error: str | None = None) -> None:
+        """Commit terminal truth despite cancellation and preserve emit ownership."""
+        nonlocal terminal_owned
+        settle_task = asyncio.ensure_future(_settle_terminal(ledger, run_id, status, error=error))
+        try:
+            terminal_owned = await asyncio.shield(settle_task)
+        except asyncio.CancelledError:
+            # The commit may have won. Learn its ownership before propagating so
+            # finally cannot mistake our terminal row for somebody else's event.
+            terminal_owned = await complete_under_cancellation(settle_task)
+            raise
+
+    try:
+        workflow = substrate.workflows.get(run.workflow_name)
+        if resume:
+            # R1-safe channel seeding: a durable resume after restart mints a fresh channel
+            # that MUST continue the persisted seq, never restart at 0 (else re-collided,
+            # silently-shed Step rows). Seed BEFORE any emitter opens the channel.
+            substrate.bus.open(run_id, from_seq=await ledger.next_seq(run_id))
+        emitter = substrate.bus.emitter(run_id)
+        if workflow is None:
+            # F2: settle the terminal INSIDE the try so the finally emits the single DONE
+            # and CLOSES the channel — an early return here leaked the open channel,
+            # tailing keepalives forever.
+            await settle_terminal(
+                RunStatus.FAILED,
+                error=f"unknown workflow: {run.workflow_name}",
+            )
+            await _cleanup_claim_resources(
+                substrate,
+                run,
+                recorded_path=run.stasis_path,
+                persistence=None,
+            )
+            return {"status": "failed", "run_id": run_id}
+
+        if resume and (run.stasis_path is None or not Path(run.stasis_path).exists()):
+            # Honest failure: never a silent re-run of a run whose checkpoint is gone.
+            # F2: settle inside the try so the finally emits the terminal + closes the channel.
+            await settle_terminal(RunStatus.FAILED, error="stasis lost")
+            await _cleanup_claim_resources(
+                substrate,
+                run,
+                recorded_path=run.stasis_path,
+                persistence=None,
+            )
+            return {"status": "failed", "run_id": run_id}
+
+        persistence = _phylactery_for(run, workflow, substrate.stasis_dir)
+        # F6: record the durable checkpoint path BEFORE the graph runs, so a crash during
+        # a hardware transition (AWAITING_HARDWARE) leaves a reconcilable orphan — else
+        # `stasis_path` was only ever persisted on the consent-park branch and an
+        # AWAITING_HARDWARE crash orphaned `{run_id}.json` with nothing to unlink it.
+        if isinstance(persistence, DurableStasisPhylactery) and run.stasis_path is None:
+            await ledger.set_stasis_path(run_id, str(persistence.json_file))
+
+        async def _on_stasis_enter() -> None:
+            # The run parks while the orchestrator transitions hardware (C7). It holds no
+            # lease while parked, so it never blocks its own drain (requester-not-counted).
+            await ledger.set_status(run_id, RunStatus.AWAITING_HARDWARE)
+
+        async def _on_stasis_exit() -> None:
+            await ledger.set_status(run_id, RunStatus.RUNNING)
+
+        runner: GraphRunner[Any] = GraphRunner(
+            orchestrator=substrate.orchestrator,
+            persistence=persistence,
+            signal_priority=run.priority,
+            on_stasis_enter=_on_stasis_enter,
+            on_stasis_exit=_on_stasis_exit,
+        )
+        from lychd.domain.codex.sigil import Sigil
+
+        services = substrate.build_services(
+            sigil=Sigil(name=run.sigil_name, scopes=run.sigil_scopes),
+        )
+
+        emitter.status(RunStatus.RUNNING.value)
         if resume:
             result = await runner.resume_graph(workflow.graph, deps=services)
         else:
@@ -170,54 +229,242 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - fresh/resume/park/fail 
                 workflow.make_state(run.to_intent()),
                 deps=services,
             )
+        if isinstance(result, RunParked):
+            return await _commit_consent_park(substrate, ledger, emitter, run_id, persistence, result)
+        await settle_terminal(RunStatus.DONE)
+        await _cleanup_claim_resources(
+            substrate,
+            run,
+            recorded_path=run.stasis_path,
+            persistence=persistence,
+        )
     except asyncio.CancelledError:
-        # Cancel path (F6/H6): free the assembled context floor and let the cancel
-        # propagate. `engine.cancel` already wrote CANCELLED + emitted the terminal;
-        # the finally's re-emit is dropped by the channel's closed-guard (F2/H3).
-        substrate.context.release(run_id)
+        # Once the claim CAS wins, every cancellation path settles durable truth
+        # before propagating, including setup/checkpoint and resume-seeding awaits.
+        if terminal_owned:
+            await complete_under_cancellation(
+                _cleanup_claim_resources(
+                    substrate,
+                    run,
+                    recorded_path=run.stasis_path,
+                    persistence=persistence,
+                )
+            )
+        else:
+            terminal_owned = await complete_under_cancellation(
+                _settle_interrupted_claim(
+                    substrate,
+                    run,
+                    enqueue_seq=claim_enqueue_seq,
+                    error="run worker cancelled",
+                    persistence=persistence,
+                )
+            )
         raise
     except Exception as exc:
         logger.exception("perform_run_failed", run_id=run_id, workflow=run.workflow_name)
-        await _write_failed_turn(substrate, run_id=run_id, session_id=run.session_id)
-        substrate.context.release(run_id)  # F6/H6: free the floor on failure
-        await _settle_terminal(ledger, run_id, RunStatus.FAILED, error=str(exc))
+        if terminal_owned:
+            await complete_under_cancellation(
+                _cleanup_claim_resources(
+                    substrate,
+                    run,
+                    recorded_path=run.stasis_path,
+                    persistence=persistence,
+                )
+            )
+        else:
+            terminal_owned = await complete_under_cancellation(
+                _settle_interrupted_claim(
+                    substrate,
+                    run,
+                    enqueue_seq=claim_enqueue_seq,
+                    error=str(exc),
+                    persistence=persistence,
+                )
+            )
+            if terminal_owned:
+                await _write_failed_turn(substrate, run_id=run_id, session_id=run.session_id)
         raise
     else:
-        if isinstance(result, RunParked):
-            # S4: persist-park → status → emit. The row is already committed (park
-            # returned post-commit); write the durable path + status, THEN emit CONSENT
-            # last, so a fast verdict can never race the engine.approve status guard.
-            await ledger.set_consent(run_id, result.consent_id)
-            if isinstance(persistence, DurableStasisPhylactery):
-                await ledger.set_stasis_path(run_id, str(persistence.json_file))
-            await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
-            emitter.consent(result.consent_id, tool_name=result.tool_name)
-            return {"status": "awaiting_consent", "run_id": run_id}
-        await _settle_terminal(ledger, run_id, RunStatus.DONE)
-        await _cleanup_stasis(ledger, run_id, persistence)
         return {"status": "done", "run_id": run_id}
     finally:
         # The never-hang guarantee, one place: emit the single terminal DONE from the
         # AUTHORITATIVE row status (cancel may have won the race), then close the
-        # channel (F5/H4). A non-terminal park leaves the channel open on purpose.
-        terminal = await ledger.get(run_id)
-        if terminal is not None and terminal.status in TERMINAL_STATUSES:
-            emitter.done(terminal.status.value)
-            substrate.bus.close(run_id)
+        # channel (F5/H4). A non-terminal park/resume leaves the channel open on purpose.
+        terminal = await complete_under_cancellation(ledger.get(run_id))
+        if terminal_owned and terminal is not None and terminal.status in TERMINAL_STATUSES:
+            if emitter is None:
+                await complete_under_cancellation(_emit_terminal(substrate, run_id))
+            else:
+                emitter.done(terminal.status.value)
+                substrate.bus.close(run_id)
+
+
+async def _settle_interrupted_claim(
+    substrate: RunSubstrate,
+    run: RunRecord,
+    *,
+    enqueue_seq: int,
+    error: str,
+    persistence: PhylacteryProtocol | None,
+) -> bool:
+    """Let an API cancellation settle first, else fail this exact claimed hop.
+
+    SAQ marks an active job aborting before its worker task receives cancellation.
+    Under Topology A the API and worker share ``cancellations``: the worker waits for
+    the API's durable ``CANCELLED`` write instead of racing it with ``FAILED``.  If
+    abort/status settlement failed, the row remains active and this delivery falls
+    back to its exact-sequence failure CAS.
+
+    Returns ``True`` only when this worker owns the terminal write and must emit the
+    terminal event.  A terminal written elsewhere owns its own event publication.
+    """
+    if substrate.cancellations.active(run.run_id):
+        await substrate.cancellations.wait(run.run_id)
+    current = await substrate.ledger.get(run.run_id)
+    if current is None:
+        return False
+    if current.status in TERMINAL_STATUSES:
+        if current.status is RunStatus.CANCELLED and current.enqueue_seq == enqueue_seq:
+            await _cleanup_cancelled_claim(substrate, run, current, persistence=persistence)
+        return False
+    return await _fail_claimed_run(
+        substrate,
+        run,
+        enqueue_seq=enqueue_seq,
+        error=error,
+        persistence=persistence,
+    )
+
+
+async def _cleanup_cancelled_claim(
+    substrate: RunSubstrate,
+    run: RunRecord,
+    current: RunRecord,
+    *,
+    persistence: PhylacteryProtocol | None,
+) -> None:
+    """Release resources created after the API took its pre-abort run snapshot."""
+    await _cleanup_claim_resources(
+        substrate,
+        run,
+        recorded_path=current.stasis_path or run.stasis_path,
+        persistence=persistence,
+    )
+
+
+async def _fail_claimed_run(
+    substrate: RunSubstrate,
+    run: RunRecord,
+    *,
+    enqueue_seq: int,
+    error: str,
+    persistence: PhylacteryProtocol | None,
+) -> bool:
+    """Settle and clean only the active hop this delivery actually claimed."""
+    settled = await complete_under_cancellation(
+        substrate.ledger.try_fail_claimed(
+            run.run_id,
+            enqueue_seq=enqueue_seq,
+            error=error,
+        )
+    )
+    if not settled:
+        return False
+    await _cleanup_claim_resources(
+        substrate,
+        run,
+        recorded_path=run.stasis_path,
+        persistence=persistence,
+    )
+    return True
+
+
+async def _cleanup_claim_resources(
+    substrate: RunSubstrate,
+    run: RunRecord,
+    *,
+    recorded_path: str | None,
+    persistence: PhylacteryProtocol | None,
+) -> None:
+    """Best-effort terminal cleanup that can never hide committed run truth."""
+    substrate.context.release(run.run_id)
+    try:
+        if persistence is None:
+            await _cleanup_recorded_stasis(substrate.ledger, run.run_id, recorded_path)
+        else:
+            await _cleanup_stasis(substrate.ledger, run.run_id, persistence)
+    except Exception as exc:  # noqa: BLE001 - terminal truth already committed
+        # Terminal publication must not depend on deleting a checkpoint pointer.
+        # Reconciliation can retry cleanup from the retained durable path.
+        logger.warning(
+            "terminal_resource_cleanup_failed",
+            run_id=run.run_id,
+            error=str(exc),
+        )
+
+
+async def _commit_consent_park(
+    substrate: RunSubstrate,
+    ledger: RunLedger,
+    emitter: RunEmitter,
+    run_id: str,
+    persistence: PhylacteryProtocol,
+    parked: RunParked,
+) -> dict[str, Any]:
+    """Commit the consent park, then close the pre-flip verdict race (F1).
+
+    S4 order: persist consent + durable path + status, THEN emit CONSENT last, so a
+    verdict arriving on the SSE-event path can never beat the `engine.approve` guard.
+    But the Bridge PAGE-RENDER path exposes the (already-committed) consent row before
+    no-op (row still RUNNING) and stranded the run AWAITING_CONSENT forever. Guard it:
+    once we are AWAITING_CONSENT, re-read the verdict and, if already decided, win the
+    SAME atomic admission CAS and enqueue the resume ourselves. Exactly one of {this,
+    `engine.approve`} wins the CAS — no double-enqueue (F4).
+    """
+    await ledger.set_consent(run_id, parked.consent_id)
+    if isinstance(persistence, DurableStasisPhylactery):
+        await ledger.set_stasis_path(run_id, str(persistence.json_file))
+    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+    emitter.consent(parked.consent_id, tool_name=parked.tool_name)
+
+    verdict = await substrate.consents.verdict(parked.consent_id) if substrate.consents is not None else None
+    if verdict is not None:
+        run = await ledger.get(run_id)
+        if run is not None and await admit_consent_resume(substrate.queues, ledger, run):
+            return {"status": "queued", "run_id": run_id}
+    return {"status": "awaiting_consent", "run_id": run_id}
 
 
 async def _cleanup_stasis(ledger: RunLedger, run_id: str, persistence: PhylacteryProtocol) -> None:
-    """Clear the run's stasis path and unlink the durable file on a terminal DONE.
+    """Unlink a terminal run's durable checkpoint, then clear its ledger pointer.
 
     Covers fresh durable runs that finish without ever parking (and the resumed run
-    that settles): the checkpoint is no longer needed once the run is terminal.
+    that settles): the checkpoint is no longer needed once the terminal status commit
+    has succeeded.  Deleting first keeps a retryable ledger pointer if unlink fails.
     """
+    path = str(persistence.json_file) if isinstance(persistence, DurableStasisPhylactery) else None
+    await _cleanup_recorded_stasis(ledger, run_id, path)
+
+
+async def _cleanup_recorded_stasis(ledger: RunLedger, run_id: str, path: str | None) -> None:
+    """Best-effort file removal with a durable pointer retained on unlink failure."""
+    if path is not None:
+        try:
+            Path(path).unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("stasis_cleanup_failed", run_id=run_id, path=path, error=str(exc))
+            return
     await ledger.set_stasis_path(run_id, None)
-    if isinstance(persistence, DurableStasisPhylactery):
-        persistence.json_file.unlink(missing_ok=True)
 
 
-async def _settle_terminal(ledger: RunLedger, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
+async def _settle_terminal(
+    ledger: RunLedger,
+    run_id: str,
+    status: RunStatus,
+    *,
+    error: str | None = None,
+) -> bool:
     """Write a terminal status race-tolerantly (F2/H3: one terminal writer in practice).
 
     If a competing writer (`engine.cancel`) already drove the row terminal, the write
@@ -231,54 +478,91 @@ async def _settle_terminal(ledger: RunLedger, run_id: str, status: RunStatus, *,
         fresh = await ledger.get(run_id)
         if fresh is not None and fresh.status in TERMINAL_STATUSES:
             logger.info("terminal_write_lost_race", run_id=run_id, attempted=status.value, settled=fresh.status.value)
-            return
+            return False
         raise
+    else:
+        return True
 
 
-async def reconcile_runs(ctx: dict[str, Any]) -> dict[str, Any]:
+async def reconcile_runs(ctx: dict[str, Any], *, boot_cutoff: datetime | None = None) -> dict[str, Any]:
     """Fail runs stranded non-terminal by a dead process (F3/F9/H2).
 
     Two orphan classes are swept to FAILED (each emitting its terminal `DONE`):
 
     - RUNNING / AWAITING_HARDWARE: a crash mid-run leaves the row non-terminal with
-      no live task. Blanket-failing every RUNNING row is CORRECT under Topology A —
-      there is a single process and a single loop, so ANY RUNNING row at boot is by
-      definition orphaned (its owning task died with the process; there is no live
-      heartbeat to check). Revisit ONLY if a multi-process Topology B ever lands.
+      no live task. A run is an orphan of a PREVIOUS process only — never a run THIS
+      process just claimed. Under Topology A a worker cannot claim until the
+      composition root publishes the substrate, which happens AFTER `boot_cutoff` is
+      stamped, so any run started this boot has ``started_at >= boot_cutoff`` and is
+      left alone (F3). When no cutoff is supplied every non-terminal row is swept
+      (the pre-boot-gate behavior). Revisit heartbeats only if a multi-process
+      Topology B ever lands.
     - QUEUED older than `RECONCILE_QUEUED_AFTER_S`: `engine.submit` compensates a
       failed `_enqueue`, but a crash between `create` and `_enqueue` (or a lost
-      broker job) can strand a QUEUED row with no job. An aged QUEUED row is failed
-      with "enqueue lost" so it never keeps a stream on keepalives forever.
+      broker job) can strand a QUEUED row with no job. The durable queue is probed
+      by the exact ``(run_id, enqueue_seq)`` key before an aged row is failed. A
+      present job protects the run; an unavailable/misconfigured broker leaves the
+      row untouched and makes this reconcile result explicitly degraded.
     """
     substrate = _substrate(ctx)
     ledger = substrate.ledger
     reconciled: list[str] = []
     for status in (RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE):
         for run in await ledger.list_by_status(status):
+            if not _predates_boot(run, boot_cutoff):
+                continue  # claimed by THIS process after boot — not an orphan (F3)
             await ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
+            await _cleanup_recorded_stasis(ledger, run.run_id, run.stasis_path)
             await _emit_terminal(substrate, run.run_id)
             reconciled.append(run.run_id)
 
-    # R8 (Wave-3 follow-up): two gaps left open here on purpose.
-    #  1) This rite runs ONCE at web startup (lifespan) — it is not scheduled. Wave 3
-    #     should register it as a saq CronJob (~300s) so a run stranded QUEUED mid
-    #     process-lifetime is healed without waiting for a restart.
-    #  2) saq's PG queue is durable, so an aged (>RECONCILE_QUEUED_AFTER_S) QUEUED row
-    #     surviving a restart may still have a live job. The correct guard is a
-    #     `queue.job(run_job_key(run.run_id, run.enqueue_seq))`-exists check before
-    #     sweeping — deferred because reconcile's substrate carries no queue handle
-    #     yet (adding one is Wave-3 wiring, not a half-build here).
+    # This rite currently runs once at web startup (lifespan), though it is also a
+    # registered SAQ task for an operator/cron caller.  A durable SAQ row can outlive
+    # the process that published it, so age alone never proves an enqueue was lost.
+    # Probe the exact monotonic hop key before settling the Run row terminally.
     now = datetime.now(UTC)
+    probe_errors: list[str] = []
     for run in await ledger.list_by_status(RunStatus.QUEUED):
         if (now - run.created_at).total_seconds() < RECONCILE_QUEUED_AFTER_S:
             continue
+        queue = substrate.queues.get(run.queue_name)
+        if queue is None:
+            logger.error(
+                "reconcile_queue_missing",
+                run_id=run.run_id,
+                queue_name=run.queue_name,
+            )
+            probe_errors.append(run.run_id)
+            continue
+        job_key = run_job_key(run.run_id, run.enqueue_seq)
+        try:
+            job = await queue.job(job_key)
+        except Exception as exc:
+            # A broker outage is not evidence that the job is absent.  Preserve the
+            # non-terminal row for a later retry and surface the degraded sweep.
+            logger.exception(
+                "reconcile_queue_probe_failed",
+                run_id=run.run_id,
+                queue_name=run.queue_name,
+                job_key=job_key,
+                error=str(exc),
+            )
+            probe_errors.append(run.run_id)
+            continue
+        if job is not None:
+            continue
         await ledger.set_status(run.run_id, RunStatus.FAILED, error="enqueue lost")
+        await _cleanup_recorded_stasis(ledger, run.run_id, run.stasis_path)
         await _emit_terminal(substrate, run.run_id)
         reconciled.append(run.run_id)
 
     if reconciled:
         logger.warning("reconcile_runs", count=len(reconciled), run_ids=reconciled)
-    return {"status": "reconciled", "count": len(reconciled)}
+    return {
+        "status": "degraded" if probe_errors else "reconciled",
+        "count": len(reconciled),
+        "probe_errors": len(probe_errors),
+    }
 
 
 class ConsentApprover(Protocol):
@@ -309,6 +593,19 @@ async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentApprover) ->
     return {"status": "reconciled", "count": len(refired)}
 
 
+def _predates_boot(run: RunRecord, boot_cutoff: datetime | None) -> bool:
+    """Whether a non-terminal run is a PRE-boot orphan (safe for reconcile to sweep).
+
+    F3: a run this process started has ``started_at >= boot_cutoff`` (the worker cannot
+    claim before the substrate is published, which is after the cutoff is stamped), so
+    it is NOT an orphan. A run with no ``started_at`` — or no cutoff supplied — cannot
+    belong to this boot and is swept.
+    """
+    if boot_cutoff is None or run.started_at is None:
+        return True
+    return run.started_at < boot_cutoff
+
+
 async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
     """Emit a reconciled run's terminal DONE onto a correctly-seeded, closed channel.
 
@@ -320,8 +617,10 @@ async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
     would otherwise leak one per startup sweep.
     """
     next_seq = await substrate.ledger.next_seq(run_id)
+    settled = await substrate.ledger.get(run_id)
+    status = settled.status if settled is not None and settled.status in TERMINAL_STATUSES else RunStatus.FAILED
     substrate.bus.open(run_id, from_seq=next_seq)
-    substrate.bus.emitter(run_id).done(RunStatus.FAILED.value)
+    substrate.bus.emitter(run_id).done(status.value)
     substrate.bus.close(run_id)
 
 

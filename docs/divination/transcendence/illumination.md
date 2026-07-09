@@ -5,6 +5,8 @@ icon: material/shimmer
 
 # :material-shimmer: Illumination
 
+_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+
 > _"The Fool learns from his own mistakes. The Magus teaches the Machine to never forget them."_
 
 **Citrinitas** (The Yellowing) is the dawn of the "Solar Light"—the moment useful intelligence stops being raw processing power and starts carrying the Magus's Imprint.

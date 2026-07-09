@@ -76,4 +76,74 @@ For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.m
     - In sovereignty-restricted modes, Portals may be disabled entirely.
     - Sensitive intents or high-privatization context may forbid Portal egress, forcing the work to local iron or sanitization workflows.
 
+## Opening a Portal
+
+Connect a remote provider end to end and confirm it on the [Nexus](../../divination/altar/nexus.md). Prerequisites: a running daemon ([the Awakening](../../summoning.md#the-awakening)) and a provider API key.
+
+1. **Store the API key as a named Podman secret** (the rune references it by name, never by value — see *Secret Lifecycle* above):
+   ```bash
+   printf '%s' "$OPENAI_API_KEY" | podman secret create portal_openai_main -
+   ```
+2. **Write the Portal Rune** under `runes/animator/portals/<group>/<name>.toml` (see *Inscribing a Portal* above and the reference below). Declare at least one `[[models]]` block — a Portal with zero models yields zero capabilities.
+3. **Bind:** `lychd bind`. Portals generate no systemd units, but bind validates the rune and registers the Portal's capabilities.
+4. **Verify:** `lychd animators` shows the Portal with its capability; on the [Nexus](../../divination/altar/nexus.md) it reads **active** — a Portal (`is_dynamic=False`) is warm as soon as it is reachable. Route Intents to it from the [Bridge](../../divination/altar/index.md).
+
+!!! warning "Egress is opt-in"
+    Binding a Portal makes **no** network call: `probe` defaults to `false`. Set `probe = true` only for a live reachability check at bind. If the capability never appears, confirm the rune parsed — `lychd bind` reports a named error on an invalid rune, and a rune that fails validation is never registered.
+
+## Portal Rune reference
+
+A **Portal Rune** lives under `~/.config/lychd/runes/animator/portals/<group>/<name>.toml`. It generates no Quadlet manifest and consumes no local VRAM; its capabilities always carry `is_dynamic=False`.
+
+### Top-level fields
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | string (required) | — | Animator name; first segment of every capability key (`<name>:<family>:<model_id>`). |
+| `description` | string | `""` | Human note. |
+| `provider_name` | string (required) | — | Provider identity (e.g. `openai`, `google-gemini`). Set by the provider-specific schema. |
+| `base_url` | URL | provider default | Endpoint override. |
+| `api_key_secret_name` | string | `null` | **Name** of the API-key secret (never the value). |
+| `models` | list of `[[models]]` | `[]` | Declared models (below). |
+| `generation` | `[generation]` table | `null` | Default generation profile for this portal. |
+| `probe` | bool | `false` | Opt-in live reachability probe. Off by default — **no surprise egress**. |
+
+!!! note "Zero models means zero capabilities"
+    A Portal with no `[[models]]` blocks yields no routable capabilities. LychD does not guess a remote provider's catalog; declare at least one model to make the Portal usable.
+
+### The `[[models]]` blocks
+
+One entry per model you want to route to. Each yields a capability spec. A Portal `[[models]]` block has no `path` (the model lives remotely); everything else — the `[models.capabilities]` hints and `[models.generation]` table — matches the [Soulstone Rune reference](./soulstone.md#soulstone-rune-reference).
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | string (required) | — | Remote model id; last segment of the capability key. |
+| `description` | string | `null` | Human note. |
+| `[models.capabilities]` | table | `null` | Capability hints (see the Soulstone reference). |
+| `[models.generation]` | table | `null` | Per-model generation overrides. |
+
+### Example
+
+```toml
+name = "openai-main"
+description = "Reference OpenAI portal (is_dynamic=False; image admission + tool support)."
+api_key_secret_name = "portal_openai_main"
+
+[generation]
+temperature = 0.5
+
+[[models]]
+id = "gpt-5.2"
+description = "Frontier chat model with vision admission and tool support."
+
+[models.capabilities]
+supports_tools = true
+modalities_in = ["text", "image"]
+
+[models.generation]
+max_tokens = 4096
+```
+
+This yields `openai-main:chat:gpt-5.2` (`is_dynamic=False`). The `provider_name` and default `base_url` come from the OpenAI portal schema; you override only what you need.
+
 > _A Portal is not a shortcut. It is a sealed opening in the sky, used only when local iron cannot finish the thought._

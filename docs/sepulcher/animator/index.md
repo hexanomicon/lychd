@@ -62,9 +62,9 @@ Model-backed Animators may possess a default generation profile defined in their
 
 Every Animator declares which **Capabilities** it can provide. A `Capability` is a typed runtime contract surfaced through the Animator registry and the wider Extension Protocol. The **[Dispatcher](../../adr/22-dispatcher.md)** queries active capabilities to resolve which Animator satisfies an Agent's, Graph's, Orchestrator's, or extension's request.
 
-Each capability carries a **lifecycle** (a fixed property of the runtime) and projects a live **phase** (its current readiness), defined canonically in the **[Dispatcher (22)](../../adr/22-dispatcher.md)**:
+Each capability carries an **`is_dynamic` flag** (a fixed property of the runtime) and projects a live **phase** (its current readiness), defined canonically in the **[Dispatcher (22)](../../adr/22-dispatcher.md)**:
 
-- **`CapabilityLifecycle`**: `STATIC` (ready as soon as the container's endpoint is reachable) or `DYNAMIC` (the container is up but the model needs an in-runtime activation step, e.g. a router `/models/load`).
+- **`is_dynamic`**: `False` (ready as soon as the container's endpoint is reachable) or `True` (the container is up but the model needs an in-runtime activation step, e.g. a router `/models/load`).
 - **`CapabilityPhase`**: the live readiness ladder — `COLD`, `ACTIVATABLE`, `WARMING`, `WARM`, `ERROR`, `UNKNOWN`.
 
 The active core family registry currently includes cognitive and tool-oriented families:
@@ -79,7 +79,7 @@ The active core family registry currently includes cognitive and tool-oriented f
 | `tool_execution` | Sandboxed code or tool execution | `nono`-wrapped execution surfaces |
 | `rerank` | Ranking or reranking of retrieved candidates | reranker models, hosted ranking APIs |
 
-This registry is not a philosophical ceiling. Watcher families such as `metrics_query`, `trace_search`, `dashboard_render`, and network families such as `a2a_delegate` can become first-class when the schema and adapter layer know how to bind, probe, and route them. Future cognitive families may also include constraint scoring, state optimization, latent rollout, proof search, formal verification, or other energy/world-model-like services. Those capabilities may make individual graph nodes far stronger, but they still enter through the same Animator binding law instead of absorbing the daemon's persistence, authority, identity, and hardware boundaries. Not all Animators offer all capabilities. A single llama.cpp Soulstone in router mode can expose different capabilities depending on which model is currently loaded; a `DYNAMIC` capability moves along the phase ladder (`ACTIVATABLE` → `WARMING` → `WARM`) as models hot-swap, without restarting the container. The Orchestrator manages these transitions.
+This registry is not a philosophical ceiling. Watcher families such as `metrics_query`, `trace_search`, `dashboard_render`, and network families such as `a2a_delegate` can become first-class when the schema and adapter layer know how to bind, probe, and route them. Future cognitive families may also include constraint scoring, state optimization, latent rollout, proof search, formal verification, or other energy/world-model-like services. Those capabilities may make individual graph nodes far stronger, but they still enter through the same Animator binding law instead of absorbing the daemon's persistence, authority, identity, and hardware boundaries. Not all Animators offer all capabilities. A single llama.cpp Soulstone in router mode can expose different capabilities depending on which model is currently loaded; a capability with `is_dynamic=True` moves along the phase ladder (`ACTIVATABLE` → `WARMING` → `WARM`) as models hot-swap, without restarting the container. The Orchestrator manages these transitions.
 
 ## 🫀 The Galvanic Arc
 

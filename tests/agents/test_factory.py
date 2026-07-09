@@ -32,17 +32,15 @@ def test_forge_caches_per_spec() -> None:
 def test_forge_distinct_specs_distinct_agents() -> None:
     """A changed spec is a distinct cache key -> a distinct agent."""
     forge = default_forge()
-    read_only_spec = replace(THE_FIRST_ONE_SPEC, writes=False)
-    forge.register(read_only_spec.name, build_the_first_one)
-    assert forge.agent_for(THE_FIRST_ONE_SPEC) is not forge.agent_for(read_only_spec)
+    short_spec = replace(THE_FIRST_ONE_SPEC, max_tokens=1024)
+    forge.register(short_spec.name, build_the_first_one)
+    assert forge.agent_for(THE_FIRST_ONE_SPEC) is not forge.agent_for(short_spec)
 
 
-def test_write_gate_binds_mutating_tool_by_absence() -> None:
-    """`writes=True` binds the coven tool; `writes=False` drops it entirely."""
-    writing = build_the_first_one(THE_FIRST_ONE_SPEC)
-    read_only = build_the_first_one(replace(THE_FIRST_ONE_SPEC, writes=False))
-    assert "request_coven_swap" in _function_tool_names(writing)
-    assert "request_coven_swap" not in _function_tool_names(read_only)
+def test_minimal_spec_binds_no_lifecycle_tool() -> None:
+    """The default First One has no in-lease hardware transition capability."""
+    agent = build_the_first_one(THE_FIRST_ONE_SPEC)
+    assert "request_coven_swap" not in _function_tool_names(agent)
 
 
 def test_forge_unknown_spec_raises() -> None:
@@ -57,3 +55,27 @@ def test_build_local_model_uses_base_url() -> None:
     model = build_local_model(model_id="qwen", base_url="http://localhost:8080/v1")
     assert isinstance(model, OpenAIChatModel)
     assert str(model.client.base_url).rstrip("/") == "http://localhost:8080/v1"
+
+
+def test_reference_and_production_models_share_one_profile() -> None:
+    """Reference (`build_local_model`) and production (`get_model`) build the SAME profile.
+
+    Guards the divergence that shipped once: the reference carried the inline-defs /
+    no-strict-tools profile and the production connector built a bare model, so tool-call
+    JSON schemas differed between tests and the running daemon.
+    """
+    from lychd.domain.animation.links import Link
+    from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
+    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
+
+    reference = build_local_model(model_id="qwen", base_url="http://localhost:8080/v1")
+    assert reference.profile is LOCAL_COMPAT_PROFILE
+
+    connector = OpenAICompatibleConnector(
+        kind="openai_compat",
+        link=Link(up=True, activatable=False),
+        base_url="http://localhost:8080/v1",
+        default_model_id="qwen",
+    )
+    production = connector.get_model()
+    assert production.profile is LOCAL_COMPAT_PROFILE

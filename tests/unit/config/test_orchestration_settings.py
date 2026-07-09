@@ -16,6 +16,7 @@ def test_orchestration_defaults() -> None:
     assert orch.queues["runs"].concurrency == 2
     assert orch.queues["rites"].concurrency == 4
     assert orch.switching.policy == "evict-idle"
+    assert orch.switching.actuator == "host-reactor"
     assert orch.switching.min_priority_for_hard_swap == 40
     assert orch.switching.drain_timeout_s == 120.0
     assert orch.whim.idle_evict_after_s == 0
@@ -54,6 +55,21 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 33
     assert settings.orchestration.queues["runs"].concurrency == 9
+    assert settings.orchestration.queues["rites"].concurrency == 4
+
+
+def test_v1_queue_topology_rejects_unimplemented_physical_queues() -> None:
+    with pytest.raises(ValueError, match="Unknown physical orchestration queues: gpu"):
+        OrchestrationSettings.model_validate({"queues": {"gpu": {"concurrency": 1}}})
+
+    with pytest.raises(ValueError, match="routing references unknown queues: gpu"):
+        OrchestrationSettings.model_validate({"routing": {"bridge": {"queue": "gpu", "priority": 70}}})
+
+
+@pytest.mark.parametrize("concurrency", [0, 129])
+def test_queue_concurrency_is_strictly_bounded(concurrency: int) -> None:
+    with pytest.raises(ValueError, match="concurrency"):
+        OrchestrationSettings.model_validate({"queues": {"runs": {"concurrency": concurrency}}})
 
 
 def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -70,6 +86,27 @@ def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.M
     with pytest.raises(ValueError, match="evict-idle"):
         altar_mod.build_altar_services(
             template_engine=JinjaTemplateEngine(directory=templates),
+            queues={},
+            rune_schemas=[],
+            runtime_adapters=[],
+            profile="memory",
+        )
+
+
+def test_missing_routed_queues_fail_before_runtime_publication(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A composition cannot persist a run whose configured physical queue is absent."""
+    from litestar.contrib.jinja import JinjaTemplateEngine
+
+    import lychd.domain.web.altar_services as altar_mod
+
+    settings = Settings()
+    monkeypatch.setattr(altar_mod, "get_settings", lambda: settings)
+    templates = Path(__file__).resolve().parents[2].parent / "src" / "lychd" / "domain" / "web" / "templates"
+
+    with pytest.raises(RuntimeError, match=r"rites.*runs|runs.*rites"):
+        altar_mod.build_altar_services(
+            template_engine=JinjaTemplateEngine(directory=templates),
+            queues={},
             rune_schemas=[],
             runtime_adapters=[],
             profile="memory",

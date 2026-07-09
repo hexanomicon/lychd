@@ -57,3 +57,8 @@ class Soulstone[C: Connector, R: SoulstoneConfig](Animator[C, R], ABC):
 
 class Portal[C: Connector, R: PortalConfig](Animator[C, R], ABC):
     """Remote/API-backed Animator."""
+
+
+# THE one runtime-animator alias. Rehomed here from three near-duplicate definitions
+# (registry / adapters.contracts / binder — the binder's used the broader RuneConfig).
+type RuntimeAnimator = Animator[Connector, SoulstoneConfig | PortalConfig]

@@ -25,10 +25,26 @@ classifiers = [
 ]
 
 dependencies = [
-    "jinja2>=3.1.6",
-    "pydantic-settings[toml]>=2.10.1",
-    "litestar>=2.18.0",
+    "advanced-alchemy>=1.8.0",
+    "alembic>=1.17.0",
+    "anyio>=4.0.0",
+    "asyncpg>=0.29.0",
+    "click>=8.1.0",
     "httpx<=0.28.1", # PINNED, review later
+    "jinja2>=3.1.6",
+    "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0",
+    "litestar-granian>=0.14.2",
+    "litestar-htmx>=0.5.0",
+    "litestar-saq[psycopg]>=0.5.3",
+    "litestar-vite",
+    "pgvector>=0.4.0",
+    "pydantic>=2.10.0",
+    "pydantic-ai-slim[openai,logfire]>=1.25.1",
+    "pydantic-settings[toml]>=2.10.1",
+    "rich>=13.9.0",
+    "sqlalchemy>=2.0.0",
+    "structlog>=24.4.0",
+    "tomlkit>=0.13.3",
 ]
 
 [project.urls]
@@ -36,16 +52,6 @@ Homepage = "https://github.com/hexanomicon/lychd"
 Issues = "https://github.com/hexanomicon/lychd/issues"
 
 [dependency-groups]
-server = [
-    "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0",
-    "litestar-htmx>=0.5.0",
-    "litestar-granian>=0.14.2",
-    "litestar-vite",
-    "litestar-saq[psycopg]>=0.5.3",
-    "pydantic-ai-slim[openai, logfire]>=1.25.1",
-    "asyncpg>=0.29.0",
-    "pgvector>=0.4.0",
-]
 docs = [
     "zensical"
 ]
@@ -75,7 +81,6 @@ typing = [
 # Use `make type-check` (which runs via `uv`) or sync the group explicitly
 # when strict type analysis is needed.
 dev = [
-    { include-group = "server" },
     { include-group = "docs" },
     { include-group = "test" },
     { include-group = "lint" },
@@ -96,7 +101,6 @@ path = "src/lychd/__about__.py"
 include = [
     "/LICENSE",
     "/README.md",
-    "/TRADEMARKS.md",
     "/pyproject.toml",
     "/src",
     "/tests",

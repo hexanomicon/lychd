@@ -1,7 +1,14 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-echo "💀 [LychD] Performing the Initialization Ritual..."
+# The Postgres entrypoint creates $POSTGRES_DB. This hook only installs its
+# extension and creates the extension-owned Phoenix database idempotently.
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'EOSQL'
+CREATE EXTENSION IF NOT EXISTS vector;
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL CREATE EXTENSION IF NOT EXISTS
-    vector; {% for db in databases %} CREATE DATABASE {{ db }}; {% endfor %} EOSQL
+SELECT 'CREATE DATABASE phoenix'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'phoenix')\gexec
+
+\connect phoenix
+CREATE EXTENSION IF NOT EXISTS vector;
+EOSQL

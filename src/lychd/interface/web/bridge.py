@@ -31,9 +31,9 @@ from lychd.agents.router import Intent
 # Runtime imports: Litestar resolves handler param/return annotations at registration.
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
+from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.runs import TERMINAL_STATUSES
-from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.schemas import BridgeTurn
 from lychd.domain.web.sessions import SessionStorePort
@@ -141,7 +141,16 @@ class BridgeController(Controller):
         # ledger's to assign; `engine.submit` returns the canonical id on the handle,
         # and every downstream surface (this SSE slot, Step rows, stasis) uses it.
         await bridge_sessions.add_turn(session_id, BridgeTurn(role="user", content=prompt))
-        handle = await run_engine.submit(Intent(session_id=session_id, prompt=prompt, source="bridge"))
+        sigil = cast("Sigil", request.user)
+        handle = await run_engine.submit(
+            Intent(
+                session_id=session_id,
+                prompt=prompt,
+                source="bridge",
+                sigil_name=sigil.name,
+                sigil_scopes=frozenset(sigil.scopes),
+            )
+        )
         return HTMXTemplate(
             template_name="bridge/message_accepted.html.j2",
             context={

@@ -160,6 +160,35 @@ async def test_await_warm_times_out_on_persistent_warming(tmp_path: Path) -> Non
 
 
 @pytest.mark.asyncio
+async def test_await_warm_estimate_is_inside_single_timeout_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import lychd.domain.animation.services.registry as registry_mod
+
+    registry, key = _single_registry(tmp_path, _SingleControl("loading"))
+    runtime = registry.get_runtime("qwen-local")
+    assert runtime is not None
+    runtime.connector.link.estimated_ready_ms = 10_000
+    clock = 0.0
+
+    def monotonic() -> float:
+        return clock
+
+    async def advance(seconds: float) -> None:
+        nonlocal clock
+        clock += seconds
+
+    monkeypatch.setattr(registry_mod.time, "monotonic", monotonic)
+    monkeypatch.setattr(registry_mod.anyio, "sleep", advance)
+
+    with pytest.raises(ActivationTimeout):
+        await registry.await_warm(key, timeout_s=1.0, interval_s=0.75)
+
+    assert clock == 1.0
+
+
+@pytest.mark.asyncio
 async def test_await_warm_raises_on_error(tmp_path: Path) -> None:
     registry, key = _single_registry(tmp_path, _SingleControl("error"))
     with pytest.raises(ActivationFailed):
@@ -180,9 +209,9 @@ def test_generation_to_model_settings_maps_known_fields() -> None:
     profile = GenerationProfile(max_tokens=256, temperature=0.4, top_p=0.9, top_k=40)
     settings = generation_to_model_settings(profile)
     assert settings is not None
-    assert settings["max_tokens"] == 256
-    assert settings["temperature"] == 0.4
-    assert settings["top_p"] == 0.9
+    assert settings.get("max_tokens") == 256
+    assert settings.get("temperature") == 0.4
+    assert settings.get("top_p") == 0.9
     # top_k is not a pydantic-ai ModelSettings key and is omitted.
     assert "top_k" not in settings
 

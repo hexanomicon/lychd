@@ -33,7 +33,15 @@ icon: material/creation
 
 ## Decision Outcome
 
-A formal **Creation Workflow** is adopted, governing how new intents are manifested into the system's body. The workflow is a linear path through the system's domains.
+A formal **Creation Workflow** is adopted as the target governing how new intents are manifested
+into the system's body.
+
+!!! warning "Doctrine ahead of execution"
+    The current foundation does not implement the Shadow/Smith creation graph, Tomb executor,
+    Jujutsu lock manifest, automated verification database, promotion transaction, or Rebirth
+    command. The Vessel has a bounded Lab mount for trusted control-plane work, but no safe surface
+    for autonomous arbitrary-code execution or self-promotion. Until the complete Tomb/nono and
+    consent/promotion path exists, this ADR is workflow law—not an enabled autopoiesis feature.
 
 ### 1. Invocation (Genesis)
 
@@ -48,7 +56,12 @@ The initial labor is performed using a divergent VCS revision. This state of "Sp
 
 Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 
-The agent graph orchestrating the speculation runs in the **Vessel**. Safe control-plane creation work may remain there: planning, graph routing, policy checks, structured diff preparation, review packaging, and promotion decisions. Raw execution payloads (code edits, test suites, linter invocations, arbitrary scripts, or risky tool calls) are dispatched to **The Tomb** container via SAQ for sandboxed execution. The Tomb returns `stdout` only; it does not run agent logic or LLM calls.
+The agent graph orchestrating the future speculation flow belongs in the **Vessel**. Safe
+control-plane creation work may remain there: planning, graph routing, policy checks, structured
+diff preparation, review packaging, and promotion decisions. Once the Tomb plane is implemented,
+raw execution payloads (code edits, test suites, linter invocations, arbitrary scripts, or risky
+tool calls) must be dispatched to it through a dedicated queue for sandboxed execution. The Tomb
+will return bounded, untrusted results only; it must not run agent logic or LLM calls.
 
 ### 3. Creation (The Sequential Deep-Dive / Buddhi)
 
@@ -56,7 +69,7 @@ Once a valid path is found in the Shadow Realm, the machine must transition from
 
 When writing core logic with causal dependencies, the agent must operate in a **Single-Threaded, Deep Sequential** mode. Massive parallelism here is a "hallucination trap." Because of **Computational Irreducibility**, the agent cannot predict the end state of a complex logical loop; it must walk the path step-by-step. By enforcing **Stillness** (Metabolic Discipline) during the actual creation phase, the system maximizes logic-per-watt and prevents the introduction of recursive errors.
 
-### 4. Verification (The Rite of Albedo)
+### 4. Verification (The Rite of Speculation)
 
 Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 

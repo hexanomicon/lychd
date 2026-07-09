@@ -11,7 +11,7 @@ icon: material/telescope
 ## Requirements
 
 - **Extension Assimilation:** Implementation as an optional coupled extension; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture structured events: the flickers of movement through the agentic graph (**Vṛttis**), including tool arguments, validation retries, and the raw "Whispers" exchanged with providers.
+- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture structured events: the flickers of movement through the agentic graph (**Vṛttis**), including tool arguments, validation retries, and the raw request/response exchanges with providers.
 - **Dual-Layer Scrying:** Separation of concerns into the "Mind" (Agent reasoning traces) and the "Body" (Host hardware and container status).
 - **Runtime Evidence:** Traces, metrics, and structured events must remain available to the runtime as evidence for diagnosis, routing, evaluation, and repair while remaining readable to the Magus.
 - **Physical Integration:** Mirroring of critical hardware metrics (GPU memory pressure) into the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to inform scheduling decisions.

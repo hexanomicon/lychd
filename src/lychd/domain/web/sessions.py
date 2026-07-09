@@ -175,16 +175,23 @@ class DbBridgeSessionStore:
             return [self._record(row) for row in reversed(rows)]
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None:
-        """Append a settled turn, reassigning `meta` wholesale so JSONB change-detection fires.
+        """Append one settled turn while holding the session row lock.
 
-        Safe ONLY under Topology A (one process, one loop); the Turn-table normalization
-        removes this read-modify-write later, behind this same port (design risk 9).
+        Turns currently share ``Session.meta`` with other session metadata, so the
+        append remains a JSONB read-modify-write.  ``SELECT ... FOR UPDATE`` makes
+        that operation transaction-safe across concurrent requests and processes:
+        each writer reads the previous writer's committed list before appending.
+        Reassigning ``meta`` wholesale still makes SQLAlchemy's JSONB change
+        detection explicit.  A future normalized Turn table can replace this
+        storage detail without changing the port.
         """
-        from lychd.domain.web.services import SessionService
+        from sqlalchemy import select
 
-        async with self._session_factory() as session:
-            svc = SessionService(session=session)
-            row = await svc.get_one_or_none(id=UUID(session_id))
+        from lychd.db.models import Session
+
+        sid = UUID(session_id)
+        async with self._session_factory() as session, session.begin():
+            row = await session.scalar(select(Session).where(Session.id == sid).with_for_update())
             if row is None:
                 return
             meta: dict[str, Any] = dict(row.meta or {})
@@ -192,7 +199,6 @@ class DbBridgeSessionStore:
             turns: list[Any] = list(cast("list[Any]", raw)) if isinstance(raw, list) else []
             turns.append(_turn_to_json(turn))
             row.meta = {**meta, "turns": turns}
-            await svc.update(row, item_id=UUID(session_id), auto_commit=True)
 
     async def session_for_run(self, run_id: str) -> SessionRecord | None:
         """Return the session that owns a run via the Run.session_id FK, or `None`."""

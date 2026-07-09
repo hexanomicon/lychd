@@ -10,7 +10,7 @@ from uuid import uuid4
 import anyio
 import structlog
 
-from lychd.domain.animation.animators import Animator
+from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import (
     ActivationResult,
     CapabilityGrant,
@@ -19,10 +19,9 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
     GrantLease,
 )
-from lychd.domain.animation.connectors import Connector, ModelConnector
+from lychd.domain.animation.connectors import ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
-from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
 from lychd.domain.animation.services.loader import AnimatorLoader
 from lychd.lib.http import run_sync
@@ -44,7 +43,6 @@ if TYPE_CHECKING:
     from lychd.system.schemas import QuadletContainer
 
 
-type RuntimeAnimator = Animator[Connector, SoulstoneConfig | PortalConfig]
 type AnimatorConfigDeclaration = SoulstoneConfig | PortalConfig
 type AnimatorFactory = Callable[..., RuntimeAnimator | None]
 
@@ -160,11 +158,23 @@ class AnimatorRegistry:
         self._capability_states = {}
         self._loaded = True
 
-        # Rune parse + transmute + spec synthesis is CPU-bound and stays sync;
-        # the initial capability probe is async and bridged here so the state cache
-        # is warm after load. This is the ONLY sanctioned ``run_sync`` in this
-        # module — every other probe/activate surface is async. Composition roots
-        # that want an explicit off-loop probe can call ``await probe_all()``.
+        # Rune parse + transmute + spec synthesis is CPU-bound and stays sync; the
+        # initial capability probe is async and bridged here so the state cache is warm
+        # after load. This is the ONLY sanctioned ``run_sync`` in this module — every
+        # other probe/activate surface is async. Composition roots that want an explicit
+        # off-loop probe can call ``await probe_all()``.
+        #
+        # FOOTGUN (finding 7, ACKNOWLEDGED, not fixed here): if a SYNC accessor triggers
+        # this lazy ``load()`` while an event loop is running (an on-loop registry touch
+        # before the startup warm), ``run_sync`` offloads the probe to a worker thread and
+        # BLOCKS the loop thread on ``.result()`` for the probe's network IO. In practice
+        # this is guarded: the composition root warms the registry off-loop
+        # (``await asyncio.to_thread(registry.ensure_loaded)``) before the app serves, so
+        # ``_loaded`` is True before any on-loop access and this branch never runs on the
+        # loop. The clean removal is architectural — the sync state-dependent read paths
+        # (``_resolve_spec``, ``resolve_intent``, Nexus status) must first learn to drive
+        # cold specs warm through an async resolve path (the platform-contract follow-up);
+        # skipping the eager probe alone strands resolution with no probed states.
         run_sync(self._probe_all_async())
 
         logger.info(
@@ -391,11 +401,13 @@ class AnimatorRegistry:
             raise CapabilityUnavailable(key, "animator not registered")
 
         model = None
-        if spec.family is not CapabilityFamily.TOOL_EXECUTION:
+        if spec.family.requires_model:
             try:
                 model = self._binder.bind_model(animator, model_id=spec.model_id)
-            except AnimatorBindingError:
-                model = None
+            except AnimatorBindingError as exc:
+                # A model-bearing family that cannot hydrate is UNAVAILABLE — not a
+                # silently model-less grant that explodes far downstream in agent hydration.
+                raise CapabilityUnavailable(key, f"model hydration failed: {exc}") from exc
         toolsets = tuple(self._binder.bind_toolsets(animator))
 
         lease = GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC), scope=scope)
@@ -427,12 +439,14 @@ class AnimatorRegistry:
         if spec is None:
             raise CapabilityUnavailable(key, "unknown capability")
 
+        deadline = time.monotonic() + timeout_s
         animator = self._animators.get(spec.animator_name)
         estimated_ready_ms = getattr(animator.connector.link, "estimated_ready_ms", None) if animator else None
         if estimated_ready_ms:
-            await anyio.sleep(min(estimated_ready_ms / 1000.0, timeout_s))
+            remaining = max(0.0, deadline - time.monotonic())
+            if remaining:
+                await anyio.sleep(min(estimated_ready_ms / 1000.0, remaining))
 
-        deadline = time.monotonic() + timeout_s
         last_state: CapabilityState | None = None
         while True:
             state = await self.refresh_capability_state(key)
@@ -443,9 +457,10 @@ class AnimatorRegistry:
                 return state
             if state.phase is CapabilityPhase.ERROR:
                 raise ActivationFailed(key, reason=state.reason)
-            if time.monotonic() >= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 raise ActivationTimeout(key, last_state)
-            await anyio.sleep(interval_s)
+            await anyio.sleep(min(interval_s, remaining))
 
     def list_persistent_residents(self) -> list[CapabilitySpec]:
         """List capabilities declared on persistent-resident animators."""

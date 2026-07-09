@@ -32,7 +32,7 @@ from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.ghouls.runs import perform_run
-from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
+from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry, approval_test_toolset
 
 if TYPE_CHECKING:
     from pydantic_ai.messages import ModelMessage
@@ -64,6 +64,22 @@ async def _always_park(messages: list[ModelMessage], info: AgentInfo) -> Any:
     yield {0: DeltaToolCall(name="request_coven_swap", json_args=_COVEN_ARGS, tool_call_id=f"c{n}")}
 
 
+async def _park_two_approvals(messages: list[ModelMessage], info: AgentInfo) -> Any:
+    """Emit TWO approval-required coven calls in one response (the F5 multi-approval turn)."""
+    responded = any(isinstance(m, ModelResponse) for m in messages)
+    if not responded:
+        yield {
+            0: DeltaToolCall(name="request_coven_swap", json_args=_COVEN_ARGS, tool_call_id="c1"),
+            1: DeltaToolCall(name="request_coven_swap", json_args=_COVEN_ARGS, tool_call_id="c2"),
+        }
+    else:
+        yield {
+            0: DeltaToolCall(
+                name=info.output_tools[0].name, json_args='{"answer":"done","fragments":[]}', tool_call_id="o1"
+            )
+        }
+
+
 def _substrate(model: Any) -> tuple[RunSubstrate, InMemoryRunLedger, InProcessEventBus, BridgeSessionStore, Any]:
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
@@ -74,7 +90,7 @@ def _substrate(model: Any) -> tuple[RunSubstrate, InMemoryRunLedger, InProcessEv
         bus=bus,
         workflows=builtin_workflow_registry(),
         orchestrator=orch,
-        dispatcher=FakeDispatcher(model=model),
+        dispatcher=FakeDispatcher(model=model, toolsets=(approval_test_toolset(),)),
         context=ContextOrchestrator(registry=FakeRegistry()),
         fragments=build_fragment_registry(),
         turns=sessions,
@@ -169,13 +185,28 @@ async def test_scenario2_approve_resumes_and_runs_tool_body() -> None:
     consent_id = await _park(substrate, "run_2")
     channel = bus.open("run_2")  # hold the ref: the resume's terminal closes + drops it
     seq_at_park = channel.next_seq
+    parked = await ledger.get("run_2")
+    assert parked is not None and parked.stasis_path is not None
+    checkpoint = Path(parked.stasis_path)
+    original_set_status = ledger.set_status
+    checkpoint_existed_at_done = False
+
+    async def record_terminal_order(run_id: str, status: RunStatus, *, error: str | None = None) -> None:
+        nonlocal checkpoint_existed_at_done
+        if status is RunStatus.DONE:
+            checkpoint_existed_at_done = checkpoint.exists()
+        await original_set_status(run_id, status, error=error)
+
+    ledger.set_status = record_terminal_order
 
     result = await _resume(substrate, "run_2", consent_id, approved=True)
 
     assert result["status"] == "done"
     run = await ledger.get("run_2")
     assert run is not None and run.status is RunStatus.DONE
+    assert checkpoint_existed_at_done is True  # GraphRunner did not delete before terminal commit
     assert run.stasis_path is None  # cleared on settle
+    assert not checkpoint.exists()
     # The approved tool body RAN (request_transition reached the orchestrator).
     assert any(call[0] == "request" for call in orch.calls)
     kinds = [str(e.kind) for e in channel._replay]
@@ -255,7 +286,10 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
             bus=bus,
             workflows=builtin_workflow_registry(),
             orchestrator=orch,
-            dispatcher=FakeDispatcher(model=FunctionModel(stream_function=_park_then_settle)),
+            dispatcher=FakeDispatcher(
+                model=FunctionModel(stream_function=_park_then_settle),
+                toolsets=(approval_test_toolset(),),
+            ),
             context=ContextOrchestrator(registry=FakeRegistry()),
             fragments=build_fragment_registry(),
             turns=sessions,
@@ -300,6 +334,146 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     assert max(all_seqs) > max(pre_seqs)  # resume emits landed strictly past the pre-park history
 
 
+# --- F5: a multi-approval turn degrades to an honest bottleneck, never a shared verdict
+
+
+@pytest.mark.asyncio
+async def test_multi_approval_turn_degrades_to_bottleneck() -> None:
+    """Two approval-required calls in one turn settle as a bottleneck, not a shared verdict (F5).
+
+    One card = one verdict; pydantic-ai requires answering every deferred call, so a
+    single card could only resolve a >1-approval turn by silently applying its verdict
+    to unseen calls. The turn is refused honestly instead — no park, no consent row.
+    """
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_two_approvals))
+    await _seed(ledger, sessions, "run_m")
+
+    result = await perform_run({"run_substrate": substrate}, run_id="run_m")
+
+    assert result["status"] == "done"  # settled, not parked
+    run = await ledger.get("run_m")
+    assert run is not None
+    assert run.status is RunStatus.DONE
+    assert run.consent_id is None  # never parked on a consent
+    turn = await sessions.settled_turn_for_run("run_m")
+    assert turn is not None
+    assert "not yet supported" in turn.content.lower()
+
+
+# --- F1: a verdict recorded BEFORE the status flip (page-render approve) is not lost --
+
+
+class _RecordingQueue:
+    """A minimal RunQueue that records enqueues (the post-flip re-admission target)."""
+
+    def __init__(self) -> None:
+        self.enqueued: list[dict[str, Any]] = []
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = job_or_func
+        self.enqueued.append(kwargs)
+
+    async def job(self, job_key: str, /) -> Any:
+        _ = job_key
+        return None
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (job, error, ttl)
+
+
+class _FailingResumeQueue(_RecordingQueue):
+    """A broker failure after the post-park admission CAS."""
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = (job_or_func, kwargs)
+        msg = "resume broker down"
+        raise RuntimeError(msg)
+
+
+@pytest.mark.asyncio
+async def test_preflip_verdict_is_not_lost() -> None:
+    """A verdict recorded before the AWAITING_CONSENT flip is re-admitted, not stranded (F1).
+
+    Simulate the Bridge PAGE-RENDER approve landing in the pre-flip window: the instant
+    `park_on_consent` commits the consent row (while the run is still RUNNING), the Magus
+    approves. `engine.approve` would no-op then (row not yet AWAITING_CONSENT). Without
+    the fix the run stays AWAITING_CONSENT forever; with it, `perform_run` re-reads the
+    verdict after the flip, wins the same CAS admission gate, and enqueues the resume.
+    """
+    substrate, ledger, bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    queue = _RecordingQueue()
+    substrate.queues = {"runs": queue}  # the re-admission needs a queue to enqueue onto
+    await _seed(ledger, sessions, "run_pf")
+
+    # The graph parks with a PENDING verdict (AwaitConsent raises); `perform_run` then
+    # calls `set_consent` (run still RUNNING) BEFORE the AWAITING_CONSENT flip. Hook it to
+    # land the Magus's approve in exactly that pre-flip window — where `engine.approve`
+    # would no-op because the row is not yet AWAITING_CONSENT.
+    orig_set_consent = ledger.set_consent
+
+    async def set_consent_then_preflip_approve(run_id: str, consent_id: str | None) -> None:
+        await orig_set_consent(run_id, consent_id)
+        if consent_id is not None:
+            await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+
+    ledger.set_consent = set_consent_then_preflip_approve
+
+    channel = bus.open("run_pf")
+    result = await perform_run({"run_substrate": substrate}, run_id="run_pf")
+
+    assert result["status"] == "queued"  # re-admitted, not left awaiting_consent
+    run = await ledger.get("run_pf")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert len(queue.enqueued) == 1
+    assert queue.enqueued[0]["resume"] is True
+    assert channel.closed is False  # a re-admitted run keeps its stream open for the resume hop
+
+
+@pytest.mark.asyncio
+async def test_preflip_resume_enqueue_failure_restores_consent_wait() -> None:
+    """The post-park race path compensates a failed enqueue and remains replayable."""
+    from lychd.domain.cortex.engine import QueueRouter, RunEngine
+
+    substrate, ledger, bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    substrate.queues = {"runs": _FailingResumeQueue()}
+    await _seed(ledger, sessions, "run_pf_fail")
+
+    original_set_consent = ledger.set_consent
+
+    async def set_consent_then_preflip_approve(run_id: str, consent_id: str | None) -> None:
+        await original_set_consent(run_id, consent_id)
+        if consent_id is not None:
+            await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+
+    ledger.set_consent = set_consent_then_preflip_approve
+
+    with pytest.raises(RuntimeError, match="resume broker down"):
+        await perform_run({"run_substrate": substrate}, run_id="run_pf_fail")
+
+    restored = await ledger.get("run_pf_fail")
+    assert restored is not None
+    assert restored.status is RunStatus.AWAITING_CONSENT
+    assert restored.consent_id is not None
+    assert restored.enqueue_seq == 1
+
+    retry_queue = _RecordingQueue()
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=substrate.workflows,
+        queue_router=QueueRouter(),
+        queues={"runs": retry_queue},
+    )
+    await engine.approve(restored.consent_id, approved=True)
+
+    retried = await ledger.get("run_pf_fail")
+    assert retried is not None
+    assert retried.status is RunStatus.QUEUED
+    assert len(retry_queue.enqueued) == 1
+    assert retry_queue.enqueued[0]["resume"] is True
+
+
 # --- stasis lost: resume with the checkpoint gone → honest FAILED, never a silent re-run
 
 
@@ -320,3 +494,4 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     run = await ledger.get("run_sl")
     assert run is not None and run.status is RunStatus.FAILED
     assert run.error == "stasis lost"
+    assert run.stasis_path is None

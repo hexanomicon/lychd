@@ -28,25 +28,26 @@ to accept images is still `chat`. This keeps routing honest: a request matches o
 `(family, required modalities)`, and image-in never silently promotes a chat model into the
 Eye.
 
-## Lifecycle vs phase
+## `is_dynamic` vs phase
 
-Each capability carries a **lifecycle** (a fixed property of how it becomes ready) and
-projects a **phase** (its live readiness right now). These are independent.
+Each capability carries an **`is_dynamic` flag** (a fixed property of how it becomes ready)
+and projects a **phase** (its live readiness right now). These are independent.
 
-### Lifecycle — how it becomes ready
+### `is_dynamic` — how it becomes ready
 
-- **`STATIC`** — the runtime is ready as soon as its endpoint is reachable. The server
-  binds its port only after the model is loaded, so a reachable endpoint *is* a warm
+- **`is_dynamic=False`** — the runtime is ready as soon as its endpoint is reachable. The
+  server binds its port only after the model is loaded, so a reachable endpoint *is* a warm
   capability. Remote [Portals](portal.md) and single-model local servers (for example a
-  vLLM server pinned to one model) are `STATIC`.
-- **`DYNAMIC`** — the container is up, but the specific model needs an in-runtime
+  vLLM server pinned to one model) have `is_dynamic=False`.
+- **`is_dynamic=True`** — the container is up, but the specific model needs an in-runtime
   activation step before it can serve (for example a `llama.cpp` router that loads a model
-  on demand). A `DYNAMIC` capability can be *awaited* and then activated without restarting
-  the container.
+  on demand). A capability with `is_dynamic=True` can be *awaited* and then activated
+  without restarting the container.
 
 !!! note "The old names are gone"
-    An earlier draft used `FIXED`/`AWAITED` for the lifecycle. The shipped vocabulary is
-    `STATIC`/`DYNAMIC`; the legacy `dynamic_soft` string normalizes to `DYNAMIC`.
+    An earlier draft used `FIXED`/`AWAITED` for this property, then a `STATIC`/`DYNAMIC`
+    enum. The shipped representation is a plain `is_dynamic: bool`; the legacy
+    `dynamic_soft` string normalizes to `is_dynamic=True`.
 
 ### Phase — whether it is ready now
 
@@ -55,38 +56,51 @@ The live readiness ladder, in order:
 | Phase | Meaning |
 | :--- | :--- |
 | `COLD` | Unit down or endpoint unreachable. |
-| `ACTIVATABLE` | Unit up; a `DYNAMIC` model is not yet loaded. |
+| `ACTIVATABLE` | Unit up; a model with `is_dynamic=True` is not yet loaded. |
 | `WARMING` | Activation in flight. |
 | `WARM` | Requests accepted now. |
 | `ERROR` | The capability is faulted. |
 | `UNKNOWN` | State not yet observed. |
 
 The [Nexus](../../divination/altar/nexus.md) renders these as operator words: `WARM`
-shows as **active**, `WARMING` as **warming**, an `ACTIVATABLE` `DYNAMIC` capability as
-**awaited**, `COLD`/`ACTIVATABLE`-on-`STATIC` as **cold**, and `ERROR` as **fault**.
+shows as **active**, `WARMING` as **warming**, an `ACTIVATABLE` capability with
+`is_dynamic=True` as **awaited**, `COLD`/(`ACTIVATABLE`-with-`is_dynamic=False`) as **cold**,
+and `ERROR` as **fault**.
+
+Two derived questions intentionally differ. `is_active` means this model capability is loaded or
+loading (`WARM`/`WARMING`). `runtime_started` means the owning local service is physically up and
+also includes `ACTIVATABLE`. Host-transition stale-state checks use `runtime_started`, so an idle
+dynamic router and `systemctl is-active` describe the same physical world even before a model is
+loaded.
 
 ## How a request drives readiness
 
 When a run requests a family, the Dispatcher reads the resolved capability's phase and acts:
 
 - **WARM** — grant it immediately.
-- **ACTIVATABLE** — soft-activate the model (no container restart), wait for warm, then
-  grant. This path never involves the Orchestrator.
-- **WARMING** — wait for warm, then grant.
+- **ACTIVATABLE** — raise the typed readiness signal; the Orchestrator closes admission for the
+  whole Animator, drains all same-Animator leases, then soft-activates the model without restarting
+  the container. It waits for warm before retry; failure stays closed because v1 has no honest
+  model-level inverse.
+- **WARMING** — raise the same readiness signal so the Orchestrator owns the bounded wait; retry
+  dispatch only after convergence.
 - **COLD** (and LychD owns the lifecycle) — raise a hardware transition, so the Orchestrator
   performs a coven swap; the run parks until the substrate is ready, then resumes.
 - **COLD** (not owned) or **ERROR** — the capability is unavailable, and the run settles
-  honestly rather than hanging.
+honestly rather than hanging.
 
-For the operator's view of these transitions, see the
-[Manage Covens](../../praxis/rites/manage-covens.md) rite and the
-[Nexus](../../divination/altar/nexus.md).
+The bounded wait has one absolute `warmup_timeout_s` deadline. `estimated_ready_ms` may delay the
+first probe adaptively, but it and every later poll sleep are capped to remaining time; an estimate
+never adds a second timeout budget.
+
+For the operator's view of these transitions, see
+[Coven](./coven.md) and the [Nexus](../../divination/altar/nexus.md).
 
 ## Declaring capabilities
 
 A capability's identity is the key `{animator}:{family}:{model_id}`. Capabilities are
 synthesized from your rune declarations (the `[[models]]` blocks of a
-[Soulstone Rune](../../praxis/runes/soulstones.md) or [Portal Rune](../../praxis/runes/portals.md))
+[Soulstone Rune](./soulstone.md#soulstone-rune-reference) or [Portal Rune](./portal.md#portal-rune-reference))
 and, for local runtimes, enriched by a live probe of what the server reports.
 
 Declaration is authoritative for *routing*: a rune hint always wins. A live probe may only

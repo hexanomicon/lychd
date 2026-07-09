@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import secrets
+import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
-from pydantic import Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -14,12 +14,8 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-from lychd.config.utils import (
-    codex_permission_issues,
-    needs_generated_secret_fallback,
-    read_secret_from_env_or_file,
-)
-from lychd.system.constants import PATH_LYCHD_TOML
+from lychd.config.utils import read_secret_from_env_or_file
+from lychd.system.constants import PATH_LYCHD_TOML, PATH_REACTOR_INBOX_DIR, PATH_STASIS_DIR
 
 DEFAULT_BUILTIN_EXTENSION_IDS: tuple[str, ...] = (
     "animator",
@@ -32,26 +28,48 @@ DEFAULT_BUILTIN_EXTENSION_IDS: tuple[str, ...] = (
 """Built-in extension ids written into a freshly generated lychd.toml."""
 
 
-# --- 2. The Infrastructure (Server) ---
-class ServerSettings(BaseSettings):
-    """Configuration for the Bone-Sustenance (Granian/Litestar)."""
+def _normalize_absolute_config_path(value: Path | str, *, field_name: str) -> Path:
+    """Return a lexical, absolute control path without touching the filesystem."""
+    try:
+        candidate = Path(value).expanduser()
+    except (TypeError, ValueError, RuntimeError) as exc:
+        msg = f"{field_name} is not a valid filesystem path: {value}"
+        raise ValueError(msg) from exc
+    path_text = os.fspath(candidate)
+    if "%" in path_text or "\\" in path_text or any(not char.isprintable() for char in path_text):
+        msg = f"{field_name} contains characters that are unsafe in a systemd path"
+        raise ValueError(msg)
+    if not candidate.is_absolute():
+        msg = f"{field_name} must be an absolute path: {value}"
+        raise ValueError(msg)
+    normalized = os.path.normpath(candidate)
+    # POSIX permits implementation-defined ``//`` semantics, while Linux treats
+    # it as ``/``. Collapse it so containment checks cannot see two spellings.
+    if normalized.startswith("//"):
+        normalized = f"/{normalized.lstrip('/')}"
+    return Path(normalized)
 
-    model_config = SettingsConfigDict(env_prefix="SERVER_")
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    """Return whether either lexical path contains the other (including equality)."""
+    return left == right or left in right.parents or right in left.parents
+
+
+# --- 2. The Infrastructure (Server) ---
+class ServerSettings(BaseModel):
+    """Configuration for the Bone-Sustenance (Granian/Litestar)."""
 
     host: str = "127.0.0.1"
     port: int = 7134  # LICH
     reload: bool = False
-    workers: int = 1
+    # Topology A uses a process-local event bus and in-process SAQ workers.
+    # More ASGI processes require a durable cross-process event plane first.
+    workers: Literal[1] = 1
     keep_alive: int = 65
 
 
-class DatabaseSettings(BaseSettings):
+class DatabaseSettings(BaseModel):
     """Configuration for the Phylactery (Postgres)."""
-
-    model_config = SettingsConfigDict(
-        env_prefix="DB_",
-        extra="ignore",
-    )
 
     host: str = "localhost"
     port: int = 5432
@@ -78,13 +96,9 @@ class DatabaseSettings(BaseSettings):
     pool_pre_ping: bool = True
     pool_use_lifo: bool = True  # TCP should be still open
 
-    _runtime_password_override: str | None = PrivateAttr(default=None)
-
     @property
     def password(self) -> str:
         """Resolve DB password from env override or mounted Podman secret file."""
-        if self._runtime_password_override is not None:
-            return self._runtime_password_override
         return read_secret_from_env_or_file(
             value_env_keys=("DB__PASSWORD", "DB_PASSWORD"),
             file_env_keys=("DB__PASSWORD_FILE", "DB_PASSWORD_FILE"),
@@ -92,46 +106,62 @@ class DatabaseSettings(BaseSettings):
             secret_label=self.password_secret,
         )
 
-    def set_runtime_password_override(self, value: str) -> None:
-        """Set an in-memory password fallback used when no configured source exists."""
-        self._runtime_password_override = value
-
     @property
     def url(self) -> str:
-        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        """Return an escaped SQLAlchemy URL without hand-built credential interpolation."""
+        from sqlalchemy.engine import URL
+
+        return URL.create(
+            "postgresql+asyncpg",
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        ).render_as_string(hide_password=False)
 
     @property
     def saq_dsn(self) -> str:
         """Driverless Postgres DSN for SAQ/psycopg (no ``+asyncpg`` driver suffix)."""
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        from sqlalchemy.engine import URL
+
+        return URL.create(
+            "postgresql",
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        ).render_as_string(hide_password=False)
 
 
-class SigilSettings(BaseSettings):
+class SigilSettings(BaseModel):
     """The Ward: the process identity + scope grammar (ADR-09, wave4-design §3.1).
 
-    ``scopes=["*"]`` is the ADR-10 §8 uncaged-localhost default (full authority on a
-    single-user loopback bind). ``enforce=False`` makes the guards no-op (tests/dev).
+    ``scopes=["*"]`` is the ADR-09 local-only Ward default: one settings-derived
+    process identity on a single-user loopback surface, not caller authentication.
+    ``enforce=False`` makes the scope guards no-op (tests/dev).
     """
-
-    model_config = SettingsConfigDict(env_prefix="SIGIL_")
 
     name: str = "magus"
     scopes: list[str] = Field(default_factory=lambda: ["*"])
     enforce: bool = True
 
 
-class StasisSettings(BaseSettings):
+class StasisSettings(BaseModel):
     """Durable Stasis checkpoint root (wave4-design §2.3)."""
 
-    model_config = SettingsConfigDict(env_prefix="STASIS_")
+    dir: Path = PATH_STASIS_DIR
 
-    dir: Path = Field(default_factory=lambda: Path.home() / ".local" / "state" / "lychd" / "stasis")
+    @field_validator("dir", mode="before")
+    @classmethod
+    def validate_dir(cls, value: Path | str) -> Path:
+        """Keep the durable checkpoint root absolute and lexically normalized."""
+        return _normalize_absolute_config_path(value, field_name="stasis.dir")
 
 
-class LogSettings(BaseSettings):
+class LogSettings(BaseModel):
     """The Scrying Mirror: Configuration for Structlog and observability."""
-
-    model_config = SettingsConfigDict(env_prefix="LOG_")
 
     # --- General ---
     # The minimum level for lychd's own logs.
@@ -154,14 +184,12 @@ class LogSettings(BaseSettings):
     pydantic_ai_level: int = 10  # DEBUG
 
 
-class ExtensionSettings(BaseSettings):
+class ExtensionSettings(BaseModel):
     """Extension activation lists for the composed runtime image.
 
     Extensions are inert unless named here. Their own RuneConfig classes become
     loadable only after the extension assembly step imports the selected organ.
     """
-
-    model_config = SettingsConfigDict(env_prefix="EXTENSIONS_")
 
     builtins: list[str] = Field(
         default_factory=lambda: list(DEFAULT_BUILTIN_EXTENSION_IDS),
@@ -177,7 +205,7 @@ class ExtensionSettings(BaseSettings):
 
 
 # --- 6. The Worker ---
-class SaqSettings(BaseSettings):
+class SaqSettings(BaseModel):
     """The Ghoul Labor: Configuration for the SAQ background worker swarm.
 
     Topology A (F1/S7): workers run in-process on the web loop
@@ -187,64 +215,125 @@ class SaqSettings(BaseSettings):
     Wave-3's `[orchestration.queues]`).
     """
 
-    model_config = SettingsConfigDict(env_prefix="SAQ_")
     web_enabled: bool = True
 
 
 # --- 6b. The Orchestration Doctrine ([orchestration]) ---
-class QueueSettings(BaseSettings):
+class QueueSettings(BaseModel):
     """Per-queue in-loop job concurrency (sizes SAQ's `QueueConfig.concurrency`)."""
 
-    concurrency: int = 2
+    concurrency: int = Field(default=2, ge=1, le=128)
 
 
-class RoutingRule(BaseSettings):
+class RoutingRule(BaseModel):
     """One `[orchestration.routing]` entry: which physical queue, at what priority."""
 
     queue: str = "runs"
     priority: int = Field(default=50, ge=0, le=100)
 
 
-class SwitchingSettings(BaseSettings):
+class SwitchingSettings(BaseModel):
     """`[orchestration.switching]`: the honest hard-swap gate + lease-drain timeout."""
 
     policy: str = "evict-idle"
+    # The normal deployment is caged and has no host user-bus socket. Direct
+    # Systemd actuation is an explicit uncaged/development choice.
+    actuator: Literal["systemd", "host-reactor"] = "host-reactor"
+    host_reactor_dir: Path = PATH_REACTOR_INBOX_DIR
     min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
-    drain_timeout_s: float = 120.0
+    drain_timeout_s: float = Field(default=120.0, gt=0)
+    # Model warm-up is different physics from draining old work (a 70B load can exceed
+    # the drain budget); `await_warm` gets its own ceiling instead of borrowing drain's.
+    warmup_timeout_s: float = Field(default=180.0, gt=0)
+    reactor_ack_timeout_s: float = Field(default=120.0, gt=0)
+
+    @field_validator("host_reactor_dir", mode="before")
+    @classmethod
+    def validate_host_reactor_dir(cls, value: Path | str) -> Path:
+        """Require a distinct, conventionally named Host Reactor inbox."""
+        inbox = _normalize_absolute_config_path(
+            value,
+            field_name="orchestration.switching.host_reactor_dir",
+        )
+        if inbox.name != "inbox":
+            msg = "orchestration.switching.host_reactor_dir must be an 'inbox' directory"
+            raise ValueError(msg)
+        return inbox
+
+    @property
+    def host_reactor_journal_dir(self) -> Path:
+        """Return the host-owned, Vessel-read-only journal paired with the inbox."""
+        return self.host_reactor_dir.parent / "journal"
 
 
-class WhimSettings(BaseSettings):
+class WhimSettings(BaseModel):
     """`[orchestration.whim]`: idle-eviction + preload shape (consumers land Wave 6)."""
 
     idle_evict_after_s: int = 0  # 0 = disabled; whim RITES land Wave 6 (A4-U8)
     preload: list[str] = Field(default_factory=list)
 
 
-class OrchestrationSettings(BaseSettings):
+def _default_queue_settings() -> dict[str, QueueSettings]:
+    return {
+        "runs": QueueSettings(concurrency=2),
+        "rites": QueueSettings(concurrency=4),
+    }
+
+
+def _default_routing_settings() -> dict[str, RoutingRule]:
+    return {
+        "default": RoutingRule(queue="runs", priority=50),
+        "cli": RoutingRule(queue="runs", priority=50),
+        "bridge": RoutingRule(queue="runs", priority=70),
+        "rite": RoutingRule(queue="rites", priority=20),
+    }
+
+
+class OrchestrationSettings(BaseModel):
     """The `[orchestration]` doctrine: queues, routing, switching, and whim."""
 
-    queues: dict[str, QueueSettings] = Field(
-        default_factory=lambda: {
-            "runs": QueueSettings(concurrency=2),
-            "rites": QueueSettings(concurrency=4),
-        }
-    )
-    routing: dict[str, RoutingRule] = Field(
-        default_factory=lambda: {
-            "default": RoutingRule(queue="runs", priority=50),
-            "cli": RoutingRule(queue="runs", priority=50),
-            "bridge": RoutingRule(queue="runs", priority=70),
-            "rite": RoutingRule(queue="rites", priority=20),
-        }
-    )
+    queues: dict[str, QueueSettings] = Field(default_factory=_default_queue_settings)
+    routing: dict[str, RoutingRule] = Field(default_factory=_default_routing_settings)
     switching: SwitchingSettings = Field(default_factory=SwitchingSettings)
     whim: WhimSettings = Field(default_factory=WhimSettings)  # shape now; consumers Wave 6
 
+    @model_validator(mode="before")
+    @classmethod
+    def merge_required_topology(cls, value: object) -> object:
+        """Deep-merge partial TOML/env tables onto the fixed v1 queue topology."""
+        if not isinstance(value, dict):
+            return value
+        data = dict(cast("dict[str, object]", value))
+        configured_queues = data.get("queues")
+        if isinstance(configured_queues, dict):
+            configured_queue_map = cast("dict[str, object]", configured_queues)
+            unknown = sorted(set(configured_queue_map).difference(_default_queue_settings()))
+            if unknown:
+                msg = f"Unknown physical orchestration queues: {', '.join(unknown)}"
+                raise ValueError(msg)
+            queues: dict[str, object] = dict(_default_queue_settings())
+            queues.update(configured_queue_map)
+            data["queues"] = queues
+        configured_routing = data.get("routing")
+        if isinstance(configured_routing, dict):
+            configured_routing_map = cast("dict[str, object]", configured_routing)
+            routing: dict[str, object] = dict(_default_routing_settings())
+            routing.update(configured_routing_map)
+            data["routing"] = routing
+        return data
 
-class LychdSettings(BaseSettings):
+    @model_validator(mode="after")
+    def validate_routing_topology(self) -> OrchestrationSettings:
+        """Every semantic route must land on one configured, implemented queue."""
+        missing = sorted({rule.queue for rule in self.routing.values()}.difference(self.queues))
+        if missing:
+            msg = f"Orchestration routing references unknown queues: {', '.join(missing)}"
+            raise ValueError(msg)
+        return self
+
+
+class LychdSettings(BaseModel):
     """The Soulstone Protocols: Bindings for local and remote manifestations."""
-
-    model_config = SettingsConfigDict(env_prefix="LYCHD_")
 
     # --- 1. Soulstone Defaults (Wild Bindings) ---
     # These containers are alien (vLLM, Llama.cpp). We must provide raw bind strings
@@ -287,10 +376,8 @@ class LychdSettings(BaseSettings):
 
 
 # This class will hold general app info.
-class AppSettings(BaseSettings):
+class AppSettings(BaseModel):
     """The Inscription Registry: Global identity and security markings."""
-
-    model_config = SettingsConfigDict(env_prefix="APP_")
 
     # --- Core App Settings ---
     # Podman secret reference for the Litestar/CSRF signing key.
@@ -316,13 +403,10 @@ class AppSettings(BaseSettings):
 
     # Set to True in production if you're using HTTPS.
     csrf_cookie_secure: bool = False
-    _runtime_secret_key_override: str | None = PrivateAttr(default=None)
 
     @property
     def secret_key(self) -> str:
         """Resolve app signing key from env override or mounted Podman secret file."""
-        if self._runtime_secret_key_override is not None:
-            return self._runtime_secret_key_override
         return read_secret_from_env_or_file(
             value_env_keys=("APP__SECRET_KEY", "APP_SECRET_KEY"),
             file_env_keys=("APP__SECRET_KEY_FILE", "APP_SECRET_KEY_FILE"),
@@ -330,15 +414,9 @@ class AppSettings(BaseSettings):
             secret_label=self.secret_key_secret,
         )
 
-    def set_runtime_secret_key_override(self, value: str) -> None:
-        """Set an in-memory signing-key fallback when no configured source exists."""
-        self._runtime_secret_key_override = value
 
-
-class ViteSettings(BaseSettings):
+class ViteSettings(BaseModel):
     """The Altar Manifest: Configuration for the Vite frontend vessel."""
-
-    model_config = SettingsConfigDict(env_prefix="VITE_")
 
     dev_mode: bool = Field(default=False, description="Start `vite` development server. Set with VITE_DEV_MODE=true")
 
@@ -435,49 +513,24 @@ class Settings(BaseSettings):
             _msg = f"Configuration Error: {'; '.join(errors)}"
             raise ValueError(_msg)
 
-        codex_issues = codex_permission_issues(PATH_LYCHD_TOML)
-        if codex_issues:
-            import warnings
-
-            warnings.warn(
-                f"codex_permissions_policy_violation: path={PATH_LYCHD_TOML} issues={codex_issues}",
-                UserWarning,
-                stacklevel=2,
-            )
-
         return self
 
+    @model_validator(mode="after")
+    def check_control_path_boundaries(self) -> Settings:
+        """Keep checkpoints separate from the Vessel-writable Reactor channel."""
+        stasis_dir = self.stasis.dir
+        switching = self.orchestration.switching
+        inbox_dir = switching.host_reactor_dir
+        journal_dir = switching.host_reactor_journal_dir
 
-def ensure_internal_secret_fallbacks(settings: Settings) -> list[str]:
-    """Ensure app/db runtime secrets exist even before Podman bind.
-
-    This is a startup safety-net for direct process execution (development,
-    tests, or any flow that boots without mounted Podman secrets). It does not
-    replace bind-time Podman secret provisioning.
-    """
-    created: list[str] = []
-
-    if needs_generated_secret_fallback(
-        value_env_keys=("APP__SECRET_KEY", "APP_SECRET_KEY"),
-        file_env_keys=("APP__SECRET_KEY_FILE", "APP_SECRET_KEY_FILE"),
-        default_file=Path("/run/secrets") / settings.app.secret_key_secret,
-    ):
-        settings.app.set_runtime_secret_key_override(secrets.token_hex(32))
-        created.append(settings.app.secret_key_secret)
-
-    if needs_generated_secret_fallback(
-        value_env_keys=("DB__PASSWORD", "DB_PASSWORD"),
-        file_env_keys=("DB__PASSWORD_FILE", "DB_PASSWORD_FILE"),
-        default_file=Path("/run/secrets") / settings.db.password_secret,
-    ):
-        settings.db.set_runtime_password_override(secrets.token_urlsafe(16))
-        created.append(settings.db.password_secret)
-
-    return created
+        for label, reactor_dir in (("inbox", inbox_dir), ("journal", journal_dir)):
+            if _paths_overlap(stasis_dir, reactor_dir):
+                msg = f"stasis.dir must not overlap the Host Reactor {label}: {reactor_dir}"
+                raise ValueError(msg)
+        return self
 
 
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
-    settings = Settings()
-    ensure_internal_secret_fallbacks(settings)
-    return settings
+    """Load immutable-by-convention settings without I/O side effects or invented secrets."""
+    return Settings()

@@ -11,7 +11,7 @@ The Sepulcher is the anatomy of the Daemon.
 Its organs are not merely colocated services. They are a disciplined body: law in the Codex, memory in the Phylactery, motion in the Vessel, and extension in the organs that grow from them.
 
 !!! abstract ":fontawesome-solid-skull: [Lich](./lich.md)"
-    The central purpose-bearing intelligence. The Lich is the daemon-instrument; all other components serve its operation. The **[Lich](./lich.md)** page contains the complete cognitive map of the daemon — the **Antahkaraṇa** (*anta* = inner, *karaṇa* = instrument — the four-faculty cognitive organ), the five **Vṛttis** (modifications of the mind-field), and the three **Guṇas** (qualitative modes) — as they manifest across the Sepulcher's architecture.
+    The central purpose-bearing intelligence. The Lich is the daemon-instrument; all other components serve its operation. The **[Lich](./lich.md)** page holds the daemon's cognitive map — how it generates candidates, discriminates truth from hallucination, and accumulates identity. (It is written in the Inner Tongue; the [Lexicon](../lexicon.md#ii-the-inner-tongue--esoteric-cartography) is the key.)
 
 !!! info ":material-book-open-page-variant: [Codex](./codex.md)"
     The book of laws and configuration runes (`~/.config/lychd`). It dictates the fundamental rules of existence.

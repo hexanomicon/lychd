@@ -33,11 +33,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
-from lychd.db.models import Run, Step
+from lychd.db.models import Run, Session, Step
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import DbRunLedger
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunStatus
 from lychd.domain.cortex.services import RunService
+from lychd.domain.web.schemas import BridgeTurn
+from lychd.domain.web.sessions import DbBridgeSessionStore
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -53,7 +55,10 @@ def pg_factory() -> Iterator[async_sessionmaker[AsyncSession]]:
 
         async def _init() -> None:
             async with engine.begin() as conn:
-                await conn.run_sync(Run.metadata.create_all, tables=[Run.__table__, Step.__table__])
+                await conn.run_sync(
+                    Run.metadata.create_all,
+                    tables=[Session.__table__, Run.__table__, Step.__table__],
+                )
 
         asyncio.run(_init())
         yield async_sessionmaker(engine, expire_on_commit=False)
@@ -96,6 +101,69 @@ async def test_cas_concurrent_same_target_is_benign(pg_factory: async_sessionmak
     row = await ledger.get(run_id)
     assert row is not None
     assert row.status is RunStatus.DONE
+
+
+@pytest.mark.asyncio
+async def test_concurrent_run_claim_has_one_winner(pg_factory: async_sessionmaker[AsyncSession]) -> None:
+    """At-least-once broker delivery is fenced by one QUEUED→RUNNING CAS."""
+    first = DbRunLedger(session_factory=pg_factory)
+    second = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(first)
+
+    results = await asyncio.gather(
+        first.try_claim_run(run_id, enqueue_seq=0),
+        second.try_claim_run(run_id, enqueue_seq=0),
+    )
+
+    assert sorted(results) == [False, True]
+    row = await first.get(run_id)
+    assert row is not None
+    assert row.status is RunStatus.RUNNING
+
+
+@pytest.mark.asyncio
+async def test_claimed_failure_cannot_overwrite_new_resume_hop(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """The failure CAS is fenced by the enqueue sequence that this worker claimed."""
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.bump_enqueue_seq(run_id) == 1
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1) is True
+
+    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+    assert await ledger.try_admit_consent(run_id) == 2
+    assert await ledger.try_claim_run(run_id, enqueue_seq=2) is True
+
+    assert await ledger.try_fail_claimed(run_id, enqueue_seq=1, error="old hop failed") is False
+    running = await ledger.get(run_id)
+    assert running is not None
+    assert running.status is RunStatus.RUNNING
+    assert running.enqueue_seq == 2
+
+    assert await ledger.try_fail_claimed(run_id, enqueue_seq=2, error="current hop failed") is True
+    failed = await ledger.get(run_id)
+    assert failed is not None
+    assert failed.status is RunStatus.FAILED
+    assert failed.error == "current hop failed"
+
+
+@pytest.mark.asyncio
+async def test_stale_consent_delivery_cannot_claim_retried_hop(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Postgres admission and hop allocation are one CAS; stale jobs cannot claim."""
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0) is True
+    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+
+    assert await ledger.try_admit_consent(run_id) == 1
+    assert await ledger.try_restore_consent_wait(run_id, enqueue_seq=1) is True
+    assert await ledger.try_admit_consent(run_id) == 2
+
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1) is False
+    assert await ledger.try_claim_run(run_id, enqueue_seq=2) is True
 
 
 @pytest.mark.asyncio
@@ -234,3 +302,20 @@ async def test_append_event_persists_seq_verbatim(pg_factory: async_sessionmaker
 
         rows = (await session.execute(select(Step.seq).where(Step.run_id == UUID(run_id)).order_by(Step.seq))).scalars()
         assert list(rows) == [0, 1, 2]  # verbatim, ordered
+
+
+@pytest.mark.asyncio
+async def test_concurrent_session_turn_appends_are_not_lost(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Concurrent writers serialize on the Session row and retain every JSONB turn."""
+    store = DbBridgeSessionStore(pg_factory, sigil_name="magus")
+    bridge_session = await store.create_session(title="concurrent")
+    turns = [BridgeTurn(role="agent", content=f"turn-{index}") for index in range(16)]
+
+    await asyncio.gather(*(store.add_turn(bridge_session.id, turn) for turn in turns))
+
+    persisted = await store.get_session(bridge_session.id)
+    assert persisted is not None
+    assert {turn.content for turn in persisted.turns} == {turn.content for turn in turns}
+    assert len(persisted.turns) == len(turns)

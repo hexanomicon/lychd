@@ -26,15 +26,16 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    /bin/uv sync --frozen --no-install-project --extra server
+    /bin/uv sync --frozen --no-dev --no-install-project --no-editable
 
 # --- 2. Install Project (Frequent Change Layer) ---
-COPY . .
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY src ./src
 
-# Install the project package itself into the environment with server dependencies.
+# Install the project non-editably so the environment does not point back to /app/src.
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    /bin/uv sync --frozen --extra server
+    /bin/uv sync --frozen --no-dev --no-editable
 
 # ==============================================================================
 # STAGE II: RUNNER (The Production Artifact)
@@ -54,14 +55,12 @@ ENV HOME=/home/lich \
     XDG_CONFIG_HOME=/home/lich/.config \
     XDG_DATA_HOME=/home/lich/.local/share \
     PATH="/app/.venv/bin:$PATH" \
-    LITESTAR_APP="lychd.app:create_app" \
-    PYTHONPATH="/app/src:$PYTHONPATH"
+    LITESTAR_APP="lychd.app:create_app"
 
 WORKDIR /app
 
 # --- The Transplant ---
 COPY --from=builder --chown=lich:lich /app/.venv /app/.venv
-COPY --from=builder --chown=lich:lich /app/src /app/src
 
 # --- Layer 4: THE GREAT SEAL (Immutability) ---
 # We strip write access (-w) from the entire /app directory.
@@ -100,4 +99,4 @@ USER lich
 EXPOSE 8000
 
 # The Final Awakening.
-CMD ["granian", "--interface", "asgi", "--host", "0.0.0.0", "--port", "8000", "lychd.app:create_app"]
+CMD ["granian", "--interface", "asgi", "--factory", "--workers", "1", "--host", "0.0.0.0", "--port", "8000", "lychd.app:create_app"]

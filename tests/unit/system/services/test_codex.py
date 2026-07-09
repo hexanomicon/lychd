@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from lychd.config.settings import get_settings
+import lychd.config.settings as settings_module
+from lychd.config.settings import Settings, get_settings
 from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
 from lychd.system.services.codex import CodexService
 
@@ -65,6 +66,42 @@ def test_lychd_toml_validity(codex_service: CodexService, codex_paths: dict[str,
     assert "db" in content
     assert content["server"]["port"] == settings.server.port
     assert content["app"]["name"] == "lychd"
+    assert content["orchestration"]["switching"]["policy"] == settings.orchestration.switching.policy
+    assert content["orchestration"]["whim"]["idle_evict_after_s"] == settings.orchestration.whim.idle_evict_after_s
+    assert content["orchestration"]["whim"]["preload"] == settings.orchestration.whim.preload
+
+
+def test_lychd_toml_round_trips_through_settings(
+    codex_service: CodexService,
+    codex_paths: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The generated nested tables must survive a second Settings parse."""
+    codex_service.inscribe()
+    toml_path = codex_paths["toml"]
+    content = tomllib.loads(toml_path.read_text(encoding="utf-8"))
+
+    monkeypatch.setattr(settings_module, "PATH_LYCHD_TOML", toml_path)
+    reparsed = Settings()
+
+    assert reparsed.model_dump(mode="json", exclude_none=True) == content
+    assert reparsed.orchestration.switching.policy == "evict-idle"
+    assert reparsed.orchestration.whim.idle_evict_after_s == 0
+    assert reparsed.orchestration.whim.preload == []
+
+
+def test_init_db_script_creates_only_extension_database(
+    codex_service: CodexService,
+    codex_paths: dict[str, Path],
+) -> None:
+    """Postgres owns its configured DB; the hook creates only Phoenix."""
+    codex_service.inscribe()
+    script = (codex_paths["postgres"] / "init_db.sh").read_text(encoding="utf-8")
+
+    assert "CREATE DATABASE phoenix" in script
+    assert "CREATE DATABASE lychd" not in script
+    assert script.count("CREATE EXTENSION IF NOT EXISTS vector;") == 2
+    assert "\\connect phoenix" in script
 
 
 def test_idempotency(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:

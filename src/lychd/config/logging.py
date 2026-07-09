@@ -17,10 +17,6 @@ from litestar.middleware.logging import LoggingMiddlewareConfig
 from litestar.plugins.structlog import StructlogConfig
 from structlog.typing import Processor
 
-from lychd.config.settings import get_settings
-
-settings = get_settings()
-
 
 @lru_cache
 def _is_tty() -> bool:
@@ -30,6 +26,9 @@ def _is_tty() -> bool:
 
 def should_render_as_json() -> bool:
     """Return JSON mode for the current runtime."""
+    from lychd.config.settings import get_settings
+
+    settings = get_settings()
     if settings.log.json_format is not None:
         return settings.log.json_format
     return not _is_tty()
@@ -37,6 +36,9 @@ def should_render_as_json() -> bool:
 
 def build_log_config(*, render_as_json: bool) -> StructlogConfig:
     """Build StructlogConfig for Litestar or direct bootstrap."""
+    from lychd.config.settings import get_settings
+
+    settings = get_settings()
     structlog_processors: list[Processor] = default_structlog_processors(as_json=render_as_json)
     structlog_processors.insert(1, structlog.processors.EventRenamer("message"))
 

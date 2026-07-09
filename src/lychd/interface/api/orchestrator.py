@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING, Any, cast
 from litestar import Controller, Request, Response, get, post
 from litestar.status_codes import HTTP_202_ACCEPTED, HTTP_409_CONFLICT
 
+from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.cortex.priority import PRIORITY_MAX
 from lychd.domain.cortex.substrate import get_run_substrate
 from lychd.domain.orchestration.arbiter import TransitionDeclined
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -45,16 +47,17 @@ class OrchestratorController(Controller):
     path = "/orchestrator"
     tags = ("Orchestrator",)
 
-    @get("/status")
+    @get("/status", guards=[requires_scopes("altar:read")])
     async def get_status(self, orchestrator: OrchestratorManager) -> dict[str, Any]:
         """Return capability status from the canonical registry view."""
         capabilities = orchestrator.list_capability_statuses()
         return {
             "active_capabilities": [item["capability_key"] for item in capabilities if item["is_active"]],
             "all_capabilities": capabilities,
+            "mutation_containment": orchestrator.containment_reason,
         }
 
-    @get("/solver/plan")
+    @get("/solver/plan", guards=[requires_scopes("altar:read")])
     async def get_transition_plan(self, orchestrator: OrchestratorManager, target: str) -> TransitionPlan:
         """Dry-run the transition solver for one capability key."""
         return await orchestrator.calculate_transition_plan(target)
@@ -63,9 +66,10 @@ class OrchestratorController(Controller):
         "/activate",
         status_code=HTTP_202_ACCEPTED,
         exception_handlers={TransitionDeclined: _handle_transition_declined},
+        guards=[requires_scopes("orchestrator:transition")],
     )
     async def activate_capability(
-        self, orchestrator: OrchestratorManager, target: str, priority: float = 100.0
+        self, orchestrator: OrchestratorManager, target: str, priority: int = PRIORITY_MAX
     ) -> TransitionPlan:
         """Manually trigger the transition path for one capability key.
 
@@ -74,7 +78,7 @@ class OrchestratorController(Controller):
         """
         return await orchestrator.request_transition(target, priority=priority)
 
-    @get("/queues")
+    @get("/queues", guards=[requires_scopes("altar:read")])
     async def get_queues(self, orchestrator: OrchestratorManager, leases: LeaseLedger) -> dict[str, Any]:
         """Report live SAQ queue depths + the current lease rows (drain-truth view).
 

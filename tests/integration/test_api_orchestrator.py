@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Litestar's create_test_client callback surface contains third-party Unknowns.
+# pyright: reportUnknownVariableType=false
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -8,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from litestar.testing import create_test_client
 
+from lychd.domain.codex import guards as guards_mod
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.arbiter import TransitionDeclined
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -23,7 +26,9 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def mock_orchestrator() -> MagicMock:
-    return MagicMock(spec=OrchestratorManager)
+    orchestrator = MagicMock(spec=OrchestratorManager)
+    orchestrator.containment_reason = None
+    return orchestrator
 
 
 @pytest.mark.asyncio
@@ -44,6 +49,7 @@ async def test_get_status(mock_orchestrator: MagicMock) -> None:
     assert "test-cap" in data["active_capabilities"]
     assert data["all_capabilities"][0]["capability_key"] == "test-cap"
     assert data["all_capabilities"][0]["evict_cost"] == 10
+    assert data["mutation_containment"] is None
 
 
 @pytest.mark.asyncio
@@ -98,7 +104,8 @@ class _GatingOrchestrator(OrchestratorManager):
         return plan
 
 
-def _gating_client() -> Any:
+def _gating_client(monkeypatch: pytest.MonkeyPatch) -> Any:
+    monkeypatch.setattr(guards_mod, "get_settings", lambda: SimpleNamespace(sigil=SimpleNamespace(enforce=False)))
     services = SimpleNamespace(orchestrator=_GatingOrchestrator(), leases=LeaseLedger())
 
     @asynccontextmanager
@@ -113,9 +120,9 @@ def _gating_client() -> Any:
     )
 
 
-def test_activate_low_priority_hard_swap_returns_409() -> None:
+def test_activate_low_priority_hard_swap_returns_409(monkeypatch: pytest.MonkeyPatch) -> None:
     """POST /activate?priority=25 against a HARD_SWAP → 409 carrying the plan + threshold."""
-    with _gating_client() as client:
+    with _gating_client(monkeypatch) as client:
         resp = client.post("/orchestrator/activate", params={"target": "titan", "priority": 25})
     assert resp.status_code == 409
     body = resp.json()
@@ -124,9 +131,9 @@ def test_activate_low_priority_hard_swap_returns_409() -> None:
     assert body["plan"]["action_type"] == "HARD_SWAP"
 
 
-def test_activate_high_priority_hard_swap_returns_202() -> None:
+def test_activate_high_priority_hard_swap_returns_202(monkeypatch: pytest.MonkeyPatch) -> None:
     """POST /activate?priority=70 proceeds → 202 with the plan."""
-    with _gating_client() as client:
+    with _gating_client(monkeypatch) as client:
         resp = client.post("/orchestrator/activate", params={"target": "titan", "priority": 70})
     assert resp.status_code == 202
     assert resp.json()["action_type"] == "HARD_SWAP"

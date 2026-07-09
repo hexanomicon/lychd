@@ -5,9 +5,9 @@ The engine routes an `Intent` to a `Workflow` ONCE via `WorkflowRegistry.route`
 persists the choice, and thereafter `perform_run` looks the workflow up by name
 via `WorkflowRegistry.get` — it never re-routes an in-flight run.
 
-The full Kit/Shed workflow packs are Wave 5; here the registry wraps the single
-built-in `bridge_chat` workflow. `WORKFLOWS` stays exported (derived from the
-registry) for the Loom controller until A2/A6 rewire it onto the registry.
+The full workflow packs are a later wave; here the registry wraps the single
+built-in `bridge_chat` workflow. Consumers (engine, Loom) read the registry
+directly via `WORKFLOW_REGISTRY`.
 """
 
 from __future__ import annotations
@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BRIDGE_CHAT",
-    "WORKFLOWS",
     "WORKFLOW_REGISTRY",
     "BuiltinWorkflowRegistry",
     "Trigger",
@@ -98,6 +97,3 @@ def builtin_workflow_registry() -> BuiltinWorkflowRegistry:
 
 # Built once from frozen workflow config data (not mutable module state).
 WORKFLOW_REGISTRY: Final[BuiltinWorkflowRegistry] = builtin_workflow_registry()
-
-# Back-compat: the Loom controller iterates this tuple until it adopts the registry.
-WORKFLOWS: Final[tuple[Workflow, ...]] = WORKFLOW_REGISTRY.all()

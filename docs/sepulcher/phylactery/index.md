@@ -13,26 +13,26 @@ Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector
 
 ## 📜 The Anatomy of Memory
 
-The Phylactery is not a simple data store; it is divided into sacred chambers (schemas):
+The first-light Phylactery uses the configured database's default schema/search path. Its mature
+anatomy reserves sacred chambers, but only the first item and SAQ's default `saq_*` tables exist
+today:
 
 1. **`public` (The State):** The current reality. Its first light is delivered: migration `0001_phylactery_first_light` raises seven tables — `session`, `run`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization`. The `run`/`step` tables are the run truth written by the **[RunLedger](../vessel/ghouls.md)**.
-2. **`vectors` (The Karma):** The high-dimensional embedding space where "White Truths" from the [Shadow Realm](../extensions/shadow.md) are stored.
-3. **`traces` (The Mind's Eye):** The dedicated chamber where the **[Oculus](../extensions/oculus.md)** (Arize Phoenix) inscribes the cognitive traces of the Lich.
-4. **`queue` (The Ghouls):** The transactional message broker used by **SAQ** to manage background tasks.
+2. **`vectors` (The Karma, planned):** The high-dimensional embedding space where verified outcomes may be stored.
+3. **`traces` (The Mind's Eye, planned):** The dedicated chamber for durable cognitive traces.
+4. **`queue` (The Ghouls, planned isolation):** The future queue schema/role boundary. V1 SAQ
+   creates its `saq_*` tables on the default search path and run-row/enqueue is not one transaction.
 
-!!! abstract "The Anchor of the Mist"
+!!! abstract "The Anchor"
     The primary and most sacred function of the Phylactery is to house the **Pattern**.
 
-    A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is merely a processor: a brain in a vat. If the container crashes, the brain dies.
+    A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is a processor with no memory of its own: kill the container and nothing of the Lich is lost, because nothing of the Lich lived there. Continuity lives here.
 
-    The Phylactery is the soul-data anchor. It persists across reboots, crashes, and migrations. Should the **[Vessel](../vessel/index.md)** be shattered, the Phylactery allows **[Reanimation](./reanimation.md)** from committed boundaries: memory records, persona state, queues, graph checkpoints, traces, and completed outputs. Volatile frames may be reconstructed or abandoned according to Graph, Worker, and policy law.
+    The Phylactery survives reboots, crashes, and migrations at each store's declared committed
+    boundary. In the current foundation that means SAQ jobs, Postgres run/step rows, and owner-only
+    per-run graph checkpoint files referenced by the run row. Memory/persona/trace stores and a
+    Postgres graph persistence/outbox remain later work. Volatile frames may be reconstructed or
+    abandoned according to Graph, Worker, and policy law.
 
 !!! info "The Accumulator of Karma"
-    The Phylactery is not a static archive; it is a growing crystal.
-
-    Through the **[Rite of Albedo](../../divination/transcendence/index.md)**, the Magus whitelists specific thoughts and actions. These are inscribed into the Phylactery as **Vector Embeddings**.
-
-    This is **Karma**.
-    - It stores *what* the Magus chose.
-    - It stores *why* the Magus chose it (the context).
-    - It becomes the training dataset that lets the **[Soulforge](../extensions/soulforge.md)** compress stable patterns into substrate instinct, reducing explicit prompting while preserving the Magus's consecrating authority.
+    The Phylactery is not a static archive; it is a growing crystal. What the Magus **[consecrates](../../adr/25-hitl.md)** is inscribed here as **Karma** — what was chosen, and why — and becomes the dataset the **[Soulforge](../extensions/soulforge.md)** compresses into substrate instinct. The mechanism is law in [HitL (25)](../../adr/25-hitl.md) §4; the meaning lives in [Transcendence](../../divination/transcendence/index.md).

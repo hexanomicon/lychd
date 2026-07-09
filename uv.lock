@@ -835,25 +835,33 @@ wheels = [
 name = "lychd"
 source = { editable = "." }
 dependencies = [
+    { name = "advanced-alchemy" },
+    { name = "alembic" },
+    { name = "anyio" },
+    { name = "asyncpg" },
+    { name = "click" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "litestar" },
-    { name = "pydantic-settings", extra = ["toml"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "asyncpg" },
-    { name = "bump-my-version" },
-    { name = "codespell" },
     { name = "litestar", extra = ["jinja", "opentelemetry", "pydantic", "sqlalchemy", "structlog"] },
     { name = "litestar-granian" },
     { name = "litestar-htmx" },
     { name = "litestar-saq", extra = ["psycopg"] },
     { name = "litestar-vite" },
     { name = "pgvector" },
-    { name = "polyfactory" },
+    { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["logfire", "openai"] },
+    { name = "pydantic-settings", extra = ["toml"] },
+    { name = "rich" },
+    { name = "sqlalchemy" },
+    { name = "structlog" },
+    { name = "tomlkit" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "bump-my-version" },
+    { name = "codespell" },
+    { name = "polyfactory" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -873,16 +881,6 @@ lint = [
     { name = "codespell" },
     { name = "ruff" },
 ]
-server = [
-    { name = "asyncpg" },
-    { name = "litestar", extra = ["jinja", "opentelemetry", "pydantic", "sqlalchemy", "structlog"] },
-    { name = "litestar-granian" },
-    { name = "litestar-htmx" },
-    { name = "litestar-saq", extra = ["psycopg"] },
-    { name = "litestar-vite" },
-    { name = "pgvector" },
-    { name = "pydantic-ai-slim", extra = ["logfire", "openai"] },
-]
 test = [
     { name = "polyfactory" },
     { name = "pytest" },
@@ -900,25 +898,33 @@ typing = [
 
 [package.metadata]
 requires-dist = [
+    { name = "advanced-alchemy", specifier = ">=1.8.0" },
+    { name = "alembic", specifier = ">=1.17.0" },
+    { name = "anyio", specifier = ">=4.0.0" },
+    { name = "asyncpg", specifier = ">=0.29.0" },
+    { name = "click", specifier = ">=8.1.0" },
     { name = "httpx", specifier = "<=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "litestar", specifier = ">=2.18.0" },
-    { name = "pydantic-settings", extras = ["toml"], specifier = ">=2.10.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "asyncpg", specifier = ">=0.29.0" },
-    { name = "bump-my-version" },
-    { name = "codespell", specifier = ">=2.4.1" },
-    { name = "litestar", extras = ["sqlalchemy", "structlog", "jinja", "pydantic", "opentelemetry"], specifier = ">=2.18.0" },
+    { name = "litestar", extras = ["jinja", "opentelemetry", "pydantic", "sqlalchemy", "structlog"], specifier = ">=2.18.0" },
     { name = "litestar-granian", specifier = ">=0.14.2" },
     { name = "litestar-htmx", specifier = ">=0.5.0" },
     { name = "litestar-saq", extras = ["psycopg"], specifier = ">=0.5.3" },
     { name = "litestar-vite" },
     { name = "pgvector", specifier = ">=0.4.0" },
+    { name = "pydantic", specifier = ">=2.10.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire", "openai"], specifier = ">=1.25.1" },
+    { name = "pydantic-settings", extras = ["toml"], specifier = ">=2.10.1" },
+    { name = "rich", specifier = ">=13.9.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.0" },
+    { name = "structlog", specifier = ">=24.4.0" },
+    { name = "tomlkit", specifier = ">=0.13.3" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "bump-my-version" },
+    { name = "codespell", specifier = ">=2.4.1" },
     { name = "polyfactory" },
-    { name = "pydantic-ai-slim", extras = ["openai", "logfire"], specifier = ">=1.25.1" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -935,16 +941,6 @@ lint = [
     { name = "bump-my-version" },
     { name = "codespell", specifier = ">=2.4.1" },
     { name = "ruff", specifier = ">=0.1.0" },
-]
-server = [
-    { name = "asyncpg", specifier = ">=0.29.0" },
-    { name = "litestar", extras = ["sqlalchemy", "structlog", "jinja", "pydantic", "opentelemetry"], specifier = ">=2.18.0" },
-    { name = "litestar-granian", specifier = ">=0.14.2" },
-    { name = "litestar-htmx", specifier = ">=0.5.0" },
-    { name = "litestar-saq", extras = ["psycopg"], specifier = ">=0.5.3" },
-    { name = "litestar-vite" },
-    { name = "pgvector", specifier = ">=0.4.0" },
-    { name = "pydantic-ai-slim", extras = ["openai", "logfire"], specifier = ">=1.25.1" },
 ]
 test = [
     { name = "polyfactory" },

@@ -1,8 +1,8 @@
 """`altar_services_lifespan` — the ONE web-layer assembly site (§TD-5).
 
-Builds `AltarServices` once, stamps it on `app.state.services`, wires the real
-`RunEngine` + process `RunSubstrate` against the SAQ queues (Topology A: the
-in-process ghoul shares this bus), registers the request-independent `route_path`
+Builds one queue-bound `AltarServices`, publishes its process `RunSubstrate`
+(Topology A: the in-process ghoul shares this bus), stamps it on
+`app.state.services`, registers the request-independent `route_path`
 Jinja global + `run_data_state` filter, warms the registry off the event loop,
 reconciles orphaned runs at startup, and drains on shutdown.
 
@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
 from lychd.domain.web.altar_services import build_altar_services
+from lychd.system.services.queues import ManagedRunQueue, connect_run_queues, disconnect_run_queues
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -35,70 +37,113 @@ _RUN_QUEUE_NAMES = ("runs", "rites")
 def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
     """Return the SAQ queues the engine enqueues onto.
 
-    Runtime seam: in the web test client (no SAQ plugin) this returns empty and the
-    real engine is never exercised — the web tests use the fake engine. Production
-    always carries the SAQ plugin, and every routed queue name MUST resolve: a
-    missing queue raises loudly here (F3/H2) rather than silently returning a partial
-    map that would black-hole every intent routed to the absent queue.
+    The production application always carries the SAQ plugin, and every routed queue
+    name MUST resolve. A missing plugin or queue is a startup wiring error; returning
+    an empty map would let the daemon boot with a run engine that can only black-hole
+    work.
     """
     from litestar_saq import SAQPlugin
 
-    try:
-        plugin = app.plugins.get(SAQPlugin)
-    except Exception:  # noqa: BLE001 - SAQ plugin genuinely absent (non-server contexts)
-        return {}
-    # No inner suppress: an unregistered queue name is a wiring bug, not a shrug.
+    plugin = app.plugins.get(SAQPlugin)
     return {name: cast("RunQueue", plugin.get_queue(name)) for name in _RUN_QUEUE_NAMES}
 
 
 @asynccontextmanager
 async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
-    """Assemble, publish, wire, warm, reconcile, and later drain the Altar services."""
+    """Assemble, warm, publish, reconcile, and later drain the Altar services."""
+    from lychd.config.settings import get_settings
     from lychd.extensions.host import get_extensions  # composition root only
+    from lychd.system.services.runtime import wait_for_host_reactor_idle
+
+    # F3: stamp the boot cutoff BEFORE the substrate is published (before any worker can
+    # claim + set a run RUNNING). Reconcile sweeps only runs started before this instant,
+    # so a run this process claims mid-startup is never mistaken for a dead-process orphan.
+    boot_cutoff = datetime.now(UTC)
 
     engine = cast("JinjaTemplateEngine", app.template_engine)
     exts = get_extensions()
-    services = build_altar_services(
-        template_engine=engine,
-        rune_schemas=exts.rune_schemas,
-        runtime_adapters=exts.runtime_adapters,
-        portal_factories=exts.portal_factories,
-    )
-
-    app.state.services = services
-
-    # Wire the real run engine + publish the process RunSubstrate (Topology A: the
-    # in-process ghoul and the SSE handler share this event bus).
-    run_engine = services.wire_runtime(_collect_run_queues(app))
-
-    # Request-independent url reversal for every template (works in SSE too), plus
-    # the frozen run-state `data-state` mapping as a Jinja filter.
-    from lychd.domain.web.schemas import run_data_state
-
-    engine.engine.globals["route_path"] = app.route_reverse  # pyright: ignore[reportArgumentType]
-    engine.engine.filters["run_data_state"] = run_data_state
-
-    # Warm the registry off the event loop: rune loading + quadlet transmutation is
-    # synchronous disk IO, so force it at startup instead of stalling the first handler.
-    await asyncio.to_thread(services.registry.ensure_loaded)
-
-    # Preauthorization startup sync (DB profile only): upsert the loaded Codex preauth
-    # runes so standing approvals are live before the first park.
-    await _sync_preauths_at_startup(exts)
-
-    # Reconcile orphaned RUNNING runs a dead process left behind (durable ledger only;
-    # a no-op under the in-memory ledger, which starts empty each process).
-    await _reconcile_at_startup()
-    # Re-fire consent verdicts recorded while the process was down (a crash between the
-    # verdict write and the re-enqueue). Needs the engine the substrate deliberately lacks.
-    await _reconcile_consents_at_startup(run_engine)
+    settings = get_settings()
+    services = None
+    connected_queues: tuple[ManagedRunQueue, ...] = ()
     try:
+        await wait_for_host_reactor_idle(settings.orchestration.switching)
+        # Resolve and CONNECT every queue before constructing or publishing a
+        # runtime handle. litestar-saq's in-process Worker starts detached and
+        # does not connect its queue; relying on it produces a healthy-looking
+        # app whose workers hot-loop on an unopened Postgres pool.
+        queues = _collect_run_queues(app)
+        connected_queues = await connect_run_queues(queues)
+        services = build_altar_services(
+            template_engine=engine,
+            queues=queues,
+            rune_schemas=exts.rune_schemas,
+            runtime_adapters=exts.runtime_adapters,
+            portal_factories=exts.portal_factories,
+            settings=settings,
+        )
+
+        # Warm the registry off the event loop: rune loading + quadlet transmutation is
+        # synchronous disk IO, so force it at startup instead of stalling the first handler.
+        await asyncio.to_thread(services.registry.ensure_loaded)
+
+        # Publish the already-complete runtime only after construction and registry
+        # validation have succeeded.  There is no late dependency mutation.
+        from lychd.domain.cortex.substrate import set_run_substrate
+
+        set_run_substrate(services.substrate)
+
+        # Request-independent url reversal for every template (works in SSE too), plus
+        # the frozen run-state `data-state` mapping as a Jinja filter.
+        from lychd.domain.web.schemas import run_data_state
+
+        engine.engine.globals["route_path"] = app.route_reverse  # pyright: ignore[reportArgumentType]
+        engine.engine.filters["run_data_state"] = run_data_state
+
+        # Preauthorization startup sync (DB profile only): upsert loaded Codex
+        # preauthorizations before the first park.
+        await _sync_preauths_at_startup(exts)
+        await _reconcile_at_startup(boot_cutoff)
+        await _reconcile_consents_at_startup(services.run_engine)
+
+        # Publish the web-facing handle last: a partially warmed runtime is never
+        # observable through app.state.
+        app.state.services = services
         yield
     finally:
         from lychd.domain.cortex.substrate import reset_run_substrate
 
-        await services.aclose()
+        # Litestar exits custom lifespan managers before running plugin
+        # ``on_shutdown`` hooks. Topology-A SAQ workers share these services, so
+        # drain them here first; otherwise a live graph can race the substrate
+        # reset and bus/session cleanup. The plugin's later stop is idempotent.
+        await _stop_in_process_workers(app)
         reset_run_substrate()
+        try:
+            if services is not None:
+                await services.aclose()
+        finally:
+            await disconnect_run_queues(connected_queues)
+
+
+async def _stop_in_process_workers(app: Litestar) -> None:
+    """Await Topology-A workers before their shared runtime is dismantled."""
+    from litestar_saq import SAQPlugin
+
+    try:
+        plugin = app.plugins.get(SAQPlugin)
+    except (KeyError, LookupError):
+        return
+    workers = [worker for worker in plugin.get_workers().values() if not worker.separate_process]
+    if not workers:
+        return
+    results = await asyncio.gather(*(worker.stop() for worker in workers), return_exceptions=True)
+    for worker, result in zip(workers, results, strict=True):
+        if isinstance(result, BaseException):
+            logger.error(
+                "saq_worker_shutdown_failed",
+                queue_name=worker.queue.name,
+                error=str(result),
+            )
 
 
 async def _reconcile_consents_at_startup(engine: Any) -> None:
@@ -132,8 +177,8 @@ async def _sync_preauths_at_startup(exts: Any) -> None:
         logger.exception("preauth_sync_at_startup_failed")
 
 
-async def _reconcile_at_startup() -> None:
-    """Run the orphan-run reconcile once at startup.
+async def _reconcile_at_startup(boot_cutoff: datetime) -> None:
+    """Run the orphan-run reconcile once at startup (gated on the boot cutoff, F3).
 
     Must not block startup on a transient DB hiccup, but the old silent `suppress`
     hid real reconcile failures (F9/H2). Log loudly instead — the failure is
@@ -142,6 +187,6 @@ async def _reconcile_at_startup() -> None:
     from lychd.ghouls.runs import reconcile_runs
 
     try:
-        await reconcile_runs({})
+        await reconcile_runs({}, boot_cutoff=boot_cutoff)
     except Exception:
         logger.exception("reconcile_at_startup_failed")

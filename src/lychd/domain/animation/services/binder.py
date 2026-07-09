@@ -3,9 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from lychd.config.runes import RuneConfig
-from lychd.domain.animation.animators import Animator
-from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
+from lychd.domain.animation.animators import RuntimeAnimator
+from lychd.domain.animation.connectors import ModelConnector, ToolConnector
 
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
@@ -13,9 +12,6 @@ if TYPE_CHECKING:
     from pydantic_ai.toolsets import AbstractToolset
 
     from lychd.domain.animation.schemas.generation import GenerationProfile
-
-
-type RuntimeAnimator = Animator[Connector, RuneConfig]
 
 
 def generation_to_model_settings(profile: GenerationProfile) -> ModelSettings | None:

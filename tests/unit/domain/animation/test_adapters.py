@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle, CapabilityPhase
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
 from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
@@ -243,7 +243,7 @@ def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None
 
     # Preset sections plus the Soulstone-name fallback each yield a dynamic spec.
     assert {spec.model_id for spec in specs} == {"router", "router-main", "router-vision"}
-    assert all(spec.lifecycle is CapabilityLifecycle.DYNAMIC for spec in specs)
+    assert all(spec.is_dynamic for spec in specs)
 
 
 @pytest.mark.asyncio
@@ -299,7 +299,52 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
     assert states[main.key].is_active is True
     assert states[vision.key].phase is CapabilityPhase.ACTIVATABLE
     assert states[vision.key].is_active is False
+    assert states[vision.key].runtime_started is True
     assert states[main.key].active_model_id == "router-main"
+
+
+@pytest.mark.asyncio
+async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path: Path) -> None:
+    preset = tmp_path / "models.ini"
+    preset.write_text(
+        "version = 1\n\n[target]\nmodel = /models/target.gguf\n",
+        encoding="utf-8",
+    )
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "router",
+            "startup_mode": "router",
+            "models_preset": str(preset),
+        }
+    )
+
+    class RejectingControlPlane:
+        async def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
+            return LlamaCppLifecycle(
+                runtime="llamacpp",
+                base_url="http://localhost:8080/v1",
+                mode="router",
+                health="ok",
+                supports_router=True,
+                available_models=["target"],
+            )
+
+        async def load_model(self, _base_url: str, _model: str) -> bool:
+            return False
+
+    adapter = LlamaCppRuntimeAdapter(
+        control_plane=cast("LlamaCppControlPlane", RejectingControlPlane()),
+    )
+    quadlet = transmute_single_soulstone_quadlet(soulstone, runtime_planner=adapter)
+    runtime = adapter.build_runtime(soulstone, quadlet)
+    target = next(spec for spec in adapter.build_capability_specs(soulstone) if spec.model_id == "target")
+    assert runtime is not None
+
+    result = await adapter.activate_capability(runtime, target)
+
+    assert result.accepted is False
+    assert result.phase is CapabilityPhase.ACTIVATABLE
+    assert result.reason == "router rejected model load"
 
 
 def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:

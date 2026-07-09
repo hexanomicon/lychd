@@ -5,6 +5,8 @@ icon: material/anvil
 
 # :material-anvil: The Soulforge: Extension of Training
 
+_Status: doctrine ahead of code — the built-in `training` package is where this lands; treat this page as design intent. Law: [ADR 33](../../adr/33-training.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"The clay is vast, but it is cold. Only the hammer of Will can heat it to life. There is no begging the spirits to understand; the names are carved into their very substance."_
 
 **The Soulforge** is the Training Extension of the LychD system. It is the physical implementation of **[ADR 33 (Training)](../../adr/33-training.md)**—a specialized module that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into model weights.
@@ -63,7 +65,7 @@ Once the fire cools and the Forge Coven is banished, the transformation is final
 - **The Result:** The Lich no longer depends on archive retrieval for every repeated behavior. More knowledge moves into standing instinct, lowering instruction tax and retrieval latency for that domain.
 
 !!! danger "The Weight of the Hammer"
-    Soul-Forging is irreversible for that specific adapter. If the system trains on "Dirty Karma" (errors or hallucinations), the Lich internalizes those flaws as instinct. The **[Rite of Albedo](../../divination/transcendence/index.md)** requires care, because the Soulforge burns whatever truth it is given.
+    Soul-Forging is irreversible for that specific adapter. If the system trains on "Dirty Karma" (errors or hallucinations), the Lich internalizes those flaws as instinct. **[Consecration](../../adr/25-hitl.md)** requires care, because the Soulforge burns whatever truth it is given.
 
 !!! warning "Ossification Risk"
     Over-forging on narrow, repetitive patterns hardens a Persona into rigidity. Keep the training corpus clean, diverse within scope, and tied to verified outcomes.

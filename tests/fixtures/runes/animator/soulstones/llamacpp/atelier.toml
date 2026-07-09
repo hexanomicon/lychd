@@ -1,5 +1,5 @@
 name = "atelier"
-description = "Reference multi-model atelier soulstone (llama.cpp router ⇒ DYNAMIC)."
+description = "Reference multi-model atelier soulstone (llama.cpp router ⇒ is_dynamic=True)."
 groups = ["atelier"]
 startup_mode = "router"
 models_dir = "/models"

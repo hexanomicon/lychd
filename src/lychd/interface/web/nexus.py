@@ -21,6 +21,7 @@ from litestar.status_codes import HTTP_202_ACCEPTED
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
+from lychd.domain.cortex.priority import PRIORITY_MAX
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.domain.web.projection import Projector, stop_polling
@@ -41,7 +42,7 @@ class NexusController(Controller):
             context={"active": "nexus", "pending": await consents.pending_count()},
         )
 
-    @get("/board", name="nexus:board")
+    @get("/board", name="nexus:board", guards=[requires_scopes("altar:read")])
     async def board(
         self,
         request: HTMXRequest,
@@ -55,7 +56,7 @@ class NexusController(Controller):
         ctx["active"] = "nexus"
         return Template(template_name="altar/pages/nexus.html.j2", context=ctx)
 
-    @get("/plan", name="nexus:plan")
+    @get("/plan", name="nexus:plan", guards=[requires_scopes("altar:read")])
     async def plan(
         self,
         request: HTMXRequest,
@@ -75,7 +76,12 @@ class NexusController(Controller):
             )
         return transition_plan
 
-    @post("/swap", status_code=HTTP_202_ACCEPTED, name="nexus:swap")
+    @post(
+        "/swap",
+        status_code=HTTP_202_ACCEPTED,
+        name="nexus:swap",
+        guards=[requires_scopes("orchestrator:transition")],
+    )
     async def swap(
         self,
         request: HTMXRequest,
@@ -99,7 +105,7 @@ class NexusController(Controller):
             raise NotFoundException(msg) from exc
 
         task = asyncio.create_task(
-            orchestrator.request_transition(target, priority=100.0),
+            orchestrator.request_transition(target, priority=PRIORITY_MAX),
             name=f"swap:{target}",
         )
         record = tickets.open(
@@ -116,7 +122,7 @@ class NexusController(Controller):
             status_code=HTTP_202_ACCEPTED,
         )
 
-    @get("/swap/{ticket_id:str}", name="nexus:ticket")
+    @get("/swap/{ticket_id:str}", name="nexus:ticket", guards=[requires_scopes("altar:read")])
     async def swap_status(
         self,
         ticket_id: str,

@@ -161,11 +161,22 @@ Within `docs/`, authority is divided by purpose:
   rationale.
 - **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
   term, but they should not redefine it.
-- **docs/sepulcher/** defines domain anatomy, runtime doctrine, and the
-  vocabulary of the body.
-- **docs/divination/** defines operator interaction, interface doctrine, and
-  transcendence-facing workflows.
-- **docs/summoning/** is the practical user ritual for bringing the daemon up.
+- **docs/sepulcher/** is **topic-oriented**: each part of the body carries its own
+  concept, how-to, and configuration reference on one page (Portal, Soulstone, Coven,
+  Codex, …). *What a part is and how to operate it* live together.
+- **docs/divination/** is the school of interacting with the **running** Lich: **`altar/`**
+  the instruments you drive it through (Bridge, Loom, Nexus) and **`transcendence/`** the
+  meaning (the alchemical ascent). The agent layer itself is code — agents are written in
+  Python and wired in the graph (the Loom); there is no separate "practice" gate.
+- **docs/summoning.md** is the practical user *tutorial* for bringing the daemon up the
+  first time (learn-by-doing) — a single continuous page, not a chunked wizard.
+
+Each fact has exactly **one** home. A part's concept + how-to + config live together on
+its topic page in the Sepulcher; the alchemical *meaning* lives in Transcendence; the agent
+layer is code (graph/Loom), not a doc gate. Pages link across seams instead of restating; a
+multi-gate journey is a *path* that stitches those homes, never a page that duplicates them.
+Troubleshooting grows per-topic as faults are actually exercised — there is no standalone
+faults gate.
 
 Directory `index.md` files inside `docs/` are parent pages in the published
 site. They are reflective maps, not passive listings: an index names the local

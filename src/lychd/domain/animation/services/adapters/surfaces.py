@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
@@ -107,22 +107,22 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         selected_surface = self._select_model_surface(model_id)
 
         try:
-            from pydantic_ai.models.openai import OpenAIChatModel
-            from pydantic_ai.providers.openai import OpenAIProvider
+            from lychd.domain.animation.model_factory import (
+                build_openai_compatible_model,
+                openai_compatible_provider,
+            )
         except ModuleNotFoundError as exc:
             msg = "Pydantic AI OpenAI extras are required to hydrate an OpenAI-compatible connector model."
             raise RuntimeError(msg) from exc
 
-        api_key = self._resolve_api_key()
-        if api_key:
-            provider = OpenAIProvider(base_url=self._base_url, api_key=api_key)
-        else:
-            provider = OpenAIProvider(base_url=self._base_url)
-        if selected_surface == ModelSurface.RESPONSES:
-            from pydantic_ai.models.openai import OpenAIResponsesModel
-
-            return cast("Model", OpenAIResponsesModel(selected_model, provider=provider))
-        return cast("Model", OpenAIChatModel(selected_model, provider=provider))
+        # THE one model constructor (shared with agents.factory.build_local_model) so
+        # tool-call JSON schemas are identical between the reference and production.
+        provider = openai_compatible_provider(base_url=self._base_url, api_key=self._resolve_api_key())
+        return build_openai_compatible_model(
+            model_id=selected_model,
+            provider=provider,
+            responses=selected_surface == ModelSurface.RESPONSES,
+        )
 
     def get_toolsets(self) -> Sequence[AbstractToolset]:
         return self._toolsets

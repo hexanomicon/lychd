@@ -7,7 +7,7 @@ retry/settings policy, and the write-gated toolsets. Cache key is the
 day one — the ADR-33 lesson learned pre-emptively.
 
 Wave 1 builds the forge + `AgentSpec` shape and wires `THE_FIRST_ONE` through it.
-The full `ToolsetRegistry`/Kit unpack (resolving `toolset_names` through a sealed
+The full toolset-registry unpack (resolving `toolset_names` through a sealed
 registry) is a later wave; here toolsets arrive as explicit factories.
 """
 
@@ -17,10 +17,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.profiles import InlineDefsJsonSchemaTransformer
-from pydantic_ai.profiles.openai import OpenAIModelProfile
-from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 
 from lychd.agents.deps import LychDDeps
@@ -28,6 +24,7 @@ from lychd.agents.deps import LychDDeps
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
 
     ToolsetFactory = Callable[[], AbstractToolset[LychDDeps]]
@@ -47,7 +44,7 @@ class AgentSpec:
     name: str
     instructions_key: str
     instructions: str
-    output_kind: str
+    output_types: tuple[type, ...]
     toolset_names: tuple[str, ...] = ()
     writes: bool = False
     retries: int = 2
@@ -57,14 +54,14 @@ class AgentSpec:
 def build_agent(
     spec: AgentSpec,
     *,
-    output_type: Any,
     toolset_factories: dict[str, ToolsetFactory],
     mutating: frozenset[str] = frozenset(),
     instruction_hooks: tuple[InstructionHook, ...] = (),
 ) -> Agent[LychDDeps, Any]:
     """Construct a late-binding agent: no model; write-gated toolsets bound by absence.
 
-    A toolset named in `mutating` is bound only when `spec.writes` — an agent
+    The typed output union is the spec's own `output_types` (hashable → in the cache
+    key). A toolset named in `mutating` is bound only when `spec.writes` — an agent
     without write authority has no mutating tool at all.
     """
     toolsets: list[AbstractToolset[LychDDeps]] = []
@@ -77,6 +74,7 @@ def build_agent(
             continue  # security by absence — no write authority, no mutating tool
         toolsets.append(factory())
 
+    output_type: Any = list(spec.output_types)
     agent: Agent[LychDDeps, Any] = Agent(
         deps_type=LychDDeps,
         output_type=output_type,
@@ -121,20 +119,21 @@ class AgentForge:
         return agent
 
 
-def build_local_model(*, model_id: str, base_url: str, api_key: str = "placeholder") -> OpenAIChatModel:
+def build_local_model(*, model_id: str, base_url: str, api_key: str = "placeholder") -> Model:
     """Build the reference local OpenAI-compatible model (A5 §4, Part 5.A).
 
-    The only place `OpenAIChatModel` is spelled in `agents/`. A3's `AnimatorBinder`
-    is the production hydrator of `grant.model`; this is the agents-layer reference
-    the binder must match, and what tests/CLI smoke use.
+    A thin wrapper over the ONE shared constructor in
+    `domain/animation/model_factory.py` — the SAME builder the production hydrator
+    (`AnimatorBinder` → `OpenAICompatibleConnector.get_model`) uses, so the reference
+    tests/CLI exercise is byte-for-byte the model the daemon runs (identical tool-call
+    JSON-schema profile). Previously this diverged: the reference carried the profile,
+    production did not.
     """
-    return OpenAIChatModel(
-        model_id,
-        provider=OpenAIProvider(base_url=base_url, api_key=api_key),
-        profile=OpenAIModelProfile(
-            json_schema_transformer=InlineDefsJsonSchemaTransformer,
-            openai_supports_strict_tool_definition=False,
-        ),
+    from lychd.domain.animation.model_factory import build_openai_compatible_model, openai_compatible_provider
+
+    return build_openai_compatible_model(
+        model_id=model_id,
+        provider=openai_compatible_provider(base_url=base_url, api_key=api_key),
     )
 
 

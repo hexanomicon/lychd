@@ -16,10 +16,10 @@ from litestar.di import Provide
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.dispatcher import Dispatcher
+from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
-from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.fragments import FragmentRegistry
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.sessions import SessionStorePort
@@ -67,7 +67,7 @@ def provide_tickets(state: State) -> TicketStore:
 
 
 def provide_run_engine(state: State) -> RunEngine:
-    """Return the transitional run engine facade."""
+    """Return the fully queue-bound run engine."""
     return state.services.run_engine
 
 

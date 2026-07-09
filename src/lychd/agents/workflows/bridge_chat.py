@@ -26,7 +26,14 @@ from lychd.agents.outputs import Bottleneck, BridgeReply, FragmentCall
 from lychd.agents.services import WorkflowServices, default_sigil
 from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
 from lychd.agents.workflows.base import Gate, Trigger, Workflow
-from lychd.agents.workflows.nodes import MAX_CONSENT_ROUNDS, new_step_id, park_on_consent, pump_agent_events
+from lychd.agents.workflows.nodes import (
+    MAX_CONSENT_ROUNDS,
+    is_single_approval,
+    new_step_id,
+    park_on_consent,
+    pump_agent_events,
+)
+from lychd.domain.cortex.priority import PRIORITY_DEFAULT
 from lychd.domain.cortex.runs import ConsentPending
 
 if TYPE_CHECKING:
@@ -62,7 +69,7 @@ class BridgeChatState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
-    priority: int = 50
+    priority: int = PRIORITY_DEFAULT
     history: list[dict[str, str]] = Field(default_factory=list)
     prefix_digest: str | None = None
     reply: BridgeReply | None = None
@@ -166,6 +173,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
             family="chat",
             run_id=ctx.state.run_id,
             priority=ctx.state.priority,
+            requires_tools=True,
         ) as grant:
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
             deps = LychDDeps(
@@ -176,6 +184,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 context=ctx.deps.context,
                 run_id=ctx.state.run_id,
                 step_id=new_step_id(),
+                priority=ctx.state.priority,
             )
             emit.status("thinking")
             output, messages = await pump_agent_events(
@@ -188,6 +197,11 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 emit=emit,
             )
         if isinstance(output, DeferredToolRequests):
+            if not is_single_approval(output):  # F5: never share one card's verdict across calls
+                ctx.state.bottleneck = Bottleneck(
+                    kind="policy_block", detail="multiple tool approvals in one turn are not yet supported"
+                )
+                return ProjectReply()
             await park_on_consent(ctx, output, messages)  # S4: records the row; does NOT emit
             return AwaitConsent()
         ctx.state.reply = output if isinstance(output, BridgeReply) else None
@@ -227,6 +241,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
             family="chat",
             run_id=ctx.state.run_id,
             priority=ctx.state.priority,
+            requires_tools=True,
         ) as grant:
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
             deps = LychDDeps(
@@ -237,6 +252,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
                 context=ctx.deps.context,
                 run_id=ctx.state.run_id,
                 step_id=new_step_id(),
+                priority=ctx.state.priority,
             )
             emit.status("thinking")
             output, messages = await pump_agent_events(
@@ -255,6 +271,11 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
         ctx.state.pending_call_ids = ()
         ctx.state.pending_consent_tool_name = None
         if isinstance(output, DeferredToolRequests):  # the tool chained another approval
+            if not is_single_approval(output):  # F5: never share one card's verdict across calls
+                ctx.state.bottleneck = Bottleneck(
+                    kind="policy_block", detail="multiple tool approvals in one turn are not yet supported"
+                )
+                return ProjectReply()
             ctx.state.consent_rounds += 1
             if ctx.state.consent_rounds >= MAX_CONSENT_ROUNDS:
                 ctx.state.bottleneck = Bottleneck(kind="policy_block", detail="consent round limit reached")
@@ -304,7 +325,7 @@ def _make_state(intent: Intent) -> BridgeChatState:
         session_id=intent.session_id,
         run_id=intent.run_id or "",
         prompt=intent.prompt,
-        priority=intent.priority if intent.priority is not None else 50,
+        priority=intent.priority if intent.priority is not None else PRIORITY_DEFAULT,
     )
 
 

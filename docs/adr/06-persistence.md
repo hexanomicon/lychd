@@ -40,9 +40,19 @@ icon: material/database
 
 **Postgres** is selected as the unified backend, equipped with the capability to handle relational, vector, and document data. The persistence logic is orchestrated via **SQLAlchemy (Async)**.
 
-### 1. The Dynamic Registry (Federation)
+!!! warning "First-light boundary"
+    The implemented database floor is one pgvector-enabled Postgres, the binary JSON/JSONB codec,
+    migration `0001_phylactery_first_light`, and the Postgres `RunLedger` over `run`/`step`. The
+    seven core tables and SAQ's `saq_*` tables currently use the configured database's default
+    schema/search path. Extension model federation, dedicated `vectors`/`traces`/`queue`/`verbatim`
+    schemas and roles, privatization-taint propagation, and Postgres graph checkpoints/outbox are
+    target architecture, not delivered isolation.
 
-The persistence layer implements a Schema Federation Protocol to support the system's recursive evolution:
+### 1. The Dynamic Registry (Planned Federation)
+
+The persistence layer will use a Schema Federation Protocol to support recursive evolution. The
+current Alembic environment imports the fixed core model package; no extension
+`context.register_model(...)` migration contract exists yet.
 
 1. **The Base:** All models inherit from a shared `UUIDBase` provided by the Core.
 2. **Registration:** During the initialization phase, extensions call `context.register_model(MyModel)`.
@@ -56,9 +66,11 @@ To achieve maximum throughput for complex state objects and execution history, a
 - **The Solution:** The system injects a custom codec that accepts already-serialized bytes (from a high-performance serializer like `msgspec`), prepends the Postgres JSONB version header (`\x01`), and transmits the raw binary protocol directly.
 - **The Result:** The application memory maps directly to the database storage engine, bypassing text processing entirely. This is critical for future rituals involving massive cognitive data dumps.
 
-### 3. Anatomical Partitioning (The Chambers)
+### 3. Anatomical Partitioning (Target Chambers)
 
-To maintain organizational purity, the Phylactery is divided into logical chambers:
+To maintain organizational purity, the mature Phylactery is divided into logical chambers. Except
+for the current default-schema state and SAQ tables, these schema boundaries are not yet created by
+the first migration:
 
 - **`public` (State):** Relational data for user state, configuration, and extension registries.
 - **`vectors` (Karma):** High-dimensional space for storing verified artifacts and long-term memory. Entries include a `status` metadata field (e.g., `speculative`, `consecrated`) to distinguish between experimental thoughts and verified truths.
@@ -71,9 +83,16 @@ To maintain organizational purity, the Phylactery is divided into logical chambe
 The database is configured to support atomic task distribution. By utilizing `SKIP LOCKED`, the system can manifest background ghouls that claim and execute pending labor without the risk of duplicate work or the need for an external broker.
 
 !!! success "First Light (delivered)"
-    The Phylactery's first real tables exist. Migration `0001_phylactery_first_light` creates seven models on a `pgvector` Postgres — `session`, `run`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization` — alongside the `vector` extension. This replaces the earlier "all in-memory" posture: the **`RunLedger`** (**[Workers (14)](14-workers.md)**) writes `run`/`step` rows as the run truth, with `step` carrying the semantic `RunEvent` trail (excluding chatty `TOKEN` deltas). Unit tests keep an in-memory `RunLedger` so the DB is not a hard dependency for DB-free suites. Session/turn persistence and the durable consent record land behind the same interfaces in later waves; until then those stores keep a single-writer in-memory adapter to avoid double truth.
+    The Phylactery's first real tables exist. Migration `0001_phylactery_first_light` creates seven
+    models on a `pgvector` Postgres — `session`, `run`, `step`, `consent`, `karma`,
+    `soulstone_record`, and `codex_preauthorization` — alongside the `vector` extension. The one
+    `db.profile` composition choice selects all three active stores: default `postgres` uses the
+    durable run/step ledger, Bridge session/turn store, and consent/preauthorization ledger;
+    `memory` selects their loop-confined DB-free adapters for focused tests. The `step` table carries
+    semantic `RunEvent` records except chatty `TOKEN` deltas. Karma promotion, memory retrieval, and
+    extension schema federation remain later work even though their first tables/shapes exist.
 
-### 5. Schema-Level Privatization Tainting (The Radioactive Tag)
+### 5. Planned Schema-Level Privatization Tainting (The Radioactive Tag)
 
 To support the system's strict egress policies (foreshadowing **[The Dispatcher (22)](22-dispatcher.md)**), the persistence layer mandates explicit data classification at the schema level.
 
@@ -86,9 +105,12 @@ To support the system's strict egress policies (foreshadowing **[The Dispatcher 
 !!! success "Positive"
     - **Atomic Reliability:** A single transaction can commit a user action and save a complex state snapshot simultaneously.
 
-    - **Performance:** Binary Transmutation reduces the latency of saving large state objects by orders of magnitude compared to standard handling.
+    - **Serialization Efficiency:** Binary Transmutation removes a redundant text encode/decode
+      path for JSON/JSONB. Its end-to-end benefit must be measured on representative payloads; the
+      architecture does not claim an unrecorded orders-of-magnitude benchmark.
 
-    - **Extension Assimilation:** A coupled extension defines a standard Python class, and the system handles table creation and evolution within the unified body.
+    - **Extension Assimilation Horizon:** A future coupled extension contract can define models
+      without adding another persistence service.
 
 !!! failure "Negative"
     - **Migration Complexity:** If two extensions define models with conflicting table names, the migration fails. The system relies on strict namespace conventions to prevent collisions.

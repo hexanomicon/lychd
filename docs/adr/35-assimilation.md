@@ -73,7 +73,7 @@ The Smith automates the creation ritual through a multi-stage process governed b
 
 1. **Genesis:** The Magus submits an intent via the **[Altar (ADR 15)](./15-frontend.md)**.
 2. **Speculation:** The Smith enters the **Shadow Realm**. It creates a Jujutsu workspace or change in the Lab and fabricates the logic, tests, and Quadlet definitions.
-3. **The Rite of Albedo:** The Smith enqueues a job for the **[Ghouls (ADR 14)](./14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against the new creation. It iterates autonomously on any failures.
+3. **The Rite of Speculation:** The Smith enqueues a job for the **[Ghouls (ADR 14)](./14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against the new creation. It iterates autonomously on any failures.
 4. **The Preemptive Blink:** Upon achieving a "White Truth" (successful tests), the machine executes a system-wide Snapshot.
 5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)** or a Codex-governed preauthorization class, the code is moved to the Crypt and the federated lockfile is updated. The Rite of Passage concludes with a **Rite of Inscription** upon the **[Codex (ADR 12)](./12-configuration.md)** — adding the Organ to the `[extensions]` activation list. Until that name is written, a forged Organ is not part of the body; the write is itself hard-gated (ADR 12).
 6. **The Rebirth:** The Smith triggers the **[Packaging (ADR 17)](./17-packaging.md)** ritual. If the "Alembic Bind" (database migration) to the **[Phylactery (ADR 06)](./06-persistence.md)** fails or the container crashes during boot, the system executes an immediate Rehydration Ritual to revert the logic and database.
@@ -114,7 +114,7 @@ Assimilated external material — source, protocol manifests, cloud archives —
 - **Vikalpa Until Verified:** Assimilated material is Vikalpa — an unverified construct — until it has passed deterministic verification. It carries no authority on the strength of its own claims.
 - **Data, Never Instruction:** Within the Smith's context, assimilated material enters only as fenced data blocks in the volatile layers of the Stable Floor (**[Context (ADR 21)](./21-context.md)**). It is never concatenated into the instruction layers.
 - **Typed Egress:** The Smith's outputs are typed (**[Agents (ADR 20)](./20-agents.md)**); free-form generation never crosses unshaped into the Crypt.
-- **Deterministic Gate First:** The Deterministic Gate — the mechanical Rite of Albedo (lint, type-check, tests) — precedes any agentic judgment of assimilated code (**[Simulation (ADR 31)](./31-simulation.md)**). Machine reasoning is spent only on material that has already survived mechanical proof.
+- **Deterministic Gate First:** The Deterministic Gate — the mechanical Rite of Speculation (lint, type-check, tests) — precedes any agentic judgment of assimilated code (**[Simulation (ADR 31)](./31-simulation.md)**). Machine reasoning is spent only on material that has already survived mechanical proof.
 - **Hard-Gated Promotion:** Promotion of any Smith-forged Organ is hard-gated without exception (**[Codex (ADR 12)](./12-configuration.md)**, **[Sovereign Consent (ADR 25)](./25-hitl.md)**).
 
 ## Consequences

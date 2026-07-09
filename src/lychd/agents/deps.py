@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from lychd.agents.services import GrantPort, TransitionPort
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.cortex.context import ContextOrchestrator
+    from lychd.domain.cortex.priority import Priority
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -35,3 +36,6 @@ class LychDDeps:
     context: ContextOrchestrator
     run_id: str
     step_id: str
+    # The run's doctrine priority — so an agent-proposed transition (`request_coven_swap`)
+    # enacts at the run's real standing instead of a hardcoded default that bypassed the gate.
+    priority: Priority

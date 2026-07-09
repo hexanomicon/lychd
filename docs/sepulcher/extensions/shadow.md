@@ -5,6 +5,8 @@ icon: material/brightness-6
 
 # :material-brightness-6: Shadow Realm
 
+_Status: doctrine ahead of code — the built-in `simulation` package is where this lands; treat this page as design intent. Law: [ADR 31](../../adr/31-simulation.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"Choice is the fracture where probability enters the law."_
 
 The Shadow Realm is not just a metaphor. It is both:

@@ -14,7 +14,7 @@ icon: material/tournament
 - **The Archivist Pattern:** Implementation of "Memory Weaving"—the automated execution of semantic scrying prior to agent invocation to hydrate the **[Context (ADR 21)](./21-context.md)** with relevant historical truth.
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
-- **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and Phylactery-backed checkpoints to record committed state transitions, enabling recovery from the last valid boundary.
+- **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and the Graph persistence boundary to record committed state transitions, enabling recovery from the last valid boundary without assuming every checkpoint already lives in Postgres.
 - **Extension Assimilation:** Implementation as a coupled extension primitive within the broader **[Extension Protocol (ADR 5)](./05-extensions.md)**, allowing specialized executive functions (e.g., a "Research Maestro") to be surfaced without hardwiring them into the core.
 - **Strategic Alignment:** Coordination with the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to ensure tactical pacing respects the physical constraints of the local iron.
 
@@ -44,6 +44,13 @@ icon: material/tournament
 The Weaver preserves temporal continuity of cognition across asynchronous steps. It prepares and synchronizes the field in which reasoning occurs, but it does not itself determine truth or identity.
 
 Workflow is the backbone of the Ouroboros. It is the structure that lets a generated fluctuation return as usable state rather than vanish as a loose transcript. Shadow supplies candidate motion, Mirror supplies identity gravity, and Riddle supplies measurement; the Weaver binds their appearances into a repeatable Pattern with checkpoints, pauses, joins, and rehydration boundaries.
+
+!!! note "Persistence foundation"
+    Durable workflow waits currently use file-backed Pydantic Graph checkpoints with their path
+    recorded on the Postgres run row; terminal status commits before checkpoint cleanup. A
+    Postgres-backed graph persistence implementation and transactional submit/resume outbox remain
+    later Phylactery work. Weaver doctrine must target the persistence port, not bypass it with
+    direct database assumptions.
 
 This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver Pattern records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
 
@@ -107,7 +114,7 @@ Weaver branches execute inside the live Run, and their joins commit into real st
     - **Disciplined Labor:** Cognitive rituals are executed with absolute temporal and logical precision.
     - **Rich Working Memory:** The Archivist ensures that every agent thought is perpetually enriched by the machine's historical experience.
     - **Safe Interoperability:** The Censor allows the machine to participate in external swarms without risking the Magus's secrets.
-    - **Stateful Resilience:** Committed ritual progress survives process death and physical reanimation through mandatory database checkpoints.
+    - **Stateful Resilience:** Declared durable waits can resume from the current file-backed checkpoint boundary; Postgres-backed graph checkpoints/outbox remain a later consolidation.
 
 !!! failure "Negative"
     - **Synapse Latency:** The rituals of scrying and cleansing add a sub-millisecond overhead to every transition between steps.

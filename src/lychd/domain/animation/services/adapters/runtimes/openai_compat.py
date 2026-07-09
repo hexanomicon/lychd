@@ -1,4 +1,4 @@
-"""Shared base for OpenAI-compatible, STATIC-lifecycle runtime adapters.
+"""Shared base for OpenAI-compatible, non-dynamic runtime adapters.
 
 vLLM and SGLang were ~90% identical exec-passthrough adapters. This base folds
 the shared planning/probe/activation plumbing into one place (A3-U2 cheap dedup;
@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilityState,
 )
@@ -36,8 +35,9 @@ if TYPE_CHECKING:
 class OpenAICompatibleRuntimeAdapter:
     """Base adapter for a local runtime that serves an OpenAI-compatible API.
 
-    Lifecycle is always STATIC: the server binds its port only after the model is
-    loaded, so a reachable endpoint means WARM and an unreachable one means COLD.
+    Always non-dynamic (``is_dynamic=False``): the server binds its port only after
+    the model is loaded, so a reachable endpoint means WARM and an unreachable one
+    means COLD.
     Subclasses set two class attributes; hooks may be overridden as needed.
     """
 
@@ -77,13 +77,13 @@ class OpenAICompatibleRuntimeAdapter:
         return SoulstoneAnimator(rune=stone, connector=connector, quadlet=quadlet)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
-        """Synthesize STATIC capability specs from runtime-derived model info."""
+        """Synthesize non-dynamic capability specs from runtime-derived model info."""
         stone = self._narrow(soulstone)
         return capability_specs_from_soulstone(
             stone,
             runtime_metadata=self.runtime_metadata(),
             runtime_defaults={},
-            lifecycle=CapabilityLifecycle.STATIC,
+            is_dynamic=False,
         )
 
     async def probe_capability_states(
@@ -91,7 +91,7 @@ class OpenAICompatibleRuntimeAdapter:
         animator: RuntimeAnimator,
         specs: list[CapabilitySpec],
     ) -> list[CapabilityState]:
-        """Probe the OpenAI-compatible endpoint and project STATIC phase states.
+        """Probe the OpenAI-compatible endpoint and project non-dynamic phase states.
 
         Reachable ⇒ WARM, unreachable ⇒ COLD (spec §2 phase table).
         """
@@ -106,7 +106,7 @@ class OpenAICompatibleRuntimeAdapter:
         return [
             CapabilityState(
                 capability_key=spec.key,
-                lifecycle=CapabilityLifecycle.STATIC,
+                is_dynamic=False,
                 phase=phase,
                 health="ok" if up else "down",
                 active_model_id=active_model_id,
@@ -119,14 +119,14 @@ class OpenAICompatibleRuntimeAdapter:
         ]
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
-        """Report that STATIC runtimes expose no in-runtime activation (unit-owned)."""
+        """Report that non-dynamic runtimes expose no in-runtime activation (unit-owned)."""
         _ = spec
         up = animator.connector.link.up
         phase = CapabilityPhase.WARM if up else CapabilityPhase.COLD
         return ActivationResult(accepted=False, phase=phase, reason="fixed capability; lifecycle owned by unit")
 
     def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
-        """Return ``None``; STATIC OpenAI-compatible runtimes have no control plane."""
+        """Return ``None``; non-dynamic OpenAI-compatible runtimes have no control plane."""
         _ = animator
         return None
 

@@ -7,7 +7,7 @@ edits the router.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -49,6 +49,15 @@ class Workflow:
     graph: Graph[Any, Any, Any]
     start_node: type[BaseNode[Any, Any, Any]]
     make_state: Callable[[Intent], BaseModel]
+    # Computed once at construction: a workflow whose graph contains any `Gate` node
+    # takes the Durable Stasis tier. Kept a derived property (not a hand-set flag) so it
+    # can never drift from the graph — but resolved HERE, near `Gate`, not re-scanned by
+    # the ghoul on every run.
+    durable: bool = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Derive the Durable-Stasis tier from the presence of any `Gate` node."""
+        object.__setattr__(self, "durable", any(issubclass(node, Gate) for node in self.graph.get_nodes()))
 
     def mermaid(self, *, highlight: type[BaseNode[Any, Any, Any]] | None = None) -> str:
         """Return the stateDiagram-v2 source, optionally highlighting one node."""

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import textwrap
-from enum import Enum
+import os
+import tempfile
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import structlog
 from jinja2 import Environment, FileSystemLoader
-from pydantic import BaseModel
+from tomlkit import dumps as _tomlkit_dumps  # pyright: ignore[reportUnknownVariableType]
 
 from lychd.config.runes import ConfigWriter, RuneConfig
 from lychd.config.settings import get_settings
@@ -14,9 +15,38 @@ from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
 
 logger = structlog.get_logger()
+
+
+def _toml_dumps(data: dict[str, Any]) -> str:
+    """Narrow tomlkit's untyped Mapping signature at the dependency boundary."""
+    return _tomlkit_dumps(data)
+
+
+def _write_new_atomic(path: Path, content: str, *, mode: int) -> bool:
+    """Durably create ``path`` without overwriting a concurrent/existing file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, raw_temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(raw_temporary)
+    try:
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            return False
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+        return True
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 class CodexService:
@@ -66,13 +96,10 @@ class CodexService:
             return
 
         settings = get_settings()
-        lines = self._introspect_model(settings)
-        self.toml_path.parent.mkdir(parents=True, exist_ok=True)
-        self.toml_path.write_text("\n".join(lines), encoding="utf-8")
-        try:
-            self.toml_path.chmod(0o600)
-        except OSError:
-            logger.warning("prime_directive_permission_set_failed", path=str(self.toml_path), expected_mode="0o600")
+        content = _toml_dumps(settings.model_dump(mode="json", exclude_none=True))
+        if not _write_new_atomic(self.toml_path, content, mode=0o600):
+            logger.debug("prime_directive_exists", path=str(self.toml_path))
+            return
         logger.info("inscribed_prime_directive", path=str(self.toml_path))
 
     def _inscribe_init_db(self) -> None:
@@ -81,13 +108,10 @@ class CodexService:
         if init_sh_path.exists():
             return
 
-        init_sh_path.parent.mkdir(parents=True, exist_ok=True)
-
         tmpl = self._env.get_template("init_db.sh.jinja")
-        content = tmpl.render(databases=["lychd", "phoenix"])
-
-        init_sh_path.write_text(content, encoding="utf-8")
-        init_sh_path.chmod(0o755)
+        content = tmpl.render()
+        if not _write_new_atomic(init_sh_path, content, mode=0o755):
+            return
         logger.info("inscribed_init_db", path=str(init_sh_path))
 
     def _inscribe_configurables(self) -> None:
@@ -97,47 +121,3 @@ class CodexService:
         writer.inscribe_samples(self.rune_schemas)
 
         logger.info("configurable_anchors_inscribed", count=len(self.rune_schemas), runes_root=str(self.runes_path))
-
-    def _introspect_model(self, model: BaseModel) -> list[str]:
-        """Recursively walk the Pydantic model to generate TOML lines."""
-        lines: list[str] = []
-        model_cls = type(model)
-
-        for field_name, field_info in model_cls.model_fields.items():
-            value = getattr(model, field_name)
-
-            if field_name.startswith("_"):
-                continue
-
-            if isinstance(value, BaseModel):
-                lines.append("")
-                lines.append(f"[{field_name}]")
-                lines.extend(self._introspect_model(value))
-                continue
-
-            if field_info.description:
-                comments = textwrap.wrap(field_info.description, width=80)
-                lines.extend(f"# {comment}" for comment in comments)
-
-            lines.append(f"{field_name} = {self._format_toml_value(value)}")
-
-        return lines
-
-    def _format_toml_value(self, value: Any) -> str:
-        """Convert Python objects to strict TOML string representation."""
-        if isinstance(value, bool):
-            return "true" if value else "false"
-
-        if isinstance(value, int | float):
-            return str(value)
-
-        if isinstance(value, list):
-            from typing import cast
-
-            items = [self._format_toml_value(v) for v in cast("list[Any]", value)]
-            return f"[{', '.join(items)}]"
-
-        if isinstance(value, Enum):
-            return f'"{value.value}"'
-
-        return f'"{value!s}"'

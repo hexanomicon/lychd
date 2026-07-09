@@ -5,6 +5,8 @@ icon: material/shield-key-outline
 
 # :material-shield-key-outline: The Veil: Extension of the Threshold
 
+_Status: doctrine ahead of code — the built-in `proxy` package is where this lands; treat this page as design intent. Law: [ADR 40](../../adr/40-proxy.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"The Sepulcher is a sanctuary of silence. To speak with the Swarm without inviting the rot of the Forest, one must draw a Veil—a shimmering wall of cryptographic trust that blinds the malicious and guides the faithful."_
 
 **The Veil** is the Proxy Extension of the LychD system. It is the implementation of **[ADR 40 (Proxy)](../../adr/40-proxy.md)**—a specialized gatekeeper based on **Caddy** that stands between the raw **[Vessel](../vessel/index.md)** and the chaotic public network.

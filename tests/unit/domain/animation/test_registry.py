@@ -212,17 +212,17 @@ def test_runtime_adapter_registry_supports_custom_portal_factories() -> None:
         }
     )
 
-    def custom_factory(config: PortalConfig) -> OpenAIPortal | None:
-        if config.provider_name != "my-openai-gateway":
+    def custom_factory(portal: PortalConfig) -> OpenAIPortal | None:
+        if portal.provider_name != "my-openai-gateway":
             return None
         connector = OpenAICompatibleConnector(
             kind="portal:my-openai-gateway",
             link=Link(up=True, activatable=False),
-            base_url=str(config.base_url or ""),
+            base_url=str(portal.base_url or ""),
             model_infos=(ModelInfo(id="custom-gpt"),),
             default_model_id="custom-gpt",
         )
-        return OpenAIPortal(rune=config, connector=connector)
+        return OpenAIPortal(rune=portal, connector=connector)
 
     adapters = RuntimeAdapterRegistry(portal_factories=[custom_factory])
     runtime = adapters.build_runtime(portal)

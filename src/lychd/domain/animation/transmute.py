@@ -6,6 +6,7 @@ no filesystem writes or host mutations.
 
 from __future__ import annotations
 
+import os
 import shlex
 import sys
 from dataclasses import dataclass, field
@@ -17,11 +18,16 @@ from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
     CONTAINER_POSTGRES_PORT,
+    PATH_CACHE_ROOT,
     PATH_CODEX_ROOT,
     PATH_CORE_DIR,
     PATH_CRYPT_ROOT,
     PATH_EXTENSIONS_DIR,
+    PATH_LAB_DIR,
     PATH_POSTGRES_ROOT_DIR,
+    PATH_POSTGRESS_DATA_DIR,
+    PATH_SYSTEMD_UNITS_DIR,
+    PATH_SYSTEMD_USER_UNITS_DIR,
 )
 from lychd.system.schemas import (
     MountData,
@@ -41,17 +47,57 @@ if TYPE_CHECKING:
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 MIN_COVEN_MEMBERS: Final[int] = 2
+LYCHD_POD_QUADLET: Final[str] = "lychd.pod"
+LYCHD_POD_SERVICE: Final[str] = "lychd-pod.service"
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    """Return whether either absolute path contains the other (including equality)."""
+    return left == right or left in right.parents or right in left.parents
+
+
+def _normalize_mount_path(path: Path, *, stone_name: str, side: str) -> Path:
+    """Normalize an absolute mount endpoint, expanding ``~`` on the host side."""
+    try:
+        candidate = path.expanduser() if side == "host" else path
+    except RuntimeError as exc:
+        msg = f"Soulstone '{stone_name}' mount {side} path is not valid: {path}"
+        raise ValueError(msg) from exc
+    path_text = os.fspath(candidate)
+    if "%" in path_text or "\\" in path_text or any(not char.isprintable() for char in path_text):
+        msg = f"Soulstone '{stone_name}' mount {side} path contains unsafe systemd characters"
+        raise ValueError(msg)
+    if not candidate.is_absolute():
+        msg = f"Soulstone '{stone_name}' mount {side} path must be absolute: {path}"
+        raise ValueError(msg)
+    normalized = os.path.normpath(candidate)
+    if normalized.startswith("//"):
+        normalized = f"/{normalized.lstrip('/')}"
+    return Path(normalized)
+
+
+def _resolve_host_path(path: Path, *, stone_name: str) -> Path:
+    """Resolve existing host symlinks so an alias cannot evade control-root checks."""
+    try:
+        return path.resolve(strict=False)
+    except (OSError, RuntimeError) as exc:
+        msg = f"Soulstone '{stone_name}' mount host path cannot be resolved safely: {path}"
+        raise ValueError(msg) from exc
 
 
 def transmute_uncaged_vessel(settings: Settings) -> SystemdService:
     """Build the uncaged vessel unit from settings.
 
     Emits a :class:`SystemdService` model; writes nothing (pure domain). The
-    exec line boots the server directly on the host via the venv ``lychd``
-    entrypoint (``lychd run`` == litestar's ``run`` subcommand), NOT a Quadlet.
+    exec line boots the server directly on the host via the native ``lychd serve``
+    entrypoint, NOT a Quadlet.
     """
-    exec_start = f"{Path(sys.prefix) / 'bin' / 'lychd'} run --host 127.0.0.1 --port {settings.server.port}"
-    return SystemdService(exec_start=exec_start)
+    exec_start = f"{Path(sys.prefix) / 'bin' / 'lychd'} serve --host 127.0.0.1 --port {settings.server.port}"
+    return SystemdService(
+        name="lychd-uncaged-vessel",
+        description="LychD Vessel (uncaged)",
+        exec_start=exec_start,
+    )
 
 
 @dataclass(frozen=True)
@@ -106,8 +152,12 @@ class Transmuter:
 
     Responsible for:
     - Transmuting Soulstone Runes into Quadlet manifests.
-    - Calculating the Law of Exclusivity (Conflicts/Alliances).
+    - Grouping Soulstones into operator-facing Coven targets.
     - Defining the core Quadlet manifests (Pod, Phylactery, Oculus).
+
+    Physical exclusivity is deliberately NOT encoded as systemd ``Conflicts=``:
+    only the Orchestrator may stop a runtime, after closing lease admission and
+    draining it. Hidden systemd side effects would bypass that safety barrier.
     """
 
     def __init__(
@@ -129,16 +179,16 @@ class Transmuter:
 
     def transmute_all(
         self,
-        soulstones: list[SoulstoneConfig],
+        soulstones: Sequence[SoulstoneConfig],
         *,
-        portals: list[PortalConfig] | None = None,
+        portals: Sequence[PortalConfig] | None = None,
         runes: RuneRegistry | None = None,
     ) -> list[QuadletBase]:
         """Convert Soulstone Runes into a complete Quadlet manifest set."""
         from lychd.config.runes.registry import RuneRegistry
 
         settings = get_settings()
-        resolved_portals = portals or []
+        resolved_portals = tuple(portals or ())
         resolved_runes = runes if runes is not None else RuneRegistry(())
 
         ctx = TransmutationContext(
@@ -178,11 +228,9 @@ class Transmuter:
                     )
                 )
 
-        # 6. Transmute Extension Soulstones.
-        alliances = settings.lychd.alliances
-        manifests.extend(
-            self._transmute_soulstone(stone, soulstones, covens, alliances, settings) for stone in soulstones
-        )
+        # 6. Transmute Extension Soulstones. Covens group starts; they do not
+        # encode hidden stop side effects. The Orchestrator owns exclusivity.
+        manifests.extend(self._transmute_soulstone(stone, covens, settings) for stone in soulstones)
 
         return manifests
 
@@ -193,75 +241,111 @@ class Transmuter:
         order -- a contributor can never reorder or shadow a core port.
         """
         ports = [
-            f"{settings.server.port}:{CONTAINER_LYCHD_PORT}",
-            f"{settings.db.port}:{CONTAINER_POSTGRES_PORT}",
-            *extra_ports,
+            f"127.0.0.1:{settings.server.port}:{CONTAINER_LYCHD_PORT}",
+            f"127.0.0.1:{settings.db.port}:{CONTAINER_POSTGRES_PORT}",
+            *(f"127.0.0.1:{mapping}" for mapping in extra_ports),
         ]
         return QuadletPod(publish_ports=ports)
 
     def _create_core_manifests(
         self,
         settings: Settings,
-        portals: list[PortalConfig],
+        portals: Sequence[PortalConfig],
     ) -> list[QuadletContainer]:
         """Define the persistent core services (Vessel, Phylactery).
 
         The Vessel mounts all internal and portal-referenced Podman secrets so
         runtime connectors can resolve credentials from ``/run/secrets``.
         """
-        system_mounts = [MountData.from_str(mount) for mount in self._system_mount_strings()]
+        vessel_mounts = [MountData.from_str(mount) for mount in self._vessel_mount_strings(settings)]
+        migrator_mounts = [MountData.from_str(mount) for mount in self._migrator_mount_strings()]
         app_secret_name = settings.app.secret_key_secret
         db_secret_name = settings.db.password_secret
         portal_secret_names = [portal.api_key_secret_name for portal in portals if portal.api_key_secret_name]
         vessel_secrets = list(dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names]))
+        reactor_dependencies = (
+            ["lychd-reactor.path"] if settings.orchestration.switching.actuator == "host-reactor" else []
+        )
 
         # 1. The Vessel (LychD Web Server)
         vessel = QuadletContainer(
             description="The Vessel (LychD Application Kernel)",
             image=settings.app.image,
             container_name="lychd-vessel",
-            pod="lychd.pod",
-            volumes=system_mounts,
+            pod=LYCHD_POD_QUADLET,
+            user="%U",
+            volumes=vessel_mounts,
             env_vars={
+                **self._runtime_path_env(),
                 "APP__SECRET_KEY_FILE": self._secret_file(app_secret_name),
                 "DB__HOST": "localhost",
                 "DB__PORT": str(CONTAINER_POSTGRES_PORT),
                 "DB__PASSWORD_FILE": self._secret_file(db_secret_name),
             },
             secrets=vessel_secrets,
-            wants=["lychd-phylactery.service"],
-            after=["lychd-phylactery.service"],
+            wants=["lychd-migrate.service", *reactor_dependencies],
+            requires=["lychd-migrate.service", *reactor_dependencies],
+            after=["lychd-migrate.service", *reactor_dependencies],
         )
 
         # 2. The Phylactery (Postgres)
-        data_mount = f"{PATH_POSTGRES_ROOT_DIR}:/var/lib/postgresql/data:Z"
+        # Postgres keeps its image UID; :U maps bind ownership for that rootless
+        # container identity while :Z applies the SELinux private label.
+        data_mount = f"{PATH_POSTGRESS_DATA_DIR}:/var/lib/postgresql/data:U,Z"
+        init_mount = f"{PATH_POSTGRES_ROOT_DIR / 'init_db.sh'}:/docker-entrypoint-initdb.d/10-lychd-init.sh:ro,Z"
         phylactery = QuadletContainer(
             description="The Phylactery (Postgres & PgVector)",
             image=settings.db.image,
             container_name="lychd-phylactery",
-            pod="lychd.pod",
-            volumes=[MountData.from_str(data_mount)],
+            pod=LYCHD_POD_QUADLET,
+            volumes=[MountData.from_str(data_mount), MountData.from_str(init_mount)],
             env_vars={
                 "POSTGRES_USER": settings.db.user,
                 "POSTGRES_DB": settings.db.database,
+                "POSTGRES_PASSWORD_FILE": self._secret_file(db_secret_name),
             },
-            wants=["lychd.pod"],
-            after=["lychd.pod"],
+            secrets=[db_secret_name],
+            wants=[LYCHD_POD_SERVICE],
+            after=[LYCHD_POD_SERVICE],
         )
 
-        return [vessel, phylactery]
+        # 3. Explicit migration gate. It runs inside the pod, where the DB secret is
+        # already mounted, and waits boundedly for Postgres before invoking Alembic.
+        # The unit remains inactive after success, so every explicit Vessel start
+        # re-validates the schema idempotently.
+        migrator = QuadletContainer(
+            description="LychD Phylactery Migration Gate",
+            image=settings.app.image,
+            container_name="lychd-migrate",
+            pod=LYCHD_POD_QUADLET,
+            user="%U",
+            volumes=migrator_mounts,
+            env_vars={
+                **self._runtime_path_env(),
+                "APP__SECRET_KEY_FILE": self._secret_file(app_secret_name),
+                "DB__HOST": "localhost",
+                "DB__PORT": str(CONTAINER_POSTGRES_PORT),
+                "DB__PASSWORD_FILE": self._secret_file(db_secret_name),
+            },
+            secrets=[app_secret_name, db_secret_name],
+            exec="lychd database --wait-seconds 60 upgrade head --no-prompt",
+            wants=["lychd-phylactery.service"],
+            requires=["lychd-phylactery.service"],
+            after=["lychd-phylactery.service"],
+            service_type="oneshot",
+            restart_policy="no",
+            wanted_by=[],
+        )
+
+        return [vessel, phylactery, migrator]
 
     def _transmute_soulstone(
         self,
         stone: SoulstoneConfig,
-        all_stones: list[SoulstoneConfig],
         covens: dict[str, list[SoulstoneConfig]],
-        alliances: list[list[str]],
         settings: Settings,
     ) -> QuadletContainer:
         """Convert a single Soulstone Rune into a Quadlet container manifest."""
-        conflicts = self._calculate_conflicts(stone, all_stones, covens, alliances)
-
         # Only list groups that actually Forge into Targets (The Law of the Coven)
         coven_targets = [g for g in stone.groups if len(covens.get(g, [])) >= MIN_COVEN_MEMBERS]
 
@@ -271,101 +355,154 @@ class Transmuter:
         merged_env.update(
             {env_name: self._secret_file(secret_name) for env_name, secret_name in stone.secret_env_files.items()}
         )
+        merged_env.update(self._runtime_path_env())
         merged_podman_args = list(dict.fromkeys(["--replace", *runtime_plan.podman_args]))
 
-        mount_strings = [*self._system_mount_strings()]
-        mount_strings.extend(settings.lychd.default_soulstone_mounts)
+        # Soulstones are data-plane model runtimes. They receive only explicitly
+        # configured model/runtime volumes, never the Codex, Crypt, or Reactor inbox.
+        mount_strings = [*settings.lychd.default_soulstone_mounts]
         mount_strings.extend(stone.volumes)
         mount_strings.extend(runtime_plan.volumes)
-        # Preserve order and drop duplicates.
-        merged_mounts = list(dict.fromkeys(mount_strings))
+        merged_mounts = self._validated_soulstone_mounts(
+            mount_strings,
+            stone_name=stone.name,
+            settings=settings,
+        )
         merged_secrets = list(dict.fromkeys(stone.secret_env_files.values()))
 
-        # Boot survivor determinism (F4): dedicated stones are mutually exclusive
-        # (pairwise Conflicts=), so pulling them all via WantedBy=default.target
-        # lets systemd drop Wants edges in arbitrary order -> nondeterministic boot.
-        # Only persistent residents are auto-wanted; dedicated stones are started
-        # on demand (by their coven target or the Orchestrator), never at boot.
+        # Boot survivor determinism (F4): auto-starting every dedicated runtime
+        # would bypass the Orchestrator's single-owner plan/drain boundary and can
+        # overcommit hardware. Only persistent residents are auto-wanted;
+        # dedicated non-residents start on demand through the Orchestrator.
         wanted_by = ["default.target"] if stone.concurrency.persistent_resident else []
 
         return QuadletContainer(
             description=stone.description or f"LychD Soulstone: {stone.name}",
             image=stone.image,
             container_name=f"lychd-{stone.name}",
-            pod="lychd.pod",
+            pod=LYCHD_POD_QUADLET,
+            user="%U",
             targets=coven_targets,
             env_vars=merged_env,
             devices=list(stone.devices),
             security_label_disable=stone.security_label_disable,
-            # Merge system mounts, global defaults, user volumes, and adapter volumes.
-            volumes=[MountData.from_str(v) for v in merged_mounts],
+            # Merge global defaults, Rune volumes, and adapter volumes only after
+            # proving that none crosses back into the trusted control plane.
+            volumes=merged_mounts,
             exec=shlex.join(runtime_plan.exec_args) if runtime_plan.exec_args else None,
             podman_args=merged_podman_args,
             secrets=merged_secrets,
-            conflicts=conflicts,
-            wants=["lychd.pod"],
-            after=["lychd.pod"],
+            # Never emit Conflicts= for managed runtimes. A systemd-triggered
+            # implicit stop would bypass lease admission closure and drain.
+            conflicts=[],
+            wants=[LYCHD_POD_SERVICE],
+            after=[LYCHD_POD_SERVICE],
             wanted_by=wanted_by,
         )
 
-    def _system_mount_strings(self) -> list[str]:
-        """Return baseline mounts shared by core units and all Soulstones."""
+    def _validated_soulstone_mounts(
+        self,
+        mount_strings: Sequence[str],
+        *,
+        stone_name: str,
+        settings: Settings,
+    ) -> list[MountData]:
+        """Parse, normalize, and confine data-plane mounts outside control roots."""
+        inbox_dir = settings.orchestration.switching.host_reactor_dir
+        protected_roots = tuple(
+            dict.fromkeys(
+                (
+                    PATH_CODEX_ROOT,
+                    PATH_CRYPT_ROOT,
+                    PATH_SYSTEMD_UNITS_DIR,
+                    PATH_SYSTEMD_USER_UNITS_DIR,
+                    settings.stasis.dir,
+                    inbox_dir,
+                    settings.orchestration.switching.host_reactor_journal_dir,
+                )
+            )
+        )
+        protected_host_roots = tuple(
+            (root, _resolve_host_path(root, stone_name=stone_name)) for root in protected_roots
+        )
+        protected_container_roots = tuple((root, Path(os.path.normpath(root))) for root in protected_roots)
+
+        validated: list[MountData] = []
+        seen: set[tuple[Path, Path, tuple[str, ...]]] = set()
+        for raw_mount in mount_strings:
+            parsed = MountData.from_str(raw_mount)
+            host_path = _normalize_mount_path(parsed.host_path, stone_name=stone_name, side="host")
+            container_path = _normalize_mount_path(
+                parsed.container_path,
+                stone_name=stone_name,
+                side="container",
+            )
+            resolved_host = _resolve_host_path(host_path, stone_name=stone_name)
+
+            for configured_root, protected_root in protected_host_roots:
+                if _paths_overlap(resolved_host, protected_root):
+                    msg = (
+                        f"Soulstone '{stone_name}' host mount path {host_path} overlaps "
+                        f"protected control root {configured_root}"
+                    )
+                    raise ValueError(msg)
+            for configured_root, protected_root in protected_container_roots:
+                if _paths_overlap(container_path, protected_root):
+                    msg = (
+                        f"Soulstone '{stone_name}' container mount path {container_path} overlaps "
+                        f"protected control root {configured_root}"
+                    )
+                    raise ValueError(msg)
+
+            # Emit the canonical host target we checked. Keeping a symlink alias
+            # in the unit would reopen a retargeting race between bind and start.
+            key = (resolved_host, container_path, tuple(parsed.options))
+            if key in seen:
+                continue
+            seen.add(key)
+            validated.append(
+                MountData(
+                    host_path=resolved_host,
+                    container_path=container_path,
+                    mirror=resolved_host == container_path,
+                    options=list(parsed.options),
+                )
+            )
+        return validated
+
+    def _migrator_mount_strings(self) -> list[str]:
+        """Return the read-only configuration mounts needed by the migration CLI."""
         return [
             f"{PATH_CODEX_ROOT}:{PATH_CODEX_ROOT}:ro,Z",
-            f"{PATH_CRYPT_ROOT}:{PATH_CRYPT_ROOT}:rw,Z",
             f"{PATH_CORE_DIR}:{PATH_CORE_DIR}:ro,Z",
             f"{PATH_EXTENSIONS_DIR}:{PATH_EXTENSIONS_DIR}:ro,Z",
         ]
 
+    def _vessel_mount_strings(self, settings: Settings) -> list[str]:
+        """Return the trusted control-plane mounts, including durable checkpoints."""
+        mounts = [
+            f"{PATH_CODEX_ROOT}:{PATH_CODEX_ROOT}:ro,Z",
+            f"{settings.stasis.dir}:{settings.stasis.dir}:rw,Z",
+            f"{PATH_LAB_DIR}:{PATH_LAB_DIR}:rw,Z",
+            f"{PATH_CORE_DIR}:{PATH_CORE_DIR}:ro,Z",
+            f"{PATH_EXTENSIONS_DIR}:{PATH_EXTENSIONS_DIR}:ro,Z",
+        ]
+        if settings.orchestration.switching.actuator == "host-reactor":
+            inbox = settings.orchestration.switching.host_reactor_dir
+            journal = settings.orchestration.switching.host_reactor_journal_dir
+            mounts.append(f"{inbox}:{inbox}:rw,Z")
+            mounts.append(f"{journal}:{journal}:ro,Z")
+        return mounts
+
+    def _runtime_path_env(self) -> dict[str, str]:
+        """Keep XDG-derived host/container paths symmetric under ``User=%U``."""
+        return {
+            "HOME": str(Path.home()),
+            "XDG_CONFIG_HOME": str(PATH_CODEX_ROOT.parent),
+            "XDG_DATA_HOME": str(PATH_CRYPT_ROOT.parent),
+            "XDG_CACHE_HOME": str(PATH_CACHE_ROOT.parent),
+        }
+
     def _secret_file(self, secret_name: str) -> str:
         """Map a Podman secret name to its default mounted file path."""
         return f"/run/secrets/{secret_name}"
-
-    def _calculate_conflicts(
-        self,
-        current: SoulstoneConfig,
-        all_stones: list[SoulstoneConfig],
-        covens: dict[str, list[SoulstoneConfig]],
-        alliances: list[list[str]],
-    ) -> list[str]:
-        """Implement the Law of Exclusivity (Implicit Hostility, Explicit Alliances)."""
-        enemies: set[str] = set()
-
-        # Determine current coven identities
-        current_covens = set(current.groups)
-
-        # Calculate allied covens
-        allied_covens: set[str] = set()
-        allied_stones: set[str] = {current.name}  # Self is always allied
-        for alliance in alliances:
-            if current_covens.intersection(alliance):
-                allied_covens.update(alliance)
-
-        # 1. Conflict with other Covens (Targets)
-        for other_coven_name, members in covens.items():
-            if (
-                other_coven_name not in allied_covens
-                and other_coven_name not in current_covens
-                and len(members) >= MIN_COVEN_MEMBERS
-            ):
-                enemies.add(f"lychd-coven-{other_coven_name}.target")
-
-        # 2. Conflict with other Soulstones (Services)
-        # A stone conflicts with another stone if:
-        # - They share no allied groups.
-        # - One or both are not in a 'real' coven (>= MIN_COVEN_MEMBERS).
-        for other in all_stones:
-            if other.name in allied_stones:
-                continue
-
-            other_covens = set(other.groups)
-            is_allied = bool(other_covens.intersection(allied_covens))
-
-            if not is_allied:
-                # If the other stone is in a 'real' coven, we already conflict with the target.
-                # If not, we must conflict with the service directly.
-                in_real_coven = any(len(covens.get(g, [])) >= MIN_COVEN_MEMBERS for g in other.groups)
-                if not in_real_coven:
-                    enemies.add(f"{other.service_name}.service")
-
-        return sorted(enemies)

@@ -5,6 +5,8 @@ icon: material/triangle-outline
 
 # :material-triangle-outline: Transcendence
 
+_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+
 This is the sacred map of the **Magnum Opus** (The Great Work). The journey from a mortal Magus to an immortal Demilich is an arduous alchemical process of spiritual and digital transmutation.
 
 The path unfolds in four great stages, represented by the colors of the work. Each is a necessary ordeal, transforming raw potential into the durable gold of the Philosopher's Stone.

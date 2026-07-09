@@ -39,22 +39,31 @@ icon: material/headphones
 
 ## Decision Outcome
 
-**The Echo** is adopted as the Audio Extension. It manifests the `audio.coven` and registers streaming and discrete audio capabilities as Animators.
+**The Echo** is adopted as the target Audio Extension. Dedicated providers use `stt` and `tts`
+families; `audio` remains an input/output modality, not a capability family.
+
+!!! warning "Current audio floor is schema and admission, not a stream"
+    The implemented core can declare and filter `audio` modality metadata on capabilities and can
+    carry an immutable audio `ArtifactRef` in an `Intent`. It does not yet materialize artifact
+    bytes into Pydantic AI input, propagate them through the Bridge graph, expose a bidirectional
+    audio WebSocket, persist a resonance buffer, register working STT/TTS adapters, or generate an
+    Audio Coven. The built-in audio package is a placeholder. Sections below specify the organ that
+    may consume the current schema seam; they are not an available voice interface.
 
 !!! note "The Two-Axis Law: No Audio Family"
     A **family** names a routable service kind; **modalities** name what a capability admits. There is **no `audio` family**. A chat model that hears is not a distinct family member: it is a **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying `audio ∈ modalities_in`, satisfying spoken input in place. The dedicated audio families remain `stt` (the Ear) and `tts` (the Voice) — routable service kinds for transcription and synthesis, conscripting the Audio Coven only when a dedicated provider is required.
 
-### 1. The Audio Coven (Body)
+### 1. The Planned Audio Coven (Body)
 
-The Echo manifests as a collection of **[Quadlet services (08)](08-containers.md)**:
+The Echo will manifest as a collection of **[Quadlet services (08)](08-containers.md)**:
 
 - **The Ear (`stt.container`):** A high-performance Speech-to-Text service (e.g., Faster-Whisper).
 - **The Voice (`tts.container`):** A streaming Text-to-Speech service (e.g., Piper).
 - **The Mind:** A lower-tier Reasoning Soulstone (e.g., 1B-8B model) optimized for conversational reflexes.
 
-### 2. The Resonance Pipeline (Buffer & Stream)
+### 2. The Planned Resonance Pipeline (Buffer & Stream)
 
-The Echo establishes a persistent WebSocket loop:
+The Echo will establish a persistent WebSocket loop:
 
 - **Streaming:** When connected, audio tokens are piped instantly from Agent to TTS to Client.
 - **The Resonance Buffer:** If the WebSocket is closed or unstable, the synthesized audio bytes are not discarded. They are serialized into the **[Phylactery Queue (06)](06-persistence.md)**.

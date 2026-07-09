@@ -48,7 +48,7 @@ A contextual inspector may appear when a selected message, artifact, approval, w
 
     1. **The Offering Plate (Input):** This is where you submit **Intents**. The Altar receives *Desire* rather than hand-written implementation. ("Refactor this module," "Analyze this log," "Plan the deployment.")
     2. **The Scrying Threshold (Observation):** When Intent becomes active work, the Altar exposes enough state to follow the rite and opens the path to [Scrying](./scrying.md), where the live run, logs, traces, and approval waits become inspectable.
-    3. **The Judgment Seat (The Albedo Interface):** When the Ghouls return from the **[Shadow Realm](../../sepulcher/extensions/shadow.md)** with potential timelines, they present them here.
+    3. **The Judgment Seat (Consecration):** When the Ghouls return from the **[Shadow Realm](../../sepulcher/extensions/shadow.md)** with potential timelines, they present them here.
 
 !!! info "The Collapse of the Wavefunction"
     This is the Altar's most critical purpose.
@@ -58,9 +58,9 @@ A contextual inspector may appear when a selected message, artifact, approval, w
     - *Timeline B:* Functional but ugly.
     - *Timeline C:* The hallucinations of an unmeasured oracle.
 
-    At the Altar, you perform the **Rite of Albedo**. You select, edit, and consecrate.
+    At the Altar, you perform the **Consecration**. You select, edit, and bless.
 
-    By choosing one timeline, you **collapse the wavefunction**. This is **Viveka** — discriminative discernment — the act of **Buddhi** applied from outside the generation process. The chosen path is **Pramāṇa** (verified truth); the rejected paths were **Vikalpa** (honest speculation) that did not survive measurement. The chosen path is inscribed into reality (the disk) and burned into the **[Phylactery](../../sepulcher/phylactery/index.md)** as Karma. The rejected paths fall silent unless their traces are retained for learning.
+    By choosing one timeline you collapse the alternatives: the chosen path is written to disk and recorded in the **[Phylactery](../../sepulcher/phylactery/index.md)** as Karma; the rejected paths are discarded (their traces may be kept for learning). Your selection is the external judgment the daemon cannot perform on itself — the act the [cognitive map](../../sepulcher/lich.md) calls **Viveka**.
 
-!!! tip "Spectral Tethers (Server-Sent Events)"
+!!! tip "Spectral Threads (Server-Sent Events)"
     The Altar maintains a constant, ethereal connection to the Vessel. Through **Server-Sent Events (SSE)**, the thoughts of the Lich are pushed to your glass in real time. You watch the daemon think without refreshing the page.

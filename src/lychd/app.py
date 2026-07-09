@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from litestar import Litestar
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
-from litestar.plugins import CLIPluginProtocol, InitPluginProtocol
+from litestar.plugins import InitPluginProtocol
 from litestar.repository.exceptions import RepositoryError
 
 # Runtime imports: Litestar evaluates the `provide_*` return annotations below at
@@ -16,7 +16,6 @@ from lychd.extensions.host import AssembledExtensions
 from lychd.lib.exceptions import exception_to_http_response
 
 if TYPE_CHECKING:
-    from click import Group
     from litestar.config.app import AppConfig
     from litestar.datastructures import State
 
@@ -31,13 +30,8 @@ def provide_runes(state: State) -> RuneRegistry:
     return state.runes
 
 
-class AppInit(InitPluginProtocol, CLIPluginProtocol):
-    """A plugin that is a protocol mixin that orchestrates application initialization.
-
-    Acts as a central hub for configuration in different contexts:
-    - Server
-    - CLI
-    """
+class AppInit(InitPluginProtocol):
+    """Configure the server application from side-effect-free component factories."""
 
     # Pre-declare attributes for memory optimization
 
@@ -175,41 +169,23 @@ class AppInit(InitPluginProtocol, CLIPluginProtocol):
 
         return app_config
 
-    def on_cli_init(self, cli: Group) -> None:
-        """Injects custom commands into the CLI.
-
-        Triggered by `litestar_group()` during CLI bootstrap. This hook
-        dynamically adds custom project commands (e.g., `init`, `bind`) to
-        the main CLI group, making them available to the user.
-
-        Args:
-            cli (Group): The default command group
-
-        """
-        # Lazy import is CRITICAL here.
-        # We don't want to load the whole app just to show --help.
-        from lychd.cli.commands import bind_quadlets, init_codex, inspect_animators, runs_group
-
-        cli.add_command(init_codex)
-        cli.add_command(bind_quadlets)
-        cli.add_command(inspect_animators)
-        cli.add_command(runs_group)
-
-
 def create_app() -> Litestar:
-    """Central Application Factory for both Server and CLI contexts.
-
-    Instantiates the Litestar application, delegating context-specific logic
-    (server plugin setup vs. CLI command injection) to the `AppInit` plugin protocol
-    implementation.
+    """Create the server application.
 
     Returns:
-        Litestar: CLI or fully configured web application
+        Litestar: Fully configured web application.
 
     """
     # Get Arize Phoenix Plugin for Tracing
     # Better yet, create a function gathering plugins - in plugin - base.py
     # Call it here and insert into Litestar app
+
+    import os
+
+    granian_workers = os.getenv("GRANIAN_WORKERS")
+    if granian_workers not in {None, "", "1"}:
+        message = "LychD v1 requires GRANIAN_WORKERS=1; the run event plane is process-local."
+        raise RuntimeError(message)
 
     return Litestar(
         plugins=[AppInit()],

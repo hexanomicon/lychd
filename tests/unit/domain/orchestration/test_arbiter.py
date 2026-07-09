@@ -82,6 +82,64 @@ async def test_same_key_contenders_coalesce_onto_one_plan() -> None:
 
 
 @pytest.mark.asyncio
+async def test_same_key_different_priorities_do_not_share_a_declining_owner() -> None:
+    """Priority cohorts stay separate so a hotter request gets its own execution."""
+    arbiter = TransitionArbiter()
+    gate = asyncio.Event()
+    order: list[str] = []
+
+    async def low_executor() -> TransitionPlan:
+        order.append("low")
+        await gate.wait()
+        return _plan("low")
+
+    low = asyncio.create_task(arbiter.run("same", 10.0, low_executor))
+    await asyncio.sleep(0)
+    high = asyncio.create_task(
+        arbiter.run("same", 90.0, lambda: _await_plan(order, "high"))
+    )
+    await asyncio.sleep(0)
+    gate.set()
+
+    low_plan, high_plan = await asyncio.gather(low, high)
+
+    assert low_plan.reason == "low"
+    assert high_plan.reason == "high"
+    assert order == ["low", "high"]
+
+
+@pytest.mark.asyncio
+async def test_cancelling_one_same_key_follower_does_not_poison_shared_transition() -> None:
+    """A follower owns its wait only; cancelling it leaves owner and peers intact."""
+    arbiter = TransitionArbiter()
+    calls = 0
+    gate = asyncio.Event()
+
+    async def _executor() -> TransitionPlan:
+        nonlocal calls
+        calls += 1
+        await gate.wait()
+        return _plan("survived")
+
+    owner = asyncio.create_task(arbiter.run("same", 50.0, _executor))
+    await asyncio.sleep(0)
+    cancelled_follower = asyncio.create_task(arbiter.run("same", 50.0, _executor))
+    surviving_follower = asyncio.create_task(arbiter.run("same", 50.0, _executor))
+    await asyncio.sleep(0)
+
+    cancelled_follower.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await cancelled_follower
+
+    gate.set()
+    owner_plan, follower_plan = await asyncio.gather(owner, surviving_follower)
+
+    assert calls == 1
+    assert owner_plan is follower_plan
+    assert follower_plan.reason == "survived"
+
+
+@pytest.mark.asyncio
 async def test_executor_exception_releases_section_and_reaches_all_same_key_waiters() -> None:
     """An executor error propagates to the owner AND every coalesced same-key waiter."""
     arbiter = TransitionArbiter()

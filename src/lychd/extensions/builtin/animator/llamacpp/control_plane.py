@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 type RuntimeAnimator = Animator[Connector, RuneConfig]
+_HTTP_SERVICE_UNAVAILABLE = 503
 
 # Back-compat alias: the control plane now returns the runtime-neutral domain DTO
 # (spec §5). ``LlamaCppLifecycle`` remains importable for one release.
@@ -22,6 +23,11 @@ LlamaCppLifecycle = AnimatorLifecycle
 
 class LlamaCppControlPlaneError(RuntimeError):
     """Raised when llama.cpp control-plane calls fail."""
+
+    def __init__(self, message: str, *, status: int | None = None) -> None:
+        """Preserve the optional HTTP status for readiness classification."""
+        super().__init__(message)
+        self.status = status
 
 
 class LlamaCppControlPlane:
@@ -76,6 +82,11 @@ class LlamaCppControlPlane:
             lifecycle.health = self._coerce_health(health)
         except LlamaCppControlPlaneError as exc:
             lifecycle.raw["health_error"] = str(exc)
+            # llama.cpp reports an in-progress model load as HTTP 503 with a
+            # JSON error body. This is readiness, not a stopped runtime. Match
+            # only the explicit loading signal; unrelated 503s stay unknown.
+            if exc.status == _HTTP_SERVICE_UNAVAILABLE and "loading model" in str(exc).lower():
+                lifecycle.health = "loading"
 
         try:
             props = await self._request_json(base_url, "GET", "/props", query=self._query_model(model_query))
@@ -129,7 +140,7 @@ class LlamaCppControlPlane:
             )
         except HttpJsonError as exc:
             error_msg = f"{method} {path} failed: {exc}"
-            raise LlamaCppControlPlaneError(error_msg) from exc
+            raise LlamaCppControlPlaneError(error_msg, status=exc.status) from exc
 
     def _build_url(self, base_url: str, path: str, *, query: dict[str, str] | None = None) -> str:
         split = urlsplit(base_url)

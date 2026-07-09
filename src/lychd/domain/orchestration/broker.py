@@ -5,8 +5,8 @@ comes from the leases (parked runs hold no lease and never count), NEVER from jo
 counts. Pausing is a claim-gate ``asyncio.Event`` checked by `perform_run` on entry:
 the installed saq ``Queue`` exposes no pause/suspend API (verified at build time —
 ``hasattr(Queue, "pause")`` is False), so the in-loop claim gate is the sanctioned
-mechanism. `QuiescentBroker` is the pre-wire / DB-free-test stand-in relocated here
-from `domain/web/altar_services.py` (D3).
+mechanism. `QuiescentBroker` is retained only as a small DB-free test double; the
+production composition root always constructs `GhoulBroker` directly.
 """
 
 from __future__ import annotations
@@ -70,8 +70,8 @@ class GhoulBroker:
 class QuiescentBroker:
     """A no-op worker broker satisfying `OrchestratorManager`'s drain protocol.
 
-    The v1 in-process profile drains via leases; this stand-in is the pre-wire and
-    DB-free-test broker (relocated verbatim from `domain/web/altar_services.py`, D3).
+    The v1 in-process profile drains via leases; this stand-in is for focused
+    DB-free tests. Production never places it in the runtime container.
     Draining is instantaneous and the active-worker count is always zero.
     """
 

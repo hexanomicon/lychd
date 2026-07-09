@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
@@ -101,7 +100,7 @@ class LlamaCppRuntimeAdapter:
             model_infos,
             runtime_metadata=descriptor.metadata,
             runtime_defaults=self._runtime_defaults(descriptor),
-            lifecycle=CapabilityLifecycle.DYNAMIC if descriptor.mode == "router" else CapabilityLifecycle.STATIC,
+            is_dynamic=descriptor.mode == "router",
             hints_by_id=hints_by_id,
         )
 
@@ -118,7 +117,7 @@ class LlamaCppRuntimeAdapter:
         """
         connector = cast("LlamacppConnector", animator.connector)
         mode = getattr(connector, "mode", "single")
-        lifecycle_mode = CapabilityLifecycle.DYNAMIC if mode == "router" else CapabilityLifecycle.STATIC
+        is_dynamic = mode == "router"
         checked_at = datetime.now(UTC)
 
         try:
@@ -128,7 +127,7 @@ class LlamaCppRuntimeAdapter:
             return [
                 CapabilityState(
                     capability_key=spec.key,
-                    lifecycle=lifecycle_mode,
+                    is_dynamic=is_dynamic,
                     phase=CapabilityPhase.ERROR,
                     health="error",
                     reason=str(exc),
@@ -157,7 +156,7 @@ class LlamaCppRuntimeAdapter:
             self._state_for_spec(
                 spec=spec,
                 mode=mode,
-                lifecycle_mode=lifecycle_mode,
+                is_dynamic=is_dynamic,
                 health=health,
                 reachable=reachable,
                 loaded_ids=loaded_ids,
@@ -173,7 +172,7 @@ class LlamaCppRuntimeAdapter:
         *,
         spec: CapabilitySpec,
         mode: str,
-        lifecycle_mode: CapabilityLifecycle,
+        is_dynamic: bool,
         health: str,
         reachable: bool,
         loaded_ids: list[str],
@@ -197,7 +196,7 @@ class LlamaCppRuntimeAdapter:
             reason = "runtime_unreachable"
         return CapabilityState(
             capability_key=spec.key,
-            lifecycle=lifecycle_mode,
+            is_dynamic=is_dynamic,
             phase=phase,
             health=health,
             active_model_id=active_model,
@@ -246,7 +245,13 @@ class LlamaCppRuntimeAdapter:
                     phase=CapabilityPhase.COLD,
                     reason="model not in /models",
                 )
-            await self._control_plane.load_model(connector.base_url, spec.model_id)
+            accepted = await self._control_plane.load_model(connector.base_url, spec.model_id)
+            if not accepted:
+                return ActivationResult(
+                    accepted=False,
+                    phase=CapabilityPhase.ACTIVATABLE,
+                    reason="router rejected model load",
+                )
         except LlamaCppControlPlaneError as exc:
             return ActivationResult(accepted=False, phase=CapabilityPhase.ERROR, reason=str(exc))
         return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)

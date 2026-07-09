@@ -4,9 +4,10 @@
       "description": "The Sepulcher (LychD Pod)",
       "pod_name": "lychd",
       "publish_ports": [
-        "7134:8000",
-        "5432:5432"
+        "127.0.0.1:7134:8000",
+        "127.0.0.1:5432:5432"
       ],
+      "user_ns": "keep-id",
       "wanted_by": [
         "default.target"
       ]
@@ -17,7 +18,8 @@
   {
     "dump": {
       "after": [
-        "lychd-phylactery.service"
+        "lychd-migrate.service",
+        "lychd-reactor.path"
       ],
       "conflicts": [],
       "container_name": "lychd-vessel",
@@ -27,13 +29,23 @@
         "APP__SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
         "DB__HOST": "localhost",
         "DB__PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
-        "DB__PORT": "5432"
+        "DB__PORT": "5432",
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
       },
       "exec": null,
       "image": "${APP_IMAGE}",
       "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
       "podman_args": [
         "--replace"
+      ],
+      "remain_after_exit": false,
+      "requires": [
+        "lychd-migrate.service",
+        "lychd-reactor.path"
       ],
       "restart_policy": "always",
       "run_init": true,
@@ -43,8 +55,11 @@
         "openai_api_key"
       ],
       "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
       "targets": [],
-      "user_ns": "keep-id",
+      "user": "%U",
+      "user_ns": null,
       "volumes": [
         {
           "container_path": "${PATH_CODEX_ROOT}",
@@ -56,8 +71,17 @@
           ]
         },
         {
-          "container_path": "${PATH_CRYPT_ROOT}",
-          "host_path": "${PATH_CRYPT_ROOT}",
+          "container_path": "${PATH_CRYPT_ROOT}/stasis",
+          "host_path": "${PATH_CRYPT_ROOT}/stasis",
+          "mirror": true,
+          "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}/lab",
+          "host_path": "${PATH_CRYPT_ROOT}/lab",
           "mirror": true,
           "options": [
             "rw",
@@ -81,49 +105,22 @@
             "ro",
             "Z"
           ]
-        }
-      ],
-      "wanted_by": [
-        "default.target"
-      ],
-      "wants": [
-        "lychd-phylactery.service"
-      ]
-    },
-    "id": "lychd-vessel",
-    "type": "QuadletContainer"
-  },
-  {
-    "dump": {
-      "after": [
-        "lychd.pod"
-      ],
-      "conflicts": [],
-      "container_name": "lychd-phylactery",
-      "description": "The Phylactery (Postgres & PgVector)",
-      "devices": [],
-      "env_vars": {
-        "POSTGRES_DB": "lychd",
-        "POSTGRES_USER": "lich"
-      },
-      "exec": null,
-      "image": "${DB_IMAGE}",
-      "pod": "lychd.pod",
-      "podman_args": [
-        "--replace"
-      ],
-      "restart_policy": "always",
-      "run_init": true,
-      "secrets": [],
-      "security_label_disable": false,
-      "targets": [],
-      "user_ns": "keep-id",
-      "volumes": [
+        },
         {
-          "container_path": "/var/lib/postgresql/data",
-          "host_path": "${PATH_POSTGRES_ROOT_DIR}",
-          "mirror": false,
+          "container_path": "${PATH_CRYPT_ROOT}/triggers/inbox",
+          "host_path": "${PATH_CRYPT_ROOT}/triggers/inbox",
+          "mirror": true,
           "options": [
+            "rw",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CRYPT_ROOT}/triggers/journal",
+          "host_path": "${PATH_CRYPT_ROOT}/triggers/journal",
+          "mirror": true,
+          "options": [
+            "ro",
             "Z"
           ]
         }
@@ -132,10 +129,154 @@
         "default.target"
       ],
       "wants": [
-        "lychd.pod"
+        "lychd-migrate.service",
+        "lychd-reactor.path"
+      ]
+    },
+    "id": "lychd-vessel",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd-pod.service"
+      ],
+      "conflicts": [],
+      "container_name": "lychd-phylactery",
+      "description": "The Phylactery (Postgres & PgVector)",
+      "devices": [],
+      "env_vars": {
+        "POSTGRES_DB": "lychd",
+        "POSTGRES_PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
+        "POSTGRES_USER": "lich"
+      },
+      "exec": null,
+      "image": "${DB_IMAGE}",
+      "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
+      "podman_args": [
+        "--replace"
+      ],
+      "remain_after_exit": false,
+      "requires": [],
+      "restart_policy": "always",
+      "run_init": true,
+      "secrets": [
+        "${DB_SECRET}"
+      ],
+      "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
+      "targets": [],
+      "user": null,
+      "user_ns": null,
+      "volumes": [
+        {
+          "container_path": "/var/lib/postgresql/data",
+          "host_path": "${PATH_POSTGRESS_DATA_DIR}",
+          "mirror": false,
+          "options": [
+            "U",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "/docker-entrypoint-initdb.d/10-lychd-init.sh",
+          "host_path": "${PATH_POSTGRES_ROOT_DIR}/init_db.sh",
+          "mirror": false,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [
+        "default.target"
+      ],
+      "wants": [
+        "lychd-pod.service"
       ]
     },
     "id": "lychd-phylactery",
+    "type": "QuadletContainer"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd-phylactery.service"
+      ],
+      "conflicts": [],
+      "container_name": "lychd-migrate",
+      "description": "LychD Phylactery Migration Gate",
+      "devices": [],
+      "env_vars": {
+        "APP__SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
+        "DB__HOST": "localhost",
+        "DB__PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
+        "DB__PORT": "5432",
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
+      },
+      "exec": "lychd database --wait-seconds 60 upgrade head --no-prompt",
+      "image": "${APP_IMAGE}",
+      "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
+      "podman_args": [
+        "--replace"
+      ],
+      "remain_after_exit": false,
+      "requires": [
+        "lychd-phylactery.service"
+      ],
+      "restart_policy": "no",
+      "run_init": true,
+      "secrets": [
+        "${APP_SECRET}",
+        "${DB_SECRET}"
+      ],
+      "security_label_disable": false,
+      "service_type": "oneshot",
+      "start_with_pod": false,
+      "targets": [],
+      "user": "%U",
+      "user_ns": null,
+      "volumes": [
+        {
+          "container_path": "${PATH_CODEX_ROOT}",
+          "host_path": "${PATH_CODEX_ROOT}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_CORE_DIR}",
+          "host_path": "${PATH_CORE_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        },
+        {
+          "container_path": "${PATH_EXTENSIONS_DIR}",
+          "host_path": "${PATH_EXTENSIONS_DIR}",
+          "mirror": true,
+          "options": [
+            "ro",
+            "Z"
+          ]
+        }
+      ],
+      "wanted_by": [],
+      "wants": [
+        "lychd-phylactery.service"
+      ]
+    },
+    "id": "lychd-migrate",
     "type": "QuadletContainer"
   },
   {
@@ -153,72 +294,43 @@
   {
     "dump": {
       "after": [
-        "lychd.pod"
+        "lychd-pod.service"
       ],
-      "conflicts": [
-        "lychd-gamma.service",
-        "lychd-resident.service"
-      ],
+      "conflicts": [],
       "container_name": "lychd-alpha",
       "description": "LychD Soulstone: alpha",
       "devices": [],
       "env_vars": {
-        "CTX": "4096"
+        "CTX": "4096",
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
       },
       "exec": null,
       "image": "registry.example/alpha:1",
       "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
       "podman_args": [
         "--replace"
       ],
+      "remain_after_exit": false,
+      "requires": [],
       "restart_policy": "always",
       "run_init": true,
       "secrets": [],
       "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
       "targets": [
         "logic"
       ],
-      "user_ns": "keep-id",
+      "user": "%U",
+      "user_ns": null,
       "volumes": [
         {
-          "container_path": "${PATH_CODEX_ROOT}",
-          "host_path": "${PATH_CODEX_ROOT}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CRYPT_ROOT}",
-          "host_path": "${PATH_CRYPT_ROOT}",
-          "mirror": true,
-          "options": [
-            "rw",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CORE_DIR}",
-          "host_path": "${PATH_CORE_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_EXTENSIONS_DIR}",
-          "host_path": "${PATH_EXTENSIONS_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
           "container_path": "/models",
-          "host_path": "${HOME}/models",
+          "host_path": "/data/models",
           "mirror": false,
           "options": [
             "ro",
@@ -228,7 +340,7 @@
       ],
       "wanted_by": [],
       "wants": [
-        "lychd.pod"
+        "lychd-pod.service"
       ]
     },
     "id": "lychd-alpha",
@@ -237,70 +349,42 @@
   {
     "dump": {
       "after": [
-        "lychd.pod"
+        "lychd-pod.service"
       ],
-      "conflicts": [
-        "lychd-gamma.service",
-        "lychd-resident.service"
-      ],
+      "conflicts": [],
       "container_name": "lychd-beta",
       "description": "LychD Soulstone: beta",
       "devices": [],
-      "env_vars": {},
+      "env_vars": {
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
+      },
       "exec": null,
       "image": "registry.example/beta:1",
       "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
       "podman_args": [
         "--replace"
       ],
+      "remain_after_exit": false,
+      "requires": [],
       "restart_policy": "always",
       "run_init": true,
       "secrets": [],
       "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
       "targets": [
         "logic"
       ],
-      "user_ns": "keep-id",
+      "user": "%U",
+      "user_ns": null,
       "volumes": [
         {
-          "container_path": "${PATH_CODEX_ROOT}",
-          "host_path": "${PATH_CODEX_ROOT}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CRYPT_ROOT}",
-          "host_path": "${PATH_CRYPT_ROOT}",
-          "mirror": true,
-          "options": [
-            "rw",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CORE_DIR}",
-          "host_path": "${PATH_CORE_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_EXTENSIONS_DIR}",
-          "host_path": "${PATH_EXTENSIONS_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
           "container_path": "/models",
-          "host_path": "${HOME}/models",
+          "host_path": "/data/models",
           "mirror": false,
           "options": [
             "ro",
@@ -310,7 +394,7 @@
       ],
       "wanted_by": [],
       "wants": [
-        "lychd.pod"
+        "lychd-pod.service"
       ]
     },
     "id": "lychd-beta",
@@ -319,72 +403,43 @@
   {
     "dump": {
       "after": [
-        "lychd.pod"
+        "lychd-pod.service"
       ],
-      "conflicts": [
-        "lychd-coven-logic.target",
-        "lychd-resident.service"
-      ],
+      "conflicts": [],
       "container_name": "lychd-gamma",
       "description": "LychD Soulstone: gamma",
       "devices": [],
       "env_vars": {
-        "HF_TOKEN_FILE": "/run/secrets/gamma_hf_token"
+        "HF_TOKEN_FILE": "/run/secrets/gamma_hf_token",
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
       },
       "exec": null,
       "image": "registry.example/gamma:1",
       "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
       "podman_args": [
         "--replace"
       ],
+      "remain_after_exit": false,
+      "requires": [],
       "restart_policy": "always",
       "run_init": true,
       "secrets": [
         "gamma_hf_token"
       ],
       "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
       "targets": [],
-      "user_ns": "keep-id",
+      "user": "%U",
+      "user_ns": null,
       "volumes": [
         {
-          "container_path": "${PATH_CODEX_ROOT}",
-          "host_path": "${PATH_CODEX_ROOT}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CRYPT_ROOT}",
-          "host_path": "${PATH_CRYPT_ROOT}",
-          "mirror": true,
-          "options": [
-            "rw",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CORE_DIR}",
-          "host_path": "${PATH_CORE_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_EXTENSIONS_DIR}",
-          "host_path": "${PATH_EXTENSIONS_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
           "container_path": "/models",
-          "host_path": "${HOME}/models",
+          "host_path": "/data/models",
           "mirror": false,
           "options": [
             "ro",
@@ -394,7 +449,7 @@
       ],
       "wanted_by": [],
       "wants": [
-        "lychd.pod"
+        "lychd-pod.service"
       ]
     },
     "id": "lychd-gamma",
@@ -403,68 +458,40 @@
   {
     "dump": {
       "after": [
-        "lychd.pod"
+        "lychd-pod.service"
       ],
-      "conflicts": [
-        "lychd-coven-logic.target",
-        "lychd-gamma.service"
-      ],
+      "conflicts": [],
       "container_name": "lychd-resident",
       "description": "LychD Soulstone: resident",
       "devices": [],
-      "env_vars": {},
+      "env_vars": {
+        "HOME": "${HOME}",
+        "XDG_CACHE_HOME": "${HOME}/.cache",
+        "XDG_CONFIG_HOME": "${HOME}/.config",
+        "XDG_DATA_HOME": "${HOME}/.local/share"
+      },
       "exec": null,
       "image": "registry.example/resident:1",
       "pod": "lychd.pod",
+      "pod_service": "lychd-pod.service",
       "podman_args": [
         "--replace"
       ],
+      "remain_after_exit": false,
+      "requires": [],
       "restart_policy": "always",
       "run_init": true,
       "secrets": [],
       "security_label_disable": false,
+      "service_type": null,
+      "start_with_pod": false,
       "targets": [],
-      "user_ns": "keep-id",
+      "user": "%U",
+      "user_ns": null,
       "volumes": [
         {
-          "container_path": "${PATH_CODEX_ROOT}",
-          "host_path": "${PATH_CODEX_ROOT}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CRYPT_ROOT}",
-          "host_path": "${PATH_CRYPT_ROOT}",
-          "mirror": true,
-          "options": [
-            "rw",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CORE_DIR}",
-          "host_path": "${PATH_CORE_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_EXTENSIONS_DIR}",
-          "host_path": "${PATH_EXTENSIONS_DIR}",
-          "mirror": true,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        },
-        {
           "container_path": "/models",
-          "host_path": "${HOME}/models",
+          "host_path": "/data/models",
           "mirror": false,
           "options": [
             "ro",
@@ -476,7 +503,7 @@
         "default.target"
       ],
       "wants": [
-        "lychd.pod"
+        "lychd-pod.service"
       ]
     },
     "id": "lychd-resident",

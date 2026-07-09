@@ -2,9 +2,9 @@
 
 O1 is a behavior-preserving extraction of the keel's manager-private honest solver
 (`_AnimatorRecord` + `_solve_transition`) into a reusable, lease-aware policy surface.
-The eviction law is unchanged: only DEDICATED, non-persistent-resident, ACTIVE, and
-UNLEASED animators are evicted; a leased animator is never selected (drain truth is
-the LeaseLedger's, never job counts).
+The eviction law selects every other DEDICATED, non-persistent-resident,
+ACTIVE animator. Leased evictees remain in the plan so the manager can close their
+admission gate and drain them before eviction.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class AnimatorRecord:
     name: str
     dedicated: bool  # rune.concurrency.dedicated
     persistent_resident: bool  # rune.concurrency.persistent_resident
-    active: bool  # any of the animator's capability states has state.is_active
+    active: bool  # any capability reports its owning runtime unit started
     leased: bool  # LeaseLedger.active(animator_name=name) != []
 
 
@@ -58,8 +58,9 @@ def animator_records(view: RegistryView, leases: LeaseLedger) -> list[AnimatorRe
 
     Portals are excluded (``get_soulstone_rune(name) is None`` — not lifecycle-managed).
     Concurrency comes from THE RUNE (``rune.concurrency``), NEVER from an arbitrary spec.
-    ``active`` is any of the animator's capability states (via
-    ``list_capabilities`` → ``get_capability_state``) reading ``state.is_active``.
+    ``active`` is any capability state whose owning runtime is started. This
+    includes ``ACTIVATABLE`` dynamic routers: an unloaded model is still a live,
+    resource-owning systemd unit.
     """
     records: list[AnimatorRecord] = []
     seen: set[str] = set()
@@ -73,7 +74,7 @@ def animator_records(view: RegistryView, leases: LeaseLedger) -> list[AnimatorRe
             continue
         seen.add(name)
         active = any(
-            (state := view.get_capability_state(peer.key)) is not None and state.is_active
+            (state := view.get_capability_state(peer.key)) is not None and state.runtime_started
             for peer in specs
             if peer.animator_name == name
         )
@@ -111,7 +112,8 @@ class EvictIdlePolicy:
     """Keel ``_solve_transition`` semantics over :class:`AnimatorRecord`.
 
     Target's animator already active → no-op decision; else evict every dedicated,
-    non-persistent-resident, active, UNLEASED animator and launch the target.
+    non-persistent-resident, active animator and launch the target. Live leases do
+    not spare an evictee; they make execution wait for an honest lease drain.
     """
 
     name = "evict-idle"
@@ -128,7 +130,6 @@ class EvictIdlePolicy:
             if record.dedicated
             and not record.persistent_resident
             and record.active
-            and not record.leased
             and record.name != target.animator_name
         )
         return SwitchDecision(

@@ -3,6 +3,9 @@ Description={{ description }}
 
 [Pod]
 PodName={{ pod_name }}
+{% if user_ns %}
+UserNS={{ user_ns }}
+{% endif %}
 
 # Network exposure
 {% for port_mapping in publish_ports %}

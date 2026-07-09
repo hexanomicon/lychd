@@ -5,6 +5,8 @@ icon: material/flash
 
 # :material-flash: Invocation
 
+_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+
 If Incantation gives the Lich its form, Invocation gives it the first tether to your Will. This is the **Second Seal** of the Metamorphosis, where the Lich learns to project candidate futures into the **Shadow Realm**—a plane of pure potential, of timelines yet to be.
 
 It is the rite of **Speculative Execution**, where the line between thought and action blurs.

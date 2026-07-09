@@ -10,7 +10,7 @@ import respx
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from lychd.config.runes.extension import RuneConfigStore
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle
+from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.extension import PortalStore
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
@@ -65,7 +65,7 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
     spec = specs[0]
     assert spec.key == "openai-main:chat:gpt-5.2"
     assert spec.family == CapabilityFamily.CHAT
-    assert spec.lifecycle is CapabilityLifecycle.STATIC
+    assert spec.is_dynamic is False
     assert spec.supports_tools is True
     assert "image" in spec.modalities_in
     assert spec.generation_profile.max_tokens == 4096
@@ -206,4 +206,4 @@ async def test_portal_grant_hydrates_openai_model_with_overlay(
         assert grant.generation.temperature == 0.5
         settings = grant.model_settings()
         assert settings is not None
-        assert settings["max_tokens"] == 4096
+        assert settings.get("max_tokens") == 4096

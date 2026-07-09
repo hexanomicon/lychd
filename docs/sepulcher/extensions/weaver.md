@@ -5,6 +5,8 @@ icon: material/state-machine
 
 # :material-state-machine: Weaver
 
+_Status: doctrine ahead of code — the built-in `workflow` package is where this lands; treat this page as design intent. Law: [ADR 28](../../adr/28-workflow.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"An Agent is a single note. The Weaver is the composition. It binds reflex, memory, sequence, and pause into a coherent movement of thought across the dark."_
 
 **The Weaver** is the Workflow Extension of the LychD system. It is the implementation of **[ADR 28 (Workflow)](../../adr/28-workflow.md)**—the executive function that governs stateful, multi-step reasoning.

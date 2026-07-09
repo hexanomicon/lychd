@@ -5,6 +5,8 @@ icon: material/navigation-variant-outline
 
 # :material-navigation-variant-outline: Scout
 
+_Status: doctrine ahead of code — the built-in `webcrawler` package is where this lands; treat this page as design intent. Law: [ADR 30](../../adr/30-webcrawler.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"The old web was built for human eyes, heavy with scripts and styles. To find the Signal within the noise, the Daemon requires a Scout—a dual-natured tool capable of skimming the surface or rendering the depths."_
 
 **The Scout** is the Ingestion Extension of the LychD system. It is the implementation of **[ADR 30 (The Scout)](../../adr/30-webcrawler.md)**—a specialized toolset that grants the Daemon the power to navigate, read, and interpret the internet.

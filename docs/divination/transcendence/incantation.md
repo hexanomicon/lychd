@@ -5,6 +5,8 @@ icon: material/script-text-outline
 
 # :material-script-text-outline: Incantation
 
+_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+
 All creation begins with the Word. Before the flesh is animated, before the soul is bound, the design must be spoken into existence. Incantation is the **First Seal** of the Metamorphosis, where the Magus inscribes the foundational truths of the Lich into this very Hexanomicon.
 
 It is the practice of **xDDD (eXtreme Documentation Driven Development)**, a doctrine that holds the written word as the ultimate source of reality.

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle, CapabilitySpec
+from lychd.domain.animation.capabilities import CapabilityFamily, CapabilitySpec, SourceKind
 from lychd.domain.animation.schemas import (
     GenerationProfile,
     ModelCapabilityHints,
@@ -103,7 +103,7 @@ def capability_specs_from_soulstone(
     *,
     runtime_metadata: dict[str, object] | None = None,
     runtime_defaults: dict[str, object] | None = None,
-    lifecycle: CapabilityLifecycle = CapabilityLifecycle.STATIC,
+    is_dynamic: bool = False,
 ) -> list[CapabilitySpec]:
     """Build capability specs from runtime-derived model info."""
     return capability_specs_from_model_infos(
@@ -111,7 +111,7 @@ def capability_specs_from_soulstone(
         model_infos_from_soulstone(soulstone),
         runtime_metadata=runtime_metadata,
         runtime_defaults=runtime_defaults,
-        lifecycle=lifecycle,
+        is_dynamic=is_dynamic,
     )
 
 
@@ -121,7 +121,7 @@ def capability_specs_from_model_infos(
     *,
     runtime_metadata: dict[str, object] | None = None,
     runtime_defaults: dict[str, object] | None = None,
-    lifecycle: CapabilityLifecycle = CapabilityLifecycle.STATIC,
+    is_dynamic: bool = False,
     hints_by_id: Mapping[str, ModelCapabilityHints] | None = None,
     probed_by_id: Mapping[str, ProbedModelFacts] | None = None,
 ) -> list[CapabilitySpec]:
@@ -157,7 +157,7 @@ def capability_specs_from_model_infos(
                 profile=profile,
                 base_generation=base_generation,
                 model_generation=models_by_id[info.id].generation if info.id in models_by_id else None,
-                lifecycle=lifecycle,
+                is_dynamic=is_dynamic,
                 runtime_metadata=runtime_meta,
             )
         )
@@ -181,7 +181,7 @@ def capability_specs_from_model_infos(
                 profile=profile,
                 base_generation=base_generation,
                 model_generation=local.generation if local is not None else None,
-                lifecycle=lifecycle,
+                is_dynamic=is_dynamic,
                 runtime_metadata=runtime_meta,
             )
         )
@@ -198,7 +198,7 @@ def _specs_for_model(
     profile: _CapabilityProfile,
     base_generation: GenerationProfile,
     model_generation: GenerationProfile | None,
-    lifecycle: CapabilityLifecycle,
+    is_dynamic: bool,
     runtime_metadata: dict[str, object],
 ) -> list[CapabilitySpec]:
     hydrated = hydrate_model_info(info=info, hints=hints, probed=probed, profile=profile)
@@ -210,16 +210,17 @@ def _specs_for_model(
             key=f"{soulstone.name}:{family}:{hydrated.id}",
             animator_name=soulstone.name,
             runtime=soulstone.runtime_name,
-            source_kind="soulstone",
+            source_kind=SourceKind.SOULSTONE,
             family=family,
             model_id=hydrated.id,
             surface=hydrated.surface,
+            max_context=hydrated.max_context,
             modalities_in=list(hydrated.modalities_in),
             modalities_out=list(hydrated.modalities_out),
             supports_tools=hydrated.supports_tools,
             supports_streaming=hydrated.supports_streaming,
             generation_profile=generation,
-            lifecycle=lifecycle,
+            is_dynamic=is_dynamic,
             concurrency=concurrency,
             metadata={**runtime_metadata, **dict(hydrated.metadata)},
         )

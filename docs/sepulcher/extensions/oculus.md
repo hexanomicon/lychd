@@ -5,6 +5,8 @@ icon: material/eye-outline
 
 # :material-eye-outline: Oculus
 
+_Status: doctrine ahead of code — the built-in `observability` package is where this lands; treat this page as design intent. Law: [ADR 29](../../adr/29-observability.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"See the ghosts that pull the strings. To command the Daemon, one must not only witness its actions, but scry the invisible web of intent from which they are born."_
 
 **The Oculus** is the Observability Extension of the LychD system. It is the implementation of **[ADR 29 (Observability)](../../adr/29-observability.md)**—the all-seeing eye that bridges the gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic).

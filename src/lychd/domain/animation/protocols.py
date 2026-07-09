@@ -12,24 +12,24 @@ canonical error strings that `Dispatcher` and
 because `refresh_capability_state` is async (Wave 3).
 
 Wave-3 surface (spec-00-FINAL C1): reads (`list_capabilities`/`get_capability`/
-`get_capability_state`/`get_runtime`/`bind_*`/`get_soulstone_rune`) stay sync;
+`get_capability_state`/`get_runtime`/`get_soulstone_rune`) stay sync;
 the probe/activate/grant surface (`refresh_*`/`activate_capability`/`await_warm`/
 `issue_grant`) is async. Sole implementation: `AnimatorRegistry`.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
+    from lychd.domain.animation.animators import RuntimeAnimator
     from lychd.domain.animation.capabilities import (
         ActivationResult,
         CapabilityGrant,
         CapabilitySpec,
         CapabilityState,
     )
+    from lychd.domain.animation.schemas import SoulstoneConfig
 
 __all__ = ["CapabilityRegistry", "require_capability_record"]
 
@@ -50,15 +50,11 @@ class CapabilityRegistry(Protocol):
 
     def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
 
-    def get_runtime(self, name: str, /) -> Any | None: ...
-
-    def bind_model(self, name: str, /, *, model_id: str | None = None) -> Any | None: ...
-
-    def bind_toolsets(self, name: str, /) -> Sequence[Any]: ...
+    def get_runtime(self, name: str, /) -> RuntimeAnimator | None: ...
 
     def list_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
 
-    def get_soulstone_rune(self, name: str, /) -> Any | None: ...
+    def get_soulstone_rune(self, name: str, /) -> SoulstoneConfig | None: ...
 
     # -- async probe/activate/grant surface (Wave 3 truth) ---------------
     async def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...

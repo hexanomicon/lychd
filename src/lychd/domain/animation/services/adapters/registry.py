@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING, cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
+    SourceKind,
 )
 from lychd.domain.animation.schemas import (
     ConcurrencyIntent,
@@ -192,17 +192,19 @@ class RuntimeAdapterRegistry:
                     key=f"{portal.name}:{family}:{model.id}",
                     animator_name=portal.name,
                     runtime=f"portal:{portal.provider_name}",
-                    source_kind="portal",
+                    source_kind=SourceKind.PORTAL,
                     family=family,
                     model_id=model.id,
                     surface=info.surface,
+                    max_context=info.max_context,
                     modalities_in=list(info.modalities_in),
                     modalities_out=list(info.modalities_out),
                     supports_tools=info.supports_tools,
                     supports_streaming=info.supports_streaming,
                     generation_profile=generation,
-                    lifecycle=CapabilityLifecycle.STATIC,
-                    concurrency=ConcurrencyIntent(),
+                    is_dynamic=False,
+                    # A Portal is remote: LychD does not own its lifecycle (ADR-22).
+                    concurrency=ConcurrencyIntent(dedicated=False),
                     metadata={"provider_name": portal.provider_name},
                 )
                 for family in synthesize_families(info, hints, None)
@@ -250,7 +252,7 @@ class RuntimeAdapterRegistry:
         return [
             CapabilityState(
                 capability_key=spec.key,
-                lifecycle=CapabilityLifecycle.STATIC,
+                is_dynamic=False,
                 phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
                 health=health,
                 active_model_id=spec.model_id if up else None,

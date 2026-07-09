@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 
 from lychd.domain.animation.capabilities import (
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
     GrantLease,
+    SourceKind,
 )
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
@@ -32,10 +32,10 @@ def _spec(*, animator: str, dedicated: bool = True, resident: bool = False) -> C
         key=f"{animator}:chat:{animator}-model",
         animator_name=animator,
         runtime="llamacpp",
-        source_kind="soulstone",
+        source_kind=SourceKind.SOULSTONE,
         family=CapabilityFamily.CHAT,
         model_id=f"{animator}-model",
-        lifecycle=CapabilityLifecycle.STATIC,
+        is_dynamic=False,
         concurrency=ConcurrencyIntent(dedicated=dedicated, persistent_resident=resident),
     )
 
@@ -43,7 +43,7 @@ def _spec(*, animator: str, dedicated: bool = True, resident: bool = False) -> C
 def _state(spec: CapabilitySpec, *, active: bool) -> CapabilityState:
     return CapabilityState(
         capability_key=spec.key,
-        lifecycle=CapabilityLifecycle.STATIC,
+        is_dynamic=False,
         phase=CapabilityPhase.WARM if active else CapabilityPhase.COLD,
         health="ok" if active else "down",
         active_model_id=spec.model_id if active else None,
@@ -94,7 +94,7 @@ def test_evict_idle_evicts_dedicated_active_unleased_keeps_resident() -> None:
     assert decision.metabolic_cost == 2.0
 
 
-def test_evict_idle_never_evicts_a_leased_animator() -> None:
+def test_evict_idle_includes_a_leased_conflict_for_manager_drain() -> None:
     titan = _spec(animator="titan")
     coding = _spec(animator="coding")
     vision = _spec(animator="vision")
@@ -105,12 +105,11 @@ def test_evict_idle_never_evicts_a_leased_animator() -> None:
         vision.key: _state(vision, active=False),
     }
     leases = LeaseLedger()
-    _lease(leases, titan)  # titan is leased → must be spared
+    _lease(leases, titan)
 
     decision = EvictIdlePolicy().solve(vision, _View(specs, states), leases)
 
-    assert decision.evict_animator_names == ["coding"]  # titan is leased, coding is idle
-    assert "titan" not in decision.evict_animator_names
+    assert decision.evict_animator_names == ["coding", "titan"]
 
 
 def test_evict_idle_no_op_when_target_animator_already_active() -> None:

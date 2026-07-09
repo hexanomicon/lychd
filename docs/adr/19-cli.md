@@ -3,7 +3,7 @@ title: 19. CLI
 icon: material/console-line
 ---
 
-# :material-console-line: 19. CLI: The Hand
+# :material-console-line: 19. CLI: The Pulse
 
 !!! abstract "Context and Problem Statement"
     The LychD system operates primarily as an always-on background daemon (The Vessel). However, a separate control plane is required for management tasks such as initialization, configuration binding, and lifecycle control. This interface must abstract the complexity of the underlying substrate—Systemd units, Podman pods, and XDG filesystem mapping—into a coherent set of commands. Without a unified management tool, the Magus is forced to manually coordinate the interaction between the **[Layout](13-layout.md)**, the **[Configuration](12-configuration.md)**, and the **[Packaging](17-packaging.md)** forge, leading to inevitable human error and logic drift.
@@ -11,7 +11,7 @@ icon: material/console-line
 ## Requirements
 
 - **Orchestration Abstraction:** High-level rituals that hide the complexity of system-level tools (`systemctl`, `podman`) behind a consistent command set.
-- **Contextual Symmetry:** The tool must utilize the exact same configuration logic and dependency injection patterns as the primary server to ensure the management context never drifts from the execution context.
+- **Contextual Symmetry:** The tool must reuse the same settings and domain/system services as the primary server without requiring the ASGI application to exist for local management commands.
 - **Highest Command:** The CLI must be the only entity capable of triggering the "Rebirth"—the manual confirmation required to activate a newly packaged substrate.
 - **Extension Registry:** Pluggable command injection; extensions must be able to graft their own subcommands into the primary management group.
 - **Dual-Mode Execution:** Lightweight bootstrapping that allows management tasks to run without the overhead of initializing the full web-server stack.
@@ -24,36 +24,47 @@ icon: material/console-line
     - **Pros:** Zero framework overhead; immediate execution.
     - **Cons:** **Architectural Blindness.** Standalone scripts cannot easily share the complex Pydantic models used for settings or the SQLAlchemy models used for the database. It creates "Logic Drift," where the CLI assumes a filesystem layout that the Server has already evolved past.
 
-!!! success "Option 2: Integrated Framework CLI"
-    Leveraging the framework's native CLI protocols to embed management logic directly within the application codebase.
+!!! success "Option 2: Native Root with Lazy Framework Bridges"
+    Owning the installed command with a small Click root, while entering Litestar lazily only for commands that actually require the ASGI/database application context.
 
     - **Pros:**
-        - **Total Symmetry:** The CLI and the Vessel share the same "Brain." Changes to the Prime Directive are instantly reflected in both.
-        - **Extension Lifecycle:** Extensions use a unified registration pass to add both web routes and management commands once the relevant stores exist.
-        - **Context Awareness:** Commands inherit the full system state, including validated database connections and secure directory paths.
+        - **Bootstrap Independence:** Help, initialization, binding, diagnosis, and inspection work before an ASGI app or database is available.
+        - **Shared Laws:** Commands still reuse the same settings, extension assembly, and system services as the Vessel.
+        - **Bounded Framework Entry:** Server and migration features retain Litestar's supported CLI surfaces without making them the root command.
 
 ## Decision Outcome
 
-An **Integrated CLI Framework** is adopted as "The Hand"—the physical interface that manipulates the system's body.
+A **native Click root with lazy framework bridges** is adopted as "The Pulse"—the rhythm by which the Magus drives the system's body.
 
-!!! note "Wave 3 ruling: the binary is `lychd` (DOC-R1)"
-    The installed command is **`lychd`** everywhere — `lychd init`, `lychd bind`, `lychd animators`. This settles the doc-time split (`lych` vs `lychd`): the entry point shipped in `pyproject.toml` is `lychd`, and all documentation, examples, and Praxis references use `lychd` verbatim. No `lych` alias is promised.
+!!! note "Ruling: the binary is `lychd` (DOC-R1)"
+    The installed command is **`lychd`** everywhere — `lychd init`, `lychd bind`, `lychd animators`. This settles the doc-time split (`lych` vs `lychd`): the entry point shipped in `pyproject.toml` is `lychd`, and all documentation and examples use `lychd` verbatim. No `lych` alias is promised.
 
-### 1. Dual-Mode Manifestation
+### 1. Bootstrap and ASGI Separation
 
-The CLI leverages the initialization protocols established in the **[Backend](11-backend.md)**.
+The `lychd` entry point owns its root command. Importing it does not construct the Litestar
+application and does not connect to Postgres, start SAQ, initialize Pydantic AI, or load Vite.
 
-- When executed as a command, the application process detects the CLI context.
-- It performs a "Lightweight Manifestation," skipping the initialization of heavy web plugins (e.g., Vite, Telemetry) to ensure management commands remain responsive.
+- `init`, `bind`, `doctor`, `animators`, and `--help` execute through local command services.
+- `serve` imports Litestar only inside its callback and delegates to the supported ASGI `run`
+  surface.
+- `database` imports Litestar only inside its callback and delegates to its database lifecycle
+  surface (for example, `lychd database upgrade`).
+
+This is a process boundary, not an environment heuristic: local commands do not instantiate a
+"light" web application. They simply never enter the ASGI composition path.
 
 ### 2. Core Rituals
 
-The Hand defines the fundamental rituals required to govern the system:
+The Pulse defines the fundamental rituals required to govern the system:
 
-- **The Inscription (`lychd init`):** Initializes the **[Codex](12-configuration.md)**. It introspects settings schemas to generate `lychd.toml`, imports extension modules, discovers `RuneConfig` subclasses, creates their rune anchor directories, and writes one sample TOML per schema (top-level payload contract). It also handles `btrfs` subvolume setup for the Phylactery.
+- **The Inscription (`lychd init`):** Initializes the **[Codex](12-configuration.md)** and layout. It generates a round-trippable `lychd.toml`, assembles enabled extensions, creates rune anchors, and writes marked sample TOML without overwriting existing intent.
 - **The Transmutation (`lychd bind`):** The primary infrastructure ritual. It reads the current configuration and installed extensions, generates the required Systemd Quadlet files, and reloads the host daemon. It turns "Config" into "Infrastructure."
+- **The Examination (`lychd doctor`):** Performs a read-only preflight over Codex permissions, runes, host tools, secret references, and the selected caged/uncaged deployment shape.
+- **The Census (`lychd animators`):** Lists declared Animator capabilities and their observed readiness without changing lifecycle state.
+- **The Migration Bridge (`lychd database ...`):** Enters Litestar's database commands lazily. `lychd database upgrade` is the explicit uncaged/development migration path when database credentials are supplied. The normal Quadlet deployment uses its generated migration unit before the Vessel.
+- **The Foreground Vessel (`lychd serve ...`):** Enters Litestar's ASGI runner lazily for development and uncaged operation. There is no `lychd run` command.
 - **The Rebirth (`lychd rebirth`):** The manual gate for **[Packaging](17-packaging.md)**. It verifies the digest of the newly forged image and executes the signed signal to the **[Host Reactor](10-privilege.md)**.
-- **The Pulse (`lychd status/logs`):** Provides a high-level view of the Vessel and its **[Ghouls](14-workers.md)**, abstracting raw `journalctl` and `podman` output into a report of system health.
+- **Status and Logs (`lychd status/logs`):** Provides a high-level view of the Vessel and its **[Ghouls](14-workers.md)**, abstracting raw `journalctl` and `podman` output into a report of system health.
 
 ### 2.1 Thin Command Doctrine
 
@@ -81,7 +92,7 @@ This preserves observability symmetry between `lychd <command>` and the Vessel p
 
 ### 4. The Mundane Anchor and Elevation Path
 
-The **Hand** (CLI) resides on the **Host Substrate**, physically separated from the Agent's volatile environment. Modification of the Host-side logic—including rebuilding or reinstalling the CLI itself—is a high-order ritual requiring **[Path Elevation](10-privilege.md)**.
+The **Pulse** (CLI) resides on the **Host Substrate**, physically separated from the Agent's volatile environment. Modification of the Host-side logic—including rebuilding or reinstalling the CLI itself—is a high-order ritual requiring **[Path Elevation](10-privilege.md)**.
 
 - **Substrate Immunity:** By default, the Host CLI is immutable to the Agent. The Agent can only modify code within the **Lab** or the **Crypt**'s read-write zones. It has no physical authority to `pip install` or overwrite files on the Host.
 - **The Elevation Ritual:** Updates to the Host-side CLI are mediated strictly by the **[Host Reactor (10)](10-privilege.md)**. The Agent must submit a validated signal which triggers a Host-native Systemd Path unit to perform the update.
@@ -94,19 +105,18 @@ The **Hand** (CLI) resides on the **Host Substrate**, physically separated from 
 ### 5. The High Rituals (Command Snippets)
 
 ```bash
-# The Hand operates through these specific incantations:
-# lychd init                 # Inscribe the Codex and forge the Crypt.
-# lychd bind                 # Transmute Codex into Systemd Quadlets.
-# lychd list                 # List containers active /inactive
-# lychd start/stop <group>    # Start/stop the container or group, this must via Conflicts=
-# lychd status               # Scry the health of the Vessel and Ghouls.
-# lychd promote <tag>        # Move a verified artifact from the Lab to the Crypt.
-# lychd rebirth              # The manual gate to activate a new forge image.
+# The Pulse operates through these specific incantations:
+lychd init                   # Inscribe the Codex and establish the layout.
+lychd doctor                 # Read-only foundation preflight.
+lychd animators              # Inspect declared capability/readiness truth.
+lychd bind                   # Transmute validated intent into units.
+lychd database upgrade       # Explicit uncaged/development migration.
+lychd serve --host 127.0.0.1 # Foreground uncaged/development Vessel.
 ```
 
 ### 6. The Arbitration Doctrine
 
-The Hand and the Vessel can both actuate the same Covens. Two wills issuing `systemctl` verbs against the same targets at once would break the **Law of Exclusivity**'s assumption of a single physical will. The Hand therefore distinguishes **observation** from **actuation**.
+The Pulse and the Vessel can both actuate the same Covens. Two wills issuing `systemctl` verbs against the same targets at once would break the **Law of Exclusivity**'s assumption of a single physical will. The Pulse therefore distinguishes **observation** from **actuation**.
 
 - **Observation commands** (`list`, `status`, `logs`, `animators`) act directly. Reading the substrate contends with nothing.
 - **Actuation commands** (`start`, `stop`, `promote`, `rebirth`) SHALL first attempt the Vessel API—while the Vessel lives, its Orchestrator is the sole physical will (**[Orchestrator (23)](23-orchestrator.md)**)—and act directly only when the Vessel is provably down.
@@ -114,24 +124,33 @@ The Hand and the Vessel can both actuate the same Covens. Two wills issuing `sys
 
 ### 7. Implementation Status
 
-xDDD permits doctrine-first specification, but the Logos should state which limbs of the Hand exist today. The following is the current status of the rituals:
+xDDD permits doctrine-first specification, but the Logos should state which limbs of the Pulse exist today. The following is the current status of the rituals:
 
 | Command | Status | Notes |
 | :--- | :--- | :--- |
 | `init` | Implemented | Inscribes the Codex, discovers `RuneConfig` schemas, writes samples, forges the Crypt. |
 | `bind` | Implemented | Transmutes Codex into Systemd Quadlets and reloads the host daemon. |
+| `doctor` | Implemented | Read-only validation of the minimum runnable foundation. |
 | `animators` | Implemented | Read-only capability probes over declared animators. |
+| `database` | Implemented bridge | Lazily delegates database lifecycle commands to Litestar. |
+| `serve` | Implemented bridge | Lazily delegates foreground ASGI execution to Litestar. |
+| `runs approve/deny` | Implemented | Records a consent verdict and re-enqueues a durable parked run. |
 | `list` | Specified | Observation command; not yet built. |
-| `status` / `logs` | Specified | The Pulse; not yet built. |
+| `status` / `logs` | Specified | Health observation; not yet built. |
 | `start` / `stop` | Specified | Actuation; bound by the Arbitration Doctrine when built. |
 | `promote` | Specified | Actuation; Lab → Crypt move, hard-gated. |
 | `rebirth` | Specified | Actuation; the manual gate to a new forge image. |
 | `restore` / `rollback` | Specified | The Mundane Anchor; must avoid importing `lychd.domain`. |
 
+The native root and the commands marked implemented above are the foundation. Extension command
+injection, CLI/Rebirth use of Host Reactor mediation, lifecycle actuation commands, Rebirth, and the independent
+Mundane Anchor remain later work; prose in §3–§6 defines their constraints, not their present
+availability.
+
 ### Consequences
 
 !!! success "Positive"
-    - **Consistency:** One tool owns the Sepulcher's geography. The user never needs to remember if a directory is in `.local` or `.config`; the Hand handles the map.
+    - **Consistency:** One tool owns the Sepulcher's geography. The user never needs to remember if a directory is in `.local` or `.config`; the Pulse handles the map.
     - **Evolution Safety:** Because the CLI and Server share the same code, a breaking change in the configuration schema is caught at compile/build time.
     - **Ease of Deployment:** The CLI provides the "Zero-Trust" confirmation needed for secure self-evolution.
 

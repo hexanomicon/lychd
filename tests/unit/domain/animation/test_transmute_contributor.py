@@ -11,6 +11,7 @@ from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import (
     QuadletContribution,
+    QuadletContributor,
     TransmutationContext,
     TransmutationStore,
     Transmuter,
@@ -18,7 +19,7 @@ from lychd.domain.animation.transmute import (
 from lychd.system.schemas import QuadletContainer, QuadletPod
 
 
-def _transmuter(*contributors: object) -> Transmuter:
+def _transmuter(*contributors: QuadletContributor) -> Transmuter:
     return Transmuter(runtime_planner=RuntimeAdapterRegistry(), contributors=list(contributors))
 
 
@@ -35,7 +36,7 @@ def test_no_contributors_reproduces_core_only() -> None:
     pod = next(m for m in manifests if isinstance(m, QuadletPod))
     assert len(pod.publish_ports) == 2
     names = {m.container_name for m in manifests if isinstance(m, QuadletContainer)}
-    assert names == {"lychd-vessel", "lychd-phylactery"}
+    assert names == {"lychd-vessel", "lychd-phylactery", "lychd-migrate"}
 
 
 def test_runes_defaults_to_empty_registry() -> None:
@@ -65,7 +66,7 @@ class _ContainerContributor:
 def test_contribution_ports_append_after_core() -> None:
     manifests = _transmuter(_PortOnlyContributor()).transmute_all([], runes=RuneRegistry([]))
     pod = next(m for m in manifests if isinstance(m, QuadletPod))
-    assert pod.publish_ports[-1] == "9999:9999"
+    assert pod.publish_ports[-1] == "127.0.0.1:9999:9999"
     assert len(pod.publish_ports) == 3
 
 

@@ -1,0 +1,196 @@
+---
+title: Coven
+icon: material/swap-horizontal-bold
+---
+
+# :material-swap-horizontal-bold: Coven: Named Runtime Grouping
+
+> _"Two spirits cannot haunt the same iron. To wake one, another must sleep."_
+
+A **coven** is a named group of model services ([Soulstones](./soulstone.md)) materialized as a
+systemd target for operator aggregation. It is not an implicit coexistence or eviction policy.
+Finite VRAM is governed by the **[Orchestrator (23)](../../adr/23-orchestrator.md)**, whose current
+`evict-idle` policy treats active, dedicated, non-resident Animators as one conservative global
+switching pool.
+
+Covens are declared by the `groups` field on a Soulstone Rune. Sharing a group creates target
+membership only; sharing or not sharing a group neither permits coexistence nor synthesizes a
+`Conflicts=` directive. The `alliances` shape is reserved for a future group-aware policy and is
+non-enforcing in v1. See [Soulstone](./soulstone.md#-coven-management-the-group-rule).
+
+!!! warning "Operator break-glass surface"
+    Starting a generated Coven target explicitly starts its installed members, and stopping it
+    propagates to members through Systemd `PartOf=`. This bypasses Orchestrator priority admission,
+    lease drain, and WARM convergence. It is reserved for a host operator performing administration
+    or recovery; application code, agents, and extension policy must address the Orchestrator
+    instead.
+
+## The states you will see on the Nexus
+
+The [Nexus](../../divination/altar/nexus.md) shows each capability in one of five operator
+states — **active**, **warming**, **awaited**, **cold**, **fault**. The vocabulary and the
+phase ladder behind it are defined in [Capabilities](./capabilities.md); the law is the
+[Dispatcher (22)](../../adr/22-dispatcher.md). Any managed capability below WARM triggers readying:
+**cold** normally requires a hard runtime swap, **awaited** identifies a dynamic runtime that needs
+lease-safe activation, and **warming** may be a dynamic or fixed/static runtime already converging.
+Internally, any runtime-started non-WARM target uses the `SOFT_SWAP`-labelled target-only barrier;
+that label does not promise that a model-load call will occur.
+
+## How a swap happens
+
+When a run needs a managed capability below **WARM**, the Dispatcher raises a readiness transition
+and the Orchestrator:
+
+1. Pauses new job claims and closes admission for every affected Animator.
+2. Waits for **leases** to release—a hard swap drains the complete planned evictee set; a
+   runtime-started convergence path drains the target Animator (up to `drain_timeout_s`).
+3. Hard: stop the complete evictee set and start the target, with no hidden generated-unit effects.
+   Runtime already started: call the adapter's model-load seam only for a dynamic target that is
+   not already WARMING; fixed/static and already-WARMING targets perform convergence only.
+4. Await honest WARM, then let the parked run retry dispatch. A hard readiness failure attempts one
+   exact typed inverse. A raising hard actuator, runtime-started activation/convergence failure, or
+   failed hard inverse stays fail-closed for operator recovery rather than reopening into unknown
+   runtime state. A
+   process-lifetime containment latch rejects every later transition/NO_OP until restart or repair.
+
+A run parked waiting for its own transition holds **no** lease, so it never blocks its own swap.
+
+## Watch a swap
+
+```bash
+curl -s http://localhost:7134/orchestrator/queues | jq
+curl -s http://localhost:7134/orchestrator/status | jq '.mutation_containment'
+```
+
+The response shows each queue's `depth`, `active` count, and `paused` state, plus the `leases`
+currently held (each with its `capability_key`, `holder`, and `priority`). Watching this during
+a Bridge conversation shows a lease appear, the swap wait for it, and the transition complete.
+The status response's `mutation_containment` is normally `null`; a reason means the process has
+latched an uncertain mutation and will reject every transition until operator recovery/restart.
+The Nexus shows the same capability moving **cold → warming → active**.
+
+## Request a transition manually
+
+To warm a target capability directly, ask the Orchestrator to activate it. `priority` is
+higher = hotter:
+
+```bash
+curl -s -X POST "http://localhost:7134/orchestrator/activate?target=atelier:chat:qwen3-8b&priority=70"
+```
+
+- **202** — the transition was accepted (or used runtime-started convergence / no-op).
+- **409** — the hard swap was **declined**: the priority was below `min_priority_for_hard_swap`.
+  This is honest back-pressure, not an error — retry with a higher priority if the swap is truly
+  warranted. The 409 body carries the plan and the threshold.
+
+---
+
+## Orchestration reference
+
+The `[orchestration]` block in `~/.config/lychd/lychd.toml` tunes how runs are routed to
+queues, how many workers each queue runs, and the policy that governs swaps. For the law behind
+it, see the [Orchestrator (23)](../../adr/23-orchestrator.md).
+
+### `[orchestration.queues]`
+
+One entry per queue, sizing its worker concurrency.
+
+| Queue | `concurrency` | Purpose |
+| :--- | :--- | :--- |
+| `runs` | `2` | Interactive and CLI runs. |
+| `rites` | `4` | Background rites. |
+
+```toml
+[orchestration.queues.runs]
+concurrency = 2
+
+[orchestration.queues.rites]
+concurrency = 4
+```
+
+### `[orchestration.routing]`
+
+Routing rules map an Intent source to a queue and a base priority. **Priority is higher =
+hotter**: a Bridge message (70) outranks a default run (50), which outranks a background rite (20).
+
+| Rule | `queue` | `priority` |
+| :--- | :--- | :--- |
+| `default` | `runs` | `50` |
+| `cli` | `runs` | `50` |
+| `bridge` | `runs` | `70` |
+| `rite` | `rites` | `20` |
+
+```toml
+[orchestration.routing.bridge]
+queue = "runs"
+priority = 70
+```
+
+Each rule has `queue` (default `"runs"`) and `priority` (default `50`, range 0–100). The
+code-side `DEFAULT_ROUTING` table stays equal to these defaults; overriding a rule here changes
+routing without touching code.
+
+### `[orchestration.switching]`
+
+Governs hard runtime swaps and runtime-started readiness convergence.
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `actuator` | string | `"host-reactor"` | Caged mediated actuation; `"systemd"` is explicit uncaged mode. |
+| `host_reactor_dir` | absolute path | XDG `.../lychd/triggers/inbox` | Writable intent inbox; sibling journal is derived and mounted read-only. |
+| `policy` | string | `"evict-idle"` | The swap policy. `evict-idle` plans every active, dedicated, non-`persistent_resident` Animator, closes admission, and waits for any leases before eviction. Group/alliance labels do not alter v1 policy. An unknown name fails loudly at startup. |
+| `min_priority_for_hard_swap` | int (0–100) | `40` | A hard swap requested below this priority is **declined**, not performed. This gates thrashing. |
+| `drain_timeout_s` | float | `120.0` | How long a hard evictee set or runtime-started target Animator waits for outstanding leases before readying. |
+| `warmup_timeout_s` | float | `180.0` | One absolute WARM convergence budget, including any adapter-estimated first sleep; every poll sleep is capped to the remaining budget. |
+| `reactor_ack_timeout_s` | float | `120.0` | How long a Reactor intent may remain unclaimed; claimed work stays fenced to a terminal receipt. |
+
+```toml
+[orchestration.switching]
+actuator = "host-reactor"
+policy = "evict-idle"
+min_priority_for_hard_swap = 40
+drain_timeout_s = 120.0
+warmup_timeout_s = 180.0
+reactor_ack_timeout_s = 120.0
+```
+
+!!! note "Declined is honest, not broken"
+    When a low-priority request would force a hard swap of a busy coven, the Orchestrator
+    declines it rather than thrashing the GPU. The run settles with the decision in its message.
+
+!!! warning "A safe Host Reactor decline may repeat"
+    Host-side configuration, policy, or stale-active-set preconditions are recorded as
+    `.declined.json` before any effect and surface as a typed no-effect failure. The manager reopens
+    its barrier without mutation containment. However, the manager's capability projection and
+    user-Systemd activity are different observations: a hung unit may remain `active` to Systemd
+    while appearing absent to readiness probing. Reconcile or stop that unit before retrying; a
+    retry against the same mismatch may be declined again.
+
+### `[orchestration.whim]`
+
+Shape for idle-eviction and preload policy. The fields exist now; the whim *rites* that consume
+them are not yet driven.
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `idle_evict_after_s` | int | `0` | Evict an idle animator after N seconds (`0` = disabled). |
+| `preload` | list[string] | `[]` | Capabilities to warm at startup. |
+
+!!! warning "Unmanifested"
+    `[orchestration.whim]` is accepted and validated, but its behavior (idle eviction, preload)
+    is not yet driven. The fields are accepted and inert; setting them has no effect until the
+    whim rites land.
+
+## Tune the policy
+
+- Raise `min_priority_for_hard_swap` to make the system more reluctant to swap busy hardware.
+- Adjust `drain_timeout_s` to change how long a swap waits for leases to release.
+- Mark a support runtime `persistent_resident = true` in its Soulstone Rune's `[concurrency]`
+  table to keep it out of every eviction set.
+
+## Verify
+
+- `curl .../orchestrator/queues` shows leases appearing and clearing around a run.
+- `POST /orchestrator/activate` at priority 70 returns 202; at priority 25 against a busy coven
+  returns 409.
+- The Nexus reflects the capability moving to **active** after a successful swap.
