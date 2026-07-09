@@ -5,6 +5,8 @@ icon: material/hammer-wrench
 
 # :material-hammer-wrench: Smith
 
+_Status: doctrine ahead of code — the built-in `assimilation` package is where this lands; treat this page as design intent. Law: [ADR 35](../../adr/35-assimilation.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _Purpose is the hammer._
 >
 > _Pattern is the anvil._

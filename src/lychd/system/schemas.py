@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -85,6 +85,7 @@ class QuadletContainer(QuadletBase):
     # [Unit] section
     description: str
     wants: list[str] = Field(default_factory=lambda: ["network-online.target"])
+    requires: list[str] = Field(default_factory=list)
     after: list[str] = Field(default_factory=lambda: ["network-online.target"])
     conflicts: list[str] = Field(default_factory=list, description="The Law of Exclusivity")
 
@@ -92,6 +93,9 @@ class QuadletContainer(QuadletBase):
     image: str
     container_name: str
     pod: str | None = None  # If part of a pod (e.g. 'lychd.pod')
+    pod_service: str | None = None
+    start_with_pod: bool = False
+    user: str | None = None
 
     # Coven Membership (Systemd Targets)
     targets: list[str] = Field(
@@ -100,7 +104,9 @@ class QuadletContainer(QuadletBase):
     )
 
     run_init: bool = True
-    user_ns: str | None = "keep-id"  # ADR 08: Identity Symmetry
+    # A container joined to a Pod inherits the Pod's user namespace; Podman
+    # ignores per-container --userns in that topology.
+    user_ns: str | None = None
     podman_args: list[str] = Field(default_factory=lambda: ["--replace"])
     devices: list[str] = Field(
         default_factory=list,
@@ -121,10 +127,20 @@ class QuadletContainer(QuadletBase):
     exec: str | None = None
 
     # [Service] section
+    service_type: Literal["simple", "oneshot"] | None = None
+    remain_after_exit: bool = False
     restart_policy: str = "always"
 
     # [Install] - Crucial for auto-start
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])
+
+    @model_validator(mode="after")
+    def derive_pod_service(self) -> QuadletContainer:
+        """Resolve a Quadlet source name to the systemd service it generates."""
+        if self.pod is not None and self.pod_service is None:
+            pod_name = self.pod.removesuffix(".pod")
+            object.__setattr__(self, "pod_service", f"{pod_name}-pod.service")
+        return self
 
 
 class QuadletPod(QuadletBase):
@@ -136,6 +152,7 @@ class QuadletPod(QuadletBase):
     description: str = "The Sepulcher (LychD Pod)"
     pod_name: str = "lychd"
     publish_ports: list[str] = Field(default_factory=list)
+    user_ns: str | None = "keep-id"
 
     # [Install] section
     wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])

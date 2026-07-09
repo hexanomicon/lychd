@@ -1,19 +1,30 @@
 from __future__ import annotations
 
+import asyncio
 import copy
 from dataclasses import dataclass
-from typing import Any
+from datetime import UTC, datetime
+from typing import Any, Literal
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, End, FullStatePersistence, Graph, GraphRunContext
 from pydantic_graph.persistence import NodeSnapshot
 
-from lychd.domain.animation.capabilities import CapabilitySpec
+from lychd.domain.animation.capabilities import (
+    CapabilityGrant,
+    CapabilityPhase,
+    CapabilitySpec,
+    CapabilityState,
+    GrantLease,
+    SourceKind,
+)
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
-from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
 from lychd.domain.cortex.graph_runner import GraphRunner
+from lychd.domain.cortex.leases import LeaseLedger
 
 
 class MockState(BaseModel):
@@ -25,7 +36,7 @@ MOCK_SPEC = CapabilitySpec(
     key="mock-anim:chat:mock-cap",
     animator_name="mock-anim",
     runtime="llamacpp",
-    source_kind="soulstone",
+    source_kind=SourceKind.SOULSTONE,
     family=CapabilityFamily.CHAT,
     model_id="mock-cap",
 )
@@ -60,6 +71,80 @@ class StasisNode(BaseNode[MockState, None, str]):
         return SuccessNode()
 
 
+@dataclass
+class LeaseAfterDrainRaceNode(BaseNode[MockState, Dispatcher, str]):
+    """Acquire through the real Dispatcher after its first issue loses admission."""
+
+    async def run(self, ctx: GraphRunContext[MockState, Dispatcher]) -> End[str]:
+        async with ctx.deps.lease_grant_key(MOCK_SPEC.key, holder="run:dispatch-race"):
+            return End("leased")
+
+
+class DrainRaceRegistry:
+    """Hold the first async grant issue across an Orchestrator drain barrier."""
+
+    def __init__(self) -> None:
+        self.state = CapabilityState(
+            capability_key=MOCK_SPEC.key,
+            is_dynamic=False,
+            phase=CapabilityPhase.WARM,
+        )
+        self.issue_started = asyncio.Event()
+        self.finish_first_issue = asyncio.Event()
+        self.issue_count = 0
+
+    def get_capability(self, key: str) -> CapabilitySpec | None:
+        return MOCK_SPEC if key == MOCK_SPEC.key else None
+
+    def get_capability_state(self, key: str) -> CapabilityState | None:
+        return self.state if key == MOCK_SPEC.key else None
+
+    def get_runtime(self, _name: str) -> None:
+        return None
+
+    async def refresh_capability_state(self, key: str) -> CapabilityState | None:
+        return self.get_capability_state(key)
+
+    async def issue_grant(
+        self,
+        key: str,
+        *,
+        holder: str,
+        scope: Literal["step", "run"] = "step",
+    ) -> CapabilityGrant:
+        assert key == MOCK_SPEC.key
+        self.issue_count += 1
+        if self.issue_count == 1:
+            self.issue_started.set()
+            await self.finish_first_issue.wait()
+        return CapabilityGrant(
+            spec=MOCK_SPEC,
+            state=self.state,
+            lease=GrantLease(
+                grant_id=uuid4().hex,
+                holder=holder,
+                issued_at=datetime.now(UTC),
+                scope=scope,
+            ),
+            generation=MOCK_SPEC.generation_profile,
+            animator=object(),  # type: ignore[arg-type] - no runtime use in this graph
+            model=None,
+        )
+
+
+class ReopenAdmissionOrchestrator:
+    """Finish the competing drain so GraphRunner can retry the parked node."""
+
+    def __init__(self, leases: LeaseLedger) -> None:
+        self.leases = leases
+        self.calls: list[str] = []
+
+    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
+        _ = signal_priority
+        self.calls.append(exception.capability_key)
+        self.leases.end_drain([exception.animator_name])
+
+
 class LychDTestPersistence(FullStatePersistence[MockState, str]):
     """Full in-memory persistence plus the LychD rehydration hooks."""
 
@@ -92,7 +177,7 @@ class SimpleMockOrchestrator:
 
 @pytest.mark.asyncio
 async def test_graph_runner_native_rehydration_ritual() -> None:
-    """Verify resume marks a persisted graph job as resumed."""
+    """A graph resume returns its result without finalizing the caller-owned checkpoint."""
     persistence = LychDTestPersistence()
     graph = Graph[MockState, None, str](nodes=[MockNode])
     await graph.initialize(MockNode(), state=MockState(data="frozen"), persistence=persistence)
@@ -100,12 +185,13 @@ async def test_graph_runner_native_rehydration_ritual() -> None:
     runner = GraphRunner[MockState](
         orchestrator=SimpleMockOrchestrator(),
         persistence=persistence,
+        signal_priority=50,
     )
 
     result = await runner.resume_graph(graph)
 
     assert result == "done"
-    persistence.mark_job_resumed_mock.assert_called_once_with("test-job")
+    persistence.mark_job_resumed_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -118,6 +204,7 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     runner = GraphRunner[MockState](
         orchestrator=mock_orchestrator,
         persistence=persistence,
+        signal_priority=50,
     )
 
     result = await runner.run_graph(graph, StasisNode(), MockState())
@@ -125,6 +212,31 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     assert result == "victory"
     mock_orchestrator.handle_transition_mock.assert_called_once()
     assert len(persistence.history) > 0
+
+
+@pytest.mark.asyncio
+async def test_dispatch_drain_race_parks_and_retries_through_graph_runner() -> None:
+    """Losing admission is Live Stasis, not a generic run-failing RuntimeError."""
+    leases = LeaseLedger()
+    registry = DrainRaceRegistry()
+    dispatcher = Dispatcher(registry=registry, leases=leases)  # type: ignore[arg-type]
+    orchestrator = ReopenAdmissionOrchestrator(leases)
+    graph = Graph[MockState, Dispatcher, str](nodes=[LeaseAfterDrainRaceNode])
+    runner = GraphRunner[MockState](
+        orchestrator=orchestrator,
+        persistence=LychDTestPersistence(),
+        signal_priority=70,
+    )
+
+    run_task = asyncio.create_task(runner.run_graph(graph, LeaseAfterDrainRaceNode(), MockState(), deps=dispatcher))
+    await registry.issue_started.wait()
+    leases.begin_drain([MOCK_SPEC.animator_name])
+    registry.finish_first_issue.set()
+
+    assert await run_task == "leased"
+    assert orchestrator.calls == [MOCK_SPEC.key]
+    assert registry.issue_count == 2
+    assert leases.active() == []
 
 
 @pytest.mark.asyncio
@@ -144,7 +256,7 @@ async def test_graph_runner_threads_signal_priority_and_fires_stasis_callbacks()
     runner = GraphRunner[MockState](
         orchestrator=mock_orchestrator,
         persistence=persistence,
-        signal_priority=42.0,
+        signal_priority=42,
         on_stasis_enter=_enter,
         on_stasis_exit=_exit,
     )

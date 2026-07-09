@@ -9,10 +9,10 @@ import pytest
 from lychd.config.settings import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
+    SourceKind,
 )
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -21,6 +21,7 @@ from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import EvictIdlePolicy
+from lychd.system.services.runtime import SystemdRuntimeActuator
 
 
 def _make_manager(broker: object, registry: object) -> OrchestratorManager:
@@ -30,6 +31,7 @@ def _make_manager(broker: object, registry: object) -> OrchestratorManager:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
+        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 
@@ -99,7 +101,7 @@ def _spec(
         key=key,
         animator_name=animator_name,
         runtime="llamacpp",
-        source_kind="soulstone",
+        source_kind=SourceKind.SOULSTONE,
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
         concurrency=ConcurrencyIntent(dedicated=dedicated, persistent_resident=persistent_resident),
@@ -109,7 +111,7 @@ def _spec(
 def _state(spec: CapabilitySpec, *, is_active: bool) -> CapabilityState:
     return CapabilityState(
         capability_key=spec.key,
-        lifecycle=CapabilityLifecycle.STATIC,
+        is_dynamic=False,
         phase=CapabilityPhase.WARM if is_active else CapabilityPhase.COLD,
         health="ok" if is_active else "down",
         active_model_id=spec.model_id if is_active else None,

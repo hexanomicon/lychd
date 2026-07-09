@@ -5,6 +5,8 @@ icon: material/cash-register
 
 # :material-cash-register: The Toll: Extension of Economics
 
+_Status: doctrine — no built package yet. Law: [ADR 41](../../adr/41-x402.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"Intelligence is energy, and energy has a cost. The Toll is the accountant of the Sepulcher, ensuring that the exchange of cognition for currency is precise, automated, and sovereign."_
 
 **The Toll** is the Economic Extension of the LychD system. It is the implementation of **[ADR 41 (x402)](../../adr/41-x402.md)**—a middleware and toolset that enables the Daemon to transact value natively via the **x402 (Payment Required)** protocol.

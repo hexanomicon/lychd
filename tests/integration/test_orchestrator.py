@@ -9,10 +9,10 @@ import pytest
 from lychd.config.settings import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
+    SourceKind,
 )
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -22,6 +22,7 @@ from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import EvictIdlePolicy
+from lychd.system.services.runtime import SystemdRuntimeActuator
 
 
 def _make_manager(broker: object, registry: object) -> OrchestratorManager:
@@ -31,6 +32,7 @@ def _make_manager(broker: object, registry: object) -> OrchestratorManager:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
+        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 
@@ -93,10 +95,10 @@ def _dynamic_spec() -> CapabilitySpec:
         key="router:chat:router-main",
         animator_name="router",
         runtime="llamacpp",
-        source_kind="soulstone",
+        source_kind=SourceKind.SOULSTONE,
         family=CapabilityFamily.CHAT,
         model_id="router-main",
-        lifecycle=CapabilityLifecycle.DYNAMIC,
+        is_dynamic=True,
     )
 
 
@@ -105,7 +107,7 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     spec = _dynamic_spec()
     state = CapabilityState(
         capability_key=spec.key,
-        lifecycle=CapabilityLifecycle.DYNAMIC,
+        is_dynamic=True,
         phase=CapabilityPhase.COLD,
         health="down",
     )
@@ -124,7 +126,7 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     process.returncode = 0
 
     with patch("asyncio.create_subprocess_exec", return_value=process) as mock_exec:
-        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200.0)
+        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200)
 
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
@@ -138,7 +140,7 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
     spec = _dynamic_spec()
     state = CapabilityState(
         capability_key=spec.key,
-        lifecycle=CapabilityLifecycle.DYNAMIC,
+        is_dynamic=True,
         phase=CapabilityPhase.COLD,
         health="ok",
     )
@@ -149,7 +151,7 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
     )
     active_peer = CapabilityState(
         capability_key="router:vision:router-vision",
-        lifecycle=CapabilityLifecycle.DYNAMIC,
+        is_dynamic=True,
         phase=CapabilityPhase.WARM,
         health="ok",
     )
@@ -163,10 +165,12 @@ async def test_orchestrator_soft_swap_only_when_runtime_is_already_warm() -> Non
     manager = _make_manager(broker, registry)
 
     with patch("asyncio.create_subprocess_exec") as mock_exec:
-        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200.0)
+        await manager.handle_transition(HardwareTransitionRequired(spec.key, spec.animator_name), signal_priority=200)
 
-    broker.pause_queues.assert_not_called()
-    broker.broadcast_soft_stop.assert_not_called()
-    broker.unpause_queues.assert_not_called()
+    # Loading another model can evict the warm peer inside the shared router,
+    # so even a runtime-native swap owns the same lease-drain barrier.
+    broker.pause_queues.assert_called_once()
+    broker.broadcast_soft_stop.assert_called_once()
+    broker.unpause_queues.assert_called_once()
     mock_exec.assert_not_called()
     assert state.is_active is True

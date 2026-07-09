@@ -19,6 +19,8 @@ icon: material/package-variant-closed
 - **Source-Centric Assembly:** Preservation of raw Python source files and docstrings to enable the runtime introspection required for self-reflection.
 - **Assimilation Before ABI:** Preservation of coupled source as the pre-v1 compatibility mechanism; public SDK/ABI surfaces are harvested only after stable patterns survive real Forge cycles.
 - **Manual Transition Gate:** Air-gapped activation of new images requiring a manual signal via the **CLI** to prevent autonomous "Infection and Restart" loops.
+- **Installable Runtime:** A clean wheel install must contain every dependency required by the shipped `lychd` CLI, Vessel, workers, persistence, and agent runtime in its wheel metadata.
+- **Development-Only Groups:** Dependency groups may carry documentation, test, lint, and type-check tools; they may not hide packages required by an installed runtime.
 
 ## Considered Options
 
@@ -46,6 +48,33 @@ icon: material/package-variant-closed
 
 **Synthetic Functional Packaging** is adopted as the definitive standard for the system substrate. The Forge operates in two distinct phases: logical convergence followed by physical binding.
 
+### 0. The Installable Foundation
+
+Before synthetic extension composition, Nix derivations, or autonomous Rebirth can be trusted,
+the ordinary Python artifact must be complete. The foundation therefore has a smaller and
+non-negotiable contract:
+
+- All packages imported by the installed CLI, ASGI Vessel, database/migration layer, SAQ workers,
+  and Pydantic AI/Graph runtime live in `[project.dependencies]` and therefore in wheel metadata.
+- `[dependency-groups]` contains contributor tooling only (`docs`, `test`, `lint`, `typing`, and
+  their `dev` aggregate). A production image uses the locked project dependencies without asking
+  for a development group or a nonexistent optional extra.
+- The installed `lychd --help`, `lychd init`, and lazy `serve`/`database` bridges must resolve from
+  the wheel without a source checkout on `PYTHONPATH`.
+- A release gate builds the wheel, creates a clean environment, installs that wheel alone, checks
+  its dependency metadata, imports the runtime composition root, and invokes the CLI help surface.
+  Passing inside the developer's already-synchronized `.venv` is not evidence of installability.
+
+This wheel-clean-install gate is implemented foundation law. Multi-manifest extension synthesis,
+the signed Synthesis Manifest, the Nix strategy, and autonomous Forge/Rebirth remain staged work;
+they may build on the wheel contract but may not weaken it.
+
+!!! warning "Forge doctrine beyond the foundation"
+    The sections below define the intended synthetic Forge. Today the repository has a checked-in,
+    locked, multi-stage `Containerfile` and the complete wheel dependency floor. Extension manifest
+    merging, Jinja injection, a signed synthesis manifest, Nix manifestation, and atomic Rebirth are
+    not implemented end to end.
+
 ### 1. The Synthesis Stage (Logical Convergence)
 
 When a packaging ritual begins, the system performs a multi-dimensional synthesis by scanning both the **Built-in** registry and the **Crypt (13)** to prepare for the physical build:
@@ -66,7 +95,9 @@ When a packaging ritual begins, the system performs a multi-dimensional synthesi
 
 #### The Mundane Path (Current Standard)
 
-This is the primary mechanism for manifestation, utilizing a multi-stage **`Containerfile`** rendered via Jinja2.
+This is the primary mechanism for manifestation, currently using a checked-in multi-stage
+**`Containerfile`**. Forge-time Jinja injection is the planned extension-composition layer; the
+foundation build does not claim to render the Containerfile dynamically.
 
 1. **Injections:** Extension-registered system dependencies are injected into the `RUN apt-get install` block of the template.
 2. **Builder Stage:** Mounts the `uv` binary and cache to perform a frozen sync of the synthesized manifests.
@@ -106,7 +137,8 @@ Packaging now emits two runtime classes:
 ### Consequences
 
 !!! success "Positive"
-    - **Mathematical Provenance:** The system provides proof that the physical "Body" perfectly matches the instruction "Scroll."
+    - **Install Honesty:** The wheel declares the complete shipped runtime instead of relying on an already-populated development environment.
+    - **Provenance Path:** Frozen manifests provide the base from which stronger synthesis attestations can be built.
     - **Synchronized Reality:** Infrastructure (Quadlets) and Logic (Code) are updated in a single, atomic ritual, preventing "Blindness" where code expects a port that is not published.
     - **Predictable Evolution:** Dependency conflicts between Extensions are caught at build-time, preventing runtime instability.
 

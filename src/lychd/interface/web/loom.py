@@ -13,21 +13,12 @@ from litestar.plugins.htmx import HTMXRequest, HTMXTemplate
 from litestar.response import Response, Template
 from litestar.status_codes import HTTP_404_NOT_FOUND
 
-from lychd.agents.workflows import WORKFLOWS
-from lychd.agents.workflows.base import Workflow
+from lychd.agents.workflows import WORKFLOW_REGISTRY
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.web.schemas import build_loom_view
 
 # Runtime import: Litestar resolves handler param annotations at registration.
-
-
-def _find_workflow(name: str) -> Workflow | None:
-    """Return the workflow with the given slug, or `None`."""
-    for workflow in WORKFLOWS:
-        if workflow.name == name:
-            return workflow
-    return None
 
 
 class LoomController(Controller):
@@ -38,13 +29,13 @@ class LoomController(Controller):
     @get("/", name="loom:page", guards=[requires_scopes("altar:read")])
     async def page(self, consents: ConsentLedger) -> Template:
         """Render the Loom with the first workflow pre-selected."""
-        workflow = WORKFLOWS[0]
+        workflow = WORKFLOW_REGISTRY.default
         return Template(
             template_name="altar/pages/loom.html.j2",
             context={
                 "active": "loom",
                 "pending": await consents.pending_count(),
-                "workflows": WORKFLOWS,
+                "workflows": WORKFLOW_REGISTRY.all(),
                 "view": build_loom_view(workflow),
                 "selected": workflow.name,
             },
@@ -53,7 +44,7 @@ class LoomController(Controller):
     @get("/{workflow:str}", name="loom:view")
     async def view(self, request: HTMXRequest, workflow: str) -> Template | Response[str]:
         """Return the graph fragment (htmx, push_url) or the full Loom page."""
-        found = _find_workflow(workflow)
+        found = WORKFLOW_REGISTRY.get(workflow)
         if found is None:
             return Response(content="No such pattern is woven.", status_code=HTTP_404_NOT_FOUND)
 
@@ -68,7 +59,7 @@ class LoomController(Controller):
             template_name="altar/pages/loom.html.j2",
             context={
                 "active": "loom",
-                "workflows": WORKFLOWS,
+                "workflows": WORKFLOW_REGISTRY.all(),
                 "view": view,
                 "selected": found.name,
             },
@@ -77,7 +68,7 @@ class LoomController(Controller):
     @get("/{workflow:str}/source", name="loom:source")
     async def source(self, workflow: str) -> Response[str]:
         """Return the mermaid stateDiagram-v2 source as plain text (curl-able)."""
-        found = _find_workflow(workflow)
+        found = WORKFLOW_REGISTRY.get(workflow)
         if found is None:
             return Response(content="No such pattern is woven.", status_code=HTTP_404_NOT_FOUND)
         return Response(content=found.mermaid(), media_type=MediaType.TEXT)

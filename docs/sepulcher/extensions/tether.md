@@ -5,6 +5,8 @@ icon: material/shield-link-variant-outline
 
 # :material-shield-link-variant-outline: The Tether: Extension of the Inner Circle
 
+_Status: doctrine ahead of code — the built-in `vpn` package is where this lands; treat this page as design intent. Law: [ADR 39](../../adr/39-vpn.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"The Veil protects the temple from the masses, but the Tether is the umbilical of light that binds the Magus to the Lich. Across any distance, through any forest, the Silver Tether ensures that the Master's voice is always heard as if they stood within the Crypt itself."_
 
 **The Tether** is the VPN Extension of the LychD system. It is the implementation of **[ADR 39 (VPN)](../../adr/39-vpn.md)**—a specialized, high-performance tunnel based on **WireGuard**.

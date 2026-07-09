@@ -40,14 +40,25 @@ icon: material/eye-settings-outline
 
 ## Decision Outcome
 
-**The Prism** is adopted as the Vision Extension. It is implemented as the reference implementation of the `vision.coven`—a stateful capability for structural visual reasoning.
+**The Prism** is adopted as the target Vision Extension and reference shape for a future
+`vision.coven`.
+
+!!! warning "Current multimodal floor is schema and admission, not execution"
+    The implemented core has immutable `ArtifactRef`/`ArtifactContent` intent parts, MIME-to-modality
+    projection, declared `modalities_in`/`modalities_out`, and Dispatcher subset filtering. It does
+    not yet have an artifact blob store/materializer, Bridge upload surface, graph-state artifact
+    propagation, `BinaryContent` conversion, image normalization/resize pipeline, Prism extension,
+    OCR tool, or generated Vision Coven. The current Bridge workflow persists the intent shape but
+    passes only its text `prompt` into the agent and requests no image modality. Sections below are
+    target design; artifact references must not be mistaken for available bytes.
 
 !!! note "The Two-Axis Law: Family vs Modality"
     A **family** names a routable service kind; **modalities** name what a capability admits. The `vision` family is reserved for the **dedicated** vision-analysis provider — the Eye. A general chat model that merely accepts images is not a member of this family and does not conscript the Vision Coven: it is a **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying `image ∈ modalities_in`. Covens exist only for dedicated providers. Intent resolution matches `(family, required_modalities)`; a multimodal chat model satisfies image work in place, without a coven swap.
 
-### 1. The Vision Coven (Body)
+### 1. The Planned Vision Coven (Body)
 
-The Prism manifests as a collection of **[Quadlet services (08)](08-containers.md)** managed as a mutually exclusive state.
+The Prism will manifest as a collection of **[Quadlet services (08)](08-containers.md)** managed as
+a named operational group under Orchestrator policy.
 
 - **The Eye (`vlm.container`):** The primary model-backed Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision` capability.
 - **The Scribe (`ocr.container`):** An optional, lightweight service for pure text extraction (e.g., Tesseract).
@@ -66,9 +77,9 @@ The Prism utilizes the **[Dispatcher (22)](22-dispatcher.md)** to manage the phy
     5. **The Thaw:** Once the Vision service is warm, the Agent rehydrates and proceeds with the `vision` model.
 - **The Tool (Capability):** Specialized tasks (e.g., `extract_text_from_image`) follow the exact same Stasis logic through their own Animator capability declarations, ensuring the Agent never attempts to use a tool that does not physically exist.
 
-### 3. The Pixel Pipeline (`BinaryContent`)
+### 3. The Planned Pixel Pipeline (`BinaryContent`)
 
-The extension implements a pre-inference pipeline to ensure high-fidelity "Observations":
+The extension will implement a pre-inference pipeline for high-fidelity observations:
 
 1. **Ingest:** The system receives raw binary data via the interface or a background **[Ghoul (14)](14-workers.md)**.
 2. **Transmute:** The Prism resizes the image to the optimal resolution for the active service, minimizing token overhead.

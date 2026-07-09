@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilityGrant
@@ -191,13 +191,12 @@ class ContextOrchestrator:
         )
 
     def _context_window(self, grant: CapabilityGrant | None) -> int | None:
-        """Read the context window from the active grant, never from static config."""
+        """Read the context window from the active grant, never from static config.
+
+        The spec carries the discovered ``max_context``; the resolved generation profile
+        overlays a rune override. (The old metadata-key lookup read keys no writer ever
+        produced and getattr'd a StrEnum surface — it was silently always None.)
+        """
         if grant is None:
             return None
-        metadata: dict[str, Any] = grant.spec.metadata
-        for candidate in ("context_window", "max_context"):
-            value = metadata.get(candidate)
-            if isinstance(value, int) and value > 0:
-                return value
-        surface = grant.spec.surface
-        return getattr(surface, "max_context", None) if surface is not None else None
+        return grant.spec.max_context or grant.generation.max_context

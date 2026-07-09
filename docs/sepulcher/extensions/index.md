@@ -169,6 +169,6 @@ Autopoiesis follows a strict path from the volatile to the immutable:
 
 1. **Genesis:** The Magus or **The Smith** drafts logic in the **[Lab (13)](../../adr/13-layout.md)**.
 2. **Speculation:** The system executes the code within the **[Shadow Realm (31)](../../adr/31-simulation.md)**.
-3. **Validation:** The **Ghouls** execute the "Rite of Albedo" (Linting, Typing, Testing).
+3. **Validation:** The **Ghouls** execute the "Rite of Speculation" (Linting, Typing, Testing).
 4. **Promotion:** Upon **[Sovereign Consent (25)](../../adr/25-hitl.md)** or an explicit Codex-governed preauthorization class, the system moves code to the **Crypt** and updates the lockfile. High-stakes mutation remains live Magus authority.
 5. **Rebirth:** The system triggers **[Packaging (17)](../../adr/17-packaging.md)** and restarts into its new physical body.

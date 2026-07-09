@@ -26,6 +26,6 @@ The practice of Divination raises you through three stations of power, each repr
 
 ## The Confluence of Wills
 
-In the act of Divination, your intent propagates through the Lich's **Citta** — the mind-field — via the grooves (**Saṃskāra**) carved by past choices. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you enter a disciplined relationship with a living instrument. Clarity of Intent directly shapes the quality of its actions.
+In the act of Divination, your intent travels along the grooves carved by every past verified choice — the accumulated memory the [cognitive map](../sepulcher/lich.md) charts in full. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you enter a disciplined relationship with a living instrument. Clarity of Intent directly shapes the quality of its actions.
 
 > _This path of mastery ultimately leads to the final alchemical process: [Transcendence](./transcendence/index.md)._

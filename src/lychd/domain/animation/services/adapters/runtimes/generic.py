@@ -5,7 +5,6 @@ from typing import ClassVar
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
@@ -73,7 +72,7 @@ class GenericRuntimeAdapter:
         animator: RuntimeAnimator,
         specs: list[CapabilitySpec],
     ) -> list[CapabilityState]:
-        """Project connector readiness into conservative STATIC capability states."""
+        """Project connector readiness into conservative non-dynamic capability states."""
         up = animator.connector.link.up
         active_model_id = getattr(animator.connector, "default_model_id", None)
         loaded_model_ids = [spec.model_id for spec in specs] if up else []
@@ -81,7 +80,7 @@ class GenericRuntimeAdapter:
         return [
             CapabilityState(
                 capability_key=spec.key,
-                lifecycle=CapabilityLifecycle.STATIC,
+                is_dynamic=False,
                 phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
                 health="ok" if up else "down",
                 active_model_id=active_model_id,

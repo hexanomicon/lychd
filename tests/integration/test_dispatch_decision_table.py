@@ -14,6 +14,7 @@ required (a parked run holds no lease).
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
@@ -24,17 +25,17 @@ import pytest
 from lychd.domain.animation.capabilities import (
     ActivationResult,
     CapabilityGrant,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
     GrantLease,
 )
-from lychd.domain.animation.errors import ActivationFailed, CapabilityUnavailable
+from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
-from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.cortex.leases import LeaseAdmissionClosed, LeaseLedger
 
 _KEY = "router:chat:main"
 
@@ -55,6 +56,7 @@ class FakeRegistry:
         await_warm_raises: Exception | None = None,
         reason: str | None = None,
         refresh_phase: CapabilityPhase | None = None,
+        dedicated: bool = True,
     ) -> None:
         self.spec = CapabilitySpec(
             key=_KEY,
@@ -63,12 +65,13 @@ class FakeRegistry:
             source_kind="soulstone",
             family=CapabilityFamily.CHAT,
             model_id="main",
-            lifecycle=CapabilityLifecycle.DYNAMIC,
+            is_dynamic=True,
+            concurrency=ConcurrencyIntent(dedicated=dedicated),
             modalities_in=["text"],
         )
         self.state = CapabilityState(
             capability_key=_KEY,
-            lifecycle=CapabilityLifecycle.DYNAMIC,
+            is_dynamic=True,
             phase=phase,
             reason=reason,
         )
@@ -124,6 +127,20 @@ class FakeRegistry:
         )
 
 
+class GrantRaceRegistry(FakeRegistry):
+    """Pause the first grant issue so a drain can close admission in that window."""
+
+    def __init__(self) -> None:
+        super().__init__(phase=CapabilityPhase.WARM)
+        self.issue_started = asyncio.Event()
+        self.finish_issue = asyncio.Event()
+
+    async def issue_grant(self, key: str, *, holder: str, scope: str = "step") -> CapabilityGrant:
+        self.issue_started.set()
+        await self.finish_issue.wait()
+        return await super().issue_grant(key, holder=holder, scope=scope)
+
+
 def _dispatcher(registry: FakeRegistry) -> tuple[Dispatcher, LeaseLedger]:
     leases = LeaseLedger()
     return Dispatcher(registry=registry, leases=leases), leases
@@ -144,39 +161,69 @@ async def test_warm_row_issues_grant_directly() -> None:
 
 
 @pytest.mark.asyncio
-async def test_activatable_row_activates_then_awaits_warm() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE)
-    dispatcher, _ = _dispatcher(registry)
+async def test_drain_racing_grant_issue_becomes_hardware_transition() -> None:
+    """A grant that loses admission during issue parks; it never leaks or fails generically."""
+    registry = GrantRaceRegistry()
+    dispatcher, leases = _dispatcher(registry)
 
-    async with dispatcher.lease_grant_key(_KEY, holder="run:1") as grant:
-        assert grant.spec.key == _KEY
+    async def _lease() -> None:
+        async with dispatcher.lease_grant_key(_KEY, holder="run:race"):
+            pytest.fail("a grant must not enter after its animator starts draining")
 
-    assert registry.calls.count("activate") == 1
-    assert "await_warm" in registry.calls
-    assert registry.calls[-1] == "issue_grant"
+    lease_task = asyncio.create_task(_lease())
+    await registry.issue_started.wait()
+    leases.begin_drain(["router"])
+    registry.finish_issue.set()
+
+    with pytest.raises(HardwareTransitionRequired) as exc_info:
+        await lease_task
+
+    assert exc_info.value.capability_key == _KEY
+    assert exc_info.value.animator_name == "router"
+    assert isinstance(exc_info.value.__cause__, LeaseAdmissionClosed)
+    assert leases.active() == []
 
 
 @pytest.mark.asyncio
-async def test_activatable_row_rejected_activation_raises_activation_failed() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE, activate_accepted=False)
-    dispatcher, _ = _dispatcher(registry)
+async def test_activatable_row_signals_orchestrator_without_mutating_runtime() -> None:
+    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE)
+    dispatcher, leases = _dispatcher(registry)
 
-    with pytest.raises(ActivationFailed):
+    with pytest.raises(HardwareTransitionRequired):
         async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
             pass
 
+    assert "activate" not in registry.calls
+    assert "await_warm" not in registry.calls
+    assert "issue_grant" not in registry.calls
+    assert leases.active() == []
+
 
 @pytest.mark.asyncio
-async def test_warming_row_awaits_warm_without_activating() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.WARMING)
+async def test_activatable_row_does_not_attempt_a_rejected_activation() -> None:
+    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE, activate_accepted=False)
     dispatcher, _ = _dispatcher(registry)
 
-    async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
-        pass
+    with pytest.raises(HardwareTransitionRequired):
+        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+            pass
 
     assert "activate" not in registry.calls
-    assert "await_warm" in registry.calls
-    assert registry.calls[-1] == "issue_grant"
+
+
+@pytest.mark.asyncio
+async def test_warming_row_signals_orchestrator_without_waiting() -> None:
+    registry = FakeRegistry(phase=CapabilityPhase.WARMING)
+    dispatcher, leases = _dispatcher(registry)
+
+    with pytest.raises(HardwareTransitionRequired):
+        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+            pass
+
+    assert "activate" not in registry.calls
+    assert "await_warm" not in registry.calls
+    assert "issue_grant" not in registry.calls
+    assert leases.active() == []
 
 
 @pytest.mark.asyncio
@@ -195,11 +242,21 @@ async def test_cold_activatable_row_raises_htr_and_registers_no_lease() -> None:
 
 
 @pytest.mark.asyncio
-async def test_cold_not_activatable_row_raises_capability_unavailable() -> None:
+async def test_cold_link_flag_does_not_override_lifecycle_ownership() -> None:
     registry = FakeRegistry(phase=CapabilityPhase.COLD, activatable=False, reason="no gpu")
     dispatcher, _ = _dispatcher(registry)
 
-    with pytest.raises(CapabilityUnavailable):
+    with pytest.raises(HardwareTransitionRequired):
+        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+            pass
+
+
+@pytest.mark.asyncio
+async def test_shared_non_warm_row_raises_capability_unavailable() -> None:
+    registry = FakeRegistry(phase=CapabilityPhase.COLD, dedicated=False)
+    dispatcher, _ = _dispatcher(registry)
+
+    with pytest.raises(CapabilityUnavailable, match="not lifecycle-managed"):
         async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
             pass
 

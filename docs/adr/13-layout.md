@@ -117,7 +117,9 @@ Inside the container, the layout mirrors the Host Domains via volume mounts. By 
 
 ### 4. Dual-Plane Trust Delta
 
-The layout now separates trusted and untrusted execution geography.
+The layout doctrine separates trusted and untrusted execution geography. The generated v1
+foundation manifests only the trusted core; Tomb paths and mounts below are reserved target
+geography, not evidence that a Tomb unit currently exists.
 
 - Vessel mounts trusted Codex and durable control-plane regions. Agents, graph state, LLM calls, routing, validation, and promotion policy stay in this trusted plane.
 - Safe creation/control-plane work may remain in Vessel when it does not require arbitrary code execution or risky host mutation. Tomb is chosen by execution risk, not by the word "creation" alone.

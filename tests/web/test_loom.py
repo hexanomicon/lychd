@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lychd.agents.workflows import WORKFLOWS
+from lychd.agents.workflows import WORKFLOW_REGISTRY
 
 if TYPE_CHECKING:
     from litestar import Litestar
     from litestar.testing import TestClient
 
 _HX = {"HX-Request": "true"}
-_NAME = WORKFLOWS[0].name
+_NAME = WORKFLOW_REGISTRY.default.name
 
 
 def test_view_htmx_returns_fragment_with_push_url(altar_client: TestClient[Litestar]) -> None:

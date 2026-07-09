@@ -20,7 +20,7 @@ TurnRole = Literal["user", "agent"]
 # `data-state` vocabulary (queued/streaming/consent/done/failed) by `run_data_state`.
 TurnState = Literal["settled", "streaming", "pending_consent", "consented", "refused", "failed"]
 # Capability `data-state` vocabulary (spec-web-design §5). `_coven_state` maps the
-# phase-by-lifecycle table (S9); "warm" stays reserved vocabulary (Wave 6 W6-a may refine).
+# phase-by-is_dynamic table (S9); "warm" stays reserved vocabulary (Wave 6 W6-a may refine).
 CovenState = Literal["active", "warm", "awaited", "warming", "cold", "fault"]
 ConsentState = Literal["pending_consent", "consented", "refused"]
 # Swap-ticket trio (spec-web-design §5): warming → settled → failed.
@@ -63,11 +63,11 @@ class ConsentCard:
 
     id: str
     run_id: str
-    session_id: str
     tool_name: str
     args: dict[str, Any]
     vision: str
     state: ConsentState = "pending_consent"
+    session_id: str = ""  # emitted as a data- attribute only; nothing in src reads it
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -119,19 +119,20 @@ class LoomView:
     mermaid_source: str
 
 
-def _coven_state(*, lifecycle: str, phase: str) -> CovenState:
-    """Map a capability's phase + lifecycle to its data-state literal (seam S9).
+def _coven_state(*, is_dynamic: bool, phase: str) -> CovenState:
+    """Map a capability's phase + is_dynamic flag to its data-state literal (seam S9).
 
-    No template or CSS ever sees a ``CapabilityPhase``/``CapabilityLifecycle``
-    enum value. A DYNAMIC capability observed ACTIVATABLE is ``"awaited"`` (the
-    S9 row); a STATIC one there degrades honestly to ``"cold"``.
+    No template or CSS ever sees a ``CapabilityPhase`` enum value or the raw
+    ``is_dynamic`` flag. A dynamic capability observed ACTIVATABLE is
+    ``"awaited"`` (the S9 row); a non-dynamic one there degrades honestly to
+    ``"cold"``.
     """
     if phase == "warm":
         return "active"
     if phase == "warming":
         return "warming"
     if phase == "activatable":
-        return "awaited" if lifecycle == "dynamic" else "cold"
+        return "awaited" if is_dynamic else "cold"
     if phase == "error":
         return "fault"
     return "cold"
@@ -149,7 +150,7 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             family=str(status["family"]),
             runtime=str(status["runtime"]),
             model_id=str(status["model_id"]),
-            state=_coven_state(lifecycle=str(status["lifecycle"]), phase=str(status["phase"])),
+            state=_coven_state(is_dynamic=bool(status["is_dynamic"]), phase=str(status["phase"])),
             is_active=bool(status["is_active"]),
             warm=bool(status["warm"]),
             health=str(status["health"]),

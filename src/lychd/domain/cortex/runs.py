@@ -20,7 +20,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lychd.agents.router import Intent
+    from lychd.agents.router import ContentPart, Intent
     from lychd.domain.cortex.events import RunChannel
 
 __all__ = [
@@ -133,7 +133,9 @@ class RunRecord:
     priority: int
     status: RunStatus
     prompt: str
+    sigil_name: str = "magus"
     sigil_scopes: frozenset[str] = field(default_factory=frozenset)
+    content: tuple[ContentPart, ...] = ()
     attempt: int = 0
     enqueue_seq: int = 0
     error: str | None = None
@@ -151,7 +153,9 @@ class RunRecord:
             session_id=self.session_id,
             run_id=self.run_id,
             prompt=self.prompt,
+            content=self.content,
             source=self.source,
+            sigil_name=self.sigil_name,
             sigil_scopes=self.sigil_scopes,
             priority=self.priority,
         )

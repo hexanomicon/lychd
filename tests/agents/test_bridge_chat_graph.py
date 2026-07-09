@@ -7,6 +7,8 @@ request permitted (`ALLOW_MODEL_REQUESTS = False`).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
+
 import pytest
 from pydantic_ai.models.test import TestModel
 from pydantic_graph.persistence.in_mem import FullStatePersistence
@@ -14,7 +16,19 @@ from pydantic_graph.persistence.in_mem import FullStatePersistence
 from lychd.agents.outputs import BridgeReply
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT_GRAPH, BridgeChatState, WeaveContext
 from tests.agents.conftest import make_services
-from tests.agents.fakes import FakeConsents, FakeEvents, FakeOrchestrator, FakeTurns
+from tests.agents.fakes import (
+    FakeConsents,
+    FakeDispatcher,
+    FakeEvents,
+    FakeOrchestrator,
+    FakeTurns,
+    approval_test_toolset,
+)
+
+if TYPE_CHECKING:
+    from pydantic_ai import AgentRunResult
+
+    from lychd.agents.factory import AgentForge
 
 
 @pytest.mark.asyncio
@@ -39,7 +53,9 @@ async def test_happy_path_settles_turn() -> None:
     assert "done" not in events.kinds()
     assert "token" not in events.kinds()  # TestModel emits structured output, not text deltas
 
-    assert services.dispatcher.calls == ["chat"]  # type: ignore[attr-defined]
+    dispatcher = cast("FakeDispatcher", services.dispatcher)
+    assert dispatcher.calls == ["chat"]
+    assert dispatcher.requires_tools_calls == [True]
     assert turns.added
     assert turns.added[0][1].state == "settled"
     assert services.context.get("run_1") is None  # floor released after settle
@@ -53,12 +69,20 @@ async def test_consent_parks_without_done() -> None:
     from lychd.domain.cortex.stasis import LiveStasisPhylactery
 
     events, turns, consents, orch = FakeEvents(), FakeTurns(), FakeConsents(), FakeOrchestrator()
-    services = make_services(model=TestModel(), events=events, turns=turns, consents=consents, orchestrator=orch)
+    services = make_services(
+        model=TestModel(),
+        events=events,
+        turns=turns,
+        consents=consents,
+        orchestrator=orch,
+        toolsets=(approval_test_toolset(),),
+    )
     state = BridgeChatState(session_id="sess_1", run_id="run_1", prompt="swap the coven")
 
     runner = GraphRunner[BridgeChatState](
         orchestrator=orch,  # pyright: ignore[reportArgumentType]
         persistence=LiveStasisPhylactery(job_id="run_1"),
+        signal_priority=50,
     )
     result = await runner.run_graph(BRIDGE_CHAT_GRAPH, WeaveContext(), state, deps=services)
 
@@ -77,14 +101,13 @@ async def test_consent_parks_without_done() -> None:
 async def test_converse_forwards_grant_model_settings() -> None:
     """O5: Converse passes `model_settings=grant.model_settings()` to run_stream_events."""
     from types import SimpleNamespace
-    from typing import Any
 
     from pydantic_ai.run import AgentRunResultEvent
 
     from lychd.agents.services import WorkflowServices, default_sigil
     from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.web.fragments import build_fragment_registry
-    from tests.agents.fakes import FakeDispatcher, FakeRegistry
+    from tests.agents.fakes import FakeRegistry
 
     captured: dict[str, Any] = {}
     sentinel = {"temperature": 0.42, "max_tokens": 128}
@@ -97,7 +120,10 @@ async def test_converse_forwards_grant_model_settings() -> None:
                 return []
 
             yield AgentRunResultEvent(
-                result=SimpleNamespace(output=BridgeReply(answer="ok", fragments=[]), all_messages=_no_messages)
+                result=cast(
+                    "AgentRunResult[BridgeReply]",
+                    SimpleNamespace(output=BridgeReply(answer="ok", fragments=[]), all_messages=_no_messages),
+                )
             )
 
     class _CaptureForge:
@@ -113,7 +139,7 @@ async def test_converse_forwards_grant_model_settings() -> None:
         turns=turns,
         consents=consents,
         events=events,
-        forge=_CaptureForge(),  # type: ignore[arg-type]
+        forge=cast("AgentForge", _CaptureForge()),
         sigil_provider=default_sigil,
     )
     state = BridgeChatState(session_id="sess_1", run_id="run_1", prompt="hello")

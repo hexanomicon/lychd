@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from lychd.domain.animation.capabilities import CapabilityLifecycle, CapabilitySpec, GrantLease
+from lychd.domain.animation.capabilities import CapabilitySpec, GrantLease, SourceKind
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.broker import GhoulBroker, QuiescentBroker
@@ -18,10 +18,10 @@ def _spec(animator: str) -> CapabilitySpec:
         key=f"{animator}:chat:{animator}-m",
         animator_name=animator,
         runtime="llamacpp",
-        source_kind="soulstone",
+        source_kind=SourceKind.SOULSTONE,
         family=CapabilityFamily.CHAT,
         model_id=f"{animator}-m",
-        lifecycle=CapabilityLifecycle.DYNAMIC,
+        is_dynamic=True,
     )
 
 

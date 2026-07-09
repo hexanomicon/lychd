@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -58,6 +60,65 @@ class _FailingQueue:
         _ = (job, error, ttl)
 
 
+@dataclass
+class _CancellationQueue:
+    """An enqueue that remains suspended until its caller is cancelled."""
+
+    entered: asyncio.Event = field(default_factory=asyncio.Event)
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = (job_or_func, kwargs)
+        self.entered.set()
+        await asyncio.Event().wait()
+
+    async def job(self, job_key: str, /) -> Any:
+        _ = job_key
+        return None
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (job, error, ttl)
+
+
+@dataclass
+class _ClaimThenRaiseQueue:
+    """Simulate an accepted publication whose worker wins before the error returns."""
+
+    ledger: InMemoryRunLedger
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        _ = job_or_func
+        assert (
+            await self.ledger.try_claim_run(
+                str(kwargs["run_id"]),
+                enqueue_seq=int(kwargs["enqueue_seq"]),
+            )
+            is True
+        )
+        message = "broker reply lost after claim"
+        raise RuntimeError(message)
+
+    async def job(self, job_key: str, /) -> Any:
+        _ = job_key
+        return None
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (job, error, ttl)
+
+
+@dataclass
+class _DelayedAbortQueue(_FakeQueue):
+    """Hold an active abort so the request task can be cancelled mid-sequence."""
+
+    abort_entered: asyncio.Event = field(default_factory=asyncio.Event)
+    abort_release: asyncio.Event = field(default_factory=asyncio.Event)
+
+    async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
+        _ = (error, ttl)
+        self.abort_entered.set()
+        await self.abort_release.wait()
+        self.aborted.append(job.key)
+
+
 def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
     # honor_intent_run_id: test-only seam so these assertions can key off stable ids
     # (R4: production always mints; identity is the ledger's, not the advisory field).
@@ -106,6 +167,7 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     assert job["run_id"] == "run_1"
     assert job["key"] == run_job_key("run_1", 1)  # enqueue_seq bumped to 1
     assert job["retries"] == 0
+    assert job["timeout"] == 0  # SAQ's 10s default must never kill local inference
     # R9 wire inversion: doctrine bridge=70 → saq priority number 100-70=30 (saq
     # dequeues lowest-first, so a hotter run gets a LOWER number on the wire).
     assert job["priority"] == 30
@@ -158,10 +220,74 @@ async def test_submit_compensates_enqueue_failure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_cancel_aborts_and_marks_cancelled() -> None:
-    """cancel aborts the SAQ job by key, marks CANCELLED, and emits a terminal DONE."""
+async def test_submit_cancellation_during_enqueue_settles_failed() -> None:
+    """Request cancellation cannot strand a persisted initial run QUEUED."""
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    queue = _CancellationQueue()
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": queue, "rites": _FakeQueue()},
+    )
+    channel = bus.open("cancelled-publish")
+    task = asyncio.create_task(
+        engine.submit(
+            Intent(
+                session_id="s",
+                run_id="cancelled-publish",
+                prompt="hi",
+                source="bridge",
+            )
+        )
+    )
+    await queue.entered.wait()
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    run = await ledger.get("cancelled-publish")
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert channel.closed is True
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_publish_error_cannot_fail_already_claimed_run() -> None:
+    """Conditional compensation preserves a worker that won the publish race."""
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    queue = _ClaimThenRaiseQueue(ledger)
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": queue, "rites": _FakeQueue()},
+    )
+    channel = bus.open("ambiguous")
+
+    with pytest.raises(RuntimeError, match="reply lost"):
+        await engine.submit(Intent(session_id="s", run_id="ambiguous", prompt="hi", source="bridge"))
+
+    run = await ledger.get("ambiguous")
+    assert run is not None
+    assert run.status is RunStatus.RUNNING
+    assert channel.closed is False
+    assert [event for event in channel._replay if event.kind is RunEventKind.DONE] == []
+
+
+@pytest.mark.asyncio
+async def test_cancel_aborts_marks_cancelled_and_cleans_checkpoint(tmp_path: Path) -> None:
+    """cancel commits CANCELLED, closes the stream, then removes stale checkpoint state."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_c", prompt="hi", source="bridge"))
+    checkpoint = tmp_path / "run_c.json"
+    checkpoint.write_text("{}")
+    await ledger.set_stasis_path("run_c", str(checkpoint))
     # Hold the channel ref BEFORE cancel: R2 closes + drops it, so a post-cancel
     # `bus.open` would mint a fresh unclosed channel and hide the close.
     channel = engine.bus.open("run_c")
@@ -172,10 +298,59 @@ async def test_cancel_aborts_and_marks_cancelled() -> None:
     assert run is not None
     assert run.status is RunStatus.CANCELLED
     assert queues["runs"].aborted == [run_job_key("run_c", 1)]
+    assert run.stasis_path is None
+    assert not checkpoint.exists()
     # a single terminal DONE landed on the channel (carrying the terminal status)
     assert channel.closed is True
     # R2: cancel closed AND dropped the channel — reopening mints a fresh one.
     assert engine.bus.open("run_c") is not channel
+
+
+@pytest.mark.asyncio
+async def test_cancel_request_disconnect_cannot_interrupt_settlement() -> None:
+    """Caller cancellation is propagated only after abort + durable CANCELLED finish."""
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    queue = _DelayedAbortQueue()
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": queue, "rites": _FakeQueue()},
+    )
+    await engine.submit(Intent(session_id="s", run_id="cancel-shield", prompt="hi", source="bridge"))
+    channel = bus.open("cancel-shield")
+    task = asyncio.create_task(engine.cancel("cancel-shield"))
+    await queue.abort_entered.wait()
+
+    task.cancel()
+    queue.abort_release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    run = await ledger.get("cancel-shield")
+    assert run is not None
+    assert run.status is RunStatus.CANCELLED
+    assert channel.closed is True
+    assert engine.cancellations.active("cancel-shield") is False
+
+
+@pytest.mark.asyncio
+async def test_concurrent_cancel_calls_have_one_abort_and_terminal_writer() -> None:
+    """Two stale API reads converge through one elected cancellation writer."""
+    engine, ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="cancel-once", prompt="hi", source="bridge"))
+    channel = engine.bus.open("cancel-once")
+
+    await asyncio.gather(engine.cancel("cancel-once"), engine.cancel("cancel-once"))
+
+    run = await ledger.get("cancel-once")
+    assert run is not None
+    assert run.status is RunStatus.CANCELLED
+    assert queues["runs"].aborted == [run_job_key("cancel-once", 1)]
+    dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
+    assert [event.data for event in dones] == [RunStatus.CANCELLED.value]
 
 
 @pytest.mark.asyncio
@@ -196,3 +371,89 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
     keys = [e["key"] for e in queues["runs"].enqueued]
     assert keys == [run_job_key("run_p", 1), run_job_key("run_p", 2)]
     assert queues["runs"].enqueued[-1]["resume"] is True
+
+
+@pytest.mark.asyncio
+async def test_double_approve_enqueues_the_resume_once() -> None:
+    """Concurrent approves resolve to a SINGLE resume enqueue via the CAS admission gate (F4).
+
+    Both callers pass the parked guard, but only one wins the atomic
+    AWAITING_CONSENT → QUEUED transition (`try_admit_consent`), so `enqueue_seq`
+    advances exactly once — a later cancel still targets the live job instead of a
+    stale key.
+    """
+    import asyncio
+
+    engine, ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="run_d", prompt="hi", source="bridge"))
+    await ledger.set_status("run_d", RunStatus.RUNNING)
+    await ledger.set_status("run_d", RunStatus.AWAITING_CONSENT)
+    await ledger.set_consent("run_d", "consent_d")
+
+    await asyncio.gather(
+        engine.approve("consent_d", approved=True),
+        engine.approve("consent_d", approved=True),
+    )
+
+    run = await ledger.get("run_d")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    resume_keys = [e["key"] for e in queues["runs"].enqueued if e.get("resume")]
+    assert resume_keys == [run_job_key("run_d", 2)]  # exactly one resume enqueue
+    assert run.enqueue_seq == 2  # bumped once past the submit, not twice
+
+
+@pytest.mark.asyncio
+async def test_approve_enqueue_failure_restores_retryable_consent_wait() -> None:
+    """A broker failure after admission restores AWAITING_CONSENT for a later retry."""
+    engine, ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="run_r", prompt="hi", source="bridge"))
+    await ledger.set_status("run_r", RunStatus.RUNNING)
+    await ledger.set_status("run_r", RunStatus.AWAITING_CONSENT)
+    await ledger.set_consent("run_r", "consent_r")
+
+    queues["runs"] = _FailingQueue()  # type: ignore[assignment]
+    with pytest.raises(RuntimeError, match="broker down"):
+        await engine.approve("consent_r", approved=True)
+
+    restored = await ledger.get("run_r")
+    assert restored is not None
+    assert restored.status is RunStatus.AWAITING_CONSENT
+    assert restored.enqueue_seq == 2  # the possibly-published key is never reused
+
+    retry_queue = _FakeQueue()
+    queues["runs"] = retry_queue
+    await engine.approve("consent_r", approved=True)
+
+    admitted = await ledger.get("run_r")
+    assert admitted is not None
+    assert admitted.status is RunStatus.QUEUED
+    assert [job["key"] for job in retry_queue.enqueued] == [run_job_key("run_r", 3)]
+
+
+@pytest.mark.asyncio
+async def test_approve_cancellation_restores_retryable_consent_wait() -> None:
+    """Cancellation after consent admission cannot lose the durable resume hop."""
+    engine, ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="run_cancel", prompt="hi", source="bridge"))
+    await ledger.set_status("run_cancel", RunStatus.RUNNING)
+    await ledger.set_status("run_cancel", RunStatus.AWAITING_CONSENT)
+    await ledger.set_consent("run_cancel", "consent_cancel")
+    queue = _CancellationQueue()
+    queues["runs"] = queue  # type: ignore[assignment]
+    task = asyncio.create_task(engine.approve("consent_cancel", approved=True))
+    await queue.entered.wait()
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    restored = await ledger.get("run_cancel")
+    assert restored is not None
+    assert restored.status is RunStatus.AWAITING_CONSENT
+    assert restored.enqueue_seq == 2
+
+    retry_queue = _FakeQueue()
+    queues["runs"] = retry_queue
+    await engine.approve("consent_cancel", approved=True)
+    assert [job["key"] for job in retry_queue.enqueued] == [run_job_key("run_cancel", 3)]

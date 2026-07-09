@@ -7,19 +7,19 @@ tests/unit/ghouls). Routing stays a pure, first-match `Trigger` decision.
 
 from __future__ import annotations
 
-from lychd.agents.router import Intent, route
+from lychd.agents.router import Intent
 from lychd.agents.workflows import WORKFLOW_REGISTRY
 
 
 def test_route_bridge_source_selects_bridge_chat() -> None:
     """A bridge-source intent routes to the bridge_chat workflow."""
-    workflow = route(Intent(session_id="s", run_id="r", prompt="hi", source="bridge"))
+    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="bridge"))
     assert workflow.name == "bridge_chat"
 
 
 def test_route_unknown_source_falls_to_default() -> None:
     """An unmatched source falls back to the default (first-registered) workflow."""
-    workflow = route(Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else"))
+    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else"))
     assert workflow.name == "bridge_chat"
 
 

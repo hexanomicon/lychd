@@ -23,16 +23,48 @@
 Summon **The Lich** 💀 — an experimental Linux-native daemon for local agentic orchestration. It is designed to manage agents through:
 
 - 🔥 **Dynamic Services** — Hot-swap local capability services through systemd. **[Covens](docs/adr/08-containers.md)** move your hardware between fast VRAM workers, CPU-offloaded models, browser engines, observers, and other bodies.
-- 🧠 **Atomic Persistence** — The spirit arises from the data. Code, memory, and state are bound in atomic snapshots (Btrfs/Git/Postgres) within the **[Phylactery](docs/adr/06-persistence.md)**, enabling reanimation and rollback.
-- 🔒 **Sandboxed Security** — Double-rootless Podman isolation. The **[Vessel](docs/sepulcher/vessel/)** reasons in one cage while dangerous tools execute in a second, [kernel-hardened sandbox](https://github.com/always-further/nono/) (Landlock) with strictly limited mounts.
+- 🧠 **Durable First Light** — The **[Phylactery](docs/adr/06-persistence.md)** provides the first
+  Postgres run/step truth, with owner-only file checkpoints for declared durable graph waits.
+  Transactional graph outbox/checkpoints and whole-system snapshot orchestration remain later work.
+- 🔒 **Narrow Rootless Core** — The generated core uses rootless Podman, loopback-only publication,
+  and exact validated mounts. A separate Tomb executor wrapped in
+  [nono](https://github.com/always-further/nono/) (Landlock) is the designed untrusted-execution
+  boundary, not an implemented foundation feature yet.
 - 🌀 **Speculative Execution** — The **[Shadow Realm](docs/adr/31-simulation.md)** explores divergent timelines in parallel, verifying truth before it is manifested in reality.
-- 🪞 **Persistent Identity** — HitL captures your Will, Karma stores its Imprint, and Mirror binds it into persistent personas and identity-gravity. One sovereign stack may host many roles without surrendering one Phylactery per employer, client, or mask.
-- 👁️ **Multimodal Senses** — Native Vision and Audio organs give the daemon eyes and ears without changing its sovereignty boundary.
+- 🪞 **Durable Consent Floor** — The default Postgres profile persists sessions, runs, and
+  approval decisions. Promotion into recalled [Karma](docs/adr/27-memory.md) and
+  [Mirror](docs/adr/32-identity.md)-bound persistent personas remains the identity horizon.
+- 👁️ **Multimodal Shape** — Vision, audio, and artifact capability families have extension seams;
+  the complete multimodal artifact materializer remains later work.
 - 🕸️ **Distributed Scale** — One brain, many bodies. Extend your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
 - 📡 **A2A Diplomacy** — Federated peer discovery and labor negotiation via the **[A2A Intercom](docs/adr/26-a2a.md)**: sovereign nodes meeting across the Necropolis without surrendering continuity.
 - 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon expands through Forge-composed organs and reconciles itself through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**; near-term in-process organs may stay close to the Core, while external-service Animators are the true decoupled boundary today.
 
->⚠️ **Acolyte's Warning:** The summoning is in its early stages. The incantations (code, documentation, and generated text) are still being inscribed and are not yet a working daemon. Expect instability, missing components, and the occasional rogue spirit. Proceed with caution.
+> ⚠️ **Acolyte's Warning:** LychD is pre-alpha. The minimum CLI/configuration/run/dispatch/orchestration foundation is implemented and locally tested. The caged default uses a mediated Host Reactor inbox plus a read-only terminal journal, generated host path/service consumer, typed/config-generation/policy/user-unit-state validation, claim/cancellation/startup fences, exact-action-prefix crash recovery, and a typed hard-readiness inverse; direct Systemd actuation is an explicit uncaged option. The real rootless Podman + GPU + chosen model stack remains an operator integration test. A Tomb/nono execution plane, a trustworthy soft model-load inverse, general repair of non-prefix or failed-compensation physical states, DB-backed graph outbox/checkpoints, and the full multimodal artifact materializer remain later work.
+
+## Minimum foundation rite
+
+On a Linux host with a rootless Podman + systemd user session:
+
+```bash
+uv tool install lychd
+lychd init
+
+# Edit ~/.config/lychd/lychd.toml and the marked samples under runes/.
+# Create every non-core Podman secret named by a Portal/Soulstone rune.
+lychd bind
+
+systemctl --user enable --now lychd-vessel.service
+lychd doctor
+lychd animators
+```
+
+Starting `lychd-vessel.service` pulls in the generated Phylactery, bounded one-shot
+`lychd-migrate.service`, and Host Reactor path watcher before the web process. Generated host ports
+are loopback-only; the current Altar/API is a local single-user surface, not an externally
+authenticated service. `lychd database upgrade` is the explicit uncaged/development path when
+database credentials are supplied; foreground serving is `lychd serve`, not `lychd run`. The
+complete, failure-oriented procedure is **[The Summoning Rite](docs/summoning.md)**.
 
 ## 🗺️ The Path of Ascension
 
@@ -55,23 +87,15 @@ The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.g
 - ♾️ **[Enter Infinity](https://hexanomicon.github.io/lychd/divination/transcendence/infinity/)**
     *Beyond the final seal: what becomes of perfected Will when sovereign machines commune across the Infinite Naught.*
 
-## 🚩 Local sovereignty — a rebellion against digital feudalism
+## 🚩 Local sovereignty
 
-The cloud isn’t a service, **it’s a prison**. A modern fiefdom where your data is the currency and your intelligence is leased at the whims of monopolist overlords. While they build walls to keep you in, LychD builds a foundation to set you free.
-
-On your hardware, with open-source software you control, you retain absolute ownership as a sovereign.
+Cloud intelligence is leased: your data is the currency, and continuity ends where the subscription does. LychD is built on the opposite premise. On your hardware, with open-source software you control, you retain absolute ownership as a sovereign.
 
 In this model, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
 
 The software surface changes accordingly: you commune primarily with the Lich, while SaaS, company APIs, and remote peers become negotiated surfaces the Lich may traverse without surrendering your continuity, memory, or private priors.
 
 A2A leases labor, not continuity: a company may invoke a consented capability, but the memory, workflows, and agentic expertise that produced it remain anchored in your Phylactery unless explicitly shared.
-
-- ⛓️ **No masters**
-- 💰 **No tolls**
-- 🎭 **No more gaslighting** while they lobotomize your models.
-
-**No surrender! Viva la résistance!**
 
 > *I would rather reign in a local hell than serve in a cloud heaven.*
 

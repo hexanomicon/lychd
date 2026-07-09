@@ -60,8 +60,8 @@ An Agent is the execution atom of cognition, the fundamental unit of labor for b
 !!! note "Stratification of Selves"
     Three identity-adjacent notions layer rather than compete. A **Posture** is a per-run mechanical configuration—output schema, tool grant, `ModelSettings`, and prompt frame. A **Lens** (**[Simulation (ADR 31)](./31-simulation.md)**) is a Posture template employed for expansion isolation in the Shadow. A **Persona** (**[Mirror (ADR 32)](./32-identity.md)**) is a durable identity that *wears* Postures across runs. Persona chooses; Posture constrains; Lens diversifies.
 
-!!! note "The identity triad: who / voice / what-it-can-do"
-    Three orthogonal axes name an acting agent and must not be conflated. The **Sigil** is *who* (identity and permission scope, **[Security (09)](./09-security.md)**). The **Persona** is *voice* (durable style, **[Mirror (ADR 32)](./32-identity.md)**). The **Kit** is *what-it-can-do* — the packed Arsenal (instructions + tools + model choice) an agent **equips** to become a **Specialist**. `Kit` and its registry the `Shed` (formerly *Craft* / *Grimoire*) are the locked terms for the capability-packing model; it is roadmap (Wave 5) and not yet built. The running instance is always the Specialist; the Kit is the packed form.
+!!! note "What names an acting agent"
+    An agent is its **tools** (its toolset — *what it can do*, hardcoded in the spec or made configurable in the Codex), its **model/provider**, and its **prompt + history**. Two identity-adjacent notions sit alongside it: the **Sigil** — *who* it acts as (permission scope + memory identity, **[Security (09)](./09-security.md)**; its scopes gate the usable tools), carried as run deps — and the **Persona** — the durable *voice* the Lich shows the Magus at the user-facing boundary, maintained by **[Mirror (ADR 32)](./32-identity.md)**, not carried inside the agentic loop. There is no separate "Kit" or "Shed" abstraction: an agent's competence is its toolset, in code.
 
 ### 1. Late-Binding Intelligence
 
@@ -117,7 +117,10 @@ Tools in LychD provide rich feedback beyond simple strings.
 
 - **Metadata (Artifacts):** Tools can return **`ToolReturn`** objects, separating the `return_value` (sent to the LLM) from the `metadata` (persisted as a permanent artifact for the user).
 - **Action Rejection Evidence:** When a tool rejects a call, the validator owns the local truth of why. Rejections should carry a compact failure class such as `precondition_miss`, `invalid_arguments`, `policy_block`, or `dependency_unavailable`, plus relevant `required_state`, `observed_state`, and retryability metadata. The Agent may receive a concise repair hint, but the persistent artifact records the boundary fact so later diagnosis does not confuse model blindness with an ambiguous or incomplete state surface.
-- **Multi-Modal Content:** Using **`BinaryContent`** (images/PDFs), tools can provide visual context to models supporting vision, allowing for "Observation" rituals where the model describes what the tool "saw."
+- **Multi-Modal Content (planned):** Pydantic AI **`BinaryContent`** can provide visual context to a
+  compatible model, but LychD currently carries only immutable `ArtifactRef` metadata. The
+  authorization-aware blob materializer and Bridge/graph conversion into model content must land
+  before an Observation ritual can consume those bytes.
 
 ### 5. Deferred Execution (The Long Sleep)
 

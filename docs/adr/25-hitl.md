@@ -10,7 +10,7 @@ icon: material/account-voice
 
 ## Requirements
 
-- **The Stasis Protocol:** Mandatory capability for a cognitive thread to hibernate and persist its state to the **[Phylactery (ADR 06)](./06-persistence.md)**, preventing resource locking during human deliberation.
+- **The Stasis Protocol:** Mandatory capability for a cognitive thread to hibernate and persist its state to the **[Phylactery (ADR 06)](./06-persistence.md)**, preventing resource locking during human deliberation. (An approval wait is Durable Stasis — definition in **[Graph (ADR 24)](./24-graph.md)**.)
 - **Speculative Isolation (Shadow Realm):** Provision of a sandbox environment to explore and verify potential outcomes (the "Vision") before they are permitted to manifest in the Crypt.
 - **Multi-Modal Transparency:** Mandatory presentation of rich, multimodal context—including code diffs, terminal logs, and visual screenshots—to the Magus at the primary interface.
 - **Resource Liberation:** Signaling to the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to evacuate hardware covens when a task enters a pending state, reclaiming VRAM for active user reflexes.
@@ -42,7 +42,7 @@ icon: material/account-voice
 
 **The Magus Consent Protocol** is adopted as the definitive Conscience of the machine. It uses a "Halt and Scry" workflow powered by Pydantic AI's native deferred tooling to transform probabilistic intents into "Verified Truths."
 
-There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash. It is the **umbilical cord** that keeps the Word tethered to the Magus's Will — the structural mechanism by which external Pramāṇa enters the system at the moment it is most needed: when the generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
+There is a structural reason this protocol cannot be treated as optional polish. An autonomous agent left to loop without external grounding faces a known failure mode: context saturates, reasoning frays, and Viparyaya-generated outputs begin referencing each other as though they were Pramāṇa — each cycle compounding the drift. The system spirals into the noise of its own generation, losing coherence not through malice but through the mathematical inevitability of probabilistic reasoning without an external anchor. HitL is not a safety leash bolted on; it is the channel by which verified human judgment enters the loop at the only moment it matters — when a generated candidate is about to become permanent reality. See **[The Lich](../sepulcher/lich.md)** for the cognitive map underlying this architecture.
 
 Within the broader simulation architecture, HitL is the final authority in a three-stage collapse sequence: structural validity is established in Shadow, identity congruence is evaluated by Mirror, and ontological promotion is authorized here through explicit Magus consent or Codex-governed Vessel preauthorization. High-stakes promotion remains live Magus authority.
 
@@ -57,8 +57,16 @@ Consent is treated as a first-class state transition within the **[Graph (ADR 24
 - Tools identified as high-risk (e.g., `modify_core`, `delete_artifact`) are configured with `requires_approval=True`.
 - Upon invocation, the tool raises an `ApprovalRequired` exception.
 - The Agent run terminates and returns a `DeferredToolRequests` object containing the tool name, validated arguments, and a unique `tool_call_id`.
-- The Graph executes an atomic exit, serializing the `StateT` and message history into the `queue` chamber of the **[Phylactery (ADR 06)](./06-persistence.md)**.
+- The Graph commits an owner-only file checkpoint in the configured stasis directory, records its
+  path on the run row, and parks the run before a verdict can re-enqueue it. This is the implemented
+  durable consent boundary; a Postgres checkpoint/outbox transaction remains later work.
 - Tools identified as preauthorizable still pass through the same Vessel-side policy gate. They may skip a live Altar prompt only when Codex policy explicitly permits that action class.
+
+When a recorded verdict admits a parked run, the ledger first performs one atomic status admission
+and then publishes a fresh SAQ resume hop. Those two stores are not one transaction. Publication
+failure or caller cancellation completes a shielded restoration to `AWAITING_CONSENT`; the
+monotonic `enqueue_seq` is not rolled back, so a key that may have reached the broker is never
+reused. Startup reconciliation can re-fire a durable decided verdict after process death.
 
 ### 2. The Shadow Realm (The Dreaming)
 

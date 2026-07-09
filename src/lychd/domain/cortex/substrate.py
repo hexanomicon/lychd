@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.leases import LeaseLedger
 
 if TYPE_CHECKING:
@@ -75,21 +76,31 @@ class RunSubstrate:
     sigil_provider: Callable[[], Sigil] = field(default_factory=_default_sigil_provider)
     # Wave 4: the ConsentLedger the graph parks into + the web reads (one-record rule).
     # Cortex must NOT import codex (import law), so this is an opaque handle: the
-    # composition root (wire_runtime) and the consent tests thread the real ledger.
+    # composition root and the consent tests thread the real ledger.
     # A run that never parks (a linear/non-Gate workflow) never touches it.
     consents: Any = None
     # Wave 3: the lease ledger + SAQ queues, shared per process. Defaulted so existing
-    # test construction sites keep compiling; wire_runtime threads the real ones.
+    # test construction sites keep compiling; the root threads the real ones.
     leases: LeaseLedger = field(default_factory=LeaseLedger)
     queues: Mapping[str, RunQueue] = field(default_factory=_empty_queues)
+    # Topology A: API cancellation and the in-process worker share this settlement
+    # fence so an abort-triggered CancelledError cannot race CANCELLED with FAILED.
+    cancellations: RunCancellationCoordinator = field(default_factory=RunCancellationCoordinator)
     # Wave 4: the Durable Stasis checkpoint root (consent tier). Defaulted from
-    # settings so existing test construction sites keep compiling; wire_runtime
-    # threads settings.stasis.dir explicitly.
+    # settings so existing test construction sites keep compiling; the root threads
+    # settings.stasis.dir explicitly.
     stasis_dir: Path = field(default_factory=_default_stasis_dir)
 
-    def build_services(self) -> WorkflowServices:
-        """Assemble the run's `WorkflowServices` (events = the shared bus)."""
+    def build_services(self, *, sigil: Sigil | None = None) -> WorkflowServices:
+        """Assemble run services with the persisted caller identity.
+
+        The process-level provider remains a test/manual fallback. Normal ghoul
+        execution supplies the run's persisted Sigil so a restart cannot silently
+        widen authority to the daemon's default identity.
+        """
         from lychd.agents.services import build_workflow_services
+
+        sigil_provider = self.sigil_provider if sigil is None else lambda: sigil
 
         return build_workflow_services(
             dispatcher=self.dispatcher,
@@ -100,7 +111,7 @@ class RunSubstrate:
             consents=self.consents,
             events=self.bus,
             forge=self.forge,
-            sigil_provider=self.sigil_provider,
+            sigil_provider=sigil_provider,
         )
 
 

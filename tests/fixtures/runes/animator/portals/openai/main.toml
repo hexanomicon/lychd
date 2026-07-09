@@ -1,5 +1,5 @@
 name = "openai-main"
-description = "Reference OpenAI portal (STATIC; image admission + tool support)."
+description = "Reference OpenAI portal (is_dynamic=False; image admission + tool support)."
 api_key_secret_name = "portal_openai_main"
 
 [generation]

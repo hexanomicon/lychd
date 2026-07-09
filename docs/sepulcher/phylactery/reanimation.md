@@ -26,8 +26,9 @@ The Scribe generates this file automatically during `lychd bind`, ensuring the *
 # ~/.config/containers/systemd/lychd-vessel.container
 [Unit]
 Description=The LychD Daemon Vessel
-Wants=network-online.target lychd-phylactery.service
-After=network-online.target lychd-phylactery.service
+Wants=network-online.target lychd-phylactery.service lychd-migrate.service
+Requires=lychd-migrate.service
+After=network-online.target lychd-migrate.service
 
 [Container]
 Image=ghcr.io/hexanomicon/lychd:latest
@@ -74,4 +75,4 @@ TimeoutStartSec=300
 ```
 
 !!! info "The Rune of Persistence"
-    The `Restart=always` section of the rune is the operating system's oath that the Vessel shall rise again. If the process crashes or is killed by the OOM Killer, Systemd starts a new process as policy allows. This is process resurrection, not proof that every cognitive frame survived; durable continuity comes from Phylactery queues, graph checkpoints, committed outputs, and Snapshots when whole body/soul rollback is required.
+    The `Restart=always` section of the rune is the operating system's oath that the Vessel shall rise again. If the process crashes or is killed by the OOM Killer, Systemd starts a new process as policy allows. This is process resurrection, not proof that every cognitive frame survived; durable continuity comes from Phylactery queues, committed outputs, and declared graph checkpoints. The foundation's durable graph checkpoint is file-backed and referenced from the run row; moving it into Postgres with an outbox is later work. Snapshots remain the heavier boundary when whole body/soul rollback is required.

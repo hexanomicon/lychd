@@ -2,9 +2,10 @@
 
 At most ONE physical transition runs at a time. Contenders are admitted by
 ``(-priority, arrival seq)`` (higher priority first, FIFO within a priority). A second
-caller for the SAME capability key coalesces onto the first's in-flight plan instead
-of planning a redundant swap. v1 orders admission only — there is NO preemption of an
-in-flight transition (design risk 4, accepted).
+caller for the SAME capability key at the SAME priority coalesces onto the in-flight
+plan. Different priorities remain separate contenders so a low-priority owner can
+never cause a qualifying high-priority follower to be declined. v1 orders admission
+only — there is NO preemption of an in-flight transition.
 """
 
 from __future__ import annotations
@@ -51,7 +52,7 @@ class TransitionArbiter:
         self._busy = False
         self._seq = 0
         self._waiters: list[tuple[float, int, anyio.Event]] = []
-        self._inflight: dict[str, asyncio.Future[TransitionPlan]] = {}
+        self._inflight: dict[tuple[str, float], asyncio.Future[TransitionPlan]] = {}
 
     async def run(
         self,
@@ -65,13 +66,17 @@ class TransitionArbiter:
         runs once); it does NOT enqueue a waiter. An executor exception releases the
         section and propagates to ALL same-key waiters.
         """
-        existing = self._inflight.get(key)
+        cohort = (key, priority)
+        existing = self._inflight.get(cohort)
         if existing is not None:
-            return await existing
+            # A follower owns only its wait, not the shared transition. Without
+            # shielding, cancelling one follower cancels the shared Future and
+            # poisons the owner plus every other same-key follower.
+            return await asyncio.shield(existing)
 
         future: asyncio.Future[TransitionPlan] = asyncio.get_running_loop().create_future()
         future.add_done_callback(_swallow)
-        self._inflight[key] = future
+        self._inflight[cohort] = future
 
         try:
             await self._acquire(priority)
@@ -80,7 +85,7 @@ class TransitionArbiter:
             # withdrawn us from the heap (or handed our slot on). Pop the in-flight
             # future we registered above so same-key retries don't hang on a future
             # that will never resolve, and relay to any coalesced waiters (F2).
-            self._inflight.pop(key, None)
+            self._inflight.pop(cohort, None)
             if not future.done():
                 future.set_exception(exc)
             raise
@@ -96,7 +101,7 @@ class TransitionArbiter:
                 future.set_result(result)
             return result
         finally:
-            self._inflight.pop(key, None)
+            self._inflight.pop(cohort, None)
             self._release()
 
     async def _acquire(self, priority: float) -> None:

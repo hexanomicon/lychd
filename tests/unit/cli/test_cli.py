@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+# This unit suite intentionally exercises the module's pure port-merge helper.
+# pyright: reportPrivateUsage=false
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock
 
 import pytest
 from click.testing import CliRunner
 
-from lychd.cli.commands import _merge_reserved_ports, bind_quadlets, init_codex
+from lychd.__main__ import cli
+from lychd.cli.commands import _decide_consent, _merge_reserved_ports, bind_quadlets, doctor, init_codex
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pytest_mock import MockerFixture
 
 
@@ -51,11 +57,130 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
-def test_init_codex_success(runner: CliRunner, mocker: MockerFixture) -> None:
+def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: MockerFixture) -> None:
+    """Local CLI discovery remains usable before the server can boot."""
+    create_app = mocker.patch("lychd.app.create_app")
+
+    result = runner.invoke(cli, ["--help"])
+
+    assert result.exit_code == 0
+    for command in ("init", "bind", "doctor", "animators", "reactor", "serve", "database"):
+        assert command in result.output
+    create_app.assert_not_called()
+
+
+def test_serve_delegates_to_litestar_lazily(runner: CliRunner, mocker: MockerFixture) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+
+    result = runner.invoke(cli, ["serve", "--host", "127.0.0.1", "--port", "7134"])
+
+    assert result.exit_code == 0
+    delegated.assert_called_once_with(
+        ("run", "--host", "127.0.0.1", "--port", "7134"),
+        prog_name="lychd serve",
+    )
+
+
+@pytest.mark.parametrize("args", [("--workers", "2"), ("--workers=3",)])
+def test_serve_rejects_multiple_process_workers(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    args: tuple[str, ...],
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+
+    result = runner.invoke(cli, ["serve", *args])
+
+    assert result.exit_code != 0
+    assert "exactly one ASGI worker" in result.output
+    delegated.assert_not_called()
+
+
+def test_serve_rejects_multiworker_environment(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+    monkeypatch.setenv("GRANIAN_WORKERS", "4")
+
+    result = runner.invoke(cli, ["serve"])
+
+    assert result.exit_code != 0
+    assert "GRANIAN_WORKERS=1" in result.output
+    delegated.assert_not_called()
+
+
+def test_database_waits_before_delegating(runner: CliRunner, mocker: MockerFixture) -> None:
+    wait = mocker.patch("lychd.__main__._wait_for_database")
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+
+    result = runner.invoke(cli, ["database", "--wait-seconds", "12", "upgrade"])
+
+    assert result.exit_code == 0
+    wait.assert_called_once_with(12.0)
+    delegated.assert_called_once_with(("database", "upgrade"), prog_name="lychd database")
+
+
+def test_doctor_validates_foundation_without_mutation(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    tmp_path: Path,
+) -> None:
+    codex = tmp_path / "lychd.toml"
+    codex.write_text("", encoding="utf-8")
+    codex.chmod(0o600)
+    stasis = tmp_path / "stasis"
+    inbox = tmp_path / "triggers" / "inbox"
+    journal = tmp_path / "triggers" / "journal"
+    units = tmp_path / "systemd"
+    for directory in (stasis, inbox, journal, units):
+        directory.mkdir(parents=True, mode=0o700, exist_ok=True)
+        directory.chmod(0o700)
+    for unit_name in ("lychd-reactor.path", "lychd-reactor.service"):
+        (units / unit_name).write_text("test", encoding="utf-8")
+
+    from lychd.config.settings import Settings
+
+    settings = Settings()
+    settings.stasis.dir = stasis
+    settings.orchestration.switching.host_reactor_dir = inbox
+    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
+    mocker.patch("lychd.system.constants.PATH_LYCHD_TOML", codex)
+    mocker.patch("lychd.system.constants.PATH_SYSTEMD_USER_UNITS_DIR", units)
+    mocker.patch("shutil.which", return_value="/usr/bin/systemctl")
+    secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
+    secret_store.exists.return_value = True
+    loader = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader").return_value
+    loader.load_all.return_value = ([], [])
+    runes = SimpleNamespace(reserved_ports=dict, all=tuple)
+    mocker.patch("lychd.config.runes.registry.load_rune_registry", return_value=runes)
+
+    result = runner.invoke(doctor)
+
+    assert result.exit_code == 0
+    assert "Foundation is coherent" in result.output
+    secret_store.ensure_present.assert_not_called()
+
+
+def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: Path) -> None:
     """Verify init command orchestrates Codex properly."""
     # Patch the classes inside the command
     mocker.patch("lychd.system.services.layout.LayoutService")
-    mocker.patch("lychd.system.services.privilege.PrivilegeService")
+    privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
+    inbox = tmp_path / "reactor" / "inbox"
+    journal = tmp_path / "reactor" / "journal"
+    stasis = tmp_path / "stasis"
+    settings = SimpleNamespace(
+        orchestration=SimpleNamespace(
+            switching=SimpleNamespace(
+                host_reactor_dir=inbox,
+                host_reactor_journal_dir=journal,
+            )
+        ),
+        stasis=SimpleNamespace(dir=stasis),
+    )
+    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
     mock_codex_cls = mocker.patch("lychd.system.services.codex.CodexService")
     mock_codex_instance = mock_codex_cls.return_value
 
@@ -68,6 +193,8 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture) -> None:
     # Verify interaction
     mock_codex_cls.assert_called_once()
     mock_codex_instance.inscribe.assert_called_once()
+    assert [entry.args[0] for entry in privilege.call_args_list] == [inbox, journal, stasis]
+    assert privilege.return_value.initialize.call_count == 3
 
 
 def test_init_codex_failure(runner: CliRunner, mocker: MockerFixture) -> None:
@@ -84,6 +211,52 @@ def test_init_codex_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     assert result.exit_code != 0
     assert "Ritual Failed" in result.output
     assert "Access Denied" in result.output
+
+
+@pytest.mark.asyncio
+async def test_consent_cli_connects_queue_before_enqueue_and_disconnects(
+    mocker: MockerFixture,
+) -> None:
+    from lychd.config.settings import Settings
+
+    settings = Settings()
+    settings.db.profile = "postgres"
+    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
+    mocker.patch("lychd.db.engine.get_session_factory", return_value=object())
+    consent_ledger = mocker.patch("lychd.domain.codex.ledger.CodexConsentLedger").return_value
+    consent_ledger.get = AsyncMock(return_value=SimpleNamespace(status="pending"))
+    consent_ledger.decide = AsyncMock()
+    events: list[str] = []
+
+    class _Queue:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        async def connect(self) -> None:
+            events.append(f"connect:{self.name}")
+
+        async def disconnect(self) -> None:
+            events.append(f"disconnect:{self.name}")
+
+    async def approve(_consent_id: str, *, approved: bool) -> None:
+        assert approved is True
+        events.append("approve")
+
+    engine = SimpleNamespace(
+        queues={"runs": _Queue("runs"), "rites": _Queue("rites")},
+        approve=approve,
+    )
+    mocker.patch("lychd.cli.commands._build_cli_engine", return_value=engine)
+
+    await _decide_consent("a" * 32, approved=True)
+
+    assert events == [
+        "connect:runs",
+        "connect:rites",
+        "approve",
+        "disconnect:rites",
+        "disconnect:runs",
+    ]
 
 
 def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None:
@@ -134,7 +307,15 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     assert isinstance(transmute_call.kwargs["runes"], RuneRegistry)
 
     mock_scribe_cls.assert_called_once()
-    mock_scribe.generate_all.assert_called_once_with(["rune1"])
+    mock_scribe.reconcile_all.assert_called_once()
+    reconcile = mock_scribe.reconcile_all.call_args
+    assert reconcile.args == (["rune1"],)
+    assert sorted(reconcile.kwargs["plain_units"]) == [
+        "lychd-reactor.path",
+        "lychd-reactor.service",
+    ]
+    mock_scribe.generate_all.assert_not_called()
+    mock_scribe.write_plain_unit.assert_not_called()
 
     mock_subprocess.assert_called_once_with(["/usr/bin/systemctl", "--user", "daemon-reload"], check=True)
 

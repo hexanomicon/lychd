@@ -5,23 +5,38 @@ icon: material/waveform
 
 # :material-waveform: Audio Echo
 
+_Status: doctrine ahead of code — the built-in `audio` package is where this lands; treat this page as design intent. Law: [ADR 37](../../adr/37-audio.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"A text-only Daemon is blind to the physical resonance of the world. To exist as a pervasive companion, the Lich must perceive vibration and project resonance—transforming the cold silence of the Crypt into a living stream of intent."_
 
-**The Echo** is the Audio Extension of the LychD system. It is the reference implementation of the `audio.coven`—a complete, stateful capability for real-time voice communion, as defined in **[ADR 37 (Audio)](../../adr/37-audio.md)**.
+**The Echo** is the planned Audio Extension of the LychD system. It is the reference design for a
+future Audio Coven—a stateful capability for real-time voice communion defined in
+**[ADR 37 (Audio)](../../adr/37-audio.md)**.
 
-By treating audio not as static "file uploads" but as a real-time **Resonance Pipeline**, The Echo bridges the sensory gap. It is a specialized extension that enables the Daemon to perceive the spoken word (STT), reason upon it, and project its own voice (TTS) in a single, fluid motion.
+The planned **Resonance Pipeline** treats audio as a real-time stream rather than a static file. It
+will connect speech-to-text (STT), agent reasoning, and text-to-speech (TTS) without claiming that
+the current immutable artifact-reference seam already carries playable bytes.
 
 ## I. The Audio Coven: A Manifestation of Resonance
 
-Resonance is not a single model; it is an entire operational state. The extension manifests the `audio.coven`, a collection of local **[Soulstones](../animator/soulstone.md)** rendered as **[Quadlet services](../../adr/08-containers.md)** and managed as one atomic unit by the **[Orchestrator](../../adr/23-orchestrator.md)**. The form includes:
+Resonance is not a single model; it is an entire operational state. The future extension will group
+local **[Soulstones](../animator/soulstone.md)** rendered as
+**[Quadlet services](../../adr/08-containers.md)** and readied under
+**[Orchestrator](../../adr/23-orchestrator.md)** policy. The target form includes:
 
 - **The Ear (`stt.container`):** A Soulstone for a high-performance Speech-to-Text model (e.g., `faster-whisper`), tagged with `capability="stt"`.
 - **The Voice (`tts.container`):** A Soulstone for a streaming Text-to-Speech model (e.g., `Piper`), tagged with `capability="tts"`.
 - **The Mind (`llm.container`):** The Coven may include a smaller, faster reasoning model for low-latency conversational tasks.
 
-## II. The Resonance Pipeline (Buffer & Stream)
+## II. The Planned Resonance Pipeline (Buffer & Stream)
 
-The Echo rejects the high-latency REST patterns of the mundane web. It establishes a low-latency WebSocket pipeline mounted directly onto the **[Vessel](../vessel/index.md)**.
+!!! warning "Current audio boundary"
+    The current core can persist an immutable audio `ArtifactRef` and filter declared audio
+    modality metadata. It has no blob materializer, Bridge/graph binary propagation, audio
+    WebSocket, resonance buffer, or working STT/TTS adapters. The pipeline below is target design.
+
+The Echo will establish a low-latency WebSocket pipeline mounted onto the
+**[Vessel](../vessel/index.md)**.
 
 1. **Ingest:** The client connects via the **[Tether](./tether.md)** and streams raw audio bytes.
 2. **Perception:** The pipeline routes the audio stream to the **Ear** Animator for real-time transcription.
@@ -31,7 +46,8 @@ The Echo rejects the high-latency REST patterns of the mundane web. It establish
 
 ## III. Dual-Mode Orchestration
 
-In the logic of the **[Orchestrator](../../adr/23-orchestrator.md)**, audio operates in two distinct modes.
+The target Audio extension will use the **[Orchestrator](../../adr/23-orchestrator.md)** in two
+distinct modes.
 
 ### Mode A: The Reflex (User Initiated)
 
@@ -49,7 +65,8 @@ When a text-based Agent decides to speak:
 
 ## IV. The Mobile Emissary (Android)
 
-To project the Echo into the physical world, the system utilizes a **Mobile Emissary**—a native application that acts as the physical mouthpiece of the Lich.
+The target design may project the Echo through a **Mobile Emissary**—a native application acting as
+the physical mouthpiece of the Lich.
 
 - **Hardware Binding:** The Emissary handles low-level Voice Activity Detection (VAD) and audio hardware management.
 - **The Secure Thread:** By tunneling its traffic through the **[Tether](./tether.md)**, the Emissary ensures that voice biometrics and private whispers are protected by WireGuard encryption.

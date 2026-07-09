@@ -8,7 +8,7 @@ on ONE event loop through ONE shared `RunEventBus`.
 
 Two passes:
 - DB-free (runs on the Mac / CI): the `memory` persistence profile with an offline
-  `TestModel`, mirroring `AltarServices.wire_runtime` but with an offline dispatcher.
+  `TestModel`, replacing only the live dispatcher in the otherwise-real substrate.
 - [LINUX] real factory over Postgres: gated behind `testcontainers`; written here,
   deferred to the Linux/PG runtime pass (it forks nothing — `separate_process=False`).
 """
@@ -17,6 +17,8 @@ Two passes:
 
 from __future__ import annotations
 
+# Litestar's create_test_client callback surface contains third-party Unknowns.
+# pyright: reportUnknownVariableType=false
 import asyncio
 from pathlib import Path
 from typing import Any
@@ -62,6 +64,7 @@ class _InProcessQueue:
                 {},  # NO ctx["run_substrate"] — reads the published process memo
                 run_id=kwargs["run_id"],
                 resume=bool(kwargs.get("resume", False)),
+                enqueue_seq=int(kwargs["enqueue_seq"]),
             )
         )
         self.tasks.append(task)
@@ -78,15 +81,18 @@ class _InProcessQueue:
 async def test_production_wiring_no_injection_queued_running_done_and_sse() -> None:
     """Submit → QUEUED → RUNNING → DONE + SSE, all on one loop, substrate read from the memo."""
     engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
+    queues = {"runs": _InProcessQueue(), "rites": _InProcessQueue()}
     services = build_altar_services(
         template_engine=engine_template,
+        queues=queues,
         rune_schemas=[],
         runtime_adapters=[],
         profile="memory",  # DB-free: the InMemoryRunLedger
     )
+    assert services.run_engine.cancellations is services.substrate.cancellations
 
-    # Mirror `wire_runtime` (the ONE publish site) but with an offline dispatcher so
-    # the graph completes without a live Soulstone. This is the production memo path.
+    # Replace the live dispatcher with an offline one so the graph completes without
+    # a Soulstone. The publication and worker lookup still use the production memo path.
     model = TestModel(custom_output_args={"answer": "risen", "fragments": []}, call_tools=[])
     substrate = RunSubstrate(
         ledger=services.ledger,
@@ -98,6 +104,7 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         fragments=services.fragments,
         turns=services.bridge_sessions,
         forge=default_forge(),
+        cancellations=services.substrate.cancellations,
     )
     set_run_substrate(substrate)
     engine = CortexRunEngine(
@@ -105,7 +112,8 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         bus=services.bus,
         workflows=substrate.workflows,
         queue_router=QueueRouter(),
-        queues={"runs": _InProcessQueue(), "rites": _InProcessQueue()},
+        queues=queues,
+        cancellations=substrate.cancellations,
     )
 
     try:
@@ -159,11 +167,11 @@ class _InfoQueue:
 
 
 @pytest.mark.asyncio
-async def test_queues_api_reads_real_substrate_zero_injection() -> None:
+async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytest.MonkeyPatch) -> None:
     """GET /orchestrator/queues through the REAL composition root — zero substrate injection.
 
-    Exit-gate item 9 (the F1 lesson made structural): `build_altar_services` +
-    `wire_runtime` publish the substrate via `set_run_substrate`; the controller reads
+    Exit-gate item 9 (the F1 lesson made structural): `build_altar_services` returns
+    one complete substrate, which the lifespan publishes; the controller reads
     the queues from that process memo (NOT an injected value) and the leases from the
     services container, returning real SAQ numbers + live lease rows.
     """
@@ -177,25 +185,34 @@ async def test_queues_api_reads_real_substrate_zero_injection() -> None:
     from lychd.domain.animation.capabilities import GrantLease
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
     from lychd.domain.cortex.substrate import reset_run_substrate as _reset
+    from lychd.domain.cortex.substrate import set_run_substrate as _publish
     from lychd.interface.api.orchestrator import OrchestratorController
     from lychd.interface.web.deps import web_dependencies
 
+    # This focused controller app intentionally omits the production auth
+    # middleware; select the documented test/dev guard floor explicitly.
+    monkeypatch.setattr(
+        "lychd.domain.codex.guards.get_settings",
+        lambda: SimpleNamespace(sigil=SimpleNamespace(enforce=False)),
+    )
+
     engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
+    queues = {"runs": _InfoQueue(queued=3, active=1), "rites": _InfoQueue(queued=0, active=0)}
     services = build_altar_services(
         template_engine=engine_template,
+        queues=queues,
         rune_schemas=[],
         runtime_adapters=[],
         profile="memory",
     )
-    queues = {"runs": _InfoQueue(queued=3, active=1), "rites": _InfoQueue(queued=0, active=0)}
-    services.wire_runtime(queues)  # the ONE publish site: set_run_substrate + GhoulBroker late-bind
+    _publish(services.substrate)
 
     # A live lease so the API's lease view is exercised.
     spec = SimpleNamespace(key="titan:chat:m", animator_name="titan")
     grant = SimpleNamespace(
         lease=GrantLease(grant_id="lease-1", holder="run:z", issued_at=datetime.now(UTC)), spec=spec
     )
-    services.leases.acquire(grant, priority=70)  # type: ignore[arg-type]
+    services.leases.acquire(grant, priority=70)
     _ = CapabilityFamily  # imported for parity with the rest of the suite
 
     @asynccontextmanager

@@ -8,14 +8,16 @@ icon: material/directions-fork
 !!! abstract "Context and Problem Statement"
     Cognitive and operational labor in a sovereign system requires abstract intents: reasoning, visual analysis, vocal perception, tool execution, telemetry queries, browsing, and peer delegation. The physical infrastructure is fragmented across discrete local containers (**Soulstones**), remote APIs (**Portals**), and peer-to-peer nodes (**The Legion**).
 
-    A single provider often offers overlapping services, creating a complex many-to-many mapping between logical intent and physical substrate. Furthermore, on a single-node architecture, provider availability is volatile; a vision model may be "sleeping" to save VRAM. The lack of an intelligent switchboard leads to resource contention, inefficient model loading, and a failure to maintain the **[Sovereignty Wall (09)](09-security.md)**. The machine requires a **Semantic Cortex** to resolve abstract desire into executable power.
+    A single provider often offers overlapping services, creating a complex many-to-many mapping between logical intent and physical substrate. Furthermore, on a single-node architecture, provider availability is volatile; a vision model may be "sleeping" to save VRAM. The lack of an intelligent switchboard leads to resource contention, inefficient model loading, and a failure to maintain the **[Sovereignty Wall (09)](09-security.md)**. A resolution layer is required to translate an abstract capability intent ("chat with tool support") into a concrete, warm endpoint. That layer is the **Dispatcher** — the Semantic Cortex.
 
 ## Requirements
 
 - **Provider-Pair Discovery:** Resolution of intents into concrete capability providers rather than hardcoded model identifiers. Cognitive calls may still resolve a `model_provider` + `tool_provider` pair, but the underlying abstraction is a capability-bearing Animator.
+- **Semantic Selection Only:** The Dispatcher selects a declared capability and issues a scoped grant only when it is `WARM`; it never starts, stops, swaps, or activates a runtime.
+- **Explicit Requirements:** Family, model preference, required input modalities, and tool support must be named in the dispatch request and filtered before a provider can be selected.
 - **The Animator Protocol:** Mandatory implementation of the **Animator** interface to bind disparate local, remote, and swarm services to the **[Agents (20)](20-agents.md)** runtime, Graph, Orchestrator, and extension surfaces.
 - **The Stasis Handshake:** Mandatory coordination with the **[Orchestrator (23)](23-orchestrator.md)**. The Dispatcher must query the physical state of the required **[Coven (08)](08-containers.md)** before binding logic. If the required hardware is "Cold," it must raise a `HardwareTransitionRequired` signal to trigger the **Stasis Protocol**.
-- **Asynchronous Deferral:** The mechanism must support "The Long Sleep." It must be capable of serializing the calling thread and suspending it until the physical body reconfigures itself.
+- **Asynchronous Deferral:** HTR and grant requirements must be serializable/park-safe so the Graph can own Live or Durable Stasis. The Dispatcher never serializes an execution frame itself.
 - **Modality Zipping:** Capability to "weave" deferred sensory tools into a text-only reasoning agent if the selected provider lacks native multimodal support.
 - **Syntax Standardization (Pydantic Covenant):** Adoption of Python type hints and Pydantic schemas as the definitive internal grammar for tool definitions, eliminating the "Middleware Tax" of legacy proxy translation layers.
 - **Sigil-Based Filtering:** Integration with **[The Ward (38)](38-iam.md)** to physically hide privileged tools/models from an Agent based on the active identity's scope.
@@ -59,21 +61,21 @@ The capability ontology is frozen. Earlier drafts left the class names provision
 
 The canonical capability key is `{animator}:{family}:{model_id}`. The rune names the Animator (**[Configuration (12)](12-configuration.md)**); the family and model id complete the identity, so a single multi-model Animator yields several Specs.
 
-#### Lifecycle and Phase
+#### `is_dynamic` and Phase
 
-A `CapabilitySpec` carries a `CapabilityLifecycle`; a `CapabilityState` projects a `CapabilityPhase`. The two are orthogonal: lifecycle is a *fixed property of the runtime* (how it becomes ready), phase is the *live observation* (whether it is ready now).
+A `CapabilitySpec` carries an `is_dynamic: bool`; a `CapabilityState` projects a `CapabilityPhase`. The two are orthogonal: `is_dynamic` is a *fixed property of the runtime* (how it becomes ready), phase is the *live observation* (whether it is ready now).
 
-- **`CapabilityLifecycle`** — `STATIC` (resident whenever the Animator unit is up — the server binds its port only after the model loads, so a reachable endpoint is warm) or `DYNAMIC` (the unit is up but the model needs an in-runtime activation step, e.g. the `llama.cpp` router `/models/load`). These are the canonical doctrine words; an earlier `FIXED/AWAITED` proposal was rejected, and the legacy `dynamic_soft` string normalizes to `DYNAMIC`.
-- **`CapabilityPhase`** — the six-value readiness ladder: `COLD` (unit down / endpoint unreachable), `ACTIVATABLE` (unit up, a `DYNAMIC` model not yet loaded), `WARMING` (activation in flight), `WARM` (requests accepted now), `ERROR`, and `UNKNOWN`. Intent resolution drives its decision table off the phase, not a boolean.
+- **`is_dynamic`** — `False` (resident whenever the Animator unit is up — the server binds its port only after the model loads, so a reachable endpoint is warm) or `True` (the unit is up but the model needs an in-runtime activation step, e.g. the `llama.cpp` router `/models/load`). These are the canonical doctrine values; an earlier `FIXED/AWAITED` proposal was rejected, and the legacy `dynamic_soft` string normalizes to `is_dynamic=True`.
+- **`CapabilityPhase`** — the six-value readiness ladder: `COLD` (unit down / endpoint unreachable), `ACTIVATABLE` (unit up, an `is_dynamic=True` model not yet loaded), `WARMING` (activation in flight), `WARM` (requests accepted now), `ERROR`, and `UNKNOWN`. Intent resolution drives its decision table off the phase, not a boolean.
 
 #### The Two-Axis Law
 
 A capability is described along two orthogonal axes, and conflating them is forbidden:
 
-- **Family** names a routable *service kind*: `chat`, `vision-analysis`, `embedding`, `stt`, `tts`, `tool_execution`, `rerank`.
+- **Family** names a routable *service kind*: `chat`, `vision`, `embedding`, `stt`, `tts`, `tool_execution`, `rerank`.
 - **Modalities** name what a capability *admits and emits* on a request.
 
-There is no AUDIO family. A chat model that hears is `chat` with `audio ∈ modalities_in`; a chat model that sees is `chat` with `image ∈ modalities_in`. The `vision-analysis` family (the dedicated Eye of **[Vision (36)](36-vision.md)**) is reserved for dedicated vision-analysis providers, not for a multimodal chat model that happens to accept images. Intent resolution matches on `(family, required_modalities)`, where the required modalities must be a subset of the capability's `modalities_in`. When no admitting capability is available, the **Modality Zip** (§5) is the sanctioned degradation path — never a silent family substitution.
+There is no AUDIO family. A chat model that hears is `chat` with `audio ∈ modalities_in`; a chat model that sees is `chat` with `image ∈ modalities_in`. The `vision` family (the dedicated Eye of **[Vision (36)](36-vision.md)**) is reserved for dedicated vision-analysis providers, not for a multimodal chat model that happens to accept images. Intent resolution matches on `(family, required_modalities, requires_tools)`, where the required modalities must be a subset of the capability's `modalities_in` and a tool-bearing request admits only `supports_tools=True`. When no admitting capability is available, the **Modality Zip** (§5) is the sanctioned degradation path — never a silent family substitution.
 
 #### The Declare-then-Verify Doctrine
 
@@ -81,19 +83,27 @@ Declared capability hints (the `[[models]]` blocks of a Soulstone rune, per **[C
 
 #### The Grant Lease Doctrine
 
-A `CapabilityGrant` is a lease scoped to the step that acquired it. Steps re-acquire per use; a grant is never cached across steps. The Orchestrator's drain honours active leases, but a hardware transition revokes all outstanding leases. A stale grant — one whose substrate moved after the lease was taken — surfaces as a `dependency_unavailable` rejection carrying `required_state` and `observed_state`, and is retryable. This ties to the Swarm Lease of the **[Orchestrator (23)](23-orchestrator.md)**.
+A `CapabilityGrant` is a lease scoped to the step that acquired it. Steps re-acquire per use; a
+grant is never cached across steps. Before any mutable-runtime transition, the Orchestrator closes
+admission and waits for every affected lease to release: the complete evictee set for a hard swap,
+or the target Animator itself for an in-process model load. The second barrier matters because a
+router load may unload an older model and invalidate a different capability grant from the same
+process. Generation/epoch-based stale-grant rejection remains a later distributed-recovery
+refinement; the foundation prevents the local stale-grant race through admission closure and drain.
+This ties to the Swarm Lease of the **[Orchestrator (23)](23-orchestrator.md)**.
 
-!!! note "Wave 3 rulings: the grant/lease surface"
+!!! note "Rulings: the grant/lease surface"
     - **HTR decoupling (seam S5).** `HardwareTransitionRequired` is now handle-free — it carries only `capability_key`, `animator_name`, and a nullable `estimated_ready_ms`. It is JSON-loggable and park-safe; consumers re-fetch the spec from the registry by key (the registry is the only truth for records).
-    - **The lease context manager.** A grant is acquired through `Dispatcher.lease_grant(...)`, an async context manager that resolves the family, drives the phase decision table to WARM, registers a GrantLease, yields the grant for the step body, and releases the lease on exit (including on exception). `lease_grant_key(key, ...)` is the key-addressed form for CLI, tests, and manual orchestrator paths — same machinery, spec resolved by explicit key.
+    - **The lease context manager.** A grant is acquired through `Dispatcher.lease_grant(...)`, an async context manager that resolves family/model/modality/tool requirements and reads the phase decision table. `WARM` registers a GrantLease and yields the grant; managed readying phases (`COLD`, `ACTIVATABLE`, `WARMING`) raise HTR *before* lease acquisition; `ERROR`, unresolved `UNKNOWN`, and unavailable shared runtimes fail closed. The lease is released on every exit. `lease_grant_key(key, ...)` is the key-addressed form for CLI, tests, and manual paths — same machinery, spec resolved by explicit key.
+    - **Concurrent drain admission.** An open Animator is preferred over an otherwise equivalent draining candidate. Admission may still close during the asynchronous WARM preflight or grant assembly; that typed refusal is converted to HTR before the grant enters the ledger, so GraphRunner parks and retries through the single readiness owner. Duplicate grant ids and other ledger defects remain hard failures rather than masquerading as stasis.
     - **`issue_grant` (formerly `resolve_capability_grant`).** Grant assembly for a WARM capability moved onto the AnimatorRegistry as `issue_grant` (mechanics only); the Dispatcher owns the phase decision, the registry owns the handoff assembly.
 
 #### Portal Capability Synthesis
 
-A Portal yields `CapabilitySpec`s from its declared model list in the Codex or, absent declaration, from a live `/v1/models` probe performed at bind. Portal-born specs are `dedicated=False` and always warm, and they pass through the Privatization and Sovereignty gates before candidacy.
+A Portal yields `CapabilitySpec`s from its declared model list in the Codex or, when explicitly enabled, from a live `/v1/models` probe performed at bind. Portal-born specs are `dedicated=False` and `is_dynamic=False`: LychD has no activation or lifecycle authority over them. Their live state must still be `WARM` before grant.
 
-!!! note "Wave 3 ruling: Portal synthesis is live"
-    Portal capability synthesis is built (Wave 3). A Portal now yields one `CapabilitySpec` per declared `[[models]]` block — key `{portal}:{family}:{model_id}`, always `STATIC`. A Portal with zero declared models yields zero specs (honest: reachable but unadvertised). The live `/v1/models` probe is opt-in per rune (`probe = true`, default `false`) so binding a Portal performs no egress by default. The Portal Egress, Sovereignty, and Economic (**[The Toll (41)](41-x402.md)**) gates now guard a routable path.
+!!! note "Ruling: Portal synthesis is live"
+    Portal capability synthesis is built. A Portal now yields one `CapabilitySpec` per declared `[[models]]` block — key `{portal}:{family}:{model_id}`, always `is_dynamic=False`. A Portal with zero declared models yields zero specs (honest: reachable but unadvertised). The live `/v1/models` probe is opt-in per rune (`probe = true`, default `false`) so binding a Portal performs no egress by default. Request-time Portal Egress, Sovereignty, and Economic (**[The Toll (41)](41-x402.md)**) gates remain policy integrations described below.
 
 
 ### 1. The World Model (Provider Indexing)
@@ -111,25 +121,37 @@ The runtime registry is the canonical handshake surface. It exposes:
 - `CapabilityGrant`: the late-bound dispatch handoff
 
 - **The Substrate Check:** When an Agent requests a capability, the Dispatcher reads `CapabilityState.phase`.
-- **The Physical Check:** Any phase below `WARM` (`COLD`, `ACTIVATABLE`, `WARMING`) means the substrate supports the capability but it is not presently ready — `ACTIVATABLE` invites a `DYNAMIC` soft activation, `COLD` invites a hard swap.
+- **The Physical Check:** Any managed phase below `WARM` (`COLD`, `ACTIVATABLE`, `WARMING`) means the substrate supports the capability but it is not presently ready. The Dispatcher emits HTR without choosing or executing the remedy.
 - **The Residency Boundary:** `persistent_resident=True` keeps a support runtime out of the default eviction set, but it does not create a second conflict law or a second activation path.
 - **The Lifecycle Boundary:** `dedicated=False` means the runtime is routable but not lifecycle-managed by LychD.
 - **The Stasis Signal:** In this scenario, the Dispatcher raises `HardwareTransitionRequired`. This freezes the Agent Graph and hands control to the Orchestrator.
-    - **Soft Activation:** If the runtime is already warm and the adapter exposes a native activation seam, the Orchestrator performs adapter-led activation (for example `llama.cpp` router `/models/load`) without a container restart.
-    - **Hard Swap:** If the target runtime is not warm and LychD owns its lifecycle, the Orchestrator executes a Systemd transition so kernel-level `Conflicts=` reclaims the substrate.
-- **The Reanimation:** Once the requested capability is warm, the Dispatcher grants it and the Agent resumes.
+    - **Soft Activation:** If the unit is already running and the adapter exposes a native
+      activation seam, the Orchestrator closes admission for that whole Animator, pauses new queue
+      claims, drains all of its leases, and only then performs adapter-led activation (for example
+      `llama.cpp` router `/models/load`) without a container restart. If activation/readiness fails,
+      admission remains deliberately closed because v1 has no trustworthy model-level inverse.
+    - **Hard Swap:** If the target runtime is cold and LychD owns its lifecycle, the Orchestrator
+      serializes one explicit evict/launch plan, drains its complete evictee set, and executes that
+      exact Systemd transition. Generated units add no hidden conflict stops. A failure after
+      physical completion but before WARM triggers one typed exact inverse; gates reopen only if
+      that compensation reaches a terminal success. A raising actuator call itself stays closed
+      because the current port does not return proof that best-effort rollback restored the world.
+      That containment rejects all later transition requests—including a warm-looking NO_OP—until
+      operator recovery or process restart.
+- **The Reanimation:** Once the Orchestrator converges the requested capability on `WARM`, the Graph retries dispatch; only that fresh dispatch may issue the grant.
 
 !!! note "Agent State vs. VRAM Swap"
-    The Agent's cognitive state (Pydantic AI graph runner, in-flight tool calls) lives in **Vessel process memory**, not inside the VLLM/llama.cpp container. When VLLM restarts, the Vessel continues running and the Agent simply waits for the next LLM response. No serialization to the Phylactery is required for VRAM swaps. Phylactery serialization serves a different concern — **Long Sleep** durability (surviving reboots, multi-day waits for human approval, or deferred A2A results).
+    An ordinary VRAM swap is **Live Stasis**: the Agent's cognitive state lives in Vessel process memory and simply waits for the substrate. The Live/Durable Stasis definitions and default table are law in **[Graph (24)](24-graph.md)**.
 
 The handshake is implemented as a strict registry and adapter contract:
 
 1. **`list_capabilities()` / `get_capability()`** -> resolve canonical capability identity.
 2. **`refresh_capability_state()`** -> re-probe warm/live readiness before grant.
-3. **`activate_capability()`** -> perform runtime-native soft activation when supported.
-4. **`bind_model()`** -> hydrate the selected model surface from the chosen connector when model-backed.
-5. **`bind_toolset()` / `bind_toolsets()`** -> hydrate tool surfaces from the chosen connector when tool-backed.
-6. **Service-specific binders** -> hydrate watcher, browser, peer, metrics, or other non-model surfaces when an extension registers that adapter family.
+3. **`issue_grant()`** -> hydrate a grant only from a `WARM` record.
+4. **`activate_capability()` / `await_warm()`** -> Orchestrator-owned readiness operations, never Dispatcher-owned selection operations.
+5. **`bind_model()`** -> hydrate the selected model surface from the chosen connector when model-backed.
+6. **`bind_toolset()` / `bind_toolsets()`** -> hydrate tool surfaces from the chosen connector when tool-backed.
+7. **Service-specific binders** -> hydrate watcher, browser, peer, metrics, or other non-model surfaces when an extension registers that adapter family.
 
 This keeps Orchestrator, Dispatcher, and Animator code decoupled while preserving deterministic resolution.
 
@@ -144,9 +166,11 @@ Generic fallback law: an unknown local Soulstone runtime is passive unless a spe
 
 ### 3. The Resolution Algorithm (Matchmaking)
 
-When a reasoning step submits a requirement, the Dispatcher executes a multi-stage resolution:
+The full policy algorithm is staged as follows. The foundation implements capability admission and
+deterministic readiness-aware ordering; later gates must be inserted before grant without creating a
+parallel dispatch path:
 
-1. **Candidate Selection:** All local (Soulstone) and remote (Portal) Animators declaring an active `Capability` matching the requested type are identified. The canonical capability taxonomy is defined in the **[Animator index](../sepulcher/animator/index.md)**.
+1. **Candidate Selection:** All local (Soulstone) and remote (Portal) Animators declaring a `Capability` matching the requested family, optional model, required modalities, and tool requirement are identified. The canonical capability taxonomy is defined in the **[Animator index](../sepulcher/animator/index.md)**.
 2. **Context Filtering:** **[The Ward (38)](38-iam.md)** verifies the Sigil's scopes. Providers not visible to the user are pruned.
 3. **Privatization Gate:** The context envelope is scored. If target is a Portal and the payload exceeds configured thresholds, raw routing is blocked and anonymization workflow is required.
 4. **Economic Arbitration:** If multiple candidates exist, **[The Toll (41)](41-x402.md)** calculates the cost. It prefers "Free" (local) over "Paid" (remote) unless the ritual is marked `high_fidelity`.
@@ -164,13 +188,31 @@ The Dispatcher does not return a raw model. It returns a **CapabilityGrant** con
 
 Tool-only and service-only grants may have no model. Capability-bearing surfaces are carried by connectors, not by pretending every Portal has a default chat model. A Watcher, browser Animator, or remote service Portal follows the same law: it exposes its own capability families rather than masquerading as chat.
 
+#### Durable Content and `ArtifactRef`
+
+Multimodal bytes do not belong inside an `Intent`, run row, queue payload, graph state, or
+checkpoint. Durable content carries an immutable `ArtifactRef` containing an artifact identity,
+SHA-256 digest, media type, byte size, and classification. The blob lives in an external artifact
+store governed by Phylactery/security policy; Graph and Dispatcher pass only the reference.
+
+The foundation implements the discriminated text/artifact content shape, digest validation, and
+media-type-to-modality projection used by dispatch admission. The blob store, authorization-aware
+materializer, retention/garbage collection, and provider-specific multimodal payload conversion
+remain later work. Until that materializer exists, an `ArtifactRef` is durable metadata, not a
+promise that every Animator can consume the referenced bytes.
+
 ### 5. The Modality Zip (Joint Intelligence)
 
-To resolve the complexity of multi-modal provider routing on disparate hardware, the Dispatcher implements the **Modality Zip**.
+To resolve the complexity of multi-modal provider routing on disparate hardware, this ADR defines the **Modality Zip** target.
 
 - **Native Pass:** If the Animator is a multimodal VisionLLM, the image data is passed directly in the prompt.
 - **Decomposed Pass:** If the Animator is text-only (e.g., Llama-3), the Dispatcher injects a **Deferred Sensory Tool** (e.g., `call_ocr_container`).
 - **The Trigger:** When the text model calls this tool, it triggers the **Stasis Protocol**, causing the text model to sleep while the OCR container is summoned.
+
+!!! warning "Doctrine ahead of the foundation"
+    Native modality admission is implemented, but the full Modality Zip planner, deferred sensory
+    tool materializer, and cross-Animator result join are not. A request that has no native
+    admitting capability currently fails closed; it is not silently transformed.
 
 ### 6. The Pydantic Covenant (The Internal Law)
 
@@ -181,7 +223,7 @@ The Dispatcher rejects intermediate translation protocols (UTCP). It adopts **Py
 
 ### 7. The Agent Registry & Emissary Protocol
 
-The Dispatcher functions as the sole keeper of the **Agent Registry**—a system-wide directory of all manifest minds.
+The Dispatcher is the intended semantic routing boundary for the **Agent Registry**—a system-wide directory of all manifest minds. The Emissary transport described here is not part of the current foundation.
 
 - **The Registry:** An in-memory index mapping agent intents to provider-route policy (`model_provider` and `tool_provider`). Extensions register their agents here during the boot sequence.
 - **The Emissary Pattern:** Remote agents are represented in the registry as **Emissaries**. To the local Agent, invoking a remote node is identical to calling a local tool—the domain boundary is invisible at the reasoning layer.
@@ -191,8 +233,13 @@ The Dispatcher functions as the sole keeper of the **Agent Registry**—a system
 
 ### 8. Health and Pulse
 
-Before granting a capability, the Dispatcher performs a **Stateless Pulse**.
-It pings the assigned provider endpoint (for OpenAI-compatible connectors, typically `/v1/models`; other connectors may define provider-specific probes). If the pulse fails (timeout/error), the Dispatcher triggers an **Autonomous Repair Signal** to the Orchestrator to investigate or restart the container, protecting the Agent from "Zombie" providers.
+Readiness comes from adapter-owned **Stateless Pulses** in the canonical registry (for
+OpenAI-compatible connectors, typically `/v1/models`; other connectors define their own probes).
+The foundation refreshes an `UNKNOWN` record once during dispatch and otherwise consumes the latest
+observed state; it does not pretend to perform a network round trip before every grant. A failed
+pulse makes the capability unavailable or non-WARM. State TTL/freshness policy, autonomous repair
+signaling, and bounded restart policy remain later Registry/Orchestrator integration; dispatch does
+not restart providers.
 
 ### 9. Portal Egress Gate (Privatization Enforcement)
 
@@ -210,6 +257,16 @@ Before any intent is dispatched to an external Portal, the volatility of the con
 The Sovereignty Wall carries two distinct authorities that must not be confused. The Dispatcher **gates**: it decides *whether* content may egress at all, applying the privatization thresholds above and failing closed under `LYCHD_SECURE_MODE`. The Weaver's Censor (**[Workflow (28)](28-workflow.md)**) **transforms**: it anonymizes *what* has been permitted to cross and re-identifies results on return.
 
 The two never substitute for one another. The Censor runs strictly downstream of the gate — only on content the gate has already admitted — and it may only narrow: it can never widen what the gate permitted. The gate answers "may this leave?"; the Censor answers "in what form does the permitted content leave?". The Censor's concrete algorithm remains future work; its position in the pipeline is now law.
+
+!!! note "Implemented foundation vs policy horizon"
+    The implemented Dispatcher foundation performs canonical family/model/modality/tool filtering,
+    warm-first deterministic selection, WARM-only scoped lease grants, and handle-free HTR for
+    managed readying candidates. The durable `Intent` schema can retain immutable artifact
+    references and derive modality requirements, but the current Bridge/graph remains text-first and
+    does not materialize those references into model content. Request-time Sigil visibility, privatization scoring,
+    anonymization, economic arbitration, secure-mode Portal filtering, Emissary/A2A routing, and
+    autonomous repair remain policy integrations described by this ADR. They must fail closed as
+    they land; their doctrine here is not evidence that the current request path enforces them.
 
 ## Consequences
 

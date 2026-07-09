@@ -5,6 +5,8 @@ icon: material/hexagon-multiple-outline
 
 # :material-hexagon-multiple-outline: Legion
 
+_Status: doctrine ahead of code — the built-in `swarm` package is where this lands; treat this page as design intent. Law: [ADR 42](../../adr/42-legion.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _One signal crosses the wire._
 >
 > _Many bodies answer._

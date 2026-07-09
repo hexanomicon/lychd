@@ -16,23 +16,23 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.plugins.htmx import HTMXPlugin
 from litestar.template.config import TemplateConfig
-from litestar.testing import create_test_client
+from litestar.testing import create_test_client  # pyright: ignore[reportUnknownVariableType]
 
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.codex.middleware import sigil_auth_middleware
+from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
-from lychd.domain.web.altar_services import RunEngine
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import Projector
 from lychd.domain.web.schemas import run_data_state
@@ -46,6 +46,8 @@ if TYPE_CHECKING:
 
     from litestar import Litestar
     from litestar.testing import TestClient
+
+    from lychd.domain.cortex.priority import Priority
 
 TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "src" / "lychd" / "domain" / "web" / "templates"
 
@@ -88,8 +90,8 @@ SAMPLE_STATUSES: list[dict[str, Any]] = [
 class FakeRunEngine(RunEngine):
     """A scripted run engine: records submitted intents, opens a live channel on the bus.
 
-    Subclasses the real `RunEngine` facade so Litestar's dependency-value validation
-    (isinstance-based) accepts it; the parent `__init__` is intentionally bypassed.
+    Subclasses the real `RunEngine` so Litestar's dependency-value validation
+    (isinstance-based) accepts it; the dataclass initializer is intentionally bypassed.
     """
 
     def __init__(self, bus: InProcessEventBus, consents: Any = None) -> None:
@@ -135,21 +137,32 @@ class FakeOrchestrator(OrchestratorManager):
         """Return the fixed capability statuses feeding the board."""
         return self._statuses
 
-    async def calculate_transition_plan(self, target: str) -> TransitionPlan:
+    async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
         """Return a canned plan, or raise ValueError for the sentinel unknown target."""
-        if target == "chat:unknown":
+        if target_capability_key == "chat:unknown":
             msg = "unknown target"
             raise ValueError(msg)
         return TransitionPlan(
             total_metabolic_cost=1.0,
             evict_coven_ids=[],
-            launch_coven_ids=[target],
+            launch_coven_ids=[target_capability_key],
             action_type="SOFT_SWAP",
         )
 
-    async def request_transition(self, target: str, priority: float = 0.0) -> None:  # noqa: ARG002
+    async def request_transition(
+        self,
+        target_capability_key: str,
+        priority: Priority = 0,
+    ) -> TransitionPlan:
         """Record the requested transition (completes immediately)."""
-        self.transitions.append(target)
+        _ = priority
+        self.transitions.append(target_capability_key)
+        return TransitionPlan(
+            total_metabolic_cost=1.0,
+            evict_coven_ids=[],
+            launch_coven_ids=[target_capability_key],
+            action_type="SOFT_SWAP",
+        )
 
 
 class FakeRegistry(AnimatorRegistry):
@@ -202,10 +215,11 @@ def _static_lifespan(services: SimpleNamespace) -> Any:
     async def _lifespan(app: Litestar) -> AsyncIterator[None]:
         app.state.services = services
 
-        engine = app.template_engine
-        engine.engine.globals["route_path"] = app.route_reverse
-        engine.engine.globals["vite_hmr"] = lambda: ""
-        engine.engine.globals["vite"] = lambda *_a, **_k: ""
+        engine = cast("JinjaTemplateEngine", app.template_engine)
+        template_globals = cast("dict[str, Any]", engine.engine.globals)
+        template_globals["route_path"] = app.route_reverse
+        template_globals["vite_hmr"] = _empty_template_helper
+        template_globals["vite"] = _empty_template_helper
         engine.engine.filters["run_data_state"] = run_data_state
         services.projector = Projector(
             engine=engine,
@@ -236,9 +250,18 @@ def altar_client(fake_services: SimpleNamespace) -> Iterator[TestClient[Litestar
 def projector() -> Projector:
     """A standalone Projector bound to a fresh engine (unit tests, no HTTP)."""
     engine = JinjaTemplateEngine(directory=TEMPLATES_DIR)
-    engine.engine.globals["route_path"] = lambda *_a, **_k: "/x"
+    template_globals = cast("dict[str, Any]", engine.engine.globals)
+    template_globals["route_path"] = _test_route_path
     engine.engine.filters["run_data_state"] = run_data_state
     sessions = BridgeSessionStore()
     return Projector(
         engine=engine, fragments=build_fragment_registry(), sessions=sessions, consents=InMemoryConsentLedger()
     )
+
+
+def _empty_template_helper(*_args: object, **_kwargs: object) -> str:
+    return ""
+
+
+def _test_route_path(*_args: object, **_kwargs: object) -> str:
+    return "/x"

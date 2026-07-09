@@ -44,8 +44,8 @@ def _inscribe(manifests: list[QuadletBase], tmp_path: Path) -> tuple[Path, Path]
     return output_dir, systemd_dir
 
 
-def test_f2_system_mount_renders_options(tmp_path: Path) -> None:
-    """F2: system mounts must render `host:container:ro,Z`, not a bare `host:container`.
+def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) -> None:
+    """Trusted mounts retain options on Vessel and never leak into a Soulstone.
 
     MountData sets mirror=True whenever host==container (every system mount); the
     old mirror branch dropped all options, losing `:ro,Z` -> SELinux EACCES /
@@ -55,16 +55,54 @@ def test_f2_system_mount_renders_options(tmp_path: Path) -> None:
     stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
-    content = (output_dir / "lychd-hermes.container").read_text(encoding="utf-8")
+    content = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8")
+    soulstone = (output_dir / "lychd-hermes.container").read_text(encoding="utf-8")
 
     volume_lines = [line for line in content.splitlines() if line.startswith("Volume=")]
-    # The read-only Codex mount and the rw Crypt mount must carry their options.
+    # Read-only Codex and bounded writable control-plane mounts carry options.
     assert any(line.endswith(":ro,Z") for line in volume_lines), volume_lines
     assert any(line.endswith(":rw,Z") for line in volume_lines), volume_lines
     # No system mount may render bare (host:container with no options).
     ro_codex = [line for line in volume_lines if "config/lychd" in line]
     assert ro_codex, volume_lines
     assert all(line.endswith(":ro,Z") for line in ro_codex), volume_lines
+    assert "config/lychd" not in soulstone
+    assert "share/lychd/triggers" not in soulstone
+
+
+def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> None:
+    """Host identity is explicit for agent containers, never forced on Postgres."""
+    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
+
+    output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
+    vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8").splitlines()
+    phylactery = (output_dir / "lychd-phylactery.container").read_text(encoding="utf-8").splitlines()
+    soulstone = (output_dir / "lychd-hermes.container").read_text(encoding="utf-8").splitlines()
+    pod = (output_dir / "lychd.pod").read_text(encoding="utf-8").splitlines()
+
+    assert "User=%U" in vessel
+    assert "User=%U" in soulstone
+    assert not any(line.startswith("User=") for line in phylactery)
+    assert "UserNS=keep-id" in pod
+    assert not any(line.startswith("UserNS=") for line in vessel)
+    assert not any(line.startswith("UserNS=") for line in soulstone)
+
+
+def test_migration_gate_renders_as_required_oneshot(tmp_path: Path) -> None:
+    """Vessel starts only after the in-pod, secret-bearing Alembic gate succeeds."""
+    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+
+    output_dir, _ = _inscribe(transmuter.transmute_all([]), tmp_path)
+    vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8").splitlines()
+    migrate = (output_dir / "lychd-migrate.container").read_text(encoding="utf-8").splitlines()
+
+    assert "Requires=lychd-migrate.service lychd-reactor.path" in vessel
+    assert "After=lychd-migrate.service lychd-reactor.path" in vessel
+    assert "Type=oneshot" in migrate
+    assert "Requires=lychd-phylactery.service" in migrate
+    assert "Exec=lychd database --wait-seconds 60 upgrade head --no-prompt" in migrate
+    assert "WantedBy=default.target" not in migrate
 
 
 def test_f3_exec_and_env_not_html_escaped(tmp_path: Path) -> None:
@@ -142,9 +180,9 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     # which merged the PartOf edge into BindsTo and defeated the coven wiring.
     alpha_lines = (output_dir / "lychd-alpha.container").read_text(encoding="utf-8").splitlines()
     assert "PartOf=lychd-coven-logic.target" in alpha_lines
-    assert "Conflicts=lychd-coven-creative.target" in alpha_lines
+    assert not any(line.startswith("Conflicts=") for line in alpha_lines)
     assert "WantedBy=lychd-coven-logic.target" in alpha_lines
-    assert "BindsTo=lychd.pod" in alpha_lines
+    assert "BindsTo=lychd-pod.service" in alpha_lines
     # No directive line may carry a second `=` directive fused onto it.
     for line in alpha_lines:
         if "=" in line and not line.startswith("#"):

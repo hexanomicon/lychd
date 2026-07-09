@@ -3,16 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import ClassVar, Protocol
 
-from lychd.domain.animation.animators import Animator
+from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
-from lychd.domain.animation.connectors import Connector
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
 from lychd.system.schemas import QuadletContainer
 
 LISTEN_HOST = "0.0.0.0"  # noqa: S104
-
-type RuntimeAnimator = Animator[Connector, SoulstoneConfig | PortalConfig]
 
 
 @dataclass(slots=True)

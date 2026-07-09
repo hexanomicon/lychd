@@ -50,7 +50,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 !!! failure "Option 3: Cross-Platform Abstraction (e.g., LlamaSwap)"
     Using a multi-service Go router (like LlamaSwap) to manage execution and conflicts across Windows/Mac/Linux.
 
-    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a completely different Go stack into a Python ecosystem and breaks the foundational security model. Attempting to abstract away Systemd means losing the Linux Kernel's native ability to enforce VRAM exclusivity (`Conflicts=`), losing Landlock (`nono`) sandboxing, and losing Double-Rootless Podman Identity Symmetry. Cross-platform abstraction forces the system to simulate what Linux does natively, resulting in massive complexity bloat for minimal gain. Let other platforms build independent implementations and speak the inter-daemon law. LychD remains pure Linux.
+    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a different lifecycle stack and breaks native integration with rootless user-systemd observation, Host Reactor mediation, Landlock (`nono`), and Podman identity symmetry. Let other platforms build independent implementations and speak the inter-daemon law. LychD remains pure Linux.
 
 !!! failure "Option 4: Simple API Webhooks"
     Exposing agents as standard REST endpoints.
@@ -61,7 +61,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
     The same `app.py` running in two modes — Master and Thrall — with the Master calling the Thrall's Vessel API directly over HTTP, and each node managing its own hardware natively.
 
     - **Pros:**
-        - **Hardware Exclusivity:** Handled purely by Systemd Quadlets using `Conflicts=` directives. The Linux kernel guarantees no two heavy Covens occupy the GPU simultaneously. No scheduler. No coordinator. The kernel *is* the coordinator.
+        - **Hardware Exclusivity:** Each node runs its own serialized Orchestrator. It plans and drains the complete local evictee set before its narrow actuator mutates user-systemd; generated units contain no hidden conflict stops.
         - **Intent Networking:** The Master sends structured Pydantic schemas to the Thrall's Vessel API. The data is small, the compute is local.
         - **Resilience via Deferral:** If a Thrall takes 10 minutes to swap a model, the Master's agent enters Stasis. It sleeps, consuming zero active cycles. The network is asynchronous by design.
         - **Sovereignty Preserved:** Every Thrall manages its own containers, its own VRAM, its own thermal envelope. The Master commands intent; the Thrall decides how to fulfill it on its own iron.
@@ -134,7 +134,7 @@ High availability is a design for services that cannot afford a second of downti
 
 A node cannot be deadlocked by rogue or hanging tasks.
 
-- **Kernel Enforcement:** Systemd `Conflicts=` directives in the generated **[Quadlets (08)](08-containers.md)** ensure only one resource-intensive Coven can occupy the GPU at a time, regardless of who submitted the task.
+- **Single Local Will:** The node's **[Orchestrator (23)](23-orchestrator.md)** serializes local transitions, closes admission, drains the planned evictees, and submits one exact effect set. Generated Quadlets never stop an unplanned unit behind that protocol.
 - **Watchdog:** The **[Orchestrator (23)](23-orchestrator.md)** pulses every active container. If a task hangs or exceeds its VRAM quota, the Orchestrator kills and restarts the container via the **[Host Reactor (10)](10-privilege.md)**. Ghost leases left by failed tasks are swept from the registry on restart.
 
 ### 7. Policy Table

@@ -19,7 +19,7 @@ Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `
 | :--- | :--- | :--- |
 | `image` | `QuadletContainer.image` | The OCI image (e.g., llama.cpp, vLLM, SGLang, Phoenix, Playwright, or another service image). |
 | `runtime` | runtime adapter selection | Selects the local runtime family (`llamacpp`, `vllm`, `sglang`, etc.). |
-| `groups` | coven targets + `Conflicts=` synthesis | Coven/state membership for orchestration. |
+| `groups` | coven target membership | Operator/systemd grouping only; v1 eviction policy is independent of group labels. |
 | `port` | runtime `--port` + pod publish mapping | Host-visible endpoint identity for the Soulstone. |
 | `base_url` | runtime connector endpoint | Optional override; defaults to `http://localhost:{port}/v1`. |
 | `exec` | `RuntimePlan.exec_args` override | Explicit command override that bypasses adapter synthesis. |
@@ -50,13 +50,15 @@ A Soulstone is inert until it is bound to an **Animator adapter**: the connector
     - **The Batching Trap:** For a single user, vLLM's aggressive batching can sometimes increase latency. During debugging, use `--max-num-seqs 1` to force serial processing, though this defeats the engine's primary purpose.
     - **Quantization:** Excellent support for **AWQ**. Define `--quantization awq` explicitly.
 
-### II. The Weaver (SGLang)
+### II. The Radix (SGLang)
 
 #### "The Specialist of Loops."
 
+_(This discipline was formerly called "the Weaver"; it was renamed to free that name for the [Workflow extension](../extensions/weaver.md).)_
+
 - **Best For:** Agentic Orchestrators, complex tool-use loops, and structured data extraction.
-- **The Mechanic (Radix Attention):** Unlike the Kinetic engine which sees memory as isolated blocks, The Weaver sees memory as a **Tree**.
-    - _The Loop:_ When an Agent tries a plan, fails, and backtracks to the system prompt to try again, The Weaver does not re-compute the prompt. It simply "branches" the tree from the existing memory node.
+- **The Mechanic (Radix Attention):** Unlike the Kinetic engine which sees memory as isolated blocks, The Radix sees memory as a **Tree**.
+    - _The Loop:_ When an Agent tries a plan, fails, and backtracks to the system prompt to try again, The Radix does not re-compute the prompt. It simply "branches" the tree from the existing memory node.
     - _The Result:_ Massive efficiency gains for Agents that "think" in loops or multi-turn reasoning steps.
 - **The Hardware Reality (Ampere):** SGLang utilizes the **Marlin Kernel** (`--enable-marlin`) for AWQ models. This is highly optimized for RTX 3090 architectures, often outperforming standard GEMM kernels.
 - **The Nuance:** SGLang is strictly for NVIDIA. While vLLM attempts to support AMD/ROCm, SGLang focuses on CUDA purity.
@@ -105,7 +107,7 @@ Mode/argument precedence is deterministic:
 
 In router mode, a single llama.cpp Soulstone can serve different models over its lifetime without the container restarting. Each model load/unload transitions the Animator's capability state:
 
-- Container boots → the router is up, so its `DYNAMIC` capabilities sit at phase `ACTIVATABLE` until a model is loaded.
+- Container boots → the router is up, so its `is_dynamic=True` capabilities sit at phase `ACTIVATABLE` until a model is loaded.
 - Model swap triggered (via llama.cpp API) → the old model's capabilities fall back toward `ACTIVATABLE`/`COLD`.
 - New model loads and warms → its capabilities pass through `WARMING` and reach `WARM`.
 - The **[Orchestrator](../../adr/23-orchestrator.md)** manages these transitions; no coven swap (Systemd restart) is required.
@@ -118,17 +120,25 @@ Models should not run in FP16 (Raw weight) unless H100-class hardware is availab
 
 | Discipline | Format | Recommended Quant | Notes |
 | :--- | :--- | :--- | :--- |
-| **Kinetic / Weaver** | **AWQ** | 4-bit | The gold standard for vLLM/SGLang. Faster decoding than GPTQ on Ampere. Compatible with the **Marlin** kernel for extreme speed. |
+| **Kinetic / Radix** | **AWQ** | 4-bit | The gold standard for vLLM/SGLang. Faster decoding than GPTQ on Ampere. Compatible with the **Marlin** kernel for extreme speed. |
 | **Titan** | **GGUF** | **Q4_K_M** | The "Balanced" quant. Offers the best ratio of perplexity (intelligence) to size. Avoid Q2/Q3 unless strictly necessary for 405B models. |
 
 ---
 
 ## 🤝 Coven Management (The Group Rule)
 
-To manage finite VRAM, Soulstones declare their membership in **Covens** using the `groups` field.
+Soulstones declare operator/systemd **Coven target membership** with the `groups` field.
 
-- **Inclusive Coexistence:** If two Soulstones share at least one common group (e.g., `groups = ["vision-state"]`), they belong to the same Coven. Systemd allows them to run simultaneously.
-- **Exclusive Banishment:** If two Soulstones share **no** common groups, they are mutually exclusive. The system generates a `Conflicts=` directive between them.
+- **Shared Label:** If two Soulstones share a group (for example `groups = ["vision-state"]`), both
+  are addressable through that multi-member target.
+- **No Hidden Policy:** Group labels do not prove safe coexistence, and different labels do not make
+  services mutually exclusive. Generated units contain no `Conflicts=`. The v1 Orchestrator policy
+  independently plans active, dedicated, non-resident Animators and drains its exact set.
+- **Operator Break-Glass:** A host operator may explicitly start or stop a Coven target as an
+  aggregate action. That bypasses Orchestrator admission, lease drain, and readiness convergence;
+  runtime and agent code must never use the target as an orchestration API.
+- **Reserved Alliances:** Global `alliances` are accepted configuration shape for a future
+  group-aware policy. They have no enforcement effect in v1.
 
 ### Example: A Vision Coven
 
@@ -151,7 +161,7 @@ name = "scribe"
 description = "Specialized OCR tool (Titan)."
 image = "ghcr.io/ggerganov/llama.cpp:server"
 runtime = "llamacpp"
-groups = ["vision-ritual"] # Shares the group; will NOT be killed by 'eye'
+groups = ["vision-ritual"] # Shares the operator target; not a coexistence guarantee.
 port = 8781
 model_path = "/models/moondream.gguf"
 startup_mode = "single"
@@ -185,11 +195,20 @@ This keeps rune files reference-only while allowing runtime code to read credent
 
 ## ⚔️ The Law of Exclusivity
 
-The **[Orchestrator](../../adr/23-orchestrator.md)** uses these group definitions to manifest the machine's state.
+The **[Orchestrator](../../adr/23-orchestrator.md)**, not the group target, owns the machine's state.
 
-1. **The Intent:** An Agent needs `vision`. The Orchestrator identifies the `vision-ritual` coven.
-2. **The Cleansing:** Systemd automatically stops any active Soulstone services/Quadlet units that do not belong to `vision-ritual` (e.g., a heavy `deep-think` coven).
-3. **The Manifestation:** All services tagged with `vision-ritual` are started in concert.
+1. **The Intent:** An Agent needs one declared capability on a target Animator.
+2. **The Plan:** `evict-idle` selects every other active, dedicated, non-resident Animator,
+   regardless of group label.
+3. **The Drain:** Admission closes and existing leases on that exact set finish.
+4. **The Manifestation:** The actuator performs only the planned stops and target start. Systemd
+   target membership adds no automatic stop or extra launch.
+
+For a dynamic router, an in-process model load is also a mutation even though no service restarts.
+The Orchestrator closes admission for that entire Animator and drains its leases before loading;
+this prevents an existing grant for model A from being invalidated when a bounded router loads
+model B. A failed soft activation remains fail-closed because v1 cannot reconstruct the prior
+loaded-model set well enough to promise an inverse.
 
 !!! warning "The Port Singularity"
     **Every Soulstone must listen on a unique host port.**
@@ -199,3 +218,88 @@ The **[Orchestrator](../../adr/23-orchestrator.md)** uses these group definition
     A Soulstone may omit `port` and `base_url`; the loader assigns a unique local port and calculates `base_url` as `http://localhost:{port}/v1` before runtime binding. Explicit values still win.
 
     The Lich handles the internal networking within the Pod. The rune defines the local runtime shape (`runtime`, ports, groups, models, flags), and the Dispatcher/Binder hydrate callable capability surfaces from the connector exposed by that runtime.
+
+---
+
+## Soulstone Rune reference
+
+The precise schema of a Soulstone Rune (`~/.config/lychd/runes/animator/soulstones/<group>/<name>.toml`). The mappings above explain what each field *does*; this is the full field list with types and defaults.
+
+### Top-level fields
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | string (required) | — | Animator name; first segment of every capability key. |
+| `description` | string | `""` | Human note. |
+| `image` | string | — | Container image (required by the generic runtime; runtime subclasses default it). |
+| `runtime` | string | `"generic"` | Runtime family; selects the adapter. |
+| `model_path` | string | `null` | Single-model path (single-model servers). |
+| `base_url` | URL | `null` | Explicit endpoint, if not derived from the port. |
+| `port` | int (1–65535) | `null` | Host port to publish. |
+| `groups` | list[string] | `[]` | Coven groups this stone joins. |
+| `devices` | list[string] | `[]` | Device passthrough (e.g. GPUs). |
+| `volumes` | list[string] | `[]` | Volume mounts. |
+| `env_vars` | dict | `{}` | Environment variables. |
+| `secret_env_files` | dict | `{}` | Secret-file env mappings (names, not values). |
+| `exec` | list[string] | `[]` | Container command/args (bypasses adapter synthesis). |
+| `models` | list of `[[models]]` | `[]` | Declared models (below). |
+| `generation` | `[generation]` table | `null` | Default generation profile. |
+
+The `[concurrency]` table governs lifecycle:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `dedicated` | bool | LychD owns this runtime's lifecycle (may start/stop/swap it). Only `dedicated` animators can be evicted for a swap. |
+| `persistent_resident` | bool | Pin the runtime resident — keep it out of the default eviction set and survive swaps. |
+
+### The `[[models]]` blocks
+
+One entry per model served; each yields a capability spec.
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | string (required) | — | Model id; last segment of the capability key. |
+| `path` | path (required) | — | Container-side model artifact path, made reachable by an explicit global, rune, or adapter volume; there is no implicit host `model_root`. |
+| `description` | string | `null` | Human note. |
+| `format` | enum | `null` | Weight format override. |
+| `[models.capabilities]` | table | `null` | Capability hints (below). |
+| `[models.generation]` | table | `null` | Per-model generation overrides. |
+
+All Soulstone volumes—global defaults, rune `volumes`, and adapter-contributed mounts—share one
+fail-closed control-root gate. Both endpoints must be absolute. A host symlink is resolved before
+comparison, and neither endpoint may equal, contain, or sit beneath the Codex, Crypt, stasis,
+Reactor, or user-systemd binding roots. Percent signs, backslashes, and non-printable characters are
+also rejected before a value reaches a systemd unit. A safe existing host alias is emitted as its
+resolved canonical target, so the checked source cannot later be retargeted through that symlink.
+
+#### `[models.capabilities]` — capability hints
+
+Hints are **authoritative for routing**: a live probe may downgrade a declared capability but can never invent one (the declare-then-verify doctrine, [Dispatcher (22)](../../adr/22-dispatcher.md)).
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `families` | list | Explicit families; overrides synthesis. Values: `chat`, `vision`, `embedding`, `stt`, `tts`, `tool_execution`, `rerank`. |
+| `modalities_in` | list[string] | Admitted inputs: `text`, `image`, `audio`. |
+| `modalities_out` | list[string] | Emitted outputs. |
+| `supports_tools` | bool | Whether the model can call tools. |
+| `supports_streaming` | bool | Whether the model streams. |
+
+!!! warning "image-in is not the Eye"
+    Declaring `modalities_in = ["text", "image"]` enriches a `chat` model's admission — it does **not** make it the `vision` family. The dedicated `vision` family is reserved for a purpose-built vision-analysis provider and must be declared with `families = ["vision"]`. This is the [two-axis law](./capabilities.md).
+
+### The `[generation]` table
+
+Default generation parameters. Overlays in order: runtime defaults → the stone's `[generation]` → a model's `[models.generation]`. Every field is optional.
+
+| Field | Type | Range |
+| :--- | :--- | :--- |
+| `max_context` | int | ≥ 1 |
+| `max_tokens` | int | ≥ 1 |
+| `temperature` | float | 0.0–2.0 |
+| `top_p` | float | 0.0–1.0 |
+| `top_k` | int | ≥ 0 |
+| `repetition_penalty` | float | ≥ 0.0 |
+| `reasoning_format` | string | — |
+
+!!! note "`is_dynamic` follows the server shape"
+    A **router** (llama.cpp loading models on demand — `startup_mode = "router"`, `models_dir` set) yields `is_dynamic=True` capabilities (reachable but awaited until a model loads). A server **pinned to one model** (a single `model_path`, e.g. a vLLM server) yields `is_dynamic=False` — reachable means warm, no activation step.

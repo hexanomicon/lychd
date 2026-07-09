@@ -13,6 +13,7 @@ icon: material/graph-outline
 - **Type Safety as the Cortex:** Mandatory passage of task memory as strongly-typed `StateT` objects between nodes to ensure the "Chain of Thought" is validated by Pydantic at every synapse.
 - **Orchestrated Handshakes:** Integration with the system’s physical arbiter to submit capability requirements at each graph step, suspending execution until the hardware state matches the logical intent.
 - **Durable Persistence:** Mandatory support for committing graph state at declared boundaries—including message history, typed state, deferred waits, and completed step outputs—to the persistent substrate.
+- **Commit-Ordered Cleanup:** A checkpoint remains recoverable until the authoritative run ledger has committed a terminal status; graph iteration or resume success may never delete it early.
 - **Functional Topology:** Adoption of functional "Steps" over class-based nodes to enable high-velocity development and reduce architectural boilerplate.
 - **Logical Parallelism:** Provision of primitives for **Broadcasting** (same data to multiple paths) and **Spreading** (fanning out elements of an iterable) to enable concurrent reasoning.
 - **Join and Reduce Synchronization:** Implementation of specialized synchronization points to aggregate and "collapse" parallel results back into a single, verified truth.
@@ -35,7 +36,7 @@ icon: material/graph-outline
     - **Pros:**
         - **Static Verifiability:** Transitions are governed by return type hints, making the entire topology verifiable before execution.
         - **Native Parallelism:** Built-in primitives for broadcasting and mapping allow the mind to explore multiple "Shadow Realities" simultaneously.
-        - **Durable Reanimation:** Standardized support for `BaseStatePersistence` allows the mind to be anchored in the database, enabling replay after system restarts, deferred approvals, or high-latency external waits. Ordinary VRAM swaps may remain Live Stasis when the Vessel process survives.
+        - **Durable Reanimation:** Standardized support for `BaseStatePersistence` allows the mind to be anchored behind a persistence port, enabling replay after system restarts, deferred approvals, or high-latency external waits. Ordinary VRAM swaps may remain Live Stasis when the Vessel process survives.
 
 ## Decision Outcome
 
@@ -51,14 +52,14 @@ The cortex is built on the installed `pydantic_graph` **`BaseNode`** API — the
 - **Nodes:** Subclasses of `BaseNode[StateT, DepsT, ...]` implementing an async `run(self, ctx)` that returns the next node (or `End`) to determine the next station of thought. A `Workflow` binds such a graph to its routing metadata.
 - **The State (`StateT`):** A mutable, JSON-serializable Pydantic model representing the "Working Memory." It is built up as it passes through each synapse, ensuring total recall across the entire ritual; per-run handles (grants, models, toolsets) live in `deps`, never in state, so durable snapshots stay clean.
 
-!!! note "Node-style API, not a functional DSL"
-    v1 stays on the installed `BaseNode` API (the `GraphBuilder` DSL is not installed). The functional `@g.step` sugar and the parallel/decision primitives sketched in §3–§4 (`g.join`, `g.decision`, `g.match`, `ReduceFirstValue`) describe the *intended* topology vocabulary and are roadmap ergonomics; today routing is expressed as a node's typed return union and branches are ordinary nodes.
+!!! warning "Doctrine ahead of code"
+    v1 stays on the installed `BaseNode` API (the `GraphBuilder` DSL is not installed). The functional `@g.step` sugar and the parallel/decision primitives sketched in §3–§4 (`g.join`, `g.decision`, `g.match`, `ReduceFirstValue`) describe the *intended* topology vocabulary; today routing is expressed as a node's typed return union and branches are ordinary nodes.
 
 ### 2. The Orchestrated Handshake (Deferred Logic)
 
 Every step in the graph respects the physical laws established in the **[Dispatcher (ADR 22)](./22-dispatcher.md)**. Before invoking an Agent, a node performs a handshake:
 
-1. **Intent Submission:** The node defines the **CapabilitySet** required (e.g., `{"text-gen", "vision"}`).
+1. **Intent Submission:** The node defines the required family and request traits (for example, `chat` with `image` input and tool support).
 2. **Grant Request:** The node asks the Dispatcher for a runtime grant instead of binding directly to a model, tool, container, or provider.
 3. **Live Stasis:** If the required capability exists but the hardware is not ready, the node waits while the Orchestrator performs the physical transition. For ordinary VRAM swaps, the graph may remain alive in Vessel process memory.
 4. **The Long Sleep:** If the wait must survive process death, reboot, human approval delay, or high-latency peer return, the Graph executes an atomic exit, serializing the `StateT` to the **[Phylactery (ADR 06)](./06-persistence.md)**.
@@ -86,10 +87,46 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 !!! note "Volatile Breath and Committed Progress"
     Volatile state is allowed. Active iterator frames, partial token streams, warm grants, derived context windows, and live adapter handles may live only in memory. The durable promise is narrower: committed step outputs, graph checkpoints, approval waits, external commitments, recovery markers, and traces must be persisted at declared boundaries. A crash may kill breath, but not committed progress.
 
+!!! note "Checkpoint Ownership and Terminal Commit"
+    `GraphRunner` may create or resume snapshots, but it does not own their deletion. A returned
+    graph result is not yet durable run truth: the process can still die before `RunStatus.DONE`
+    reaches the ledger. The run worker therefore commits `DONE`, `FAILED`, or another terminal
+    status first and only then asks the persistence boundary to remove the checkpoint and clear its
+    recorded path. If cleanup fails, the ledger pointer is retained for reconciliation. Consent and
+    hardware parks remain non-terminal and keep their checkpoint.
+
+    This ordering forbids the loss window `resume completes → checkpoint deleted → process dies →
+    terminal status never committed`. Reanimation always prefers a retained committed boundary over
+    silently restarting a run from its original intent.
+
 !!! note "Run Events Are Observation, Not Recovery"
     A graph run may expose lanes and append-only events for the Altar and Oculus: node movement, child-agent branches, Tomb jobs, approval requests, hardware stasis, and completion. These streams are the Magus's observation surface. They do not replace graph checkpoints, queue records, or Phylactery recovery boundaries.
 
     The event surface must support backfill plus live tail: stable `run_id`, `lane_id`, `step_id`, and `event_id` values allow the Altar, Oculus, and agent reviewers to resume observation without inventing state. Approval should appear as correlated request/result events, while the durable reanimation boundary remains the Graph checkpoint and queue record.
+
+!!! note "Implemented persistence floor vs Phylactery horizon"
+    The current durable tier uses one file-backed Pydantic Graph checkpoint per run and records its
+    path on the run ledger before execution can park. It supports process-death recovery for consent
+    waits, with terminal-commit-owned cleanup. The live tier uses in-memory persistence for resident
+    hardware waits; a process death during ordinary Live Stasis is reconciled as a failed run rather
+    than silently replayed.
+
+    The default durable root is `~/.local/share/lychd/stasis`, inside the Crypt, and the generated
+    Vessel receives that directory as its own read-write mount rather than receiving the whole
+    Crypt. Soulstones and the Reactor consumer do not receive graph checkpoints. The root must be a
+    real, current-UID-owned `0700` directory; each run checkpoint is an owner-only JSON file.
+
+    A save serializes the complete snapshot set to a same-directory `0600` temporary file, flushes
+    and `fsync`s it, atomically replaces the previous checkpoint, and `fsync`s the parent directory.
+    A sibling lock file is held with kernel `flock` during mutation, so process death releases the
+    lock even if the lock pathname remains. This is process-safe on one Linux host; it is not a
+    distributed lock or a transactional database boundary.
+
+    A Postgres-backed graph persistence implementation, transactional submit/resume outbox, durable
+    event stream, blob/artifact materializer, checkpoint schema migration, and cross-host lease
+    recovery remain later Phylactery work. SAQ enqueue compensation and reconciliation narrow the
+    current failure windows, but they are not a transactional outbox and must not be documented as
+    one.
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 

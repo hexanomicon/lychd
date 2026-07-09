@@ -27,7 +27,8 @@ if TYPE_CHECKING:
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
     from lychd.domain.codex.schemas import ConsentDecision
     from lychd.domain.cortex.context import ContextOrchestrator
-    from lychd.domain.cortex.events import RunEmitter, RunEventBus
+    from lychd.domain.cortex.events import RunEventBus
+    from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.schema import TransitionPlan
     from lychd.domain.web.fragments import FragmentRegistry
 
@@ -35,16 +36,6 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Narrow ports — the seams the nodes and tools depend on
 # ---------------------------------------------------------------------------
-
-
-class RunEventPort(Protocol):
-    """The run event surface: hands a run its bus-backed `RunEmitter`.
-
-    Today an `InProcessEventBus`; later a `PostgresEventBus` — the emitter tees
-    non-TOKEN events to the `RunLedger` and pushes to the run's channel.
-    """
-
-    def emitter(self, run_id: str) -> RunEmitter: ...
 
 
 class TurnLedgerPort(Protocol):
@@ -88,7 +79,7 @@ class TransitionPort(Protocol):
 
     async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan: ...
 
-    async def request_transition(self, target_capability_key: str, priority: float) -> TransitionPlan: ...
+    async def request_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan: ...
 
 
 class GrantPort(Protocol):
@@ -105,6 +96,7 @@ class GrantPort(Protocol):
         run_id: str,
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
+        requires_tools: bool = False,
     ) -> AbstractAsyncContextManager[CapabilityGrant]: ...
 
 
@@ -196,7 +188,6 @@ def build_workflow_services(
 __all__ = [
     "ConsentLedgerPort",
     "GrantPort",
-    "RunEventPort",
     "TransitionPort",
     "TurnLedgerPort",
     "WorkflowServices",

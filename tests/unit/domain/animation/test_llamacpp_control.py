@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from pydantic import AnyHttpUrl
 
+from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo
 from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
@@ -16,6 +17,7 @@ from lychd.extensions.builtin.animator.llamacpp import (
     LlamacppStone,
 )
 from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
+from lychd.lib.http import HttpJsonError
 
 
 def _router_animator() -> LlamacppStone:
@@ -102,6 +104,38 @@ async def test_llamacpp_control_inspect_degrades_on_endpoint_error(monkeypatch: 
     assert lifecycle.health == "loading"
     assert "props_error" in lifecycle.raw
     assert "models_error" in lifecycle.raw
+
+
+@pytest.mark.asyncio
+async def test_llamacpp_503_loading_is_warming_runtime_not_cold(monkeypatch: Any) -> None:
+    import lychd.extensions.builtin.animator.llamacpp.control_plane as control_plane_mod
+
+    async def fake_transport(
+        method: str,
+        url: str,
+        **_kwargs: Any,
+    ) -> dict[str, object]:
+        _ = method
+        if url.endswith("/health"):
+            message = 'GET /health failed with status 503: {"error":{"message":"Loading model"}}'
+            raise HttpJsonError(message, status=503)
+        if url.endswith("/models"):
+            return {"data": [{"id": "qwen-next-80b", "status": {"value": "unloaded"}}]}
+        return {}
+
+    monkeypatch.setattr(control_plane_mod, "request_json", fake_transport)
+    control = LlamaCppControlPlane()
+    animator = _router_animator()
+    lifecycle = await control.inspect_animator(animator)
+    adapter = LlamaCppRuntimeAdapter(control_plane=control)
+    specs = adapter.build_capability_specs(animator.rune)
+    states = await adapter.probe_capability_states(animator, specs)
+
+    assert lifecycle.health == "loading"
+    assert lifecycle.raw["health_error"]
+    assert states
+    assert all(state.phase is CapabilityPhase.WARMING for state in states)
+    assert all(state.runtime_started for state in states)
 
 
 @pytest.mark.asyncio

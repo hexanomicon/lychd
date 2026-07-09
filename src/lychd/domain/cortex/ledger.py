@@ -68,6 +68,18 @@ class RunLedger(Protocol):
         """Increment and return the run's enqueue seq (unique SAQ keys across hops)."""
         ...
 
+    async def try_claim_run(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """Claim QUEUED → RUNNING only for this exact published delivery hop."""
+        ...
+
+    async def try_fail_queued(self, run_id: str, *, error: str) -> bool:
+        """Atomically settle QUEUED → FAILED only if no worker claimed it."""
+        ...
+
+    async def try_fail_claimed(self, run_id: str, *, enqueue_seq: int, error: str) -> bool:
+        """Fail only the RUNNING/AWAITING_HARDWARE hop with this enqueue sequence."""
+        ...
+
     async def set_consent(self, run_id: str, consent_id: str | None) -> None:
         """Record (or clear) the consent id a run is parked on."""
         ...
@@ -90,6 +102,25 @@ class RunLedger(Protocol):
 
     async def get_by_consent(self, consent_id: str) -> RunRecord | None:
         """Return the run parked on ``consent_id`` (feeds `engine.approve`)."""
+        ...
+
+    async def try_admit_consent(self, run_id: str) -> int | None:
+        """Atomically admit a parked run and allocate its next enqueue sequence.
+
+        The SINGLE resume-admission gate (F1/F4): returns the new sequence iff THIS
+        caller performed the transition. Concurrent approves, and an `engine.approve`
+        racing `perform_run`'s post-flip re-check, all funnel here so exactly one
+        sequence is allocated and enqueued.
+        """
+        ...
+
+    async def try_restore_consent_wait(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """Compensate a failed resume enqueue (QUEUED → AWAITING_CONSENT).
+
+        Returns ``True`` only when this caller restored the exact admitted hop. The
+        conditional transition deliberately lives outside the public run state
+        machine: it is a narrow rollback for the admission CAS, not a normal edge.
+        """
         ...
 
 
@@ -150,7 +181,9 @@ class InMemoryRunLedger:
             priority=priority,
             status=RunStatus.QUEUED,
             prompt=intent.prompt,
+            sigil_name=intent.sigil_name,
             sigil_scopes=intent.sigil_scopes,
+            content=intent.content,
         )
         self._runs[record.run_id] = record
         self._events[record.run_id] = []
@@ -170,6 +203,33 @@ class InMemoryRunLedger:
         record = self._require(run_id)
         record.enqueue_seq += 1
         return record.enqueue_seq
+
+    async def try_claim_run(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """Claim the exact queued hop on the loop; stale/duplicate deliveries lose."""
+        record = self._require(run_id)
+        if record.status is not RunStatus.QUEUED or record.enqueue_seq != enqueue_seq:
+            return False
+        _apply_status(record, RunStatus.RUNNING, error=None)
+        return True
+
+    async def try_fail_queued(self, run_id: str, *, error: str) -> bool:
+        """Fail only an unclaimed queued run after broker publication failed."""
+        record = self._require(run_id)
+        if record.status is not RunStatus.QUEUED:
+            return False
+        _apply_status(record, RunStatus.FAILED, error=error)
+        return True
+
+    async def try_fail_claimed(self, run_id: str, *, enqueue_seq: int, error: str) -> bool:
+        """Fail this claimed hop without overwriting a resumed or terminal run."""
+        record = self._require(run_id)
+        if record.enqueue_seq != enqueue_seq or record.status not in {
+            RunStatus.RUNNING,
+            RunStatus.AWAITING_HARDWARE,
+        }:
+            return False
+        _apply_status(record, RunStatus.FAILED, error=error)
+        return True
 
     async def set_consent(self, run_id: str, consent_id: str | None) -> None:
         """Record (or clear) the consent id."""
@@ -199,6 +259,31 @@ class InMemoryRunLedger:
             if record.consent_id == consent_id:
                 return record
         return None
+
+    async def try_admit_consent(self, run_id: str) -> int | None:
+        """CAS the parked run to QUEUED and allocate its sequence in one loop turn.
+
+        There is no await across either mutation, so no stale job can claim between
+        admission and sequence allocation.
+        """
+        record = self._require(run_id)
+        if record.status is not RunStatus.AWAITING_CONSENT:
+            return None
+        _apply_status(record, RunStatus.QUEUED, error=None)
+        record.enqueue_seq += 1
+        return record.enqueue_seq
+
+    async def try_restore_consent_wait(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """CAS the exact QUEUED hop back to wait after resume publication failed.
+
+        The failed enqueue sequence is intentionally not rolled back: its job key may
+        have reached the broker before the error surfaced and must never be reused.
+        """
+        record = self._require(run_id)
+        if record.status is not RunStatus.QUEUED or record.enqueue_seq != enqueue_seq:
+            return False
+        record.status = RunStatus.AWAITING_CONSENT
+        return True
 
     def events(self, run_id: str) -> list[RunEvent]:
         """Return the recorded non-TOKEN events for a run (test/observability read)."""
@@ -258,13 +343,15 @@ class DbRunLedger:
                     source=intent.source,
                     status=RunStatus.QUEUED.value,
                     priority=priority,
-                    sigil_name="magus",
+                    sigil_name=intent.sigil_name,
                     session_id=session_fk,
                     intent={
                         "session_id": intent.session_id,
                         "run_id": intent.run_id,
                         "prompt": intent.prompt,
+                        "content": [part.model_dump(mode="json") for part in intent.content],
                         "source": intent.source,
+                        "sigil_name": intent.sigil_name,
                         "sigil_scopes": sorted(intent.sigil_scopes),
                     },
                     queue_name=queue_name,
@@ -365,6 +452,85 @@ class DbRunLedger:
             await svc.update({"enqueue_seq": next_seq}, item_id=UUID(run_id), auto_commit=True)
             return next_seq
 
+    async def try_claim_run(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """CAS this exact QUEUED delivery → RUNNING; stale broker jobs lose."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(
+                        Run.id == UUID(run_id),
+                        Run.status == RunStatus.QUEUED.value,
+                        Run.enqueue_seq == enqueue_seq,
+                    )
+                    .values(
+                        status=RunStatus.RUNNING.value,
+                        started_at=datetime.now(UTC),
+                        error=None,
+                    )
+                ),
+            )
+            await session.commit()
+            return result.rowcount == 1
+
+    async def try_fail_queued(self, run_id: str, *, error: str) -> bool:
+        """CAS QUEUED → FAILED without overwriting a worker claim."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(Run.id == UUID(run_id), Run.status == RunStatus.QUEUED.value)
+                    .values(
+                        status=RunStatus.FAILED.value,
+                        error=error,
+                        finished_at=datetime.now(UTC),
+                    )
+                ),
+            )
+            await session.commit()
+            return result.rowcount == 1
+
+    async def try_fail_claimed(self, run_id: str, *, enqueue_seq: int, error: str) -> bool:
+        """CAS the owned active hop to FAILED without touching a later resume."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(
+                        Run.id == UUID(run_id),
+                        Run.enqueue_seq == enqueue_seq,
+                        Run.status.in_(
+                            (
+                                RunStatus.RUNNING.value,
+                                RunStatus.AWAITING_HARDWARE.value,
+                            )
+                        ),
+                    )
+                    .values(
+                        status=RunStatus.FAILED.value,
+                        error=error,
+                        finished_at=datetime.now(UTC),
+                    )
+                ),
+            )
+            await session.commit()
+            return result.rowcount == 1
+
     async def set_consent(self, run_id: str, consent_id: str | None) -> None:
         """Record nothing (S8): the Consent row IS the durable record.
 
@@ -449,14 +615,78 @@ class DbRunLedger:
             run_id = await session.scalar(select(Consent.run_id).where(Consent.id == cid))
         return await self.get(str(run_id)) if run_id is not None else None
 
+    async def try_admit_consent(self, run_id: str) -> int | None:
+        """CAS parked → QUEUED and allocate the resume sequence atomically.
+
+        One conditional ``UPDATE`` changes status and increments ``enqueue_seq``.
+        Returning the new value makes admission, delivery identity, and publication
+        one logical hop even though broker publication remains a later operation.
+        """
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Run)
+                .where(Run.id == UUID(run_id), Run.status == RunStatus.AWAITING_CONSENT.value)
+                .values(
+                    status=RunStatus.QUEUED.value,
+                    enqueue_seq=Run.enqueue_seq + 1,
+                )
+                .returning(Run.enqueue_seq)
+            )
+            enqueue_seq = result.scalar_one_or_none()
+            await session.commit()
+            return int(enqueue_seq) if enqueue_seq is not None else None
+
+    async def try_restore_consent_wait(self, run_id: str, *, enqueue_seq: int) -> bool:
+        """CAS the exact QUEUED hop back to wait after resume publication failed.
+
+        This is the inverse of ``try_admit_consent`` only for enqueue compensation;
+        retaining ``enqueue_seq`` prevents reuse of a possibly accepted broker key.
+        """
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(
+                        Run.id == UUID(run_id),
+                        Run.status == RunStatus.QUEUED.value,
+                        Run.enqueue_seq == enqueue_seq,
+                    )
+                    .values(status=RunStatus.AWAITING_CONSENT.value)
+                ),
+            )
+            await session.commit()
+            return result.rowcount == 1
+
     @staticmethod
     def _to_record(row: object) -> RunRecord:
         """Map a `Run` ORM row to a storage-agnostic `RunRecord`."""
+        from lychd.agents.router import Intent
+
         intent: dict[str, object] = getattr(row, "intent", {}) or {}
         scopes_val = intent.get("sigil_scopes", [])
         scopes: frozenset[str] = frozenset[str]()
         if isinstance(scopes_val, list):
             scopes = frozenset(str(s) for s in cast("list[Any]", scopes_val))
+        parsed_intent = Intent.model_validate(
+            {
+                "session_id": str(intent.get("session_id", "")),
+                "run_id": intent.get("run_id"),
+                "prompt": str(intent.get("prompt", "")),
+                "content": intent.get("content", ()),
+                "source": str(intent.get("source", "bridge")),
+                "sigil_name": str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
+                "sigil_scopes": scopes,
+            }
+        )
         return RunRecord(
             run_id=str(row.id),  # type: ignore[attr-defined]
             session_id=str(intent.get("session_id", "")),
@@ -466,7 +696,9 @@ class DbRunLedger:
             priority=int(row.priority),  # type: ignore[attr-defined]
             status=RunStatus(str(row.status)),  # type: ignore[attr-defined]
             prompt=str(intent.get("prompt", "")),
+            sigil_name=str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
             sigil_scopes=scopes,
+            content=parsed_intent.content,
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]

@@ -92,10 +92,18 @@ Failure to satisfy `pgvector` capability is a hard startup error for memory-enab
 
 To maintain organizational and transactional purity, the Phylactery is divided into four sacred chambers:
 
+!!! warning "Target topology"
+    The first migration currently creates the seven core tables and pgvector extension on the
+    configured default schema/search path; SAQ likewise owns default `saq_*` tables. Dedicated
+    `vectors`, `traces`, and `queue` schemas, Memori bootstrap, and transactional memory ingestion
+    are not part of the implemented foundation yet.
+
 - **`public` (The State):** Relational data for user state, active extensions, and the **[Codex (ADR 12)](./12-configuration.md)**.
 - **`vectors` (The Karma):** The high-dimensional embedding space storing verified thoughts and outcomes organized by namespace.
 - **`traces` (The Eye):** Dedicated storage for the machine's reasoning history and observability data.
-- **`queue` (The Labor):** The persistence layer for the **[Workers (ADR 14)](./14-workers.md)**, ensuring background labor is transactional with state changes.
+- **`queue` (The Labor, planned isolation):** The future schema/role boundary for
+  **[Workers (ADR 14)](./14-workers.md)**. V1 SAQ uses its default tables and a compensated,
+  reconciled run-row/enqueue split rather than a shared transaction.
 
 ### 3. The Standardized Embedding Pipeline
 
@@ -155,7 +163,7 @@ The primary function of the Phylactery is to house the **Pattern** of the machin
 Memory is manifested as a dynamic power granted to an **[Agent (ADR 20)](./20-agents.md)** by the **[Dispatcher (ADR 22)](./22-dispatcher.md)**:
 
 - **The Grant:** A `query_archive()` tool is injected into the arsenal only when the required Embedding Coven is active.
-- **The Mentat Refusal:** If a retrieval ritual returns a similarity score below the **Sovereign Threshold**, the Agent is physically barred from "guessing." It must return a **Hard Refusal**: *"The Archive contains no truth regarding this intent."*
+- **The Hard Refusal:** If a retrieval ritual returns a similarity score below the **Sovereign Threshold**, the Agent is physically barred from "guessing." It must return a hard refusal: *"The Archive contains no truth regarding this intent."*
 - **Sigil Scope:** Retrieval MUST include `entity_id` scoping (or explicit policy-authorized shared scope) so one identity cannot read another identity’s Karma.
 - **Shared Scope Is Exceptional:** Cross-persona or cross-organization recall is a deliberate grant, not the default shape of memory. The system begins from sovereignty and moves outward only by consent.
 - **Cross-Identity Recall Is Hard-Gated:** Cross-identity recall is a hard-gated class under the **[Codex (ADR 12)](./12-configuration.md)** whose grant record is future work. Until that grant record is defined, **[Archive Gating (ADR 38)](./38-iam.md)** admits no exception, and every recall stays scoped to the active Sigil's `entity_id`.
@@ -208,7 +216,7 @@ The Curator therefore manages sedimentation, not only deletion: it governs how e
     - **Atomic Stability:** The entire state of the machine (State, Memory, and Work) is captured in a single, consistent snapshot of the database directory.
     - **Sovereign Extensibility:** New memory strategies can be implemented as Extensions that manipulate the existing chambers without requiring new infrastructure.
     - **Physical Purity:** By rejecting intrusive external frameworks, absolute control over execution loops and hardware utilization is maintained.
-    - **Truth Integrity:** The Mentat Refusal ensures that reasoning is always grounded in verified or high-confidence data.
+    - **Truth Integrity:** The Hard Refusal ensures that reasoning is always grounded in verified or high-confidence data.
 
 !!! failure "Negative"
     - **Index Build Pressure:** Large-scale ingestion generates significant I/O pressure when rebuilding HNSW indexes, potentially impacting real-time performance.

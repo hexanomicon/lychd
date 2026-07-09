@@ -30,12 +30,31 @@ if TYPE_CHECKING:
 
 MAX_CONSENT_ROUNDS: Final[int] = 3
 
-__all__ = ["MAX_CONSENT_ROUNDS", "new_step_id", "park_on_consent", "pump_agent_events"]
+__all__ = [
+    "MAX_CONSENT_ROUNDS",
+    "is_single_approval",
+    "new_step_id",
+    "park_on_consent",
+    "pump_agent_events",
+]
 
 
 def new_step_id() -> str:
     """Return a fresh per-step id."""
     return f"step_{uuid.uuid4().hex[:12]}"
+
+
+def is_single_approval(requests: DeferredToolRequests) -> bool:
+    """Whether a park is honestly representable today: exactly one approval, no external calls.
+
+    One consent record = one card = one tri-state verdict. pydantic-ai requires a
+    result for EVERY deferred call on resume, so a turn that raises >1 approval (or any
+    external deferred `call`) cannot be resolved from a single card without silently
+    applying one seen verdict to unseen calls (finding 5). Until per-call cards land,
+    the caller degrades such a turn to a bottleneck instead of parking it. Today only
+    `coven` is approval-gated, so a well-behaved turn always yields exactly one.
+    """
+    return len(requests.approvals) == 1 and not requests.calls
 
 
 async def pump_agent_events(

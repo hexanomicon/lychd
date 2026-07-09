@@ -5,6 +5,8 @@ icon: material/mirror
 
 # :material-mirror: Mirror Identity
 
+_Status: doctrine ahead of code — the built-in `identity` package is where this lands; treat this page as design intent. Law: [ADR 32](../../adr/32-identity.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+
 > _"Before the Word can be trusted, it must recognize its own face. The Mirror is the polished surface on which the Lich learns the shape of the Magus and refuses to become a stranger to itself."_
 
 **The Mirror** is the Identity Extension of the LychD system. It is the implementation of **[ADR 32 (Identity)](../../adr/32-identity.md)**—the "Ego-Software" that hydrates a generic **[Agent](../../adr/20-agents.md)** shell into a persistent, coherent Persona.

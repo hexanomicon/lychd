@@ -36,10 +36,10 @@ The security posture is designed around the following assumptions:
 - The host operating system and user account of the Magus
 - Rootless Podman / Quadlet runtime posture
 - Vessel control-plane services
-- Host Reactor / privileged intent executor
+- Host Reactor / host-authoritative user-service intent consumer
 - Podman secret storage
 - Explicitly trusted database roles and control-plane credentials
-- The Identity Symmetry (UID 1000) mapping
+- The Pod-level `keep-id` mapping for the invoking, unprivileged host user
 
 ### Untrusted or Potentially Compromised
 
@@ -57,7 +57,7 @@ The security posture is designed around the following assumptions:
 - Unauthorized durable state mutation
 - Lateral movement from unsafe execution into the control plane
 - Over-broad network egress from risky workloads
-- Host escalation via container compromise
+- Direct acquisition of host `root` through the ordinary rootless container identity
 - Cross-identity memory contamination
 - Replay of unsafe results without re-approval
 
@@ -65,6 +65,7 @@ The security posture is designed around the following assumptions:
 
 - Protection against all kernel 0-days
 - Protection against malicious host administrators
+- Protection after compromise of the trusted Magus host account or another process with that UID
 - Protection against physical compromise of the machine
 - Absolute safety from every parser, dependency, or database vulnerability
 
@@ -113,8 +114,9 @@ The model aims for strong practical containment, not magical invulnerability.
     - **Pros:**
         - **Defense in Depth:** The container boundary protects the host, while the sandbox protects the container's high-value environment variables (DB credentials).
         - **Clear Topology:** The Semi-Trusted worker loop acts as a built-in proxy for the sandbox, removing the need for complex network routing.
-        - **V1 Pragmatism:** Allows the entire system to share a single network Pod for easy bootstrapping, while retaining absolute file and network isolation for untrusted code.
-    - **Verdict:** Selected for the Initial Phase (V1).
+        - **V1 Pragmatism:** Allows the system to share one network Pod for easy bootstrapping while retaining explicit mount boundaries and a separate no-network subprocess sandbox for untrusted code.
+    - **Verdict:** Selected target architecture. The trusted core boundary is implemented first;
+      the separate Tomb/nono execution plane is still pending.
 
 ## Decision Outcome
 
@@ -123,19 +125,44 @@ LychD adopts a layered **Defense in Depth** model built around a hard trust spli
 - **Vessel** is the trusted control plane.
 - **The Tomb** is the **Semi-Trusted** execution plane.
 
-The architecture relies on the **"Golden Mean"** for its Initial Phase (V1):
-All containers (`vessel`, `lychd-tomb`, `phylactery`) share a single Pod and therefore share a `localhost` network namespace. Because they share a network, they all have internet access and can "see" each other's ports.
-Security is guaranteed by two independent layers:
+!!! warning "Foundation status: do not submit untrusted code yet"
+    The current generated topology contains the trusted Vessel/core, narrow validated mounts,
+    rootless identity, loopback-only host publication, and the typed Host Reactor boundary. It does
+    **not** yet contain a Tomb Quadlet, Tomb SAQ queue/profile, narrow Tomb database role, executor
+    loop, or `nono` invocation path. Every Tomb and `nono` rule below is normative design for that
+    future plane, not a claim that arbitrary code execution is safe in the current Vessel. Until
+    the whole boundary lands and is tested, untrusted tool execution is unavailable.
 
-1. **Layer 7 Authentication:** Containers can see the Database and Phoenix, but they cannot access them without the proper credentials. The Tomb may receive only the narrow SAQ/Postgres execution credential required to claim, acknowledge, and retry execution-plane jobs.
-2. **The Nono Sandbox:** Untrusted execution never runs directly in the Tomb container. It is spawned inside `nono`, which uses Linux Landlock to enforce **zero network access** and strict file isolation.
+The architecture relies on the **"Golden Mean"** for its Initial Phase (V1). Joined containers
+share one Pod and therefore one `localhost` network namespace and internet route; they can see each
+other's listening ports. Host-published core and extension ports are generated on `127.0.0.1` only.
+The practical boundaries are therefore layered rather than absolute:
 
-If the `nono` sandbox is breached (e.g., via a Kernel 0-day), the attacker escapes into the Tomb container. They may gain access to the Tomb worker's narrow queue credential, but they hit the titanium wall of the container boundary. They cannot steal the Vessel's master DB passwords, API keys, provider credentials, signing keys, or control-plane authority.
+1. **Service credentials:** services such as Postgres require their own scoped credentials. A shared
+   network never implies shared database authority.
+2. **Mount isolation:** a process cannot directly read a secret or control file that is not mounted
+   into its unit.
+3. **The Nono Sandbox (planned):** untrusted execution is intended to run inside `nono`, which uses Linux
+   Landlock to enforce zero network access and strict file isolation inside the Tomb plane.
+
+Loopback is not authentication. The current LychD web Ward stamps requests with the single
+settings-derived Sigil and applies scope guards; it does not authenticate distinct callers. The
+Altar/API is therefore a single-user, local-only foundation surface. Publishing it remotely requires
+a separately configured authenticated, authorized, TLS-terminating front door; changing the bind
+address alone is not a supported security posture.
+
+If the `nono` sandbox is breached, the attacker reaches the Tomb container's authority, including
+any narrow worker credential and shared-Pod endpoints. The mount boundary still prevents direct
+filesystem reads of unmounted Vessel secrets, but service/API authorization must independently
+protect every reachable endpoint. In particular, the current local-only LychD API must not be
+treated as a hostile-network boundary.
 
 !!! warning "Axiom: Identity vs. Mounts (The Badge vs. The Wall)"
     Do not confuse system-level authority with data-level authority.
 
-    - **Identity (The Badge):** Provides **system-level security**. Symmetric Identity (UID 1000) prevents Root escalation while allowing native file editing. The boundary between planes is *not* defined by different UIDs.
+    - **Identity (The Badge):** The rootless Pod maps the invoking unprivileged host identity with
+      `keep-id`; it does not hardcode UID 1000. This avoids host-root authority and permits assigned
+      user-owned mounts, but it does not distinguish trusted and untrusted planes.
     - **Mounts (The Wall):** Provide **data-level security**. Mounts are absolute and throw a "blanket" over internal container permissions. The wall between the Vessel and the Tomb is entirely Mount-Defined.
 
 ### 1. Defense in Depth Layers
@@ -151,7 +178,11 @@ RUN groupadd --system --gid 1001 lich && \
 USER lich
 ```
 
-The internal `lich` user (UID 1001) is a fallback execution identity, not a filesystem authority. Persistent runtime paths are governed by **[Layout (13)](13-layout.md)** and mounted symmetrically (`~/.config/lychd`, `~/.local/share/lychd`, and explicit `~/work` Outlands). The image may provide a writable home for process caches, but no security rule may rely on the baked-in user home as the canonical data topology.
+The internal `lich` user (UID 1001) is a fallback image identity, not a filesystem authority.
+Persistent runtime paths are governed by **[Layout (13)](13-layout.md)** and only the specific paths
+assigned to a unit are mounted symmetrically. The Vessel does not receive a blanket
+`~/.local/share/lychd` mount. The image may provide a writable home for process caches, but no
+security rule may rely on the baked-in user home as the canonical data topology.
 
 #### Layer 2: The Warden (External Rootless Runtime)
 
@@ -161,29 +192,48 @@ If a container breakout occurs, the attacker inherits only the authority of the 
 
 #### Layer 3: Identity Symmetry (The "Badge")
 
-The static image identity is not sufficient for real host interaction. The runtime therefore applies a dynamic host/container identity bridge through Quadlets:
+The static image identity is not sufficient for real host interaction. The runtime therefore
+applies the user-namespace bridge once at the Pod and selects the process user per container:
 
 ```ini
+[Pod]
+UserNS=keep-id
+
 [Container]
 User=%U
-UserNS=keep-id
 ```
 
-The `keep-id` flag acts as a Runtime Identity Mapping. It performs a "Hot Swap" that maps the Host user (UID 1000) directly into the container, overriding the `USER` instruction from the Containerfile.
+`UserNS=keep-id` belongs to `lychd.pod`. Joined containers inherit that namespace, so generated
+container Quadlets do not repeat a per-container `UserNS=` directive. `User=%U` is emitted for the
+Vessel, migration gate, and Soulstones, mapping the actual invoking host UID rather than assuming a
+number. The Phylactery instead preserves the Postgres image user and uses `:U,Z` on its data bind.
 
 This creates a **Double Non-Root** posture:
 
 1. On the host, the process is a normal unprivileged user.
 2. Inside the container, the process is also non-root.
 
-Because the UID matches the invoking host user, the process can interact with user-owned volumes without unsafe permission broadening. The architecture explicitly rejects a separate Tomb UID (1001) for runtime execution, as mismatched UIDs prevent the AI from natively editing the Magus's files. System security is instead achieved via the Non-Root status of UID 1000—which inherently protects the container's internal `/etc` and `/usr`—combined with strict Read-Only Mounts for trusted paths.
+Because an application unit's UID matches the invoking host user, it can interact with its assigned
+user-owned volumes without unsafe permission broadening. Data-plane separation is still achieved
+through exact mounts and modes, not by pretending the shared numerical identity is an authorization
+boundary.
 
 #### Layer 4: The Mount-Defined Boundary (The "Wall")
 
 The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined.
 
-- **The Vessel:** High-trust plane. Granted the control-plane mount set needed for API, orchestration, persistence, and promotion. Agents live here: graph state, LLM calls, routing, validation, memory access, and promotion policy remain Vessel-side. The Codex is normal runtime configuration; writable Codex mutation remains a host/Magus action or an explicitly authorized ritual, not arbitrary agent labor.
+- **The Vessel:** High-trust plane. Its generated mounts are the Codex read-only; the configured
+  stasis directory and Lab read-write; Core and Extensions read-only; and, in `host-reactor` mode,
+  the Reactor inbox read-write plus its host-owned terminal journal read-only. It receives no
+  whole-Crypt mount. Agents live here: graph state, LLM calls, routing, validation, memory access, and
+  promotion policy remain Vessel-side. Writable Codex mutation remains a host/Magus action or an
+  explicitly authorized ritual, not arbitrary agent labor.
 - **The Tomb:** Low-trust execution hand. Granted no Codex mount at all under the No-Codex Law ([ADR 13](13-layout.md)): every job-safe fact it needs travels in the job payload as a task-safe, secret-forbidden runtime envelope ([ADR 11](11-backend.md)). It receives RW access only to disposable, task-scoped workspaces and artifacts.
+- **Soulstones:** Model/runtime data plane. They receive only explicitly configured model/runtime
+  volumes and unit-scoped secrets. Global, rune, and adapter-contributed mounts are all rejected if
+  either endpoint overlaps the Codex, Crypt, stasis, trigger/Reactor, or user-systemd control roots;
+  existing host symlink aliases are resolved before this comparison, and a safe alias is rendered
+  as the canonical checked target rather than retained in the generated unit.
 
 Native code modification is protected by Git Branching, not by different UIDs. Unsafe execution may manipulate workspaces, but it must not rewrite the trusted running body of the control plane.
 
@@ -195,7 +245,30 @@ Where supported, mounts use SELinux relabeling via `:Z`.
 
 This adds a kernel-enforced MAC layer on top of UID-based posture. SELinux does not replace proper trust zoning, but it hardens file access boundaries and helps prevent accidental or malicious access across mislabeled paths.
 
-#### Layer 6: Secret Scope & Secret Classes
+#### Layer 6: The Host Reactor Boundary
+
+The caged default does not mount the user Systemd bus into the Vessel. Instead, the Vessel can write
+only typed `TransitionIntent` files into an owner-only Reactor inbox. `lychd-reactor.path` watches
+new inbox files and crash-surviving journal processing records, waking the host-side
+`lychd reactor consume` oneshot. It claims a pending entry out of the Vessel-writable
+directory before parsing, then validates it through a no-follow descriptor: file type, bounded size,
+owner, mode, schema/set invariants, filename/transition identity, configuration digest, configured
+switch-policy plan, expected user-systemd state, and host-owned Animator-to-unit mappings all pass
+before an effect.
+
+The host moves each claimed intent into a journal before execution and retains processing,
+completed, declined, or rejected records. Existing journal IDs suppress duplicate execution.
+Configuration/policy/stale-state preconditions become a typed no-effect decline; uncertain effect
+failures remain rejected. The journal is
+read-only in the trusted Vessel; terminal filenames close the admission/cancellation fence but do
+not carry writable host commands. This protects the local file handoff; it is not a signature or
+remote-authentication protocol. Malformed or oversized input is discarded and reduced to a compact
+rejection marker rather than retained as an attacker-sized journal payload. After consumer death,
+recovery resumes only when observed user-unit state equals an exact ordered action prefix;
+non-prefix states are rejected without mutation. See **[Privilege (10)](10-privilege.md)** for the
+exact implemented boundary and remaining failed-compensation/general-repair limit.
+
+#### Layer 7: Secret Scope & Secret Classes
 
 Secrets are stored by reference in configuration and materialized through Podman secret storage only into units that require them.
 
@@ -236,7 +309,7 @@ Permissions at rest protect secrets from other host users and less-privileged ho
 
 If a unit can use a secret, that unit must be assumed capable of reading it.
 
-#### Layer 7: The Two-Plane Trust Boundary
+#### Layer 8: The Two-Plane Trust Boundary
 
 Security is built around a hard split between trusted and untrusted roles:
 
@@ -258,9 +331,11 @@ To enforce the central law, the Tomb execution plane (and its internal `nono` sa
 
 This mechanism ensures that while cognitive labor can be requested by the execution plane, the system's economic limits cannot be bypassed, API keys cannot be stolen, and the underlying model hardware cannot be accessed directly.
 
-#### Layer 8: Worker Process Sandboxing (`nono`)
+#### Layer 9: Planned Worker Process Sandboxing (`nono`)
 
-Inside the Tomb plane, the architecture enforces strict per-process sandboxing using **`nono`**. This is not an optional layer; it is the fundamental mechanism that enables the shared Pod architecture.
+When the Tomb plane is implemented, the architecture must enforce strict per-process sandboxing
+using **`nono`**. It is not an optional layer for enabling untrusted execution in the shared-Pod
+architecture; its absence means that execution surface must remain disabled.
 
 - The `lychd-tomb` container itself may use controlled Pod connectivity and holds only the narrow SAQ/Postgres execution credential.
 - The `lychd-tomb` Python worker loop (the execution hand) is **Semi-Trusted**.
@@ -280,9 +355,16 @@ Outbound network is treated as authority, not convenience.
 #### Core Rules
 
 - The `lychd.pod` shares a network namespace, meaning containers inherently possess the Pod's internet route.
+- Every generated Pod `PublishPort` binds the host side to `127.0.0.1`; no core or contributed
+  service is exposed on all host interfaces by default.
 - The Vessel and Semi-Trusted Tomb loop utilize this native egress.
 - **Untrusted execution (inside `nono`) defaults to ZERO egress.**
 - Wide-open outbound access from a sandbox is forbidden. Any sandbox requiring external data must route requests through the Tomb loop acting as its proxy.
+
+The loopback bind limits which hosts can connect; it does not identify which same-host process or
+user made a request. Until real caller authentication exists, the LychD web/API surface remains
+local single-user infrastructure. Remote ingress requires an authenticated and authorized front
+door with TLS and an explicit trusted-proxy policy.
 
     - no secrets
     - no broad durable mounts
@@ -376,14 +458,14 @@ The same law governs every input crossing into cognition from a lower-trust plan
 
 | Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Untrusted Execution Plane)                                   |
 | :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
-| **Identity**       | UID 1000 (Symmetric Identity).                                 | UID 1000 (Symmetric Identity).                                         |
+| **Identity**       | Invoking unprivileged host UID through Pod-level `keep-id`; `User=%U` for the Vessel. | Same Pod user-namespace geometry where manifested; identity alone is not the plane boundary. |
 | **Secrets**        | Accesses control-plane database credentials and high-value API keys. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, signing keys, Codex secrets, or control-plane credentials. |
-| **Mounts**         | Control-plane mount set for configuration, persistence, and authorized promotion. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
-| **Network**        | Shared Pod network (Internet + Localhost).                     | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
+| **Mounts**         | Codex RO; stasis and Lab RW; Core/Extensions RO; Reactor inbox RW plus terminal journal RO only in Host Reactor mode; no whole Crypt. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
+| **Network**        | Shared Pod network and egress; host publication is loopback-only and not caller authentication. | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
 | **Queue Control**  | Owns enqueue policy, durable scheduling, and control-plane retries. | Claims, acks, and retries execution-plane SAQ jobs only.               |
 | **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |
 | **Context Egress** | Applies privatization and anonymization gates.                 | Cannot bypass egress policy.                                           |
-| **Host Authority** | May emit validated host intents via the Host Reactor contract. | Cannot emit host intents or mutate infrastructure.                     |
+| **Host Authority** | May emit typed intents into the inbox; the host validates and journals them before acting. | Cannot mount the inbox, emit host intents, or mutate infrastructure.   |
 | **Arbitrary Code** | Forbidden.                                                     | Allowed only in constrained execution contexts (`nono` sandbox).       |
 | **Mutation**       | Forbidden. Protected by Git Branching and RO Mounts.           | Allowed only in disposable/task-scoped areas.                          |
 
@@ -419,15 +501,21 @@ Security posture is only real if it is inspectable after the fact.
 
 ### 8. Future Hardening (The Remaster)
 
-The V1 "Golden Mean" (Shared Pod + Nono + Layer 7 Auth) is deliberately pragmatic. It allows LychD to bootstrap and self-host safely today without writing complex custom network routers.
+The implemented foundation (shared Pod, narrow mounts, loopback-only host publication, and service
+credentials) is deliberately pragmatic. It does not include remote caller authentication or the
+Tomb/`nono` untrusted-execution plane.
 
 However, the architecture explicitly acknowledges possible future sovereign security milestones for later versions (V2+):
 
 - **Total Network Separation:** Abandoning the shared `lychd.pod` in favor of strict, isolated Podman networks (`lychd-core`, `lychd-tomb`).
+- **Authenticated External Ingress:** Place remote access behind an explicitly trusted TLS front
+  door with real caller authentication, authorization, and proxy-header policy.
 - **Dedicated Worker API Plane:** Tomb workers communicating with the Vessel purely over a restricted internal API, removing direct database access from the worker completely.
 - **Sovereign Egress Proxy:** Moving the egress routing into a dedicated Vessel service, potentially dropping the reliance on `nono`'s internal Rust proxy in favor of a pure-Python boundary.
 
-These are valid long-term directions. They are **not** immediate prerequisites. The current container boundary combined with `nono` provides sufficient blast-radius containment while the system matures.
+These are valid long-term directions. The Tomb/`nono` boundary is, however, an immediate
+prerequisite for exposing any untrusted code-execution feature; the current Vessel container must
+not be substituted for it.
 
 ## Consequences
 

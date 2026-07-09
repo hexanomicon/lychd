@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 # Golden unit text (D1). exec_start is injected so the golden is stable across venvs.
-_GOLDEN_EXEC = "/venv/bin/lychd run --host 127.0.0.1 --port 7134"
+_GOLDEN_EXEC = "/venv/bin/lychd serve --host 127.0.0.1 --port 7134"
 _GOLDEN_UNIT = (
     "[Unit]\n"
     "Description=LychD Vessel (uncaged)\n"
@@ -81,9 +81,9 @@ def test_transmute_uncaged_vessel_builds_from_settings() -> None:
 
     assert isinstance(service, SystemdService)
     expected_bin = str(Path(sys.prefix) / "bin" / "lychd")
-    assert service.exec_start == f"{expected_bin} run --host 127.0.0.1 --port 9999"
+    assert service.exec_start == f"{expected_bin} serve --host 127.0.0.1 --port 9999"
     assert service.environment == {"LYCHD_MODE": "uncaged"}
-    assert service.filename == "lychd-vessel.service"
+    assert service.filename == "lychd-uncaged-vessel.service"
 
 
 # ---------------------------------------------------------------------------
@@ -180,8 +180,6 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     mock_transmuter.transmute_all.return_value = ["rune1"]
 
     mock_scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
-    mock_scribe.write_user_unit.return_value = Path("/home/magus/.config/systemd/user/lychd-vessel.service")
-
     mock_subprocess = mocker.patch("subprocess.run")
     mocker.patch("shutil.which").return_value = systemctl
     return SimpleNamespace(scribe=mock_scribe, subprocess=mock_subprocess)
@@ -194,8 +192,10 @@ def test_bind_uncaged_writes_unit_and_prints_enable_hint(runner: CliRunner, mock
     result = runner.invoke(bind_quadlets, ["--uncaged"])
 
     assert result.exit_code == 0
-    mocks.scribe.write_user_unit.assert_called_once()
-    assert "systemctl --user enable --now lychd-vessel.service" in result.output
+    mocks.scribe.reconcile_all.assert_called_once()
+    plain_units = mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
+    assert "lychd-uncaged-vessel.service" in plain_units
+    assert "systemctl --user enable --now lychd-uncaged-vessel.service" in result.output
     assert "flip the switch" in result.output
     # daemon-reload runs; enable/start is NEVER auto-invoked.
     reload_calls = [c for c in mocks.subprocess.call_args_list if c.args and "daemon-reload" in c.args[0]]
@@ -211,8 +211,9 @@ def test_bind_uncaged_no_systemd_degrades_to_file_and_warning(runner: CliRunner,
     result = runner.invoke(bind_quadlets, ["--uncaged"])
 
     assert result.exit_code == 0
-    mocks.scribe.write_user_unit.assert_called_once()
-    assert "daemon-reload skipped" in result.output
+    mocks.scribe.reconcile_all.assert_called_once()
+    assert "lychd-uncaged-vessel.service" in mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
+    assert "Manual daemon-reload required" in result.output
     assert mocks.subprocess.call_args_list == []  # nothing invoked without systemctl
 
 
@@ -223,7 +224,8 @@ def test_bind_without_uncaged_writes_no_user_unit(runner: CliRunner, mocker: Moc
     result = runner.invoke(bind_quadlets)
 
     assert result.exit_code == 0
-    mocks.scribe.write_user_unit.assert_not_called()
+    mocks.scribe.reconcile_all.assert_called_once()
+    assert "lychd-uncaged-vessel.service" not in mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
     assert "uncaged" not in result.output.lower()
 
 
@@ -249,4 +251,7 @@ def test_uncaged_unit_passes_systemd_analyze(tmp_path: Path) -> None:
         capture_output=True,
         check=False,
     )
-    assert result.returncode == 0, result.stderr.decode()
+    stderr = result.stderr.decode()
+    if result.returncode != 0 and "Operation not permitted" in stderr and "SO_PASS" in stderr:
+        pytest.skip("systemd-analyze user-manager socket operations are blocked by the sandbox")
+    assert result.returncode == 0, stderr

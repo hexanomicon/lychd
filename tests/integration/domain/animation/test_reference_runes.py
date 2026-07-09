@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityLifecycle
+from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
     GenericSoulstoneConfig,
@@ -62,12 +62,12 @@ def test_reference_runes_resolve_exactly_the_five_keys() -> None:
         "openai-main:chat:gpt-5.2",
     }
 
-    # Lifecycle per key: the atelier router is DYNAMIC; vLLM + portal are STATIC.
-    assert specs["atelier:chat:qwen3-vl-8b"].lifecycle is CapabilityLifecycle.DYNAMIC
-    assert specs["atelier:embedding:bge-m3"].lifecycle is CapabilityLifecycle.DYNAMIC
-    assert specs["atelier:vision:the-eye"].lifecycle is CapabilityLifecycle.DYNAMIC
-    assert specs["glm:chat:GLM-4.6"].lifecycle is CapabilityLifecycle.STATIC
-    assert specs["openai-main:chat:gpt-5.2"].lifecycle is CapabilityLifecycle.STATIC
+    # is_dynamic per key: the atelier router is dynamic; vLLM + portal are not.
+    assert specs["atelier:chat:qwen3-vl-8b"].is_dynamic is True
+    assert specs["atelier:embedding:bge-m3"].is_dynamic is True
+    assert specs["atelier:vision:the-eye"].is_dynamic is True
+    assert specs["glm:chat:GLM-4.6"].is_dynamic is False
+    assert specs["openai-main:chat:gpt-5.2"].is_dynamic is False
 
 
 def test_reference_runes_per_key_families_and_modalities() -> None:

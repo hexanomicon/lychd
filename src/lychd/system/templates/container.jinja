@@ -1,13 +1,16 @@
 [Unit]
 Description={{ description }}
-{% if pod %}
-BindsTo={{ pod }}
+{% if pod_service %}
+BindsTo={{ pod_service }}
 {% endif %}
 {% for target in targets %}
 PartOf=lychd-coven-{{ target }}.target
 {% endfor %}
 {% if wants %}
 Wants={{ wants | join(' ') }}
+{% endif %}
+{% if requires %}
+Requires={{ requires | join(' ') }}
 {% endif %}
 {% if after %}
 After={{ after | join(' ') }}
@@ -19,9 +22,13 @@ Conflicts={{ conflicts | join(' ') }}
 [Container]
 {% if pod %}
 Pod={{ pod }}
+StartWithPod={{ start_with_pod | lower }}
 {% endif %}
 Image={{ image }}
 ContainerName={{ container_name }}
+{% if user %}
+User={{ user }}
+{% endif %}
 {% if user_ns %}
 UserNS={{ user_ns }}
 {% endif %}
@@ -67,6 +74,12 @@ Exec={{ exec }}
 {% endif %}
 
 [Service]
+{% if service_type %}
+Type={{ service_type }}
+{% endif %}
+{% if remain_after_exit %}
+RemainAfterExit=true
+{% endif %}
 Restart={{ restart_policy | default('always') }}
 
 [Install]

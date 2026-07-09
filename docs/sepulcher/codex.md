@@ -66,6 +66,26 @@ Typical examples:
 
 The Prime Scroll carries global law. Instance declarations live in `runes/`.
 
+The generated foundation defaults to the caged Host Reactor path:
+
+```toml
+[orchestration.switching]
+actuator = "host-reactor"
+```
+
+This causes `lychd bind` to inscribe the host path/service consumer and to mount the configured
+Reactor inbox read-write plus its derived sibling journal read-only into the Vessel.
+`actuator = "systemd"` is the explicit
+uncaged/development choice. The default durable graph checkpoint root is
+`~/.local/share/lychd/stasis`; that exact directory is mounted read-write, not the whole Crypt.
+Custom Reactor/stasis paths must be absolute, the Reactor directory must be named `inbox`, and
+stasis cannot overlap that inbox or its derived sibling journal. `reactor_ack_timeout_s` bounds how
+long an intent may remain unclaimed; a claimed transition retains the admission fence until a
+terminal journal receipt. `lychd init` provisions the
+validated configured paths. Paths containing `%`, backslashes, or non-printable characters are
+invalid because the values enter generated systemd units. After changing either path in an existing
+Codex, rerun `lychd init` before `lychd bind` so the new owner-only directories exist.
+
 ### II. The Rune Archive (`runes/`)
 
 This is the archive of instance scrolls.
@@ -97,6 +117,18 @@ In practice:
 - the folder path determines which rune family owns the file
 - misplaced scrolls are ignored or rejected during validation
 - valid runes become intent for the binding ritual
+
+#### How declarations resolve
+
+- **Model paths** in a Soulstone Rune are container-side paths (normally `/models/...`). The host
+  weights directory reaches that path only through the global/default or rune-specific volume
+  mapping; there is no implicit host-relative `model_root` resolution.
+- **Secrets** are referenced by *name*, never by value: a rune names a secret (for example `api_key_secret_name = "portal_openai_main"`) and LychD resolves it from the host's secret store at bind/run time. Runes are safe to read; they carry no secret material.
+- **`lychd bind`** transmutes every valid rune into Podman/systemd Quadlet manifests and, when the
+  caged Host Reactor is selected, the host-only `lychd-reactor.path` and
+  `lychd-reactor.service` units. A rune that fails validation stops the bind with a named error
+  rather than emitting a broken unit. Never hand-edit generated projections—they are reconciled
+  on every bind.
 
 The rune archive is extensible. Installing an extension can add new anchors without changing how the Codex is read.
 
@@ -137,7 +169,10 @@ lychd bind
 1. **Reading:** The Librarian reads `lychd.toml` and the rune archive by anchor.
 2. **Validation:** The Codex is checked for structural violations before manifestation (ownership, identity, required named instances, and policy constraints).
 3. **Calculation:** The Scribe resolves runtime relationships and orchestration consequences.
-4. **Inscription:** The Scribe writes generated **Quadlet manifests** into the System's Binding Site (`~/.config/containers/systemd/`).
+4. **Inscription:** The Scribe transactionally writes generated **Quadlet manifests** into
+   `~/.config/containers/systemd/` and selected plain user units into
+   `~/.config/systemd/user/`, governed by the exact `.lychd-owned.json` ownership ledger in the
+   Quadlet binding site.
 5. **Reanimation:** Systemd reloads, and the new services manifest.
 
 For the technical rules behind this sequence:
@@ -147,8 +182,10 @@ For the technical rules behind this sequence:
 - [Orchestrator (ADR 23)](../adr/23-orchestrator.md)
 
 !!! warning "The Ephemeral Quadlets"
-    **Do not edit the files in `~/.config/containers/systemd/` manually.**
+    **Do not manually edit files recorded in `.lychd-owned.json`.**
 
-    These files are **Quadlet manifests**, projected by the Scribe from Codex Runes. They are ephemeral artifacts. The next time `lychd bind` runs, the Scribe wipes that directory clean and rewrites it from scratch.
+    Those files are **Quadlet/systemd projections** produced by the Scribe from Codex Runes. On the next `lychd bind`, the Scribe reconciles one complete generated-and-plain unit set and replaces or removes only the exact filenames in its validated hidden ownership manifest. That authority manifest must remain a regular, same-UID `0600` file. The Scribe never wipes the shared directory, adopts an existing same-name file, or touches unrelated operator units—even when they use `.container`, `.pod`, or `.target` suffixes.
+
+    If a generated name is already present but absent from the ownership manifest, binding fails closed. Move or explicitly remove the conflicting operator file after reviewing it; LychD will not silently claim it.
 
     To change reality, **edit the Codex**, not the projection.

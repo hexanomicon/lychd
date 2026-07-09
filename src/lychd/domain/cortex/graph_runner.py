@@ -1,23 +1,62 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from pydantic import BaseModel
 from pydantic_graph import BaseNode, Graph
 from pydantic_graph.persistence import BaseStatePersistence
 
-from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
+from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.extensions.protocols import PhylacteryProtocol
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from lychd.domain.cortex.priority import Priority
+
+
+@dataclass(frozen=True, kw_only=True)
+class StasisPolicy:
+    """Convergence bounds for the stasis retry loop (was ad-hoc locals)."""
+
+    max_resumes: int = 8  # total transition retries per run
+    max_same_key: int = 3  # identical-capability convergence bound
+
+
+def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
+    """Find a `kind` signal reachable from `exc` via cause/context or a BaseExceptionGroup.
+
+    The old walk was depth-1 over ``__cause__`` only — it missed the ``ExceptionGroup``
+    wrapping anyio task groups can produce around a tool raised mid-stream. This is a
+    bounded, cycle-safe transitive search.
+    """
+    seen: set[int] = set()
+
+    def walk(current: BaseException | None, depth: int) -> T | None:
+        if current is None or depth < 0 or id(current) in seen:
+            return None
+        seen.add(id(current))
+        if isinstance(current, kind):
+            return current
+        if isinstance(current, BaseExceptionGroup):
+            group = cast("BaseExceptionGroup[BaseException]", current)
+            for sub in group.exceptions:
+                if (found := walk(sub, depth - 1)) is not None:
+                    return found
+        for nxt in (current.__cause__, current.__context__):
+            if (found := walk(nxt, depth - 1)) is not None:
+                return found
+        return None
+
+    return walk(exc, max_depth)
+
 
 class TransitionOrchestrator(Protocol):
     """Orchestration surface required by graph stasis recovery."""
 
-    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None: ...
+    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: Priority) -> None: ...
 
 
 class GraphRunner[StateT: BaseModel]:
@@ -28,14 +67,17 @@ class GraphRunner[StateT: BaseModel]:
         *,
         orchestrator: TransitionOrchestrator,
         persistence: PhylacteryProtocol,
-        signal_priority: float = 100.0,
+        signal_priority: Priority,
         on_stasis_enter: Callable[[], Awaitable[None]] | None = None,
         on_stasis_exit: Callable[[], Awaitable[None]] | None = None,
+        policy: StasisPolicy | None = None,
     ) -> None:
         """Initialize graph runner dependencies.
 
-        ``signal_priority`` is threaded to ``handle_transition`` (the run's priority,
-        C7). The stasis callbacks (spec-00 C7) fire around a transition so the ledger
+        ``signal_priority`` is REQUIRED (no default): a missing value would silently
+        claim maximum urgency — the worst failure direction for a priority system. It is
+        threaded to ``handle_transition`` (the run's priority, C7). The stasis callbacks
+        (spec-00 C7) fire around a transition so the ledger
         can flip ``RUNNING → AWAITING_HARDWARE → RUNNING`` — ``on_stasis_enter`` after
         rehydration, ``on_stasis_exit`` after ``handle_transition`` returns.
         """
@@ -44,6 +86,7 @@ class GraphRunner[StateT: BaseModel]:
         self.signal_priority = signal_priority
         self._on_stasis_enter = on_stasis_enter
         self._on_stasis_exit = on_stasis_exit
+        self._policy = policy or StasisPolicy()
 
     async def run_graph(
         self,
@@ -54,7 +97,7 @@ class GraphRunner[StateT: BaseModel]:
         deps: Any = None,
     ) -> Any:
         """Execute a fresh Pydantic Graph run with native stasis support."""
-        return await self._execute_ritual(
+        return await self._run_with_stasis(
             graph,
             is_resume=False,
             start_node=start_node,
@@ -63,17 +106,15 @@ class GraphRunner[StateT: BaseModel]:
         )
 
     async def resume_graph(self, graph: Graph[StateT, Any, Any], *, deps: Any = None) -> Any:
-        """Resume a persisted graph run with stasis support.
+        """Resume a persisted graph run without finalizing its checkpoint.
 
-        A chained re-park (the resumed run parked AGAIN) must keep its durable file:
-        `mark_job_resumed` (the tombstone) fires only on a non-parked resume.
+        Checkpoint ownership belongs to ``perform_run``: only the caller knows when the
+        graph result has been committed as terminal run truth.  Deleting here creates a
+        loss window between graph completion and ``RunStatus.DONE`` persistence.
         """
-        result = await self._execute_ritual(graph, is_resume=True, deps=deps)
-        if not isinstance(result, RunParked):
-            await self.persistence.mark_job_resumed(self.persistence.job_id)
-        return result
+        return await self._run_with_stasis(graph, is_resume=True, deps=deps)
 
-    async def _execute_ritual(  # noqa: C901, PLR0912 - bounded-retry stasis loop is intentionally branchy
+    async def _run_with_stasis(  # noqa: C901, PLR0912 - bounded-retry stasis loop is intentionally branchy
         self,
         graph: Graph[StateT, Any, Any],
         *,
@@ -87,8 +128,6 @@ class GraphRunner[StateT: BaseModel]:
         resume_count = 0
         repeated_key: str | None = None
         repeated_count = 0
-        max_resumes = 8
-        max_same_key = 3
 
         while True:
             if not current_is_resume:
@@ -116,20 +155,12 @@ class GraphRunner[StateT: BaseModel]:
                     # Consent park (C3): a Gate raised ConsentPending. Snapshot the
                     # parked node (fresh id) and return the RunParked sentinel — the run
                     # SUSPENDS (it does not fail, and it is not a hardware transition).
-                    park: ConsentPending | None = None
-                    for candidate in (exc, getattr(exc, "__cause__", None)):
-                        if isinstance(candidate, ConsentPending):
-                            park = candidate
-                            break
+                    park = _extract_signal(exc, ConsentPending)
                     if park is not None:
                         await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
                         return RunParked(consent_id=park.consent_id, tool_name=park.tool_name)
 
-                    signal: HardwareTransitionRequired | None = None
-                    for candidate in (exc, getattr(exc, "__cause__", None)):
-                        if isinstance(candidate, HardwareTransitionRequired):
-                            signal = candidate
-                            break
+                    signal = _extract_signal(exc, HardwareTransitionRequired)
 
                     if signal:
                         resume_count += 1
@@ -137,7 +168,7 @@ class GraphRunner[StateT: BaseModel]:
                             repeated_count += 1
                         else:
                             repeated_key, repeated_count = signal.capability_key, 1
-                        if resume_count > max_resumes or repeated_count >= max_same_key:
+                        if resume_count > self._policy.max_resumes or repeated_count >= self._policy.max_same_key:
                             msg = (
                                 f"Stasis did not converge for capability '{signal.capability_key}' after "
                                 f"{resume_count} transition(s); aborting the run."

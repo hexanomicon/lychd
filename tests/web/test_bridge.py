@@ -68,6 +68,8 @@ def test_send_happy_path(altar_client: TestClient[Litestar], fake_services: Simp
     # the engine received exactly one Intent carrying the prompt
     assert len(fake_services.run_engine.submitted) == 1
     assert fake_services.run_engine.submitted[0].prompt == "raise the dead"
+    assert fake_services.run_engine.submitted[0].sigil_name
+    assert fake_services.run_engine.submitted[0].sigil_scopes
 
 
 def test_inspector_renders(altar_client: TestClient[Litestar], fake_services: SimpleNamespace) -> None:

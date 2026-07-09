@@ -42,11 +42,20 @@ icon: material/camera-timer
 
 A **Hybrid Snapshot Strategy** governed by a **Checkpoint Protocol** is adopted. This ensures the Daemon can "blink" its current reality into permanence without risk of corruption.
 
+!!! warning "Design adopted; whole-body snapshot ritual not implemented"
+    The layout service can create the Postgres data directory as a Btrfs subvolume and apply its
+    no-COW posture, but there is no current checkpoint coordinator, `lychd.lock` generator, Btrfs
+    snapshot/restore driver, Postgres export fallback, `jj edit` rehydration gate, or post-restore
+    reconciliation command. The implemented rollback floors are narrower: transactional Scribe
+    reconciliation for generated units, process-local Systemd compensation, and owner-only graph
+    checkpoint files for declared durable waits. Sections below specify the whole-body target and
+    must not be read as an available recovery command.
+
 !!! note "Replay Is Not Snapshot Rollback"
-    Workflow replay is normally a Phylactery concern: Postgres records queue rows, graph checkpoints, traces, committed outputs, and recovery markers so work can resume from the last declared safe boundary. Snapshot rollback is heavier. It restores whole reality when the Body (code, lockfiles, VCS state) and Soul (database state) must move together after Creation, Assimilation, Evolution, migration, or failed promotion.
+    Workflow replay is normally a Phylactery concern. The current foundation records run/queue truth in Postgres and keeps durable Pydantic Graph checkpoints in per-run files whose paths are recorded on the run row. A Postgres-backed graph persistence/outbox remains later work. Snapshot rollback is heavier: it restores whole reality when the Body (code, lockfiles, VCS state) and every durable Soul component must move together after Creation, Assimilation, Evolution, migration, or failed promotion.
 
 !!! important "The Precedence Doctrine"
-    The two authorities do not partition the *data*. Graph checkpoints and queue rows live inside the Soul (the [Phylactery (06)](06-persistence.md) `queue` chamber and graph checkpoints), so any whole-body restore necessarily rewinds the replay authority's own state. They cannot be disjoint in data; they are disjoint in **decision rights**. Replay authority operates *within* a Soul; Restore authority *selects which Soul exists*. After a restore, the replay state contained in the restored Soul is the sole truth: work enqueued after the snapshot instant is lost by design and must be re-submitted, never reconstructed.
+    The two authorities do not partition the *durable Soul*, although the current material data spans Postgres run/queue rows and file-backed graph checkpoints. A whole-body restore must rewind those components coherently or mark unmatched work abandoned; restoring only one is not replay. A later Postgres graph persistence layer may collocate them, but does not change the decision rights: Replay operates *within* a Soul, while Restore selects which Soul exists. After a restore, the recovered replay state is the sole truth; work enqueued after the snapshot instant is lost by design and must be re-submitted, never reconstructed.
 
 ### 1. The Checkpoint Protocol (The Freeze)
 
@@ -114,9 +123,11 @@ Resumption is shared across several authorities. Each owns exactly one share, an
 ### Consequences
 
 !!! success "Positive"
-    - **Indestructible Continuity:** The system can revert to a mathematically exact previous state where the Logic matches the Data.
+    - **Coherence Target:** Once the checkpoint protocol lands, restore has one explicit contract
+      for aligning logic and durable data instead of composing independent ad hoc backups.
 
-    - **Infrastructure Intelligence:** By detecting Btrfs and configuring No_COW (`+C`), the system optimizes performance without sacrificing safety.
+    - **Layout Preparation:** Btrfs detection and no-COW configuration prepare the Postgres data
+      subvolume for a future coordinated snapshot driver.
 
     -   **Verifiable Provenance:** The `lychd.lock` provides a human-readable and machine-verifiable history of the exact composition of the Daemon, captured via VCS.
 

@@ -18,7 +18,7 @@ icon: material/text-box-multiple-outline
 - **Identity Scopes:** Mandatory inclusion of the active **Sigil** and its associated permission scopes to facilitate secure tool filtering.
 - **Karma Integration:** Prioritization of verified interaction traces and feedback as hot context for subsequent reasoning rituals.
 - **Heuristic Arbitration:** Implementation of logic to autonomously switch between Retrieval-Augmented Generation (RAG) and Context Aware Generation (CAG) based on token volume and model limits.
-- **Governance Limits:** Mandatory enforcement of hard boundary limits (CTC Governor) to prevent VRAM spikes and substrate instability.
+- **Governance Limits:** Mandatory enforcement of hard boundary limits (the context governor) to prevent VRAM spikes and substrate instability.
 - **Prompt Density Optimization:** Support for Meta-Reasoning rituals to condense instructional prompts without loss of logical density.
 
 ## Considered Options

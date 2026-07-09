@@ -76,7 +76,9 @@ To ensure the persistence layer remains the single source of truth, the Vessel u
 
 ### 5. Dual-Plane Trust Delta
 
-Backend scope is now explicitly control-plane only.
+Backend scope is explicitly control-plane only. The current foundation implements the Vessel side;
+the Tomb job schema, queue/profile, credential, unit, and executor below are target boundaries and
+must land together before untrusted execution is enabled.
 
 - Vessel owns API, orchestration, control-plane queue policy, persistence access, and promotion authority.
 - Vessel agents can plan, score, route, validate, and gate HitL.

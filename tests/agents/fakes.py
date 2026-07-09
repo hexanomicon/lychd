@@ -9,12 +9,22 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
+from pydantic_ai import RunContext
+
+from lychd.agents.deps import LychDDeps
+from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.schemas import ConsentDecision
+from lychd.domain.cortex.events import RunChannel, RunEmitter, RunEvent
+from lychd.domain.orchestration.schema import TransitionPlan
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+    from lychd.domain.animation.capabilities import CapabilityGrant, CapabilityState
+    from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+    from lychd.domain.cortex.priority import Priority
 
 
 @dataclass
@@ -38,26 +48,26 @@ class FakeDispatcher:
     toolsets: tuple[Any, ...] = ()
     settings: Any = None
     calls: list[str] = field(default_factory=list)
+    requires_tools_calls: list[bool] = field(default_factory=list)
 
     @asynccontextmanager
     async def lease_grant(
         self,
         *,
-        family: Any,
-        model_name: Any = None,
+        family: CapabilityFamily | str,
+        model_name: str | None = None,
         run_id: str,
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
-    ) -> AsyncIterator[FakeGrant]:
+        requires_tools: bool = False,
+    ) -> AsyncIterator[CapabilityGrant]:
         _ = (model_name, run_id, priority, require_modalities)
         self.calls.append(str(family))
-        yield FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings)
-
-
-@dataclass
-class _Plan:
-    action_type: str = "NO_OP"
-    total_metabolic_cost: float = 0.0
+        self.requires_tools_calls.append(requires_tools)
+        # The graph deliberately consumes only the grant surface represented by
+        # ``FakeGrant``.  The cast keeps that test double honest at the concrete
+        # production seam without constructing live animator/model handles.
+        yield cast("CapabilityGrant", FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings))
 
 
 @dataclass
@@ -66,13 +76,23 @@ class FakeOrchestrator:
 
     calls: list[tuple[str, ...]] = field(default_factory=list)
 
-    async def calculate_transition_plan(self, target_capability_key: str) -> _Plan:
+    async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
         self.calls.append(("calculate", target_capability_key))
-        return _Plan()
+        return TransitionPlan(
+            total_metabolic_cost=0.0,
+            evict_coven_ids=[],
+            launch_coven_ids=[],
+            action_type="NO_OP",
+        )
 
-    async def request_transition(self, target_capability_key: str, priority: float) -> _Plan:
+    async def request_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan:
         self.calls.append(("request", target_capability_key, str(priority)))
-        return _Plan()
+        return TransitionPlan(
+            total_metabolic_cost=0.0,
+            evict_coven_ids=[],
+            launch_coven_ids=[],
+            action_type="NO_OP",
+        )
 
 
 @dataclass
@@ -84,23 +104,28 @@ class FakeEvents:
     """
 
     events: list[tuple[str, str, str]] = field(default_factory=list)
-    _channels: dict[str, Any] = field(default_factory=dict)
+    _channels: dict[str, RunChannel] = field(default_factory=dict)
 
-    def emitter(self, run_id: str) -> Any:
-        from lychd.domain.cortex.events import RunEmitter
-
-        return RunEmitter(channel=self._channel(run_id), persist=self._record)
-
-    def _channel(self, run_id: str) -> Any:
-        from lychd.domain.cortex.events import RunChannel
-
+    def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
+        """Return the run channel, seeding a newly restored stream when requested."""
         channel = self._channels.get(run_id)
         if channel is None:
-            channel = RunChannel(run_id=run_id)
+            channel = RunChannel(run_id=run_id, _seq=from_seq or 0)
             self._channels[run_id] = channel
         return channel
 
-    def _record(self, event: Any) -> None:
+    def emitter(self, run_id: str) -> RunEmitter:
+        return RunEmitter(channel=self.open(run_id), persist=self._record)
+
+    def subscribe(self, run_id: str, *, from_seq: int | None = None) -> AsyncIterator[RunEvent]:
+        return self.open(run_id).subscribe(from_seq)
+
+    def close(self, run_id: str) -> None:
+        channel = self._channels.pop(run_id, None)
+        if channel is not None:
+            channel.mark_closed()
+
+    def _record(self, event: RunEvent) -> None:
         self.events.append((event.run_id, str(event.kind), event.data))
 
     def kinds(self) -> list[str]:
@@ -165,8 +190,32 @@ class FakeConsents:
         return self.verdicts.get(consent_id)
 
 
-class FakeRegistry:
+class FakeRegistry(AnimatorRegistry):
     """Minimal registry for a real `ContextOrchestrator` (no warm capabilities)."""
 
-    def list_capability_states(self) -> list[Any]:
+    def __init__(self) -> None:
+        """Bypass the production registry's runtime-adapter construction."""
+
+    def list_capability_states(self) -> list[CapabilityState]:
         return []
+
+
+def approval_test_toolset() -> Any:
+    """Return the test-only approval tool used to exercise generic consent resume.
+
+    Production's minimal First One deliberately has no coven transition tool.  The
+    consent substrate still needs an approval-required function in offline tests, so
+    it is injected through the fake capability grant instead of the agent spec.
+    """
+    from pydantic_ai.toolsets import FunctionToolset
+
+    async def request_coven_swap(ctx: RunContext[LychDDeps], capability_key: str, reason: str) -> str:
+        plan = await ctx.deps.orchestrator.request_transition(capability_key, priority=ctx.deps.priority)
+        return (
+            f"transition to {capability_key} executed "
+            f"(action {plan.action_type}, cost {plan.total_metabolic_cost}); reason: {reason}"
+        )
+
+    toolset: FunctionToolset[LychDDeps] = FunctionToolset()
+    toolset.add_function(request_coven_swap, requires_approval=True)
+    return toolset

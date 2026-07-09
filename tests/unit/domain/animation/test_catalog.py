@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# Catalog/control-plane white-box tests pin private merge invariants directly.
+# pyright: reportPrivateUsage=false
 import json
 from pathlib import Path
 
@@ -180,7 +182,9 @@ def test_populate_router_models_reads_markers_from_fixture() -> None:
 
 def test_populate_router_models_tolerates_garbage() -> None:
     lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url="http://localhost:8080/v1", mode="router")
-    payload = {"data": [{"id": "x", "capabilities": "not-a-list"}, {"id": "y"}, {"no-id": 1}]}
+    payload: dict[str, object] = {
+        "data": [{"id": "x", "capabilities": "not-a-list"}, {"id": "y"}, {"no-id": 1}]
+    }
 
     LlamaCppControlPlane()._populate_router_models(lifecycle, payload)
 

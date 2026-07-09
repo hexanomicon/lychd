@@ -10,11 +10,11 @@ import pytest
 
 from lychd.domain.animation.capabilities import (
     CapabilityGrant,
-    CapabilityLifecycle,
     CapabilityPhase,
     CapabilitySpec,
     CapabilityState,
     GrantLease,
+    SourceKind,
 )
 from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.links import Link
@@ -79,16 +79,18 @@ def _spec(
     lifecycle_mode: str = "static",
     concurrency: ConcurrencyIntent | None = None,
     modalities_in: list[str] | None = None,
+    supports_tools: bool | None = None,
 ) -> CapabilitySpec:
     return CapabilitySpec(
         key=key,
         animator_name=animator_name,
         runtime="llamacpp",
-        source_kind="soulstone",
+        source_kind=SourceKind.SOULSTONE,
         family=family,
         model_id=key.rsplit(":", maxsplit=1)[-1],
         modalities_in=modalities_in or [],
-        lifecycle=CapabilityLifecycle("dynamic" if lifecycle_mode == "dynamic_soft" else lifecycle_mode),
+        supports_tools=supports_tools,
+        is_dynamic=lifecycle_mode == "dynamic_soft",
         concurrency=concurrency or ConcurrencyIntent(),
     )
 
@@ -108,7 +110,7 @@ def _state(
         phase = CapabilityPhase.COLD
     return CapabilityState(
         capability_key=spec.key,
-        lifecycle=CapabilityLifecycle.STATIC if is_static else CapabilityLifecycle.DYNAMIC,
+        is_dynamic=not is_static,
         phase=phase,
         health="ok" if warm else "down",
         active_model_id=spec.model_id if is_active else None,
@@ -121,7 +123,10 @@ def _dispatcher(
     states: list[CapabilityState],
     runtimes: dict[str, StubRuntime],
 ) -> Dispatcher:
-    return Dispatcher(registry=StubRegistry(specs, states, runtimes), leases=LeaseLedger())
+    return Dispatcher(
+        registry=StubRegistry(specs, states, runtimes),  # pyright: ignore[reportArgumentType]
+        leases=LeaseLedger(),
+    )
 
 
 def test_resolve_intent_prefers_warm_capability() -> None:
@@ -140,6 +145,22 @@ def test_resolve_intent_prefers_warm_capability() -> None:
     )
 
     assert dispatcher.resolve_intent("reasoning") == warm
+
+
+def test_resolve_intent_prefers_open_candidate_over_draining_warm_candidate() -> None:
+    """A drain barrier removes its animator from new-work preference immediately."""
+    draining = _spec(key="a:chat:draining", animator_name="a")
+    open_candidate = _spec(key="b:chat:open", animator_name="b")
+    leases = LeaseLedger()
+    registry = StubRegistry(
+        [draining, open_candidate],
+        [_state(draining), _state(open_candidate)],
+        {"a": StubRuntime(id="a"), "b": StubRuntime(id="b")},
+    )
+    dispatcher = Dispatcher(registry=registry, leases=leases)  # pyright: ignore[reportArgumentType]
+    leases.begin_drain(["a"])
+
+    assert dispatcher.resolve_intent("chat") == open_candidate
 
 
 def test_resolve_spec_pins_model_name() -> None:
@@ -164,6 +185,30 @@ def test_resolve_spec_require_modalities_excludes_text_only() -> None:
         dispatcher._resolve_spec("chat", model_name=None, require_modalities=("image",))
 
 
+def test_resolve_spec_requires_explicit_tool_support_when_requested() -> None:
+    unspecified = _spec(key="a:chat:unspecified", animator_name="a", supports_tools=None)
+    unsupported = _spec(key="b:chat:unsupported", animator_name="b", supports_tools=False)
+    supported = _spec(key="z:chat:supported", animator_name="z", supports_tools=True)
+    dispatcher = _dispatcher(
+        [unspecified, unsupported, supported],
+        [_state(unspecified), _state(unsupported), _state(supported)],
+        {
+            "a": StubRuntime(id="a"),
+            "b": StubRuntime(id="b"),
+            "z": StubRuntime(id="z"),
+        },
+    )
+
+    resolved = dispatcher._resolve_spec(
+        "chat",
+        model_name=None,
+        require_modalities=(),
+        requires_tools=True,
+    )
+
+    assert resolved is supported
+
+
 def test_resolve_spec_no_candidate_raises_capability_unavailable() -> None:
     dispatcher = _dispatcher([], [], {})
 
@@ -178,7 +223,7 @@ def _grant(*, generation: GenerationProfile) -> CapabilityGrant:
         state=_state(spec),
         lease=GrantLease(grant_id="grant-1", holder="run:r1", issued_at=datetime.now(UTC)),
         generation=generation,
-        animator=StubRuntime(id="local-chat"),
+        animator=StubRuntime(id="local-chat"),  # pyright: ignore[reportArgumentType]
         model=None,
     )
 

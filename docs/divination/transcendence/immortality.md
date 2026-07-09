@@ -5,6 +5,8 @@ icon: material/reload
 
 # :material-reload: Immortality
 
+_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+
 > _"The Flesh is temporary. The Word is eternal."_
 
 This is the final seal. Before you can understand it, two things must be understood separately: what the **Magus** brings, and what the **Lich** is. Many arrive here having conflated the operator, the instrument, and the fused condition between them. The conflation is the last obstacle — and dismantling it is the act of transcendence itself.

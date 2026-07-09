@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -54,10 +54,10 @@ _REGEN = os.getenv("LYCHD_REGEN_GOLDEN") == "1"
 # Deterministic fixture set (no random factory fields — a golden must be exact) #
 # --------------------------------------------------------------------------- #
 def _soulstones() -> list[SoulstoneConfig]:
-    """A deterministic stone set covering every conflict/target/boot property.
+    """A deterministic stone set covering target and boot properties.
 
     - ``alpha`` + ``beta``: a >= 2-member coven ("logic") -> a real target.
-    - ``gamma``: a solitary stone -> conflicts by service, not target.
+    - ``gamma``: a solitary stone with no target membership.
     - ``resident``: a persistent resident -> WantedBy=default.target.
     """
     return [
@@ -103,6 +103,7 @@ def _portals() -> list[PortalConfig]:
 def _replacements() -> list[tuple[str, str]]:
     settings = get_settings()
     pairs = [
+        (str(constants.PATH_POSTGRESS_DATA_DIR), "${PATH_POSTGRESS_DATA_DIR}"),
         (str(constants.PATH_POSTGRES_ROOT_DIR), "${PATH_POSTGRES_ROOT_DIR}"),
         (str(constants.PATH_CORE_DIR), "${PATH_CORE_DIR}"),
         (str(constants.PATH_EXTENSIONS_DIR), "${PATH_EXTENSIONS_DIR}"),
@@ -126,9 +127,11 @@ def _normalize(value: Any) -> Any:
                 value = value.replace(actual, token)
         return value
     if isinstance(value, list):
-        return [_normalize(item) for item in value]
+        items = cast("list[Any]", value)
+        return [_normalize(item) for item in items]
     if isinstance(value, dict):
-        return {key: _normalize(item) for key, item in value.items()}
+        mapping = cast("dict[str, Any]", value)
+        return {key: _normalize(item) for key, item in mapping.items()}
     return value
 
 
@@ -217,8 +220,8 @@ def test_property1_pod_network_truth() -> None:
     """§8.1 — the pod publishes core ports, then phoenix ports (active) in order."""
     settings = get_settings()
     core = [
-        f"{settings.server.port}:{constants.CONTAINER_LYCHD_PORT}",
-        f"{settings.db.port}:{constants.CONTAINER_POSTGRES_PORT}",
+        f"127.0.0.1:{settings.server.port}:{constants.CONTAINER_LYCHD_PORT}",
+        f"127.0.0.1:{settings.db.port}:{constants.CONTAINER_POSTGRES_PORT}",
     ]
 
     active = _transmute(phoenix_active=True)
@@ -227,16 +230,17 @@ def test_property1_pod_network_truth() -> None:
     absent_pod = next(m for m in absent if isinstance(m, QuadletPod))
 
     assert absent_pod.publish_ports == core
+    assert absent_pod.user_ns == "keep-id"
     phoenix = PhoenixSettings()
     assert active_pod.publish_ports == [
         *core,
-        f"{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
-        f"{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
+        f"127.0.0.1:{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
+        f"127.0.0.1:{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
     ]
 
 
 def test_property2_manifest_sequence() -> None:
-    """§8 — sequence: pod -> vessel -> phylactery -> oculus(active) -> targets -> stones."""
+    """§8 — sequence: pod -> core -> migration -> contributions -> targets -> stones."""
     active = _transmute(phoenix_active=True)
     absent = _transmute(phoenix_active=False)
 
@@ -245,6 +249,7 @@ def test_property2_manifest_sequence() -> None:
         ("QuadletPod", "lychd"),
         ("QuadletContainer", "lychd-vessel"),
         ("QuadletContainer", "lychd-phylactery"),
+        ("QuadletContainer", "lychd-migrate"),
         ("QuadletContainer", "lychd-oculus"),
         ("QuadletTarget", "logic"),
         ("QuadletContainer", "lychd-alpha"),
@@ -259,6 +264,7 @@ def test_property2_manifest_sequence() -> None:
         ("QuadletPod", "lychd"),
         ("QuadletContainer", "lychd-vessel"),
         ("QuadletContainer", "lychd-phylactery"),
+        ("QuadletContainer", "lychd-migrate"),
         ("QuadletTarget", "logic"),
         ("QuadletContainer", "lychd-alpha"),
         ("QuadletContainer", "lychd-beta"),
@@ -285,8 +291,10 @@ def test_property3_oculus_and_core_lattice() -> None:
 
     vessel = active["lychd-vessel"]
     phylactery = active["lychd-phylactery"]
+    migrator = active["lychd-migrate"]
     assert isinstance(vessel, QuadletContainer)
     assert isinstance(phylactery, QuadletContainer)
+    assert isinstance(migrator, QuadletContainer)
     # Vessel env + secrets (incl. the portal secret).
     assert vessel.env_vars["APP__SECRET_KEY_FILE"] == f"/run/secrets/{settings.app.secret_key_secret}"
     assert vessel.env_vars["DB__HOST"] == "localhost"
@@ -295,15 +303,30 @@ def test_property3_oculus_and_core_lattice() -> None:
     assert "openai_api_key" in vessel.secrets
     assert settings.app.secret_key_secret in vessel.secrets
     assert settings.db.password_secret in vessel.secrets
-    assert vessel.wants == ["lychd-phylactery.service"]
-    assert vessel.after == ["lychd-phylactery.service"]
-    # Phylactery hangs off the pod.
-    assert phylactery.wants == ["lychd.pod"]
-    assert phylactery.after == ["lychd.pod"]
+    assert vessel.wants == ["lychd-migrate.service", "lychd-reactor.path"]
+    assert vessel.requires == ["lychd-migrate.service", "lychd-reactor.path"]
+    assert vessel.after == ["lychd-migrate.service", "lychd-reactor.path"]
+    assert vessel.user == "%U"
+    assert vessel.user_ns is None
+    assert vessel.pod_service == "lychd-pod.service"
+    # Phylactery hangs off the generated pod service and keeps its image user.
+    assert phylactery.user is None
+    assert phylactery.wants == ["lychd-pod.service"]
+    assert phylactery.after == ["lychd-pod.service"]
+    assert phylactery.secrets == [settings.db.password_secret]
+    assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert phylactery.volumes[0].host_path == constants.PATH_POSTGRESS_DATA_DIR
+    assert phylactery.volumes[0].options == ["U", "Z"]
+    assert phylactery.volumes[1].host_path == constants.PATH_POSTGRES_ROOT_DIR / "init_db.sh"
+    # Migration is a bounded one-shot dependency and shares the Vessel's path identity.
+    assert migrator.service_type == "oneshot"
+    assert migrator.requires == ["lychd-phylactery.service"]
+    assert migrator.exec == "lychd database --wait-seconds 60 upgrade head --no-prompt"
+    assert migrator.wanted_by == []
 
 
 def test_property3_law_of_exclusivity_and_boot() -> None:
-    """§8.3 — sorted Conflicts=, targets membership, WantedBy boot-survivor rule."""
+    """§8.3 — no hidden stops, target membership, and deterministic boot."""
     active = _by_id(_transmute(phoenix_active=True))
 
     alpha = active["lychd-alpha"]
@@ -312,16 +335,16 @@ def test_property3_law_of_exclusivity_and_boot() -> None:
     assert isinstance(alpha, QuadletContainer)
     assert isinstance(gamma, QuadletContainer)
     assert isinstance(resident, QuadletContainer)
+    assert alpha.user == "%U"
+    assert gamma.user == "%U"
+    assert resident.user == "%U"
+    assert alpha.wants == ["lychd-pod.service"]
 
-    # alpha (coven "logic") conflicts with the solitary services, not its coven-mate.
+    # Systemd has no hidden stop graph; the lease-aware Orchestrator owns swaps.
     assert alpha.targets == ["logic"]
-    assert alpha.conflicts == sorted(alpha.conflicts)
-    assert "lychd-gamma.service" in alpha.conflicts
-    assert "lychd-resident.service" in alpha.conflicts
-    assert "lychd-beta.service" not in alpha.conflicts
+    assert alpha.conflicts == []
 
-    # gamma (solitary) conflicts with the "logic" coven target and the other stones.
-    assert "lychd-coven-logic.target" in gamma.conflicts
+    assert gamma.conflicts == []
     assert gamma.targets == []
 
     # Boot-survivor determinism (F4): only the persistent resident is auto-wanted.

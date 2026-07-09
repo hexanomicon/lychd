@@ -16,6 +16,8 @@ icon: material/cog-box
 
 - **Single Source of Truth:** All user intent must reside within a bounded configuration domain.
 - **Type Authority:** Configuration must be validated through explicit schemas before any infrastructure is generated.
+- **One Settings Root:** Only the root `Settings` object may inherit `BaseSettings`; nested sections are ordinary `BaseModel` values reached through that root.
+- **Pure Loading:** Loading configuration is read-only. It must not create files, generate credentials, mutate the environment, or silently repair invalid input.
 - **Deterministic Discovery:** Filesystem hierarchy must uniquely determine rune ownership and instance identity.
 - **Fail-Fast Validation:** Port conflicts, branch-owned TOML files, duplicate instance identity, and schema violations must abort loading before Quadlets are written.
 - **Secret Discipline:** Sensitive values must be protected from accidental exposure and validated for permission correctness.
@@ -85,6 +87,35 @@ Examples include:
 - Coven alliances
 - Global defaults
 
+The caged foundation selects the Host Reactor explicitly in the generated default tree:
+
+```toml
+[orchestration.switching]
+actuator = "host-reactor"
+reactor_ack_timeout_s = 120.0 # claim deadline; claimed work remains fenced to terminal status
+```
+
+`host-reactor` writes typed transition intents to the configured `host_reactor_dir` and is the
+normal caged default. Selecting `systemd` is an explicit uncaged/development choice that gives the
+process direct access to the user Systemd bus. The default `[stasis].dir` is
+`~/.local/share/lychd/stasis`, inside the Crypt; binding mounts that exact directory read-write into
+the Vessel rather than granting a blanket Crypt mount.
+
+Both control paths must be absolute and are lexically normalized. The Reactor path must name an
+`inbox` directory; its sibling `journal` is derived rather than configured independently.
+`stasis.dir` may neither contain nor be contained by the inbox or journal. `lychd init` provisions
+the configured inbox, sibling journal, and stasis directory with the owner-only privilege service,
+so a valid non-default absolute layout is operational rather than merely parseable. Percent signs,
+backslashes, and non-printable characters are rejected because these paths enter generated systemd
+units.
+
+`reactor_ack_timeout_s` must be positive and bounds only the unclaimed inbox phase. On expiry the
+Vessel retracts an unclaimed file before failing. If the host already moved it to `.processing`,
+the queue/admission barrier remains closed until a read-only `.completed`, `.declined`, or
+`.rejected` terminal receipt appears; this prevents delayed effects from escaping the logical drain
+window. A `.declined` receipt proves a failed precondition before effects and reopens the initial
+forward barrier without mutation containment.
+
 Schema authority for global settings resides in `src/lychd/config/settings.py`.
 `src/lychd/config/components.py` consumes the validated settings object into framework component configuration.
 
@@ -94,7 +125,7 @@ If secret references are declared in Codex:
 
 - The file must be owned by the Magus.
 - File permissions must be `0600`.
-- Startup validation emits a structured warning if permissions are broader.
+- `lychd doctor` fails its preflight if ownership or group/other permissions are unsafe.
 
 The Global config defines global truth.
 
@@ -109,6 +140,7 @@ It is implemented using Pydantic and defines:
 - Required fields
 - Strict typing
 - Secret-reference enforcement for credentials (`*_secret` fields)
+- One `BaseSettings` root (`Settings`) with ordinary `BaseModel` sections beneath it
 - Deterministic source precedence (`Settings.settings_customise_sources()`):
 
 ```txt
@@ -117,12 +149,30 @@ Init kwargs → Explicit Environment Overrides → Pydantic dotenv source, when 
 
 ```
 
-Environment variables enter through explicit override channels in the schema loader.
+Environment variables enter through the root using `env_nested_delimiter="__"`. The grammar is
+`SECTION__FIELD`, extended one segment per nested model; for example,
+`SERVER__PORT=9011` overrides `server.port`, while
+`ORCHESTRATION__SWITCHING__DRAIN_TIMEOUT_S=30` overrides the nested switching value.
+Nested models do not load their own environment, dotenv, TOML, or secret sources. This preserves
+one precedence order and prevents a section from becoming a second, invisible settings root.
+
+The v1 physical queue topology is fixed to `runs` and `rites`. A partial
+`[orchestration.queues]` table deep-merges onto those required defaults instead of deleting an
+omitted queue, and an unknown physical queue name fails validation. Partial
+`[orchestration.routing]` entries likewise merge onto the required semantic routes; every resolved
+route must name a configured queue. Adding a new physical worker queue is therefore a composition
+change, not an unchecked TOML spelling.
+
+Constructing `Settings` is a read-only parse and validation operation. It never inscribes the
+Codex and never invents missing secrets. Explicit secret properties resolve from a named
+environment value or a mounted file only when needed and fail closed when neither source is
+present. Secret creation belongs to an explicit operator/bind ritual, not configuration loading.
+
 If `.env` files are enabled:
 
 - They must reside within the Codex boundary.
 - They must be `0600`.
-- Permission violations produce warnings.
+- Permission violations must fail the deployment preflight.
 
 The Schema Layer validates global state before any infrastructure intent is processed.
 
@@ -458,11 +508,32 @@ At runtime, initialization follows a deterministic inscription path:
 This keeps extension activation outside the rune filesystem layer.
 Animation follows the same path: `AnimatorLoader` consumes the same `RuneConfig` runes under `runes/animator/`.
 
+The global `lychd.toml` is emitted from the validated default `Settings` tree by a real TOML
+writer. `None` values are omitted; mappings, arrays, paths, and nested models retain their TOML
+types and table ancestry. A newly inscribed file must parse back through a fresh `Settings`
+process to the same JSON-mode model dump. This **init round-trip gate** is part of the foundation:
+`lychd init` is invalid if the next `lychd` invocation cannot load what it wrote.
+
 Generated sample TOMLs are marked with `# lychd: sample-rune`. The loader skips
 marked files before schema validation, so first-run placeholders do not break
 `lychd bind`. Removing that marker promotes the TOML into real configuration.
 
 Generic local runtimes are passive by default. Non-model runtimes must declare capability hints explicitly, and local OpenAI-compatible APIs must select an explicit OpenAI-compatible runtime alias or a dedicated adapter. Endpoint presence is not configuration authority for model binding.
+
+`lychd bind` is the separate manifestation ritual. After the complete settings/rune tree validates,
+it transmutes the active configuration into Quadlets and plain user-systemd units. In the caged
+default this includes the host-only `lychd-reactor.path` and `lychd-reactor.service` units; the
+Vessel receives the configured Reactor inbox read-write and its host-owned sibling journal
+read-only so the actuation barrier can observe terminal receipts.
+
+The Scribe's authority is exact, not suffix-based. The Quadlet binding site contains one owner-only
+`.lychd-owned.json` manifest whose separate sets name the exact LychD-owned Quadlet and
+plain-systemd files across both shared binding sites. A bind may replace or remove only those
+recorded names. The authority file must be a regular non-symlink owned by the invoking UID with
+exact mode `0600`. Duplicate or unsafe manifest entries, invalid authority metadata, malformed
+ownership data, and a generated name already occupied by an unowned file fail closed. Staging,
+same-filesystem replacement, and prepared backups allow a failure at either binding site to restore
+the previous files and ownership manifest.
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 
@@ -497,7 +568,8 @@ The configuration lifecycle proceeds in strict order:
    - Domain identity and policy constraints
    - Port arbitration
 6. Only after full validation:
-   - Generate Quadlets.
+   - Generate the Pod/Container Quadlets and any selected host user units.
+   - Commit only the exact Scribe-owned files and update `.lychd-owned.json` transactionally.
 
 Infrastructure is a manifestation of validated intent.
 
@@ -517,6 +589,12 @@ Secrets:
 - Are not stored inline in `lychd.toml` or rune TOMLs
 - Are mounted only into units that require them
 - Are accessible to the process boundary that consumes them
+
+The loader never generates fallback secret material. A secret value is resolved only from an
+explicit environment value, an explicit `*_FILE` override, or the declared mounted Podman secret
+path. Missing, unreadable, or empty secret files are errors. `lychd bind` may perform an explicit
+provisioning/reconciliation ritual for core Podman secrets, but that mutation is not part of
+`Settings()` or `get_settings()`.
 
 Example lifecycle:
 
@@ -621,12 +699,22 @@ Configuration is now split by trust boundary:
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Loaded via Podman secret references and mounted into trusted units. | Provider and authority secret fields are forbidden by schema; narrow queue-only SAQ/Postgres execution credentials live at worker-unit policy. |
-| Mounts | Codex-backed config and durable state mounts. | Sanitized task-scoped config artifact or read-only projection only. |
+| Mounts | Codex RO; configured stasis and Lab RW; Core/Extensions RO; Reactor inbox RW plus sibling journal RO only when selected. No blanket Crypt mount. | No Codex mount; task-safe facts travel in the job envelope and only disposable task paths may be RW. |
 | Network | Resolves provider and broker routes per policy. | No direct secret-bearing provider routes. |
 | Queue Ownership | Owns queue workflow configuration. | No queue configuration ownership. |
 | Context Privatization | Defines thresholds and anonymization policy for portal egress. | Cannot lower thresholds or bypass sanitization gates. |
 | Autonomy Policy | Defines preauthorization, HitL, and denial classes. | Cannot authorize promotion or broaden its action class. |
 | Authority Boundaries | Defines and signs runtime envelopes. | Consumes envelope; cannot redefine authority. |
+
+Soulstones are a separate data-plane configuration consumer, not a third source of Codex truth.
+Their generated units receive only explicitly configured model/runtime volumes and unit-scoped
+secrets—never the Codex, Crypt, stasis, trigger, Reactor inbox, Reactor journal, or user-systemd
+binding sites. Global defaults, rune volumes, and adapter-contributed volumes all pass through the
+same gate: host and container endpoints must be absolute, host symlink aliases are resolved, and a
+path equal to, containing, or contained by a protected control root fails binding. A safe existing
+host alias is rendered as its resolved canonical target, pinning the path that passed validation
+rather than leaving a retargetable symlink in the unit. The same systemd-unsafe character gate
+applies to both mount endpoints.
 
 ## Consequences
 
