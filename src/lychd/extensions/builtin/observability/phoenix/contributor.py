@@ -25,7 +25,7 @@ class PhoenixQuadletContributor:
         phoenix = ctx.runes.one_or_none(PhoenixSettings)  # >1 raises loudly (kept semantics)
         if phoenix is None:
             return QuadletContribution()
-        db_url = f"postgresql://{ctx.settings.db.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
+        db_url = f"postgresql://{ctx.settings.server.database.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
         return QuadletContribution(
             containers=[
                 QuadletContainer(

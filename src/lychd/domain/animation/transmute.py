@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
@@ -29,6 +29,7 @@ from lychd.system.constants import (
     PATH_SYSTEMD_UNITS_DIR,
     PATH_SYSTEMD_USER_UNITS_DIR,
 )
+from lychd.system.path_policy import paths_overlap
 from lychd.system.schemas import (
     MountData,
     QuadletBase,
@@ -42,18 +43,13 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lychd.config.runes.registry import RuneRegistry
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 MIN_COVEN_MEMBERS: Final[int] = 2
 LYCHD_POD_QUADLET: Final[str] = "lychd.pod"
 LYCHD_POD_SERVICE: Final[str] = "lychd-pod.service"
-
-
-def _paths_overlap(left: Path, right: Path) -> bool:
-    """Return whether either absolute path contains the other (including equality)."""
-    return left == right or left in right.parents or right in left.parents
 
 
 def _normalize_mount_path(path: Path, *, stone_name: str, side: str) -> Path:
@@ -242,7 +238,7 @@ class Transmuter:
         """
         ports = [
             f"127.0.0.1:{settings.server.port}:{CONTAINER_LYCHD_PORT}",
-            f"127.0.0.1:{settings.db.port}:{CONTAINER_POSTGRES_PORT}",
+            f"127.0.0.1:{settings.server.database.port}:{CONTAINER_POSTGRES_PORT}",
             *(f"127.0.0.1:{mapping}" for mapping in extra_ports),
         ]
         return QuadletPod(publish_ports=ports)
@@ -259,8 +255,8 @@ class Transmuter:
         """
         vessel_mounts = [MountData.from_str(mount) for mount in self._vessel_mount_strings(settings)]
         migrator_mounts = [MountData.from_str(mount) for mount in self._migrator_mount_strings()]
-        app_secret_name = settings.app.secret_key_secret
-        db_secret_name = settings.db.password_secret
+        app_secret_name = settings.server.web.secret_key_secret
+        db_secret_name = settings.server.database.password_secret
         portal_secret_names = [portal.api_key_secret_name for portal in portals if portal.api_key_secret_name]
         vessel_secrets = list(dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names]))
         reactor_dependencies = (
@@ -270,17 +266,17 @@ class Transmuter:
         # 1. The Vessel (LychD Web Server)
         vessel = QuadletContainer(
             description="The Vessel (LychD Application Kernel)",
-            image=settings.app.image,
+            image=settings.server.web.image,
             container_name="lychd-vessel",
             pod=LYCHD_POD_QUADLET,
             user="%U",
             volumes=vessel_mounts,
             env_vars={
                 **self._runtime_path_env(),
-                "APP__SECRET_KEY_FILE": self._secret_file(app_secret_name),
-                "DB__HOST": "localhost",
-                "DB__PORT": str(CONTAINER_POSTGRES_PORT),
-                "DB__PASSWORD_FILE": self._secret_file(db_secret_name),
+                "LYCHD_APP_SECRET_KEY_FILE": self._secret_file(app_secret_name),
+                "SERVER__DATABASE__HOST": "localhost",
+                "SERVER__DATABASE__PORT": str(CONTAINER_POSTGRES_PORT),
+                "LYCHD_DB_PASSWORD_FILE": self._secret_file(db_secret_name),
             },
             secrets=vessel_secrets,
             wants=["lychd-migrate.service", *reactor_dependencies],
@@ -295,13 +291,13 @@ class Transmuter:
         init_mount = f"{PATH_POSTGRES_ROOT_DIR / 'init_db.sh'}:/docker-entrypoint-initdb.d/10-lychd-init.sh:ro,Z"
         phylactery = QuadletContainer(
             description="The Phylactery (Postgres & PgVector)",
-            image=settings.db.image,
+            image=settings.server.database.image,
             container_name="lychd-phylactery",
             pod=LYCHD_POD_QUADLET,
             volumes=[MountData.from_str(data_mount), MountData.from_str(init_mount)],
             env_vars={
-                "POSTGRES_USER": settings.db.user,
-                "POSTGRES_DB": settings.db.database,
+                "POSTGRES_USER": settings.server.database.user,
+                "POSTGRES_DB": settings.server.database.database,
                 "POSTGRES_PASSWORD_FILE": self._secret_file(db_secret_name),
             },
             secrets=[db_secret_name],
@@ -315,17 +311,17 @@ class Transmuter:
         # re-validates the schema idempotently.
         migrator = QuadletContainer(
             description="LychD Phylactery Migration Gate",
-            image=settings.app.image,
+            image=settings.server.web.image,
             container_name="lychd-migrate",
             pod=LYCHD_POD_QUADLET,
             user="%U",
             volumes=migrator_mounts,
             env_vars={
                 **self._runtime_path_env(),
-                "APP__SECRET_KEY_FILE": self._secret_file(app_secret_name),
-                "DB__HOST": "localhost",
-                "DB__PORT": str(CONTAINER_POSTGRES_PORT),
-                "DB__PASSWORD_FILE": self._secret_file(db_secret_name),
+                "LYCHD_APP_SECRET_KEY_FILE": self._secret_file(app_secret_name),
+                "SERVER__DATABASE__HOST": "localhost",
+                "SERVER__DATABASE__PORT": str(CONTAINER_POSTGRES_PORT),
+                "LYCHD_DB_PASSWORD_FILE": self._secret_file(db_secret_name),
             },
             secrets=[app_secret_name, db_secret_name],
             exec="lychd database --wait-seconds 60 upgrade head --no-prompt",
@@ -360,8 +356,7 @@ class Transmuter:
 
         # Soulstones are data-plane model runtimes. They receive only explicitly
         # configured model/runtime volumes, never the Codex, Crypt, or Reactor inbox.
-        mount_strings = [*settings.lychd.default_soulstone_mounts]
-        mount_strings.extend(stone.volumes)
+        mount_strings = [*stone.volumes]
         mount_strings.extend(runtime_plan.volumes)
         merged_mounts = self._validated_soulstone_mounts(
             mount_strings,
@@ -386,7 +381,7 @@ class Transmuter:
             env_vars=merged_env,
             devices=list(stone.devices),
             security_label_disable=stone.security_label_disable,
-            # Merge global defaults, Rune volumes, and adapter volumes only after
+            # Merge Rune volumes and adapter volumes only after
             # proving that none crosses back into the trusted control plane.
             volumes=merged_mounts,
             exec=shlex.join(runtime_plan.exec_args) if runtime_plan.exec_args else None,
@@ -416,7 +411,6 @@ class Transmuter:
                     PATH_CRYPT_ROOT,
                     PATH_SYSTEMD_UNITS_DIR,
                     PATH_SYSTEMD_USER_UNITS_DIR,
-                    settings.stasis.dir,
                     inbox_dir,
                     settings.orchestration.switching.host_reactor_journal_dir,
                 )
@@ -440,14 +434,14 @@ class Transmuter:
             resolved_host = _resolve_host_path(host_path, stone_name=stone_name)
 
             for configured_root, protected_root in protected_host_roots:
-                if _paths_overlap(resolved_host, protected_root):
+                if paths_overlap(resolved_host, protected_root):
                     msg = (
                         f"Soulstone '{stone_name}' host mount path {host_path} overlaps "
                         f"protected control root {configured_root}"
                     )
                     raise ValueError(msg)
             for configured_root, protected_root in protected_container_roots:
-                if _paths_overlap(container_path, protected_root):
+                if paths_overlap(container_path, protected_root):
                     msg = (
                         f"Soulstone '{stone_name}' container mount path {container_path} overlaps "
                         f"protected control root {configured_root}"
@@ -479,10 +473,9 @@ class Transmuter:
         ]
 
     def _vessel_mount_strings(self, settings: Settings) -> list[str]:
-        """Return the trusted control-plane mounts, including durable checkpoints."""
+        """Return the trusted Vessel control-plane mounts."""
         mounts = [
             f"{PATH_CODEX_ROOT}:{PATH_CODEX_ROOT}:ro,Z",
-            f"{settings.stasis.dir}:{settings.stasis.dir}:rw,Z",
             f"{PATH_LAB_DIR}:{PATH_LAB_DIR}:rw,Z",
             f"{PATH_CORE_DIR}:{PATH_CORE_DIR}:ro,Z",
             f"{PATH_EXTENSIONS_DIR}:{PATH_EXTENSIONS_DIR}:ro,Z",

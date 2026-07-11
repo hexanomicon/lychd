@@ -1,9 +1,4 @@
-"""`requires_scopes` — a Litestar guard over the connection Sigil's scopes (§3.3).
-
-No-ops when `settings.sigil.enforce` is False (the test/dev floor); otherwise raises
-`PermissionDeniedException` unless the connection carries a `Sigil` whose scopes
-satisfy every required scope (per the §3.2 grammar).
-"""
+"""`requires_scopes` — a Litestar guard over the authenticated Sigil's scopes."""
 
 from __future__ import annotations
 
@@ -11,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 from litestar.exceptions import PermissionDeniedException
 
-from lychd.config.settings import get_settings
 from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.codex.sigil import Sigil
 
@@ -32,8 +26,6 @@ def requires_scopes(*required: str) -> _Guard:
     """Build a guard requiring every named scope on the connection Sigil."""
 
     def guard(connection: ASGIConnection[Any, Any, Any, Any], _handler: BaseRouteHandler) -> None:
-        if not get_settings().sigil.enforce:
-            return
         # Reading `connection.user` raises a framework configuration error when
         # authentication middleware is absent. Missing identity is an ordinary
         # authorization denial, never a 500.

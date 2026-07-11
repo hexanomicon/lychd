@@ -91,9 +91,9 @@ Every step in the graph respects the physical laws established in the **[Dispatc
     `GraphRunner` may create or resume snapshots, but it does not own their deletion. A returned
     graph result is not yet durable run truth: the process can still die before `RunStatus.DONE`
     reaches the ledger. The run worker therefore commits `DONE`, `FAILED`, or another terminal
-    status first and only then asks the persistence boundary to remove the checkpoint and clear its
-    recorded path. If cleanup fails, the ledger pointer is retained for reconciliation. Consent and
-    hardware parks remain non-terminal and keep their checkpoint.
+    status first and only then asks the persistence boundary to remove the run-owned checkpoint row.
+    If cleanup fails, the row remains for reconciliation. Consent and hardware parks remain
+    non-terminal and keep their checkpoint.
 
     This ordering forbids the loss window `resume completes → checkpoint deleted → process dies →
     terminal status never committed`. Reanimation always prefers a retained committed boundary over
@@ -105,28 +105,18 @@ Every step in the graph respects the physical laws established in the **[Dispatc
     The event surface must support backfill plus live tail: stable `run_id`, `lane_id`, `step_id`, and `event_id` values allow the Altar, Oculus, and agent reviewers to resume observation without inventing state. Approval should appear as correlated request/result events, while the durable reanimation boundary remains the Graph checkpoint and queue record.
 
 !!! note "Implemented persistence floor vs Phylactery horizon"
-    The current durable tier uses one file-backed Pydantic Graph checkpoint per run and records its
-    path on the run ledger before execution can park. It supports process-death recovery for consent
-    waits, with terminal-commit-owned cleanup. The live tier uses in-memory persistence for resident
-    hardware waits; a process death during ordinary Live Stasis is reconciled as a failed run rather
-    than silently replayed.
+    The current durable tier uses one Postgres `run_checkpoint` row per run. Its JSONB document is
+    the complete, type-validated Pydantic Graph snapshot history and is foreign-key-owned by `run`.
+    It supports process-death recovery for consent waits, with terminal-commit-owned cleanup. The
+    live tier uses in-memory persistence for resident hardware waits; a process death during
+    ordinary Live Stasis is reconciled as a failed run rather than silently replayed.
 
-    The default durable root is `~/.local/share/lychd/stasis`, inside the Crypt, and the generated
-    Vessel receives that directory as its own read-write mount rather than receiving the whole
-    Crypt. Soulstones and the Reactor consumer do not receive graph checkpoints. The root must be a
-    real, current-UID-owned `0700` directory; each run checkpoint is an owner-only JSON file.
-
-    A save serializes the complete snapshot set to a same-directory `0600` temporary file, flushes
-    and `fsync`s it, atomically replaces the previous checkpoint, and `fsync`s the parent directory.
-    A sibling lock file is held with kernel `flock` during mutation, so process death releases the
-    lock even if the lock pathname remains. This is process-safe on one Linux host; it is not a
-    distributed lock or a transactional database boundary.
-
-    A Postgres-backed graph persistence implementation, transactional submit/resume outbox, durable
-    event stream, blob/artifact materializer, checkpoint schema migration, and cross-host lease
-    recovery remain later Phylactery work. SAQ enqueue compensation and reconciliation narrow the
-    current failure windows, but they are not a transactional outbox and must not be documented as
-    one.
+    `INSERT … ON CONFLICT … UPDATE` replaces the row atomically. The present topology has one
+    in-process worker and a ledger claim fence per run; it is not a distributed execution protocol.
+    A transactional submit/resume outbox, durable event stream, blob/artifact materializer,
+    checkpoint schema migration, and cross-host lease recovery remain later Phylactery work.
+    SAQ enqueue compensation and reconciliation narrow the current failure windows, but they are
+    not a transactional outbox and must not be documented as one.
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 

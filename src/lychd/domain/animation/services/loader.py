@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 import structlog
 
 from lychd.config.runes import ConfigLoader, RuneConfig
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
     PortalConfig,
@@ -47,7 +47,7 @@ class AnimatorLoader:
         """Initialize loader with required rune schemas and reserved host ports."""
         self._runes_dir = runes_dir or PATH_RUNES_DIR
         self._rune_schemas = list(rune_schemas)
-        self._reserved_ports = reserved_ports or get_settings().reserved_ports_map
+        self._reserved_ports = reserved_ports or get_settings().server.reserved_ports_map
 
     def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
         """Load Soulstone/Portal Runes with inherited animator defaults."""

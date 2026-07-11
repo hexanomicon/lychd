@@ -1,7 +1,7 @@
 """Durable Stasis floor (wave4-design §2.4): workflow State round-trips JSON.
 
 Every registered workflow's State must survive `model_dump_json → model_validate_json`
-byte-stable (a durable snapshot is JSON on disk). A `BridgeChatState` carrying real
+byte-stable (a durable snapshot is JSONB in Postgres). A `BridgeChatState` carrying real
 `to_jsonable_python` messages + `pending_call_ids` must round-trip too. Plus the
 tier-selection unit: a Gate-bearing workflow → Durable, a linear one → Live.
 """
@@ -11,7 +11,7 @@ tier-selection unit: a Gate-bearing workflow → Durable, a linear one → Live.
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pydantic_ai.models
 import pytest
@@ -25,11 +25,8 @@ from lychd.agents.workflows import builtin_workflow_registry
 from lychd.agents.workflows.base import Gate, Trigger, Workflow
 from lychd.agents.workflows.bridge_chat import BridgeChatState
 from lychd.domain.cortex.runs import RunRecord, RunStatus
-from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
+from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 from lychd.ghouls.runs import _phylactery_for
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
@@ -79,7 +76,7 @@ class _PlainNode(BaseNode[BridgeChatState, None, None]):
         return End(None)
 
 
-def _run(stasis_path: str | None = None) -> RunRecord:
+def _run() -> RunRecord:
     return RunRecord(
         run_id="r1",
         session_id="s1",
@@ -89,7 +86,6 @@ def _run(stasis_path: str | None = None) -> RunRecord:
         priority=50,
         status=RunStatus.QUEUED,
         prompt="hi",
-        stasis_path=stasis_path,
     )
 
 
@@ -106,61 +102,37 @@ def _workflow_for(node: type[BaseNode[Any, Any, Any]]) -> Workflow:
     )
 
 
-def test_gate_workflow_selects_durable(tmp_path: Path) -> None:
+def test_gate_workflow_selects_durable() -> None:
     workflow = _workflow_for(_GateNode)
     assert workflow.durable is True  # derived from the Gate node at construction
-    phy = _phylactery_for(_run(), workflow, tmp_path)
+    substrate = SimpleNamespace(stasis_store=InMemoryStasisStore())
+    phy = _phylactery_for(_run(), workflow, substrate)  # type: ignore[arg-type]
     assert isinstance(phy, DurableStasisPhylactery)
 
 
-def test_linear_workflow_selects_live(tmp_path: Path) -> None:
+def test_linear_workflow_selects_live() -> None:
     workflow = _workflow_for(_PlainNode)
     assert workflow.durable is False
-    phy = _phylactery_for(_run(), workflow, tmp_path)
+    substrate = SimpleNamespace(stasis_store=InMemoryStasisStore())
+    phy = _phylactery_for(_run(), workflow, substrate)  # type: ignore[arg-type]
     assert isinstance(phy, LiveStasisPhylactery)
 
 
-def test_resume_from_stasis_path_is_durable(tmp_path: Path) -> None:
-    workflow = SimpleNamespace(graph=Graph(nodes=(_PlainNode,), name="plain"))
-    checkpoint = tmp_path / "r1.json"
-    phy = _phylactery_for(_run(stasis_path=str(checkpoint)), workflow, tmp_path)  # type: ignore[arg-type]
-    assert isinstance(phy, DurableStasisPhylactery)
-    assert phy.json_file == checkpoint
-
-
-def test_durable_checkpoint_save_is_atomic_and_owner_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    checkpoint = tmp_path / "r1.json"
-    phy = DurableStasisPhylactery(job_id="r1", json_file=checkpoint)
-
-    def dump_json(_snapshots: object, *, indent: int | None = None) -> bytes:
-        _ = indent
-        return b"[]"
-
-    adapter: Any = SimpleNamespace(dump_json=dump_json)
-    phy._snapshots_type_adapter = adapter
-    phy._save_sync([])
-    original = checkpoint.read_bytes()
-
-    def fail_replace(self: Path, target: Path) -> None:
-        _ = (self, target)
-        msg = "simulated crash before rename"
-        raise OSError(msg)
-
-    monkeypatch.setattr(type(checkpoint), "replace", fail_replace)
-    with pytest.raises(OSError, match="simulated crash"):
-        phy._save_sync([])
-
-    assert checkpoint.read_bytes() == original
-    assert checkpoint.stat().st_mode & 0o777 == 0o600
-    assert list(tmp_path.glob(".r1.json.*.tmp")) == []
-
-
 @pytest.mark.asyncio
-async def test_durable_lock_ignores_upstream_stale_marker(tmp_path: Path) -> None:
-    checkpoint = tmp_path / "r1.json"
-    stale = tmp_path / "r1.json.pydantic-graph-persistence-lock"
-    stale.write_text("crash residue", encoding="utf-8")
-    phy = DurableStasisPhylactery(job_id="r1", json_file=checkpoint)
+async def test_durable_store_is_run_owned_and_returns_copies() -> None:
+    store = InMemoryStasisStore()
+    snapshots = [{"state": {"prompt": "hello"}}]
 
-    async with phy._lock(timeout=0.1):
-        assert stale.exists()
+    await store.replace("r1", snapshots)
+    snapshots[0]["state"]["prompt"] = "mutated after write"
+
+    restored = await store.load("r1")
+    assert restored == [{"state": {"prompt": "hello"}}]
+    assert await store.exists("r1")
+    assert not await store.exists("r2")
+
+    restored[0]["state"]["prompt"] = "mutated after read"  # type: ignore[index]
+    assert await store.load("r1") == [{"state": {"prompt": "hello"}}]
+
+    await store.delete("r1")
+    assert not await store.exists("r1")

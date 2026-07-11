@@ -18,4 +18,16 @@ class Sigil:
     scopes: frozenset[str]
 
 
-__all__ = ["Sigil"]
+_DEFAULT_LOCAL_SIGIL = Sigil(name="magus", scopes=frozenset({"*"}))
+
+
+def default_local_sigil() -> Sigil:
+    """Return the fixed trusted identity for the loopback-only bootstrap mode.
+
+    This is not configurable authentication. IAM replaces this function's caller
+    with credential-backed Sigil resolution before LychD accepts remote traffic.
+    """
+    return _DEFAULT_LOCAL_SIGIL
+
+
+__all__ = ["Sigil", "default_local_sigil"]

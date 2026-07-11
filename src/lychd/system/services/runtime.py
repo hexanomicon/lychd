@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from lychd.config.settings import SwitchingSettings
+    from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.animation.protocols import CapabilityRegistry
 
 __all__ = [

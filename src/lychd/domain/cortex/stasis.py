@@ -1,35 +1,68 @@
-"""Stasis Phylacteries (ADR 24): Live (in-memory) + Durable (file-backed).
-
-`LiveStasisPhylactery` is the resident-loop tier (hardware transitions within one
-process lifetime). `DurableStasisPhylactery` is the Wave-4 consent tier: it writes
-each node snapshot to a JSON file under the stasis dir, so a run parked on consent
-survives process death and resumes from the checkpointed node. Requeue uses
-Pydantic Graph's public snapshot-id API; it never mutates private node state.
-"""
+"""Stasis Phylacteries: live memory and durable database-backed graph state."""
 
 from __future__ import annotations
 
-import fcntl
-import os
-import stat
-import tempfile
+import asyncio
+import copy
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, Any
+from time import perf_counter
+from typing import TYPE_CHECKING, Any, Protocol
 
-import anyio
-from pydantic_graph.nodes import generate_snapshot_id
-from pydantic_graph.persistence.file import FileStatePersistence
+import pydantic
+from pydantic_graph import exceptions
+from pydantic_graph.nodes import BaseNode, End, generate_snapshot_id
+from pydantic_graph.persistence import (
+    BaseStatePersistence,
+    EndSnapshot,
+    NodeSnapshot,
+    Snapshot,
+    SnapshotStatus,
+    build_snapshot_list_type_adapter,
+)
 from pydantic_graph.persistence.in_mem import FullStatePersistence
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
-    from pathlib import Path
 
-    from pydantic_graph.persistence import Snapshot
+__all__ = [
+    "DurableStasisPhylactery",
+    "InMemoryStasisStore",
+    "LiveStasisPhylactery",
+    "StasisStore",
+]
 
-__all__ = ["DurableStasisPhylactery", "LiveStasisPhylactery"]
 
-_PRIVATE_DIR_MODE = 0o700
+class StasisStore(Protocol):
+    """Durable checkpoint document store, keyed by the authoritative run id."""
+
+    async def load(self, run_id: str) -> list[Any] | None: ...
+
+    async def replace(self, run_id: str, snapshots: list[Any]) -> None: ...
+
+    async def delete(self, run_id: str) -> None: ...
+
+    async def exists(self, run_id: str) -> bool: ...
+
+
+class InMemoryStasisStore:
+    """DB-free store used only by the memory profile and focused tests."""
+
+    def __init__(self) -> None:
+        """Create an empty checkpoint map."""
+        self._documents: dict[str, list[Any]] = {}
+
+    async def load(self, run_id: str) -> list[Any] | None:
+        document = self._documents.get(run_id)
+        return copy.deepcopy(document) if document is not None else None
+
+    async def replace(self, run_id: str, snapshots: list[Any]) -> None:
+        self._documents[run_id] = copy.deepcopy(snapshots)
+
+    async def delete(self, run_id: str) -> None:
+        self._documents.pop(run_id, None)
+
+    async def exists(self, run_id: str) -> bool:
+        return run_id in self._documents
 
 
 def _refresh_snapshot_id(node: Any) -> None:
@@ -39,107 +72,125 @@ def _refresh_snapshot_id(node: Any) -> None:
 
 
 class LiveStasisPhylactery(FullStatePersistence[Any, Any]):
-    """In-memory persistence with Live Stasis rehydration for `GraphRunner`.
-
-    Subclasses `FullStatePersistence` (which already implements the whole
-    `snapshot_*`/`load_*`/`record_run`/`set_graph_types` surface). Adds the
-    `job_id` handle and the stasis requeue hook `GraphRunner` calls when a
-    `HardwareTransitionRequired` is caught mid-run.
-    """
-
-    job_id: str
+    """In-memory persistence for a resident graph during ordinary hardware waits."""
 
     def __init__(self, *, job_id: str) -> None:
-        """Bind the phylactery to one run id (the job id)."""
+        """Bind this live persistence history to one run."""
         super().__init__()
         self.job_id = job_id
 
     async def rehydrate_stasis(self, state: Any, node: Any) -> None:
-        """Append a fresh 'created' snapshot so `load_next` resumes from `node`."""
         _refresh_snapshot_id(node)
         await self.snapshot_node(state, node)
 
 
-class DurableStasisPhylactery(FileStatePersistence[Any, Any]):
-    """File-backed persistence for the consent tier (survives process death).
+class DurableStasisPhylactery(BaseStatePersistence[Any, Any]):
+    """One run's typed graph history persisted as a JSONB checkpoint document.
 
-    The base supplies the snapshot surface over a JSON file; this adds the `job_id`
-    handle, the `for_run` factory, and the stasis requeue hook.  Checkpoint deletion is
-    deliberately owned by ``perform_run`` after it commits a terminal run status.
+    The store is intentionally a narrow port: production supplies Postgres while
+    the memory profile supplies an in-memory implementation. No control-directory
+    path or filesystem checkpoint participates in durable run recovery.
     """
 
-    job_id: str
-
-    def __init__(self, *, job_id: str, json_file: Path) -> None:
-        """Bind the phylactery to one run id and its durable checkpoint file."""
-        super().__init__(json_file=json_file)
+    def __init__(self, *, job_id: str, store: StasisStore) -> None:
+        """Bind one run's checkpoint history to its durable store."""
         self.job_id = job_id
-
-    @classmethod
-    def for_run(cls, run_id: str, *, stasis_dir: Path) -> DurableStasisPhylactery:
-        """Build a durable phylactery for a fresh run under the stasis dir."""
-        if stasis_dir.is_symlink():
-            msg = f"Durable stasis root must not be a symlink: {stasis_dir}"
-            raise RuntimeError(msg)
-        stasis_dir.mkdir(parents=True, mode=_PRIVATE_DIR_MODE, exist_ok=True)
-        metadata = stasis_dir.stat()
-        if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != _PRIVATE_DIR_MODE:
-            msg = f"Durable stasis root must be owned by uid {os.getuid()} with mode 0o700: {stasis_dir}"
-            raise RuntimeError(msg)
-        return cls(job_id=run_id, json_file=stasis_dir / f"{run_id}.json")
+        self._store = store
+        self._snapshots_type_adapter: pydantic.TypeAdapter[list[Snapshot[Any, Any]]] | None = None
+        self._lock = asyncio.Lock()
 
     async def rehydrate_stasis(self, state: Any, node: Any) -> None:
-        """Append a fresh 'created' snapshot so `load_next` resumes from `node`."""
         _refresh_snapshot_id(node)
         await self.snapshot_node(state, node)
 
-    def _save_sync(self, snapshots: list[Snapshot[Any, Any]]) -> None:
-        """Replace a complete checkpoint atomically and durably on one filesystem."""
-        adapter = self._snapshots_type_adapter
-        if adapter is None:
-            msg = "snapshots type adapter must be set"
-            raise RuntimeError(msg)
-        self.json_file.parent.mkdir(parents=True, exist_ok=True)
-        descriptor, temporary_name = tempfile.mkstemp(
-            dir=self.json_file.parent,
-            prefix=f".{self.json_file.name}.",
-            suffix=".tmp",
-        )
-        temporary = type(self.json_file)(temporary_name)
-        try:
-            os.fchmod(descriptor, 0o600)
-            with os.fdopen(descriptor, "wb") as stream:
-                stream.write(adapter.dump_json(snapshots, indent=2))
-                stream.flush()
-                os.fsync(stream.fileno())
-            temporary.replace(self.json_file)
-            directory_fd = os.open(self.json_file.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
-        except BaseException:
-            temporary.unlink(missing_ok=True)
-            raise
+    async def snapshot_node(self, state: Any, next_node: BaseNode[Any, Any, Any]) -> None:
+        await self._append(NodeSnapshot(state=copy.deepcopy(state), node=next_node.deep_copy()))
+
+    async def snapshot_node_if_new(self, snapshot_id: str, state: Any, next_node: BaseNode[Any, Any, Any]) -> None:
+        async with self._lock:
+            snapshots = await self._load()
+            if not any(snapshot.id == snapshot_id for snapshot in snapshots):
+                snapshots.append(NodeSnapshot(state=copy.deepcopy(state), node=next_node.deep_copy()))
+                await self._save(snapshots)
+
+    async def snapshot_end(self, state: Any, end: End[Any]) -> None:
+        await self._append(EndSnapshot(state=copy.deepcopy(state), result=end.deep_copy_data()))
 
     @asynccontextmanager
-    async def _lock(self, *, timeout: float = 1.0) -> AsyncIterator[None]:  # noqa: ASYNC109 - upstream override
-        """Use a kernel advisory lock, which is released automatically on process death."""
-        self.json_file.parent.mkdir(parents=True, exist_ok=True)
-        lock_file = self.json_file.parent / f"{self.json_file.name}.lock"
-        descriptor = os.open(lock_file, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
-        os.fchmod(descriptor, 0o600)
+    async def record_run(self, snapshot_id: str) -> AsyncIterator[None]:
+        async with self._lock:
+            snapshots = await self._load()
+            snapshot = self._node_snapshot(snapshots, snapshot_id)
+            exceptions.GraphNodeStatusError.check(snapshot.status)
+            snapshot.status = "running"
+            from pydantic_graph.persistence import _utils
+
+            snapshot.start_ts = _utils.now_utc()
+            await self._save(snapshots)
+        started = perf_counter()
         try:
-            with anyio.fail_after(timeout):
-                while True:
-                    try:
-                        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    except BlockingIOError:
-                        await anyio.sleep(0.01)
-                    else:
-                        break
             yield
-        finally:
-            with suppress(OSError):
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
-            os.close(descriptor)
+        except Exception:
+            await self._finish(snapshot_id, perf_counter() - started, "error")
+            raise
+        else:
+            await self._finish(snapshot_id, perf_counter() - started, "success")
+
+    async def load_next(self) -> NodeSnapshot[Any, Any] | None:
+        async with self._lock:
+            snapshots = await self._load()
+            snapshot = next(
+                (item for item in snapshots if isinstance(item, NodeSnapshot) and item.status == "created"),
+                None,
+            )
+            if snapshot is None:
+                return None
+            snapshot.status = "pending"
+            await self._save(snapshots)
+            return snapshot
+
+    async def load_all(self) -> list[Snapshot[Any, Any]]:
+        async with self._lock:
+            return await self._load()
+
+    def should_set_types(self) -> bool:
+        return self._snapshots_type_adapter is None
+
+    def set_types(self, state_type: type[Any], run_end_type: type[Any]) -> None:
+        self._snapshots_type_adapter = build_snapshot_list_type_adapter(state_type, run_end_type)
+
+    async def _append(self, snapshot: Snapshot[Any, Any]) -> None:
+        async with self._lock:
+            snapshots = await self._load()
+            snapshots.append(snapshot)
+            await self._save(snapshots)
+
+    async def _finish(self, snapshot_id: str, duration: float, status: SnapshotStatus) -> None:
+        async with self._lock:
+            snapshots = await self._load()
+            snapshot = self._node_snapshot(snapshots, snapshot_id)
+            snapshot.duration = duration
+            snapshot.status = status
+            await self._save(snapshots)
+
+    def _node_snapshot(self, snapshots: list[Snapshot[Any, Any]], snapshot_id: str) -> NodeSnapshot[Any, Any]:
+        try:
+            snapshot = next(item for item in snapshots if item.id == snapshot_id)
+        except StopIteration as exc:
+            msg = f"No snapshot found with id={snapshot_id!r}"
+            raise LookupError(msg) from exc
+        assert isinstance(snapshot, NodeSnapshot), "Only NodeSnapshot can be recorded"  # noqa: S101
+        return snapshot
+
+    async def _load(self) -> list[Snapshot[Any, Any]]:
+        if self._snapshots_type_adapter is None:
+            msg = "snapshot type adapter must be set"
+            raise RuntimeError(msg)
+        document = await self._store.load(self.job_id)
+        return [] if document is None else self._snapshots_type_adapter.validate_python(document)
+
+    async def _save(self, snapshots: list[Snapshot[Any, Any]]) -> None:
+        if self._snapshots_type_adapter is None:
+            msg = "snapshot type adapter must be set"
+            raise RuntimeError(msg)
+        await self._store.replace(self.job_id, self._snapshots_type_adapter.dump_python(snapshots, mode="json"))

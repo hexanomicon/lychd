@@ -14,7 +14,7 @@ _REACTOR_DIRECTORY_MODE = 0o700
 if TYPE_CHECKING:
     from rich.console import Console
 
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import SoulstoneConfig
 
 
@@ -78,7 +78,7 @@ def init_codex() -> None:
     3. Establishes the Intent Registry (Triggers).
     4. Inscribes default configuration files.
     """
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions
     from lychd.system.services.codex import CodexService
     from lychd.system.services.layout import LayoutService
@@ -95,7 +95,6 @@ def init_codex() -> None:
     console.print("[dim]  Performing the Rite of Signaling (Intent Registry)...[/]")
     PrivilegeService(settings.orchestration.switching.host_reactor_dir).initialize()
     PrivilegeService(settings.orchestration.switching.host_reactor_journal_dir).initialize()
-    PrivilegeService(settings.stasis.dir).initialize()
 
     # 3. Inscribe the Laws (Settings)
     console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
@@ -133,7 +132,7 @@ def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one lin
     import subprocess
 
     from lychd.config.runes.registry import load_rune_registry
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.loader import AnimatorLoader
     from lychd.domain.animation.transmute import Transmuter, transmute_uncaged_vessel
@@ -157,7 +156,7 @@ def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one lin
     # ONE ConfigLoader pass, reused for both reserved-port honesty and the
     # transmute context (D5): no second load, no duck-typing.
     runes = load_rune_registry(extensions)
-    reserved_ports = _merge_reserved_ports(settings.reserved_ports_map, runes.reserved_ports())
+    reserved_ports = _merge_reserved_ports(settings.server.reserved_ports_map, runes.reserved_ports())
 
     # 1. Summon the Librarian (Loads & Validates Config)
     loader = AnimatorLoader(rune_schemas=list(extensions.rune_schemas), reserved_ports=reserved_ports)
@@ -166,10 +165,10 @@ def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one lin
     # 1.5. Ensure required Podman secrets exist before rendering units.
     secret_store = PodmanSecretStore()
     created: list[str] = []
-    if secret_store.ensure_present(settings.app.secret_key_secret, secrets.token_hex(32)):
-        created.append(settings.app.secret_key_secret)
-    if secret_store.ensure_present(settings.db.password_secret, secrets.token_urlsafe(16)):
-        created.append(settings.db.password_secret)
+    if secret_store.ensure_present(settings.server.web.secret_key_secret, secrets.token_hex(32)):
+        created.append(settings.server.web.secret_key_secret)
+    if secret_store.ensure_present(settings.server.database.password_secret, secrets.token_urlsafe(16)):
+        created.append(settings.server.database.password_secret)
 
     required_soulstone_secrets = _required_secret_names_from_soulstones(soulstones)
     missing_portal_secrets = sorted(
@@ -360,7 +359,7 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
     import stat
 
     from lychd.config.runes.registry import load_rune_registry
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
     from lychd.config.utils import codex_permission_issues
     from lychd.domain.animation.services.loader import AnimatorLoader
     from lychd.extensions.host import get_extensions
@@ -378,7 +377,7 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
     settings = get_settings()
     extensions = get_extensions()
     runes = load_rune_registry(extensions)
-    reserved_ports = _merge_reserved_ports(settings.reserved_ports_map, runes.reserved_ports())
+    reserved_ports = _merge_reserved_ports(settings.server.reserved_ports_map, runes.reserved_ports())
     soulstones, portals = AnimatorLoader(
         rune_schemas=list(extensions.rune_schemas),
         reserved_ports=reserved_ports,
@@ -386,18 +385,6 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
 
     if shutil.which("systemctl") is None:
         failures.append("systemctl is not available on PATH")
-
-    if settings.stasis.dir.is_symlink() or not settings.stasis.dir.is_dir():
-        failures.append(f"durable stasis directory is missing or unsafe: {settings.stasis.dir}; run `lychd init`")
-    else:
-        stasis_metadata = settings.stasis.dir.stat()
-        if (
-            stasis_metadata.st_uid != os.getuid()
-            or stat.S_IMODE(stasis_metadata.st_mode) != _REACTOR_DIRECTORY_MODE
-        ):
-            failures.append(
-                f"durable stasis must be owned by uid {os.getuid()} with mode 0o700: {settings.stasis.dir}"
-            )
 
     switching = settings.orchestration.switching
     if not uncaged:
@@ -419,9 +406,12 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
             )
 
     if uncaged:
+        from lychd.config.components import resolve_web_secret_key
+        from lychd.db.factory import resolve_database_password
+
         secret_resolvers = (
-            ("application signing key", lambda: settings.app.secret_key),
-            ("database password", lambda: settings.db.password),
+            ("application signing key", lambda: resolve_web_secret_key(settings.server.web)),
+            ("database password", lambda: resolve_database_password(settings.server.database)),
         )
         for label, resolver in secret_resolvers:
             try:
@@ -437,8 +427,8 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
             failures.append(str(exc))
         else:
             referenced = {
-                settings.app.secret_key_secret,
-                settings.db.password_secret,
+                settings.server.web.secret_key_secret,
+                settings.server.database.password_secret,
                 *(name for stone in soulstones for name in stone.secret_env_files.values()),
                 *(portal.api_key_secret_name for portal in portals if portal.api_key_secret_name),
             }
@@ -482,11 +472,11 @@ async def _decide_consent(consent_id: str, *, approved: bool) -> None:
     """Record a consent verdict + re-enqueue the parked run (register-shim doctrine)."""
     import sys
 
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
 
     console = get_console()
     settings = get_settings()
-    if settings.db.profile == "memory":
+    if settings.server.database.profile == "memory":
         console.print(
             "  [red]✗[/] consent verdicts require the postgres profile (an in-memory ledger is process-local)."
         )
@@ -505,7 +495,9 @@ async def _decide_consent(consent_id: str, *, approved: bool) -> None:
         console.print(f"  [dim]Consent {consent_id} is already {view.status} — nothing to do.[/]")
         return
 
-    await ledger.decide(consent_id, approved=approved, decided_by=settings.sigil.name)
+    from lychd.domain.codex.sigil import default_local_sigil
+
+    await ledger.decide(consent_id, approved=approved, decided_by=default_local_sigil().name)
     engine = _build_cli_engine(settings, factory)
     from lychd.system.services.queues import connect_run_queues, disconnect_run_queues
 
@@ -551,7 +543,7 @@ async def _consume_reactor_intents() -> None:
     """Build host registry truth and drain the configured Reactor inbox."""
     import asyncio
 
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
     from lychd.domain.animation.services.registry import AnimatorRegistry
     from lychd.domain.orchestration.policies import resolve_switch_policy
     from lychd.extensions.host import get_extensions

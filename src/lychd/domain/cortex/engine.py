@@ -18,7 +18,6 @@ import asyncio
 from collections.abc import Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
@@ -178,7 +177,7 @@ class RunEngine:
     infrastructure collaborators (ledger, bus, queues) from HTTP input.
     """
 
-    __slots__ = ("bus", "cancellations", "ledger", "queue_router", "queues", "workflows")
+    __slots__ = ("bus", "cancellations", "ledger", "queue_router", "queues", "stasis_store", "workflows")
 
     def __init__(
         self,
@@ -189,6 +188,7 @@ class RunEngine:
         queue_router: QueueRouter,
         queues: Mapping[str, RunQueue],
         cancellations: RunCancellationCoordinator | None = None,
+        stasis_store: Any | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
         self.ledger = ledger
@@ -197,13 +197,18 @@ class RunEngine:
         self.queue_router = queue_router
         self.queues = queues
         self.cancellations = cancellations or RunCancellationCoordinator()
+        if stasis_store is None:
+            from lychd.domain.cortex.stasis import InMemoryStasisStore
+
+            stasis_store = InMemoryStasisStore()
+        self.stasis_store = stasis_store
 
     async def submit(self, intent: Intent) -> RunHandle:
         """Route once, persist QUEUED, open the channel, and enqueue `perform_run`.
 
         S3: the run id is the LEDGER's canonical id (`run.run_id`); `intent.run_id`
         is advisory client-correlation only (stashed in the intent JSONB). The
-        handle and every downstream surface (SSE URL, Step rows, stasis path, lease
+        handle and every downstream surface (SSE URL, Step rows, checkpoint row, lease
         holder) key on `run.run_id`.
 
         Compensation (F3/H2): if `_enqueue` raises (broker down, or an unknown
@@ -298,7 +303,7 @@ class RunEngine:
                 raise
             self.bus.emitter(run.run_id).done(RunStatus.CANCELLED.value)
             self.bus.close(run.run_id)
-            await self._discard_stasis_checkpoint(run.run_id, run.stasis_path)
+            await self._discard_stasis_checkpoint(run.run_id)
         finally:
             self.cancellations.finish(run.run_id)
 
@@ -333,11 +338,6 @@ class RunEngine:
         if job is not None:
             await queue.abort(job, "cancelled by the Magus")
 
-    async def _discard_stasis_checkpoint(self, run_id: str, path: str | None) -> None:
-        """Remove a terminally cancelled run's checkpoint and clear its ledger pointer."""
-        if path is not None:
-            try:
-                Path(path).unlink(missing_ok=True)
-            except OSError:
-                return  # retain the ledger pointer so reconciliation can retry cleanup
-        await self.ledger.set_stasis_path(run_id, None)
+    async def _discard_stasis_checkpoint(self, run_id: str) -> None:
+        """Delete a cancelled run's checkpoint from the shared Stasis store."""
+        await self.stasis_store.delete(run_id)

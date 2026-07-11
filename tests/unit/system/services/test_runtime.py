@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, call
 import pytest
 from pydantic import ValidationError
 
-from lychd.config.settings import SwitchingSettings
+from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.domain.orchestration.actuator import RuntimePreconditionError, TransitionIntent
 from lychd.system.services.runtime import (
     HostReactorRuntimeActuator,
@@ -78,10 +78,11 @@ def _secure_reactor_dirs(tmp_path: Path) -> tuple[Path, Path]:
 
 
 async def _wait_until_exists(path: Path) -> None:
-    for _ in range(100):
+    deadline = asyncio.get_running_loop().time() + 1.0
+    while asyncio.get_running_loop().time() < deadline:
         if path.exists():
             return
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.001)
     pytest.fail(f"path was not published: {path}")
 
 

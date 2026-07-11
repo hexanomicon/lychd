@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from lychd.config.settings import SwitchingSettings
+from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
     CapabilityPhase,

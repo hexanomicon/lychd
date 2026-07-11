@@ -11,13 +11,13 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.db.factory import create_db_engine
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-    from lychd.config.settings import DatabaseSettings
+    from lychd.config.settings.server import DatabaseSettings
 
 _state: dict[str, Any] = {"engine": None, "session_factory": None}
 
@@ -26,14 +26,14 @@ def get_engine(settings: DatabaseSettings | None = None, *, fresh: bool = False)
     """Return the process-memoized engine, creating it on first call.
 
     Args:
-        settings: Database settings. Defaults to ``get_settings().db``.
+        settings: Database settings. Defaults to ``get_settings().server.database``.
         fresh: When True, discard any memoized engine/session factory and build a
             new engine. REQUIRED in forked SAQ worker processes because asyncpg
             connections do not survive ``fork``.
 
     """
     if fresh or _state["engine"] is None:
-        db_settings = settings or get_settings().db
+        db_settings = settings or get_settings().server.database
         _state["engine"] = create_db_engine(db_settings)
         _state["session_factory"] = None
     return _state["engine"]

@@ -4,15 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from lychd.config.settings import (
-    AppSettings,
-    DatabaseSettings,
-    OrchestrationSettings,
-    Settings,
-    StasisSettings,
-    SwitchingSettings,
-)
+from lychd.config.components import resolve_web_secret_key
+from lychd.config.settings.extensions import ExtensionSettings
+from lychd.config.settings.orchestration import SwitchingSettings
+from lychd.config.settings.root import Settings
+from lychd.config.settings.server import DatabaseSettings, ServerSettings, WebSettings
 from lychd.config.utils import codex_permission_issues
+from lychd.db.factory import database_saq_dsn, database_url, resolve_database_password
 
 
 def test_codex_permission_issues_returns_empty_for_missing_file(tmp_path: Path) -> None:
@@ -39,119 +37,110 @@ def test_codex_permission_issues_accepts_restricted_mode(tmp_path: Path) -> None
     assert "mode" not in issues
 
 
-def test_app_secret_key_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("APP__SECRET_KEY", "app-secret")
-    settings = AppSettings()
-    assert settings.secret_key == "app-secret"  # noqa: S105 - test fixture value
+def test_web_secret_key_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "app-secret")
+    settings = WebSettings()
+    assert resolve_web_secret_key(settings) == "app-secret"
 
 
 def test_db_password_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DB__PASSWORD", "db-pass")
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", "db-pass")
     settings = DatabaseSettings()
-    assert settings.password == "db-pass"  # noqa: S105 - test fixture value
+    assert resolve_database_password(settings) == "db-pass"
 
 
 def test_database_urls_escape_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DB__PASSWORD", "a/b:c@d")
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", "a/b:c@d")
     settings = DatabaseSettings(user="lich@example")
 
-    assert "lich%40example:a%2Fb%3Ac%40d@" in settings.url
-    assert settings.url.startswith("postgresql+asyncpg://")
-    assert settings.saq_dsn.startswith("postgresql://")
+    assert "lich%40example:a%2Fb%3Ac%40d@" in database_url(settings)
+    assert database_url(settings).startswith("postgresql+asyncpg://")
+    assert database_saq_dsn(settings).startswith("postgresql://")
 
 
 def test_missing_secrets_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in (
-        "APP__SECRET_KEY",
-        "APP_SECRET_KEY",
-        "APP__SECRET_KEY_FILE",
-        "APP_SECRET_KEY_FILE",
-        "DB__PASSWORD",
-        "DB_PASSWORD",
-        "DB__PASSWORD_FILE",
-        "DB_PASSWORD_FILE",
+        "LYCHD_APP_SECRET_KEY",
+        "LYCHD_APP_SECRET_KEY_FILE",
+        "LYCHD_DB_PASSWORD",
+        "LYCHD_DB_PASSWORD_FILE",
     ):
         monkeypatch.delenv(key, raising=False)
 
     settings = Settings()
     with pytest.raises(ValueError, match="Required secret"):
-        _ = settings.app.secret_key
+        resolve_web_secret_key(settings.server.web)
     with pytest.raises(ValueError, match="Required secret"):
-        _ = settings.db.password
+        resolve_database_password(settings.server.database)
 
 
 def test_root_nested_environment_grammar(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SERVER__PORT", "9011")
-    monkeypatch.setenv("APP__SECRET_KEY", "explicit-app-secret")
-    monkeypatch.setenv("DB__PASSWORD", "explicit-db-secret")
+    monkeypatch.setenv("LYCHD_APP_SECRET_KEY", "explicit-app-secret")
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", "explicit-db-secret")
     settings = Settings()
 
     assert settings.server.port == 9011
-    assert settings.app.secret_key == "explicit-app-secret"  # noqa: S105 - fixture secret
-    assert settings.db.password == "explicit-db-secret"  # noqa: S105 - fixture secret
+    assert resolve_web_secret_key(settings.server.web) == "explicit-app-secret"
+    assert resolve_database_password(settings.server.database) == "explicit-db-secret"
 
 
-def test_topology_a_rejects_multiple_server_processes() -> None:
-    with pytest.raises(ValueError, match="workers"):
-        Settings.model_validate({"server": {"workers": 2}})
+def test_only_the_three_declared_top_level_sections_are_accepted() -> None:
+    with pytest.raises(ValueError, match="app"):
+        Settings.model_validate({"app": {"debug": True}})
+
+    with pytest.raises(ValueError, match="not_a_server_setting"):
+        Settings.model_validate({"server": {"not_a_server_setting": True}})
+
+
+def test_optional_extensions_are_inert_until_explicitly_selected() -> None:
+    settings = ExtensionSettings()
+
+    assert settings.builtins == ()
+    assert settings.crypt == ()
+
+
+def test_settings_attribute_docstrings_export_schema_descriptions() -> None:
+    assert ServerSettings.model_fields["reload"].description == "Restart the development server when Python source files change."
+    assert DatabaseSettings.model_fields["profile"].description == (
+        "Persistence backend: Postgres for normal operation; memory only for focused tests."
+    )
+    assert ExtensionSettings.model_fields["builtins"].description == "Built-in extension IDs explicitly activated for this Vessel."
+
+
+def test_extension_activation_rejects_duplicate_ids() -> None:
+    with pytest.raises(ValueError, match="animator/llamacpp"):
+        ExtensionSettings(builtins=("animator/llamacpp", "animator/llamacpp"))
+
+
+def test_extension_activation_rejects_unknown_builtin_ids() -> None:
+    with pytest.raises(ValueError, match="animator/not-real"):
+        ExtensionSettings(builtins=("animator/not-real",))
+
+
+def test_bootstrap_server_rejects_public_bind_addresses() -> None:
+    with pytest.raises(ValueError, match="127.0.0.1"):
+        ServerSettings(host="0.0.0.0")  # noqa: S104  # type: ignore[arg-type]
+
+
+def test_server_rejects_port_claim_conflicts() -> None:
+    with pytest.raises(ValueError, match="Port 5432 is claimed by multiple services"):
+        ServerSettings(port=5432)
 
 
 def test_control_paths_are_absolute_and_normalized(tmp_path: Path) -> None:
-    stasis = StasisSettings(dir=tmp_path / "checkpoint" / ".." / "stasis")
     switching = SwitchingSettings(host_reactor_dir=tmp_path / "triggers" / "nested" / ".." / "inbox")
 
-    assert stasis.dir == tmp_path / "stasis"
     assert switching.host_reactor_dir == tmp_path / "triggers" / "inbox"
     assert switching.host_reactor_journal_dir == tmp_path / "triggers" / "journal"
 
-    with pytest.raises(ValueError, match="stasis.dir must be an absolute path"):
-        StasisSettings(dir=Path("relative/stasis"))
     with pytest.raises(ValueError, match="host_reactor_dir must be an absolute path"):
         SwitchingSettings(host_reactor_dir=Path("relative/inbox"))
     with pytest.raises(ValueError, match="must be an 'inbox' directory"):
         SwitchingSettings(host_reactor_dir=tmp_path / "reactor")
 
-    double_slash_stasis = StasisSettings.model_validate({"dir": f"/{tmp_path}/stasis"})
-    assert double_slash_stasis.dir == tmp_path / "stasis"
-
-    with pytest.raises(ValueError, match="unsafe in a systemd path"):
-        StasisSettings.model_validate({"dir": f"{tmp_path}/%h/stasis"})
     with pytest.raises(ValueError, match="unsafe in a systemd path"):
         SwitchingSettings.model_validate({"host_reactor_dir": f"{tmp_path}/bad\n/inbox"})
-
-
-@pytest.mark.parametrize(
-    "stasis_path",
-    [
-        "triggers",
-        "triggers/inbox",
-        "triggers/inbox/run-checkpoints",
-        "triggers/journal",
-        "triggers/journal/archive",
-    ],
-)
-def test_stasis_must_not_overlap_reactor_channels(tmp_path: Path, stasis_path: str) -> None:
-    inbox = tmp_path / "triggers" / "inbox"
-
-    with pytest.raises(ValueError, match="stasis.dir must not overlap"):
-        Settings(
-            stasis=StasisSettings(dir=tmp_path / stasis_path),
-            orchestration=OrchestrationSettings(
-                switching=SwitchingSettings(host_reactor_dir=inbox),
-            ),
-        )
-
-
-def test_stasis_may_be_a_reactor_sibling(tmp_path: Path) -> None:
-    inbox = tmp_path / "triggers" / "inbox"
-    settings = Settings(
-        stasis=StasisSettings(dir=tmp_path / "stasis"),
-        orchestration=OrchestrationSettings(
-            switching=SwitchingSettings(host_reactor_dir=inbox),
-        ),
-    )
-
-    assert settings.stasis.dir == tmp_path / "stasis"
 
 
 def test_control_paths_load_through_nested_environment(
@@ -159,12 +148,9 @@ def test_control_paths_load_through_nested_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     inbox = tmp_path / "reactor" / "inbox"
-    stasis = tmp_path / "checkpoints"
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__HOST_REACTOR_DIR", str(inbox))
-    monkeypatch.setenv("STASIS__DIR", str(stasis))
 
     settings = Settings()
 
     assert settings.orchestration.switching.host_reactor_dir == inbox
     assert settings.orchestration.switching.host_reactor_journal_dir == tmp_path / "reactor" / "journal"
-    assert settings.stasis.dir == stasis

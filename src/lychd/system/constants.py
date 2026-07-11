@@ -86,9 +86,6 @@ PATH_REACTOR_INBOX_DIR: Final[Path] = PATH_TRIGGERS_DIR / "inbox"
 PATH_REACTOR_JOURNAL_DIR: Final[Path] = PATH_TRIGGERS_DIR / "journal"
 """Host-owned journal exposed to the Vessel only for read-only terminal receipts."""
 
-PATH_STASIS_DIR: Final[Path] = PATH_CRYPT_ROOT / "stasis"
-"""Durable graph checkpoints, inside the caged Vessel's mounted Crypt."""
-
 PATH_POSTGRES_ROOT_DIR: Final[Path] = PATH_CRYPT_ROOT / "postgres"  # ~/.local/share/lychd/postgres
 """Live Database Storage."""
 
@@ -163,7 +160,6 @@ HOST_LAYOUT: Final[tuple[Path,...]] = (
     PATH_TRIGGERS_DIR,         # ├── triggers/        <-- The Signal (Nervous System)
     PATH_REACTOR_INBOX_DIR,    # │   ├── inbox/      <-- Vessel -> host intents
     PATH_REACTOR_JOURNAL_DIR,  # │   └── journal/    <-- Host consumption record
-    PATH_STASIS_DIR,           # ├── stasis/         <-- Durable graph checkpoints
     PATH_LAB_DIR,              # ├── lab/             <-- The Workspace
     PATH_EXTENSIONS_DIR,       # ├── extensions/      <-- The Tissue
     PATH_CORE_DIR,             # ├── core/            <-- The lychd source dir

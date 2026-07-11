@@ -4,13 +4,12 @@ import importlib
 import importlib.util
 from pathlib import Path, PurePosixPath
 from types import ModuleType
-from typing import Final
 
-from lychd.config.settings import ExtensionSettings, get_settings
+from lychd.config.settings.extensions import ExtensionSettings
+from lychd.config.settings.root import get_settings
+from lychd.extensions.builtin.catalog import builtin_register_module
 from lychd.extensions.context import ExtensionContext
 from lychd.system.constants import PATH_EXTENSIONS_DIR
-
-BUILTIN_ROOT_PACKAGE: Final = "lychd.extensions.builtin"
 
 
 class ExtensionManager:
@@ -66,8 +65,7 @@ class ExtensionManager:
 
     def _builtin_register_module(self, extension_id: str) -> str:
         """Resolve a selected built-in id to its required register module."""
-        dotted_id = ".".join(part.replace("-", "_") for part in self._extension_id_parts(extension_id))
-        return f"{BUILTIN_ROOT_PACKAGE}.{dotted_id}.register"
+        return builtin_register_module(extension_id)
 
     def _register_crypt(self, extension_id: str, context: ExtensionContext) -> None:
         module_path = self._crypt_module_path(extension_id)

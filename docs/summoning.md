@@ -334,9 +334,9 @@ journalctl --user -fu lychd-vessel.service
     native foreground server bridge:
 
     ```bash
-    DB__PASSWORD_FILE=/secure/path/db-password lychd database upgrade
-    DB__PASSWORD_FILE=/secure/path/db-password \
-      APP__SECRET_KEY_FILE=/secure/path/app-key \
+    LYCHD_DB_PASSWORD_FILE=/secure/path/db-password lychd database upgrade
+    LYCHD_DB_PASSWORD_FILE=/secure/path/db-password \
+      LYCHD_APP_SECRET_KEY_FILE=/secure/path/app-key \
       ORCHESTRATION__SWITCHING__ACTUATOR=systemd \
       lychd serve --host 127.0.0.1 --port 7134
     ```
@@ -365,7 +365,7 @@ systemctl --user --no-pager status \
 ```
 
 `doctor` validates Codex permissions, settings, Runes, host tools, secret references, the
-owner-only stasis/Reactor directories, and both generated Reactor unit files.
+owner-only Reactor directories and both generated Reactor unit files.
 The systemd status is the separate live-unit check; `doctor` does not claim that a model has
 completed real inference.
 

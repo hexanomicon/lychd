@@ -222,8 +222,8 @@ boundary.
 
 The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defined.
 
-- **The Vessel:** High-trust plane. Its generated mounts are the Codex read-only; the configured
-  stasis directory and Lab read-write; Core and Extensions read-only; and, in `host-reactor` mode,
+- **The Vessel:** High-trust plane. Its generated mounts are the Codex read-only; Lab read-write;
+  Core and Extensions read-only; and, in `host-reactor` mode,
   the Reactor inbox read-write plus its host-owned terminal journal read-only. It receives no
   whole-Crypt mount. Agents live here: graph state, LLM calls, routing, validation, memory access, and
   promotion policy remain Vessel-side. Writable Codex mutation remains a host/Magus action or an
@@ -231,7 +231,7 @@ The boundary between the Vessel and the Tomb is Mount-Defined, not Identity-Defi
 - **The Tomb:** Low-trust execution hand. Granted no Codex mount at all under the No-Codex Law ([ADR 13](13-layout.md)): every job-safe fact it needs travels in the job payload as a task-safe, secret-forbidden runtime envelope ([ADR 11](11-backend.md)). It receives RW access only to disposable, task-scoped workspaces and artifacts.
 - **Soulstones:** Model/runtime data plane. They receive only explicitly configured model/runtime
   volumes and unit-scoped secrets. Global, rune, and adapter-contributed mounts are all rejected if
-  either endpoint overlaps the Codex, Crypt, stasis, trigger/Reactor, or user-systemd control roots;
+  either endpoint overlaps the Codex, Crypt, trigger/Reactor, or user-systemd control roots;
   existing host symlink aliases are resolved before this comparison, and a safe alias is rendered
   as the canonical checked target rather than retained in the generated unit.
 
@@ -460,7 +460,7 @@ The same law governs every input crossing into cognition from a lower-trust plan
 | :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
 | **Identity**       | Invoking unprivileged host UID through Pod-level `keep-id`; `User=%U` for the Vessel. | Same Pod user-namespace geometry where manifested; identity alone is not the plane boundary. |
 | **Secrets**        | Accesses control-plane database credentials and high-value API keys. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, signing keys, Codex secrets, or control-plane credentials. |
-| **Mounts**         | Codex RO; stasis and Lab RW; Core/Extensions RO; Reactor inbox RW plus terminal journal RO only in Host Reactor mode; no whole Crypt. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
+| **Mounts**         | Codex RO; Lab RW; Core/Extensions RO; Reactor inbox RW plus terminal journal RO only in Host Reactor mode; no whole Crypt. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
 | **Network**        | Shared Pod network and egress; host publication is loopback-only and not caller authentication. | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
 | **Queue Control**  | Owns enqueue policy, durable scheduling, and control-plane retries. | Claims, acks, and retries execution-plane SAQ jobs only.               |
 | **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |

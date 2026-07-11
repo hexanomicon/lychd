@@ -158,9 +158,9 @@ which provides no safe no-effect attestation and therefore stays fail-closed. Or
 probing still decides whether the launched service becomes `WARM`.
 
 Configuration requires an absolute, normalized path whose final segment is `inbox`; the
-host-owned, Vessel-read-only journal is its derived sibling. The stasis path is independently absolute and may not overlap either
-Reactor directory. Systemd-unsafe `%`, backslash, and non-printable characters are rejected.
-`lychd init` provisions these configured paths, including valid custom layouts.
+host-owned, Vessel-read-only journal is its derived sibling. Systemd-unsafe `%`, backslash, and
+non-printable characters are rejected. `lychd init` provisions these configured paths, including
+valid custom layouts.
 
 ### 3. Read-Only Terminal Receipt and Late-Intent Fence
 
@@ -266,7 +266,7 @@ The intent drop directory is itself a privilege boundary, and this ADR is its so
 The generated deployment mounts the configured Reactor inbox read-write and its sibling journal
 read-only into the trusted Vessel. The broader Crypt is not mounted through that channel.
 Soulstones receive only explicitly configured model/runtime volumes after host/container
-protected-root validation; Codex, Crypt, stasis, trigger/Reactor, and user-systemd overlaps fail
+protected-root validation; Codex, Crypt, trigger/Reactor, and user-systemd overlaps fail
 binding. The writer and consumer additionally enforce exact owner, mode, file type, and
 no-overwrite publication rules at the filesystem boundary.
 

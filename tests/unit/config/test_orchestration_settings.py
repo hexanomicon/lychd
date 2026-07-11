@@ -6,15 +6,15 @@ from pathlib import Path
 
 import pytest
 
-import lychd.config.settings as settings_mod
-from lychd.config.settings import OrchestrationSettings, Settings
+import lychd.config.settings.root as settings_mod
+from lychd.config.settings.orchestration import OrchestrationSettings
+from lychd.config.settings.root import Settings
+from lychd.config.settings.server import ServerJobsSettings
 from lychd.domain.cortex.engine import DEFAULT_ROUTING, RouteRule
 
 
 def test_orchestration_defaults() -> None:
     orch = OrchestrationSettings()
-    assert orch.queues["runs"].concurrency == 2
-    assert orch.queues["rites"].concurrency == 4
     assert orch.switching.policy == "evict-idle"
     assert orch.switching.actuator == "host-reactor"
     assert orch.switching.min_priority_for_hard_swap == 40
@@ -46,21 +46,21 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
         "[orchestration.switching]\n"
         'policy = "evict-idle"\n'
         "min_priority_for_hard_swap = 33\n"
-        "[orchestration.queues.runs]\n"
-        "concurrency = 9\n",
+        "[server.jobs]\n"
+        "interactive_concurrency = 9\n",
         encoding="utf-8",
     )
     toml.chmod(0o600)  # keep the codex-permission validator quiet
     monkeypatch.setattr(settings_mod, "PATH_LYCHD_TOML", toml)
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 33
-    assert settings.orchestration.queues["runs"].concurrency == 9
-    assert settings.orchestration.queues["rites"].concurrency == 4
+    assert settings.server.jobs.interactive_concurrency == 9
+    assert settings.server.jobs.background_concurrency == 4
 
 
 def test_v1_queue_topology_rejects_unimplemented_physical_queues() -> None:
-    with pytest.raises(ValueError, match="Unknown physical orchestration queues: gpu"):
-        OrchestrationSettings.model_validate({"queues": {"gpu": {"concurrency": 1}}})
+    with pytest.raises(ValueError, match="gpu_concurrency"):
+        ServerJobsSettings.model_validate({"gpu_concurrency": 1})
 
     with pytest.raises(ValueError, match="routing references unknown queues: gpu"):
         OrchestrationSettings.model_validate({"routing": {"bridge": {"queue": "gpu", "priority": 70}}})
@@ -69,7 +69,13 @@ def test_v1_queue_topology_rejects_unimplemented_physical_queues() -> None:
 @pytest.mark.parametrize("concurrency", [0, 129])
 def test_queue_concurrency_is_strictly_bounded(concurrency: int) -> None:
     with pytest.raises(ValueError, match="concurrency"):
-        OrchestrationSettings.model_validate({"queues": {"runs": {"concurrency": concurrency}}})
+        ServerJobsSettings.model_validate({"interactive_concurrency": concurrency})
+
+
+def test_job_admin_ui_path_is_an_absolute_vessel_route() -> None:
+    assert ServerJobsSettings(admin_ui_path="jobs/").admin_ui_path == "/jobs"
+    with pytest.raises(ValueError, match="must start"):
+        ServerJobsSettings(admin_ui_path="jobs")
 
 
 def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.MonkeyPatch) -> None:

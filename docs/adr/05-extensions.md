@@ -82,11 +82,12 @@ The activation selector has list semantics, not boolean map semantics:
 
 ```toml
 [extensions]
-builtins = ["observability/phoenix", "animator"]
+builtins = []
 crypt = ["my-private-organ"]
 ```
 
-This keeps the default body inert. Enabling an extension means its schemas,
+This keeps the default body inert. `lychd init` provides commented built-in
+choices; it does not activate every installed runtime. Enabling an extension means its schemas,
 hydrators, and registration stores may participate. It does not by itself start every
 rune instance owned by that extension; instance-level activation remains a
 domain/runtime decision inside the extension's runes.

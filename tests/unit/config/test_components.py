@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 
 from lychd.config.components import build_saq_config
-from lychd.config.settings import Settings
+from lychd.config.settings.root import Settings
 
 
 def _settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
-    monkeypatch.setenv("DB__PASSWORD", "test-db-password")
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", "test-db-password")
     return Settings()
 
 
@@ -29,6 +29,19 @@ def test_no_server_lifespan_forks(monkeypatch: pytest.MonkeyPatch) -> None:
     """F1/H1: `use_server_lifespan=False` stops the plugin from spawning worker forks."""
     config = build_saq_config(_settings(monkeypatch))
     assert config.use_server_lifespan is False
+
+
+def test_saq_admin_ui_is_optional_and_uses_the_vessel_http_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = _settings(monkeypatch)
+    config = build_saq_config(settings)
+    assert config.web_enabled is False
+    assert config.web_path == "/saq"
+
+    settings.server.jobs.admin_ui_enabled = True
+    settings.server.jobs.admin_ui_path = "/jobs"
+    config = build_saq_config(settings)
+    assert config.web_enabled is True
+    assert config.web_path == "/jobs"
 
 
 def test_rites_queue_can_claim_perform_run(monkeypatch: pytest.MonkeyPatch) -> None:

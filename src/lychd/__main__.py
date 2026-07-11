@@ -80,9 +80,9 @@ def _wait_for_database(timeout: float) -> None:
     import socket
     import time
 
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
 
-    db = get_settings().db
+    db = get_settings().server.database
     deadline = time.monotonic() + timeout
     last_error: OSError | None = None
     while time.monotonic() < deadline:

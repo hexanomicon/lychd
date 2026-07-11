@@ -140,7 +140,6 @@ class RunRecord:
     enqueue_seq: int = 0
     error: str | None = None
     consent_id: str | None = None
-    stasis_path: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     finished_at: datetime | None = None

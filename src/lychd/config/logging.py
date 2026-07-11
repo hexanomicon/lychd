@@ -26,17 +26,17 @@ def _is_tty() -> bool:
 
 def should_render_as_json() -> bool:
     """Return JSON mode for the current runtime."""
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
 
     settings = get_settings()
-    if settings.log.json_format is not None:
-        return settings.log.json_format
+    if settings.server.logging.json_format is not None:
+        return settings.server.logging.json_format
     return not _is_tty()
 
 
 def build_log_config(*, render_as_json: bool) -> StructlogConfig:
     """Build StructlogConfig for Litestar or direct bootstrap."""
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
 
     settings = get_settings()
     structlog_processors: list[Processor] = default_structlog_processors(as_json=render_as_json)
@@ -47,15 +47,15 @@ def build_log_config(*, render_as_json: bool) -> StructlogConfig:
 
     return StructlogConfig(
         middleware_logging_config=LoggingMiddlewareConfig(
-            request_log_fields=settings.log.request_fields,
-            response_log_fields=settings.log.response_fields,
+            request_log_fields=settings.server.logging.request_fields,
+            response_log_fields=settings.server.logging.response_fields,
         ),
         structlog_logging_config=StructLoggingConfig(
             log_exceptions="always",
             processors=structlog_processors,
             logger_factory=default_logger_factory(as_json=render_as_json),
             standard_lib_logging_config=LoggingConfig(
-                root={"level": settings.log.level.upper(), "handlers": ["console"]},
+                root={"level": settings.server.logging.level.upper(), "handlers": ["console"]},
                 formatters={
                     "standard": {
                         "()": "structlog.stdlib.ProcessorFormatter",
@@ -71,22 +71,22 @@ def build_log_config(*, render_as_json: bool) -> StructlogConfig:
                 loggers={
                     "granian.access": {
                         "propagate": False,
-                        "level": settings.log.granian_level,
+                        "level": settings.server.logging.granian_level,
                         "handlers": ["console"],
                     },
                     "saq": {
                         "propagate": False,
-                        "level": settings.log.saq_level,
+                        "level": settings.server.logging.saq_level,
                         "handlers": ["console"],
                     },
                     "sqlalchemy.engine": {
                         "propagate": False,
-                        "level": settings.log.sqlalchemy_level,
+                        "level": settings.server.logging.sqlalchemy_level,
                         "handlers": ["console"],
                     },
                     "pydantic_ai": {
                         "propagate": False,
-                        "level": settings.log.pydantic_ai_level,
+                        "level": settings.server.logging.pydantic_ai_level,
                         "handlers": ["console"],
                     },
                 },

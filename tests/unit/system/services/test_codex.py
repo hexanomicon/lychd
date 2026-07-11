@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-import lychd.config.settings as settings_module
-from lychd.config.settings import Settings, get_settings
+import lychd.config.settings.root as settings_module
+from lychd.config.settings.root import Settings, get_settings
 from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
 from lychd.system.services.codex import CodexService
 
@@ -63,12 +63,17 @@ def test_lychd_toml_validity(codex_service: CodexService, codex_paths: dict[str,
     settings = get_settings()
 
     assert "server" in content
-    assert "db" in content
     assert content["server"]["port"] == settings.server.port
-    assert content["app"]["name"] == "lychd"
+    assert content["server"]["web"]["name"] == "lychd"
+    assert content["server"]["database"]["database"] == settings.server.database.database
     assert content["orchestration"]["switching"]["policy"] == settings.orchestration.switching.policy
     assert content["orchestration"]["whim"]["idle_evict_after_s"] == settings.orchestration.whim.idle_evict_after_s
     assert content["orchestration"]["whim"]["preload"] == settings.orchestration.whim.preload
+    assert content["extensions"]["builtins"] == []
+
+    rendered = codex_paths["toml"].read_text(encoding="utf-8")
+    assert "# Local llama.cpp:" in rendered
+    assert "# Other choices:" in rendered
 
 
 def test_lychd_toml_round_trips_through_settings(

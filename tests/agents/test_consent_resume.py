@@ -12,8 +12,6 @@ the streaming API. Scenario 5 (durable restart) lives beside this in 4C-6.
 # ruff: noqa: PT018 - compound run-state asserts read clearer than split ones here
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pydantic_ai.models
@@ -28,6 +26,7 @@ from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
@@ -96,7 +95,7 @@ def _substrate(model: Any) -> tuple[RunSubstrate, InMemoryRunLedger, InProcessEv
         turns=sessions,
         consents=InMemoryConsentLedger(),
         forge=default_forge(),
-        stasis_dir=Path(tempfile.mkdtemp()),
+        stasis_store=InMemoryStasisStore(),
     )
     return substrate, ledger, bus, sessions, orch
 
@@ -152,7 +151,7 @@ async def test_scenario1_parks_with_s4_emit_ordering() -> None:
     assert run is not None
     assert run.status is RunStatus.AWAITING_CONSENT
     assert run.consent_id is not None
-    assert run.stasis_path is not None and Path(run.stasis_path).exists()  # durable checkpoint written
+    assert await substrate.stasis_store.exists("run_1")  # durable checkpoint written
     kinds = _kinds(bus, "run_1")
     assert "consent" in kinds
     assert "done" not in kinds  # a parked run never closes the stream
@@ -186,15 +185,14 @@ async def test_scenario2_approve_resumes_and_runs_tool_body() -> None:
     channel = bus.open("run_2")  # hold the ref: the resume's terminal closes + drops it
     seq_at_park = channel.next_seq
     parked = await ledger.get("run_2")
-    assert parked is not None and parked.stasis_path is not None
-    checkpoint = Path(parked.stasis_path)
+    assert parked is not None
     original_set_status = ledger.set_status
     checkpoint_existed_at_done = False
 
     async def record_terminal_order(run_id: str, status: RunStatus, *, error: str | None = None) -> None:
         nonlocal checkpoint_existed_at_done
         if status is RunStatus.DONE:
-            checkpoint_existed_at_done = checkpoint.exists()
+            checkpoint_existed_at_done = await substrate.stasis_store.exists("run_2")
         await original_set_status(run_id, status, error=error)
 
     ledger.set_status = record_terminal_order
@@ -205,8 +203,7 @@ async def test_scenario2_approve_resumes_and_runs_tool_body() -> None:
     run = await ledger.get("run_2")
     assert run is not None and run.status is RunStatus.DONE
     assert checkpoint_existed_at_done is True  # GraphRunner did not delete before terminal commit
-    assert run.stasis_path is None  # cleared on settle
-    assert not checkpoint.exists()
+    assert not await substrate.stasis_store.exists("run_2")  # cleared on settle
     # The approved tool body RAN (request_transition reached the orchestrator).
     assert any(call[0] == "request" for call in orch.calls)
     kinds = [str(e.kind) for e in channel._replay]
@@ -275,10 +272,10 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     """
     import asyncio
 
-    stasis_dir = Path(tempfile.mkdtemp())
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     consents = InMemoryConsentLedger()
     orch = FakeOrchestrator()
+    stasis_store = InMemoryStasisStore()
 
     def _mk_substrate(bus: InProcessEventBus, sessions: BridgeSessionStore) -> RunSubstrate:
         return RunSubstrate(
@@ -295,7 +292,7 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
             turns=sessions,
             consents=consents,
             forge=default_forge(),
-            stasis_dir=stasis_dir,
+            stasis_store=stasis_store,
         )
 
     # Boot 1: park.
@@ -305,15 +302,14 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     park_result = await perform_run({"run_substrate": sub1}, run_id="run_5")
     assert park_result["status"] == "awaiting_consent"
     run = await ledger.get("run_5")
-    assert run is not None and run.consent_id is not None and run.stasis_path is not None
+    assert run is not None and run.consent_id is not None
     consent_id = run.consent_id
-    stasis_file = Path(run.stasis_path)
-    assert stasis_file.exists()  # the durable checkpoint really survives
+    assert await stasis_store.exists("run_5")  # the durable checkpoint really survives
     await asyncio.sleep(0.05)  # let the ledger tee drain the pre-park Step rows
     pre_seqs = [e.seq for e in ledger.events("run_5")]
     assert pre_seqs  # some Step rows persisted before the park
 
-    # RESTART: a fresh bus + substrate; the ledger + consents + stasis file carry over.
+    # RESTART: a fresh bus + substrate; the ledger + consents + checkpoint store carry over.
     bus2 = InProcessEventBus(ledger=ledger)
     sub2 = _mk_substrate(bus2, BridgeSessionStore())
 
@@ -324,8 +320,7 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     assert resume_result["status"] == "done"
     run = await ledger.get("run_5")
     assert run is not None and run.status is RunStatus.DONE
-    assert run.stasis_path is None  # cleared on settle
-    assert not stasis_file.exists()  # durable file unlinked after settle
+    assert not await stasis_store.exists("run_5")  # cleared on settle
     assert any(call[0] == "request" for call in orch.calls)  # the approved tool body ran
     await asyncio.sleep(0.05)  # let the resume-hop tee drain
     all_seqs = [e.seq for e in ledger.events("run_5")]
@@ -483,8 +478,8 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     await _seed(ledger, sessions, "run_sl")
     consent_id = await _park(substrate, "run_sl")
     run = await ledger.get("run_sl")
-    assert run is not None and run.stasis_path is not None
-    Path(run.stasis_path).unlink()  # the checkpoint vanished
+    assert run is not None
+    await substrate.stasis_store.delete("run_sl")  # the checkpoint vanished
 
     await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
     await ledger.set_status("run_sl", RunStatus.QUEUED)
@@ -494,4 +489,4 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     run = await ledger.get("run_sl")
     assert run is not None and run.status is RunStatus.FAILED
     assert run.error == "stasis lost"
-    assert run.stasis_path is None
+    assert not await substrate.stasis_store.exists("run_sl")

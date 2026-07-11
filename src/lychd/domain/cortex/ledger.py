@@ -84,10 +84,6 @@ class RunLedger(Protocol):
         """Record (or clear) the consent id a run is parked on."""
         ...
 
-    async def set_stasis_path(self, run_id: str, path: str | None) -> None:
-        """Record (or clear) the durable-stasis checkpoint path."""
-        ...
-
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's Step ledger."""
         ...
@@ -234,10 +230,6 @@ class InMemoryRunLedger:
     async def set_consent(self, run_id: str, consent_id: str | None) -> None:
         """Record (or clear) the consent id."""
         self._require(run_id).consent_id = consent_id
-
-    async def set_stasis_path(self, run_id: str, path: str | None) -> None:
-        """Record (or clear) the durable-stasis path."""
-        self._require(run_id).stasis_path = path
 
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's step list."""
@@ -539,14 +531,6 @@ class DbRunLedger:
         """
         _ = (run_id, consent_id)
 
-    async def set_stasis_path(self, run_id: str, path: str | None) -> None:
-        """Record (or clear) the durable-stasis path on the run row."""
-        from lychd.domain.cortex.services import RunService
-
-        async with self._session_factory() as session:
-            svc = RunService(session=session)
-            await svc.update({"stasis_path": path}, item_id=UUID(run_id), auto_commit=True)
-
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event as a Step row, persisting `event.seq` VERBATIM.
 
@@ -702,7 +686,6 @@ class DbRunLedger:
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]
-            stasis_path=row.stasis_path,  # type: ignore[attr-defined]
             created_at=row.created_at,  # type: ignore[attr-defined]  # UUIDAuditBase; feeds the QUEUED-age sweep
             started_at=row.started_at,  # type: ignore[attr-defined]
             finished_at=row.finished_at,  # type: ignore[attr-defined]

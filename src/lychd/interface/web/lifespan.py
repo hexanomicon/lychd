@@ -51,7 +51,7 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 @asynccontextmanager
 async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
     """Assemble, warm, publish, reconcile, and later drain the Altar services."""
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions  # composition root only
     from lychd.system.services.runtime import wait_for_host_reactor_idle
 
@@ -158,9 +158,9 @@ async def _reconcile_consents_at_startup(engine: Any) -> None:
 
 async def _sync_preauths_at_startup(exts: Any) -> None:
     """Upsert loaded Codex preauthorization runes (DB profile only; loud on failure)."""
-    from lychd.config.settings import get_settings
+    from lychd.config.settings.root import get_settings
 
-    if get_settings().db.profile != "postgres":
+    if get_settings().server.database.profile != "postgres":
         return
     try:
         from lychd.config.runes.registry import load_rune_registry

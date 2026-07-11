@@ -11,12 +11,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.extensions.manager import ExtensionManager
 
 if TYPE_CHECKING:
     from lychd.config.runes.base import RuneConfig
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.adapters.contracts import (
         PortalRuntimeFactory,
         SoulstoneDefinition,

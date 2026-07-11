@@ -57,9 +57,9 @@ Consent is treated as a first-class state transition within the **[Graph (ADR 24
 - Tools identified as high-risk (e.g., `modify_core`, `delete_artifact`) are configured with `requires_approval=True`.
 - Upon invocation, the tool raises an `ApprovalRequired` exception.
 - The Agent run terminates and returns a `DeferredToolRequests` object containing the tool name, validated arguments, and a unique `tool_call_id`.
-- The Graph commits an owner-only file checkpoint in the configured stasis directory, records its
-  path on the run row, and parks the run before a verdict can re-enqueue it. This is the implemented
-  durable consent boundary; a Postgres checkpoint/outbox transaction remains later work.
+- The Graph commits its typed snapshot history to the run-owned Postgres checkpoint row and parks
+  before a verdict can re-enqueue it. This is the implemented durable consent boundary; a
+  transactional checkpoint/outbox transaction remains later work.
 - Tools identified as preauthorizable still pass through the same Vessel-side policy gate. They may skip a live Altar prompt only when Codex policy explicitly permits that action class.
 
 When a recorded verdict admits a parked run, the ledger first performs one atomic status admission

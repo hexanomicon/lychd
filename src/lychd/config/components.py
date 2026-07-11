@@ -8,6 +8,7 @@ object is produced by a ``build_*`` factory called from the composition root
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from litestar.config.compression import CompressionConfig
@@ -30,18 +31,31 @@ from lychd.config.constants import (
     PATH_VITE_RESOURCE_DIR,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
+from lychd.config.utils import read_secret_from_env_or_file
 from lychd.db.engine import get_engine
+from lychd.db.factory import database_saq_dsn
 
 if TYPE_CHECKING:
     from litestar.plugins.structlog import StructlogConfig
 
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
+    from lychd.config.settings.server import WebSettings
+
+
+def resolve_web_secret_key(settings: WebSettings) -> str:
+    """Resolve the signing secret at the web-component boundary, not in settings."""
+    return read_secret_from_env_or_file(
+        value_env_keys=("LYCHD_APP_SECRET_KEY",),
+        file_env_keys=("LYCHD_APP_SECRET_KEY_FILE",),
+        default_file=Path("/run/secrets") / settings.secret_key_secret,
+        secret_label=settings.secret_key_secret,
+    )
 
 
 def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
     """Build the Phylactery (database) plugin config from the process engine."""
     return SQLAlchemyAsyncConfig(
-        engine_instance=get_engine(settings.db),
+        engine_instance=get_engine(settings.server.database),
         before_send_handler="autocommit",
         session_config=AsyncSessionConfig(expire_on_commit=False),
         alembic_config=AlembicAsyncConfig(
@@ -76,22 +90,23 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
         *extra_tasks,
     ]
     return SAQConfig(
-        web_enabled=settings.saq.web_enabled,
+        web_enabled=settings.server.jobs.admin_ui_enabled,
+        web_path=settings.server.jobs.admin_ui_path,
         use_server_lifespan=False,  # Topology A: no forked workers — on_app_startup owns the loop.
         queue_configs=[
             QueueConfig(
                 name="runs",
-                dsn=settings.db.saq_dsn,
+                dsn=database_saq_dsn(settings.server.database),
                 tasks=["lychd.ghouls.runs.perform_run", "lychd.ghouls.runs.reconcile_runs"],
-                concurrency=settings.orchestration.queues["runs"].concurrency,
+                concurrency=settings.server.jobs.interactive_concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
             ),
             QueueConfig(
                 name="rites",
-                dsn=settings.db.saq_dsn,
+                dsn=database_saq_dsn(settings.server.database),
                 tasks=rite_tasks,
-                concurrency=settings.orchestration.queues["rites"].concurrency,
+                concurrency=settings.server.jobs.background_concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,
             ),
@@ -104,11 +119,11 @@ def saq_queue_from_settings(settings: Settings, name: str) -> Any:
 
     Used by the CLI's `lychd runs approve|deny` (a separate process from the vessel): the
     verdict re-enqueue must land on the queue/tables the daemon's worker claims. Derives
-    the DSN from `settings.db.saq_dsn` (never string surgery).
+    the DSN from the database connection factory (never string surgery).
     """
     from saq.queue.postgres import PostgresQueue
 
-    return PostgresQueue.from_url(settings.db.saq_dsn, name=name)
+    return PostgresQueue.from_url(database_saq_dsn(settings.server.database), name=name)
 
 
 def build_vite_config(settings: Settings) -> ViteConfig:
@@ -116,11 +131,11 @@ def build_vite_config(settings: Settings) -> ViteConfig:
     return ViteConfig(
         bundle_dir=PATH_VITE_BUNDLE_DIR,
         resource_dir=PATH_VITE_RESOURCE_DIR,
-        use_server_lifespan=settings.vite.use_server_lifespan,
-        dev_mode=settings.vite.dev_mode,
-        hot_reload=settings.vite.hot_reload,
-        port=settings.vite.port,
-        host=settings.vite.host,
+        use_server_lifespan=settings.server.web.vite.use_server_lifespan,
+        dev_mode=settings.server.web.vite.dev_mode,
+        hot_reload=settings.server.web.vite.hot_reload,
+        port=settings.server.web.vite.port,
+        host=settings.server.web.vite.host,
     )
 
 
@@ -136,15 +151,15 @@ def build_template_config(settings: Settings) -> TemplateConfig[JinjaTemplateEng
 
 def build_cors_config(settings: Settings) -> CORSConfig:
     """Build the CORS config from allowed origins."""
-    return CORSConfig(allow_origins=settings.app.allowed_cors_origins)
+    return CORSConfig(allow_origins=settings.server.web.allowed_cors_origins)
 
 
 def build_csrf_config(settings: Settings) -> CSRFConfig:
     """Build the CSRF config from the app signing key."""
     return CSRFConfig(
-        secret=settings.app.secret_key,
-        cookie_name=settings.app.csrf_cookie_name,
-        cookie_secure=settings.app.csrf_cookie_secure,
+        secret=resolve_web_secret_key(settings.server.web),
+        cookie_name=settings.server.web.csrf_cookie_name,
+        cookie_secure=settings.server.web.csrf_cookie_secure,
     )
 
 

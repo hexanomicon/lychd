@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -281,13 +280,11 @@ async def test_ambiguous_publish_error_cannot_fail_already_claimed_run() -> None
 
 
 @pytest.mark.asyncio
-async def test_cancel_aborts_marks_cancelled_and_cleans_checkpoint(tmp_path: Path) -> None:
+async def test_cancel_aborts_marks_cancelled_and_cleans_checkpoint() -> None:
     """cancel commits CANCELLED, closes the stream, then removes stale checkpoint state."""
     engine, ledger, queues = _engine()
     await engine.submit(Intent(session_id="s", run_id="run_c", prompt="hi", source="bridge"))
-    checkpoint = tmp_path / "run_c.json"
-    checkpoint.write_text("{}")
-    await ledger.set_stasis_path("run_c", str(checkpoint))
+    await engine.stasis_store.replace("run_c", [])
     # Hold the channel ref BEFORE cancel: R2 closes + drops it, so a post-cancel
     # `bus.open` would mint a fresh unclosed channel and hide the close.
     channel = engine.bus.open("run_c")
@@ -298,8 +295,7 @@ async def test_cancel_aborts_marks_cancelled_and_cleans_checkpoint(tmp_path: Pat
     assert run is not None
     assert run.status is RunStatus.CANCELLED
     assert queues["runs"].aborted == [run_job_key("run_c", 1)]
-    assert run.stasis_path is None
-    assert not checkpoint.exists()
+    assert not await engine.stasis_store.exists("run_c")
     # a single terminal DONE landed on the channel (carrying the terminal status)
     assert channel.closed is True
     # R2: cancel closed AND dropped the channel — reopening mints a fresh one.
