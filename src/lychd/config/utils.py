@@ -14,8 +14,10 @@ def read_secret_from_env_or_file(
 ) -> str:
     """Resolve a secret from explicit environment overrides or a mounted secret file.
 
-    This prioritizes explicit environment variable values over file paths, and falls
-    back to the specified default secret file if none are provided.
+    A direct value environment variable is an explicit local/test override, kept for
+    the ADR 12 contract and never emitted by LychD's generated Quadlets. Production
+    deployments should supply only a ``*_FILE`` path to a Podman-mounted secret; a
+    value environment variable wins if an operator or image injects one.
     """
     for env_key in value_env_keys:
         value = os.environ.get(env_key)

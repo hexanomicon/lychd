@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
 from lychd.agents.deps import Sigil
+from lychd.domain.codex.sigil import default_local_sigil
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -129,28 +130,9 @@ class WorkflowServices:
 # Sigil provider (v1 single-identity stand-in for the Ward)
 # ---------------------------------------------------------------------------
 
-# Test/dev fallback only: the §3.2 grammar (a held `"*"` grants every scope). The
-# composition root threads `settings_sigil_provider` in production (4C-1 tail).
-_DEFAULT_SIGIL = Sigil(name="magus", scopes=frozenset({"*"}))
-
-
 def default_sigil() -> Sigil:
-    """Return the process default Sigil (test fallback stand-in for the Ward).
-
-    A frozen constant, not mutable module state: the Ward replaces this callable
-    at app startup by overriding `WorkflowServices.sigil_provider`.
-    """
-    return _DEFAULT_SIGIL
-
-
-def settings_sigil_provider(settings: Any) -> Callable[[], Sigil]:
-    """Build a `sigil_provider` from settings (built once at the composition root)."""
-    sigil = Sigil(name=settings.sigil.name, scopes=frozenset(settings.sigil.scopes))
-
-    def provider() -> Sigil:
-        return sigil
-
-    return provider
+    """Return the loopback bootstrap Sigil until IAM provides a caller Sigil."""
+    return default_local_sigil()
 
 
 def build_workflow_services(
@@ -193,5 +175,4 @@ __all__ = [
     "WorkflowServices",
     "build_workflow_services",
     "default_sigil",
-    "settings_sigil_provider",
 ]

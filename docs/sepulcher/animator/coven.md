@@ -87,25 +87,28 @@ curl -s -X POST "http://localhost:7134/orchestrator/activate?target=atelier:chat
 
 ## Orchestration reference
 
-The `[orchestration]` block in `~/.config/lychd/lychd.toml` tunes how runs are routed to
-queues, how many workers each queue runs, and the policy that governs swaps. For the law behind
-it, see the [Orchestrator (23)](../../adr/23-orchestrator.md).
+`[server.jobs]` defines the local job capacity; `[orchestration]` maps
+semantic run sources onto that fixed capacity and governs swaps. For the law
+behind it, see the [Orchestrator (23)](../../adr/23-orchestrator.md).
 
-### `[orchestration.queues]`
+### `[server.jobs]`
 
-One entry per queue, sizing its worker concurrency.
+One explicit concurrency setting per fixed queue.
 
-| Queue | `concurrency` | Purpose |
-| :--- | :--- | :--- |
-| `runs` | `2` | Interactive and CLI runs. |
-| `rites` | `4` | Background rites. |
+| Queue | Setting | Default | Purpose |
+| :--- | :--- | :--- | :--- |
+| `runs` | `interactive_concurrency` | `2` | Interactive and CLI runs. |
+| `rites` | `background_concurrency` | `4` | Background rites. |
+
+`admin_ui_enabled` optionally mounts SAQ's diagnostic queue UI at
+`admin_ui_path` (default `/saq`) on the Vessel's existing HTTP address. It does
+not start a second server or open another port. It is disabled by default and
+has no LychD-specific guard, so an eventual Ward/Proxy must not expose it
+without an explicit access policy.
 
 ```toml
-[orchestration.queues.runs]
-concurrency = 2
-
-[orchestration.queues.rites]
-concurrency = 4
+interactive_concurrency = 2
+background_concurrency = 4
 ```
 
 ### `[orchestration.routing]`

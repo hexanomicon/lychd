@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import (
     ConcurrencyIntent,
     GenericSoulstoneConfig,
@@ -110,10 +110,10 @@ def _replacements() -> list[tuple[str, str]]:
         (str(constants.PATH_CODEX_ROOT), "${PATH_CODEX_ROOT}"),
         (str(constants.PATH_CRYPT_ROOT), "${PATH_CRYPT_ROOT}"),
         (str(Path.home()), "${HOME}"),
-        (settings.app.image, "${APP_IMAGE}"),
-        (settings.db.image, "${DB_IMAGE}"),
-        (settings.app.secret_key_secret, "${APP_SECRET}"),
-        (settings.db.password_secret, "${DB_SECRET}"),
+        (settings.server.web.image, "${APP_IMAGE}"),
+        (settings.server.database.image, "${DB_IMAGE}"),
+        (settings.server.web.secret_key_secret, "${APP_SECRET}"),
+        (settings.server.database.password_secret, "${DB_SECRET}"),
     ]
     # Longest source first so nested paths (CORE/EXTENSIONS under CRYPT) win.
     return sorted(pairs, key=lambda pair: len(pair[0]), reverse=True)
@@ -221,7 +221,7 @@ def test_property1_pod_network_truth() -> None:
     settings = get_settings()
     core = [
         f"127.0.0.1:{settings.server.port}:{constants.CONTAINER_LYCHD_PORT}",
-        f"127.0.0.1:{settings.db.port}:{constants.CONTAINER_POSTGRES_PORT}",
+        f"127.0.0.1:{settings.server.database.port}:{constants.CONTAINER_POSTGRES_PORT}",
     ]
 
     active = _transmute(phoenix_active=True)
@@ -281,7 +281,7 @@ def test_property3_oculus_and_core_lattice() -> None:
     oculus = active["lychd-oculus"]
     assert isinstance(oculus, QuadletContainer)
     assert oculus.pod == "lychd.pod"
-    db_url = f"postgresql://{settings.db.user}@localhost:{constants.CONTAINER_POSTGRES_PORT}/phoenix"
+    db_url = f"postgresql://{settings.server.database.user}@localhost:{constants.CONTAINER_POSTGRES_PORT}/phoenix"
     assert oculus.env_vars == {
         "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
         "PHOENIX_SQL_DATABASE_URL": db_url,
@@ -296,13 +296,13 @@ def test_property3_oculus_and_core_lattice() -> None:
     assert isinstance(phylactery, QuadletContainer)
     assert isinstance(migrator, QuadletContainer)
     # Vessel env + secrets (incl. the portal secret).
-    assert vessel.env_vars["APP__SECRET_KEY_FILE"] == f"/run/secrets/{settings.app.secret_key_secret}"
-    assert vessel.env_vars["DB__HOST"] == "localhost"
-    assert vessel.env_vars["DB__PORT"] == str(constants.CONTAINER_POSTGRES_PORT)
-    assert vessel.env_vars["DB__PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert vessel.env_vars["LYCHD_APP_SECRET_KEY_FILE"] == f"/run/secrets/{settings.server.web.secret_key_secret}"
+    assert vessel.env_vars["SERVER__DATABASE__HOST"] == "localhost"
+    assert vessel.env_vars["SERVER__DATABASE__PORT"] == str(constants.CONTAINER_POSTGRES_PORT)
+    assert vessel.env_vars["LYCHD_DB_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert "openai_api_key" in vessel.secrets
-    assert settings.app.secret_key_secret in vessel.secrets
-    assert settings.db.password_secret in vessel.secrets
+    assert settings.server.web.secret_key_secret in vessel.secrets
+    assert settings.server.database.password_secret in vessel.secrets
     assert vessel.wants == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.requires == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.after == ["lychd-migrate.service", "lychd-reactor.path"]
@@ -313,8 +313,8 @@ def test_property3_oculus_and_core_lattice() -> None:
     assert phylactery.user is None
     assert phylactery.wants == ["lychd-pod.service"]
     assert phylactery.after == ["lychd-pod.service"]
-    assert phylactery.secrets == [settings.db.password_secret]
-    assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert phylactery.secrets == [settings.server.database.password_secret]
+    assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert phylactery.volumes[0].host_path == constants.PATH_POSTGRESS_DATA_DIR
     assert phylactery.volumes[0].options == ["U", "Z"]
     assert phylactery.volumes[1].host_path == constants.PATH_POSTGRES_ROOT_DIR / "init_db.sh"

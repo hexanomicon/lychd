@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
@@ -67,19 +66,10 @@ def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
     return get_run_substrate()
 
 
-def _phylactery_for(run: RunRecord, workflow: Workflow, stasis_dir: Path) -> PhylacteryProtocol:
-    """Select the stasis tier: resume the durable file, else Durable for Gate workflows.
-
-    A run with a persisted `stasis_path` resumes from THAT file (durable). A fresh
-    Gate-bearing workflow gets a Durable phylactery; a purely linear workflow gets
-    the Live (in-memory) tier.
-    """
-    from pathlib import Path
-
-    if run.stasis_path is not None:
-        return DurableStasisPhylactery(job_id=run.run_id, json_file=Path(run.stasis_path))
+def _phylactery_for(run: RunRecord, workflow: Workflow, substrate: RunSubstrate) -> PhylacteryProtocol:
+    """Select durable Postgres-backed Stasis for durable workflows, else live memory."""
     if workflow.durable:
-        return DurableStasisPhylactery.for_run(run.run_id, stasis_dir=stasis_dir)
+        return DurableStasisPhylactery(job_id=run.run_id, store=substrate.stasis_store)
     return LiveStasisPhylactery(job_id=run.run_id)
 
 
@@ -173,30 +163,22 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
             await _cleanup_claim_resources(
                 substrate,
                 run,
-                recorded_path=run.stasis_path,
                 persistence=None,
             )
             return {"status": "failed", "run_id": run_id}
 
-        if resume and (run.stasis_path is None or not Path(run.stasis_path).exists()):
+        if resume and not await substrate.stasis_store.exists(run.run_id):
             # Honest failure: never a silent re-run of a run whose checkpoint is gone.
             # F2: settle inside the try so the finally emits the terminal + closes the channel.
             await settle_terminal(RunStatus.FAILED, error="stasis lost")
             await _cleanup_claim_resources(
                 substrate,
                 run,
-                recorded_path=run.stasis_path,
                 persistence=None,
             )
             return {"status": "failed", "run_id": run_id}
 
-        persistence = _phylactery_for(run, workflow, substrate.stasis_dir)
-        # F6: record the durable checkpoint path BEFORE the graph runs, so a crash during
-        # a hardware transition (AWAITING_HARDWARE) leaves a reconcilable orphan — else
-        # `stasis_path` was only ever persisted on the consent-park branch and an
-        # AWAITING_HARDWARE crash orphaned `{run_id}.json` with nothing to unlink it.
-        if isinstance(persistence, DurableStasisPhylactery) and run.stasis_path is None:
-            await ledger.set_stasis_path(run_id, str(persistence.json_file))
+        persistence = _phylactery_for(run, workflow, substrate)
 
         async def _on_stasis_enter() -> None:
             # The run parks while the orchestrator transitions hardware (C7). It holds no
@@ -230,12 +212,11 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
                 deps=services,
             )
         if isinstance(result, RunParked):
-            return await _commit_consent_park(substrate, ledger, emitter, run_id, persistence, result)
+            return await _commit_consent_park(substrate, ledger, emitter, run_id, result)
         await settle_terminal(RunStatus.DONE)
         await _cleanup_claim_resources(
             substrate,
             run,
-            recorded_path=run.stasis_path,
             persistence=persistence,
         )
     except asyncio.CancelledError:
@@ -246,7 +227,6 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
                 _cleanup_claim_resources(
                     substrate,
                     run,
-                    recorded_path=run.stasis_path,
                     persistence=persistence,
                 )
             )
@@ -268,7 +248,6 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
                 _cleanup_claim_resources(
                     substrate,
                     run,
-                    recorded_path=run.stasis_path,
                     persistence=persistence,
                 )
             )
@@ -326,7 +305,7 @@ async def _settle_interrupted_claim(
         return False
     if current.status in TERMINAL_STATUSES:
         if current.status is RunStatus.CANCELLED and current.enqueue_seq == enqueue_seq:
-            await _cleanup_cancelled_claim(substrate, run, current, persistence=persistence)
+            await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
         return False
     return await _fail_claimed_run(
         substrate,
@@ -340,7 +319,6 @@ async def _settle_interrupted_claim(
 async def _cleanup_cancelled_claim(
     substrate: RunSubstrate,
     run: RunRecord,
-    current: RunRecord,
     *,
     persistence: PhylacteryProtocol | None,
 ) -> None:
@@ -348,7 +326,6 @@ async def _cleanup_cancelled_claim(
     await _cleanup_claim_resources(
         substrate,
         run,
-        recorded_path=current.stasis_path or run.stasis_path,
         persistence=persistence,
     )
 
@@ -374,7 +351,6 @@ async def _fail_claimed_run(
     await _cleanup_claim_resources(
         substrate,
         run,
-        recorded_path=run.stasis_path,
         persistence=persistence,
     )
     return True
@@ -384,16 +360,15 @@ async def _cleanup_claim_resources(
     substrate: RunSubstrate,
     run: RunRecord,
     *,
-    recorded_path: str | None,
     persistence: PhylacteryProtocol | None,
 ) -> None:
     """Best-effort terminal cleanup that can never hide committed run truth."""
     substrate.context.release(run.run_id)
     try:
         if persistence is None:
-            await _cleanup_recorded_stasis(substrate.ledger, run.run_id, recorded_path)
+            await substrate.stasis_store.delete(run.run_id)
         else:
-            await _cleanup_stasis(substrate.ledger, run.run_id, persistence)
+            await _cleanup_stasis(substrate, run.run_id, persistence)
     except Exception as exc:  # noqa: BLE001 - terminal truth already committed
         # Terminal publication must not depend on deleting a checkpoint pointer.
         # Reconciliation can retry cleanup from the retained durable path.
@@ -409,7 +384,6 @@ async def _commit_consent_park(
     ledger: RunLedger,
     emitter: RunEmitter,
     run_id: str,
-    persistence: PhylacteryProtocol,
     parked: RunParked,
 ) -> dict[str, Any]:
     """Commit the consent park, then close the pre-flip verdict race (F1).
@@ -423,8 +397,6 @@ async def _commit_consent_park(
     `engine.approve`} wins the CAS — no double-enqueue (F4).
     """
     await ledger.set_consent(run_id, parked.consent_id)
-    if isinstance(persistence, DurableStasisPhylactery):
-        await ledger.set_stasis_path(run_id, str(persistence.json_file))
     await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
     emitter.consent(parked.consent_id, tool_name=parked.tool_name)
 
@@ -436,26 +408,10 @@ async def _commit_consent_park(
     return {"status": "awaiting_consent", "run_id": run_id}
 
 
-async def _cleanup_stasis(ledger: RunLedger, run_id: str, persistence: PhylacteryProtocol) -> None:
-    """Unlink a terminal run's durable checkpoint, then clear its ledger pointer.
-
-    Covers fresh durable runs that finish without ever parking (and the resumed run
-    that settles): the checkpoint is no longer needed once the terminal status commit
-    has succeeded.  Deleting first keeps a retryable ledger pointer if unlink fails.
-    """
-    path = str(persistence.json_file) if isinstance(persistence, DurableStasisPhylactery) else None
-    await _cleanup_recorded_stasis(ledger, run_id, path)
-
-
-async def _cleanup_recorded_stasis(ledger: RunLedger, run_id: str, path: str | None) -> None:
-    """Best-effort file removal with a durable pointer retained on unlink failure."""
-    if path is not None:
-        try:
-            Path(path).unlink(missing_ok=True)
-        except OSError as exc:
-            logger.warning("stasis_cleanup_failed", run_id=run_id, path=path, error=str(exc))
-            return
-    await ledger.set_stasis_path(run_id, None)
+async def _cleanup_stasis(substrate: RunSubstrate, run_id: str, _persistence: PhylacteryProtocol) -> None:
+    """Delete a terminal durable checkpoint after the terminal run commit."""
+    if isinstance(_persistence, DurableStasisPhylactery):
+        await substrate.stasis_store.delete(run_id)
 
 
 async def _settle_terminal(
@@ -512,7 +468,7 @@ async def reconcile_runs(ctx: dict[str, Any], *, boot_cutoff: datetime | None = 
             if not _predates_boot(run, boot_cutoff):
                 continue  # claimed by THIS process after boot — not an orphan (F3)
             await ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
-            await _cleanup_recorded_stasis(ledger, run.run_id, run.stasis_path)
+            await substrate.stasis_store.delete(run.run_id)
             await _emit_terminal(substrate, run.run_id)
             reconciled.append(run.run_id)
 
@@ -552,7 +508,7 @@ async def reconcile_runs(ctx: dict[str, Any], *, boot_cutoff: datetime | None = 
         if job is not None:
             continue
         await ledger.set_status(run.run_id, RunStatus.FAILED, error="enqueue lost")
-        await _cleanup_recorded_stasis(ledger, run.run_id, run.stasis_path)
+        await substrate.stasis_store.delete(run.run_id)
         await _emit_terminal(substrate, run.run_id)
         reconciled.append(run.run_id)
 

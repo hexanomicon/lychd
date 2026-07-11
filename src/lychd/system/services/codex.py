@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 from tomlkit import dumps as _tomlkit_dumps  # pyright: ignore[reportUnknownVariableType]
 
 from lychd.config.runes import ConfigWriter, RuneConfig
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import Settings, get_settings
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
 
 if TYPE_CHECKING:
@@ -22,6 +22,22 @@ logger = structlog.get_logger()
 def _toml_dumps(data: dict[str, Any]) -> str:
     """Narrow tomlkit's untyped Mapping signature at the dependency boundary."""
     return _tomlkit_dumps(data)
+
+
+def _render_default_settings_toml(settings: Settings) -> str:
+    """Render defaults with an operator-facing, inert extension selection hint."""
+    content = _toml_dumps(settings.model_dump(mode="json", exclude_none=True))
+    extension_table = "[extensions]\n"
+    extension_hint = (
+        "# Optional built-ins: choose only what this machine needs.\n"
+        '# Local llama.cpp: builtins = ["animator/llamacpp"]\n'
+        '# Other choices: "animator/vllm", "animator/sglang",\n'
+        '#                "observability/phoenix", "simulation"\n'
+    )
+    if extension_table not in content:
+        msg = "Settings TOML did not contain the required [extensions] table."
+        raise RuntimeError(msg)
+    return content.replace(extension_table, f"{extension_table}{extension_hint}", count=1)
 
 
 def _write_new_atomic(path: Path, content: str, *, mode: int) -> bool:
@@ -96,7 +112,7 @@ class CodexService:
             return
 
         settings = get_settings()
-        content = _toml_dumps(settings.model_dump(mode="json", exclude_none=True))
+        content = _render_default_settings_toml(settings)
         if not _write_new_atomic(self.toml_path, content, mode=0o600):
             logger.debug("prime_directive_exists", path=str(self.toml_path))
             return

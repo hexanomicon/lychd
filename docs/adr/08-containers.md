@@ -211,12 +211,12 @@ The `llama-server` router mode supports a models preset `.ini` file (`--models-p
 The container topology acts as the foundational layer for the system's defense-in-depth model. While Quadlets govern the physical resource boundaries (VRAM, CPUs, and mount propagation), the logical authority boundaries—such as the split between the trusted **Vessel** and the semi-trusted **Tomb** execution plane—are governed by strict security policy.
 
 The implemented core mount floor is intentionally narrow. The Vessel receives the Codex read-only,
-its configured stasis directory and Lab read-write, Core and Extensions read-only, and—only in the
+Lab read-write, Core and Extensions read-only, and—only in the
 default `host-reactor` mode—the Reactor inbox read-write and sibling terminal journal read-only. It
 receives no whole-Crypt mount. The migration gate receives only the read-only configuration/code mounts
 needed to run migrations. Soulstones receive only explicitly configured model/runtime volumes and
 secrets. Every global, rune, and adapter-contributed volume passes one protected-root gate before
-rendering, so neither its host nor container endpoint may overlap the Codex, Crypt, stasis,
+rendering, so neither its host nor container endpoint may overlap the Codex, Crypt,
 trigger/Reactor, or user-systemd binding sites.
 
 The planned Tomb container is a **brainless executor**. When implemented, it will run no agent

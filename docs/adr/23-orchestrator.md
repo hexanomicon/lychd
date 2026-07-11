@@ -194,8 +194,7 @@ actuator = "host-reactor"
 
 `host_reactor_dir` defaults to the XDG-derived LychD Reactor inbox and may be overridden with an
 absolute operator-owned path whose final segment remains `inbox`. Its sibling journal is derived;
-the configured stasis root cannot overlap either directory, and `lychd init` provisions the
-validated paths. These paths are resolved at composition and never copied into a
+`lychd init` provisions the validated paths. These paths are resolved at composition and never copied into a
 `TransitionIntent`.
 
 - **`host-reactor` (caged default):** writes one `0600` JSON intent using sibling-temp creation,

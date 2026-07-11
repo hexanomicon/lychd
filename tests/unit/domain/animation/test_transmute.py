@@ -6,7 +6,8 @@ import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 import lychd.domain.animation.transmute as transmute_mod
-from lychd.config.settings import OrchestrationSettings, Settings, StasisSettings, SwitchingSettings, get_settings
+from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
+from lychd.config.settings.root import Settings, get_settings
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
@@ -45,10 +46,10 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     # The Oculus (Phoenix) is no longer an unconditional core container; it is
     # emitted only when an observability extension rune is active.
     vessel = containers["lychd-vessel"]
-    assert settings.app.secret_key_secret in vessel.secrets
-    assert settings.db.password_secret in vessel.secrets
-    assert vessel.env_vars["APP__SECRET_KEY_FILE"] == f"/run/secrets/{settings.app.secret_key_secret}"
-    assert vessel.env_vars["DB__PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert settings.server.web.secret_key_secret in vessel.secrets
+    assert settings.server.database.password_secret in vessel.secrets
+    assert vessel.env_vars["LYCHD_APP_SECRET_KEY_FILE"] == f"/run/secrets/{settings.server.web.secret_key_secret}"
+    assert vessel.env_vars["LYCHD_DB_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert vessel.user == "%U"
     assert vessel.requires == ["lychd-migrate.service", "lychd-reactor.path"]
     assert vessel.after == ["lychd-migrate.service", "lychd-reactor.path"]
@@ -63,8 +64,8 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
 
     phylactery = containers["lychd-phylactery"]
     assert phylactery.user is None
-    assert phylactery.secrets == [settings.db.password_secret]
-    assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.db.password_secret}"
+    assert phylactery.secrets == [settings.server.database.password_secret]
+    assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert phylactery.wants == ["lychd-pod.service"]
     assert phylactery.after == ["lychd-pod.service"]
     assert phylactery.volumes[0].host_path == constants.PATH_POSTGRESS_DATA_DIR
@@ -113,7 +114,6 @@ def test_transmute_soulstone_to_manifest(transmuter: Transmuter) -> None:
     # explicit model/runtime volumes are present.
     volumes = [str(v) for v in manifest.volumes]
     assert not any("config/lychd" in v for v in volumes)
-    assert not any("share/lychd/stasis" in v for v in volumes)
     assert not any("share/lychd/triggers" in v for v in volumes)
 
 
@@ -159,7 +159,7 @@ def test_transmute_merges_runtime_podman_args() -> None:
     assert "--ipc=host" in manifest.podman_args
 
 
-@pytest.mark.parametrize("source", ["default", "rune", "adapter"])
+@pytest.mark.parametrize("source", ["rune", "adapter"])
 @pytest.mark.parametrize(
     "protected_root",
     [
@@ -177,11 +177,9 @@ def test_soulstone_mount_sources_cannot_overlap_control_roots(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Defaults, Rune volumes, and adapter plans share one fail-closed boundary."""
+    """Rune and adapter volumes share one fail-closed boundary."""
     safe_host = tmp_path / "models"
     malicious_mount = f"{protected_root}:/models:ro" if side == "host" else f"{safe_host}:{protected_root}:ro"
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [malicious_mount] if source == "default" else [f"{safe_host}:/models:ro"]
     rune_volumes = [malicious_mount] if source == "rune" else []
     adapter_volumes = [malicious_mount] if source == "adapter" else []
 
@@ -190,7 +188,6 @@ def test_soulstone_mount_sources_cannot_overlap_control_roots(
             _ = soulstone
             return RuntimePlan(volumes=adapter_volumes)
 
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
     transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
     stone = SoulstoneFactory.build(name="confined", image="example/runtime", volumes=rune_volumes)
 
@@ -204,10 +201,7 @@ def test_soulstone_mount_check_resolves_host_symlink_aliases(
 ) -> None:
     alias = tmp_path / "codex-alias"
     alias.symlink_to(constants.PATH_CODEX_ROOT, target_is_directory=True)
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [f"{alias}:/models:ro"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="alias", image="example/runtime")
+    stone = SoulstoneFactory.build(name="alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -221,10 +215,7 @@ def test_safe_host_symlink_is_pinned_to_its_canonical_target(
     target.mkdir()
     alias = tmp_path / "model-alias"
     alias.symlink_to(target, target_is_directory=True)
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [f"{alias}:/models:ro"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="safe-alias", image="example/runtime")
+    stone = SoulstoneFactory.build(name="safe-alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
 
     manifests = Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
     manifest = next(
@@ -235,7 +226,7 @@ def test_safe_host_symlink_is_pinned_to_its_canonical_target(
     assert manifest.volumes[0].container_path == Path("/models")
 
 
-@pytest.mark.parametrize("control_path", ["stasis", "inbox", "journal"])
+@pytest.mark.parametrize("control_path", ["inbox", "journal"])
 @pytest.mark.parametrize("side", ["host", "container"])
 def test_soulstone_mounts_respect_configured_control_paths(
     control_path: str,
@@ -243,23 +234,16 @@ def test_soulstone_mounts_respect_configured_control_paths(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    stasis_dir = tmp_path / "control" / "stasis"
     switching = SwitchingSettings(host_reactor_dir=tmp_path / "control" / "reactor" / "inbox")
-    settings = Settings(
-        stasis=StasisSettings(dir=stasis_dir),
-        orchestration=OrchestrationSettings(switching=switching),
-    )
+    settings = Settings(orchestration=OrchestrationSettings(switching=switching))
     selected = {
-        "stasis": stasis_dir,
         "inbox": switching.host_reactor_dir,
         "journal": switching.host_reactor_journal_dir,
     }[control_path]
     safe_host = tmp_path / "models"
-    settings.lychd.default_soulstone_mounts = (
-        [f"{selected}:/models:ro"] if side == "host" else [f"{safe_host}:{selected}:ro"]
-    )
     monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="configured-control", image="example/runtime")
+    mounts = [f"{selected}:/models:ro"] if side == "host" else [f"{safe_host}:{selected}:ro"]
+    stone = SoulstoneFactory.build(name="configured-control", image="example/runtime", volumes=mounts)
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -269,10 +253,11 @@ def test_soulstone_mounts_require_absolute_endpoints(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [f"{tmp_path / 'models'}:relative/models:ro"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="relative", image="example/runtime")
+    stone = SoulstoneFactory.build(
+        name="relative",
+        image="example/runtime",
+        volumes=[f"{tmp_path / 'models'}:relative/models:ro"],
+    )
 
     with pytest.raises(ValueError, match="container path must be absolute"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -282,11 +267,12 @@ def test_soulstone_container_mount_cannot_use_double_slash_alias(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    settings = Settings()
     doubled_codex = f"/{constants.PATH_CODEX_ROOT}"
-    settings.lychd.default_soulstone_mounts = [f"{tmp_path / 'models'}:{doubled_codex}:ro"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="double-slash", image="example/runtime")
+    stone = SoulstoneFactory.build(
+        name="double-slash",
+        image="example/runtime",
+        volumes=[f"{tmp_path / 'models'}:{doubled_codex}:ro"],
+    )
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -296,10 +282,11 @@ def test_soulstone_mounts_reject_systemd_path_specifiers(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [f"{tmp_path / 'models'}:/%h/.config/lychd:ro"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
-    stone = SoulstoneFactory.build(name="specifier", image="example/runtime")
+    stone = SoulstoneFactory.build(
+        name="specifier",
+        image="example/runtime",
+        volumes=[f"{tmp_path / 'models'}:/%h/.config/lychd:ro"],
+    )
 
     with pytest.raises(ValueError, match="unsafe systemd characters"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -309,12 +296,8 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    default_host = tmp_path / "models"
     rune_host = tmp_path / "runtime-cache"
     adapter_host = tmp_path / "adapter-data"
-    settings = Settings()
-    settings.lychd.default_soulstone_mounts = [f"{default_host}:/models:ro,Z"]
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
 
     class StubRuntimePlanner:
         def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
@@ -324,7 +307,7 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
     stone = SoulstoneFactory.build(
         name="ordinary",
         image="example/runtime",
-        volumes=[f"{rune_host}:/runtime-cache:rw"],
+        volumes=[f"{rune_host}:/runtime-cache:rw", f"{tmp_path / 'models'}:/models:ro,Z"],
     )
     manifests = Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all([stone])
     manifest = next(
@@ -332,8 +315,8 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
     )
 
     assert [(mount.host_path, mount.container_path, mount.options) for mount in manifest.volumes] == [
-        (default_host, Path("/models"), ["ro", "Z"]),
         (rune_host, Path("/runtime-cache"), ["rw"]),
+        (tmp_path / "models", Path("/models"), ["ro", "Z"]),
         (adapter_host, Path("/adapter-data"), ["ro"]),
     ]
 

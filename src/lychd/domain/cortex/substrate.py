@@ -21,10 +21,10 @@ from typing import TYPE_CHECKING, Any
 
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.cortex.stasis import InMemoryStasisStore
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
-    from pathlib import Path
 
     from lychd.agents.deps import Sigil
     from lychd.agents.factory import AgentForge
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.cortex.stasis import StasisStore
     from lychd.domain.web.fragments import FragmentRegistry
 
 __all__ = [
@@ -52,12 +53,6 @@ def _default_sigil_provider() -> Callable[[], Sigil]:
 
 def _empty_queues() -> dict[str, RunQueue]:
     return {}
-
-
-def _default_stasis_dir() -> Path:
-    from lychd.config.settings import get_settings
-
-    return get_settings().stasis.dir
 
 
 @dataclass
@@ -86,10 +81,9 @@ class RunSubstrate:
     # Topology A: API cancellation and the in-process worker share this settlement
     # fence so an abort-triggered CancelledError cannot race CANCELLED with FAILED.
     cancellations: RunCancellationCoordinator = field(default_factory=RunCancellationCoordinator)
-    # Wave 4: the Durable Stasis checkpoint root (consent tier). Defaulted from
-    # settings so existing test construction sites keep compiling; the root threads
-    # settings.stasis.dir explicitly.
-    stasis_dir: Path = field(default_factory=_default_stasis_dir)
+    # Durable Stasis is a run-keyed store. Production injects Postgres; the memory
+    # profile uses this DB-free implementation only for tests/local memory mode.
+    stasis_store: StasisStore = field(default_factory=InMemoryStasisStore)
 
     def build_services(self, *, sigil: Sigil | None = None) -> WorkflowServices:
         """Assemble run services with the persisted caller identity.

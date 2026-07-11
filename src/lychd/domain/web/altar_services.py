@@ -12,10 +12,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from lychd.agents.services import settings_sigil_provider
+from lychd.agents.services import default_sigil
 from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.context import ContextOrchestrator
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
     from litestar.contrib.jinja import JinjaTemplateEngine
 
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.adapters.contracts import PortalRuntimeFactory, SoulstoneRuntimeAdapter
     from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.cortex.engine import RunQueue
@@ -153,14 +153,14 @@ def build_altar_services(
     """Assemble the `AltarServices` container (the sole construction site).
 
     The run ledger is chosen by the persistence ``profile`` (defaults to
-    ``settings.db.profile`` — ``postgres`` in production, ``memory`` in DB-free
+    ``settings.server.database.profile`` — ``postgres`` in production, ``memory`` in DB-free
     tests). The bus tees non-TOKEN events into whichever ledger is selected, so the
     choice MUST happen here, before the bus is built.
     """
     if settings is None:
         settings = get_settings()
     if profile is None:
-        profile = settings.db.profile
+        profile = settings.server.database.profile
     routing = _routing_from_settings(settings)
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
@@ -184,7 +184,7 @@ def build_altar_services(
     )
     context_orchestrator = ContextOrchestrator(registry=registry)
     fragments = build_fragment_registry()
-    bridge_sessions = _build_session_store(profile, sigil_name=settings.sigil.name)
+    bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
     consents = _build_consent_ledger(profile)
     tickets = TicketStore()
     projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions, consents=consents)
@@ -192,6 +192,15 @@ def build_altar_services(
     bus = InProcessEventBus(ledger=ledger)
     workflows = builtin_workflow_registry()
     cancellations = RunCancellationCoordinator()
+    if profile == "postgres":
+        from lychd.db.checkpoints import PostgresStasisStore
+        from lychd.db.engine import get_session_factory
+
+        stasis_store = PostgresStasisStore(get_session_factory())
+    else:
+        from lychd.domain.cortex.stasis import InMemoryStasisStore
+
+        stasis_store = InMemoryStasisStore()
     substrate = RunSubstrate(
         ledger=ledger,
         bus=bus,
@@ -203,11 +212,11 @@ def build_altar_services(
         turns=bridge_sessions,
         consents=consents,
         forge=default_forge(),
-        sigil_provider=settings_sigil_provider(settings),
+        sigil_provider=default_sigil,
         leases=leases,
         queues=queues,
         cancellations=cancellations,
-        stasis_dir=settings.stasis.dir,
+        stasis_store=stasis_store,
     )
     run_engine = RunEngine(
         ledger=ledger,
@@ -216,6 +225,7 @@ def build_altar_services(
         queue_router=QueueRouter(routing=routing),
         queues=queues,
         cancellations=cancellations,
+        stasis_store=stasis_store,
     )
     return AltarServices(
         registry=registry,

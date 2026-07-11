@@ -184,17 +184,11 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
 
     from lychd.domain.animation.capabilities import GrantLease
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
+    from lychd.domain.codex.middleware import sigil_auth_middleware
     from lychd.domain.cortex.substrate import reset_run_substrate as _reset
     from lychd.domain.cortex.substrate import set_run_substrate as _publish
     from lychd.interface.api.orchestrator import OrchestratorController
     from lychd.interface.web.deps import web_dependencies
-
-    # This focused controller app intentionally omits the production auth
-    # middleware; select the documented test/dev guard floor explicitly.
-    monkeypatch.setattr(
-        "lychd.domain.codex.guards.get_settings",
-        lambda: SimpleNamespace(sigil=SimpleNamespace(enforce=False)),
-    )
 
     engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
     queues = {"runs": _InfoQueue(queued=3, active=1), "rites": _InfoQueue(queued=0, active=0)}
@@ -225,6 +219,7 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
             route_handlers=[OrchestratorController],
             dependencies=web_dependencies,
             lifespan=[_lifespan],
+            middleware=[sigil_auth_middleware()],
         ) as client:
             resp = client.get("/orchestrator/queues")
         assert resp.status_code == 200

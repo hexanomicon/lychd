@@ -25,7 +25,7 @@ def _intent(run_id: str = "run_1") -> Intent:
 
 def test_profile_switch_selects_ledger_impl(monkeypatch: pytest.MonkeyPatch) -> None:
     """H5/S3: the persistence profile selects the RunLedger impl (DB-free construction)."""
-    monkeypatch.setenv("DB__PASSWORD", "test-db-password")
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", "test-db-password")
     from lychd.domain.cortex.ledger import DbRunLedger
     from lychd.domain.web.altar_services import _build_run_ledger
 

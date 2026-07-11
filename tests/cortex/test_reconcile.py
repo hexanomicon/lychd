@@ -4,8 +4,6 @@
 # pyright: reportArgumentType=false
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -40,7 +38,6 @@ def _substrate() -> tuple[RunSubstrate, InMemoryRunLedger, InMemoryConsentLedger
         turns=BridgeSessionStore(),
         consents=consents,
         forge=default_forge(),
-        stasis_dir=Path(tempfile.mkdtemp()),
     )
     return substrate, ledger, consents
 

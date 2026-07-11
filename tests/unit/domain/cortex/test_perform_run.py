@@ -10,9 +10,7 @@ the graph runs on a `TestModel` handed through the fake dispatcher's grant.
 from __future__ import annotations
 
 import asyncio
-import tempfile
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import pydantic_ai.models
@@ -26,6 +24,7 @@ from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
@@ -94,7 +93,7 @@ def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, Bri
         turns=sessions,
         forge=default_forge(),
         queues={"runs": _ProbeQueue()},
-        stasis_dir=Path(tempfile.mkdtemp()),  # bridge_chat is a Gate (durable) workflow (Wave 4)
+        stasis_store=InMemoryStasisStore(),
     )
     return substrate, ledger, sessions
 
@@ -308,7 +307,7 @@ async def test_cancellation_after_terminal_commit_still_emits_done(
     run = await ledger.get("terminal-cancel")
     assert run is not None
     assert run.status is RunStatus.DONE
-    assert run.stasis_path is None
+    assert not await substrate.stasis_store.exists("terminal-cancel")
     dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
     assert [event.data for event in dones] == [RunStatus.DONE.value]
 
@@ -325,7 +324,7 @@ async def test_cancellation_during_terminal_cleanup_is_preserved(
     channel = substrate.bus.open("cleanup-cancel")
     cleanup_entered = asyncio.Event()
     cleanup_release = asyncio.Event()
-    original_set_stasis = ledger.set_stasis_path
+    original_delete = substrate.stasis_store.delete
 
     class _ImmediateRunner:
         def __init__(self, **_kwargs: Any) -> None:
@@ -334,14 +333,13 @@ async def test_cancellation_during_terminal_cleanup_is_preserved(
         async def run_graph(self, *_args: Any, **_kwargs: Any) -> None:
             return None
 
-    async def delayed_pointer_clear(run_id: str, path: str | None) -> None:
-        if path is None:
-            cleanup_entered.set()
-            await cleanup_release.wait()
-        await original_set_stasis(run_id, path)
+    async def delayed_delete(run_id: str) -> None:
+        cleanup_entered.set()
+        await cleanup_release.wait()
+        await original_delete(run_id)
 
     monkeypatch.setattr(runs_mod, "GraphRunner", _ImmediateRunner)
-    monkeypatch.setattr(ledger, "set_stasis_path", delayed_pointer_clear)
+    monkeypatch.setattr(substrate.stasis_store, "delete", delayed_delete)
     task = asyncio.create_task(perform_run({"run_substrate": substrate}, run_id="cleanup-cancel"))
     await cleanup_entered.wait()
 
@@ -353,7 +351,7 @@ async def test_cancellation_during_terminal_cleanup_is_preserved(
     run = await ledger.get("cleanup-cancel")
     assert run is not None
     assert run.status is RunStatus.DONE
-    assert run.stasis_path is None
+    assert not await substrate.stasis_store.exists("cleanup-cancel")
     dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
     assert [event.data for event in dones] == [RunStatus.DONE.value]
 
@@ -368,7 +366,7 @@ async def test_cleanup_failure_cannot_hide_committed_failed_terminal(
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "cleanup-fail")
     channel = substrate.bus.open("cleanup-fail")
-    original_set_stasis = ledger.set_stasis_path
+    await substrate.stasis_store.replace("cleanup-fail", [])
 
     class _FailingRunner:
         def __init__(self, **_kwargs: Any) -> None:
@@ -378,14 +376,12 @@ async def test_cleanup_failure_cannot_hide_committed_failed_terminal(
             msg = "graph failed"
             raise RuntimeError(msg)
 
-    async def fail_pointer_clear(run_id: str, path: str | None) -> None:
-        if path is None:
-            msg = "pointer store unavailable"
-            raise RuntimeError(msg)
-        await original_set_stasis(run_id, path)
+    async def fail_delete(_run_id: str) -> None:
+        msg = "checkpoint store unavailable"
+        raise RuntimeError(msg)
 
     monkeypatch.setattr(runs_mod, "GraphRunner", _FailingRunner)
-    monkeypatch.setattr(ledger, "set_stasis_path", fail_pointer_clear)
+    monkeypatch.setattr(substrate.stasis_store, "delete", fail_delete)
 
     with pytest.raises(RuntimeError, match="graph failed"):
         await perform_run({"run_substrate": substrate}, run_id="cleanup-fail")
@@ -393,7 +389,7 @@ async def test_cleanup_failure_cannot_hide_committed_failed_terminal(
     run = await ledger.get("cleanup-fail")
     assert run is not None
     assert run.status is RunStatus.FAILED
-    assert run.stasis_path is not None  # retained so reconciliation can retry cleanup
+    assert await substrate.stasis_store.exists("cleanup-fail")  # retained for reconciliation to retry cleanup
     dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
     assert [event.data for event in dones] == [RunStatus.FAILED.value]
 
@@ -444,6 +440,7 @@ async def test_api_abort_cancellation_wins_over_worker_failure(monkeypatch: pyte
         queue_router=QueueRouter(),
         queues=substrate.queues,
         cancellations=substrate.cancellations,
+        stasis_store=substrate.stasis_store,
     )
     worker = asyncio.create_task(perform_run({"run_substrate": substrate}, run_id="api-cancel"))
     queue.worker = worker
@@ -457,7 +454,7 @@ async def test_api_abort_cancellation_wins_over_worker_failure(monkeypatch: pyte
     assert run is not None
     assert run.status is RunStatus.CANCELLED
     assert run.error is None
-    assert run.stasis_path is None
+    assert not await substrate.stasis_store.exists("api-cancel")
     dones = [event for event in channel._replay if event.kind is RunEventKind.DONE]
     assert [event.data for event in dones] == [RunStatus.CANCELLED.value]
 
@@ -472,6 +469,7 @@ async def test_old_park_hop_cannot_fail_resume_that_already_claimed(
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "resume-owner")
+    await substrate.stasis_store.replace("resume-owner", [])
     substrate.context._cache["resume-owner"] = object()
 
     class _DecidedConsents:
@@ -519,7 +517,7 @@ async def test_old_park_hop_cannot_fail_resume_that_already_claimed(
     assert run.status is RunStatus.RUNNING
     assert run.enqueue_seq == 1
     assert run.error is None
-    assert run.stasis_path is not None
+    assert await substrate.stasis_store.exists("resume-owner")
     assert "resume-owner" in substrate.context._cache
     session = await sessions.get_session(run.session_id)
     assert session is not None
@@ -542,8 +540,7 @@ async def test_perform_run_failure_marks_failed_and_emits_done() -> None:
     assert run is not None
     assert run.status is RunStatus.FAILED
     assert run.error is not None
-    assert run.stasis_path is None
-    assert not (substrate.stasis_dir / "run_3.json").exists()
+    assert not await substrate.stasis_store.exists("run_3")
 
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
@@ -764,8 +761,8 @@ async def test_reconcile_runs_preserves_queued_when_broker_probe_fails() -> None
 
 
 @pytest.mark.asyncio
-async def test_reconcile_respects_boot_cutoff_and_unlinks_stasis() -> None:
-    """Boot-gate: a run started AFTER the cutoff survives; a pre-boot orphan is swept and its stasis file unlinked (F3/F6)."""
+async def test_reconcile_respects_boot_cutoff_and_deletes_checkpoint() -> None:
+    """Boot-gate: a run started AFTER the cutoff survives; a pre-boot orphan is swept and its checkpoint deleted."""
     from datetime import UTC, datetime, timedelta
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
@@ -774,10 +771,8 @@ async def test_reconcile_respects_boot_cutoff_and_unlinks_stasis() -> None:
     await ledger.set_status("old", RunStatus.RUNNING)
     await ledger.set_status("new", RunStatus.RUNNING)  # started_at = now (this boot)
 
-    # Give "old" an orphaned durable checkpoint on disk (as an AWAITING_HARDWARE crash would).
-    stasis_file = substrate.stasis_dir / "old.json"
-    stasis_file.write_text("{}")
-    await ledger.set_stasis_path("old", str(stasis_file))
+    # Give "old" an orphaned durable checkpoint (as an AWAITING_HARDWARE crash would).
+    await substrate.stasis_store.replace("old", [])
     old = await ledger.get("old")
     assert old is not None
     assert old.started_at is not None
@@ -790,8 +785,7 @@ async def test_reconcile_respects_boot_cutoff_and_unlinks_stasis() -> None:
     swept = await ledger.get("old")
     assert swept is not None
     assert swept.status is RunStatus.FAILED
-    assert swept.stasis_path is None
-    assert not stasis_file.exists()  # F6: the orphaned checkpoint was unlinked
+    assert not await substrate.stasis_store.exists("old")
     kept = await ledger.get("new")
     assert kept is not None
     assert kept.status is RunStatus.RUNNING  # F3: a run this boot claimed is never swept

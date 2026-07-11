@@ -76,10 +76,9 @@ actuator = "host-reactor"
 This causes `lychd bind` to inscribe the host path/service consumer and to mount the configured
 Reactor inbox read-write plus its derived sibling journal read-only into the Vessel.
 `actuator = "systemd"` is the explicit
-uncaged/development choice. The default durable graph checkpoint root is
-`~/.local/share/lychd/stasis`; that exact directory is mounted read-write, not the whole Crypt.
-Custom Reactor/stasis paths must be absolute, the Reactor directory must be named `inbox`, and
-stasis cannot overlap that inbox or its derived sibling journal. `reactor_ack_timeout_s` bounds how
+uncaged/development choice. Durable graph checkpoints live in Postgres; no checkpoint directory is
+mounted into the Vessel. The custom Reactor path must be absolute and name `inbox`.
+`reactor_ack_timeout_s` bounds how
 long an intent may remain unclaimed; a claimed transition retains the admission fence until a
 terminal journal receipt. `lychd init` provisions the
 validated configured paths. Paths containing `%`, backslashes, or non-printable characters are

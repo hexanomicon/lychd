@@ -8,7 +8,6 @@ icon: material/cog-box
 !!! abstract "Context and Problem Statement"
     Configuration fragmentation creates structural blindness. When intent is scattered across hardcoded paths, environment variables, and implicit runtime state, the system loses determinism. In a Sepulcher that bridges Host and Container, this fragmentation produces port collisions, permission mismatches, and non-reproducible infrastructure states.
 
-    A sovereign system requires a single source of truth, strict validation before manifestation, and a deterministic mapping between filesystem topology and runtime behavior.
 
 ---
 
@@ -80,12 +79,26 @@ It contains two distinct domains:
 
 Contains **global configuration only**.
 
-Examples include:
+Python consumers enter through `lychd.config.settings`. It exports `Settings`,
+`get_settings`, and every named configuration section type (for example,
+`ServerSettings` and `SwitchingSettings`). The section model modules are an
+internal file layout; callers do not import from them. A loaded root is still
+navigated as `settings.server`, `settings.orchestration`, and
+`settings.extensions`.
 
-- Application-level settings
-- Core service configuration
-- Coven alliances
-- Global defaults
+Its only top-level sections are:
+
+- `[server]`: the one LychD process and services it operates — HTTP, database,
+  Vite, logging, and in-process queue workers.
+- `[orchestration]`: semantic run routing and runtime-switching policy.
+- `[extensions]`: explicitly selected optional extensions.
+
+The bootstrap server accepts only loopback bind addresses (`127.0.0.1` or
+`::1`). It has a fixed trusted local Sigil, not caller authentication. External
+traffic must enter through the authenticated Ward/Proxy path defined by IAM.
+
+Extension instance intent belongs to its Rune. In particular, model mounts,
+runtime images, portals, and coven membership do not belong in global settings.
 
 The caged foundation selects the Host Reactor explicitly in the generated default tree:
 
@@ -97,17 +110,14 @@ reactor_ack_timeout_s = 120.0 # claim deadline; claimed work remains fenced to t
 
 `host-reactor` writes typed transition intents to the configured `host_reactor_dir` and is the
 normal caged default. Selecting `systemd` is an explicit uncaged/development choice that gives the
-process direct access to the user Systemd bus. The default `[stasis].dir` is
-`~/.local/share/lychd/stasis`, inside the Crypt; binding mounts that exact directory read-write into
-the Vessel rather than granting a blanket Crypt mount.
+process direct access to the user Systemd bus. Durable graph checkpoints are owned by Postgres;
+there is no Stasis filesystem path or Vessel checkpoint mount.
 
-Both control paths must be absolute and are lexically normalized. The Reactor path must name an
-`inbox` directory; its sibling `journal` is derived rather than configured independently.
-`stasis.dir` may neither contain nor be contained by the inbox or journal. `lychd init` provisions
-the configured inbox, sibling journal, and stasis directory with the owner-only privilege service,
-so a valid non-default absolute layout is operational rather than merely parseable. Percent signs,
-backslashes, and non-printable characters are rejected because these paths enter generated systemd
-units.
+The Reactor control path must be absolute and is lexically normalized. It must name an `inbox`
+directory; its sibling `journal` is derived rather than configured independently. `lychd init`
+provisions both with the owner-only privilege service, so a valid non-default layout is operational
+rather than merely parseable. Percent signs, backslashes, and non-printable characters are rejected
+because these paths enter generated systemd units.
 
 `reactor_ack_timeout_s` must be positive and bounds only the unclaimed inbox phase. On expiry the
 Vessel retracts an unclaimed file before failing. If the host already moved it to `.processing`,
@@ -116,7 +126,9 @@ the queue/admission barrier remains closed until a read-only `.completed`, `.dec
 window. A `.declined` receipt proves a failed precondition before effects and reopens the initial
 forward barrier without mutation containment.
 
-Schema authority for global settings resides in `src/lychd/config/settings.py`.
+Schema authority for global settings resides in `src/lychd/config/settings/`:
+`root.py` composes the root; one file each owns server, orchestration, and
+extensions. Each owner validates rules local to its own settings branch.
 `src/lychd/config/components.py` consumes the validated settings object into framework component configuration.
 
 It carries no multi-instance infrastructure definitions.
@@ -131,7 +143,7 @@ The Global config defines global truth.
 
 ---
 
-## 2. The Schema Layer (`src/lychd/config/settings.py`)
+## 2. The Schema Layer (`src/lychd/config/settings/`)
 
 The Schema Layer provides type authority and deterministic loading.
 
@@ -140,28 +152,29 @@ It is implemented using Pydantic and defines:
 - Required fields
 - Strict typing
 - Secret-reference enforcement for credentials (`*_secret` fields)
-- One `BaseSettings` root (`Settings`) with ordinary `BaseModel` sections beneath it
+- One `BaseSettings` root (`Settings`) with ordinary strict `BaseModel` sections beneath it;
+  unknown fields and obsolete section names abort loading
 - Deterministic source precedence (`Settings.settings_customise_sources()`):
 
 ```txt
 
-Init kwargs → Explicit Environment Overrides → Pydantic dotenv source, when enabled → `lychd.toml` → File Secrets → Model Defaults
+Explicit construction → Environment Overrides → `lychd.toml` → Pydantic File Secrets → Model Defaults
 
 ```
 
 Environment variables enter through the root using `env_nested_delimiter="__"`. The grammar is
 `SECTION__FIELD`, extended one segment per nested model; for example,
 `SERVER__PORT=9011` overrides `server.port`, while
+`SERVER__DATABASE__PORT=5433` overrides `server.database.port` and
 `ORCHESTRATION__SWITCHING__DRAIN_TIMEOUT_S=30` overrides the nested switching value.
 Nested models do not load their own environment, dotenv, TOML, or secret sources. This preserves
 one precedence order and prevents a section from becoming a second, invisible settings root.
 
-The v1 physical queue topology is fixed to `runs` and `rites`. A partial
-`[orchestration.queues]` table deep-merges onto those required defaults instead of deleting an
-omitted queue, and an unknown physical queue name fails validation. Partial
-`[orchestration.routing]` entries likewise merge onto the required semantic routes; every resolved
-route must name a configured queue. Adding a new physical worker queue is therefore a composition
-change, not an unchecked TOML spelling.
+The v1 physical queue-worker topology is fixed to `runs` and `rites`. Their
+capacity is explicit in `[server.jobs]` as `interactive_concurrency` and
+`background_concurrency`; adding a physical worker queue is a composition change, not
+an unchecked TOML spelling. Partial `[orchestration.routing]` entries merge onto
+the required semantic routes and may name only those fixed physical queues.
 
 Constructing `Settings` is a read-only parse and validation operation. It never inscribes the
 Codex and never invents missing secrets. Explicit secret properties resolve from a named
@@ -176,11 +189,12 @@ If `.env` files are enabled:
 
 The Schema Layer validates global state before any infrastructure intent is processed.
 
-Exact source precedence and reserved-port validation are implemented in `src/lychd/config/settings.py:281`:
+Exact source precedence and root composition are implemented in
+`src/lychd/config/settings/root.py`:
 
-??? example "Live snippet: `src/lychd/config/settings.py:281`"
+??? example "Live snippet: `src/lychd/config/settings/root.py`"
     ```python
-    --8<-- "src/lychd/config/settings.py:281:371"
+    --8<-- "src/lychd/config/settings/root.py:17:77"
     ```
 
 ---
@@ -412,11 +426,11 @@ an explicit `list[type[RuneConfig]]` and performs only filesystem anchoring,
 sample writing, TOML parsing, and Pydantic validation.
 
 In the current implementation, `ExtensionManager` assembles this list from
-`[extensions].builtins` and `[extensions].crypt`. Built-ins are resolved inside
-the trusted `lychd.extensions.builtin` namespace by convention, then the selected
-builtin's own `register(context)` shim performs the contribution. Crypt organs
-follow the same selected-shim rule from the local extension root. The selected
-shim writes into explicit registration stores on `ExtensionContext`.
+`[extensions].builtins` and `[extensions].crypt`. Built-ins are resolved through
+a trusted, static catalog, then the selected builtin's own `register(context)`
+shim performs the contribution. Crypt organs follow the selected-shim rule from
+the local extension root. The selected shim writes into explicit registration
+stores on `ExtensionContext`.
 
 Store ownership stays with the layer that owns the concept:
 
@@ -434,11 +448,13 @@ Extension activation itself is configured outside extension-owned runes. Core
 
 ```toml
 [extensions]
-builtins = ["observability/phoenix", "animator"]
+builtins = []
 crypt = ["my-private-organ"]
 ```
 
-All omitted extension ids are inactive. This avoids the bootstrap paradox where
+All extensions are inactive until explicitly named. `lychd init` writes
+commented catalog examples beside the empty list; it does not activate every
+installed runtime. This avoids the bootstrap paradox where
 Codex would need an extension's rune schema in order to decide whether that same
 extension should be imported. Once selected, the extension may register rune
 schemas; those runes configure selected extension instances, not extension
@@ -591,8 +607,10 @@ Secrets:
 - Are accessible to the process boundary that consumes them
 
 The loader never generates fallback secret material. A secret value is resolved only from an
-explicit environment value, an explicit `*_FILE` override, or the declared mounted Podman secret
-path. Missing, unreadable, or empty secret files are errors. `lychd bind` may perform an explicit
+explicit local/test environment value, an explicit `*_FILE` override, or the declared mounted Podman secret
+path. Generated Quadlets use only the file form; they never place a secret value in the environment.
+Because an explicitly injected value wins, production operators must not inject one. Missing,
+unreadable, or empty secret files are errors. `lychd bind` may perform an explicit
 provisioning/reconciliation ritual for core Podman secrets, but that mutation is not part of
 `Settings()` or `get_settings()`.
 
@@ -699,7 +717,7 @@ Configuration is now split by trust boundary:
 | Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
 | :--- | :--- | :--- |
 | Secrets | Loaded via Podman secret references and mounted into trusted units. | Provider and authority secret fields are forbidden by schema; narrow queue-only SAQ/Postgres execution credentials live at worker-unit policy. |
-| Mounts | Codex RO; configured stasis and Lab RW; Core/Extensions RO; Reactor inbox RW plus sibling journal RO only when selected. No blanket Crypt mount. | No Codex mount; task-safe facts travel in the job envelope and only disposable task paths may be RW. |
+| Mounts | Codex RO; Lab RW; Core/Extensions RO; Reactor inbox RW plus sibling journal RO only when selected. No blanket Crypt mount. | No Codex mount; task-safe facts travel in the job envelope and only disposable task paths may be RW. |
 | Network | Resolves provider and broker routes per policy. | No direct secret-bearing provider routes. |
 | Queue Ownership | Owns queue workflow configuration. | No queue configuration ownership. |
 | Context Privatization | Defines thresholds and anonymization policy for portal egress. | Cannot lower thresholds or bypass sanitization gates. |
@@ -708,7 +726,7 @@ Configuration is now split by trust boundary:
 
 Soulstones are a separate data-plane configuration consumer, not a third source of Codex truth.
 Their generated units receive only explicitly configured model/runtime volumes and unit-scoped
-secrets—never the Codex, Crypt, stasis, trigger, Reactor inbox, Reactor journal, or user-systemd
+secrets—never the Codex, Crypt, trigger, Reactor inbox, Reactor journal, or user-systemd
 binding sites. Global defaults, rune volumes, and adapter-contributed volumes all pass through the
 same gate: host and container endpoints must be absolute, host symlink aliases are resolved, and a
 path equal to, containing, or contained by a protected control root fails binding. A safe existing

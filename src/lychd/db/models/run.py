@@ -38,8 +38,5 @@ class Run(UUIDAuditBase):
     queue_name: Mapped[str] = mapped_column(String(50))
     attempt: Mapped[int] = mapped_column(default=0, server_default=text("0"))
     enqueue_seq: Mapped[int] = mapped_column(default=0, server_default=text("0"))
-    stasis_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    #   Durable Stasis v1 seat: FileStatePersistence path. No state_snapshot JSONB (C4).
-
     session: Mapped[Session | None] = relationship(back_populates="runs", lazy="noload")
     steps: Mapped[list[Step]] = relationship(back_populates="run", lazy="noload", cascade="all, delete-orphan")

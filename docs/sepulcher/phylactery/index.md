@@ -17,7 +17,7 @@ The first-light Phylactery uses the configured database's default schema/search 
 anatomy reserves sacred chambers, but only the first item and SAQ's default `saq_*` tables exist
 today:
 
-1. **`public` (The State):** The current reality. Its first light is delivered: migration `0001_phylactery_first_light` raises seven tables — `session`, `run`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization`. The `run`/`step` tables are the run truth written by the **[RunLedger](../vessel/ghouls.md)**.
+1. **`public` (The State):** The current reality. Migration `0001_phylactery_first_light` raises `session`, `run`, `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization`. The `run`/`step` tables are the run truth written by the **[RunLedger](../vessel/ghouls.md)**; `run_checkpoint` owns one complete durable graph history per run.
 2. **`vectors` (The Karma, planned):** The high-dimensional embedding space where verified outcomes may be stored.
 3. **`traces` (The Mind's Eye, planned):** The dedicated chamber for durable cognitive traces.
 4. **`queue` (The Ghouls, planned isolation):** The future queue schema/role boundary. V1 SAQ
@@ -29,9 +29,9 @@ today:
     A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is a processor with no memory of its own: kill the container and nothing of the Lich is lost, because nothing of the Lich lived there. Continuity lives here.
 
     The Phylactery survives reboots, crashes, and migrations at each store's declared committed
-    boundary. In the current foundation that means SAQ jobs, Postgres run/step rows, and owner-only
-    per-run graph checkpoint files referenced by the run row. Memory/persona/trace stores and a
-    Postgres graph persistence/outbox remain later work. Volatile frames may be reconstructed or
+    boundary. In the current foundation that means SAQ jobs, Postgres run/step rows, and one
+    run-owned JSONB graph checkpoint document. Memory/persona/trace stores and a transactional
+    graph/queue outbox remain later work. Volatile frames may be reconstructed or
     abandoned according to Graph, Worker, and policy law.
 
 !!! info "The Accumulator of Karma"

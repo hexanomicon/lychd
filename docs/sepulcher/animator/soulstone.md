@@ -267,7 +267,7 @@ One entry per model served; each yields a capability spec.
 
 All Soulstone volumes—global defaults, rune `volumes`, and adapter-contributed mounts—share one
 fail-closed control-root gate. Both endpoints must be absolute. A host symlink is resolved before
-comparison, and neither endpoint may equal, contain, or sit beneath the Codex, Crypt, stasis,
+comparison, and neither endpoint may equal, contain, or sit beneath the Codex, Crypt,
 Reactor, or user-systemd binding roots. Percent signs, backslashes, and non-printable characters are
 also rejected before a value reaches a systemd unit. A safe existing host alias is emitted as its
 resolved canonical target, so the checked source cannot later be retargeted through that symlink.

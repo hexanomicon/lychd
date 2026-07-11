@@ -11,7 +11,7 @@ from litestar.repository.exceptions import RepositoryError
 # Runtime imports: Litestar evaluates the `provide_*` return annotations below at
 # app-init to type the injected dependencies, so these must resolve at runtime.
 from lychd.config.runes.registry import RuneRegistry
-from lychd.config.settings import get_settings
+from lychd.config.settings.root import get_settings
 from lychd.extensions.host import AssembledExtensions
 from lychd.lib.exceptions import exception_to_http_response
 
@@ -85,10 +85,10 @@ class AppInit(InitPluginProtocol):
         extensions = get_extensions()  # THE one assembly for this process
         runes = load_rune_registry(extensions)  # validated TOML instances, loaded once
 
-        app_config.debug = settings.app.debug
+        app_config.debug = settings.server.web.debug
 
         app_config.openapi_config = OpenAPIConfig(
-            title=settings.app.name,
+            title=settings.server.web.name,
             version=current_version,
             use_handler_docstrings=True,
             render_plugins=[ScalarRenderPlugin(version="latest")],

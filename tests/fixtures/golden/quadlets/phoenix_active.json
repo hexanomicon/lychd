@@ -28,11 +28,11 @@
       "description": "The Vessel (LychD Application Kernel)",
       "devices": [],
       "env_vars": {
-        "APP__SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
-        "DB__HOST": "localhost",
-        "DB__PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
-        "DB__PORT": "5432",
         "HOME": "${HOME}",
+        "LYCHD_APP_SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
+        "LYCHD_DB_PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
+        "SERVER__DATABASE__HOST": "localhost",
+        "SERVER__DATABASE__PORT": "5432",
         "XDG_CACHE_HOME": "${HOME}/.cache",
         "XDG_CONFIG_HOME": "${HOME}/.config",
         "XDG_DATA_HOME": "${HOME}/.local/share"
@@ -69,15 +69,6 @@
           "mirror": true,
           "options": [
             "ro",
-            "Z"
-          ]
-        },
-        {
-          "container_path": "${PATH_CRYPT_ROOT}/stasis",
-          "host_path": "${PATH_CRYPT_ROOT}/stasis",
-          "mirror": true,
-          "options": [
-            "rw",
             "Z"
           ]
         },
@@ -212,11 +203,11 @@
       "description": "LychD Phylactery Migration Gate",
       "devices": [],
       "env_vars": {
-        "APP__SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
-        "DB__HOST": "localhost",
-        "DB__PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
-        "DB__PORT": "5432",
         "HOME": "${HOME}",
+        "LYCHD_APP_SECRET_KEY_FILE": "/run/secrets/${APP_SECRET}",
+        "LYCHD_DB_PASSWORD_FILE": "/run/secrets/${DB_SECRET}",
+        "SERVER__DATABASE__HOST": "localhost",
+        "SERVER__DATABASE__PORT": "5432",
         "XDG_CACHE_HOME": "${HOME}/.cache",
         "XDG_CONFIG_HOME": "${HOME}/.config",
         "XDG_DATA_HOME": "${HOME}/.local/share"
@@ -371,17 +362,7 @@
       ],
       "user": "%U",
       "user_ns": null,
-      "volumes": [
-        {
-          "container_path": "/models",
-          "host_path": "/data/models",
-          "mirror": false,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        }
-      ],
+      "volumes": [],
       "wanted_by": [],
       "wants": [
         "lychd-pod.service"
@@ -425,17 +406,7 @@
       ],
       "user": "%U",
       "user_ns": null,
-      "volumes": [
-        {
-          "container_path": "/models",
-          "host_path": "/data/models",
-          "mirror": false,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        }
-      ],
+      "volumes": [],
       "wanted_by": [],
       "wants": [
         "lychd-pod.service"
@@ -480,17 +451,7 @@
       "targets": [],
       "user": "%U",
       "user_ns": null,
-      "volumes": [
-        {
-          "container_path": "/models",
-          "host_path": "/data/models",
-          "mirror": false,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        }
-      ],
+      "volumes": [],
       "wanted_by": [],
       "wants": [
         "lychd-pod.service"
@@ -532,17 +493,7 @@
       "targets": [],
       "user": "%U",
       "user_ns": null,
-      "volumes": [
-        {
-          "container_path": "/models",
-          "host_path": "/data/models",
-          "mirror": false,
-          "options": [
-            "ro",
-            "Z"
-          ]
-        }
-      ],
+      "volumes": [],
       "wanted_by": [
         "default.target"
       ],

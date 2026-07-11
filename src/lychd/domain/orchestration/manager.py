@@ -25,7 +25,7 @@ from lychd.domain.orchestration.schema import TransitionPlan
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from lychd.config.settings import SwitchingSettings
+    from lychd.config.settings.orchestration import SwitchingSettings
     from lychd.domain.cortex.leases import LeaseLedger
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.actuator import RuntimeActuator

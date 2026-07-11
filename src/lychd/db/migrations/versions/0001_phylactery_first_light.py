@@ -6,8 +6,8 @@ Revises:
 Create Date: 2026-07-06 00:00:00.000000
 
 Hand-authored first migration for the Phylactery. Creates the pgvector
-extension and the seven Wave-1 tables (session, run, step, consent, karma,
-soulstone_record, codex_preauthorization) in FK-dependency order.
+extension and the eight Wave-1 tables (session, run, run_checkpoint, step,
+consent, karma, soulstone_record, codex_preauthorization) in FK-dependency order.
 """
 
 from __future__ import annotations
@@ -86,7 +86,6 @@ def schema_upgrades() -> None:
         sa.Column("queue_name", sa.String(length=50), nullable=False),
         sa.Column("attempt", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("enqueue_seq", sa.Integer(), nullable=False, server_default=sa.text("0")),
-        sa.Column("stasis_path", sa.String(length=500), nullable=True),
         sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
         sa.Column("created_at", DateTimeUTC(timezone=True), nullable=False),
         sa.Column("updated_at", DateTimeUTC(timezone=True), nullable=False),
@@ -96,6 +95,19 @@ def schema_upgrades() -> None:
     op.create_index("ix_run_workflow_name", "run", ["workflow_name"], unique=False)
     op.create_index("ix_run_status", "run", ["status"], unique=False)
     op.create_index("ix_run_session_id", "run", ["session_id"], unique=False)
+
+    op.create_table(
+        "run_checkpoint",
+        sa.Column("id", GUID(length=16), nullable=False),
+        sa.Column("run_id", GUID(length=16), nullable=False),
+        sa.Column("snapshots", JSONB(), nullable=False),
+        sa.Column("sa_orm_sentinel", sa.Integer(), nullable=True),
+        sa.Column("created_at", DateTimeUTC(timezone=True), nullable=False),
+        sa.Column("updated_at", DateTimeUTC(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["run_id"], ["run.id"], name="fk_run_checkpoint_run_id_run", ondelete="CASCADE"),
+        sa.PrimaryKeyConstraint("id", name="pk_run_checkpoint"),
+        sa.UniqueConstraint("run_id", name="uq_run_checkpoint_run_id"),
+    )
 
     op.create_table(
         "step",
@@ -203,6 +215,7 @@ def schema_downgrades() -> None:
     op.drop_table("consent")
     op.drop_index("ix_step_run_id", table_name="step")
     op.drop_table("step")
+    op.drop_table("run_checkpoint")
     op.drop_index("ix_run_session_id", table_name="run")
     op.drop_index("ix_run_status", table_name="run")
     op.drop_index("ix_run_workflow_name", table_name="run")

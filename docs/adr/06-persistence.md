@@ -42,10 +42,11 @@ icon: material/database
 
 !!! warning "First-light boundary"
     The implemented database floor is one pgvector-enabled Postgres, the binary JSON/JSONB codec,
-    migration `0001_phylactery_first_light`, and the Postgres `RunLedger` over `run`/`step`. The
-    seven core tables and SAQ's `saq_*` tables currently use the configured database's default
+    migration `0001_phylactery_first_light`, the Postgres `RunLedger` over `run`/`step`, and one
+    JSONB `run_checkpoint` row per durable graph run. The eight core
+    tables and SAQ's `saq_*` tables currently use the configured database's default
     schema/search path. Extension model federation, dedicated `vectors`/`traces`/`queue`/`verbatim`
-    schemas and roles, privatization-taint propagation, and Postgres graph checkpoints/outbox are
+    schemas and roles, privatization-taint propagation, and a transactional graph/queue outbox are
     target architecture, not delivered isolation.
 
 ### 1. The Dynamic Registry (Planned Federation)

@@ -130,22 +130,20 @@ def test_doctor_validates_foundation_without_mutation(
     codex = tmp_path / "lychd.toml"
     codex.write_text("", encoding="utf-8")
     codex.chmod(0o600)
-    stasis = tmp_path / "stasis"
     inbox = tmp_path / "triggers" / "inbox"
     journal = tmp_path / "triggers" / "journal"
     units = tmp_path / "systemd"
-    for directory in (stasis, inbox, journal, units):
+    for directory in (inbox, journal, units):
         directory.mkdir(parents=True, mode=0o700, exist_ok=True)
         directory.chmod(0o700)
     for unit_name in ("lychd-reactor.path", "lychd-reactor.service"):
         (units / unit_name).write_text("test", encoding="utf-8")
 
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
 
     settings = Settings()
-    settings.stasis.dir = stasis
     settings.orchestration.switching.host_reactor_dir = inbox
-    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mocker.patch("lychd.system.constants.PATH_LYCHD_TOML", codex)
     mocker.patch("lychd.system.constants.PATH_SYSTEMD_USER_UNITS_DIR", units)
     mocker.patch("shutil.which", return_value="/usr/bin/systemctl")
@@ -170,7 +168,6 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: 
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     inbox = tmp_path / "reactor" / "inbox"
     journal = tmp_path / "reactor" / "journal"
-    stasis = tmp_path / "stasis"
     settings = SimpleNamespace(
         orchestration=SimpleNamespace(
             switching=SimpleNamespace(
@@ -178,9 +175,9 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: 
                 host_reactor_journal_dir=journal,
             )
         ),
-        stasis=SimpleNamespace(dir=stasis),
+        extensions=SimpleNamespace(builtins=(), crypt=()),
     )
-    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mock_codex_cls = mocker.patch("lychd.system.services.codex.CodexService")
     mock_codex_instance = mock_codex_cls.return_value
 
@@ -193,8 +190,8 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: 
     # Verify interaction
     mock_codex_cls.assert_called_once()
     mock_codex_instance.inscribe.assert_called_once()
-    assert [entry.args[0] for entry in privilege.call_args_list] == [inbox, journal, stasis]
-    assert privilege.return_value.initialize.call_count == 3
+    assert [entry.args[0] for entry in privilege.call_args_list] == [inbox, journal]
+    assert privilege.return_value.initialize.call_count == 2
 
 
 def test_init_codex_failure(runner: CliRunner, mocker: MockerFixture) -> None:
@@ -217,11 +214,11 @@ def test_init_codex_failure(runner: CliRunner, mocker: MockerFixture) -> None:
 async def test_consent_cli_connects_queue_before_enqueue_and_disconnects(
     mocker: MockerFixture,
 ) -> None:
-    from lychd.config.settings import Settings
+    from lychd.config.settings.root import Settings
 
     settings = Settings()
-    settings.db.profile = "postgres"
-    mocker.patch("lychd.config.settings.get_settings", return_value=settings)
+    settings.server.database.profile = "postgres"
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mocker.patch("lychd.db.engine.get_session_factory", return_value=object())
     consent_ledger = mocker.patch("lychd.domain.codex.ledger.CodexConsentLedger").return_value
     consent_ledger.get = AsyncMock(return_value=SimpleNamespace(status="pending"))

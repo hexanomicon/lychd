@@ -89,7 +89,7 @@ uses lists, so every extension is inactive unless named:
 
 ```toml
 [extensions]
-builtins = ["observability/phoenix", "animator"]
+builtins = []
 crypt = ["my-private-organ"]
 ```
 
@@ -97,9 +97,9 @@ This selector decides which organs are imported and allowed to register schemas,
 runtime hydrators, and registration stores. Extension-owned runes then configure the
 selected organ's instances; they do not decide whether the organ exists.
 
-Fresh Codex inscription writes the known built-ins into `builtins` explicitly, so
-the default body is active without hidden magic. Removing an id from the list
-deactivates that organ on the next assembly pass.
+Fresh Codex inscription keeps `builtins` empty and writes commented catalog
+examples. Adding an id activates that organ on the next assembly pass; removing
+one deactivates it.
 
 | Store | Grant | System Target |
 | :--- | :--- | :--- |

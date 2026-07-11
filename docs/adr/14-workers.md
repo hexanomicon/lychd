@@ -79,10 +79,11 @@ codebase and Postgres queue contract.
     hook. The ghouls (`perform_run`) and SSE handlers therefore share the same process-local
     `InProcessRunEventBus`, so a run's tokens reach its open stream byte-for-byte.
 
-    This topology requires exactly one ASGI/Granian worker process (`server.workers = 1`). More
-    processes would create isolated event buses: a Ghoul claimed in one process could publish
-    events that an SSE connection in another process can never observe. Multi-process serving is
-    forbidden until `RunEventBus` is backed by a shared transport such as `PostgresEventBus`.
+    This topology requires exactly one ASGI/Granian worker process. Server startup rejects a
+    `GRANIAN_WORKERS` or `--workers` value other than one. More processes would create isolated
+    event buses: a Ghoul claimed in one process could publish events that an SSE connection in
+    another process can never observe. Multi-process serving is forbidden until `RunEventBus` is
+    backed by a shared transport such as `PostgresEventBus`.
     A separately isolated Tomb worker plane remains later work.
 
     Startup is fail-closed and ordered: both fixed v1 queues connect before the run substrate or
