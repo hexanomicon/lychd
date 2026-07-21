@@ -36,9 +36,16 @@ class TelemetryPlugin(InitPluginProtocol):
         logfire.configure(send_to_logfire=False, console=ConsoleOptions(min_log_level="debug", colors="always"))
 
         # 3. Instrument Libraries
-        #    This catches internal calls in PydanticAI and HTTP requests.
+        #    This catches PydanticAI activity and HTTP transport metadata. Generic
+        #    HTTP bodies and headers may contain prompts or bearer credentials and
+        #    are never captured wholesale.
         logfire.instrument_pydantic_ai()
-        logfire.instrument_httpx(capture_all=True)
+        logfire.instrument_httpx(
+            capture_all=False,
+            capture_headers=False,
+            capture_request_body=False,
+            capture_response_body=False,
+        )
 
         # 4. Instrument Litestar
         #    Logfire has already initialized the Global Tracer Provider.

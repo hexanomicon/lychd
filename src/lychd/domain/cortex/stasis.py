@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 from contextlib import asynccontextmanager, suppress
+from datetime import UTC, datetime
 from time import perf_counter
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -123,9 +124,7 @@ class DurableStasisPhylactery(BaseStatePersistence[Any, Any]):
             snapshot = self._node_snapshot(snapshots, snapshot_id)
             exceptions.GraphNodeStatusError.check(snapshot.status)
             snapshot.status = "running"
-            from pydantic_graph.persistence import _utils
-
-            snapshot.start_ts = _utils.now_utc()
+            snapshot.start_ts = datetime.now(UTC)
             await self._save(snapshots)
         started = perf_counter()
         try:

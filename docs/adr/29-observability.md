@@ -26,21 +26,27 @@ icon: material/telescope
     - **Pros:** Maximum power and industry standard.
     - **Cons:** **Extreme Default Overhead.** Requires 3-4 heavy containers and meaningful RAM allocation just to monitor a single node. The complexity of PromQL, LogQL, dashboarding, and retention policy is disproportionate to the needs of a personal daemon before it has many active Animators or Legion nodes.
 
-!!! failure "Option 2: Persistence-Layer Logging"
-    Storing all traces and metrics directly as JSONB rows in the **[Phylactery (ADR 06)](./06-persistence.md)**.
+!!! failure "Option 2: Undifferentiated Persistence-Layer Logging"
+    Storing every raw span and metric directly as unbounded JSONB rows in the **[Phylactery (ADR 06)](./06-persistence.md)**.
     - **Pros:** Zero extra infrastructure; unified backups.
-    - **Cons:** **Wrong Tool.** Relational databases are inefficient for high-frequency time-series events. Building a specialized Trace UI within the Altar is a massive development diversion from core AI capabilities.
+    - **Cons:** Raw telemetry is not domain truth. Curated run, transition, cost, and hardware facts belong in Postgres, but unlimited vendor-shaped spans need explicit retention and must not define the domain schema.
 
-!!! success "Option 3: The Oculus (Phoenix + Cockpit)"
-    A hybrid strategy utilizing specialized GenAI tracing and native host monitoring.
+!!! success "Option 3: Native Oculus with Pluggable Eyes"
+    A native Litestar/HTMX inspection surface over LychD-owned evidence, with standards-based exports and optional external viewers.
     - **Pros:**
-        - **Arize Phoenix:** Specialized for LLM workflows and Pydantic AI; provides a local, high-fidelity scrying pool for cognitive traces.
-        - **Logfire SDK:** Native integration with Pydantic models ensures zero-boilerplate instrumentation.
-        - **Cockpit:** Zero-overhead host monitoring for "Body" metrics (GPU/CPU/RAM).
+        - **Native view:** Domain vocabulary, grants, transitions, consent, Legion, and GPU pressure can be correlated without a second control plane or required container.
+        - **OpenTelemetry:** Existing Pydantic AI/HTTP instrumentation remains an interoperable signal source.
+        - **Pluggable Eyes:** Phoenix, Logfire, Cockpit, or fleet tooling may consume bounded exports without owning canonical state.
 
 ## Decision Outcome
 
-**The Oculus** is adopted as the Observability Extension. Phoenix is the current scrying pool, but the architectural requirement is the trace itself: structured evidence that connects intent, graph movement, tool use, runtime pressure, and outcome while leveraging host-native tools for hardware telemetry.
+**The Oculus** is adopted as LychD's native observability extension and Altar surface. Its canonical input is structured LychD evidence connecting intent, graph movement, tool use, consent, runtime pressure, and outcome. It must not require another application container. Phoenix is retained only as a compatibility extension and possible external **Eye** during the transition; it is not the Oculus and never owns run, identity, scheduling, or retention truth.
+
+!!! warning "Implementation state"
+    The native HTMX Oculus is the accepted redesign but is not yet complete. The repository still
+    ships `observability/phoenix` and its historical `lychd-oculus` unit stem for compatibility.
+    That extension is optional and deprecated as the default view; removing or renaming its unit is
+    a separate migration. Documentation must not present the compatibility container as native Oculus.
 
 !!! note "Trace Correlation Contract"
     Runtime evidence must preserve correlation keys across layers: `run_id`, `step_id`, `tool_call_id`, `lane_id`, peer task IDs, and relevant hardware lease IDs. This lets an incident, Riddle failure, HitL decision, or A2A callback be followed from visible surface to graph movement to provider call without granting the trace authority over the underlying state.
@@ -49,11 +55,12 @@ icon: material/telescope
 
 ### 1. The Extension Registration (The Retina Hook)
 
-To satisfy the requirement of sovereignty, the Oculus is implemented as an Extension:
+To satisfy the requirement of sovereignty, the Oculus is implemented through shaped extension seams:
 
-- **The Rune:** `observability/phoenix` registers `PhoenixSettings`, a
-  `RuneConfig` under `runes/observability/phoenix/`. Phoenix image and host
-  ports are extension-owned TOML, not fields on the core `Settings` model.
+- **The Native Surface:** Oculus routes and HTMX fragments belong to the Altar-facing observability
+  extension. They query typed application services; templates do not query tables or SDKs directly.
+- **Compatibility Eye:** `observability/phoenix` registers `PhoenixSettings` under
+  `runes/observability/phoenix/`. Its image, exporter endpoint, and ports remain extension-owned TOML.
 - **The Store:** Vessel telemetry registration is reserved for a future shaped
   `context.vessel` bundle; it must not become another flat ExtensionContext
   method.
@@ -67,10 +74,16 @@ To satisfy the requirement of sovereignty, the Oculus is implemented as an Exten
 
 The extension configures the process to emit signals following the Generative AI Semantic Conventions:
 
-- **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` and `logfire.instrument_httpx()`. This captures the reasoning loop of the Agent and the raw prompts exchanged with the **[Dispatcher (ADR 22)](./22-dispatcher.md)**'s providers.
-- **The Collector:** An active `PhoenixSettings` rune manifests a local
-  `lychd-oculus` service running **Arize Phoenix**.
-- **The Routing:** Telemetry is exported via OTLP to `http://localhost:4318`. Because the composed runtime shares the `lychd.pod` network namespace, all containers can natively push traces over TCP without requiring complex network bridging or custom proxies.
+- **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` for the reasoning loop and
+  `logfire.instrument_httpx()` for transport metadata. Generic HTTP instrumentation must never
+  blanket-capture headers or request/response bodies: those surfaces carry prompts and bearer
+  credentials, including runtime administration keys. Content capture belongs to an explicit
+  privacy policy at the cognitive instrumentation boundary.
+- **The Native Store/View:** Curated trace summaries and domain events use LychD-owned persistence,
+  structured logs, and live streams with explicit retention. Oculus renders those facts in-process.
+- **Optional Export:** An active `PhoenixSettings` compatibility rune currently manifests the legacy
+  `lychd-oculus` unit and accepts OTLP at `http://localhost:4318`. The unit name is migration debt,
+  not an ownership claim. Other OTLP consumers may replace it behind the same bounded export policy.
 
 ### 3. Physical Body Monitoring (Body)
 
@@ -102,7 +115,7 @@ The rejection of the Cloud Native Suite is a default-runtime decision, not a per
 
 - many Soulstone, Portal, browser, watcher, or tool Animators running at once;
 - Legion/Thrall nodes emitting service metrics from multiple machines;
-- historical dashboards, alert rules, and cross-service correlation beyond what Cockpit, Phoenix, Postgres metrics, and agent queries comfortably provide;
+- historical dashboards, alert rules, and cross-service correlation beyond what Oculus, Postgres metrics, journal evidence, and agent queries comfortably provide;
 - log volume where `journalctl` and structured application logs stop being ergonomic.
 
 When summoned, these tools must be optional Soulstones or Portals under the Oculus/Watcher family. They must not become Core dependencies, must not replace the Phylactery metrics used as Orchestrator fuel, and must expose explicit capabilities such as `metrics_query`, `logs_query`, `trace_search`, `dashboard_render`, or `alert_state` rather than masquerading as cognitive Animators.
@@ -119,9 +132,9 @@ The Oculus respects the global `LYCHD_SECURE_MODE` toggle:
 
 !!! success "Positive"
     - **Zero-Cost Purity:** Users who do not enable the Oculus extension incur zero instrumentation overhead or resource bloat.
-    - **Specialized Visualization:** Arize Phoenix provides native rendering for "Retrieved Chunks" and "Tool Calls," providing far superior scrying compared to generic logging tools.
-    - **Pluggable Eyes:** Any extension can register a telemetry plugin. The Magus can swap the local Oculus for a cloud provider (e.g., Logfire Cloud) simply by changing the extension configuration.
+    - **Domain-Native Correlation:** Oculus can join LychD grants, transitions, consent, costs, and hardware evidence without translating them into a vendor's ownership model.
+    - **Pluggable Eyes:** External viewers can be added or replaced through bounded telemetry exports without replacing Oculus or canonical state.
 
 !!! failure "Negative"
-    - **Fragmented Dashboard:** Correlating a slow Agent response (Mind) with high GPU utilization (Body) requires the Magus to look at both the Oculus and Cockpit interfaces.
-    - **Startup Latency:** The initialization of the OpenTelemetry exporters adds a measurable delay (~500ms) to the application boot sequence when the extension is active.
+    - **Native UI Cost:** LychD owns the quality and maintenance of its domain-specific trace explorer.
+    - **Optional Export Cost:** Enabling an external Eye adds its own startup, storage, and resource overhead.

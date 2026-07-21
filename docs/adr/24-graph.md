@@ -35,8 +35,11 @@ icon: material/graph-outline
     Adopting an async-first graph library where nodes and edges are defined using Python generics and functional steps.
     - **Pros:**
         - **Static Verifiability:** Transitions are governed by return type hints, making the entire topology verifiable before execution.
-        - **Native Parallelism:** Built-in primitives for broadcasting and mapping allow the mind to explore multiple "Shadow Realities" simultaneously.
-        - **Durable Reanimation:** Standardized support for `BaseStatePersistence` allows the mind to be anchored behind a persistence port, enabling replay after system restarts, deferred approvals, or high-latency external waits. Ordinary VRAM swaps may remain Live Stasis when the Vessel process survives.
+        - **Parallel Vocabulary:** The newer GraphBuilder API supplies map, broadcast, and join
+          primitives, but the deployed legacy `BaseNode` runner does not execute nodes in parallel.
+        - **Persistence Seam:** The v1 `BaseStatePersistence` interface lets LychD adapt graph
+          snapshots to its own Postgres checkpoint store. The library supplies an interface, not
+          production durability or recovery authority.
 
 ## Decision Outcome
 
@@ -53,7 +56,21 @@ The cortex is built on the installed `pydantic_graph` **`BaseNode`** API — the
 - **The State (`StateT`):** A mutable, JSON-serializable Pydantic model representing the "Working Memory." It is built up as it passes through each synapse, ensuring total recall across the entire ritual; per-run handles (grants, models, toolsets) live in `deps`, never in state, so durable snapshots stay clean.
 
 !!! warning "Doctrine ahead of code"
-    v1 stays on the installed `BaseNode` API (the `GraphBuilder` DSL is not installed). The functional `@g.step` sugar and the parallel/decision primitives sketched in §3–§4 (`g.join`, `g.decision`, `g.match`, `ReduceFirstValue`) describe the *intended* topology vocabulary; today routing is expressed as a node's typed return union and branches are ordinary nodes.
+    LychD stays on the installed v1 `BaseNode` API. The dependency is explicitly constrained to
+    `pydantic-ai-slim==1.25.1`: current upstream 2.x adds promising durability capabilities,
+    deferred stream events, enqueued messages, and runtime model hooks, but also crosses the legacy
+    graph/message boundary on which Stasis depends. The exact pin is a temporary migration fence,
+    not a rejection of v2. An isolated upgrade must first prove deferred consent resume, serialized
+    message/checkpoint compatibility, AgentForge/toolset behavior, and the streaming event union.
+    GraphBuilder remains a beta execution adapter until LychD's own durable step ledger can govern it.
+
+    The staged route is `1.25.1` → exact final-v1 bridge
+    ([`1.107.1`](https://github.com/pydantic/pydantic-ai/releases/tag/v1.107.1), tag `54d51dbf`)
+    with deprecations as errors → versioned LychD checkpoint/cursor and legacy parked-run migration
+    → a `WorkflowRuntime` port → exact audited v2. The `1.107.1` patch is mandatory over `1.107.0`:
+    it fixes the AG-UI `sanitize_messages` trailing-message authorization bypass; `1.107.0` lies in
+    the affected range. Parallel GraphBuilder branches and external durability engines are separate
+    experiments; neither may ride inside the checkpoint-format migration.
 
 ### 2. The Orchestrated Handshake (Deferred Logic)
 

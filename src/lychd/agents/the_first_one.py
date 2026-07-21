@@ -32,8 +32,8 @@ THE_FIRST_ONE_SPEC = AgentSpec(
 )
 
 
-def stable_floor(ctx: RunContext[LychDDeps]) -> str:
-    """Layers 2-4 of the assembled floor, deterministic given the block key set."""
+async def stable_floor(ctx: RunContext[LychDDeps]) -> str:
+    """Return layers 2-4 without routing a trivial lookup through a worker thread."""
     return ctx.deps.context.floor_text(ctx.deps.run_id)
 
 
