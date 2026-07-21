@@ -54,6 +54,7 @@ This ADR defines where the Codex lives and how it is mounted. The Codex contract
     - `runes/`: Validated TOML instance declarations.
         - `animator/`: Animation root defaults and child anchors.
             - `soulstones/`: Local infrastructure intent (container-backed providers).
+                - `exllamav3/`: Dynamic ExLlamaV3 instances served by TabbyAPI.
                 - `llamacpp/`: Instances of llama.cpp providers (TOML files).
                 - `vllm/`: Instances of vLLM providers.
                 - `sglang/`: Instances of SGLang providers.

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import SoulstoneConfig
+    from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 
 
 def _raise_missing_portal_secrets_error(secret_names: list[str]) -> None:
@@ -55,14 +56,39 @@ def _merge_reserved_ports(core: Mapping[str, int], extension: Mapping[str, int])
     return merged
 
 
-def _required_secret_names_from_soulstones(soulstones: Sequence[SoulstoneConfig]) -> list[str]:
-    """Collect Podman secret names declared by soulstone secret env mappings."""
+def _required_secret_names_from_soulstones(
+    soulstones: Sequence[SoulstoneConfig],
+    runtime_plans: Sequence[RuntimePlan] = (),
+) -> list[str]:
+    """Collect every Rune-, control-, and adapter-planned Soulstone secret."""
+    from lychd.system.schemas import podman_secret_source
+
+    if runtime_plans and len(runtime_plans) != len(soulstones):
+        msg = "Runtime plan count must match the Soulstone count"
+        raise ValueError(msg)
     names: set[str] = set()
     for stone in soulstones:
         for secret_name in stone.secret_env_files.values():
             if secret_name:
                 names.add(secret_name)
+        names.update(stone.control_plane_secret_names)
+    for plan in runtime_plans:
+        names.update(podman_secret_source(spec) for spec in plan.secrets)
     return sorted(names)
+
+
+def _uncaged_control_plane_secrets(soulstones: Sequence[SoulstoneConfig]) -> list[str]:
+    """Return secrets that only the caged Vessel can receive from Podman."""
+    return sorted({name for stone in soulstones for name in stone.control_plane_secret_names})
+
+
+def _raise_uncaged_control_plane_error(secret_names: Sequence[str]) -> None:
+    names = ", ".join(secret_names)
+    msg = (
+        "Uncaged Vessel mode cannot host Soulstones with Podman-mounted control-plane secrets "
+        f"({names}); use the caged Vessel until a host credential boundary is implemented."
+    )
+    raise RuntimeError(msg)
 
 
 @ritual_command(
@@ -115,7 +141,7 @@ def init_codex() -> None:
     default=False,
     help="Also inscribe the uncaged vessel systemd --user unit (runs lychd directly on the host, no Podman).",
 )
-def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one linear binding transaction
+def bind_quadlets(  # noqa: C901, PLR0915 - the command intentionally narrates one linear binding transaction
     uncaged: bool,  # noqa: FBT001 - Click owns this boolean option contract
 ) -> None:
     """Perform the Binding Ritual (III. The Transmutation).
@@ -161,16 +187,21 @@ def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one lin
     # 1. Summon the Librarian (Loads & Validates Config)
     loader = AnimatorLoader(rune_schemas=list(extensions.rune_schemas), reserved_ports=reserved_ports)
     soulstones, portals = loader.load_all()
+    if uncaged and (uncaged_secrets := _uncaged_control_plane_secrets(soulstones)):
+        _raise_uncaged_control_plane_error(uncaged_secrets)
+    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.runtime_adapters)
+    runtime_plans = [runtime_planner.plan(stone) for stone in soulstones]
 
     # 1.5. Ensure required Podman secrets exist before rendering units.
     secret_store = PodmanSecretStore()
+    secret_store.require_quadlet_version()
     created: list[str] = []
     if secret_store.ensure_present(settings.server.web.secret_key_secret, secrets.token_hex(32)):
         created.append(settings.server.web.secret_key_secret)
     if secret_store.ensure_present(settings.server.database.password_secret, secrets.token_urlsafe(16)):
         created.append(settings.server.database.password_secret)
 
-    required_soulstone_secrets = _required_secret_names_from_soulstones(soulstones)
+    required_soulstone_secrets = _required_secret_names_from_soulstones(soulstones, runtime_plans)
     missing_portal_secrets = sorted(
         {
             portal.api_key_secret_name
@@ -186,9 +217,13 @@ def bind_quadlets(  # noqa: PLR0915 - the command intentionally narrates one lin
         console.print(f"  [dim]Provisioned secrets: {', '.join(created)}[/]")
 
     # 2. Summon the Alchemist (Transmutes Soulstone Runes into Quadlet manifests)
-    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.runtime_adapters)
     transmuter = Transmuter(runtime_planner=runtime_planner, contributors=extensions.quadlet_contributors)
-    manifests = transmuter.transmute_all(soulstones, portals=portals, runes=runes)
+    manifests = transmuter.transmute_all(
+        soulstones,
+        portals=portals,
+        runes=runes,
+        runtime_plans=runtime_plans,
+    )
 
     # 3. Compute the COMPLETE desired plain-unit set before touching either
     # binding site. One Scribe transaction owns generation, stale removal, and
@@ -361,6 +396,7 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
     from lychd.config.runes.registry import load_rune_registry
     from lychd.config.settings.root import get_settings
     from lychd.config.utils import codex_permission_issues
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.loader import AnimatorLoader
     from lychd.extensions.host import get_extensions
     from lychd.system.constants import PATH_LYCHD_TOML, PATH_SYSTEMD_USER_UNITS_DIR
@@ -382,6 +418,8 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
         rune_schemas=list(extensions.rune_schemas),
         reserved_ports=reserved_ports,
     ).load_all()
+    runtime_planner = RuntimeAdapterRegistry(adapters=extensions.runtime_adapters)
+    runtime_plans = [runtime_planner.plan(stone) for stone in soulstones]
 
     if shutil.which("systemctl") is None:
         failures.append("systemctl is not available on PATH")
@@ -392,7 +430,10 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
             failures.append("caged deployment requires orchestration.switching.actuator='host-reactor'")
         else:
             journal_dir = switching.host_reactor_journal_dir
-            for label, directory in (("Host Reactor inbox", switching.host_reactor_dir), ("Host Reactor journal", journal_dir)):
+            for label, directory in (
+                ("Host Reactor inbox", switching.host_reactor_dir),
+                ("Host Reactor journal", journal_dir),
+            ):
                 if directory.is_symlink() or not directory.is_dir():
                     failures.append(f"{label} is missing or unsafe: {directory}; run `lychd init`")
                     continue
@@ -406,6 +447,12 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
             )
 
     if uncaged:
+        uncaged_secrets = _uncaged_control_plane_secrets(soulstones)
+        if uncaged_secrets:
+            failures.append(
+                "uncaged Vessel cannot resolve Podman-mounted Soulstone control-plane secrets: "
+                f"{', '.join(uncaged_secrets)}"
+            )
         from lychd.config.components import resolve_web_secret_key
         from lychd.db.factory import resolve_database_password
 
@@ -423,13 +470,14 @@ def doctor(uncaged: bool) -> None:  # noqa: C901, FBT001, PLR0912, PLR0915 - bou
 
         try:
             secret_store = PodmanSecretStore()
+            secret_store.require_quadlet_version()
         except PodmanSecretStoreError as exc:
             failures.append(str(exc))
         else:
             referenced = {
                 settings.server.web.secret_key_secret,
                 settings.server.database.password_secret,
-                *(name for stone in soulstones for name in stone.secret_env_files.values()),
+                *_required_secret_names_from_soulstones(soulstones, runtime_plans),
                 *(portal.api_key_secret_name for portal in portals if portal.api_key_secret_name),
             }
             missing = sorted(name for name in referenced if not secret_store.exists(name))

@@ -22,7 +22,6 @@ name = "sglang-main"
 description = "SGLang Soulstone."
 image = "lmsysorg/sglang:latest"
 port = 8011
-ipc_host = true
 
 exec = ["-m", "sglang.launch_server", "--port", "8011", "--model-path", "/models/your-model"]
 """
@@ -30,5 +29,7 @@ exec = ["-m", "sglang.launch_server", "--port", "8011", "--model-path", "/models
     image: str = "lmsysorg/sglang:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
 
-    ipc_host: bool = True
+    # Legacy runes may retain these fields. They are accepted as inert inputs;
+    # pod members never receive host IPC or host networking flags.
+    ipc_host: bool = False
     network_host: bool = False

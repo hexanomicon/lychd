@@ -31,7 +31,7 @@ def _render_default_settings_toml(settings: Settings) -> str:
     extension_hint = (
         "# Optional built-ins: choose only what this machine needs.\n"
         '# Local llama.cpp: builtins = ["animator/llamacpp"]\n'
-        '# Other choices: "animator/vllm", "animator/sglang",\n'
+        '# Other choices: "animator/exllamav3", "animator/vllm", "animator/sglang",\n'
         '#                "observability/phoenix", "simulation"\n'
     )
     if extension_table not in content:

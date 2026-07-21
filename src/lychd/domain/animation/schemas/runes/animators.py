@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import re
 from abc import ABC
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Final
 
-from pydantic import AnyHttpUrl, Field, model_validator
+from pydantic import AnyHttpUrl, Field, field_validator, model_validator
 
 from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.runes.models import LocalModelConfig, PortalModelConfig
 from lychd.domain.animation.schemas.shared import ModelFormat
+from lychd.system.secret_names import is_valid_podman_secret_name
+
+_ENV_NAME: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class AnimatorConfig(RuneConfig, ABC):
@@ -115,6 +119,15 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         ),
     )
 
+    @field_validator("exec")
+    @classmethod
+    def _validate_exec_command_separators(cls, values: list[str]) -> list[str]:
+        """Reject tokens that Quadlet/systemd can reinterpret as another command."""
+        if any(token.strip("'\"") == ";" for value in values for token in value.split()):
+            msg = "exec cannot contain a standalone systemd command separator"
+            raise ValueError(msg)
+        return values
+
     @property
     def service_name(self) -> str:
         """Systemd service stem used by conflict generation."""
@@ -125,14 +138,19 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         """Normalized runtime id for adapter dispatch."""
         return str(getattr(self, "runtime", "generic"))
 
+    @property
+    def control_plane_secret_names(self) -> tuple[str, ...]:
+        """Secrets the Vessel needs to operate this local runtime's control plane."""
+        return ()
+
     @model_validator(mode="after")
     def _hydrate_local_defaults(self) -> SoulstoneConfig:
         for env_name, secret_name in self.secret_env_files.items():
-            if not env_name.strip():
-                msg = "secret_env_files keys must be non-empty environment variable names."
+            if _ENV_NAME.fullmatch(env_name) is None:
+                msg = "secret_env_files keys must be valid environment variable names."
                 raise ValueError(msg)
-            if not secret_name.strip():
-                msg = "secret_env_files values must be non-empty Podman secret names."
+            if not is_valid_podman_secret_name(secret_name):
+                msg = "secret_env_files values must be option-free Podman secret names."
                 raise ValueError(msg)
         return self
 
@@ -177,6 +195,14 @@ class PortalConfig(AnimatorConfig, ABC):
         default=False,
         description="Opt-in live reachability probe (no surprise egress by default).",
     )
+
+    @field_validator("api_key_secret_name")
+    @classmethod
+    def _validate_api_key_secret_name(cls, value: str | None) -> str | None:
+        if value is not None and not is_valid_podman_secret_name(value):
+            msg = "api_key_secret_name must be one option-free Podman secret name."
+            raise ValueError(msg)
+        return value
 
 
 class OpenAIPortalConfig(PortalConfig):

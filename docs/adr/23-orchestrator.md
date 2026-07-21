@@ -161,8 +161,25 @@ adapter performs its runtime-native activation. A bounded router load may unload
 which is why the barrier is mandatory. For a fixed/static capability, and for any capability
 already `WARMING`, the manager skips adapter activation and only waits for honest convergence.
 
-- **Activate:** for the `llama.cpp` router, activation is `POST /models/load` against the running router.
-- **Phase projection:** the router's reported `status` (`unloaded`, `loading`, `loaded`) maps to the `CapabilityPhase` ladder — `ACTIVATABLE`, `WARMING`, `WARM` respectively — alongside `loaded_model_ids` and `estimated_ready_ms`.
+- **Activate:** the `llama.cpp` router uses `POST /models/load`; ExLlamaV3 uses the official
+  TabbyAPI `POST /v1/model/load` endpoint against its running server.
+- **Phase projection:** llama.cpp router status and TabbyAPI's health/inventory/current-model
+  contract map onto `ACTIVATABLE`, `WARMING`, and `WARM`. In particular, a healthy TabbyAPI with
+  `GET /v1/model` reporting no loaded model is `ACTIVATABLE`, never `WARM`.
+- **Streaming ambiguity:** TabbyAPI emits multiple SSE load stages and continues a detached load
+  after client disconnect. Its adapter consumes through EOF and verifies `GET /v1/model`; timeout
+  or disconnect stays `WARMING` while the observer is alive and converges only through bounded
+  polling. If the observer ends without a trustworthy terminal event and no active model can be
+  verified, the capability becomes contained `ERROR`; restarting the caged Vessel resets Tabby and
+  the in-memory load epoch together.
+- **Authority and containment:** TabbyAPI data and admin calls use separate keys from one
+  Vessel/Tabby-only Podman secret. The Tabby unit has `BindsTo=lychd-vessel.service`, so a detached
+  load cannot survive loss of the process that owns admission and mutation authority.
+- **Resource-profile boundary:** the phase-one adapter requests only model identity/backend.
+  TabbyAPI still chooses cache, context, split, and reserve defaults, while a model-local
+  `tabby_config.yml` can override request values. Until a typed requested/effective load profile
+  and managed override policy land, ExLlamaV3 is dynamically switchable but not quantitatively
+  admissible by VRAM/topology.
 - **Readiness:** the capability is grantable once its model id appears in `loaded_model_ids` and its phase is `WARM`.
 - **One deadline:** `warmup_timeout_s` creates one monotonic deadline for the entire `await_warm`
   call. An adapter's `estimated_ready_ms` may seed the first sleep, but that sleep and every poll
@@ -172,9 +189,9 @@ already `WARMING`, the manager skips adapter activation and only waits for hones
   `WARM` convergence failure on this path therefore leaves the target Animator and queue claim gate
   closed.
 
-The llama.cpp router adapter implements the dynamic activation seam. Fixed OpenAI-compatible and
-generic adapters are not called for activation; their already-started targets use convergence only
-and must become `WARM` within the same absolute deadline.
+The llama.cpp router and ExLlamaV3/TabbyAPI adapters implement the dynamic activation seam. Fixed
+OpenAI-compatible and generic adapters are not called for activation; their already-started targets
+use convergence only and must become `WARM` within the same absolute deadline.
 
 ### Host Mutation Port and Privilege Boundary
 

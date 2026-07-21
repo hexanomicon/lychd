@@ -113,58 +113,84 @@ MPL 2.0 protects the shared body at the distribution boundary. This is a plain-l
 
 **Protocol over implementation.** LychD is Linux-native, not "the Agentic OS." macOS, Windows, and other runtimes may exist as ports, forks, or independent implementations. If they speak the **A2A Intercom**, they can enter the Necropolis and trade labor in the Swarm.
 
-## ⛩️ A Tribute to the Spirits
+## ⛩️ Hall of Spirits
 
-> *"The Lich only sees far because it stands on the shoulders of Giants."*
+> *The Lich sees far because it stands on the shoulders of giants.*
 
-### 🕸️ Backend
+These names have different relationships to LychD. **Foundations** are part of the shipped or
+operational stack. **Inference bodies** are supported runtime integrations and still require the
+operator's model artifacts, hardware, and validation. **Teachers** are projects we studied; credit
+does not mean that their source or control plane was imported. This hall is gratitude, not the
+release license inventory.
 
-- **[Litestar](https://github.com/litestar-org/litestar)** — Forges the **[Vessel](https://hexanomicon.github.io/lychd/sepulcher/vessel/)**, the body of the Lich, following the **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** blueprint and served by **[Granian](https://github.com/emmett-framework/granian)** or the CLI protocol.
-- **[SQLAlchemy](https://www.sqlalchemy.org/)** — The mapper of state and material persistence. **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** provides repositories and QoL improvements.
-- **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Orchestrator of agentic intelligence, logic, and model graphs.
-- **[SAQ](https://github.com/tobymao/saq)** — Background Workers known as **[Ghouls](https://hexanomicon.github.io/lychd/sepulcher/vessel/ghouls/)**
+### 🜏 Foundations
 
-### 🎭 Frontend
+- **[Litestar](https://github.com/litestar-org/litestar)** and
+  **[Pydantic AI](https://github.com/pydantic/pydantic-ai)** form the typed HTTP and cognitive edges;
+  **[Granian](https://github.com/emmett-framework/granian)** serves the Vessel and
+  **[SAQ](https://github.com/tobymao/saq)** animates its Ghouls. LychD retains lifecycle,
+  authorization, and durable-run authority.
+- **[SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy)**,
+  **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)**, and
+  **[PostgreSQL](https://www.postgresql.org/)** with
+  **[pgvector](https://github.com/pgvector/pgvector)** anchor the Phylactery.
+- **[Jinja](https://github.com/pallets/jinja)**,
+  **[HTMX](https://github.com/bigskysoftware/htmx)**,
+  **[Alpine.js](https://github.com/alpinejs/alpine)**, and
+  **[Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)** shape the server-owned Altar;
+  **[Vite](https://github.com/vitejs/vite)** forges its static assets.
+- **[OpenTelemetry](https://opentelemetry.io/)** and
+  **[Structlog](https://github.com/hynek/structlog)** are the telemetry substrate beneath Oculus.
+- **[Linux](https://kernel.org/)**, **[systemd](https://systemd.io/)**, and
+  **[Podman/Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)** animate
+  rootless local services; **[Btrfs](https://btrfs.readthedocs.io/)** remains an optional
+  snapshot accelerator.
+- **[Zensical](https://github.com/zensical/zensical)** publishes the Hexanomicon. The forge uses
+  **[uv](https://github.com/astral-sh/uv)**, **[Ruff](https://github.com/astral-sh/ruff)**,
+  **[basedpyright](https://github.com/DetachHead/basedpyright)**,
+  **[pytest](https://github.com/pytest-dev/pytest)**,
+  **[Jujutsu](https://github.com/jj-vcs/jj)**, and **[Git](https://git-scm.com/)**.
 
-- **[Zensical](https://github.com/zensical/zensical)** — inscribed **[Hexanomicon](https://hexanomicon.github.io/lychd/)**
-- **[Jinja2](https://jinja.palletsprojects.com/)** — renders the **[Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
-- **[Vite](https://vitejs.dev/)** — **[JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)** bundler
-- **[HTMX](https://htmx.org/)** — Engine for seamless transmutation.
-- **[Tailwind CSS](https://tailwindcss.com/)** — styling.
-- **[Alpine.js](https://alpinejs.dev/)** — UI animation.
+### 🔥 Inference bodies
 
-### 📦 Containerization & Sandboxing
+- LychD ships a core dynamic-runtime adapter for
+  **[ExLlamaV3](https://github.com/turboderp-org/exllamav3)** through its official
+  OpenAI-compatible server, **[TabbyAPI](https://github.com/theroyallab/tabbyAPI)**. The image
+  boundary is digest-pinned and the adapter is contract-tested against TabbyAPI revision
+  `0158fb48`; it does not yet carry a repository NVIDIA/model hardware receipt. Every EXL3 quant,
+  cache, and GPU split still requires real-host validation.
+  TabbyAPI remains a separately versioned AGPL-3.0 runtime, not LychD's control plane; LychD talks
+  to its unmodified pinned container over HTTP and imports none of its server source.
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)**,
+  **[vLLM](https://github.com/vllm-project/vllm)**, and
+  **[SGLang](https://github.com/sgl-project/sglang)** provide complementary local execution bodies.
 
-- **[Systemd](https://systemd.io/)** — Orchestrator of the undying processes of the **[Linux Kernel](https://kernel.org/)**.
-- **[Podman](https://podman.io/)** — Isolation of the spirit inside containers via **[Quadlets](https://github.com/containers/quadlet)**.
-- **[Nono](https://github.com/always-further/nono/)** — Strict per-process execution sandbox leveraging Linux Landlock to isolate unsafe tool executions within the Shadow Realm.
-- **[Btrfs](https://btrfs.readthedocs.io/en/latest/)** — Management of time through snapshots.
+### 🕯️ Teachers and provocateurs
 
-### 🔥 Inference Engines
-
-- **[vLLM](https://github.com/vllm-project/vllm)** — Batching, high-throughput inference engine for GPUs.
-- **[Llama.cpp](https://github.com/ggerganov/llama.cpp)** — Single batch server Optimised for CPU offloading of larger models.
-- **[SGLang](https://github.com/sgl-project/sglang)** — Radix attention benefit for batched agentic workflows on GPUs.
-
-### 🔨 Forging & Evaluation
-
-- **[DeepFabric](https://github.com/always-further/deepfabric)** — The mechanical loom that generates structured training datasets and evaluates model mettle via physical execution in the Shadow Realm.
-- **[Unsloth](https://github.com/unslothai/unsloth)** — High-efficiency pipeline for striking verified patterns into LoRA adapter weights.
-
-### 👁️ Database & Telemetry
-
-- **[PostgreSQL](https://www.postgresql.org/)** — The anchor of the Soul, extended by **[pgvector](https://github.com/pgvector/pgvector)**.
-- **[OpenTelemetry](https://opentelemetry.io/)** — Tracer of thought, flowing into **[Arize Phoenix](https://phoenix.arize.com/)**.
-- **[Structlog](https://www.structlog.org/)** — Capturing the internal monologue of the machine.
-- **[Cockpit](https://cockpit-project.org/)** — Monitor of the physical frame.
-
-### 🛠️ Code Control
-
-- **[uv](https://github.com/astral-sh/uv)** — Manager of the environment and dependencies.
-- **[Ruff](https://github.com/astral-sh/ruff)** — The polisher of the written word.
-- **[Pyright](https://github.com/microsoft/pyright)** — Enforcer of the static types.
-- **[Pytest](https://docs.pytest.org/)** — Verifier of the logic's truth.
-- **[Git](https://git-scm.com/)** — Immortalizer of the project's evolution.
+- **[Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack)** was an integration
+  blueprint and source ancestor; its MIT provenance must remain attached to adapted code.
+- **[llama-swap](https://github.com/mostlygeek/llama-swap)**,
+  **[oMLX](https://github.com/jundot/omlx)**,
+  **[RamaLama](https://github.com/containers/ramalama)**, and
+  **[club-3090](https://github.com/noonghunna/club-3090)** sharpened routing, memory admission,
+  rootless packaging, hardware topology, and calibration. LychD keeps scheduling and lifecycle
+  authority.
+- **[cache-hunter](https://github.com/co-l/cache-hunter)** provoked controlled prompt-cache
+  experiments. Its checkout carries no reuse license, so no source, schema, or UI is imported.
+- **[Arize Phoenix](https://github.com/arize-ai/phoenix)** taught trace-query and observability-UI
+  lessons—and clarified why **Oculus** should remain native. Phoenix may return only as an optional
+  external Eye.
+- **[Agno](https://github.com/agno-agi/agno)**,
+  **[mem0](https://github.com/mem0ai/mem0)**,
+  **[Memori](https://github.com/MemoriLabs/Memori)**,
+  **[DeepEval](https://github.com/confident-ai/deepeval)**,
+  **[Firecrawl](https://github.com/firecrawl/firecrawl)**,
+  **[SearXNG](https://github.com/searxng/searxng)**, and
+  **[nono](https://github.com/always-further/nono)** remain valuable comparative teachers across
+  workflow, memory, evaluation, discovery, and sandboxing; none owns LychD's canonical state.
+- **[DeepFabric](https://github.com/always-further/deepfabric)** and
+  **[Unsloth](https://github.com/unslothai/unsloth)** inform optional forging and evaluation;
+  **[Cockpit](https://cockpit-project.org/)** may remain an external host monitor, never Oculus.
 
 
 ---

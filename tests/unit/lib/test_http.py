@@ -53,6 +53,26 @@ async def test_request_json_empty_body_is_empty_dict() -> None:
     assert body == {}
 
 
+@pytest.mark.asyncio
+async def test_request_json_rejects_null_by_default() -> None:
+    with respx.mock:
+        respx.post("http://host/model/unload").mock(
+            return_value=httpx.Response(200, text="null", headers={"content-type": "application/json"})
+        )
+        with pytest.raises(HttpJsonError, match="unsupported payload type"):
+            await request_json("POST", "http://host/model/unload")
+
+
+@pytest.mark.asyncio
+async def test_request_json_accepts_null_only_when_explicit() -> None:
+    with respx.mock:
+        respx.post("http://host/model/unload").mock(
+            return_value=httpx.Response(200, text="null", headers={"content-type": "application/json"})
+        )
+        body = await request_json("POST", "http://host/model/unload", allow_null=True)
+    assert body == {}
+
+
 def test_run_sync_without_running_loop() -> None:
     async def coro() -> int:
         return 21

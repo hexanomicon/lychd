@@ -37,6 +37,7 @@ from lychd.system.schemas import (
     QuadletPod,
     QuadletTarget,
     SystemdService,
+    podman_secret_source,
 )
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ if TYPE_CHECKING:
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
-    from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
+    from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimePlanner
 
 MIN_COVEN_MEMBERS: Final[int] = 2
 LYCHD_POD_QUADLET: Final[str] = "lychd.pod"
@@ -179,6 +180,7 @@ class Transmuter:
         *,
         portals: Sequence[PortalConfig] | None = None,
         runes: RuneRegistry | None = None,
+        runtime_plans: Sequence[RuntimePlan] | None = None,
     ) -> list[QuadletBase]:
         """Convert Soulstone Runes into a complete Quadlet manifest set."""
         from lychd.config.runes.registry import RuneRegistry
@@ -194,15 +196,25 @@ class Transmuter:
             runes=resolved_runes,
         )
         contributions = [contributor.contribute(ctx) for contributor in self._contributors]
+        resolved_runtime_plans = (
+            list(runtime_plans)
+            if runtime_plans is not None
+            else [self._runtime_planner.plan(stone) for stone in soulstones]
+        )
+        if len(resolved_runtime_plans) != len(soulstones):
+            msg = "Runtime plan count must match the Soulstone count"
+            raise ValueError(msg)
+
+        self._validate_secret_isolation(settings, resolved_portals, soulstones, resolved_runtime_plans)
 
         manifests: list[QuadletBase] = []
 
         # 1. The Sepulcher (Pod): core ports + contribution ports (contributor order).
         contribution_ports = [port for contribution in contributions for port in contribution.pod_ports]
-        manifests.append(self._create_pod(settings, contribution_ports))
+        manifests.append(self._create_pod(settings, contribution_ports, resolved_runtime_plans))
 
         # 2. The Core Rituals (Vessel, Phylactery).
-        manifests.extend(self._create_core_manifests(settings, resolved_portals))
+        manifests.extend(self._create_core_manifests(settings, resolved_portals, soulstones))
 
         # 3. Contribution containers (contributor order) -- e.g. the Oculus.
         for contribution in contributions:
@@ -226,11 +238,19 @@ class Transmuter:
 
         # 6. Transmute Extension Soulstones. Covens group starts; they do not
         # encode hidden stop side effects. The Orchestrator owns exclusivity.
-        manifests.extend(self._transmute_soulstone(stone, covens, settings) for stone in soulstones)
+        manifests.extend(
+            self._transmute_soulstone(stone, covens, settings, runtime_plan)
+            for stone, runtime_plan in zip(soulstones, resolved_runtime_plans, strict=True)
+        )
 
         return manifests
 
-    def _create_pod(self, settings: Settings, extra_ports: list[str]) -> QuadletPod:
+    def _create_pod(
+        self,
+        settings: Settings,
+        extra_ports: list[str],
+        runtime_plans: Sequence[RuntimePlan],
+    ) -> QuadletPod:
         """Define the physical boundary of the Sepulcher.
 
         Core ports come first, then contribution ports append in contributor
@@ -241,12 +261,95 @@ class Transmuter:
             f"127.0.0.1:{settings.server.database.port}:{CONTAINER_POSTGRES_PORT}",
             *(f"127.0.0.1:{mapping}" for mapping in extra_ports),
         ]
-        return QuadletPod(publish_ports=ports)
+        shared_memory_requirements = [plan.pod_shared_memory_bytes for plan in runtime_plans]
+        if any(requirement < 0 for requirement in shared_memory_requirements):
+            msg = "Runtime plans cannot request a negative pod shared-memory capacity"
+            raise ValueError(msg)
+        shared_memory_bytes = sum(shared_memory_requirements)
+        return QuadletPod(
+            publish_ports=ports,
+            shm_size=self._format_memory_size(shared_memory_bytes) if shared_memory_bytes else None,
+        )
+
+    def _format_memory_size(self, size_bytes: int) -> str:
+        """Render an exact byte requirement in the largest integral Quadlet unit."""
+        for suffix, scale in (("t", 1024**4), ("g", 1024**3), ("m", 1024**2), ("k", 1024)):
+            if size_bytes % scale == 0:
+                return f"{size_bytes // scale}{suffix}"
+        return str(size_bytes)
+
+    def _validate_secret_isolation(
+        self,
+        settings: Settings,
+        portals: Sequence[PortalConfig],
+        soulstones: Sequence[SoulstoneConfig],
+        runtime_plans: Sequence[RuntimePlan],
+    ) -> None:
+        """Keep every data-plane credential distinct from privileged control secrets."""
+        app_secret = settings.server.web.secret_key_secret
+        db_secret = settings.server.database.password_secret
+        if app_secret == db_secret:
+            msg = "Core application-signing and database-password secrets must use distinct names"
+            raise ValueError(msg)
+        core_secrets = {app_secret, db_secret}
+        portal_secrets = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
+        portal_core_aliases = sorted(portal_secrets.intersection(core_secrets))
+        if portal_core_aliases:
+            aliases = ", ".join(portal_core_aliases)
+            msg = f"Portal API secret(s) {aliases} cannot alias core application or database secrets"
+            raise ValueError(msg)
+        privileged = core_secrets | portal_secrets
+        control_plane_owners: dict[str, tuple[int, str]] = {}
+        for stone_index, stone in enumerate(soulstones):
+            for secret_name in stone.control_plane_secret_names:
+                previous = control_plane_owners.get(secret_name)
+                if previous is not None:
+                    msg = (
+                        f"Soulstones '{previous[1]}' and '{stone.name}' cannot share control-plane "
+                        f"secret '{secret_name}'"
+                    )
+                    raise ValueError(msg)
+                control_plane_owners[secret_name] = (stone_index, stone.name)
+
+        for stone_index, (stone, plan) in enumerate(zip(soulstones, runtime_plans, strict=True)):
+            runtime_secret_names = {podman_secret_source(secret) for secret in plan.secrets}
+            data_plane_secrets = {
+                *stone.secret_env_files.values(),
+                *stone.control_plane_secret_names,
+                *runtime_secret_names,
+            }
+            overlap = sorted(data_plane_secrets.intersection(privileged))
+            if overlap:
+                msg = (
+                    f"Soulstone '{stone.name}' secret(s) {', '.join(overlap)} must be distinct "
+                    "from core and Portal secrets"
+                )
+                raise ValueError(msg)
+
+            # A runtime adapter may mount its own control document into the
+            # runtime it controls (TabbyAPI requires this), but Rune-level data
+            # secrets must never alias any control-plane document, and an
+            # adapter must never mount a document owned by another Soulstone.
+            rune_aliases = sorted(set(stone.secret_env_files.values()).intersection(control_plane_owners))
+            foreign_runtime_aliases = sorted(
+                secret_name
+                for secret_name in runtime_secret_names
+                if (owner := control_plane_owners.get(secret_name)) is not None and owner[0] != stone_index
+            )
+            forbidden_aliases = sorted({*rune_aliases, *foreign_runtime_aliases})
+            if forbidden_aliases:
+                aliases = ", ".join(forbidden_aliases)
+                msg = (
+                    f"Soulstone '{stone.name}' data-plane secret(s) {aliases} cannot alias "
+                    "a Soulstone control-plane secret"
+                )
+                raise ValueError(msg)
 
     def _create_core_manifests(
         self,
         settings: Settings,
         portals: Sequence[PortalConfig],
+        soulstones: Sequence[SoulstoneConfig],
     ) -> list[QuadletContainer]:
         """Define the persistent core services (Vessel, Phylactery).
 
@@ -258,7 +361,12 @@ class Transmuter:
         app_secret_name = settings.server.web.secret_key_secret
         db_secret_name = settings.server.database.password_secret
         portal_secret_names = [portal.api_key_secret_name for portal in portals if portal.api_key_secret_name]
-        vessel_secrets = list(dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names]))
+        control_plane_secret_names = [
+            secret_name for stone in soulstones for secret_name in stone.control_plane_secret_names
+        ]
+        vessel_secrets = list(
+            dict.fromkeys([app_secret_name, db_secret_name, *portal_secret_names, *control_plane_secret_names])
+        )
         reactor_dependencies = (
             ["lychd-reactor.path"] if settings.orchestration.switching.actuator == "host-reactor" else []
         )
@@ -340,12 +448,12 @@ class Transmuter:
         stone: SoulstoneConfig,
         covens: dict[str, list[SoulstoneConfig]],
         settings: Settings,
+        runtime_plan: RuntimePlan,
     ) -> QuadletContainer:
         """Convert a single Soulstone Rune into a Quadlet container manifest."""
         # Only list groups that actually Forge into Targets (The Law of the Coven)
         coven_targets = [g for g in stone.groups if len(covens.get(g, [])) >= MIN_COVEN_MEMBERS]
 
-        runtime_plan = self._runtime_planner.plan(stone)
         merged_env = {k: str(v) for k, v in stone.env_vars.items()}
         merged_env.update(runtime_plan.env_overrides)
         merged_env.update(
@@ -363,7 +471,7 @@ class Transmuter:
             stone_name=stone.name,
             settings=settings,
         )
-        merged_secrets = list(dict.fromkeys(stone.secret_env_files.values()))
+        merged_secrets = list(dict.fromkeys([*stone.secret_env_files.values(), *runtime_plan.secrets]))
 
         # Boot survivor determinism (F4): auto-starting every dedicated runtime
         # would bypass the Orchestrator's single-owner plan/drain boundary and can
@@ -390,8 +498,9 @@ class Transmuter:
             # Never emit Conflicts= for managed runtimes. A systemd-triggered
             # implicit stop would bypass lease admission closure and drain.
             conflicts=[],
+            binds_to=list(runtime_plan.unit_binds_to),
             wants=[LYCHD_POD_SERVICE],
-            after=[LYCHD_POD_SERVICE],
+            after=[LYCHD_POD_SERVICE, *runtime_plan.unit_after],
             wanted_by=wanted_by,
         )
 
@@ -423,6 +532,7 @@ class Transmuter:
 
         validated: list[MountData] = []
         seen: set[tuple[Path, Path, tuple[str, ...]]] = set()
+        destinations: dict[Path, Path] = {}
         for raw_mount in mount_strings:
             parsed = MountData.from_str(raw_mount)
             host_path = _normalize_mount_path(parsed.host_path, stone_name=stone_name, side="host")
@@ -432,6 +542,13 @@ class Transmuter:
                 side="container",
             )
             resolved_host = _resolve_host_path(host_path, stone_name=stone_name)
+
+            previous_host = destinations.setdefault(container_path, resolved_host)
+            if previous_host != resolved_host or any(
+                existing.container_path == container_path for existing in validated
+            ):
+                msg = f"Soulstone '{stone_name}' declares more than one mount for container path {container_path}"
+                raise ValueError(msg)
 
             for configured_root, protected_root in protected_host_roots:
                 if paths_overlap(resolved_host, protected_root):

@@ -65,6 +65,10 @@ Portal auth is reference-driven:
 
 Core app secrets (`APP` signing key and DB password) are auto-generated as startup fallbacks only when no secret source is configured. Portal secrets are never auto-generated and must be explicitly created.
 
+A Portal API secret name may never alias either core secret name. Multiple Portals may
+deliberately reference the same provider credential because their connectors all execute inside
+the trusted Vessel; doing so also deliberately shares that credential's rotation and blast radius.
+
 For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.md) and [Configuration (ADR 12)](../../adr/12-configuration.md).
 
 !!! danger "The Tithe (Token Creep)"

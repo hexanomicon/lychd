@@ -25,6 +25,10 @@ BUILTIN_EXTENSIONS: Final = MappingProxyType(
             register_module="lychd.extensions.builtin.animator.llamacpp.register",
             description="llama.cpp local Soulstone runtime.",
         ),
+        "animator/exllamav3": BuiltinExtension(
+            register_module="lychd.extensions.builtin.animator.exllamav3.register",
+            description="Dynamic ExLlamaV3 Soulstone served by TabbyAPI.",
+        ),
         "animator/vllm": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.vllm.register",
             description="vLLM local Soulstone runtime.",
@@ -35,7 +39,7 @@ BUILTIN_EXTENSIONS: Final = MappingProxyType(
         ),
         "observability/phoenix": BuiltinExtension(
             register_module="lychd.extensions.builtin.observability.phoenix.register",
-            description="Local Phoenix observability service.",
+            description="Optional legacy Phoenix telemetry Eye (not native Oculus).",
         ),
         "simulation": BuiltinExtension(
             register_module="lychd.extensions.builtin.simulation.register",

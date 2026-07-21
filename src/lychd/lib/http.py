@@ -26,10 +26,11 @@ _HTTP_STATUS_BAD_REQUEST = 400
 class HttpJsonError(RuntimeError):
     """Raised when an async JSON HTTP request fails or returns a non-JSON body."""
 
-    def __init__(self, message: str, *, status: int | None = None) -> None:
-        """Store the human-readable failure message and optional HTTP status."""
+    def __init__(self, message: str, *, status: int | None = None, transport: bool = False) -> None:
+        """Store status and whether the request failed before a valid HTTP response."""
         super().__init__(message)
         self.status = status
+        self.transport = transport
 
 
 async def request_json(
@@ -40,6 +41,7 @@ async def request_json(
     payload: Mapping[str, Any] | None = None,
     headers: Mapping[str, str] | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,  # noqa: ASYNC109 - httpx owns the request timeout natively
+    allow_null: bool = False,
 ) -> dict[str, object]:
     """Issue an async JSON request and normalize the response into a dict.
 
@@ -63,7 +65,7 @@ async def request_json(
             )
     except httpx.HTTPError as exc:
         msg = f"{method} {url} failed: {exc}"
-        raise HttpJsonError(msg) from exc
+        raise HttpJsonError(msg, transport=True) from exc
 
     if response.status_code >= _HTTP_STATUS_BAD_REQUEST:
         body = response.text[:200]
@@ -85,6 +87,8 @@ async def request_json(
         return {str(key): value for key, value in mapping.items()}
     if isinstance(parsed, list):
         return {"data": cast("list[object]", parsed)}
+    if parsed is None and allow_null:
+        return {}
 
     msg = f"{method} {url} returned unsupported payload type: {type(parsed)}"
     raise HttpJsonError(msg)

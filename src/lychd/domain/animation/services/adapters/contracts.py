@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Protocol
+from typing import ClassVar, Protocol, runtime_checkable
 
 from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
@@ -20,6 +20,10 @@ class RuntimePlan:
     env_overrides: dict[str, str] = field(default_factory=dict)
     volumes: list[str] = field(default_factory=list)
     podman_args: list[str] = field(default_factory=list)
+    secrets: list[str] = field(default_factory=list)
+    unit_binds_to: list[str] = field(default_factory=list)
+    unit_after: list[str] = field(default_factory=list)
+    pod_shared_memory_bytes: int = 0
 
 
 @dataclass(frozen=True)
@@ -58,6 +62,13 @@ class AnimatorControlPlane(Protocol):
     async def unload_model(self, base_url: str, model: str) -> bool: ...
 
 
+@runtime_checkable
+class ActivationObserver(Protocol):
+    """Optional adapter capability for releasing asynchronous activation observers."""
+
+    async def abandon_activation(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> None: ...
+
+
 class SoulstoneRuntimeAdapter(Protocol):
     """Contract for Soulstone runtime planners/builders."""
 
@@ -90,6 +101,7 @@ class SoulstoneRuntimePlanner(Protocol):
 
 __all__ = [
     "LISTEN_HOST",
+    "ActivationObserver",
     "AnimatorControlPlane",
     "PortalDefinition",
     "PortalRuntimeFactory",

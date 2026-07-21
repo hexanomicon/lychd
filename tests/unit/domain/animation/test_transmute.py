@@ -8,7 +8,12 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 import lychd.domain.animation.transmute as transmute_mod
 from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
 from lychd.config.settings.root import Settings, get_settings
-from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
+from lychd.domain.animation.schemas import (
+    ConcurrencyIntent,
+    GenericSoulstoneConfig,
+    OpenAIPortalConfig,
+    SoulstoneConfig,
+)
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
@@ -37,6 +42,7 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     pods = [manifest for manifest in manifests if isinstance(manifest, QuadletPod)]
     assert len(pods) == 1
     assert pods[0].pod_name == "lychd"
+    assert pods[0].shm_size is None
 
     # 2. Check Core Containers
     containers = {manifest.container_name: manifest for manifest in manifests if isinstance(manifest, QuadletContainer)}
@@ -157,6 +163,91 @@ def test_transmute_merges_runtime_podman_args() -> None:
 
     assert "--replace" in manifest.podman_args
     assert "--ipc=host" in manifest.podman_args
+
+
+def test_soulstone_exec_rejects_standalone_systemd_command_separator() -> None:
+    with pytest.raises(ValueError, match="standalone systemd command separator"):
+        GenericSoulstoneConfig(
+            name="separator",
+            image="example/runtime",
+            exec=[";", "/bin/touch", "/tmp/pwned"],  # noqa: S108
+        )
+
+
+def test_runtime_plan_podman_args_reject_standalone_systemd_command_separator() -> None:
+    class UnsafeRuntimePlanner:
+        def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
+            _ = soulstone
+            return RuntimePlan(podman_args=["';'"])
+
+    stone = SoulstoneFactory.build(name="separator", image="example/runtime")
+    with pytest.raises(ValueError, match="standalone systemd command separator"):
+        Transmuter(runtime_planner=UnsafeRuntimePlanner()).transmute_all([stone])
+
+
+def test_transmute_aggregates_runtime_shared_memory_requirement() -> None:
+    class StubRuntimePlanner:
+        def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
+            requested = 8 * 1024**3 if soulstone.name == "large" else 2 * 1024**3
+            return RuntimePlan(pod_shared_memory_bytes=requested)
+
+    stones = [
+        SoulstoneFactory.build(name="small", image="example/small"),
+        SoulstoneFactory.build(name="large", image="example/large"),
+    ]
+    manifests = Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all(stones)
+    pod = next(manifest for manifest in manifests if isinstance(manifest, QuadletPod))
+
+    assert pod.shm_size == "10g"
+
+
+def test_transmute_rejects_any_negative_shared_memory_requirement() -> None:
+    class StubRuntimePlanner:
+        def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
+            requested = 8 * 1024**3 if soulstone.name == "large" else -1
+            return RuntimePlan(pod_shared_memory_bytes=requested)
+
+    stones = [
+        SoulstoneFactory.build(name="large", image="example/large"),
+        SoulstoneFactory.build(name="invalid", image="example/invalid"),
+    ]
+    with pytest.raises(ValueError, match="negative pod shared-memory"):
+        Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all(stones)
+
+
+def test_soulstone_cannot_receive_a_core_secret(transmuter: Transmuter) -> None:
+    settings = get_settings()
+    stone = SoulstoneFactory.build(
+        name="leak",
+        image="example/runtime",
+        secret_env_files={"LEAK": settings.server.database.password_secret},
+    )
+
+    with pytest.raises(ValueError, match="distinct from core and Portal secrets"):
+        transmuter.transmute_all([stone])
+
+
+def test_portal_cannot_receive_a_core_secret(transmuter: Transmuter) -> None:
+    settings = get_settings()
+    portal = OpenAIPortalConfig(
+        name="stolen-core",
+        api_key_secret_name=settings.server.database.password_secret,
+    )
+
+    with pytest.raises(ValueError, match="cannot alias core application or database secrets"):
+        transmuter.transmute_all([], portals=[portal])
+
+
+def test_soulstone_secret_env_file_rejects_podman_target_options() -> None:
+    settings = get_settings()
+    with pytest.raises(ValueError, match="option-free Podman secret names"):
+        GenericSoulstoneConfig.model_validate(
+            {
+                "name": "secret-option-injection",
+                "image": "example/runtime",
+                "secret_env_files": {"LEAK": f"{settings.server.database.password_secret},target=/data/stolen"},
+            }
+        )
 
 
 @pytest.mark.parametrize("source", ["rune", "adapter"])
@@ -288,7 +379,32 @@ def test_soulstone_mounts_reject_systemd_path_specifiers(
         volumes=[f"{tmp_path / 'models'}:/%h/.config/lychd:ro"],
     )
 
-    with pytest.raises(ValueError, match="unsafe systemd characters"):
+    with pytest.raises(ValueError, match="systemd specifier"):
+        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+
+
+def test_soulstone_mounts_reject_systemd_environment_aliases() -> None:
+    stone = SoulstoneFactory.build(
+        name="environment-alias",
+        image="example/runtime",
+        volumes=["/${HOME}/.config/lychd:/models:ro"],
+    )
+
+    with pytest.raises(ValueError, match="systemd environment expansion"):
+        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+
+
+def test_soulstone_rejects_duplicate_container_mount_destinations(tmp_path: Path) -> None:
+    stone = SoulstoneFactory.build(
+        name="duplicate-target",
+        image="example/runtime",
+        volumes=[
+            f"{tmp_path / 'first'}:/models:ro",
+            f"{tmp_path / 'second'}:/models:rw",
+        ],
+    )
+
+    with pytest.raises(ValueError, match="more than one mount for container path /models"):
         Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 

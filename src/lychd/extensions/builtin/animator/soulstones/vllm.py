@@ -28,9 +28,6 @@ groups = ["local-llm"]
 image = "vllm/vllm-openai:nightly"
 port = 8000
 
-ipc_host = true
-network_host = false
-
 devices = ["nvidia.com/gpu=all"]
 # security_label_disable = false  # SELinux stays on for the container (CDI handles GPU access)
 
@@ -65,5 +62,11 @@ exec = [
     image: str = "vllm/vllm-openai:latest"
     model_format: ModelFormat | None = ModelFormat.AWQ
 
-    ipc_host: bool = True
-    network_host: bool = Field(default=False, description="Emit --network=host on the Quadlet.")
+    ipc_host: bool = Field(
+        default=False,
+        description="Deprecated compatibility input; host IPC is never emitted for a pod member.",
+    )
+    network_host: bool = Field(
+        default=False,
+        description="Deprecated compatibility input; host networking is never emitted for a pod member.",
+    )

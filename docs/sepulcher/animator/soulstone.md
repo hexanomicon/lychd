@@ -13,12 +13,12 @@ Unlike a remote API, a Soulstone requires the Magus to understand the physics of
 
 ## 💎 The Infrastructure Mapping
 
-Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `SoulstoneConfig` branch, such as `LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`. The fields defined in the scroll shape the local runtime and the generated container manifest.
+Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `SoulstoneConfig` branch, such as `LlamaCppSoulstoneConfig`, `ExLlamaV3SoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`. The fields defined in the scroll shape the local runtime and the generated container manifest.
 
 | TOML Field | Runtime Mapping | Purpose |
 | :--- | :--- | :--- |
-| `image` | `QuadletContainer.image` | The OCI image (e.g., llama.cpp, vLLM, SGLang, Phoenix, Playwright, or another service image). |
-| `runtime` | runtime adapter selection | Selects the local runtime family (`llamacpp`, `vllm`, `sglang`, etc.). |
+| `image` | `QuadletContainer.image` | The OCI image (e.g., llama.cpp, TabbyAPI, vLLM, SGLang, or another service image). |
+| `runtime` | runtime adapter selection | Selects the local runtime family (`llamacpp`, `exllamav3`, `vllm`, `sglang`, etc.). |
 | `groups` | coven target membership | Operator/systemd grouping only; v1 eviction policy is independent of group labels. |
 | `port` | runtime `--port` + pod publish mapping | Host-visible endpoint identity for the Soulstone. |
 | `base_url` | runtime connector endpoint | Optional override; defaults to `http://localhost:{port}/v1`. |
@@ -36,7 +36,7 @@ Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `
 
 ## :material-school: Model-Backed Disciplines of Animation
 
-A Soulstone is inert until it is bound to an **Animator adapter**: the connector that turns a local service into routable capabilities. The current model-backed core ships with built-in Soulstone profiles for **vLLM**, **SGLang**, and **llama.cpp**. Additional disciplines can be introduced through extensions, including non-model services whose adapters expose observation, browsing, execution, or peer-network capabilities.
+A Soulstone is inert until it is bound to an **Animator adapter**: the connector that turns a local service into routable capabilities. The current model-backed core ships with built-in Soulstone profiles for **vLLM**, **SGLang**, **llama.cpp**, and **ExLlamaV3 through TabbyAPI**. Additional disciplines can be introduced through extensions, including non-model services whose adapters expose observation, browsing, execution, or peer-network capabilities.
 
 ### I. The Kinetic (vLLM)
 
@@ -114,6 +114,70 @@ In router mode, a single llama.cpp Soulstone can serve different models over its
 
 This means a single llama.cpp Soulstone can dynamically expose `chat`, `vision`, or `embedding` capability families as different models are loaded. The **[Dispatcher](../../adr/22-dispatcher.md)** tracks each capability's `CapabilityPhase` (its position on the `COLD → ACTIVATABLE → WARMING → WARM` ladder) and routes accordingly.
 
+### IV. ExLlamaV3 through TabbyAPI
+
+**ExLlamaV3 is the inference library; TabbyAPI is its official OpenAI-compatible server.** LychD
+keeps that server outside the daemon dependency graph and registers it as the dynamic
+`animator/exllamav3` Soulstone runtime.
+
+- The official TabbyAPI image is pinned by digest in the generated sample. TabbyAPI is a rolling,
+  separately versioned boundary; changing the image requires contract tests and a local NVIDIA
+  hardware receipt.
+- The container starts healthy without a model. That is `ACTIVATABLE`, not `WARM`.
+- `POST /v1/model/load` reports several stages over SSE. LychD consumes the whole stream and then
+  verifies `GET /v1/model`; a disconnect is ambiguous because TabbyAPI continues the detached load.
+  A valid terminal stream followed by no active model releases the fence as a completed-but-lost
+  runtime epoch. A mid-stream transport loss cannot prove that, so it becomes a contained `ERROR`;
+  restart the caged Vessel to reset Tabby and the in-memory epoch together before another load.
+- Stable LychD `[[models]].id` values are distinct from Tabby's directory basenames. LychD derives
+  the runtime name from each validated direct-child `path` basename. The connector translates it
+  on both the lifecycle API and OpenAI data plane; agent bindings continue to request the stable
+  LychD id.
+- Authentication is mandatory even inside the un-published private pod. `auth_secret_name`
+  references one Podman secret containing strict JSON with distinct `api_key` and `admin_key`
+  values of at least 32 printable ASCII characters. The secret is mounted only into TabbyAPI and
+  the trusted Vessel: inference uses the data-plane key and lifecycle calls use the admin key.
+  Rune files, environment values, and generated manifests contain only the secret name.
+  This contract is deliberately unavailable to the uncaged Vessel until a host credential and
+  network boundary exists; `bind --uncaged` rejects such a Soulstone.
+- TabbyAPI is bound to `lychd-vessel.service`; loss or restart of the Vessel also stops Tabby so a
+  detached model load cannot outlive LychD's mutation fence. ExLlamaV3, vLLM, and SGLang runtime
+  plans request shared memory explicitly. Because every container in the pod shares one tmpfs,
+  the pod sums the configured per-runtime requirements; the size remains a lazy ceiling rather
+  than preallocated RAM, and no shared-memory size is imposed when no runtime requests one.
+- The current phase-one adapter sends only the declared model directory and backend. Effective
+  context, cache quantization/size, tensor or autosplit placement, and per-GPU reserve therefore
+  remain TabbyAPI defaults and are opaque to LychD's scheduler. A model-local `tabby_config.yml`
+  overrides even API load parameters. Resource-aware support must add a typed per-model load
+  profile plus requested-versus-effective verification and an explicit managed-mode policy for
+  that hidden override; raw option dictionaries are not an acceptable Rune surface.
+- TabbyAPI writes a rotating file log under `/app/logs` even though LychD captures stdout through
+  journald. The rootless Quadlet therefore mounts that directory as an ephemeral mode-1777 tmpfs;
+  no writable host or control-plane directory is exposed to the inference container. LychD also
+  pins TabbyAPI's log level above INFO because that upstream level prints raw authentication keys.
+- The adapter does not copy rootful Docker Compose `memlock` or `nofile` raises into rootless
+  Quadlet: ordinary user-manager hard limits cannot honor them. Any future limit change needs a
+  measured Tabby requirement, host preflight, and rootless Podman receipt.
+
+```toml
+name = "exl3"
+volumes = ["/data/models:/app/models:ro"]
+auth_secret_name = "tabby_exl3_auth"
+
+# podman secret create tabby_exl3_auth ./tabby-exl3-auth.json
+# JSON: {"api_key":"<32+-char-data-key>","admin_key":"<different-32+-char-admin-key>"}
+
+[[models]]
+id = "daily-driver"
+path = "/app/models/qwen-exl3"
+format = "EXL3"
+```
+
+The adapter and mocked server-contract tests are part of core support. A real Podman + NVIDIA +
+model run remains an operator/hardware acceptance receipt, as it does for the other GPU engines.
+Replacing a Podman secret does not update existing containers; rotate both keys by recreating the
+Vessel and this TabbyAPI Soulstone together.
+
 ## :material-scale-balance: The Ritual of Compression (Quantization)
 
 Models should not run in FP16 (Raw weight) unless H100-class hardware is available. The degradation in intelligence from **4-bit quantization** is negligible compared to the massive gains in VRAM efficiency (allowing for larger context windows).
@@ -121,6 +185,7 @@ Models should not run in FP16 (Raw weight) unless H100-class hardware is availab
 | Discipline | Format | Recommended Quant | Notes |
 | :--- | :--- | :--- | :--- |
 | **Kinetic / Radix** | **AWQ** | 4-bit | The gold standard for vLLM/SGLang. Faster decoding than GPTQ on Ampere. Compatible with the **Marlin** kernel for extreme speed. |
+| **ExLlamaV3** | **EXL3** | Hardware/model-specific | Native ExLlamaV3 format. Validate the chosen quant, cache, and split against the actual GPU topology. |
 | **Titan** | **GGUF** | **Q4_K_M** | The "Balanced" quant. Offers the best ratio of perplexity (intelligence) to size. Avoid Q2/Q3 unless strictly necessary for 405B models. |
 
 ---
@@ -151,15 +216,17 @@ runtime = "sglang"
 groups = ["vision-ritual"]
 port = 8780
 model_path = "/models/qwen3-next-80b-awq"
-tensor_parallel_size = 2
-enable_marlin = true
-# extra_args are appended after adapter defaults
-extra_args = ["--reasoning-parser", "deepseek-r1"]
+exec = [
+  "-m", "sglang.launch_server",
+  "--host", "0.0.0.0", "--port", "8780",
+  "--model-path", "/models/qwen3-next-80b-awq",
+  "--tp", "2",
+]
 
 # ~/.config/lychd/runes/animator/soulstones/llamacpp/vision_scribe.toml
 name = "scribe"
 description = "Specialized OCR tool (Titan)."
-image = "ghcr.io/ggerganov/llama.cpp:server"
+image = "ghcr.io/ggml-org/llama.cpp:server-cuda"
 runtime = "llamacpp"
 groups = ["vision-ritual"] # Shares the operator target; not a coexistence guarantee.
 port = 8781
@@ -302,4 +369,4 @@ Default generation parameters. Overlays in order: runtime defaults → the stone
 | `reasoning_format` | string | — |
 
 !!! note "`is_dynamic` follows the server shape"
-    A **router** (llama.cpp loading models on demand — `startup_mode = "router"`, `models_dir` set) yields `is_dynamic=True` capabilities (reachable but awaited until a model loads). A server **pinned to one model** (a single `model_path`, e.g. a vLLM server) yields `is_dynamic=False` — reachable means warm, no activation step.
+    A **dynamic server** (the llama.cpp router or ExLlamaV3 through TabbyAPI) yields `is_dynamic=True` capabilities: the endpoint may be reachable while the requested model is only `ACTIVATABLE`. A server **pinned to one model** (a single `model_path`, e.g. a vLLM server) yields `is_dynamic=False` — reachable means warm, no activation step.

@@ -22,5 +22,6 @@ class ModelFormat(StrEnum):
     AWQ = "AWQ"
     GPTQ = "GPTQ"
     EXL2 = "EXL2"
+    EXL3 = "EXL3"
     RAW = "RAW"
     OTHER = "OTHER"

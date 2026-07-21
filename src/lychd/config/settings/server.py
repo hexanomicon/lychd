@@ -8,6 +8,7 @@ from litestar.data_extractors import RequestExtractorField, ResponseExtractorFie
 from pydantic import Field, field_validator, model_validator
 
 from lychd.config.settings.section import SettingsSection
+from lychd.system.secret_names import validate_podman_secret_name
 
 QUEUE_NAMES = frozenset({"runs", "rites"})
 
@@ -40,6 +41,13 @@ class DatabaseSettings(SettingsSection):
     """Test a pooled connection before use and replace it if the database closed it."""
     pool_use_lifo: bool = True
     """Reuse the most recently active pooled connection first."""
+
+    @field_validator("password_secret")
+    @classmethod
+    def validate_password_secret(cls, value: str) -> str:
+        """Reject absolute/traversal names before secret-path composition."""
+        return validate_podman_secret_name(value, field_name="server.database.password_secret")
+
 
 class ViteSettings(SettingsSection):
     """The Vite development surface served beside the web application."""
@@ -75,6 +83,12 @@ class WebSettings(SettingsSection):
     csrf_cookie_secure: bool = False
     """Require HTTPS when browsers send the CSRF cookie; enable behind an HTTPS Ward/Proxy."""
     vite: ViteSettings = Field(default_factory=ViteSettings)
+
+    @field_validator("secret_key_secret")
+    @classmethod
+    def validate_secret_key_secret(cls, value: str) -> str:
+        """Reject absolute/traversal names before secret-path composition."""
+        return validate_podman_secret_name(value, field_name="server.web.secret_key_secret")
 
 
 class LoggingSettings(SettingsSection):
@@ -150,5 +164,8 @@ class ServerSettings(SettingsSection):
         ]
         if conflicts:
             msg = f"Configuration Error: {'; '.join(conflicts)}"
+            raise ValueError(msg)
+        if self.web.secret_key_secret == self.database.password_secret:
+            msg = "Core application-signing and database-password secrets must use distinct Podman secret names"
             raise ValueError(msg)
         return self

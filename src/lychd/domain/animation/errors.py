@@ -49,7 +49,7 @@ class HardwareTransitionRequired(Exception):  # noqa: N818
 class ActivationTimeout(CapabilityUnavailable):
     """Raised when a capability did not reach WARM before the deadline."""
 
-    def __init__(self, capability_key: str, last_state: CapabilityState, reason: str | None = None) -> None:
+    def __init__(self, capability_key: str, last_state: CapabilityState | None, reason: str | None = None) -> None:
         """Store the last observed state alongside the unavailability signal."""
         super().__init__(capability_key, reason or "activation timed out before warm")
         self.last_state = last_state

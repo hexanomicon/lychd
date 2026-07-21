@@ -9,7 +9,7 @@ import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import structlog
 from jinja2 import Environment, FileSystemLoader
@@ -20,7 +20,14 @@ from lychd.system.constants import (
     PATH_SYSTEMD_UNITS_DIR,
     PATH_SYSTEMD_USER_UNITS_DIR,
 )
-from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget, SystemdService
+from lychd.system.schemas import (
+    QuadletBase,
+    QuadletContainer,
+    QuadletPod,
+    QuadletTarget,
+    SystemdService,
+    quadlet_environment_assignment,
+)
 
 logger = structlog.get_logger()
 
@@ -161,6 +168,8 @@ class ScribeService:
             trim_blocks=True,
             lstrip_blocks=True,
         )
+        template_globals = cast("dict[str, object]", self._env.globals)
+        template_globals["quadlet_environment_assignment"] = quadlet_environment_assignment
         self._container_tmpl = self._env.get_template("container.jinja")
         self._pod_tmpl = self._env.get_template("pod.jinja")
         self._target_tmpl = self._env.get_template("target.jinja")

@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, ClassVar
 
+import httpx
 import pytest
+import respx
 from pydantic_ai.models.openai import OpenAIChatModel
 
 from lychd.domain.animation.capabilities import CapabilityPhase
@@ -24,6 +26,14 @@ from lychd.extensions.builtin.animator.runtimes import (
 )
 
 _SOULSTONE_SCHEMAS = (LlamaCppSoulstoneConfig, VllmSoulstoneConfig, OpenAIPortalConfig)
+
+
+@pytest.fixture(autouse=True)
+def local_runtime_probes_are_offline(respx_mock: respx.MockRouter) -> None:
+    """Keep registry unit tests deterministic while exercising real probe projection."""
+    respx_mock.route(host="localhost").mock(
+        side_effect=httpx.ConnectError("local runtime intentionally unavailable in unit tests")
+    )
 
 
 def _builtin_adapters() -> list[Any]:

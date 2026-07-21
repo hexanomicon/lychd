@@ -105,6 +105,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
     def get_model(self, *, model_id: str | None = None) -> Model:
         selected_model = self._select_model_id(model_id)
         selected_surface = self._select_model_surface(model_id)
+        provider_model = self._provider_model_id(selected_model)
 
         try:
             from lychd.domain.animation.model_factory import (
@@ -119,7 +120,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         # tool-call JSON schemas are identical between the reference and production.
         provider = openai_compatible_provider(base_url=self._base_url, api_key=self._resolve_api_key())
         return build_openai_compatible_model(
-            model_id=selected_model,
+            model_id=provider_model,
             provider=provider,
             responses=selected_surface == ModelSurface.RESPONSES,
         )
@@ -137,6 +138,10 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
 
         msg = f"Connector '{self.kind}' cannot hydrate a model because no default or requested model id was provided."
         raise ValueError(msg)
+
+    def _provider_model_id(self, selected_model_id: str) -> str:
+        """Translate a stable capability id into the provider-facing model id."""
+        return selected_model_id
 
     def _select_model_surface(self, requested: str | None) -> ModelSurface:
         if requested:

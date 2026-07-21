@@ -9,10 +9,14 @@ file on disk), not just at the model layer.
 
 from __future__ import annotations
 
+import os
+import re
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
@@ -23,6 +27,8 @@ from lychd.system.services.scribe import ScribeService
 
 if TYPE_CHECKING:
     from lychd.system.schemas import QuadletBase
+
+_QUADLET_GENERATOR = Path("/usr/libexec/podman/quadlet")
 
 
 class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
@@ -105,8 +111,8 @@ def test_migration_gate_renders_as_required_oneshot(tmp_path: Path) -> None:
     assert "WantedBy=default.target" not in migrate
 
 
-def test_f3_exec_and_env_not_html_escaped(tmp_path: Path) -> None:
-    """F3: shell-quoted Exec= args and `&` in Environment= must NOT be HTML-escaped."""
+def test_f3_exec_and_env_are_systemd_quoted_not_html_escaped(tmp_path: Path) -> None:
+    """F3: preserve shell Exec quoting and safely quote systemd environment values."""
 
     class StubRuntimePlanner:
         def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
@@ -115,7 +121,7 @@ def test_f3_exec_and_env_not_html_escaped(tmp_path: Path) -> None:
             # is the classic autoescape victim (`&` -> `&amp;`, `'` -> `&#39;`).
             return RuntimePlan(
                 exec_args=["serve", "--chat-template", "role: user"],
-                env_overrides={"UPSTREAM_URL": "http://x/y?a=1&b=2"},
+                env_overrides={"UPSTREAM_URL": 'http://x/y?a=1&b=2 label="two words" token=${HOST_TOKEN}'},
             )
 
     transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
@@ -128,8 +134,48 @@ def test_f3_exec_and_env_not_html_escaped(tmp_path: Path) -> None:
     assert "&amp;" not in content
     exec_line = next(line for line in content.splitlines() if line.startswith("Exec="))
     assert "'role: user'" in exec_line
-    env_line = next(line for line in content.splitlines() if line.startswith("Environment=UPSTREAM_URL="))
-    assert env_line == "Environment=UPSTREAM_URL=http://x/y?a=1&b=2"
+    env_line = next(line for line in content.splitlines() if line.startswith('Environment="UPSTREAM_URL='))
+    assert env_line == ('Environment="UPSTREAM_URL=http://x/y?a=1&b=2 label=\\"two words\\" token=$${HOST_TOKEN}"')
+
+
+@pytest.mark.skipif(not _QUADLET_GENERATOR.is_file(), reason="Podman Quadlet generator is unavailable")
+def test_real_quadlet_generator_preserves_literal_environment_and_command_boundary(tmp_path: Path) -> None:
+    """Exercise the real generator after LychD's source-level boundary validation."""
+
+    class StubRuntimePlanner:
+        def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
+            _ = soulstone
+            return RuntimePlan(
+                exec_args=["serve", "value;still-one-argument"],
+                env_overrides={"LITERAL": "${HOST_TOKEN}"},
+            )
+
+    stone = SoulstoneFactory.build(name="generator", image="example/runtime")
+    output_dir, _ = _inscribe(
+        Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all([stone]),
+        tmp_path,
+    )
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "HOST_TOKEN": "host-secret-must-not-expand",
+            "QUADLET_UNIT_DIRS": str(output_dir),
+        }
+    )
+
+    result = subprocess.run(  # noqa: S603 - pinned local system generator, no shell
+        [str(_QUADLET_GENERATOR), "-dryrun", "-user"],
+        check=False,
+        capture_output=True,
+        env=environment,
+        text=True,
+    )
+    generated = f"{result.stdout}\n{result.stderr}"
+
+    assert result.returncode == 0, generated
+    assert "host-secret-must-not-expand" not in generated
+    assert "$${HOST_TOKEN}" in generated
+    assert re.search(r"(?:^|\\s);(?:$|\\s)", generated) is None
 
 
 def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:

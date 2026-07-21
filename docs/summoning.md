@@ -75,7 +75,9 @@ loginctl show-user "$USER" --property=Linger
 ### Podman with Quadlet support
 
 The binding rite writes [Quadlet](sepulcher/codex.md) manifests that podman's systemd
-generator turns into services. Quadlet requires podman 4.4 or newer:
+generator turns into services. LychD requires Podman 5.4 or newer: `.pod`
+Quadlets arrived after 4.4, and the shared-pod `ShmSize=` contract used by local
+inference runtimes requires 5.4:
 
 ```bash
 podman --version
@@ -90,6 +92,20 @@ warm and how many can share a coven. Check what the host sees:
 nvidia-smi        # NVIDIA
 rocm-smi          # AMD
 ```
+
+ExLlamaV3 uses NVIDIA's CDI device names rather than raw `/dev` passthrough. A host-level
+`nvidia-smi` result is not sufficient: install NVIDIA Container Toolkit, generate its CDI
+specification, and confirm Podman can resolve the selector before enabling that Soulstone:
+
+```bash
+nvidia-ctk cdi list
+podman run --rm --device nvidia.com/gpu=all \
+  --entrypoint nvidia-smi \
+  ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3
+```
+
+The second command is the deployment receipt the repository cannot produce without your
+NVIDIA host and model. It may pull the pinned image if it is not already present.
 
 !!! note "You can start without a GPU"
     A remote [Portal](sepulcher/animator/portal.md) needs no local VRAM at all. If you
@@ -108,8 +124,10 @@ target an already-running Postgres and run `lychd database upgrade` explicitly.
 **Verify the grounds.** You are ready to install when all of the following are true:
 
 - `systemctl --user status` reports a running session.
-- `podman --version` is 4.4 or newer.
+- `podman --version` is 5.4 or newer.
 - `nvidia-smi` / `rocm-smi` shows a GPU (or you plan to use a Portal).
+- For ExLlamaV3, `nvidia-ctk cdi list` exposes the selected `nvidia.com/gpu=...` device and
+  the Podman receipt above succeeds.
 - Podman can pull the configured Phylactery and model images.
 
 ## The Desecration

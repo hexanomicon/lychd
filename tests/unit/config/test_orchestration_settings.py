@@ -73,7 +73,7 @@ def test_queue_concurrency_is_strictly_bounded(concurrency: int) -> None:
 
 
 def test_job_admin_ui_path_is_an_absolute_vessel_route() -> None:
-    assert ServerJobsSettings(admin_ui_path="jobs/").admin_ui_path == "/jobs"
+    assert ServerJobsSettings(admin_ui_path="/jobs/").admin_ui_path == "/jobs"
     with pytest.raises(ValueError, match="must start"):
         ServerJobsSettings(admin_ui_path="jobs")
 

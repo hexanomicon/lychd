@@ -3,6 +3,9 @@ Description={{ description }}
 {% if pod_service %}
 BindsTo={{ pod_service }}
 {% endif %}
+{% if binds_to %}
+BindsTo={{ binds_to | join(' ') }}
+{% endif %}
 {% for target in targets %}
 PartOf=lychd-coven-{{ target }}.target
 {% endfor %}
@@ -60,7 +63,7 @@ Volume={{ vol.host_path }}:{{ vol.container_path }}
 
 # Environment Variables
 {% for key, value in env_vars.items() %}
-Environment={{ key }}={{ value }}
+Environment={{ quadlet_environment_assignment(key, value) }}
 {% endfor %}
 
 # Podman Secrets

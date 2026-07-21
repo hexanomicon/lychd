@@ -1,6 +1,7 @@
 """Builtin animator runtime schemas."""
 
 from lychd.extensions.builtin.animator.soulstones import (
+    ExLlamaV3SoulstoneConfig,
     LlamaCppMode,
     LlamaCppSoulstoneConfig,
     SglangSoulstoneConfig,
@@ -8,6 +9,7 @@ from lychd.extensions.builtin.animator.soulstones import (
 )
 
 __all__ = [
+    "ExLlamaV3SoulstoneConfig",
     "LlamaCppMode",
     "LlamaCppSoulstoneConfig",
     "SglangSoulstoneConfig",

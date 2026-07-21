@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
     from lychd.system.schemas import QuadletContainer
 
+_INFERENCE_SHARED_MEMORY_BYTES = 8 * 1024**3
+
 
 class OpenAICompatibleRuntimeAdapter:
     """Base adapter for a local runtime that serves an OpenAI-compatible API.
@@ -55,20 +57,21 @@ class OpenAICompatibleRuntimeAdapter:
         return {"runtime": self.runtime}
 
     def podman_args(self, stone: SoulstoneConfig) -> list[str]:
-        """Deterministic podman flags from the host-envelope config fields."""
-        args: list[str] = []
-        if getattr(stone, "ipc_host", False):
-            args.append("--ipc=host")
-        if getattr(stone, "network_host", False):
-            args.append("--network=host")
-        return args
+        """Return no namespace overrides; every Soulstone joins the shared LychD pod."""
+        _ = stone
+        return []
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Plan the container envelope; framework flags come from ``exec`` verbatim."""
         from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 
         stone = self._narrow(soulstone)
-        return RuntimePlan(exec_args=list(stone.exec), env_overrides={}, podman_args=self.podman_args(stone))
+        return RuntimePlan(
+            exec_args=list(stone.exec),
+            env_overrides={},
+            podman_args=self.podman_args(stone),
+            pod_shared_memory_bytes=_INFERENCE_SHARED_MEMORY_BYTES,
+        )
 
     def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
         """Build a runtime handle with an OpenAI-compatible connector surface."""
