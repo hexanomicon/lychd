@@ -126,7 +126,6 @@ def test_vllm_openai_compatible_plan() -> None:
             "name": "glm47",
             "model_path": "/models/glm-flash",
             "port": 8000,
-            "ipc_host": True,
             "exec": exec_args,
         }
     )
@@ -136,7 +135,7 @@ def test_vllm_openai_compatible_plan() -> None:
     assert connector.kind == "vllm"
     assert [info.id for info in connector.list_models()] == ["glm-flash"]
     assert plan.exec_args == exec_args
-    assert "--ipc=host" in plan.podman_args
+    assert "--ipc=host" not in plan.podman_args
     assert connector.list_models()[0].supports_tools is True
     assert connector.metadata["runtime"] == "vllm"
 
@@ -189,7 +188,7 @@ def test_sglang_openai_compatible_plan() -> None:
     assert connector.kind == "sglang"
     assert [info.id for info in connector.list_models()] == ["qwen-awq"]
     assert plan.exec_args == exec_args
-    assert "--ipc=host" in plan.podman_args
+    assert "--ipc=host" not in plan.podman_args
     assert connector.metadata["runtime"] == "sglang"
 
 

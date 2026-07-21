@@ -63,11 +63,43 @@ class _ContainerContributor:
         )
 
 
+class _UnsafePortContributor:
+    def __init__(self, mapping: str) -> None:
+        self._mapping = mapping
+
+    def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
+        _ = ctx
+        return QuadletContribution(pod_ports=[self._mapping])
+
+
 def test_contribution_ports_append_after_core() -> None:
     manifests = _transmuter(_PortOnlyContributor()).transmute_all([], runes=RuneRegistry([]))
     pod = next(m for m in manifests if isinstance(m, QuadletPod))
     assert pod.publish_ports[-1] == "127.0.0.1:9999:9999"
     assert len(pod.publish_ports) == 3
+
+
+@pytest.mark.parametrize(
+    "mapping",
+    [
+        "9999:9999\nNetwork=host",
+        "0:9999",
+        "65536:9999",
+        "9999:9999:udp",
+        "not-a-port",
+    ],
+)
+def test_contribution_ports_cannot_escape_the_loopback_port_boundary(mapping: str) -> None:
+    with pytest.raises(ValueError, match="PublishPort|single-line"):
+        _transmuter(_UnsafePortContributor(mapping)).transmute_all([], runes=RuneRegistry([]))
+
+
+def test_contribution_port_cannot_duplicate_a_core_host_port() -> None:
+    from lychd.config.settings.root import get_settings
+
+    server_port = get_settings().server.port
+    with pytest.raises(ValueError, match=f"duplicate host port {server_port}"):
+        _transmuter(_UnsafePortContributor(f"{server_port}:9999")).transmute_all([], runes=RuneRegistry([]))
 
 
 def test_contribution_container_lands_after_core_before_stones() -> None:

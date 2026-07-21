@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import anyio
 import pytest
 
 from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase
@@ -156,7 +157,27 @@ async def test_await_warm_times_out_on_persistent_warming(tmp_path: Path) -> Non
     registry, key = _single_registry(tmp_path, _SingleControl("loading"))
     with pytest.raises(ActivationTimeout) as exc:
         await registry.await_warm(key, timeout_s=0.05, interval_s=0.01)
+    assert exc.value.last_state is not None
     assert exc.value.last_state.phase is CapabilityPhase.WARMING
+
+
+@pytest.mark.asyncio
+async def test_await_warm_timeout_abandons_adapter_observation_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("loading"))
+    abandoned: list[str] = []
+
+    async def abandon(_animator: Any, spec: Any) -> None:
+        abandoned.append(spec.key)
+
+    monkeypatch.setattr(registry._runtime_adapters, "abandon_activation", abandon)  # pyright: ignore[reportPrivateUsage]
+
+    with pytest.raises(ActivationTimeout):
+        await registry.await_warm(key, timeout_s=0.02, interval_s=0.005)
+
+    assert abandoned == [key]
 
 
 @pytest.mark.asyncio
@@ -193,6 +214,72 @@ async def test_await_warm_raises_on_error(tmp_path: Path) -> None:
     registry, key = _single_registry(tmp_path, _SingleControl("error"))
     with pytest.raises(ActivationFailed):
         await registry.await_warm(key, timeout_s=1.0, interval_s=0.01)
+
+
+@pytest.mark.asyncio
+async def test_await_warm_cleanup_failure_does_not_mask_activation_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("error"))
+    calls = 0
+
+    async def fail_cleanup(_animator: Any, _spec: Any) -> None:
+        nonlocal calls
+        calls += 1
+        msg = "cleanup failed"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(
+        registry._runtime_adapters,  # pyright: ignore[reportPrivateUsage]
+        "abandon_activation",
+        fail_cleanup,
+    )
+
+    with pytest.raises(ActivationFailed):
+        await registry.await_warm(key, timeout_s=1.0, interval_s=0.01)
+
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_await_warm_cancellation_shields_observer_cleanup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("loading"))
+    probe_started = anyio.Event()
+    cleanup_finished = anyio.Event()
+    cancel_scope: anyio.CancelScope | None = None
+
+    async def block_probe(_key: str) -> None:
+        probe_started.set()
+        await anyio.sleep_forever()
+
+    async def abandon(_animator: Any, _spec: Any) -> None:
+        await anyio.sleep(0)  # noqa: ASYNC115 - explicit cancellation checkpoint in the shield test
+        cleanup_finished.set()
+
+    monkeypatch.setattr(registry, "refresh_capability_state", block_probe)
+    monkeypatch.setattr(
+        registry._runtime_adapters,  # pyright: ignore[reportPrivateUsage]
+        "abandon_activation",
+        abandon,
+    )
+
+    async def wait_until_cancelled() -> None:
+        nonlocal cancel_scope
+        with anyio.CancelScope() as local_scope:
+            cancel_scope = local_scope
+            await registry.await_warm(key, timeout_s=10.0, interval_s=1.0)
+
+    async with anyio.create_task_group() as task_group:
+        task_group.start_soon(wait_until_cancelled)
+        await probe_started.wait()
+        assert cancel_scope is not None
+        cancel_scope.cancel()
+
+    assert cleanup_finished.is_set()
 
 
 @pytest.mark.asyncio

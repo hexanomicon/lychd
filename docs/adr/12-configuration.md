@@ -320,7 +320,12 @@ schema-intake boundary instead.
 `AnimatorConfig` and `SoulstoneConfig` are abstract branch configs. They are
 configuration base classes, but they are not direct TOML owners. Concrete
 Soulstone TOML instances must live under a leaf schema such as
-`LlamaCppSoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`.
+`LlamaCppSoulstoneConfig`, `ExLlamaV3SoulstoneConfig`, `VllmSoulstoneConfig`, or
+`SglangSoulstoneConfig`.
+
+Runtime-owned security fields remain on their concrete leaf. For example,
+`ExLlamaV3SoulstoneConfig.auth_secret_name` is a required reference to the shared TabbyAPI/Vessel
+authentication document; secret values are never valid Codex configuration.
 
 ---
 

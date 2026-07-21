@@ -10,7 +10,16 @@ import pytest
 from click.testing import CliRunner
 
 from lychd.__main__ import cli
-from lychd.cli.commands import _decide_consent, _merge_reserved_ports, bind_quadlets, doctor, init_codex
+from lychd.cli.commands import (
+    _decide_consent,
+    _merge_reserved_ports,
+    _required_secret_names_from_soulstones,
+    bind_quadlets,
+    doctor,
+    init_codex,
+)
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
+from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -261,7 +270,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     # 1. Mock Loader
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader = mock_loader_cls.return_value
-    stone = SimpleNamespace(secret_env_files={})
+    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader.load_all.return_value = ([stone], [portal])
 
@@ -302,6 +311,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     assert transmute_call.args == ([stone],)
     assert transmute_call.kwargs["portals"] == [portal]
     assert isinstance(transmute_call.kwargs["runes"], RuneRegistry)
+    assert len(transmute_call.kwargs["runtime_plans"]) == 1
 
     mock_scribe_cls.assert_called_once()
     mock_scribe.reconcile_all.assert_called_once()
@@ -320,7 +330,10 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
 def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify we catch subprocess errors if systemd fails."""
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader_cls.return_value.load_all.return_value = ([SimpleNamespace(secret_env_files={})], [])
+    mock_loader_cls.return_value.load_all.return_value = (
+        [GenericSoulstoneConfig(name="test", image="example/runtime")],
+        [],
+    )
     mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
     mock_transmuter_cls.return_value.transmute_all.return_value = ["rune1"]
     mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
@@ -344,7 +357,11 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
 
 def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mocker: MockerFixture) -> None:
     """Bind must fail closed when a soulstone references a missing Podman secret."""
-    stone = SimpleNamespace(secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"})
+    stone = GenericSoulstoneConfig(
+        name="test",
+        image="example/runtime",
+        secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
+    )
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader_cls.return_value.load_all.return_value = ([stone], [])
 
@@ -362,3 +379,59 @@ def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mo
 
     assert result.exit_code != 0
     assert "Missing required Podman secrets" in result.output
+
+
+def test_runtime_plan_secrets_are_included_in_generic_preflight() -> None:
+    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    plan = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
+
+    assert _required_secret_names_from_soulstones([stone], [plan]) == ["adapter_token"]
+
+
+def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(
+    runner: CliRunner,
+    mocker: MockerFixture,
+) -> None:
+    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader").return_value.load_all.return_value = (
+        [stone],
+        [],
+    )
+    planner = mocker.patch("lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry").return_value
+    planner.plan.return_value = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
+    mocker.patch("lychd.domain.animation.transmute.Transmuter")
+    mocker.patch("lychd.system.services.scribe.ScribeService")
+    mocker.patch("shutil.which", return_value="/usr/bin/systemctl")
+    mocker.patch("subprocess.run")
+    secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
+    secret_store.ensure_present.return_value = False
+
+    def secret_exists(name: str) -> bool:
+        return name != "adapter_token"
+
+    secret_store.exists.side_effect = secret_exists
+
+    result = runner.invoke(bind_quadlets)
+
+    assert result.exit_code != 0
+    assert "Missing required Podman secrets: adapter_token" in result.output
+
+
+def test_bind_quadlets_rejects_uncaged_control_plane_secrets(
+    runner: CliRunner,
+    mocker: MockerFixture,
+) -> None:
+    """An uncaged Vessel has no Podman secret mount for authenticated runtimes."""
+    stone = SimpleNamespace(
+        secret_env_files={},
+        control_plane_secret_names=("tabby_exl3_auth",),
+    )
+    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
+    mock_loader_cls.return_value.load_all.return_value = ([stone], [])
+    mock_transmuter = mocker.patch("lychd.domain.animation.transmute.Transmuter")
+
+    result = runner.invoke(bind_quadlets, ["--uncaged"])
+
+    assert result.exit_code != 0
+    assert "Uncaged Vessel mode cannot host Soulstones" in result.output
+    mock_transmuter.assert_not_called()

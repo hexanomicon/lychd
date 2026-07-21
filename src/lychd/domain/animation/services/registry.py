@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
@@ -48,6 +49,7 @@ type AnimatorFactory = Callable[..., RuntimeAnimator | None]
 
 logger = structlog.get_logger()
 _RUNTIME_FACTORY_WITH_QUADLET_ARITY = 2
+_ACTIVATION_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
 class AnimatorRegistry:
@@ -442,14 +444,41 @@ class AnimatorRegistry:
         deadline = time.monotonic() + timeout_s
         animator = self._animators.get(spec.animator_name)
         estimated_ready_ms = getattr(animator.connector.link, "estimated_ready_ms", None) if animator else None
-        if estimated_ready_ms:
-            remaining = max(0.0, deadline - time.monotonic())
-            if remaining:
-                await anyio.sleep(min(estimated_ready_ms / 1000.0, remaining))
+        try:
+            if estimated_ready_ms:
+                remaining = max(0.0, deadline - time.monotonic())
+                if remaining:
+                    await anyio.sleep(min(estimated_ready_ms / 1000.0, remaining))
+            return await self._poll_until_warm(
+                key=key,
+                deadline=deadline,
+                interval_s=interval_s,
+            )
+        except asyncio.CancelledError:
+            await self._abandon_activation(animator, spec)
+            raise
+        except Exception:
+            await self._abandon_activation(animator, spec)
+            raise
 
-        last_state: CapabilityState | None = None
+    async def _poll_until_warm(
+        self,
+        *,
+        key: str,
+        deadline: float,
+        interval_s: float,
+    ) -> CapabilityState:
+        """Poll one capability under the caller's single absolute deadline."""
+        last_state = self._capability_states.get(key)
         while True:
-            state = await self.refresh_capability_state(key)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ActivationTimeout(key, last_state)
+            state: CapabilityState | None = None
+            with anyio.move_on_after(remaining) as probe_scope:
+                state = await self.refresh_capability_state(key)
+            if probe_scope.cancel_called:
+                raise ActivationTimeout(key, last_state)
             if state is None:
                 raise CapabilityUnavailable(key, "capability state unavailable")
             last_state = state
@@ -457,10 +486,21 @@ class AnimatorRegistry:
                 return state
             if state.phase is CapabilityPhase.ERROR:
                 raise ActivationFailed(key, reason=state.reason)
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise ActivationTimeout(key, last_state)
-            await anyio.sleep(min(interval_s, remaining))
+            await anyio.sleep(min(interval_s, max(0.0, deadline - time.monotonic())))
+
+    async def _abandon_activation(self, animator: RuntimeAnimator | None, spec: CapabilitySpec) -> None:
+        """Release adapter-owned observers without losing the canonical failure."""
+        if animator is None:
+            return
+        with anyio.move_on_after(_ACTIVATION_CLEANUP_TIMEOUT_SECONDS, shield=True):
+            try:
+                await self._runtime_adapters.abandon_activation(animator, spec)
+            except Exception:  # noqa: BLE001 - cleanup must never mask the canonical activation failure
+                logger.warning(
+                    "activation_observer_cleanup_failed",
+                    capability_key=spec.key,
+                    exc_info=True,
+                )
 
     def list_persistent_residents(self) -> list[CapabilitySpec]:
         """List capabilities declared on persistent-resident animators."""

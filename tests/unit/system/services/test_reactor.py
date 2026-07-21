@@ -288,3 +288,20 @@ def test_reactor_units_are_narrow_and_host_triggered(tmp_path: Path) -> None:
     assert f"PathExistsGlob={tmp_path}/journal/*.processing.json" in path
     assert "Unit=lychd-reactor.service" in path
     assert "sudo" not in service
+
+
+def test_reactor_service_quotes_environment_as_one_assignment(tmp_path: Path) -> None:
+    service = render_reactor_service_unit(
+        executable=tmp_path / "bin" / "lychd",
+        environment={"LABEL": 'two words and "quoted" ${LITERAL}'},
+    )
+
+    assert 'Environment="LABEL=two words and \\"quoted\\" ${LITERAL}"' in service
+
+
+def test_reactor_service_rejects_systemd_environment_escapes(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="backslashes"):
+        render_reactor_service_unit(
+            executable=tmp_path / "bin" / "lychd",
+            environment={"SAFE": r"value\x0aEnvironment=MALICE=1"},
+        )

@@ -101,11 +101,17 @@ def test_optional_extensions_are_inert_until_explicitly_selected() -> None:
 
 
 def test_settings_attribute_docstrings_export_schema_descriptions() -> None:
-    assert ServerSettings.model_fields["reload"].description == "Restart the development server when Python source files change."
+    assert (
+        ServerSettings.model_fields["reload"].description
+        == "Restart the development server when Python source files change."
+    )
     assert DatabaseSettings.model_fields["profile"].description == (
         "Persistence backend: Postgres for normal operation; memory only for focused tests."
     )
-    assert ExtensionSettings.model_fields["builtins"].description == "Built-in extension IDs explicitly activated for this Vessel."
+    assert (
+        ExtensionSettings.model_fields["builtins"].description
+        == "Built-in extension IDs explicitly activated for this Vessel."
+    )
 
 
 def test_extension_activation_rejects_duplicate_ids() -> None:
@@ -126,6 +132,32 @@ def test_bootstrap_server_rejects_public_bind_addresses() -> None:
 def test_server_rejects_port_claim_conflicts() -> None:
     with pytest.raises(ValueError, match="Port 5432 is claimed by multiple services"):
         ServerSettings(port=5432)
+
+
+@pytest.mark.parametrize(
+    ("settings_type", "field_name", "value"),
+    [
+        (WebSettings, "secret_key_secret", "/absolute/stolen"),
+        (WebSettings, "secret_key_secret", "../stolen"),
+        (DatabaseSettings, "password_secret", "db,target=/run/stolen"),
+        (DatabaseSettings, "password_secret", "db secret"),
+    ],
+)
+def test_core_secret_names_are_option_free_podman_basenames(
+    settings_type: type[WebSettings | DatabaseSettings],
+    field_name: str,
+    value: str,
+) -> None:
+    with pytest.raises(ValueError, match="option-free Podman secret name"):
+        settings_type.model_validate({field_name: value})
+
+
+def test_core_application_and_database_secrets_must_be_distinct() -> None:
+    with pytest.raises(ValueError, match="must use distinct Podman secret names"):
+        ServerSettings(
+            web=WebSettings(secret_key_secret="shared_core_secret"),  # noqa: S106 - reference name
+            database=DatabaseSettings(password_secret="shared_core_secret"),  # noqa: S106 - reference name
+        )
 
 
 def test_control_paths_are_absolute_and_normalized(tmp_path: Path) -> None:

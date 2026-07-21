@@ -11,8 +11,13 @@ It is used by the bind ritual so Codex/runes can stay reference-only
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
+from typing import Final
+
+_MIN_PODMAN_VERSION: Final[tuple[int, int]] = (5, 4)
+_PODMAN_VERSION = re.compile(r"\b(\d+)\.(\d+)(?:\.\d+)?\b")
 
 
 class PodmanSecretStoreError(RuntimeError):
@@ -39,6 +44,31 @@ class PodmanSecretStore:
             text=True,
         )
         return result.returncode == 0
+
+    def require_quadlet_version(self) -> None:
+        """Fail unless Podman supports `.pod` Quadlets and their `ShmSize=` key."""
+        try:
+            result = subprocess.run(  # noqa: S603
+                [self._podman, "--version"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            detail = (exc.stderr or exc.stdout or str(exc)).strip()
+            msg = f"Could not determine Podman version: {detail}"
+            raise PodmanSecretStoreError(msg) from exc
+        match = _PODMAN_VERSION.search(result.stdout)
+        if match is None:
+            msg = f"Could not parse Podman version from: {result.stdout.strip()!r}"
+            raise PodmanSecretStoreError(msg)
+        version = (int(match.group(1)), int(match.group(2)))
+        if version < _MIN_PODMAN_VERSION:
+            msg = (
+                f"Podman >= {_MIN_PODMAN_VERSION[0]}.{_MIN_PODMAN_VERSION[1]} is required "
+                "for LychD .pod Quadlets with ShmSize"
+            )
+            raise PodmanSecretStoreError(msg)
 
     def create(self, name: str, value: str) -> None:
         """Create or replace a Podman secret from stdin.

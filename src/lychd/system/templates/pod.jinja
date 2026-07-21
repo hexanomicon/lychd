@@ -6,6 +6,9 @@ PodName={{ pod_name }}
 {% if user_ns %}
 UserNS={{ user_ns }}
 {% endif %}
+{% if shm_size %}
+ShmSize={{ shm_size }}
+{% endif %}
 
 # Network exposure
 {% for port_mapping in publish_ports %}

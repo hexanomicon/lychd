@@ -231,6 +231,7 @@ def test_property1_pod_network_truth() -> None:
 
     assert absent_pod.publish_ports == core
     assert absent_pod.user_ns == "keep-id"
+    assert absent_pod.shm_size is None
     phoenix = PhoenixSettings()
     assert active_pod.publish_ports == [
         *core,

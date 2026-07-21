@@ -53,6 +53,13 @@ _DEFAULT_PROFILE = _CapabilityProfile(
     supports_streaming=True,
 )
 _RUNTIME_PROFILES: dict[str, _CapabilityProfile] = {
+    "exllamav3": _CapabilityProfile(
+        surface=ModelSurface.CHAT,
+        modalities_in=("text",),
+        modalities_out=("text",),
+        supports_tools=True,
+        supports_streaming=True,
+    ),
     "llamacpp": _CapabilityProfile(
         surface=ModelSurface.CHAT,
         modalities_in=("text",),

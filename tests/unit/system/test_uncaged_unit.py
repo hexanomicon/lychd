@@ -18,6 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from lychd.cli.commands import bind_quadlets
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.transmute import transmute_uncaged_vessel
 from lychd.system.schemas import SystemdService
 from lychd.system.services.scribe import ScribeService
@@ -67,6 +68,32 @@ def test_systemd_service_env_deterministic_order() -> None:
     service = SystemdService(exec_start=_GOLDEN_EXEC, environment={"ZED": "2", "ALPHA": "1"})
     rendered = service.render()
     assert rendered.index('Environment="ALPHA=1"') < rendered.index('Environment="ZED=2"')
+
+
+def test_systemd_service_quotes_environment_as_one_assignment() -> None:
+    service = SystemdService(
+        exec_start=_GOLDEN_EXEC,
+        environment={"LABEL": 'two words and "quoted" ${LITERAL}'},
+    )
+
+    assert 'Environment="LABEL=two words and \\"quoted\\" ${LITERAL}"' in service.render()
+
+
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"description": "swallow-next-directive\\"},
+        {"exec_start": r"/bin/echo\x0aExecStart=/bin/sh"},
+        {"environment": {"SAFE": r"value\x22 MALICE=1"}},
+        {"environment": {"NOT SAFE": "value"}},
+        {"name": "../foreign"},
+    ],
+)
+def test_systemd_service_rejects_directive_escape_and_unsafe_names(
+    override: dict[str, object],
+) -> None:
+    with pytest.raises(ValueError, match="backslash|environment variable|unit-name"):
+        SystemdService.model_validate({"exec_start": _GOLDEN_EXEC, **override})
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +194,7 @@ def runner() -> CliRunner:
 
 def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNamespace:
     """Stub the normal bind pass so the uncaged branch can be exercised in isolation."""
-    stone = SimpleNamespace(secret_env_files={})
+    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader_cls.return_value.load_all.return_value = ([stone], [portal])

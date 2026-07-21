@@ -23,6 +23,7 @@ from lychd.domain.animation.schemas import (
 )
 from lychd.domain.animation.services.adapters.catalog import synthesize_families
 from lychd.domain.animation.services.adapters.contracts import (
+    ActivationObserver,
     PortalRuntimeFactory,
     RuntimeAnimator,
     RuntimePlan,
@@ -153,6 +154,15 @@ class RuntimeAdapterRegistry:
 
         adapter = self.adapter_for(rune)
         return await adapter.activate_capability(animator, spec)
+
+    async def abandon_activation(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> None:
+        """Stop adapter-owned observation after canonical warm convergence ends."""
+        rune = animator.rune
+        if isinstance(rune, PortalConfig):
+            return
+        adapter = self.adapter_for(rune)
+        if isinstance(adapter, ActivationObserver):
+            await adapter.abandon_activation(animator, spec)
 
     def _build_portal_runtime(self, portal: PortalConfig) -> RuntimeAnimator:
         """Resolve portal runtime by custom factories, then passive fallback."""

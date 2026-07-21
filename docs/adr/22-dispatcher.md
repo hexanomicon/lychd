@@ -65,7 +65,7 @@ The canonical capability key is `{animator}:{family}:{model_id}`. The rune names
 
 A `CapabilitySpec` carries an `is_dynamic: bool`; a `CapabilityState` projects a `CapabilityPhase`. The two are orthogonal: `is_dynamic` is a *fixed property of the runtime* (how it becomes ready), phase is the *live observation* (whether it is ready now).
 
-- **`is_dynamic`** — `False` (resident whenever the Animator unit is up — the server binds its port only after the model loads, so a reachable endpoint is warm) or `True` (the unit is up but the model needs an in-runtime activation step, e.g. the `llama.cpp` router `/models/load`). These are the canonical doctrine values; an earlier `FIXED/AWAITED` proposal was rejected, and the legacy `dynamic_soft` string normalizes to `is_dynamic=True`.
+- **`is_dynamic`** — `False` (resident whenever the Animator unit is up — the server binds its port only after the model loads, so a reachable endpoint is warm) or `True` (the unit is up but the model needs an in-runtime activation step, e.g. the `llama.cpp` router `/models/load` or ExLlamaV3 through TabbyAPI `/v1/model/load`). These are the canonical doctrine values; an earlier `FIXED/AWAITED` proposal was rejected, and the legacy `dynamic_soft` string normalizes to `is_dynamic=True`.
 - **`CapabilityPhase`** — the six-value readiness ladder: `COLD` (unit down / endpoint unreachable), `ACTIVATABLE` (unit up, an `is_dynamic=True` model not yet loaded), `WARMING` (activation in flight), `WARM` (requests accepted now), `ERROR`, and `UNKNOWN`. Intent resolution drives its decision table off the phase, not a boolean.
 
 #### The Two-Axis Law

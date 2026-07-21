@@ -43,11 +43,17 @@ class AnimatorLoader:
         rune_schemas: Sequence[type[RuneConfig]],
         reserved_ports: dict[str, int] | None = None,
         runes_dir: Path | None = None,
+        core_secret_names: tuple[str, str] | None = None,
     ) -> None:
         """Initialize loader with required rune schemas and reserved host ports."""
+        settings = get_settings()
         self._runes_dir = runes_dir or PATH_RUNES_DIR
         self._rune_schemas = list(rune_schemas)
-        self._reserved_ports = reserved_ports or get_settings().server.reserved_ports_map
+        self._reserved_ports = reserved_ports or settings.server.reserved_ports_map
+        self._core_secret_names = core_secret_names or (
+            settings.server.web.secret_key_secret,
+            settings.server.database.password_secret,
+        )
 
     def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
         """Load Soulstone/Portal Runes with inherited animator defaults."""
@@ -68,6 +74,7 @@ class AnimatorLoader:
         soulstones = [stone for stone in soulstones if not self._is_unresolved_sample_soulstone(stone)]
         portals = [portal for portal in portals if not self._is_unresolved_sample_portal(portal)]
         self._validate_unique_names(soulstones, portals)
+        self._validate_secret_isolation(soulstones, portals)
 
         soulstones = self._hydrate_soulstone_endpoints(soulstones)
         self._validate_ports(soulstones)
@@ -222,6 +229,48 @@ class AnimatorLoader:
         if errors:
             msg = f"Animator name conflicts detected: {', '.join(errors)}"
             raise AnimatorConfigError(msg)
+
+    def _validate_secret_isolation(
+        self,
+        soulstones: list[SoulstoneConfig],
+        portals: list[PortalConfig],
+    ) -> None:
+        """Reject credential aliases before any Portal connector can resolve them."""
+        app_secret, db_secret = self._core_secret_names
+        if app_secret == db_secret:
+            msg = "Core application-signing and database-password secrets must use distinct names"
+            raise AnimatorConfigError(msg)
+
+        core_names = {app_secret, db_secret}
+        portal_names = {portal.api_key_secret_name for portal in portals if portal.api_key_secret_name is not None}
+        core_aliases = sorted(core_names.intersection(portal_names))
+        if core_aliases:
+            msg = f"Portal API secret(s) {', '.join(core_aliases)} cannot alias core application or database secrets"
+            raise AnimatorConfigError(msg)
+
+        privileged = core_names | portal_names
+        control_plane_owners: dict[str, str] = {}
+        for stone in soulstones:
+            for secret_name in stone.control_plane_secret_names:
+                previous_owner = control_plane_owners.get(secret_name)
+                if previous_owner is not None:
+                    msg = (
+                        f"Soulstones '{previous_owner}' and '{stone.name}' cannot share "
+                        f"control-plane secret '{secret_name}'"
+                    )
+                    raise AnimatorConfigError(msg)
+                control_plane_owners[secret_name] = stone.name
+            rune_secret_names = {
+                *stone.secret_env_files.values(),
+                *stone.control_plane_secret_names,
+            }
+            aliases = sorted(rune_secret_names.intersection(privileged))
+            if aliases:
+                msg = (
+                    f"Soulstone '{stone.name}' secret(s) {', '.join(aliases)} must be distinct "
+                    "from core and Portal secrets"
+                )
+                raise AnimatorConfigError(msg)
 
     def _is_unset(self, value: Any) -> bool:
         return value in (None, "", [], {})

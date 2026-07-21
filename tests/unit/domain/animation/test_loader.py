@@ -15,6 +15,7 @@ from lychd.domain.animation.schemas import (
 )
 from lychd.domain.animation.services.loader import AnimatorConfigError, AnimatorLoader
 from lychd.extensions.builtin.animator import (
+    ExLlamaV3SoulstoneConfig,
     LlamaCppSoulstoneConfig,
     SglangSoulstoneConfig,
     VllmSoulstoneConfig,
@@ -28,6 +29,7 @@ _SCHEMAS = [
     SoulstoneConfig,
     PortalConfig,
     GenericSoulstoneConfig,
+    ExLlamaV3SoulstoneConfig,
     LlamaCppSoulstoneConfig,
     VllmSoulstoneConfig,
     SglangSoulstoneConfig,
@@ -156,6 +158,70 @@ def test_portal_api_key_secret_reference(runes_dir: Path) -> None:
 
     assert len(portals) == 1
     assert portals[0].api_key_secret_name == "portal_secure_api_key"  # noqa: S105 - secret name fixture
+
+
+def test_portal_api_secret_cannot_alias_a_core_secret(runes_dir: Path) -> None:
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "stolen.toml",
+        """
+        name = "stolen"
+        api_key_secret_name = "core_db"
+        """,
+    )
+    loader = AnimatorLoader(
+        runes_dir=runes_dir,
+        rune_schemas=_SCHEMAS,
+        reserved_ports={},
+        core_secret_names=("core_app", "core_db"),
+    )
+
+    with pytest.raises(AnimatorConfigError, match="cannot alias core application or database secrets"):
+        loader.load_all()
+
+
+def test_portals_may_deliberately_share_one_provider_secret(runes_dir: Path) -> None:
+    for name in ("primary", "fallback"):
+        _write(
+            runes_dir / "animator" / "portals" / "openai" / f"{name}.toml",
+            f"""
+            name = "{name}"
+            api_key_secret_name = "shared_provider_key"
+            """,
+        )
+
+    _, portals = AnimatorLoader(
+        runes_dir=runes_dir,
+        rune_schemas=_SCHEMAS,
+        reserved_ports={},
+        core_secret_names=("core_app", "core_db"),
+    ).load_all()
+
+    assert [portal.api_key_secret_name for portal in portals] == ["shared_provider_key"] * 2
+
+
+def test_soulstones_cannot_share_one_control_plane_secret(runes_dir: Path) -> None:
+    for name in ("primary", "fallback"):
+        _write(
+            runes_dir / "animator" / "soulstones" / "exllamav3" / f"{name}.toml",
+            f"""
+            name = "{name}"
+            auth_secret_name = "shared_tabby_control"
+            volumes = ["/data/{name}:/app/models:ro"]
+
+            [[models]]
+            id = "{name}-model"
+            path = "/app/models/{name}-model"
+            format = "EXL3"
+            """,
+        )
+
+    with pytest.raises(AnimatorConfigError, match="cannot share control-plane secret"):
+        AnimatorLoader(
+            runes_dir=runes_dir,
+            rune_schemas=_SCHEMAS,
+            reserved_ports={},
+            core_secret_names=("core_app", "core_db"),
+        ).load_all()
 
 
 def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:

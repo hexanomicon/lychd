@@ -21,6 +21,7 @@ from lychd.domain.orchestration.actuator import (
 )
 from lychd.domain.orchestration.policies import SwitchPolicy, resolve_switch_policy
 from lychd.system.constants import PATH_REACTOR_INBOX_DIR, PATH_REACTOR_JOURNAL_DIR
+from lychd.system.schemas import systemd_environment_assignment
 from lychd.system.services.runtime import SystemdRuntimeActuator
 
 if TYPE_CHECKING:
@@ -77,7 +78,7 @@ def render_reactor_service_unit(*, executable: Path, environment: dict[str, str]
         "[Service]",
         "Type=oneshot",
         f"ExecStart={executable} reactor consume",
-        *(f'Environment="{key}={value}"' for key, value in sorted(environment.items())),
+        *(f"Environment={systemd_environment_assignment(key, value)}" for key, value in sorted(environment.items())),
         "Restart=on-failure",
         "RestartSec=1s",
         "",

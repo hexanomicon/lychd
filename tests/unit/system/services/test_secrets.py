@@ -45,6 +45,29 @@ def test_secret_store_ensure_present_creates_only_when_missing(mocker: MockerFix
     create.assert_called_once_with("alpha", "value")
 
 
+@pytest.mark.parametrize("version", ["podman version 5.4.0", "podman version 6.1.2"])
+def test_secret_store_accepts_supported_quadlet_version(mocker: MockerFixture, version: str) -> None:
+    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
+    mocker.patch(
+        "lychd.system.services.secrets.subprocess.run",
+        return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout=version),
+    )
+
+    PodmanSecretStore().require_quadlet_version()
+
+
+@pytest.mark.parametrize("version", ["podman version 4.9.4", "podman version 5.3.2"])
+def test_secret_store_rejects_unsupported_quadlet_version(mocker: MockerFixture, version: str) -> None:
+    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
+    mocker.patch(
+        "lychd.system.services.secrets.subprocess.run",
+        return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout=version),
+    )
+
+    with pytest.raises(PodmanSecretStoreError, match="Podman >= 5.4"):
+        PodmanSecretStore().require_quadlet_version()
+
+
 def test_secret_store_create_raises_domain_error(mocker: MockerFixture) -> None:
     mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
     mock_run = mocker.patch("lychd.system.services.secrets.subprocess.run")

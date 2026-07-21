@@ -9,6 +9,7 @@
         "127.0.0.1:6006:6006",
         "127.0.0.1:4317:4317"
       ],
+      "shm_size": null,
       "user_ns": "keep-id",
       "wanted_by": [
         "default.target"
@@ -23,6 +24,7 @@
         "lychd-migrate.service",
         "lychd-reactor.path"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-vessel",
       "description": "The Vessel (LychD Application Kernel)",
@@ -134,6 +136,7 @@
       "after": [
         "lychd-pod.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-phylactery",
       "description": "The Phylactery (Postgres & PgVector)",
@@ -198,6 +201,7 @@
       "after": [
         "lychd-phylactery.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-migrate",
       "description": "LychD Phylactery Migration Gate",
@@ -277,6 +281,7 @@
       "after": [
         "lychd-phylactery.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-oculus",
       "description": "The Oculus (Arize Phoenix)",
@@ -331,6 +336,7 @@
       "after": [
         "lychd-pod.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-alpha",
       "description": "LychD Soulstone: alpha",
@@ -376,6 +382,7 @@
       "after": [
         "lychd-pod.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-beta",
       "description": "LychD Soulstone: beta",
@@ -420,6 +427,7 @@
       "after": [
         "lychd-pod.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-gamma",
       "description": "LychD Soulstone: gamma",
@@ -465,6 +473,7 @@
       "after": [
         "lychd-pod.service"
       ],
+      "binds_to": [],
       "conflicts": [],
       "container_name": "lychd-resident",
       "description": "LychD Soulstone: resident",
