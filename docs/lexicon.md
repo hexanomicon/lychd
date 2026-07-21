@@ -61,7 +61,7 @@ The engineering vocabulary of the Sepulcher. These terms map directly to code, s
 | **Loom** | The Altar's graph instrument for Weaver pattern browsing and Mermaid/pydantic_graph renderings. | Altar + Weaver |
 | **Mirror** | The Identity/Persona Extension. The ego-software that maintains behavioral consistency. | Extension |
 | **Necropolis** | The decentralized peer-to-peer swarm topology built on the A2A Intercom (ADR 26). | Extension |
-| **Oculus** | The Observability Extension — the full stack of Arize Phoenix (traces), Structlog (logs), and Cockpit (host telemetry). The Great Seer. | Extension (ADR 29) |
+| **Oculus** | LychD's native observability extension and Altar view over typed traces, logs, runtime pressure, and durable domain evidence. Phoenix, Cockpit, and similar tools are optional external Eyes, never the Oculus or canonical state owner. The Great Seer. | Extension (ADR 29) |
 | **Orchestrator** | The state machine managing VRAM and container lifecycles. The runtime governor. | `src/lychd/domain/orchestration/` |
 | **Ouroboros** | The self-reference loop by which generated outputs return through workflow state, Shadow execution, Riddle measurement, Mirror attribution, memory inscription, and consent before shaping future runs. The mechanism that turns linear generation into coherent inertia. | Evolution + Lich |
 | **Persona** | The durable *voice and style* the Lich shows the Magus, maintained by the Mirror (ADR 32) and applied at the user-facing boundary — not inside the agentic loop. A Persona wears Postures; it is not itself a per-run Posture. | Mirror (ADR 32) |

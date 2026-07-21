@@ -30,7 +30,13 @@ icon: material/robot-outline
 !!! failure "Option 2: Agno (formerly Phidata) / CrewAI"
     Utilizing opinionated "Agentic Roles" or "Assistant" frameworks.
 
-    - **Cons:** **Insufficient Substrate Control.** These systems are designed for cloud-first environments and lack the low-level hooks required for local hardware resource management and "Long Sleep" rehydration.
+    - **Pros:** Modern Agno has a richer ready-made workflow vocabulary, including parallel,
+      router, condition, loop, review, persistence, resumable approval, A2A/MCP, scheduling, and
+      local deployment surfaces.
+    - **Cons:** Embedding AgentOS would introduce competing ownership for HTTP serving, sessions,
+      persistence, authentication, events, scheduling, and run lifecycle. Its workflow state and
+      dependency contracts also rely more heavily on `dict[str, Any]` than LychD's typed
+      `RunContext[LychDDeps]` boundary.
 
 !!! success "Option 3: Pydantic AI"
     An agent framework built on Pydantic and Python generics.
@@ -43,6 +49,29 @@ icon: material/robot-outline
 ## Decision Outcome
 
 **Pydantic AI** is adopted as the atomic primitive for all reasoning. An `Agent` in LychD is defined as a static **Specification Class** that is hydrated into a living entity by the system's current state.
+
+This is a least-conflict decision, not a claim that Pydantic AI is the more capable agent platform
+in every dimension. Agno remains a valid bounded benchmark when workflow velocity—especially
+parallel execution or richer approval choreography—outweighs static typing. Any prototype must sit
+behind LychD's Dispatcher, Orchestrator, Phylactery, and HitL ports; AgentOS may not become a second
+control plane.
+
+!!! note "Pydantic AI v2 horizon"
+    Upstream 2.14 strengthens this selection with composable durability capabilities, deferred
+    request/result stream events, enqueued live messages, model-resolution hooks, and richer usage
+    evidence. Those are migration candidates, not permission to hand execution ownership away.
+    Temporal, DBOS, or Prefect can durably wrap an inner Agent only inside their own workflow
+    runtime; they do not replace LychD's run ledger, Phylactery, SAQ, Sigils, consent ordering,
+    Dispatcher leases, or Oculus events. `LychDDeps` and a live `CapabilityGrant` must never cross
+    such a serialization boundary. A future adapter carries stable authorized capability IDs and
+    reacquires a fresh grant per activity.
+
+    The v2 migration is gated behind a final-v1 compatibility pass and a LychD-owned, versioned
+    workflow checkpoint. It must also choose `end_strategy` explicitly: accepting a new default
+    that lets sibling mutating tools finish would be a security behavior change, not a library
+    upgrade. Current upstream event names are `DeferredToolRequestsEvent` and
+    `DeferredToolResultsEvent`; they may enrich Oculus evidence, but the first event cannot replace
+    LychD's persist-consent → persist-wait-state → emit-card ordering.
 
 This is a runtime decision, not merely an implementation detail. Pre-v1 LychD agents are **model/provider agnostic**, but they are not **agent-framework agnostic** inside the Vessel. Pydantic AI supplies the blessed execution grammar for typed outputs, `RunContext`, toolsets, deferred execution, retries, usage propagation, and graph-friendly composition. Other agent frameworks may still participate by being wrapped as external-service Animators or A2A Emissaries, or by being assimilated into native Pydantic AI agents. They are not loaded as independent in-process agent runtimes unless a future versioned `lychd.extensions.api` explicitly defines that product surface.
 
