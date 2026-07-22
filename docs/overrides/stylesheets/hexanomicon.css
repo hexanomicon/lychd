@@ -206,3 +206,102 @@ h1, h2, h3 {
 .md-top:hover {
     color: var(--necro-green);
 }
+
+/*
+   ==========================================================================
+   6. PROPHECY HERO
+   ==========================================================================
+*/
+
+.md-typeset .prophecy-hero {
+  margin: 0 auto 2rem;
+  text-align: center;
+}
+
+.md-typeset .prophecy-hero__sigil {
+  display: block;
+  width: min(15rem, 52vw);
+  height: auto;
+  margin: 0 auto 0.75rem;
+  border: 1px solid #3b0a6e;
+  border-radius: 15px;
+  box-shadow: 0 0 40px rgba(124, 77, 255, 0.25);
+}
+
+.md-typeset .prophecy-hero__title {
+  margin: 0;
+  color: #f7f5ff;
+  font-size: clamp(2.25rem, 7vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .md-typeset .prophecy-hero__title {
+    background: linear-gradient(
+      90deg,
+      var(--arcane-purple),
+      var(--frost-blue),
+      var(--necro-green)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+.md-typeset .prophecy-hero__kicker {
+  margin: 0.5rem 0 0;
+  color: #a0a0b0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: clamp(0.8rem, 2.5vw, 1.1rem);
+  letter-spacing: 0.06em;
+}
+
+.md-typeset .prophecy-hero__motto {
+  margin: 0.8rem 0 0;
+}
+
+.md-typeset .prophecy-hero__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 1rem 0 0;
+}
+
+.md-typeset .prophecy-hero__badges a {
+  line-height: 0;
+}
+
+.md-typeset .prophecy-hero__badges img {
+  width: auto;
+  max-width: 100%;
+  height: 1.75rem;
+}
+
+@media (max-width: 30rem) {
+  .md-typeset .prophecy-hero {
+    margin-bottom: 1.5rem;
+  }
+
+  .md-typeset .prophecy-hero__sigil {
+    width: min(11rem, 52vw);
+  }
+}
+
+@media (forced-colors: active) {
+  .md-typeset .prophecy-hero__sigil {
+    border-color: CanvasText;
+    box-shadow: none;
+  }
+
+  .md-typeset .prophecy-hero__title {
+    background: none;
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+    text-shadow: none;
+  }
+}
