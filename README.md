@@ -22,6 +22,9 @@
 
 Summon **The Lich** 💀 — an experimental Linux-native daemon for local agentic orchestration. It is designed to manage agents through:
 
+LychD is **pre-alpha**. [State of the Work](docs/state-of-the-work.md) names what can answer now,
+what still needs a named operator receipt, and what remains design.
+
 - 🔥 **Dynamic Services** — Hot-swap local capability services through systemd. **[Covens](docs/adr/08-containers.md)** move your hardware between fast VRAM workers, CPU-offloaded models, browser engines, observers, and other bodies.
 - 🧠 **Durable First Light** — The **[Phylactery](docs/adr/06-persistence.md)** provides the first
   Postgres run/step truth, with owner-only file checkpoints for declared durable graph waits.

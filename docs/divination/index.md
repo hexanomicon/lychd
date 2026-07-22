@@ -9,6 +9,9 @@ icon: fontawesome/solid/ankh
 
 Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its motion through the interface of the [Altar](./altar/).
 
+Divination names the practice; [State of the Work](../state-of-the-work.md) is the sole record of
+which instruments and faculties can answer now.
+
 Through these rites, you, the Magus, move beyond the role of mere user and become witness, arbiter, and consecrating authority.
 
 ## 🔮 The Threefold Path of the Magus

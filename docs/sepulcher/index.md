@@ -10,6 +10,9 @@ LychD is orchestrated via **Podman Quadlets** within a central Pod—the Sepulch
 The Sepulcher is the anatomy of the Daemon.
 Its organs are not merely colocated services. They are a disciplined body: law in the Codex, memory in the Phylactery, motion in the Vessel, and extension in the organs that grow from them.
 
+The Sepulcher maps the body; [State of the Work](../state-of-the-work.md) is the sole record of
+which organs can answer now.
+
 !!! abstract ":fontawesome-solid-skull: [Lich](./lich.md)"
     The central purpose-bearing intelligence. The Lich is the daemon-instrument; all other components serve its operation. The **[Lich](./lich.md)** page holds the daemon's cognitive map — how it generates candidates, discriminates truth from hallucination, and accumulates identity. (It is written in the Inner Tongue; the [Lexicon](../lexicon.md#ii-the-inner-tongue--esoteric-cartography) is the key.)
 
