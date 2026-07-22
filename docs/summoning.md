@@ -5,433 +5,502 @@ icon: material/fire
 
 # :material-fire: The Summoning Rite
 
-This is the minimum rite that binds and starts the daemon. Follow it top to bottom and you
-will have a validated Codex, generated rootless Podman units, an upgraded Phylactery, a
-running Vessel, and a foundation diagnosis. A first local model reply is the final
-operator smoke test; it still depends on your chosen image, weights, driver stack, and
-runtime flags.
+This rite brings one LychD source revision to first life on one Linux host and receives one reply
+in its **Bridge chat instrument**. Follow it top to bottom in one shell. At the end, configuration
+preflight, systemd state, model readiness, and that Bridge reply must agree.
 
-Six movements, each ending in a command that proves it worked:
+LychD calls its recurrent whole **the Lich**. The model you bind here is one organ of that whole,
+not its memory, policy, authority, or identity.
 
-| Movement | You will |
-| :--- | :--- |
-| [The Grounds](#the-grounds) | Confirm the host can carry the daemon (Linux, rootless Podman, systemd; optionally a GPU). |
-| [The Desecration](#the-desecration) | Install the `lychd` command-line tool. |
-| [The Inscription](#the-inscription) | Run `lychd init` and meet the Codex and the Crypt. |
-| [The Secret Covenant](#the-secret-covenant) | Establish referenced Podman secrets without putting values in TOML. |
-| [The First Soulstone](#the-first-soulstone) | Write your first Soulstone Rune (a local model service) and bind it. |
-| [The Awakening](#the-awakening) | Start the Vessel, let migrations run, diagnose the foundation, and try the first message. |
+The path has six movements:
 
-!!! note "Time estimate"
-    Budget about 30 minutes if Podman and your device drivers are ready, plus however long
-    it takes to download your first model weights.
+1. [The Grounds](#the-grounds) — verify the Linux host, NVIDIA device, and model file.
+2. [The Desecration](#the-desecration) — install this source revision and build its Vessel image.
+3. [The Inscription](#the-inscription) — create configuration and data homes, then activate the
+   llama.cpp extension.
+4. [The Secret Covenant](#the-secret-covenant) — keep secret values outside configuration.
+5. [The First Soulstone](#the-first-soulstone) — declare and bind one local model service.
+6. [The Awakening](#the-awakening) — start, diagnose, and send one message.
 
-!!! warning "The host is Linux"
-    LychD binds to a Linux host with a rootless podman + systemd user session. macOS and
-    Windows are development platforms for the code, not summoning grounds for the daemon.
-    See [The Grounds](#the-grounds) for the full list.
+!!! warning "Current pre-alpha install path"
+    This repository revision does not have a published command-line package and Vessel image pair
+    that matches its source. The rite therefore uses a source checkout and builds
+    `localhost/lychd:dev`. Do not substitute `uv tool install lychd`, `pip install lychd`, or
+    `ghcr.io/hexanomicon/lychd:latest` unless a later release records matching public artifacts.
 
 !!! warning "Foundation boundary"
-    The CLI/configuration/dispatch/orchestration foundation is covered by local tests. A real
-    rootless Podman + GPU + model-image invocation is intentionally an operator integration test
-    at this phase. The caged default includes mediated Host Reactor delivery, a read-only terminal
-    journal, a host path/service consumer, typed validation, claim/cancellation/startup fences,
-    exact-action-prefix crash recovery, and a typed hard-readiness inverse. A trustworthy soft
-    model-load inverse, general repair of non-prefix or failed-compensation physical states, a
-    DB-backed graph outbox, and the multimodal artifact materializer are later work. This rite does
-    not imply they already exist.
+    Repository tests exercise the local software foundation. Rootless Podman, systemd, NVIDIA,
+    llama.cpp, and your selected weights meet only on your host; their conjunction must be observed
+    there and is not something documentation can pre-claim. [State of the
+    Work](state-of-the-work.md) owns every other delivery boundary and the metadata required for a
+    maintained operator receipt.
 
-    [State of the Work](state-of-the-work.md) is the canonical delivery record for every boundary
-    named in this rite.
+!!! note "Time"
+    The commands are short. Building and pulling images, acquiring a suitable model, and loading it
+    on your hardware dominate the duration, so there is no honest fixed estimate.
 
-When you finish, the daemon is alive on your iron. From there, the [Sepulcher](sepulcher/index.md)
-documents each part you will work with — opening [Portals](sepulcher/animator/portal.md) and
-driving [coven](sepulcher/animator/coven.md) swaps — while [Divination](divination/index.md) is
-where you commune with the running daemon through the [Altar](divination/altar/index.md) instruments.
+## The Grounds — verify the Linux host {#the-grounds}
 
-## The Grounds
+The daemon needs ground that can carry its body. This candidate path is deliberately narrow: a
+Linux host, rootless Podman 5.4 or newer, a working systemd user manager, NVIDIA CDI, and one
+tool-capable GGUF model.
 
-Before the Lich can rise, the ground must be able to hold it. LychD is a systemd-native
-daemon: it runs your models as rootless Podman containers governed by your user's systemd
-session, and it keeps its durable soul in a generated pgvector/Postgres Phylactery unit. Confirm each prerequisite below with
-the command given; do not proceed until every check passes.
+Run the rite as your ordinary user. Do not prefix LychD, Podman, or `systemctl --user` commands
+with `sudo`.
 
-### A Linux host
+**Goal.** Prove every prerequisite before changing LychD configuration.
 
-LychD manages the host's init system directly. It requires Linux with a **rootless podman
-+ systemd user session** — the same substrate the [Sepulcher](sepulcher/index.md) is
-built on. Confirm the user session is live:
+Run:
 
 ```bash
+uname -s
 systemctl --user status
+loginctl show-user "$USER" --property=Linger
+podman --version
+podman info --format '{{.Host.Security.Rootless}}'
+git --version
+uv --version
+nvidia-smi
+nvidia-ctk cdi list
+```
+
+You need `Linux`, a responding user manager, Podman **5.4 or newer** reporting `true` for rootless
+operation, Git, uv, a visible NVIDIA device, and an NVIDIA CDI entry such as
+`nvidia.com/gpu=all`. If `Linger=no`, make the user service survive logout:
+
+```bash
+loginctl enable-linger "$USER"
 loginctl show-user "$USER" --property=Linger
 ```
 
-!!! tip "Enable lingering"
-    If `Linger=no`, the daemon stops when you log out. Enable it so LychD survives a
-    disconnected session:
-
-    ```bash
-    loginctl enable-linger "$USER"
-    ```
-
-### Podman with Quadlet support
-
-The binding rite writes [Quadlet](sepulcher/codex.md) manifests that podman's systemd
-generator turns into services. LychD requires Podman 5.4 or newer: `.pod`
-Quadlets arrived after 4.4, and the shared-pod `ShmSize=` contract used by local
-inference runtimes requires 5.4:
+Derive the paths LychD will use. Keep these shell variables for the rest of the continuous rite:
 
 ```bash
-podman --version
+CODEX_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lychd"
+CRYPT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/lychd"
+QUADLET_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/containers/systemd"
+USER_UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+printf '%s\n' "$CODEX_DIR" "$CRYPT_DIR" "$QUADLET_DIR" "$USER_UNIT_DIR"
 ```
 
-### A GPU with enough VRAM
-
-Local model inference needs a GPU. The VRAM you have sets how large a model you can hold
-warm and how many can share a coven. Check what the host sees:
+This rite does not acquire weights for you. Arrive with a GGUF whose model card explicitly
+documents llama.cpp compatibility, a chat template, and tool calling; the filename and later Rune
+hint alone prove none of those properties. The model must also fit your VRAM because LychD does not
+yet calculate that fit for you. Place the file at this exact path:
 
 ```bash
-nvidia-smi        # NVIDIA
-rocm-smi          # AMD
+mkdir -p "$HOME/models"
+realpath "$HOME/models"
+test -r "$HOME/models/first-model.gguf" \
+  && test -s "$HOME/models/first-model.gguf" \
+  && echo "model readable and non-empty"
+ls -lh "$HOME/models/first-model.gguf"
+sha256sum "$HOME/models/first-model.gguf"
 ```
 
-ExLlamaV3 uses NVIDIA's CDI device names rather than raw `/dev` passthrough. A host-level
-`nvidia-smi` result is not sufficient: install NVIDIA Container Toolkit, generate its CDI
-specification, and confirm Podman can resolve the selector before enabling that Soulstone:
+**Proof.** Every command above succeeds; lingering reads `yes`; the CDI list contains the selector;
+and the final commands show a readable, non-empty `first-model.gguf` and its digest. Preserve that
+digest if you later assemble a maintained receipt. Model licensing and the source from which you
+obtain the weights remain your responsibility.
+
+**If it fails.** Stop at the failed prerequisite. Install or repair that host component with your
+distribution or NVIDIA documentation, then repeat this movement. Do not continue with an invisible
+GPU, Podman older than 5.4, or an unreadable model.
+
+??? info "No NVIDIA device?"
+    A remote [Portal](sepulcher/animator/portal.md) avoids local VRAM, and other Soulstone runtimes
+    have their own device contracts. They are different **Runes—TOML configuration
+    declarations**—not drop-in substitutions for the CUDA Rune below. Complete their owning guide
+    instead of mixing paths in this rite.
+
+## The Desecration — install LychD {#the-desecration}
+
+Build the host command and containerized application from the same checkout so their configuration
+and generated-unit contracts cannot drift.
+
+**Goal.** Create the locked host environment and a locally tagged Vessel image from one checkout.
+
+If you already completed the README bootstrap or opened this page from an existing checkout, do
+not clone another copy inside it. Stay at that checkout's root, skip only the `git clone` and
+`cd lychd` lines below, and rerun the common `uv sync`, build, and proof commands. Otherwise, start
+in a parent directory that does not already contain `lychd`.
+
+Run:
 
 ```bash
-nvidia-ctk cdi list
-podman run --rm --device nvidia.com/gpu=all \
-  --entrypoint nvidia-smi \
-  ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3
+git clone https://github.com/hexanomicon/lychd.git
+cd lychd
+uv sync --frozen
+podman build --file Containerfile --tag localhost/lychd:dev .
 ```
 
-The second command is the deployment receipt the repository cannot produce without your
-NVIDIA host and model. It may pull the pinned image if it is not already present.
+Keep this checkout at a stable absolute path. The Host Reactor unit generated later points to the
+`lychd` executable inside this checkout's `.venv`; moving or deleting the checkout breaks that
+host-side consumer.
 
-!!! note "You can start without a GPU"
-    A remote [Portal](sepulcher/animator/portal.md) needs no local VRAM at all. If you
-    have no GPU yet, you can still complete the rite by opening a Portal instead of writing
-    a local Soulstone — but the [First Soulstone](#the-first-soulstone) movement assumes
-    local iron.
-
-### The generated Phylactery
-
-The normal caged rite does not require a separately installed Postgres. `lychd bind`
-generates `lychd-phylactery.service` from the configured pgvector image and a one-shot
-migration Quadlet (`lychd-migrate.container`, generated as `lychd-migrate.service`) ordered
-before the Vessel. An uncaged/development invocation may instead
-target an already-running Postgres and run `lychd database upgrade` explicitly.
-
-**Verify the grounds.** You are ready to install when all of the following are true:
-
-- `systemctl --user status` reports a running session.
-- `podman --version` is 5.4 or newer.
-- `nvidia-smi` / `rocm-smi` shows a GPU (or you plan to use a Portal).
-- For ExLlamaV3, `nvidia-ctk cdi list` exposes the selected `nvidia.com/gpu=...` device and
-  the Podman receipt above succeeds.
-- Podman can pull the configured Phylactery and model images.
-
-## The Desecration
-
-Install the `lychd` command-line tool — the [Pulse](lexicon.md), the rhythm by which you
-drive the daemon. Pick one path. The Iron Path is recommended; it installs `lychd` into an
-isolated environment so it never collides with your other Python tools.
-
-=== "The Iron Path (recommended)"
-
-    [`uv`](https://docs.astral.sh/uv/) installs the tool cleanly and instantly:
-
-    ```bash
-    uv tool install lychd
-    ```
-
-=== "The Acolyte's Path (pip)"
-
-    Standard pip installation, for hosts without `uv`:
-
-    ```bash
-    pip install lychd
-    ```
-
-=== "The Necromancer's Path (source)"
-
-    For Magi who intend to modify the core:
-
-    ```bash
-    git clone https://github.com/hexanomicon/lychd.git
-    cd lychd
-    uv sync
-    ```
-
-    From a source checkout the command runs as `uv run lychd`.
-
-**Verify the install.** Confirm the Pulse answers:
+**Proof.** Record the revision and inspect both interfaces:
 
 ```bash
-lychd --help
+git rev-parse HEAD
+uv run lychd --help
+podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-You should see the command groups — `init`, `bind`, and the others. If the shell reports
-`command not found`, the tool's install directory is not on your `PATH` — ensure
-`~/.local/bin` is on it (`uv tool update-shell`).
+The help output must include `init`, `bind`, `doctor`, `animators`, `database`, `serve`, and
+`reactor`; the image inspection must print an image ID.
 
-## The Inscription
+**If it fails.** Use Python `>=3.12,<3.15` for the locked environment and read the first failing
+build step. Do not work around a failure by installing the old PyPI placeholder or by assuming a
+remote `latest` image matches the checkout.
 
-Before the Lich can rise, it must be told where its body will live. `init` creates the two
-directories every later rite reads from and writes a starter set of configuration
-templates.
+For development conventions and the full quality gate, enter the [contributor
+forge](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md).
+
+## The Inscription — create configuration and data homes {#the-inscription}
+
+The source now exists, but it has no host inscription. `init` creates the editable configuration
+home—the **Codex**—and LychD-managed persistent data—the **Crypt**. Your model shelf remains the
+separate directory you made in the first movement.
+
+**Goal.** Create both homes, select the local Vessel image, and activate exactly the extension this
+rite uses.
+
+This is a fresh-install or README-bootstrap path, not a migration guide for an existing LychD
+configuration. If this Codex already contains custom extensions or active Runes, stop and reconcile
+them through their owning guides; additional active declarations invalidate this rite's
+one-Soulstone proof.
+
+Run the first inscription:
 
 ```bash
-lychd init
+uv run lychd init
+vi "$CODEX_DIR/lychd.toml"
 ```
 
-This establishes the two homes of the daemon:
+In the existing `[server.web]` table, change its existing `image` value to:
 
-- **The Codex** (`~/.config/lychd`) — your configuration. It holds `lychd.toml` plus the
-  `runes/` tree of TOML declarations (your Soulstones, Portals, and settings). **You edit
-  this.** See [The Codex](sepulcher/codex.md).
-- **The Crypt** (`~/.local/share/lychd`) — persistent data: model weights, the
-  Phylactery's volumes, and generated state. **LychD manages this; you back it up.** See
-  [The Crypt](sepulcher/crypt.md).
-
-During `init`, the filesystem is inspected. On **Btrfs**, the layout service may establish
-native subvolume boundaries. On another filesystem it creates ordinary directories and
-continues without snapshot guarantees. Automatic loopback-Btrfs fallback and complete
-rollback orchestration are later work; `init` does not pretend a plain directory is a snapshot.
-
-`init` also discovers every installed configuration schema and writes one sample TOML per
-schema under the Codex `runes/` tree — including sample Soulstone and Portal declarations
-you will edit in the next movement.
-
-!!! tip "Set your model mount now"
-    Open `~/.config/lychd/lychd.toml` and set `[lychd].models_dir` plus
-    `[lychd].default_soulstone_mounts` for the host directory that contains your weights.
-    Rune model paths name the container-side path (normally `/models/...`); they are not an
-    undocumented host-relative `model_root` shortcut.
-
-**Verify the inscription.** Confirm both homes exist:
-
-```bash
-ls ~/.config/lychd/lychd.toml ~/.local/share/lychd
+```toml
+image = "localhost/lychd:dev"
 ```
 
-For the full Codex layout — file precedence, the `runes/` tree, and environment
-overrides — see [The Codex](sepulcher/codex.md).
+In the existing `[extensions]` table, change its existing `builtins` value to:
 
-## The Secret Covenant
+```toml
+builtins = ["animator/llamacpp"]
+```
 
-Codex and Rune TOML contain secret **names**, never secret values. Core application and
-database secret names are declared by `app.secret_key_secret` and `db.password_secret`;
-`lychd bind` reconciles those core references with rootless Podman secret storage. A Portal
-or Soulstone secret is operator-owned and must exist before bind.
-
-For each non-core secret name referenced by a rune:
+Leave `crypt = []` unchanged. Do not add a `[lychd]` table or global model-mount setting; neither
+exists. Run `init` a second time so the now-active extension can contribute its Rune anchor and
+marked, inactive sample:
 
 ```bash
-read -rsp "Secret value: " LYCHD_SECRET
-printf '%s' "$LYCHD_SECRET" | podman secret create portal_openai_main -
-unset LYCHD_SECRET
+uv run lychd init
+```
+
+`init` does not overwrite the existing `lychd.toml`. The second pass reads your extension selection
+and creates `runes/animator/soulstones/llamacpp/` if needed.
+
+On Btrfs, initialization may establish native subvolume boundaries. On another filesystem it uses
+ordinary directories and does not claim snapshot rollback.
+
+**Proof.** Inspect the homes and their owner-only boundaries:
+
+```bash
+stat -c '%a %n' "$CODEX_DIR/lychd.toml"
+stat -c '%a %n' \
+  "$CRYPT_DIR/triggers/inbox" \
+  "$CRYPT_DIR/triggers/journal"
+ls -la "$CODEX_DIR/runes/animator/soulstones/llamacpp"
+```
+
+The settings file must report mode `600`; both Reactor directories must report `700`; and the
+llama.cpp anchor must exist. Its generated sample begins with `# lychd: sample-rune` and remains
+inactive. The next movement creates a separate active Rune.
+
+**If it fails.** Correct malformed TOML or an unknown extension ID, then rerun `init`. If you want a
+fresh generated settings file, first preserve your existing one yourself; `init` refuses to
+overwrite it.
+
+Read [The Codex](sepulcher/codex.md) when you need precedence, layout, or additional Rune families.
+
+## The Secret Covenant — account for referenced secrets {#the-secret-covenant}
+
+Configuration may name a secret, but it may never contain the value. Rootless Podman's secret
+store holds values; Codex and Rune TOML hold references.
+
+**Goal.** Account for every non-core secret name before binding without inventing one the current
+Rune does not need.
+
+The llama.cpp Rune in the next movement references **no non-core secret**, so the candidate path has
+nothing to create here. Inspect the store:
+
+```bash
 podman secret ls
 ```
 
-Use `podman secret create --replace ...` only when you deliberately rotate an existing
-value. Never paste a credential into `lychd.toml`, a Rune, a command history argument, or a
-generated Quadlet.
+`lychd bind` will generate strong values for the two core references—`lychd_app_secret_key` and
+`lychd_db_password`—only when they are absent. It preserves existing values.
 
-**Verify the covenant.** Every name referenced by a Portal's `api_key_secret_name` or a
-Soulstone's `secret_env_files` must appear in `podman secret ls`. Missing references make
-`lychd bind` fail closed before any unit is rewritten.
+??? info "Later Runes with non-core secrets"
+    If you later add a Portal or Soulstone Rune that names a non-core secret, create that exact
+    name before binding. For example, only if a Rune names `portal_openai_main`:
 
-## The First Soulstone
+    ```bash
+    SECRET_NAME=portal_openai_main
+    read -rsp "Value for $SECRET_NAME: " LYCHD_SECRET
+    printf '%s' "$LYCHD_SECRET" | podman secret create "$SECRET_NAME" -
+    podman secret exists "$SECRET_NAME"
+    unset LYCHD_SECRET SECRET_NAME
+    ```
 
-A [Soulstone](sepulcher/animator/soulstone.md) is a local model service running on your
-own iron. You declare it as a **Soulstone Rune** — a TOML file in the Codex — and `bind`
-transmutes that declaration into a systemd service. This movement writes your first
-Soulstone Rune and binds it.
+**Proof.** Every non-core name referenced by `api_key_secret_name`, `secret_env_files`, or a runtime
+control-plane field exists in `podman secret ls`. For the exact Rune below, that set is empty.
 
-### Write the rune
+**If it fails.** Create the missing name and rerun `bind`. Missing references fail closed before the
+generated unit set is rewritten. Use `podman secret create --replace` only for a deliberate
+rotation, then recreate affected containers so they receive the new value.
 
-Soulstone Runes live under `~/.config/lychd/runes/animator/soulstones/`. Create one for a
-`llama.cpp` server. This example runs the server in **router** mode, which loads models on
-demand (a capability with `is_dynamic=True`):
+## The First Soulstone — bind one local model service {#the-first-soulstone}
 
-```toml title="~/.config/lychd/runes/animator/soulstones/llamacpp/atelier.toml"
+A **Soulstone** is a local model service whose lifecycle LychD can coordinate. This one is a
+llama.cpp router: LychD's runtime **Orchestrator** starts the service, and its model can move from
+available to warming to warm without restarting the Vessel.
+
+**Goal.** Declare one tool-capable chat model, expose only its model shelf and NVIDIA device, then
+transmute that declaration into generated units.
+
+Print the exact host path you will paste into the Rune:
+
+```bash
+MODEL_DIR=$(realpath "$HOME/models")
+printf '%s\n' "$MODEL_DIR"
+```
+
+Create the active Rune:
+
+```bash
+vi "$CODEX_DIR/runes/animator/soulstones/llamacpp/atelier.toml"
+```
+
+Paste the following TOML, but replace `/home/YOU/models` with the exact `MODEL_DIR` output. Keep the
+container path `/models` unchanged. TOML does not expand `$HOME`.
+
+```toml title="atelier.toml"
 name = "atelier"
-description = "My first local model service."
-groups = ["atelier"]
+description = "First local llama.cpp router."
+image = "ghcr.io/ggml-org/llama.cpp:server-cuda"
 startup_mode = "router"
+model_path = "/models/first-model.gguf"
 models_dir = "/models"
+models_autoload = false
+volumes = ["/home/YOU/models:/models:ro,Z"]
+devices = ["nvidia.com/gpu=all"]
 
 [concurrency]
 dedicated = true
 persistent_resident = false
 
 [[models]]
-id = "qwen3-8b"
-path = "/models/qwen3-8b"
-description = "A local chat model."
+id = "first-model"
+path = "/models/first-model.gguf"
+description = "First local tool-capable chat model."
 
 [models.capabilities]
+families = ["chat"]
 supports_tools = true
 ```
 
-What each part declares:
+The top-level `model_path` is a current router-identity compatibility field: it makes the connector
+probe `first-model`, matching the explicit model ID it asks the router to load.
 
-- `name` — the Animator's name. It becomes the first segment of every capability key this
-  Soulstone yields: `atelier:chat:qwen3-8b`.
-- `startup_mode = "router"` — the `llama.cpp` router loads models on demand, so its
-  capabilities carry `is_dynamic=True` (see [Capabilities](sepulcher/animator/capabilities.md)).
-  A single-model server (for example vLLM) has `is_dynamic=False` instead — reachable means warm.
-- `[concurrency]` — `dedicated = true` means LychD owns this runtime's lifecycle and may
-  swap it; `persistent_resident = false` means it is not pinned to survive every swap.
-- `[[models]]` — one block per model. The `id` and `path` are required; `path` names the
-  container-side artifact supplied by your configured model mount. The
-  `[models.capabilities]` hints declare what the model can do — here, tool calling.
-
-The full schema, including every field and how to declare vision, embeddings, and
-generation defaults, is the [Soulstone Rune reference](sepulcher/animator/soulstone.md#soulstone-rune-reference).
-
-!!! tip "A simpler non-dynamic alternative"
-    If you run a single-model server such as vLLM, the capability has `is_dynamic=False` — it is
-    warm the moment its endpoint is reachable, with no activation step. See the
-    [reference](sepulcher/animator/soulstone.md#soulstone-rune-reference) for a vLLM example.
-
-### Bind it
-
-Transmute the Codex into systemd units:
+Confirm that the saved Rune contains the real mount, pre-pull the runtime image, record its resolved
+identity, then bind:
 
 ```bash
-lychd bind
+grep -F "$MODEL_DIR:/models:ro,Z" \
+  "$CODEX_DIR/runes/animator/soulstones/llamacpp/atelier.toml"
+podman pull ghcr.io/ggml-org/llama.cpp:server-cuda
+podman image inspect ghcr.io/ggml-org/llama.cpp:server-cuda \
+  --format '{{.Id}} {{json .RepoDigests}}'
+uv run lychd bind
+uv run lychd doctor
 ```
 
-This reads your runes and installed extensions, generates the Podman/systemd
-[Quadlet](sepulcher/codex.md) manifests (including the Phylactery, migration, and Vessel
-units), and—in the default `host-reactor` mode—inscribes the host-only
-`lychd-reactor.path` and `lychd-reactor.service` units. It then reloads the user daemon. No
-service is started by bind. Quadlets and plain user units are reconciled as one complete desired
-fileset: a failure restores the prior owned generation, stale owned names disappear, and unrelated
-operator units remain untouched. The circle is bound.
+`bind` validates the active settings and Rune, creates missing core secrets, writes the complete
+owned Quadlet/plain-unit generation, and reloads the user manager. It does **not** start the
+services. `doctor` is configuration and host preflight; it is not liveness, readiness, or inference
+proof.
 
-**Verify the soulstone.** Confirm LychD sees the Soulstone and can read its declared
-capabilities:
+**Proof.** `doctor` ends with `Foundation is coherent`. Confirm the two generated boundaries and
+the core secret references:
 
 ```bash
-lychd animators
+podman secret exists lychd_app_secret_key && echo "application secret present"
+podman secret exists lychd_db_password && echo "database secret present"
+test -f "$QUADLET_DIR/lychd-vessel.container" \
+  && echo "Vessel Quadlet present"
+test -f "$USER_UNIT_DIR/lychd-reactor.path" \
+  && echo "Host Reactor path present"
 ```
 
-You should see `atelier` listed with a `chat` capability for your model. Its **Active** and
-**Warm** columns stay empty until the daemon runs and the model warms — that is expected
-before the Awakening. If `bind` failed or the animator is missing, confirm the rune
-parsed — `lychd bind` reports a named error on an invalid rune.
+**If it fails.** Read the first named violation, correct the Rune or settings, and run `bind` again.
+If the active Rune is not loaded, confirm `builtins = ["animator/llamacpp"]` and the exact Rune
+directory. If the mount is rejected, use an absolute host path outside the Codex, Crypt,
+systemd-unit, and Reactor control roots. If an external secret is missing, create the exact reported
+name. Do not hand-edit generated units.
 
-## The Awakening
+The [Soulstone guide](sepulcher/animator/soulstone.md) owns additional runtimes, concurrency, and
+mount configuration.
 
-Everything is in place: the grounds are clear, the tool is installed, the Codex is
-inscribed, and a Soulstone is bound. This movement wakes the daemon and exchanges the first
-message.
+## The Awakening — start, diagnose, and send one message {#the-awakening}
 
-### Start the daemon
+The body is bound but still. Starting the containerized (or **caged**) Vessel pulls its dependency
+chain into motion: the pod and its PostgreSQL **Phylactery** durable-data service start, the
+migration gate waits up to 60 seconds and upgrades the schema, the **Host Reactor** host-side
+transition actuator watches for typed intents, and only then does the web process rise.
 
-Summon the Vessel through the user's systemd session:
+**Goal.** Obtain four agreeing first-life observations through the capability **Dispatcher** and
+runtime **Orchestrator** path.
+
+Start the normal caged Vessel:
 
 ```bash
-systemctl --user enable --now lychd-vessel.service
+systemctl --user start lychd-vessel.service
 ```
 
-The generated dependencies start the Phylactery, wait at most 60 seconds for its TCP
-readiness, run the one-shot schema migration, activate the Host Reactor path watcher, and only
-then start the Vessel. A timeout or migration failure prevents the Vessel from starting. The
-path watcher invokes the host-side `lychd reactor consume` oneshot when a complete typed
-transition arrives. Watch the daemon's internal monologue while it comes up:
+Do not manually enable the generated caged Quadlet. Verify the live core and the completed one-shot
+migration separately:
+
+```bash
+systemctl --user is-active \
+  lychd-pod.service \
+  lychd-phylactery.service \
+  lychd-reactor.path \
+  lychd-vessel.service
+systemctl --user show lychd-migrate.service \
+  --property=Result --property=ExecMainStatus
+```
+
+The four active units must each print `active`; migration must show `Result=success` and
+`ExecMainStatus=0`. If startup is still in progress, follow the Vessel:
 
 ```bash
 journalctl --user -fu lychd-vessel.service
 ```
 
-!!! tip "Foreground alternative for development"
-    Uncaged/development mode uses explicit database credentials and migration, then the
-    native foreground server bridge:
+Press `Ctrl-C` after the Vessel is active; that stops only the log follow, not the service.
 
-    ```bash
-    LYCHD_DB_PASSWORD_FILE=/secure/path/db-password lychd database upgrade
-    LYCHD_DB_PASSWORD_FILE=/secure/path/db-password \
-      LYCHD_APP_SECRET_KEY_FILE=/secure/path/app-key \
-      ORCHESTRATION__SWITCHING__ACTUATOR=systemd \
-      lychd serve --host 127.0.0.1 --port 7134
-    ```
+!!! danger "Temporary local-browser boundary"
+    **Before opening the Altar:** use a dedicated browser profile on this same host. Keep the HTTP
+    listener on `127.0.0.1`; do not publish, reverse-proxy, tunnel, or port-forward its port. Do not
+    enable the SAQ UI or open `/schema/scalar`. Stop the Vessel when the rite is finished if hostile
+    webpages are in your threat model.
 
-    `lychd database upgrade` is not an extra step in the normal caged rite; the generated
-    migration unit owns it. Direct Systemd actuation is an explicit uncaged choice; the caged
-    default is `host-reactor`. Use `lychd doctor --uncaged` for the matching preflight. There is
-    no `lychd run` command.
+    **Why:** the fixed `magus:*` identity label (a **Sigil**) is not a login. The production app
+    still accepts arbitrary Host values and wildcard CORS, so loopback alone does not isolate
+    Bridge, Nexus, or run streams from every hostile webpage. CSRF blocks ordinary unsafe
+    cross-origin requests, but it does not protect GET/SSE confidentiality or DNS rebinding. Do
+    not use the Altar from a browser profile that also visits untrusted sites.
 
-    For a host-managed uncaged service instead of the foreground process, set
-    `orchestration.switching.actuator = "systemd"`, run `lychd bind --uncaged`, and explicitly
-    enable `lychd-uncaged-vessel.service`. Its distinct name cannot shadow the caged
-    `lychd-vessel.service`. Before returning to caged mode, disable the uncaged unit, restore
-    `actuator = "host-reactor"`, and run ordinary `lychd bind`; complete-fileset reconciliation
-    removes the now-stale owned unit file.
+    Until the S0 ingress gate lands, use exactly the documented generated deployment or
+    `lychd serve --host 127.0.0.1`; neither choice is permission to expose the port remotely.
 
-### Examine the foundation
+Open the loopback Altar:
 
-After startup, run the read-only preflight:
+```text
+http://127.0.0.1:7134/
+```
+
+The root opens the **Bridge**, the Altar's chat instrument. On a fresh Phylactery, click **New
+Séance** to create the first session. Then send one simple message, such as:
+
+```text
+Reply with one sentence confirming first light.
+```
+
+The first request may take time: it requests the declared tool-capable chat service, starts the
+dedicated Soulstone through the Host Reactor, asks the router to load `first-model`, waits for
+readiness, and then retries dispatch. The Rune's `supports_tools = true` is an operator assertion
+used for admission; the settled reply does not prove arbitrary tool calling.
+
+When a non-empty response settles in the Bridge, repeat preflight from the host and inspect the
+runtime from inside the Vessel's shared pod network:
 
 ```bash
-lychd doctor
+uv run lychd doctor
+podman exec lychd-vessel lychd animators
+```
+
+You can witness the same cached capability through the **Nexus transition board** at
+`http://127.0.0.1:7134/nexus`; `http://127.0.0.1:7134/orchestrator/status` exposes the local JSON
+projection. The `atelier:chat:first-model` row should have phase `warm` and `warm: true` after the
+settled turn.
+
+**Proof.** First life exists only when all four observations agree:
+
+1. `doctor` reports a coherent foundation;
+2. the pod, Phylactery, Reactor path, and Vessel are active and migration succeeded;
+3. the in-Vessel `lychd animators` probe reports `atelier` / `chat` / `first-model` as warm after
+   the turn;
+4. the Bridge contains a non-empty settled reply.
+
+!!! success "The foundation has answered"
+    These four observations form a bounded first-life result for this host, model, driver, and
+    image combination. Preserve them with State's required environment, command, timing, log,
+    identity, shutdown, and recovery metadata before calling the result a maintained operator
+    receipt. They do not prove every accelerator, model, engine, later organ, or hostile-browser
+    boundary.
+
+**If it fails.** Read the smallest journal that owns the failed boundary:
+
+```bash
 systemctl --user --no-pager status \
   lychd-phylactery.service lychd-migrate.service lychd-reactor.path \
-  lychd-vessel.service
+  lychd-vessel.service lychd-atelier.service
+journalctl --user \
+  -u lychd-migrate.service \
+  -u lychd-reactor.service \
+  -u lychd-atelier.service \
+  -u lychd-vessel.service \
+  --no-pager --lines=120
 ```
 
-`doctor` validates Codex permissions, settings, Runes, host tools, secret references, the
-owner-only Reactor directories and both generated Reactor unit files.
-The systemd status is the separate live-unit check; `doctor` does not claim that a model has
-completed real inference.
+If the core is healthy but inference fails, recheck the exact model filename, the CDI selector,
+VRAM fit, and the model's real tool/chat-template support. Correct the owning Rune and run `bind`
+again. Do not start the Soulstone by hand as a second activation path.
 
-### Open the Altar
+To stop this first-life stack without deleting configuration, data, secrets, or generated files:
 
-The [Altar](divination/altar/index.md) is the web surface for communing with the Lich.
-Open it in a browser:
-
+```bash
+systemctl --user stop \
+  lychd-atelier.service \
+  lychd-vessel.service \
+  lychd-phylactery.service \
+  lychd-reactor.path \
+  lychd-pod.service
 ```
-http://localhost:7134
-```
 
-The generated Pod publishes this port on host loopback only. That makes the current Altar a
-single-user local surface; it is not caller authentication. Do not expose it by changing the bind
-address alone. Remote access needs a separately configured authenticated, authorized, TLS front
-door.
+??? info "Development alternative: uncaged execution"
+    Uncaged execution is a distinct development profile, not a fallback for a broken caged rite. It
+    requires an external Postgres matching `[server.database]`, explicit application-key and
+    database-password files, and direct systemd actuation:
 
-### Watch the Nexus warm
+    ```bash
+    export LYCHD_DB_PASSWORD_FILE=/secure/path/db-password
+    export LYCHD_APP_SECRET_KEY_FILE=/secure/path/app-key
+    export ORCHESTRATION__SWITCHING__ACTUATOR=systemd
+    uv run lychd doctor --uncaged
+    uv run lychd database --wait-seconds 60 upgrade head --no-prompt
+    uv run lychd serve --host 127.0.0.1 --port 7134
+    ```
 
-Open the [Nexus](divination/altar/nexus.md) — the capability board. When you first
-arrive, your model's `chat` capability will show as **awaited** (a dynamic model —
-`is_dynamic=True` — that is reachable but not yet loaded) or **cold**. This is honest:
-nothing is loaded until something asks for it.
+    The same temporary local-browser boundary above still applies; a literal loopback foreground
+    bind does not add caller authentication, Host admission, or origin isolation. There is no
+    `lychd run` command. Although `bind --uncaged` can currently generate a distinct host service,
+    that unit does not yet carry the two secret-file paths required at process start; do not use its
+    printed enable hint as a working deployment recipe.
 
-### Exchange the first message
-
-Open the [Bridge](divination/altar/index.md) — the chat instrument — and send a message.
-
-Behind the scenes: your Intent resolves to a `chat` capability with explicit modality and
-tool requirements. The Dispatcher selects semantically but grants only `WARM`; a managed
-non-WARM capability emits a transition signal. The Orchestrator alone performs the soft
-activation or hard swap, waits for `WARM`, and lets the graph retry dispatch. The Nexus then
-moves the capability **awaited → warming → active**, and the first tokens can stream back on
-the Bridge.
-
-!!! success "The foundation is summoned"
-    When `doctor`, the core unit and Reactor-path states, `lychd animators`, and the Bridge reply all agree,
-    the minimum vertical slice is alive on your iron. If the units pass but inference does
-    not, the remaining fault is in the selected model image/weights/runtime boundary rather
-    than a reason to bypass the Dispatcher or add a second activation path.
-
-## Where to go next
-
-- [Open a Portal](sepulcher/animator/portal.md) to add a remote provider alongside your
-  local models.
-- [Manage covens](sepulcher/animator/coven.md) to understand and drive model swaps.
-- Drive and watch the daemon from the [Altar](divination/altar/index.md) — the Bridge and
-  the Loom.
+You have awakened one bounded body and heard it answer. Enter the [Sepulcher](sepulcher/index.md)
+next to learn which organ owns configuration, persistence, inference, execution, and extension. If
+any of the four observations is still absent, remain in [The Awakening](#the-awakening) until the
+evidence agrees.
