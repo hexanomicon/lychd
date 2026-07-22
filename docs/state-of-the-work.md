@@ -104,6 +104,33 @@ end-to-end CLI placeholder contains no tests. No real host or GPU execution is c
 - **Verification:** [Focused CLI command tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py)
 - **Law:** [ADR 19 — CLI](./adr/19-cli.md)
 
+### Public release artifact chain {#public-release-artifact-chain}
+
+**State:** Designed
+
+**Proved now:** The source tree declares a Hatch-built Python distribution, a Containerfile, and a
+tag-triggered workflow that can build and push a Vessel image.
+
+**Do not expect yet:** No maintained receipt pairs this revision as an anonymously installable
+PyPI package and pullable GHCR image from one tag and commit. A 2026-07-22 audit found only the
+placeholder `lychd==0.0.1` on PyPI while source declares `0.0.2`; an anonymous pull of the
+configured `ghcr.io/hexanomicon/lychd:latest` was denied, and no immutable tag or digest pairs it
+with the source wheel. That audit did build and isolated-install the source wheel, expose the real
+CLI tree, and complete `lychd init`, but a one-time manual pass is not a public release or a
+maintained packed-artifact receipt. Promotion needs one version owner, automated wheel/image
+inspection, matching public artifacts, and a named clean-host install/start/reply/stop receipt.
+
+**Evidence**
+
+- **Source:** [Package version](https://github.com/hexanomicon/lychd/blob/main/src/lychd/__about__.py)
+  and [default Vessel image](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/settings/server.py)
+- **Version:** [Distribution and version declarations](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml),
+  [Vessel build](https://github.com/hexanomicon/lychd/blob/main/Containerfile),
+  [tag-triggered image workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/build.yml),
+  and [public PyPI project](https://pypi.org/project/lychd/)
+- **Law:** [ADR 17 — Packaging](./adr/17-packaging.md) and
+  [ADR 18 — Evolution](./adr/18-evolution.md)
+
 ### Deployment-plan compilation and materialization {#deployment-plan-materialization}
 
 **State:** Available
@@ -160,7 +187,6 @@ remain separate receipts.
 - **Source:** [Runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py)
 - **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py)
   and [pending llama.cpp fixture boundary](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/llamacpp/README.md)
-- **Rite:** [The Summoning](./summoning.md)
 - **Law:** [ADR 08 — Containers](./adr/08-containers.md) and
   [ADR 10 — Privilege](./adr/10-privilege.md)
 
@@ -674,6 +700,42 @@ rechecked immediately before a protected effect after waiting.
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 25 — Human in the Loop](./adr/25-hitl.md), and [ADR 38 — IAM](./adr/38-iam.md)
 
+### Local browser and bind boundary {#local-browser-bind-boundary}
+
+**State:** Partial
+
+**Proved now:** Generated Pod ports and the generated uncaged systemd unit pin the Vessel to IPv4
+loopback. The Quadlet schema and extension-contribution boundary reject non-loopback publication,
+and the production application composes Litestar CSRF protection.
+
+**Boundary — Not yet:** The hostile-browser contract fails. Production configuration permits
+wildcard CORS, does not constrain the Host authority, and stamps ordinary requests with the fixed
+`magus:*` bootstrap Sigil rather than authenticating a caller. Foreground `lychd serve` arguments
+or environment can bypass the typed loopback host setting, while `/schema/scalar` loads mutable CDN
+assets into the local browser origin. CSRF remains a useful unsafe-method layer, but it does not
+protect GET or SSE confidentiality or stop DNS rebinding. Remote, proxied, tunneled,
+direct-image-public, foreground non-loopback, and untrusted-browser use are unsupported until the
+bind, Host, Origin, local-asset, security-header, full-production-app, and hostile-browser
+contracts pass.
+
+**Evidence**
+
+- **Source:** [Application composition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py),
+  [CORS and CSRF builders](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/components.py),
+  [web defaults](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/settings/server.py),
+  [bootstrap Sigil middleware](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/middleware.py),
+  [foreground launcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/__main__.py),
+  [deployment transmutation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/transmute.py),
+  and [Quadlet schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/schemas.py)
+- **Verification:** [Generated-network golden tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_golden.py),
+  [extension publication tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_contributor.py),
+  [Quadlet schema tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_schemas.py),
+  [generated uncaged-unit tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_uncaged_unit.py),
+  and [explicit production-wiring receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+- **Law:** [ADR 09 — Security](./adr/09-security.md),
+  [ADR 11 — Backend](./adr/11-backend.md), and
+  [ADR 15 — Frontend](./adr/15-frontend.md)
+
 ### Vision admission {#vision-admission}
 
 **State:** Partial
@@ -939,6 +1001,7 @@ topic pages own operation, and source, tests, and maintained receipts own execut
 
 ## Enter the Work
 
-This ledger is a threshold, not a destination. Continue to [The Summoning](./summoning.md), perform
+This ledger is a threshold, not a destination. The current Summoning page remains under D2c
+correction and is not an operator route. When that bounded source-candidate rite replaces it, perform
 its first bounded local rite, and let the observed result—not hope—decide what this page may claim
 next.

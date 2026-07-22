@@ -54,6 +54,7 @@ _RECORD_ANCHORS = {
     "karma-semantic-memory",
     "legion-federation",
     "llamacpp-integration",
+    "local-browser-bind-boundary",
     "local-sigil-authority",
     "loom-workflow-views",
     "mirror-identity",
@@ -62,6 +63,7 @@ _RECORD_ANCHORS = {
     "phylactery-first-light",
     "phoenix-eye",
     "proxy-veil",
+    "public-release-artifact-chain",
     "pydantic-ai-v1-adapter",
     "pydantic-ai-v2-migration",
     "reliquary-instrument",
@@ -125,7 +127,7 @@ def test_state_has_the_exact_public_jurisdictions_and_subjects() -> None:
 
     assert family_anchors == _FAMILY_ANCHORS
     assert record_anchors == _RECORD_ANCHORS
-    assert len(records) == len(_RECORD_ANCHORS) == 46
+    assert len(records) == len(_RECORD_ANCHORS) == 48
     assert len(record_anchors) == len(records), "State record anchors must be unique"
 
 
