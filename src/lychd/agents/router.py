@@ -88,6 +88,4 @@ class Intent(BaseModel):
     @property
     def required_modalities(self) -> tuple[str, ...]:
         """Return non-text modalities required by referenced artifacts."""
-        return tuple(
-            sorted({part.artifact.modality for part in self.content if isinstance(part, ArtifactContent)})
-        )
+        return tuple(sorted({part.artifact.modality for part in self.content if isinstance(part, ArtifactContent)}))

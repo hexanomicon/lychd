@@ -130,6 +130,7 @@ class WorkflowServices:
 # Sigil provider (v1 single-identity stand-in for the Ward)
 # ---------------------------------------------------------------------------
 
+
 def default_sigil() -> Sigil:
     """Return the loopback bootstrap Sigil until IAM provides a caller Sigil."""
     return default_local_sigil()

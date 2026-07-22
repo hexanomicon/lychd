@@ -179,10 +179,7 @@ class OrchestratorManager:
         # NO_OP return, which otherwise bypasses the arbiter-side check.
         self._raise_if_contained()
         target_animator = self._target_animator(target_capability_key)
-        if (
-            pre.action_type == "NO_OP"
-            and self._leases.admission(target_animator) is AnimatorAdmission.OPEN
-        ):
+        if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
             return pre
         return await self._arbiter.run(
             target_capability_key,
@@ -209,9 +206,7 @@ class OrchestratorManager:
             if priority < threshold:
                 raise TransitionDeclined(plan, priority, threshold)
 
-            affected_animators = list(
-                dict.fromkeys([*plan.evict_coven_ids, *plan.launch_coven_ids])
-            )
+            affected_animators = list(dict.fromkeys([*plan.evict_coven_ids, *plan.launch_coven_ids]))
             async with self._runtime_mutation_barrier(affected_animators) as barrier:
                 intent = TransitionIntent(
                     config_generation=self._config_generation(),
@@ -334,10 +329,7 @@ class OrchestratorManager:
 
     def _is_animator_runtime_started(self, animator_name: str) -> bool:
         """Return whether a dynamic animator can converge without a host restart."""
-        return any(
-            state.runtime_started
-            for state in self.registry.list_capability_states_for_animator(animator_name)
-        )
+        return any(state.runtime_started for state in self.registry.list_capability_states_for_animator(animator_name))
 
     async def _activate_dynamic_capability(self, target: CapabilitySpec) -> None:
         result = await self.registry.activate_capability(target.key)

@@ -182,9 +182,7 @@ def test_populate_router_models_reads_markers_from_fixture() -> None:
 
 def test_populate_router_models_tolerates_garbage() -> None:
     lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url="http://localhost:8080/v1", mode="router")
-    payload: dict[str, object] = {
-        "data": [{"id": "x", "capabilities": "not-a-list"}, {"id": "y"}, {"no-id": 1}]
-    }
+    payload: dict[str, object] = {"data": [{"id": "x", "capabilities": "not-a-list"}, {"id": "y"}, {"no-id": 1}]}
 
     LlamaCppControlPlane()._populate_router_models(lifecycle, payload)
 

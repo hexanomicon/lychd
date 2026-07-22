@@ -50,6 +50,7 @@ class Settings(BaseSettings):
             file_secret_settings,
         )
 
+
 @lru_cache(maxsize=1, typed=True)
 def get_settings() -> Settings:
     """Load settings without writing files or inventing secrets."""
