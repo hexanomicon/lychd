@@ -5,11 +5,25 @@ icon: material/eye-outline
 
 # :material-eye-outline: Oculus
 
-_Status: doctrine ahead of code — the built-in `observability` package is where this lands; treat this page as design intent. Law: [ADR 29](../../adr/29-observability.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose:** Oculus is LychD's planned native observability jurisdiction—the evidence model and
+Altar surface intended to connect agent and run behavior with runtime health.
+
+**Current boundary:** A telemetry class has a narrow direct unit test, but it is not installed by
+current application or extension composition. There is no native ingestion, durable query/read
+model, retention path, or Scrying view. [State records the native Oculus
+boundary](../../state-of-the-work.md#native-oculus).
+
+**External boundary:** [Arize owns Phoenix](https://github.com/arize-ai/phoenix). LychD can generate
+an optional legacy Phoenix service contribution, but Phoenix is not Oculus and current evidence
+does not prove application trace export to it. [State records the Phoenix
+boundary](../../state-of-the-work.md#phoenix-eye). Everything below describes intended Oculus
+design, not behavior available today.
 
 > _"See the ghosts that pull the strings. To command the Daemon, one must not only witness its actions, but scry the invisible web of intent from which they are born."_
 
-**The Oculus** is the Observability Extension of the LychD system. It is the implementation of **[ADR 29 (Observability)](../../adr/29-observability.md)**—the all-seeing eye that bridges the gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic).
+**The Oculus** is the Observability Extension of the LychD system. It is the intended implementation
+of **[ADR 29 (Observability)](../../adr/29-observability.md)**—the all-seeing eye that bridges the
+gap between the physical "Body" (hardware) and the probabilistic "Mind" (agent logic).
 
 While traditional tools see only network latency, the Oculus grants the Magus the power to view the entire **Thought Trace**—the complete causal chain of **Vṛttis** from a whispered intent to its final manifestation. It transforms the invisible chaos of agentic reasoning into a structured, scryable record, tracking the **Logic-per-Watt** necessary to achieve the ultimate goal of **Stillness**.
 
@@ -18,7 +32,9 @@ While traditional tools see only network latency, the Oculus grants the Magus th
 The primary gift of the Oculus is the ability to see a thought as it forms. It rejects simple logging in favor of a deep, structural understanding of the cognitive loop.
 
 - **The Retina:** Upon awakening, the extension grafts a "retina" onto the **[Vessel](../vessel/index.md)** and the **[Ghouls](../vessel/ghouls.md)**. This is a set of OpenTelemetry hooks that capture the internal monologue of every **[Agent](../../adr/20-agents.md)**.
-- **The Scrying Pool:** These captured traces are exported to a local Arize Phoenix service manifested from the `PhoenixSettings` Rune under `runes/observability/phoenix/`. This local, high-fidelity interface allows the Magus to visualize the full execution tree, including tool calls, validation retries, and the raw whispers exchanged with model-backed **[Animators](../animator/index.md)**.
+- **The Scrying Pool:** Native Scrying is intended to render LychD-owned evidence. Phoenix may
+  consume a bounded one-way export as an optional external viewer; the current legacy service
+  contribution neither makes Phoenix the Oculus nor proves that application traces reach it.
 - **The Permanent Record:** The visions in the pool are not fleeting. The Oculus inscribes them into a dedicated `traces` chamber within the **[Phylactery](../phylactery/index.md)**, ensuring that every significant thought becomes a permanent, reviewable part of the Daemon's history.
 
 ## II. The Body's Health (The Physical Gaze)

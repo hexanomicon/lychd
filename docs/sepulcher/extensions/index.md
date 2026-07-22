@@ -7,6 +7,10 @@ icon: material/hubspot
 
 > _"The Core provides the skeleton; the Extensions provide the organs. But organs alone do not make a body. They must sing in one key, move toward one will, and remember the same night in which they were called to life."_
 
+The Federation is a jurisdiction map, not a list of working features.
+[State of the Work](../../state-of-the-work.md) is the sole current-delivery record; the Function
+column below names intended responsibility unless a current source-map note says otherwise.
+
 LychD employs a strict philosophy of **Dogfooding**. The core kernel remains a minimal vessel for routing and state. Every advanced capability—from the API Proxy to the Swarm Protocol—functions as an **Extension**.
 
 This architecture proves the **[Extension Protocol (ADR 05)](../../adr/05-extensions.md)**: the system constructs itself using the same tools available to the Magus. LychD's first extension boundary is not compatibility; it is assimilation.
@@ -36,7 +40,7 @@ Source-map note: doctrine names are domain names, not guaranteed package slugs. 
 
 | Name | Domain | Sigil | Function | ADR |
 | :--- | :--- | :--- | :--- | :--- |
-| **[The Oculus](./oculus.md)** | **Observability** | :material-eye-outline: | Records the **Thought Trace** and monitors physical hardware health. | **[29](../../adr/29-observability.md)** |
+| **[The Oculus](./oculus.md)** | **Observability** | :material-eye-outline: | Native evidence and Scrying jurisdiction; Phoenix may remain an optional external Eye. | **[29](../../adr/29-observability.md)** |
 | **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a WireGuard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
 | **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
 | **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
@@ -147,10 +151,10 @@ from `context.soulstones.runtime_adapters`. Animator runtimes such as
 and the `AnimatorRegistry`/`Dispatcher` model binding path through the same
 activation list.
 
-Observability follows the same rule: `observability/phoenix` registers
-`PhoenixSettings` as a RuneConfig. Its generated TOML lives under
-`runes/observability/phoenix/`; the Core settings model does not own a
-`[phoenix]` section.
+The optional legacy Phoenix contribution registers LychD-owned configuration and generated unit
+intent. [Arize owns Phoenix](https://github.com/arize-ai/phoenix); its service is not native Oculus,
+and current evidence does not prove application trace export to it.
+[State records that interoperability boundary](../../state-of-the-work.md#phoenix-eye).
 
 Cross-language organs follow the same rule. A Rust or C-backed engine may keep
 its native configuration internally, but the operator-facing surface should be a

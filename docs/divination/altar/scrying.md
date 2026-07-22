@@ -5,21 +5,13 @@ icon: material/crystal-ball
 
 # :material-crystal-ball: Scrying
 
-Scrying is the Altar's live observation surface.
+**Purpose:** Scrying is the intended Altar jurisdiction for observing live and recent work.
 
-It gathers the work currently moving through the Sepulcher: active Invocations, queued Ghouls, graph events, log streams, trace fragments, emerging artifacts, and approval waits.
-
-Where the [Altar](./index.md) offers Intent, Scrying watches Intent in motion.
-
-Scrying answers:
-
-- what is running
-- what is waiting
-- what failed
-- what needs the Magus to decide
-- where the evidence and outputs are
-
-Judgment can begin here. When a run pauses for approval, Scrying shows the waiting branch, its evidence, and the controls needed to consecrate or reject it.
+**Current boundary:** Today the Altar exposes only an honestly marked Scrying route and unbuilt
+shell. It does not yet provide a useful trace query, timeline, health read model, or native
+observability backend. [State records the current Scrying
+boundary](../../state-of-the-work.md#scrying-instrument). The surface below is intended design, not
+useful behavior available now.
 
 ## Surface Shape
 
