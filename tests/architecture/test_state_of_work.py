@@ -247,5 +247,6 @@ def test_opening_earns_vocabulary_and_closes_with_one_next_act() -> None:
         assert unearned_name not in opening
 
     assert text.rstrip().endswith(
-        "its first bounded local rite, and let the observed result—not hope—decide what this page may claim\nnext."
+        "observations are a bounded first-life result, not a maintained operator receipt; preserve them\n"
+        "with all metadata above, and let the observed result—not hope—decide what this page may claim next."
     )

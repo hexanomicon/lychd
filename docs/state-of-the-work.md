@@ -26,6 +26,7 @@ bind every part of that foundation to its exact proof and limit.
 
 Go directly to:
 
+- [Attempt the bounded first-life rite](./summoning.md)
 - [Inscription and embodiment](#inscription-and-embodiment)
 - [Persistence, execution, and consent](#persistence-execution-and-consent)
 - [Animation and orchestration](#animation-and-orchestration)
@@ -187,6 +188,7 @@ remain separate receipts.
 - **Source:** [Runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py)
 - **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py)
   and [pending llama.cpp fixture boundary](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/llamacpp/README.md)
+- **Rite:** [The Summoning](./summoning.md)
 - **Law:** [ADR 08 — Containers](./adr/08-containers.md) and
   [ADR 10 — Privilege](./adr/10-privilege.md)
 
@@ -1001,7 +1003,7 @@ topic pages own operation, and source, tests, and maintained receipts own execut
 
 ## Enter the Work
 
-This ledger is a threshold, not a destination. The current Summoning page remains under D2c
-correction and is not an operator route. When that bounded source-candidate rite replaces it, perform
-its first bounded local rite, and let the observed result—not hope—decide what this page may claim
-next.
+This ledger is a threshold, not a destination. Perform [The Summoning
+Rite](./summoning.md) when you are ready to test one bounded local conjunction. Its four agreeing
+observations are a bounded first-life result, not a maintained operator receipt; preserve them
+with all metadata above, and let the observed result—not hope—decide what this page may claim next.
