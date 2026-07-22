@@ -57,13 +57,56 @@ icon: material/book-cog-outline
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
 - **CSS:** A custom stylesheet (`stylesheets/hexanomicon.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
 
-### The Layered Grimoire Strategy
+### The Five Registers
 
-A delicate balance between narrative depth and engineering clarity is maintained by splitting the documentation into three distinct tiers:
+Narrative depth and engineering clarity are joined through five registers. Each register has a
+distinct office; none is a measure of how seriously the project takes the myth.
 
-- **The Iron Covenants (ADRs):** `docs/adr/` remains strictly technical and objective. The dark fantasy vocabulary (Vessel, Phylactery, Thrall) is used solely to reduce cognitive load and map domains. It is the architectural ground truth.
-- **The Outer Wall (The Grimoire):** All general documentation within `docs/`. These pages carry the dark fantasy aesthetic, but remain functional guides for operating the software.
-- **The Inner Sanctum (Lore & Transcendence):** Specifically `docs/divination/transcendence/`. This is where the project explores esoteric philosophy, Vedic metaphysics, and restrained mythic metaphor — the "why" behind the "how." The lore is optional. It does not help configure the system; it rewards the dedicated practitioner who wants to understand the ultimate intent without confusing the casual contributor seeking an API endpoint.
+| Register | Canonical surface | Voice and burden |
+| --- | --- | --- |
+| **Law** | ADRs and security or technical contracts | Exact boundaries, decisions, failures, compatibility, and proof requirements. |
+| **Iron** | Commands, configuration, recovery, and troubleshooting | Literal, copyable, observable, and recoverable. |
+| **Threshold** | README, Prophecy, State, and section indexes | Lucid enchantment, current orientation, and one clear next act. |
+| **Operated doctrine** | Sepulcher and Altar | Mythic meaning joined to actual operation and explicit limits. |
+| **Great Work** | Transcendence and the philosophy canon | Full mythic voltage, exact internal relations, and distinct sources. |
+
+The Great Work is optional for executing an ordinary command; it is not optional project purpose
+or disposable theming. Technical readers may take the Iron path without first learning the full
+cosmology. Writers and agents working on doctrine enter the telos before translating it.
+
+Progressive revelation follows four rules:
+
+1. Deep exegesis has one canonical home; topic pages keep only the smallest useful correspondence
+   and route inward.
+2. Delivery metadata uses the six literal states below. Mythic words such as *manifest* or
+   *prophesied* remain prose, never status chips.
+3. The first viewport introduces LychD and the Lich. The operator may then be named Magus; further
+   vocabulary is earned beside its ordinary referent.
+4. Threshold and Iron pages lead with purpose. Great Work chapters and the Soulforge Covenant may
+   open ceremonially.
+
+### Decision, Delivery, and Evidence
+
+[State of the Work](../state-of-the-work.md) is the sole granular public delivery record. Its
+visible values are exactly:
+
+- **Available** — repository evidence supports the whole boundary stated by the subject.
+- **Operator validation** — the software contract exists, but one named real host, hardware, model,
+  or engine receipt is missing.
+- **Partial** — a useful verified subset exists and the record states what is not yet present.
+- **Designed** — law or architecture exists, but no useful runnable LychD slice exists.
+- **Experimental** — a runnable LychD slice deliberately carries an unstable support contract.
+- **External** — another project owns and versions the subject; the record names LychD's bounded
+  interoperability.
+
+`Pre-alpha` is the project maturity envelope, not a seventh state. An accepted ADR records a
+decision; a test filename records only a possible oracle; neither proves delivery without the
+bounded evidence named by the State record. README and Prophecy may summarize the aggregate
+envelope and route to State, but they do not copy a capability ledger.
+
+Each State subject is a vertical record: one state, one proved-now statement, one state-specific
+boundary, and concrete links to evidence and law. Topic pages own operation, ADRs own decisions,
+State owns delivery, and source, focused tests, lockfiles, and maintained receipts own proof.
 
 ### Agent Scope Boundary
 
@@ -74,7 +117,8 @@ If a scope starts explaining project truth, that truth belongs in `docs/**`, an 
 ### Consequences
 
 !!! success "Positive"
-    - **Cultivation of Lore:** The separation allows the project to maintain its stylized "Grimoire" aesthetic and mythic philosophy without compromising the perceived professionalism of the engineering architecture.
+    - **Cultivation of Telos:** The registers preserve the full mythic constitution while keeping
+      engineering law, commands, delivery claims, and evidence exact.
     - **Engine Performance:** Zensical's Rust core drastically reduces build times, improving the developer experience.
 
 !!! failure "Negative"

@@ -19,6 +19,7 @@ extra_javascript = [
 # Until then have to do it like this
 nav = [
     { "Prophecy" = "index.md" },
+    { "State of the Work" = "state-of-the-work.md" },
     { "Summoning" = "summoning.md" },
     { "Sepulcher" = [
         "sepulcher/index.md",

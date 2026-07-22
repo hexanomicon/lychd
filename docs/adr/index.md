@@ -10,6 +10,12 @@ icon: material/pillar
 
     This lack of historical context can lead to inconsistent design choices, repeated debates, and difficulty in maintaining the project's core architectural principles.
 
+!!! info "Decision is not delivery"
+    An accepted Covenant records current architectural law; it does not prove that the capability is
+    implemented or validated on a real host. [State of the Work](../state-of-the-work.md) owns the
+    public delivery boundary. Source, focused tests, lockfiles, and maintained operator receipts own
+    executable evidence. ADR pages do not carry copied status chips.
+
 ## Requirements
 
 - **Methodology:** A lightweight, effective method is required to document critical decisions in a way that is version-controlled and accessible alongside the source code.
