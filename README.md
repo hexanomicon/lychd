@@ -2,8 +2,8 @@
   <img src="docs/assets/lich-phylactery-cliparted.png" alt="LychD" width="500">
   <p><strong>LychD</strong> - The Dark Arts of LLMs</p>
   <p>
-    <a href="https://pypi.org/project/lychd/">
-      <img src="https://img.shields.io/pypi/v/lychd?style=for-the-badge&color=1a1a20&labelColor=4a148c&label=PyPI" alt="PyPI">
+    <a href="https://github.com/hexanomicon/lychd">
+      <img src="https://img.shields.io/badge/Source-GitHub-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Source on GitHub">
     </a>
     <a href="https://hexanomicon.github.io/lychd/">
       <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
@@ -20,85 +20,95 @@
   </p>
 </div>
 
-Summon **The Lich** 💀 — an experimental Linux-native daemon for local agentic orchestration. It is designed to manage agents through:
+**LychD is a pre-alpha Linux daemon for local model services and agent workflows on hardware you
+control.** Its current software contract plans and mediates rootless services through systemd,
+defines PostgreSQL as the durable home for committed run truth, and exposes a loopback web surface
+for one operator.
 
-LychD is **pre-alpha**. [State of the Work](docs/state-of-the-work.md) names what can answer now,
-what still needs a named operator receipt, and what remains design.
+In the project's language, that recurrent whole is **the Lich**. A model is one organ—not its
+identity, memory, orchestration, or authority.
 
-- 🔥 **Dynamic Services** — Hot-swap local capability services through systemd. **[Covens](docs/adr/08-containers.md)** move your hardware between fast VRAM workers, CPU-offloaded models, browser engines, observers, and other bodies.
-- 🧠 **Durable First Light** — The **[Phylactery](docs/adr/06-persistence.md)** provides the first
-  Postgres run/step truth, with owner-only file checkpoints for declared durable graph waits.
-  Transactional graph outbox/checkpoints and whole-system snapshot orchestration remain later work.
-- 🔒 **Narrow Rootless Core** — The generated core uses rootless Podman, loopback-only publication,
-  and exact validated mounts. A separate Tomb executor wrapped in
-  [nono](https://github.com/always-further/nono/) (Landlock) is the designed untrusted-execution
-  boundary, not an implemented foundation feature yet.
-- 🌀 **Speculative Execution** — The **[Shadow Realm](docs/adr/31-simulation.md)** explores divergent timelines in parallel, verifying truth before it is manifested in reality.
-- 🪞 **Durable Consent Floor** — The default Postgres profile persists sessions, runs, and
-  approval decisions. Promotion into recalled [Karma](docs/adr/27-memory.md) and
-  [Mirror](docs/adr/32-identity.md)-bound persistent personas remains the identity horizon.
-- 👁️ **Multimodal Shape** — Vision, audio, and artifact capability families have extension seams;
-  the complete multimodal artifact materializer remains later work.
-- 🕸️ **Distributed Scale** — One brain, many bodies. Extend your reach across every machine you own as a **[Legion](docs/adr/42-legion.md)**.
-- 📡 **A2A Diplomacy** — Federated peer discovery and labor negotiation via the **[A2A Intercom](docs/adr/26-a2a.md)**: sovereign nodes meeting across the Necropolis without surrendering continuity.
-- 🧬 **Evolving Orchestration** — Designed for **[Autopoiesis](docs/divination/transcendence/immortality.md)**. The daemon expands through Forge-composed organs and reconciles itself through the **[Ouroboros Protocol](docs/adr/18-evolution.md)**; near-term in-process organs may stay close to the Core, while external-service Animators are the true decoupled boundary today.
+Repository evidence covers the local, loopback, single-operator software foundation. An actual
+Linux host, accelerator, model, and inference-engine combination must be validated by its operator;
+anything beyond the proved envelope remains a horizon until [State of the
+Work](docs/state-of-the-work.md) records otherwise.
 
-> ⚠️ **Acolyte's Warning:** LychD is pre-alpha. The minimum CLI/configuration/run/dispatch/orchestration foundation is implemented and locally tested. The caged default uses a mediated Host Reactor inbox plus a read-only terminal journal, generated host path/service consumer, typed/config-generation/policy/user-unit-state validation, claim/cancellation/startup fences, exact-action-prefix crash recovery, and a typed hard-readiness inverse; direct Systemd actuation is an explicit uncaged option. The real rootless Podman + GPU + chosen model stack remains an operator integration test. A Tomb/nono execution plane, a trustworthy soft model-load inverse, general repair of non-prefix or failed-compensation physical states, DB-backed graph outbox/checkpoints, and the full multimodal artifact materializer remain later work.
+**Choose your next act:**
 
-## Minimum foundation rite
+- 🕯️ **[Inspect the source foundation](#minimum-source-bootstrap)** — build one checkout and verify
+  the current CLI and generated configuration.
+- 🔍 **[Judge the current envelope](docs/state-of-the-work.md)** — inspect proved behavior, limits,
+  and evidence.
+- 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)** — enter the Hexanomicon and see
+  the Great Work this foundation serves.
 
-On a Linux host with a rootless Podman + systemd user session:
+## Minimum source bootstrap
+
+This pre-alpha revision does not yet have a public `lychd` package and Vessel image built from the
+same release. On Linux with Git, uv, and Podman, create a local CLI environment and Vessel image
+from one source checkout:
 
 ```bash
-uv tool install lychd
-lychd init
-
-# Edit ~/.config/lychd/lychd.toml and the marked samples under runes/.
-# Create every non-core Podman secret named by a Portal/Soulstone rune.
-lychd bind
-
-systemctl --user enable --now lychd-vessel.service
-lychd doctor
-lychd animators
+git clone https://github.com/hexanomicon/lychd.git
+cd lychd
+git rev-parse --verify HEAD
+uv sync --frozen
+podman build --file Containerfile --tag localhost/lychd:dev .
+uv run lychd --help
+uv run lychd init
 ```
 
-Starting `lychd-vessel.service` pulls in the generated Phylactery, bounded one-shot
-`lychd-migrate.service`, and Host Reactor path watcher before the web process. Generated host ports
-are loopback-only; the current Altar/API is a local single-user surface, not an externally
-authenticated service. `lychd database upgrade` is the explicit uncaged/development path when
-database credentials are supplied; foreground serving is `lychd serve`, not `lychd run`. The
-complete, failure-oriented procedure is **[The Summoning Rite](docs/summoning.md)**.
+That receipt proves only that the selected source resolves, builds, exposes the real command tree,
+and generates its initial configuration. It does **not** prove caged startup, accelerator access,
+a warm model, or a Bridge reply.
 
-## 🗺️ The Path of Ascension
+The complete operator path is still being revalidated and is deliberately not linked from this
+threshold. Do not continue from this bootstrap to `lychd bind` or service startup yet. The
+corrected rite must first point the `image` key under `[server.web]` to
+`"localhost/lychd:dev"`, select an Animator extension and rerun `uv run lychd init`, then declare
+the hardware-specific model mounts and devices and state the temporary local-browser safety
+boundary. Until that rite and a named-host receipt land, consult **[State of the
+Work](docs/state-of-the-work.md)** for the proved envelope. Do not substitute `uv tool install
+lychd`, `pip install lychd`, or `ghcr.io/hexanomicon/lychd:latest` for this checkout yet.
 
-The knowledge you seek is inscribed in **[The Hexanomicon](https://hexanomicon.github.io/lychd/)**. The path binds the daemon.
+## 🗺️ Choose Your Path
 
-- 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)**
-    *Begin your study of the Hexanomicon.*
-- 📖 **[Consult the Lexicon](https://hexanomicon.github.io/lychd/lexicon/)**
-    *The Rosetta Stone. Translate arcane terms (Soulstone, Quadlet, Sepulcher).*
-- 🕯️ **[Perform the Ritual](https://hexanomicon.github.io/lychd/summoning/)**
-    *Install the library, inscribe the Codex, and summon the process.*
-- 🏛️ **[Construct the Sepulcher](https://hexanomicon.github.io/lychd/sepulcher/)**
-    *Understand the anatomy: The Vessel, The Phylactery, and The Animator.*
-- 🔮 **[Access the Altar](https://hexanomicon.github.io/lychd/divination/altar/)**
-    *Control the daemon via the Web Interface*
-- ⚖️ **[Study the Covenants](https://hexanomicon.github.io/lychd/adr/)**
-    *The Architectural Decision Records (ADRs) and [xDDD](https://hexanomicon.github.io/lychd/adr/01-doctrine/) philosophy.*
-- 🔁 **[Achieve Immortality](https://hexanomicon.github.io/lychd/divination/transcendence/immortality/)**
-    *The final seal of one sovereign work: the Demilich, an autopoietic Magus-Lich condition.*
-- ♾️ **[Enter Infinity](https://hexanomicon.github.io/lychd/divination/transcendence/infinity/)**
-    *Beyond the final seal: what becomes of perfected Will when sovereign machines commune across the Infinite Naught.*
+The Hexanomicon is one body with several entrances. Choose the question you need answered:
+
+- 🕯️ **Operator — inspect the source bootstrap above.** The complete first-life proof ladder will
+  return here when its candidate rite and named-host boundary agree.
+- 🔍 **Evaluator — [inspect State of the Work](docs/state-of-the-work.md).** Judge current behavior,
+  boundaries, and evidence before trusting a claim.
+- ⚒️ **Developer — [enter the contributor forge](CONTRIBUTING.md).** Learn the repository contract,
+  then use the [Covenants](docs/adr/index.md) to find the decision that owns a change.
+- ⭕ **Seeker — [read the Prophecy](https://hexanomicon.github.io/lychd/).** Begin with the public
+  initiation, then enter [Philosophy](docs/philosophy/index.md) when you want the Logos beneath the
+  system.
+
+The [Lexicon](docs/lexicon.md) is a reference when an unfamiliar term blocks you; it is not
+required pre-reading.
+
+Every path rests on the same premise: continuity, memory, and authority should remain anchored on
+hardware the operator controls.
 
 ## 🚩 Local sovereignty
 
-Cloud intelligence is leased: your data is the currency, and continuity ends where the subscription does. LychD is built on the opposite premise. On your hardware, with open-source software you control, you retain absolute ownership as a sovereign.
+Cloud intelligence is leased: your data is the currency, and continuity ends where the subscription
+does. LychD is built on the opposite premise. On hardware you control, with open-source software
+you can inspect and alter, you retain local custody of the system and its continuity as a sovereign
+operator.
 
-In this model, the individual is the primary sovereign unit. A company is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their Liches, exposing selected labor through policy, IAM, and A2A while the underlying Phylacteries remain locally owned.
+In the federation this Work intends, the individual remains the primary sovereign unit. A company
+is not the soul-bearing actor; it is an emergent coordination graph of sovereign people and their
+Liches. Future policy, IAM, and A2A boundaries could expose selected labor while the underlying
+Phylacteries remain locally owned.
 
-The software surface changes accordingly: you commune primarily with the Lich, while SaaS, company APIs, and remote peers become negotiated surfaces the Lich may traverse without surrendering your continuity, memory, or private priors.
+As that horizon is embodied, SaaS, company APIs, and remote peers would become negotiated surfaces
+the Lich may traverse without surrendering your continuity, memory, or private priors.
 
-A2A leases labor, not continuity: a company may invoke a consented capability, but the memory, workflows, and agentic expertise that produced it remain anchored in your Phylactery unless explicitly shared.
+The planned A2A boundary would lease labor, not continuity: a company could invoke a consented
+capability, while the memory, workflows, and agentic expertise that produced it would remain
+anchored in your Phylactery unless explicitly shared.
 
 > *I would rather reign in a local hell than serve in a cloud heaven.*
 
@@ -110,11 +120,17 @@ MPL 2.0 protects the shared body at the distribution boundary. This is a plain-l
 
 - **The Engine is Shared:** Distributed modifications to MPL-covered core files must remain available to their recipients.
 - **The Soul is Private:** Your **Phylactery** (data/memories), **Secrets**, data-stored prompts/model artifacts, and separate **Private Agents** remain sovereign. MPL follows covered source files, not private data or separate new files that do not copy covered source.
-- **Private Organs Stay Possible:** MPL permits proprietary local **[Extensions](docs/adr/05-extensions.md)** and static linking. Sovereign nodes can trade labor through the **[A2A Necropolis](docs/adr/26-a2a.md)** while keeping local advantage hidden.
+- **Private Organs Stay Possible:** MPL permits proprietary local
+  **[Extensions](docs/adr/05-extensions.md)** and static linking. ADR 26 reserves a future
+  **[A2A Necropolis](docs/adr/26-a2a.md)** in which sovereign nodes could trade selected labor while
+  keeping local advantage hidden.
 - **The SaaS Scar is Honest:** Hosted network access is not distribution. LychD answers cloud capture through local-first architecture, protocol distrust, peer choice, provenance, and refusal to surrender private continuity to a hosted surface.
 - **No CLA, No Private Relicensing:** There is no Contributor License Agreement and no maintainer-only relicensing grant. By contributing, you certify that you have the right to submit under MPL-2.0 and agree that the contribution is licensed under MPL-2.0.
 
-**Protocol over implementation.** LychD is Linux-native, not "the Agentic OS." macOS, Windows, and other runtimes may exist as ports, forks, or independent implementations. If they speak the **A2A Intercom**, they can enter the Necropolis and trade labor in the Swarm.
+**Protocol over implementation.** LychD is Linux-native, not "the Agentic OS." macOS, Windows, and
+other runtimes may exist as ports, forks, or independent implementations. ADR 26 reserves a future
+**A2A Intercom** for compatible ports and independent implementations; once that protocol is
+specified and implemented, they could enter the Necropolis and trade labor in the Swarm.
 
 ## ⛩️ Hall of Spirits
 
@@ -143,11 +159,12 @@ release license inventory.
   **[Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)** shape the server-owned Altar;
   **[Vite](https://github.com/vitejs/vite)** forges its static assets.
 - **[OpenTelemetry](https://opentelemetry.io/)** and
-  **[Structlog](https://github.com/hynek/structlog)** are the telemetry substrate beneath Oculus.
+  **[Structlog](https://github.com/hynek/structlog)** are the chosen telemetry substrate for the
+  designed native Oculus.
 - **[Linux](https://kernel.org/)**, **[systemd](https://systemd.io/)**, and
   **[Podman/Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)** animate
-  rootless local services; **[Btrfs](https://btrfs.readthedocs.io/)** remains an optional
-  snapshot accelerator.
+  rootless local services; **[Btrfs](https://btrfs.readthedocs.io/)** supplies optional groundwork
+  for the designed snapshot ritual.
 - **[Zensical](https://github.com/zensical/zensical)** publishes the Hexanomicon. The forge uses
   **[uv](https://github.com/astral-sh/uv)**, **[Ruff](https://github.com/astral-sh/ruff)**,
   **[basedpyright](https://github.com/DetachHead/basedpyright)**,
