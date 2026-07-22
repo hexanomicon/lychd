@@ -95,9 +95,7 @@ async def test_same_key_different_priorities_do_not_share_a_declining_owner() ->
 
     low = asyncio.create_task(arbiter.run("same", 10.0, low_executor))
     await asyncio.sleep(0)
-    high = asyncio.create_task(
-        arbiter.run("same", 90.0, lambda: _await_plan(order, "high"))
-    )
+    high = asyncio.create_task(arbiter.run("same", 90.0, lambda: _await_plan(order, "high")))
     await asyncio.sleep(0)
     gate.set()
 

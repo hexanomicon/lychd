@@ -169,6 +169,7 @@ class AppInit(InitPluginProtocol):
 
         return app_config
 
+
 def create_app() -> Litestar:
     """Create the server application.
 

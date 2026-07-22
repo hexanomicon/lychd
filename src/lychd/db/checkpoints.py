@@ -30,9 +30,13 @@ class PostgresStasisStore:
     async def replace(self, run_id: str, snapshots: list[Any]) -> None:
         run_uuid = UUID(run_id)
         async with self._session_factory() as session:
-            statement = insert(RunCheckpoint).values(run_id=run_uuid, snapshots=copy.deepcopy(snapshots)).on_conflict_do_update(
-                index_elements=[RunCheckpoint.run_id],
-                set_={"snapshots": copy.deepcopy(snapshots)},
+            statement = (
+                insert(RunCheckpoint)
+                .values(run_id=run_uuid, snapshots=copy.deepcopy(snapshots))
+                .on_conflict_do_update(
+                    index_elements=[RunCheckpoint.run_id],
+                    set_={"snapshots": copy.deepcopy(snapshots)},
+                )
             )
             async with session.begin():
                 await session.execute(statement)
@@ -45,4 +49,6 @@ class PostgresStasisStore:
 
     async def exists(self, run_id: str) -> bool:
         async with self._session_factory() as session:
-            return await session.scalar(select(RunCheckpoint.id).where(RunCheckpoint.run_id == UUID(run_id))) is not None
+            return (
+                await session.scalar(select(RunCheckpoint.id).where(RunCheckpoint.run_id == UUID(run_id))) is not None
+            )

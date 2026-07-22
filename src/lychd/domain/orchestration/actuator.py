@@ -103,10 +103,7 @@ def build_compensation_intent(intent: TransitionIntent) -> TransitionIntent:
         msg = "Only a forward transition can be compensated."
         raise ValueError(msg)
     expected_after = tuple(
-        sorted(
-            (set(intent.expected_active_animators) - set(intent.evict_animators))
-            | set(intent.launch_animators)
-        )
+        sorted((set(intent.expected_active_animators) - set(intent.evict_animators)) | set(intent.launch_animators))
     )
     return TransitionIntent(
         operation="compensation",
@@ -129,9 +126,6 @@ class RuntimeActuator(Protocol):
 
 def capability_config_generation(registry: CapabilityRegistry) -> str:
     """Digest the immutable capability projection shared by Vessel and Reactor."""
-    payload = [
-        spec.model_dump(mode="json")
-        for spec in sorted(registry.list_capabilities(), key=lambda item: item.key)
-    ]
+    payload = [spec.model_dump(mode="json") for spec in sorted(registry.list_capabilities(), key=lambda item: item.key)]
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
