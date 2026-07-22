@@ -79,6 +79,15 @@ nav = [
             "divination/transcendence/infinity.md"
         ]}
     ]},
+    { "Philosophy" = [
+        "philosophy/index.md",
+        "philosophy/echoes-of-the-eternal.md",
+        "philosophy/concordance.md",
+        "philosophy/soulforge-covenant.md",
+        "philosophy/open-theorems.md",
+        "philosophy/sources.md",
+        "philosophy/agent-initiation.md"
+    ]},
     { "Covenants" = [
         "adr/index.md",
         "adr/00-license.md",
