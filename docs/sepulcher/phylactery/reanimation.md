@@ -5,74 +5,135 @@ icon: material/eject-outline
 
 # :material-eject-outline: Reanimation
 
-> _"Daemons don't hot-reload; they are reanimated."_
+> _"Daemons return through Systemd. A thought returns only through a boundary committed before
+> death."_
 
-In the philosophy of the Hexanomicon, the Lich does not cling to a single, fragile process. It embraces the cycle of death and rebirth because its durable state is anchored in the Phylactery. The crash is not feared; it is bounded. The physical rite of process return is orchestrated by the grand chronomancer of the operating system: **Systemd**.
+**Reanimation** is the recovery path after the Vessel process dies: Systemd raises a new process,
+the application rebuilds volatile services from the Codex and live probes, and the Phylactery and
+queue records decide what may continue. It is not hot reload, whole-body rollback, or a promise
+that every intermediate thought survives.
 
-!!! abstract "The Cycle of Unlife"
-    Unlike mortal scripts trapped in the endless loop of `while True`, the Lich's existence is a managed sequence of controlled death and disciplined rebirth.
+The myth is exact here. Death separates breath from inscription. Process memory, live event
+subscribers, open leases, and uncommitted frames vanish. Durable rows and a valid graph checkpoint
+remain only where the running workflow committed them before the boundary.
 
-    1. **The Willing Death:** When the Codex is altered or the vessel becomes corrupted, the Lich does not wait for failure. It willingly accepts termination (`SIGTERM`), dissolving its physical form.
-    2. **The Cleansing Silence:** The process vanishes. All resources are released. The VRAM of the Soulstones is scoured clean of any lingering corruption.
-    3. **The Managed Rebirth:** Systemd, the eternal watcher, detects the absence left by the Lich's passing and spawns a fresh Vessel from the image. The new process then recovers committed state from the Phylactery rather than pretending every volatile frame survived.
+## Three rites that must not be confused
 
-## 📜 The Quadlet: A Verse of Binding
+### Live Stasis — the body never died
 
-The physical form of the vessel is not defined by code, but by a sacred verse known as a **Podman Quadlet**. This inscription tells Systemd the exact nature of the being to summon.
+An ordinary model or VRAM transition is **Live Stasis**. The run stays inside the Vessel process,
+releases its capability lease, waits while the Orchestrator drains and converges the hardware, and
+resumes itself. Restarting the Vessel is neither required nor a safe substitute.
 
-The Scribe generates this file automatically during `lychd bind`, ensuring the **[Hermetic Spheres](../crypt.md)** are mounted correctly.
+### Reanimation — a new Vessel judges durable truth
 
-```ini
-# ~/.config/containers/systemd/lychd-vessel.container
-[Unit]
-Description=The LychD Daemon Vessel
-Wants=network-online.target lychd-phylactery.service lychd-migrate.service
-Requires=lychd-migrate.service
-After=network-online.target lychd-migrate.service
+After process death, the new Vessel reconnects the fixed `runs` and `rites` queues, warms the
+Animator registry, publishes a fresh process-local run substrate, and attempts startup
+reconciliation before serving the Altar. An unexpected reconciliation exception is contained and
+logged so the application may still serve; a live Altar therefore does not prove that reconciliation
+succeeded. Current outcomes after a successful reconciliation attempt are deliberately unequal:
 
-[Container]
-Image=ghcr.io/hexanomicon/lychd:latest
+- **`AWAITING_CONSENT` remains parked.** A pending verdict waits. A verdict committed while the
+  process was down is re-fired through the run engine when reconciliation succeeds; the resume hop
+  reads the durable graph checkpoint and continues event sequence after the persisted history. If
+  that reconciliation attempt fails, the consent remains parked for a later retry or operator
+  recovery rather than being called resumed.
+- **`QUEUED` remains queue-owned.** An aged row is failed only after the exact
+  `(run_id, enqueue_seq)` SAQ job is proved absent. If the broker cannot be checked, the row is
+  preserved and reconciliation reports degradation rather than guessing.
+- **Previous-process `RUNNING` and `AWAITING_HARDWARE` do not resume.** They become `FAILED` with
+  `ghoul lost`, their checkpoint is deleted, and a terminal event is recorded. A checkpoint beside
+  an active row is not authority to replay arbitrary work.
+- **A missing consent checkpoint fails honestly.** Reanimation never silently restarts the graph
+  from its first node when durable stasis has been lost.
 
-# --- The Pod Binding ---
-# Binding to the Sepulcher Pod defined in lychd.pod.
-# The Pod unit handles the port mapping (Host:7134 -> Pod:8000).
-Pod=lychd.pod
+Focused tests prove a memory-profile consent restart and these reconciliation rules. [State of the
+Work](../../state-of-the-work.md#graph-stasis-consent) records the missing Postgres
+Consent-plus-Checkpoint restart receipt and the current single-approval boundary.
 
-# --- The Spheres of Creation (Mounts) ---
+### Restoration — the whole body moves through time
 
-# 0. The Codex (Configuration)
-# Maps Host Config to Container Config (Symmetric Path).
-Volume=%h/.config/lychd:%h/.config/lychd:ro,Z
+Whole-body snapshot and restore is a different ritual. LychD has filesystem groundwork, but it
+does not yet coordinate database, code, configuration, freeze, restore, and post-restore
+reconciliation as one proved operation. See [State's snapshot
+boundary](../../state-of-the-work.md#whole-body-snapshot-restore); a service restart must never be
+sold as rollback.
 
-# 1. The Crypt (Persistent Reality)
-# Maps the full Crypt symmetrically; stricter read-only overlays below
-# prevent Core and Extension mutation during normal runtime.
-Volume=%h/.local/share/lychd:%h/.local/share/lychd:rw,Z
+## The generated body
 
-# 2. The Self (Core Overlay)
-# Allows promoted changes to bind host-side source through the VCS layer.
-# Mounted Read-Only over the container's built-in source.
-Volume=%h/.local/share/lychd/core:%h/.local/share/lychd/core:ro,Z
+`lychd bind` compiles validated Codex intent into the current Pod, Phylactery, migration gate,
+Vessel, Host-Reactor units, selected extensions, and Soulstones, then asks the Scribe to reconcile
+the complete owned fileset atomically. The generated files are projections, not operator-authored
+configuration. Do not paste a Quadlet from this page or edit one in the binding directory.
 
-# 3. The Extensions (Installed Capabilities)
-# Maps Host Extensions to Container Extensions (Symmetric Path).
-# Mounted Read-Only. Updates require a Promotion Ritual (Restart).
-Volume=%h/.local/share/lychd/extensions:%h/.local/share/lychd/extensions:ro,Z
+The current generated contract gives the Vessel a Systemd restart policy and requires the
+one-shot migration gate before an explicit Vessel start. That is repository protocol evidence, not
+yet a maintained real-host reboot receipt; [systemd and rootless Podman embodiment remains an
+operator-validation boundary](../../state-of-the-work.md#systemd-podman-embodiment).
 
-# 4. The Library (Reference Data)
-# (Configured via lychd.toml settings.lychd.library_sources)
-# Mapped as a read-only Outland beneath ~/work/library/...
-Volume=%h/Documents/Books:%h/work/library/Books:ro,Z
+!!! warning "A restart is a host-lifecycle action, not a checkpoint command"
+    Do not restart a Vessel with active work and expect that work to continue. Park at a supported
+    Durable Stasis boundary first, or accept that current active runs will settle as failed. A
+    direct Systemd action also bypasses the Orchestrator's admission and lease-drain protocol.
 
-# --- The Hardware ---
-# Requesting access to the GPU via CDI
-Device=nvidia.com/gpu=all
+A Vessel-only restart does not mean “stop every Soulstone,” “clear all VRAM,” or “restore a
+snapshot.” Individual adapters may declare additional dependency edges, but model transitions
+belong to the Orchestrator and whole-pod actions remain explicit break glass.
 
-[Service]
-# The promise of immortality
-Restart=always
-TimeoutStartSec=300
+## Perform one bounded reanimation
+
+This rite assumes the four observations in [Summoning](../../summoning.md#the-awakening) have
+already agreed. If they have not, return there; Reanimation cannot repair an incomplete first life.
+
+The current CLI can decide a known consent but cannot enumerate every active run or perform a
+graceful system-wide drain. This page therefore cannot offer a copyable zero-loss precondition. For
+a bounded local demonstration, stop new submissions and wait for every run visible in the Bridge
+to settle; that observation is incomplete. If unseen work may exist or continuity matters, do not
+restart the Vessel. Build the missing census and drain path first.
+
+If Codex intent changed, bind the new projection first. If no configuration or unit intent changed,
+do not bind merely to restart:
+
+```bash
+# Only when Codex or generated-unit intent changed:
+uv run lychd bind
+
+systemctl --user restart lychd-vessel.service
+systemctl --user is-active \
+  lychd-pod.service \
+  lychd-phylactery.service \
+  lychd-reactor.path \
+  lychd-vessel.service
+systemctl --user show lychd-migrate.service \
+  --property=Result --property=ExecMainStatus
+uv run lychd doctor
+journalctl --user -u lychd-vessel.service -n 200 --no-pager
 ```
 
-!!! info "The Rune of Persistence"
-    The `Restart=always` section of the rune is the operating system's oath that the Vessel shall rise again. If the process crashes or is killed by the OOM Killer, Systemd starts a new process as policy allows. This is process resurrection, not proof that every cognitive frame survived; durable continuity comes from Phylactery queues, committed outputs, and declared graph checkpoints. The foundation stores each durable graph history as a Postgres JSONB document owned by its run. A transactional graph/queue outbox is later work. Snapshots remain the heavier boundary when whole body/soul rollback is required.
+The pod, Phylactery, Reactor path, and Vessel must report `active`; the migration gate must report
+`Result=success` and `ExecMainStatus=0`; and `doctor` must report a coherent foundation. Then repeat
+the runtime and Bridge observations rather than trusting process state alone:
+
+```bash
+podman exec lychd-vessel lychd animators
+```
+
+Open the [Bridge](../../divination/altar/index.md) only through its stated same-host browser
+boundary and send one benign message. If unit state, runtime readiness, and the reply do not agree,
+stay in [The Awakening](../../summoning.md#the-awakening) and diagnose the first missing
+observation.
+
+## Read the ashes
+
+After return, inspect durable run truth before claiming continuity:
+
+- a consent card still pending is a preserved wait, not a hung process;
+- a decided consent that re-enters `QUEUED` is a re-admitted resume hop;
+- `FAILED / ghoul lost` names work that crossed death without a supported durable boundary; and
+- a surviving SAQ job protects queued labor, but does not recreate an in-memory event stream.
+
+Preserve the exact host, unit, image, database, queue, run, shutdown, and recovery observations if
+you intend to promote this from a bounded local result to a maintained operator receipt.
+
+> _The promise is not that nothing dies. The promise is that the Phylactery never calls an
+> uncommitted breath immortal._
