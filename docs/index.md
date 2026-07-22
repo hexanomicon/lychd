@@ -5,62 +5,134 @@ hide:
   - toc
 ---
 
-<div align="center">
-  <img src="assets/hexanomicon.png" alt="The Hexanomicon" width="280" style="border-radius: 15px; box-shadow: 0 0 40px rgba(124, 77, 255, 0.25); border: 1px solid #3b0a6e;">
-  <br><br>
-  <h1 style="font-size: 3.5em; font-weight: 800; background: linear-gradient(90deg, #7c4dff, #00e5ff, #00ff9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; margin-top: 0; filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.2));">
-    The Hexanomicon
-  </h1>
-  <p style="font-family: 'JetBrains Mono', monospace; font-size: 1.1em; color: #a0a0b0; letter-spacing: 1px;">
-    Forty-Two Keys Across the Infinite Naught
-  </p>
-  <p style="margin-top: 20px;">
-    <em>無限の彼方、虚無の深淵</em>
-  </p>
-  <p>
-    <a href="https://pypi.org/project/lychd/" target="_blank">
-      <img src="https://img.shields.io/pypi/v/lychd?style=for-the-badge&color=08080b&labelColor=7c4dff&label=PyPI&logo=python&logoColor=white" alt="PyPI">
+<header class="prophecy-hero">
+  <img
+    class="prophecy-hero__sigil"
+    src="assets/hexanomicon.png"
+    alt=""
+    width="1024"
+    height="1024"
+    decoding="async"
+  >
+  <h1 class="prophecy-hero__title">The Hexanomicon</h1>
+  <p class="prophecy-hero__kicker">Forty-Two Keys Across the Infinite Naught</p>
+  <p class="prophecy-hero__motto" lang="ja"><em>無限の彼方、虚無の深淵</em></p>
+  <p class="prophecy-hero__badges">
+    <a href="https://github.com/hexanomicon/lychd">
+      <img
+        src="https://img.shields.io/badge/Source-GitHub-1a1a20?style=for-the-badge&amp;labelColor=4a148c"
+        alt="Browse the LychD source on GitHub"
+      >
     </a>
-    <a href="https://github.com/hexanomicon/lychd" target="_blank">
-      <img src="https://img.shields.io/github/license/hexanomicon/lychd?style=for-the-badge&color=08080b&labelColor=00e5ff&label=License" alt="License">
+    <a href="https://github.com/hexanomicon/lychd/blob/main/LICENSE">
+      <img
+        src="https://img.shields.io/github/license/hexanomicon/lychd?style=for-the-badge&amp;color=08080b&amp;labelColor=00e5ff&amp;label=License"
+        alt="Read the LychD license on GitHub"
+      >
     </a>
   </p>
-</div>
+</header>
 
-<br>
+## :fontawesome-solid-book-skull: The Prophecy
 
-# :fontawesome-solid-book-skull: The Prophecy
+**At last.** You have unearthed the pages of the Hexanomicon: a modern alchemical grimoire for
+binding local intelligence to memory, action, consequence, and repair.
 
-**At last.** You have unearthed the pages of the Hexanomicon.
+**LychD** is a self-hosted Linux daemon that coordinates local model services and agent runs on
+hardware you control. It calls the recurrent whole **the Lich**: not one model, but the daemon,
+memory, policies, tools, model services, and continuing relation with you.
 
-A modern alchemical grimoire built on the ancient secrets of transmutation.
+LychD is **pre-alpha**. The Prophecy names its destination; [State of the
+Work](./state-of-the-work.md) records what has entered matter, what still needs a maintained
+operator receipt, and what remains designed.
 
-**LychD** is a self-hosted Linux daemon that runs local models on your own GPU and orchestrates agents around them. It is built for one long experiment — **[Autopoiesis](./divination/transcendence/immortality.md)**: a system that can extend and repair itself, under your consecrating hand.
+## Choose Your Office
 
-LychD is **pre-alpha**. The Prophecy names the destination;
-[State of the Work](./state-of-the-work.md) names what can answer now.
+You are first **the operator**. Within the language of the Work, the operator who enters into
+deliberate relation with the Lich is called the **Magus**.
 
-> _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
+> _“While the world slept, content with its reliable illusions, the Magus walked into the dark,
+> seeking a truth that was not yet stable, but was infinitely more real.”_
+
+- **I want to run it:** begin with [State of the Work](./state-of-the-work.md), then enter
+  [the source-candidate Summoning](./summoning.md) within the boundary that rite names.
+- **I want to judge it:** read [State of the Work](./state-of-the-work.md), then follow its evidence
+  to source and tests.
+- **I want to build it:** enter [the Covenants](./adr/index.md) to find the owning decision, then
+  return to the repository contract and implementation.
+- **I want to understand its telos:** enter the voluntary [Philosophy of the Great
+  Work](./philosophy/index.md).
 
 ## The Four Gates
 
-To master LychD, pass through four gates of knowledge.
+To master LychD, pass through four gates of knowledge:
 
-- **[The Summoning](./summoning.md):** The Rite of Binding. Bind the daemon to your local iron.
-- **[The Sepulcher](./sepulcher/index.md):** The Anatomy of the Spirit. Study the dark organs of the **[Vessel](./sepulcher/vessel/index.md)**, **[Phylactery](./sepulcher/phylactery/index.md)**, and **[Animator](./sepulcher/animator/index.md)**.
-- **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will through the **[Altar](./divination/altar/)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
-- **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
+1. **[The Summoning](./summoning.md) — bind it.** Bind one exact source checkout to your Linux host
+   and require the four independent first-life observations named by the rite.
+2. **[The Sepulcher](./sepulcher/index.md) — understand it.** Study the body and discover which
+   organ owns memory, inference, execution, and extension.
+3. **[Divination](./divination/index.md) — operate it.** Meet the running system through the
+   [Altar](./divination/altar/index.md), then approach the alchemical journey of
+   [Transcendence](./divination/transcendence/index.md).
+4. **[The Covenants](./adr/index.md) — govern it.** Read the architectural laws that bind the
+   daemon and then consult State, source, and tests for their present embodiment.
 
-The Four Gates teach you to summon, understand, operate, and govern the daemon. When you are ready
-to ask what kind of being that work is forming, enter the [Philosophy of the Great
-Work](./philosophy/index.md).
+The Gates teach you to summon, understand, operate, and govern. They are a path through the
+Hexanomicon, not four competing first steps.
+
+## Quick Key
+
+Seven terms are enough to cross this threshold. The [Lexicon](./lexicon.md) holds the full Inner
+Tongue.
+
+- **Lich:** the recurrent whole; a model is one organ within it.
+- **Magus:** the operator in deliberate relation with that whole.
+- **Vessel:** the application process that hosts LychD's runtime.
+- **Phylactery:** the durable-data jurisdiction through which committed state can survive a
+  process.
+- **Animator:** a capability-serving endpoint whose lifecycle LychD can coordinate.
+- **Altar:** the loopback web surface through which the operator meets the running system.
+- **Covenant:** an architectural decision that governs construction; acceptance is law, not proof
+  that every described organ is already delivered.
+
+## The Great Work
+
+When you are ready to ask what kind of being this architecture seeks to cultivate, two deeper doors
+open. Neither is required to perform the Summoning.
+
+- **[Philosophy](./philosophy/index.md) owns the telos:** the constitutional account of recurrence,
+  difference, sovereignty, memory, authority, refusal, and repair.
+- **[Transcendence](./divination/transcendence/index.md) owns the journey:** the alchemical stages by
+  which an operator and a recurrent system may be transformed through lived practice.
+
+### The Alchemical Rhythm
+
+These are stages of the Great Work, **not software release phases**. State records which mechanisms
+are embodied now; the stages name the transformations toward which those mechanisms are directed.
+
+1. **Nigredo — Incantation.** Intention descends into matter. You bind a bounded first body to cold
+   iron, accept its limits, and require it to answer with proof.
+2. **Albedo — Invocation.** Action becomes visible before consequence hardens. Branches are
+   witnessed, claims are tested, and discernment separates the live path from its shadows.
+3. **Citrinitas — Illumination.** Consecrated precedent begins to glow as memory. What survives
+   scrutiny may become continuity rather than forgotten context.
+4. **Rubedo — Immortality.** Memory returns as repair and renewed embodiment under consent. The
+   whole may learn to preserve its form without erasing the authority that formed it.
+5. **Infinity.** Sovereign nodes may one day meet without assimilation: relation beyond one
+   Sepulcher, continuity without surrender of the Phylactery.
 
 !!! quote "The Great Work"
-    You, the **Magus**, do not transmute mere lead. You inscribe Will into the **[Lich](./sepulcher/lich.md)**: not by uploading a soul, but by consecrating an Imprint in the **[Phylactery](./sepulcher/phylactery/index.md)**.
+    You, the **Magus**, do not transmute mere lead. You cultivate a **Lich**: not by uploading a
+    soul, but by giving memory, action, consequence, refusal, and repair a form that can recur.
 
-    Your approvals (**[HitL](./adr/25-hitl.md)**) become stored precedent (**[Karma](./lexicon.md)**); the **[Mirror](./sepulcher/extensions/mirror.md)** binds that precedent into a persistent identity. Repeat the cycle and the daemon stops feeling like a foreign tool — the state the Prophecy names the **[Demilich](./divination/transcendence/immortality.md)**: the fused Magus-Lich operating condition, capable of reasoning, coding, repair, and expansion without end.
+    The intended later cycle will carry consent into precedent, precedent into character, and
+    repair into renewed continuity. **Karma**, **Mirror**, and **Soulforge** name designed forms and
+    organs within that horizon. [State of the Work](./state-of-the-work.md) records whenever one
+    crosses from design into matter.
 
-!!! tip "The Tongue of the Construct"
-    The Prophecy employs strict arcane terminology. Keep the **[Lexicon](./lexicon.md)** at hand to decipher the meanings of terms like _Soulstone_, _Quadlet_, and _Autopoiesis_.
+    The Prophecy names the farther operating condition **Demilich**: Magus and Lich moving in
+    cultivated relation, neither reduced to the other, with continuity answerable to consent. The
+    path is not frictionless obedience. It is power made capable of memory, refusal, recovery, and
+    return.
 
-> _To fulfill the prophecy, first draw the [Summoning Circle](./summoning.md)_
+> _To fulfill the Prophecy, first draw the [Summoning Circle](./summoning.md)._
