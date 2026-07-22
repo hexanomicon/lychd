@@ -2,34 +2,51 @@
 
 ## Trigger
 
-Load this scope when implementing wave-plan work under `src/**` or `tests/**` — the run substrate, persistence, capabilities, agents/graph, or the composition root.
+Load this scope for implementation work under `src/**` or `tests/**`, including application
+assembly, persistence, execution, capabilities, agents, orchestration, extensions, and interfaces.
 
-## Purpose
+## Authorities
 
-Route a builder to the reconciled spec and the delivered source before writing code, so the docs (the Logos) and the build stay coherent. The blueprint under `.agents/work/` is the contract; `docs/**` is the published truth it derives.
-
-## Agent Posture
-
-Spec first, source second. Read the locked rulings before touching a file the wave plan names. Keep `make type-check` green per unit and write tests in the same unit. Do not restate doctrine in code comments that belongs in an ADR.
+- [AGENTS.md](../../AGENTS.md) and [CONTRIBUTING.md](../../CONTRIBUTING.md) define repository and
+  verification behavior.
+- The matching accepted ADR owns the intended technical contract.
+- Tracked source and tests own current implementation evidence.
+- Published Sepulcher and Divination pages own user-facing behavior.
+- Ignored `.agents/work/**` and `.agents/journal/**` files may inform archaeology only; they are
+  never build contracts.
 
 ## Probes
 
-- Locked decisions and lexicon rulings: `.agents/work/INTRODUCTION.md`, `.agents/work/spec-00-FINAL.md`
-- Current build state (waves done / in flight): `.agents/journal/CURRENT.md`
-- Composition root and process memos: `src/lychd/app.py`, `src/lychd/extensions/host.py`, `src/lychd/config/components.py`, `src/lychd/domain/cortex/substrate.py`
-- Persistence: `src/lychd/db/models/`, `src/lychd/db/engine.py`, `src/lychd/db/migrations/versions/0001_phylactery_first_light.py`
-- Run substrate: `src/lychd/domain/cortex/{engine,runs,events,ledger}.py`, `src/lychd/ghouls/runs.py`
-- Capabilities: `src/lychd/domain/animation/capabilities.py`, `src/lychd/domain/animation/services/`
-- Agents and graph: `src/lychd/agents/`, `src/lychd/agents/workflows/`, `src/lychd/domain/cortex/graph_runner.py`
-- Governing doctrine: `docs/adr/06-persistence.md`, `docs/adr/14-workers.md`, `docs/adr/22-dispatcher.md`, `docs/adr/23-orchestrator.md`, `docs/adr/24-graph.md`
+- Composition: `src/lychd/app.py`, `src/lychd/extensions/host.py`,
+  `src/lychd/config/components.py`
+- Persistence: `docs/adr/06-persistence.md`, `src/lychd/db/`,
+  `src/lychd/domain/cortex/ledger.py`
+- Run execution: `docs/adr/14-workers.md`, `docs/adr/24-graph.md`,
+  `src/lychd/domain/cortex/`, `src/lychd/ghouls/runs.py`
+- Capabilities and orchestration: `docs/adr/22-dispatcher.md`,
+  `docs/adr/23-orchestrator.md`, `src/lychd/domain/animation/`,
+  `src/lychd/domain/orchestration/`
+- Agent runtime: `docs/adr/20-agents.md`, `src/lychd/agents/`
+- Extensions and host effects: `docs/adr/05-extensions.md`, `docs/adr/08-containers.md`,
+  `docs/adr/10-privilege.md`, `src/lychd/extensions/`, `src/lychd/system/`
 
-## Write Bounds
+## Typical Change Surface
 
-- `src/**`, `tests/**` per the wave plan's per-builder file ownership.
-- Docs are out of bounds for build work; a forced doctrine change is routed to the architecture scope, not written inline.
+This is routing guidance, not authorization. A build slice normally changes one semantic owner,
+its narrow source paths, its independent oracle under `tests/**`, and the canonical delivery/user
+documentation needed for dynamic synchronization. New packages land only with a real caller,
+implementation, failure contract, and test.
 
 ## Verification
 
-- Per-unit: `make type-check`, `make lint`, `make test` (see `CONTRIBUTING.md`).
-- DB-backed work: `docker compose up db` (pgvector); keep the in-memory `RunLedger` path DB-free.
-- Do not run integration/podman/systemd suites on non-Linux hosts; defer to the Linux pass.
+- Run the targeted lint, type, and test commands from `CONTRIBUTING.md` during development.
+- Before integration, run the affected boundary tests and the repository gates appropriate to the
+  slice; do not add or weaken skips, timeouts, mocks, snapshots, or negative controls silently.
+- Verify no new caller depends on a facade scheduled for retirement.
+- Keep delivery claims synchronized with actual evidence and supported profiles.
+
+## Escalate
+
+Escalate when a worker must guess system truth, two changes own the same semantic boundary, a
+schema/effect lacks migration or rollback law, an oracle would need weakening, or a change expands
+privilege, exposure, persistence, external effects, or compatibility beyond the accepted contract.
