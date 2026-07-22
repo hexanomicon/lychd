@@ -12,23 +12,29 @@ be inspected, invoked, and—at declared boundaries—resumed.
 **Current boundary:** LychD has one internal Pattern, `bridge_chat`, built directly under
 `src/lychd/agents/workflows/`. It has typed serializable state, deterministic route-once selection,
 a sequential Pydantic Graph, per-step capability leasing, bounded consent parking, and a
-run-keyed checkpoint adapter. The fixed registry is not populated by the empty built-in `workflow`
-extension namespace. There is no public Pattern contribution API, general workflow editor,
-Archive-backed Memory Weaving, Censor, planning engine, parallel Pattern, or live Loom traversal.
+run-keyed Postgres JSONB checkpoint adapter. The fixed registry is not populated by the empty
+built-in `workflow` extension namespace. There is no Portfolio or Composition registry, schedule
+catalogue, Occurrence admission, public contribution API, general workflow editor, Archive-backed
+Memory Weaving, Censor, planning engine, parallel Pattern, or live Loom traversal.
 [State records the current cognitive adapter and migration
 boundary](../../state-of-the-work.md#pydantic-ai-v1-adapter), [graph Stasis
 boundary](../../state-of-the-work.md#graph-stasis-consent), and [Loom
 projection](../../state-of-the-work.md#loom-workflow-views).
 
 **Law:** [ADR 28 — Workflow](../../adr/28-workflow.md) owns the Weaver's office;
-[ADR 24 — Graph](../../adr/24-graph.md) owns topology and checkpoints; and
-[ADR 20 — Agents](../../adr/20-agents.md) owns the typed cognitive atom.
+[ADR 24 — Graph](../../adr/24-graph.md) owns topology and checkpoints; and [ADR 20 —
+Agents](../../adr/20-agents.md) owns the typed cognitive atom. The living [Composition
+Portfolio](../../compositions/index.md) maps application designs above Patterns without becoming
+another Covenant.
 
-> _“An Agent is a single note. The Weaver is the composition: thread remembered across darkness,
+> _“An Agent is a single note. The Weaver is the weaving: thread remembered across darkness,
 > pause held without deceit, and scattered motion returned to one score.”_
 
-## The three offices
+## From Portfolio to Invocation
 
+- The **Portfolio** is the set of registered Compositions governed by one Weaver.
+- A **Reference Composition** is an operator-visible application with one purpose, Pattern
+  catalogue, policy, data, dependencies, and projections. It owns product/application identity.
 - The **Pattern** is the validated score owned by the Weaver. It names what may happen and the
   contract by which that shape remains legible.
 - The **Loom** is the Altar instrument that projects a Pattern and may later hold inert drafts. It
@@ -38,11 +44,16 @@ projection](../../state-of-the-work.md#loom-workflow-views).
   evidence, and a persisted Pattern name; revision identity and checkpoint-schema pinning remain
   part of the contribution horizon.
 
-Graph supplies execution grammar; Weaver gives that grammar product identity, validation,
-registration, and compatibility through time. The Dispatcher binds a logical capability request to
-an eligible provider. The Orchestrator alone governs physical readiness and swaps. HitL owns human
-judgment. The Phylactery owns committed run and checkpoint truth. The Weaver composes these organs;
-it does not impersonate them.
+Graph supplies execution grammar. Weaver owns Pattern validation, registration, selection, and
+continuity through time; the Composition supplies the application identity in which one or more
+Patterns belong. The Dispatcher binds a logical capability request to an eligible provider. The
+Orchestrator alone governs physical readiness and swaps. The Magus owns human judgment; HitL owns
+the consent ordering and protocol. The Phylactery owns committed run and checkpoint truth. Weaver
+coordinates these offices; it does not impersonate them.
+
+The accepted Portfolio is documented under [Reference
+Compositions](../../compositions/index.md). Those pages are architecture targets, not entries in a
+working registry.
 
 ## The Pattern that has entered matter
 
@@ -73,6 +84,19 @@ trigger.
 
 That name prevents trigger re-routing inside the current frozen registry; it is not an immutable
 revision guarantee across deployments.
+
+## Schedule without a rival scheduler
+
+The future Composition control plane distinguishes three uses of “schedule”:
+
+- **Weaver** owns calendar/event meaning, idempotent Occurrences, logical priority, dependencies,
+  overlap, coalescing, and admission of a pinned Pattern revision.
+- **Workers and Ghouls** own durable delivery, queue claims, retry, backoff, and crash pickup.
+- **Orchestrator** owns physical readiness, prewarming, lease drain, eviction, and model swaps.
+
+A timer submits through the ordinary run-admission boundary. It never calls a Graph node, Agent,
+container, or model directly. Multiple Invocations may be logically active while finite iron
+serializes their physical work.
 
 ## The Fermata: a pause with an owner
 

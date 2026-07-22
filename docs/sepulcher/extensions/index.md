@@ -17,6 +17,11 @@ This architecture proves the **[Extension Protocol (ADR 05)](../../adr/05-extens
 
 Read that boundary narrowly: pre-v1 in-process organs are composed with the body they join; durable compatibility is reserved for surfaces that LychD explicitly versions and tests.
 
+An Extension is how code, schemas, tools, routes, workloads, or future workflow metadata enter the
+body. A [Reference Composition](../../compositions/index.md) is the complete application assembled
+from those contributions and existing organs. The four accepted Compositions are not four new
+members of the Federation of Fifteen, and an application does not earn one ADR merely by existing.
+
 Each extension is more than a plugin-era module. It is an organ with a fantasy, a discipline, and a jurisdiction:
 
 - **The Watchers** see and remember.
@@ -111,6 +116,8 @@ one deactivates it.
 | `context.soulstones.add(SoulstoneDefinition)` | :material-cog-transfer: **Soulstone Runtime Definition** | **[Animator](../animator/index.md)** |
 | `context.portals` | :material-cloud-outline: **Reserved Remote/API Model Store** | **[Animator](../animator/portal.md)** |
 | `context.vessel` | :material-router: **Reserved Web/API/Event Store** | **[Vessel (11)](../../adr/11-backend.md)** |
+| future `context.patterns` | :material-state-machine: **Pattern Revision Contributions — designed, absent** | **[Weaver (28)](../../adr/28-workflow.md)** |
+| future `context.compositions` | :material-source-branch: **Composition Metadata — designed, absent** | **[Composition Portfolio](../../compositions/index.md)** |
 
 An enabled Python organ exposes a small shim:
 
@@ -137,6 +144,10 @@ def register(context: ExtensionContext) -> None:
 middleware, auth policies, and event hooks will be added as shaped bundles or
 sub-stores once the Vessel boundary is stable enough to avoid becoming a grab
 bag.
+
+The Pattern and Composition rows are target stores, not attributes on the current
+`ExtensionContext`. They become real only with shaped contracts, frozen assembly, collision and
+compatibility checks, lifecycle tests, and a matching State boundary.
 
 The manager owns import order and calls this function only for selected
 extensions. Codex never scans arbitrary packages by itself. For built-ins, the

@@ -6,7 +6,7 @@ icon: material/tournament
 # :material-tournament: 28. Workflow: The Weaver
 
 !!! abstract "Context and Problem Statement"
-    Cognitive labor involving multiple asynchronous **[Workers (ADR 14)](./14-workers.md)** and specialized **[Agents (ADR 20)](./20-agents.md)** often devolves into execution chaos without a centralized executive function to dictate tempo and sequence. While the machine possesses the raw topology of the **[Graph (ADR 24)](./24-graph.md)**, the tactical movement of data between synapses remains uncoordinated, leading to fragmentation and logic drift. A mechanism is necessary to translate the strategic intent of the machine's physical will into a synchronized, verifiable, and stateful workflow, ensuring that every step of a pattern is provided with woven context and purified data.
+    Cognitive labor involving multiple asynchronous **[Workers (ADR 14)](./14-workers.md)** and specialized **[Agents (ADR 20)](./20-agents.md)** often devolves into execution chaos without a centralized executive function to govern tempo and sequence. While the machine possesses the raw topology of the **[Graph (ADR 24)](./24-graph.md)**, tactical movement between synapses remains uncoordinated, leading to fragmentation and logic drift. A mechanism is necessary to translate authenticated operator and application intent into synchronized, verifiable, stateful workflow and semantic capability demand while respecting the physical constraints of the iron.
 
 ## Requirements
 
@@ -15,7 +15,10 @@ icon: material/tournament
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
 - **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and the Graph persistence boundary to record committed state transitions, enabling recovery from the last valid boundary without assuming every checkpoint already lives in Postgres.
-- **Extension Assimilation:** Implementation as a coupled extension primitive within the broader **[Extension Protocol (ADR 5)](./05-extensions.md)**, allowing specialized executive functions (e.g., a "Research Maestro") to be surfaced without hardwiring them into the core.
+- **Composition Assimilation:** One Weaver must accept shaped, explicitly selected Pattern and
+  [Reference Composition](../compositions/index.md) contributions through the broader
+  **[Extension Protocol (ADR 5)](./05-extensions.md)** without spawning competing workflow
+  engines or hardwiring every application into the Core.
 - **Strategic Alignment:** Coordination with the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to ensure tactical pacing respects the physical constraints of the local iron.
 
 ## Considered Options
@@ -30,46 +33,64 @@ icon: material/tournament
     - **Pros:** Robust error handling; native support for long-running processes.
     - **Cons:** **Architectural Bloat.** These systems introduce significant resource overhead and external dependencies, violating the **[Single-Node Sovereignty (ADR 01)](./01-doctrine.md)**. They bifurcate the machine's "Mind" from its "Tactics," creating latency that destroys the responsiveness of the machine.
 
-!!! success "Option 3: The Weaver (Executive Graph Extensions)"
-    Implementing workflows as specialized extensions that govern the stateful movement of intent through functional graph steps.
+!!! success "Option 3: One Weaver with Contributed Patterns"
+    Implementing one workflow jurisdiction whose immutable Patterns govern the stateful movement
+    of intent through functional graph steps and whose Portfolio organizes complete applications.
     - **Pros:**
         - **Total Synchronization:** Natively utilizes the **[Graph (ADR 24)](./24-graph.md)** engine to manage persistence and reanimation.
-        - **Recursive Evolution:** The Smith possesses the capability to generate and install new Weavers, allowing the machine to learn new "Ways of Working."
+        - **Recursive Evolution:** The Smith may eventually generate, verify, and promote new
+          Pattern or Composition contributions, allowing the machine to learn new ways of working
+          without multiplying workflow authorities.
         - **Deep Integration:** Allows for "Memory Weaving" to be performed as a first-class citizen of the execution loop, ensuring agents are never born into a void.
 
 ## Decision Outcome
 
-**The Weaver** is adopted as the definitive workflow primitive. It functions as the Maestro of the machine's internal processes, managing the sequence, context, and pacing of labor.
+**The Weaver** is adopted as the singular logical workflow-application control plane. The
+**Pattern** is its immutable executable primitive. Weaver manages application enablement and the
+sequence, context, pacing, and continuity of admitted labor. The living [Reference Composition
+Portfolio](../compositions/index.md) maps evolving application designs above Patterns.
 
 The Weaver preserves temporal continuity of cognition across asynchronous steps. It prepares and synchronizes the field in which reasoning occurs, but it does not itself determine truth or identity.
 
 Workflow is the backbone of the Ouroboros. It is the structure that lets a generated fluctuation return as usable state rather than vanish as a loose transcript. Shadow supplies candidate motion, Mirror supplies identity gravity, and Riddle supplies measurement; the Weaver binds their appearances into a repeatable Pattern with checkpoints, pauses, joins, and rehydration boundaries.
 
 !!! note "Persistence foundation"
-    Durable workflow waits currently use file-backed Pydantic Graph checkpoints with their path
-    recorded on the Postgres run row; terminal status commits before checkpoint cleanup. A
-    Postgres-backed graph persistence implementation and transactional submit/resume outbox remain
-    later Phylactery work. Weaver doctrine must target the persistence port, not bypass it with
-    direct database assumptions.
+    The production-wired durable store targets one run-keyed Postgres `run_checkpoint` row carrying
+    the complete Pydantic Graph snapshot document in JSONB. Focused memory-profile tests prove the
+    resume and terminal-before-cleanup semantics; a real Postgres Consent-plus-Checkpoint restart
+    receipt is still absent. Transactional submit/resume outbox, checkpoint-schema migration, and
+    full cross-host recovery remain later Phylactery work. Weaver doctrine targets the persistence
+    port rather than issuing direct database writes.
 
 This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver Pattern records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
 
 ### 1. The Maestro Pattern (Tactical arm of the Will)
 
-The Weaver translates the strategy of the **[Orchestrator (ADR 23)](./23-orchestrator.md)** into tactical steps. It manages the temporal execution of nodes, coordinating between immediate reflexes and long-term rituals. By registering via the extension hook, the Weaver grafts itself onto the core, ensuring all multi-stage labor follows a disciplined workflow pattern.
+The Weaver translates authenticated Magus or Composition intent into admitted Invocations,
+Pattern steps, gates, budgets, dependencies, and semantic capability demand. The
+**[Orchestrator (ADR 23)](./23-orchestrator.md)** travels in the opposite direction of authority:
+it receives capability demand and decides how physical services become ready. It never authors
+the workflow's purpose.
 
-New Weavers are Organs; their forging and promotion follow the **[Smith (ADR 35)](./35-assimilation.md)** and the **[Lab→Test→Promote rite (ADR 16)](./16-creation.md)** without exception. The machine's capacity to learn new "Ways of Working" introduces no bespoke mechanism—a generated Weaver enters the body only through the same sanctioned assimilation path as any other Organ.
+New Pattern and Composition contributions follow the **[Smith (ADR 35)](./35-assimilation.md)** and
+the **[Lab→Test→Promote rite (ADR 16)](./16-creation.md)** without exception. A generated way of
+working enters through shaped contribution and immutable revision; it does not become a second
+Weaver or acquire the jurisdictions of Graph, Dispatcher, Orchestrator, Phylactery, or HitL.
 
 ### 2. The Archivist (Memory Weaving)
 
-Before a reasoning step wakes in the cortex, the Weaver performs the "Scry" ritual:
+When a Pattern explicitly declares memory preparation, the future Archivist performs a bounded
+“Scry” ritual through the typed Archive port:
 
-- It executes a background SQL and **[Vector Search (ADR 27)](./27-memory.md)** based on the current state.
+- It submits a classified, budgeted **[Vector Search (ADR 27)](./27-memory.md)** request rather than
+  hidden SQL.
 - It transforms raw database rows into Associative Links.
 - These links are injected into the "Karma" block of the **[RunContext (ADR 21)](./21-context.md)**.
 - By the time the **[Agent (ADR 20)](./20-agents.md)** receives control, the relevant memory is already part of its active reality.
 
-The Archivist therefore activates latent impressions before reasoning starts, weaving memory into fluctuation so downstream steps receive prepared associations rather than raw storage.
+The Archivist therefore activates attributable impressions before a requesting reasoning step.
+It is neither ambient behavior on every node nor current delivery; the present Bridge Context has
+reserved but empty memory chambers.
 
 ### 3. The Censor (Data Integrity)
 
@@ -95,9 +116,19 @@ The Weaver governs tempo and synchronization of these movements; validity and se
 
 At each join, the workflow can close a loop: generated branches return to a shared state, failed branches become evidence, and the surviving continuation carries both measurement and identity forward. This is the practical shape of the semantic vortex in execution time.
 
+A Reference Composition may collect several Patterns under one operator-visible purpose. Weaver
+governs the Portfolio, immutable Pattern selection, logical priority, dependencies, overlap, and
+schedule semantics. Workers own durable occurrence delivery and retry. Orchestrator owns model
+residency, lease drain, prewarming, eviction, and swaps. Several Invocations may therefore remain
+logically active while finite iron serializes their physical inference.
+
 ### 5. Interaction with HitL
 
-Every workflow includes a "Decision Point" that triggers the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. When a pattern execution reaches a high-order synapse (e.g., system promotion), the Weaver initiates the stasis event and manifests the scried "Vision" at the interface, awaiting the Magus's signal to resume the tempo.
+A Pattern declares a Decision Point only where authority, uncertainty, or effect policy requires
+the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. Read-only and fully preauthorized
+Patterns need no ceremonial pause merely to satisfy topology. When a governed step does require a
+decision—such as source promotion, public publication, deletion, or world restore—Weaver enters
+Durable Stasis and projects the bounded choice for the Magus.
 
 ### 6. The Demarcation of Weaver and Shadow
 
@@ -111,11 +142,19 @@ Weaver branches execute inside the live Run, and their joins commit into real st
 ## Consequences
 
 !!! success "Positive"
-    - **Disciplined Labor:** Cognitive rituals are executed with absolute temporal and logical precision.
-    - **Rich Working Memory:** The Archivist ensures that every agent thought is perpetually enriched by the machine's historical experience.
-    - **Safe Interoperability:** The Censor allows the machine to participate in external swarms without risking the Magus's secrets.
-    - **Stateful Resilience:** Declared durable waits can resume from the current file-backed checkpoint boundary; Postgres-backed graph checkpoints/outbox remain a later consolidation.
+    - **Disciplined Labor:** Validated Patterns make temporal order, gates, budgets, and outcomes
+      explicit rather than leaving them in an uninspectable script loop.
+    - **Rich Working Memory:** When the Archivist is implemented, requesting steps can receive
+      bounded, attributable historical context through the typed Archive port.
+    - **Narrower Interoperability Risk:** When the Censor is implemented, it can minimize already
+      authorized egress. It does not eliminate provider, peer, or re-identification risk.
+    - **Stateful Resilience:** The typed Stasis port and memory-profile tests prove declared durable
+      resume semantics, while production wiring targets the run-keyed Postgres checkpoint adapter.
+      A real Postgres restart receipt, transactional submit/resume outbox, and broader recovery
+      remain later consolidation.
 
 !!! failure "Negative"
-    - **Synapse Latency:** The rituals of scrying and cleansing add a sub-millisecond overhead to every transition between steps.
-    - **Architectural Rigor:** Extension authors must adhere to the strict Pattern structure, requiring higher initial engineering effort compared to simple scripts.
+    - **Synapse Cost:** Scrying, cleansing, checkpointing, and gates add work that must be measured
+      per Pattern; no universal latency bound is assumed.
+    - **Architectural Rigor:** Pattern authors must satisfy the typed contribution and continuity
+      contract, requiring more initial work than a simple script.

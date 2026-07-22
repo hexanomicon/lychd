@@ -16,6 +16,12 @@ This file is the stable entry node. Load only the next probe needed by the task;
 - Governing philosophy: [docs/philosophy/index.md](docs/philosophy/index.md), loaded for mythic
   doctrine, source correspondence, formation, or philosophical voice; route through
   [.agents/scopes/philosophy.md](.agents/scopes/philosophy.md) before selecting a chamber.
+- Accepted application designs: [docs/compositions/index.md](docs/compositions/index.md), loaded
+  when a task concerns the Portfolio, an application Pattern catalogue, cross-organ ownership, or
+  promotion from idea into accepted architecture. Composition pages do not prove delivery.
+- Candidate futures: [docs/incubator/index.md](docs/incubator/index.md), loaded only for
+  uncommitted ideation or promotion work; an incubated proposal is neither delivery truth nor
+  accepted architecture.
 - [.agents/scopes/](.agents/scopes/): official tracked agent extension for bounded context routing. LychD allows this shared extension and ignores the rest of `.agents/*`.
 - Local overlays: do not load `.agents/AGENTS.md`, `~/.agents/AGENTS.md`, or tool-specific local profiles for this repo unless the operator explicitly assigns one for the current task.
 
@@ -28,7 +34,10 @@ Follow the cheapest useful edge:
 3. For philosophy, mythic doctrine, or formation work, load
    [.agents/scopes/philosophy.md](.agents/scopes/philosophy.md) and follow its smallest canonical
    path. Do not infer delivery from the Logos.
-4. For documentation work, use [docs/index.md](docs/index.md) as the published parent map, [docs/lexicon.md](docs/lexicon.md) for terms, and directory `index.md` files before child pages.
+4. For documentation work, use [docs/index.md](docs/index.md) as the published parent map,
+   [docs/lexicon.md](docs/lexicon.md) for terms, and directory `index.md` files before child pages.
+   Route accepted application architecture through [docs/compositions/index.md](docs/compositions/index.md)
+   and unselected possibilities through the Incubator.
 5. Inspect LychD source and `src/lychd/system/constants.py` for project truth.
 6. Inspect installed packages under `.venv/lib/` when dependency runtime behavior matters.
 7. Use ignored local reference shelves only when the operator explicitly assigns them.

@@ -62,6 +62,11 @@ deliberate relation with the Lich is called the **Magus**.
   return to the repository contract and implementation.
 - **I want to understand its telos:** enter the voluntary [Philosophy of the Great
   Work](./philosophy/index.md).
+- **I want to explore accepted applications:** enter the [Reference Composition
+  Portfolio](./compositions/index.md), where concrete designs show how Patterns, Agents, organs,
+  models, data, and interfaces join without pretending those applications are delivered.
+- **I want to explore possible futures:** enter the [Incubator](./incubator/index.md), where
+  uncommitted ideas remain visibly separate from architecture, delivery, and backlog.
 
 ## The Four Gates
 

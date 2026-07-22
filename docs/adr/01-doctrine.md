@@ -188,6 +188,10 @@ Within `docs/`, authority is divided by purpose:
   receipt, and what remains design. ADR acceptance never sets a delivery state.
 - **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
   term, but they should not redefine it.
+- **docs/compositions/** holds accepted application specifications governed by ADR law. A
+  Composition page owns one application's intent, Pattern catalogue, cross-organ boundaries,
+  data, providers, policy, proving slice, and delivery gaps. Acceptance establishes architecture,
+  never implementation evidence or a State label.
 - **docs/sepulcher/** is **topic-oriented**: each part of the body carries its own
   concept, how-to, and configuration reference on one page (Portal, Soulstone, Coven,
   Codex, …). *What a part is and how to operate it* live together.
@@ -195,6 +199,11 @@ Within `docs/`, authority is divided by purpose:
   the instruments you drive it through (Bridge, Loom, Nexus) and **`transcendence/`** the
   meaning (the alchemical ascent). The agent layer itself is code — agents are written in
   Python and wired in the graph (the Loom); there is no separate "practice" gate.
+- **docs/incubator/** holds public, uncommitted design seeds. It may explore candidate Patterns,
+  extensions, workloads, and tutorial arcs, but it owns no architectural law, delivery state,
+  priority, or implementation promise. An accepted application may leave the Incubator for an
+  owning ADR and Composition page; State changes only when maintained evidence supports a bounded
+  delivery record.
 - **docs/summoning.md** is the practical user *tutorial* for bringing the daemon up the
   first time (learn-by-doing) — a single continuous page, not a chunked wizard.
 
@@ -234,11 +243,12 @@ the task:
 2. Use directory indexes as maps before opening child concepts.
 3. Use `docs/lexicon.md` when terminology controls meaning.
 4. Use ADRs when architecture, boundaries, or governance are in question.
-5. Use Sepulcher and Divination pages when domain doctrine or operator workflow
+5. Use `docs/compositions/` for an accepted application's complete contract and Pattern catalogue.
+6. Use Sepulcher and Divination pages when domain doctrine or operator workflow
    is in question.
-6. Use tracked `.agents/scopes/` only as routing hints for agent context, not as
+7. Use tracked `.agents/scopes/` only as routing hints for agent context, not as
    replacement truth.
-7. Inspect source, runes, lockfiles, and runtime artifacts when executable
+8. Inspect source, runes, lockfiles, and runtime artifacts when executable
    behavior matters.
 
 Documentation changes follow the same dynamic sync law as source changes. When
@@ -257,13 +267,17 @@ Authority resolves by the kind of truth being asked for:
 3. ADRs define architectural law, constraints, and intended boundaries; an
    accepted decision does not prove delivery.
 4. The Lexicon defines canonical terminology.
-5. Sepulcher and Divination documents define operated doctrine, user workflow,
+5. Composition specifications define accepted application contracts under ADR law without
+   proving their implementation or delivery priority.
+6. Sepulcher and Divination documents define operated doctrine, user workflow,
    and the alchemical journey without becoming a second delivery ledger.
-6. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
+7. Incubator pages preserve proposals for discussion; they do not decide architecture,
+   delivery, priority, or actionable backlog.
+8. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
    humans through the topology.
-7. `AGENTS.md` defines agent operating procedure, while `.agents/scopes/`
+9. `AGENTS.md` defines agent operating procedure, while `.agents/scopes/`
    provide cheap routing hints into canon.
-8. Generated indexes, search results, ignored campaign evidence, and local
+10. Generated indexes, search results, ignored campaign evidence, and local
    overlays assist discovery but do not decide.
 
 ### Consequences

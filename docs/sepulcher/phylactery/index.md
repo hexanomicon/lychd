@@ -24,7 +24,7 @@ today:
    creates its `saq_*` tables on the default search path and run-row/enqueue is not one transaction.
 
 !!! abstract "The Anchor"
-    The primary and most sacred function of the Phylactery is to house the **Pattern**.
+    The primary and most sacred function of the Phylactery is to house the **continuity pattern**.
 
     A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is a processor with no memory of its own: kill the container and nothing of the Lich is lost, because nothing of the Lich lived there. Continuity lives here.
 
