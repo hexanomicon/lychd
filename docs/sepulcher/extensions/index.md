@@ -45,7 +45,7 @@ Source-map note: doctrine names are domain names, not guaranteed package slugs. 
 | **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
 | **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
 | **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Patterns** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
-| **[The Scout](./scout.md)** | **Ingestion** | :material-navigation-variant-outline: | Wields a **Dual-Mode** browser to harvest internet knowledge. | **[30](../../adr/30-webcrawler.md)** |
+| **[The Scout](./scout.md)** | **Web acquisition** | :material-navigation-variant-outline: | Coordinates separately authorized web-acquisition effects; no Scout runtime is available yet. | **[30](../../adr/30-webcrawler.md)** |
 | **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-wrench: | Drafts code and executes the autonomous **Evolution** of the system. | **[35](../../adr/35-assimilation.md)** |
 | **[The Soulforge](./soulforge.md)** | **Training** | :material-anvil: | Transmutes Karma into model weights via **LoRA** fine-tuning. | **[33](../../adr/33-training.md)** |
 | **[The Riddle](./riddle.md)** | **Evaluation** | :material-help-rhombus-outline: | Evaluates model performance in the agentic harness. | **[34](../../adr/34-evaluation.md)** |
@@ -165,11 +165,17 @@ itself is not required to implement `.rune`.
 
 ### III. Federated Persistence
 
-The system manages extensions as a **Jujutsu-backed Federation of Git Repositories**. The `lychd.lock` file in the Crypt root tracks the exact body state of every active organ, ensuring the system remains deterministic and revertible. The flesh may grow, but the binding must remain exact.
+The designed Federation will pin Forge-composed extension repositories through `lychd.lock`, so
+one body can later be reproduced and restored. That repository and lock lifecycle is not delivered
+today. Current LychD assembles explicitly selected built-in and Crypt registration shims;
+[State](../../state-of-the-work.md#extension-activation-contributions) owns the partial boundary.
 
 ### IV. The Ritual of Assimilation
 
 Autopoiesis follows a strict path from the volatile to the immutable:
+
+This is the designed assimilation sequence, not a runnable end-to-end workflow today; State owns
+the delivery of each participating office.
 
 1. **Genesis:** The Magus or **The Smith** drafts logic in the **[Lab (13)](../../adr/13-layout.md)**.
 2. **Speculation:** The system executes the code within the **[Shadow Realm (31)](../../adr/31-simulation.md)**.
