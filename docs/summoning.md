@@ -41,6 +41,9 @@ Six movements, each ending in a command that proves it worked:
     DB-backed graph outbox, and the multimodal artifact materializer are later work. This rite does
     not imply they already exist.
 
+    [State of the Work](state-of-the-work.md) is the canonical delivery record for every boundary
+    named in this rite.
+
 When you finish, the daemon is alive on your iron. From there, the [Sepulcher](sepulcher/index.md)
 documents each part you will work with — opening [Portals](sepulcher/animator/portal.md) and
 driving [coven](sepulcher/animator/coven.md) swaps — while [Divination](divination/index.md) is

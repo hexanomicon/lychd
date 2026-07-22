@@ -37,6 +37,9 @@ A modern alchemical grimoire built on the ancient secrets of transmutation.
 
 **LychD** is a self-hosted Linux daemon that runs local models on your own GPU and orchestrates agents around them. It is built for one long experiment — **[Autopoiesis](./divination/transcendence/immortality.md)**: a system that can extend and repair itself, under your consecrating hand.
 
+LychD is **pre-alpha**. The Prophecy names the destination;
+[State of the Work](./state-of-the-work.md) names what can answer now.
+
 > _"While the world slept, content with its reliable illusions, the Magus walked into the dark, seeking a truth that was not yet stable, but was infinitely more real."_
 
 ## The Four Gates

@@ -9,6 +9,9 @@ icon: fontawesome/solid/dungeon
 
 Access the Altar at **`http://localhost:7134`**.
 
+The Altar maps the instruments; [State of the Work](../../state-of-the-work.md) is the sole record
+of which can answer now.
+
 The first screen (index) is **the Bridge**: a full-page terminal-chat surface where the Magus speaks his Intent and the Vessel resolves it into the proper rite. It is both the captain's bridge of the Sepulcher and the bridge between Magus and Machine.
 
 A simple question may return a direct answer. A deeper request may become a Ghoul job, Weaver workflow, Scrying stream, Reliquary artifact, Nexus routing concern, or approval wait.
