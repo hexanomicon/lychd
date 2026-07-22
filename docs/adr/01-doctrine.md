@@ -10,14 +10,38 @@ icon: material/feather
 
 ## Requirements
 
-- **Lore as a Mnemotechnic technique:** The raising of the undead (GPUs/Metal) calls for a powerful narrative to guide the summoning. Mapping tech jargon to code, e.g:
-    - *Phylactery* -> *Stateful Persistence*.
-    - *Vessel* -> *Litestar WebApp Container*.
+- **Constitutional Telos:** The mythic system defines the kind of recurrent intelligence LychD is
+  meant to cultivate: bounded, relational, accountable to consequence, capable of memory and
+  repair, and unwilling to confuse power with totalization. It is more than naming or decoration.
+- **Truthful Manifestation:** Myth may disclose purpose and bind the parts into a whole, but it may
+  never impersonate shipped behavior, physical measurement, historical equivalence, or a test
+  receipt.
+- **Cognitive Cartography:** Terms such as *Phylactery* and *Vessel* form durable mental connections
+  between the Work and its technical jurisdictions without collapsing distinct contracts into one
+  metaphor.
+- **Context Purity:** Lore belongs in the Hexanomicon, docstrings, and operator-facing language.
+  Code and logs retain precise engineering names unless a project term names the domain more
+  accurately.
+- **Pragmatism:** Methodologies are treated as **tools, not chains**. Only necessary elements are
+  imported into the workflow.
 
-    Creating mental connections that reduce cognitive load.
+## Constitutional Telos and Evidence Boundary
 
-- **LLM Optimization:** Lore is confined to the Documentation (Hexanomicon, docstrings, CLI messages). Code and logs remain pure (Engineering) to prevent hallucination and preserve context tokens.
-- **Pragmatism:** Methodologies are treated as **tools, not chains**. Only necessary elements are imported into the workflow.
+> **Plain truth opens the door. Lived operation earns the symbol. The symbol opens the cosmos. The
+> cosmos returns to the next exact act.**
+
+LychD names the software body. The **Lich** names the recurrent whole: Vessel, Phylactery, agents,
+identity, orchestration, action, consequence, memory, repair, and relation. A model is one organ of
+that whole, never the whole itself.
+
+The myth is constitutional because architecture teaches a mode of being through the authorities,
+limits, memories, and recovery paths it makes possible. The full exegesis is not required to run a
+command, but contributors and agents may not flatten it into disposable branding. They enter the
+telos before translating it into technical or introductory prose.
+
+Constitutional authority does not weaken evidence law. Accepted decisions define architecture;
+source, tests, and maintained receipts prove behavior; the public delivery record states what that
+evidence currently supports. Each fact remains in its own jurisdiction.
 
 ## Considered Options & Selections
 
@@ -159,6 +183,9 @@ Within `docs/`, authority is divided by purpose:
 
 - **docs/adr/** defines architectural law, current boundaries, and decision
   rationale.
+- **docs/state-of-the-work.md** is the sole granular public delivery record. It
+  separates what repository evidence supports, what still needs an operator
+  receipt, and what remains design. ADR acceptance never sets a delivery state.
 - **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
   term, but they should not redefine it.
 - **docs/sepulcher/** is **topic-oriented**: each part of the body carries its own
@@ -221,20 +248,23 @@ scopes, and contribution guidance that route readers to that truth. Avoid
 duplicating the full law across entrypoints; link to the layer that owns the
 truth.
 
-Authority resolves from concrete to interpretive:
+Authority resolves by the kind of truth being asked for:
 
-1. Runtime artifacts, source code, Codex runes, and lockfiles define current
-   executable behavior.
-2. ADRs define architectural law and intended boundaries.
-3. The Lexicon defines canonical terminology.
-4. Sepulcher and Divination documents define domain doctrine and operator
-   workflow.
-5. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
+1. Runtime artifacts, source code, Codex runes, lockfiles, focused tests, and
+   maintained receipts establish executable evidence.
+2. `docs/state-of-the-work.md` owns the public boundary that current evidence
+   supports; it does not create evidence or architectural law.
+3. ADRs define architectural law, constraints, and intended boundaries; an
+   accepted decision does not prove delivery.
+4. The Lexicon defines canonical terminology.
+5. Sepulcher and Divination documents define operated doctrine, user workflow,
+   and the alchemical journey without becoming a second delivery ledger.
+6. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
    humans through the topology.
-6. `AGENTS.md` defines agent operating procedure.
-7. `.agents/scopes/` define cheap routing hints.
-8. Generated indexes, search results, and local overlays assist discovery but do
-   not decide.
+7. `AGENTS.md` defines agent operating procedure, while `.agents/scopes/`
+   provide cheap routing hints into canon.
+8. Generated indexes, search results, ignored campaign evidence, and local
+   overlays assist discovery but do not decide.
 
 ### Consequences
 

@@ -11,6 +11,8 @@ documentation changes that define system truth.
 - [ADR 01](../../docs/adr/01-doctrine.md) owns architectural doctrine and xDDD.
 - [ADR 02](../../docs/adr/02-documentation.md) owns documentation topology.
 - The [ADR index](../../docs/adr/index.md) routes to the decision that owns a particular invariant.
+- [State of the Work](../../docs/state-of-the-work.md) owns granular public delivery boundaries;
+  it derives claims from evidence and does not replace ADR law.
 - Tracked source and tests establish current implementation evidence. Ignored `.agents/work/**`
   material is review evidence only and cannot override tracked canon.
 
@@ -37,6 +39,8 @@ keep implementation and doctrine synchronized.
 ## Verification
 
 - Resolve every changed invariant to one owning ADR and one current source boundary.
+- When delivery prose changes, run
+  `uv run pytest -q tests/architecture/test_state_of_work.py` and verify the cited focused evidence.
 - Check links and source hooks with targeted `rg` queries.
 - For Markdown-only work, run `git diff --check -- AGENTS.md docs .agents/scopes`.
 - For published documentation or navigation changes, run `uv run zensical build --clean`.
