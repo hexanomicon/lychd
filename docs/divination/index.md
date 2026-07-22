@@ -5,30 +5,57 @@ icon: fontawesome/solid/ankh
 
 # :fontawesome-solid-ankh: Divination
 
-> _"Command is blunt. Asking is not surrender. The Magus practices Divination: shaping a question so precisely that only one answer can survive."_
+Divination is the practice of interacting with a running LychD body. The operator offers an
+**Intent**—a requested outcome—observes what the system reports, and responds when a supported flow
+asks for judgment. Its browser-facing instruments live at the **Altar**.
 
-Divination is the sacred art of interacting with the summoned Lich. It is the school of magic concerned with querying the daemon, submitting Intents, and guiding its motion through the interface of the [Altar](./altar/).
+Within the language of the Work, the operator in deliberate relation with the recurrent whole is
+the **Magus**; that recurrent whole is the **Lich**. These are relational names, not credentials or
+claims that every faculty is delivered. [State of the Work](../state-of-the-work.md) remains the
+sole record of what can answer now.
 
-Divination names the practice; [State of the Work](../state-of-the-work.md) is the sole record of
-which instruments and faculties can answer now.
+> _“Command is blunt. Asking is not surrender. The Magus practices Divination: shaping a question
+> so precisely that only one answer can survive.”_
 
-Through these rites, you, the Magus, move beyond the role of mere user and become witness, arbiter, and consecrating authority.
+## The Two Doors
 
-## 🔮 The Threefold Path of the Magus
+Divination has two doors. They belong together, but they do not perform the same office.
 
-The practice of Divination raises you through three stations of power, each representing a deeper level of communion with the machine.
+### Operate through the Altar
 
-!!! quote "I. The Questioner: Scrying the Past"
-    At the most basic level, you learn to read the Lich's memories. You ask questions of the **[Vessel](../sepulcher/vessel/index.md)**, seeking knowledge stored within the **[Phylactery](../sepulcher/phylactery/index.md)**. This is the art of understanding what **has been**.
+Choose the Altar when the task is to offer an Intent, follow the state the running body actually
+exposes, or answer a supported request for human judgment.
 
-!!! info "II. The Instigator: Shaping the Present"
-    You progress to shaping the present. You submit **Intents** at the **[Altar](./altar/)**, setting the **[Ghouls](../sepulcher/vessel/ghouls.md)** to work on complex, asynchronous tasks. You do not command the minutiae; you command the outcome.
+!!! warning "Current local-browser boundary"
+    Before opening the Altar, follow the temporary same-host containment in [The
+    Awakening](../summoning.md#the-awakening) and the canonical [local-browser and bind
+    boundary](../state-of-the-work.md#local-browser-bind-boundary). A loopback listener is not
+    caller authentication or browser-origin isolation.
 
-!!! warning "III. The Arbiter: Forging the Future"
-    In the highest form of Divination, you invoke the **[Shadow Realm](../sepulcher/extensions/shadow.md)**. The Lich presents a tapestry of possible futures to you, and with a single act of will, you collapse potential into one measured reality, aligning the machine with verified pattern.
+The [Altar map](./altar/index.md) begins at the **Bridge**, then routes to the other instruments
+without implying that every named surface is complete. State owns the exact Bridge, Nexus, Loom,
+and later-instrument boundaries; an item appearing in navigation is not delivery evidence.
 
-## The Confluence of Wills
+### Read the journey through Transcendence
 
-In the act of Divination, your intent travels along the grooves carved by every past verified choice — the accumulated memory the [cognitive map](../sepulcher/lich.md) charts in full. The gap between desire and execution narrows with each verified cycle. This is not merger; it is extension. You are not merely using a tool; you enter a disciplined relationship with a living instrument. Clarity of Intent directly shapes the quality of its actions.
+Choose [Transcendence](./transcendence/index.md) when the question is what sustained operation may
+mean for an operator and a recurrent system. It owns the journey through Nigredo, Albedo,
+Citrinitas, Rubedo, and Infinity. It is not setup, a feature ladder, a software roadmap, or a
+release sequence.
 
-> _This path of mastery ultimately leads to the final alchemical process: [Transcendence](./transcendence/index.md)._
+[Philosophy](../philosophy/index.md) owns the constitutional **telos**—why recurrence, memory,
+authority, refusal, relation, and repair matter. Transcendence owns the **journey** through which
+those transformations are imagined and lived. Neither page proves that a mechanism has entered
+matter; State does.
+
+## The Return to Practice
+
+Divination is neither blunt command nor merger. It is disciplined relation: Intent is offered, the
+body answers in visible state, and the Magus may consent, refuse, correct, or begin again. The
+Altar is where an act is attempted; Transcendence is where the journey is interpreted.
+
+The act below assumes that the four observations in [Summoning](../summoning.md) agree on the host
+that runs them. Until they do, remain in the rite rather than treating this page as liveness proof.
+
+> _Under the temporary browser boundary, [enter the Altar](./altar/index.md) and begin at the
+> Bridge._
