@@ -36,7 +36,8 @@ Work](docs/state-of-the-work.md) records otherwise.
 **Choose your next act:**
 
 - 🕯️ **[Inspect the source foundation](#minimum-source-bootstrap)** — build one checkout and verify
-  the current CLI and generated configuration.
+  the current CLI and generated configuration, then continue through the
+  **[source-candidate Summoning Rite](docs/summoning.md)**.
 - 🔍 **[Judge the current envelope](docs/state-of-the-work.md)** — inspect proved behavior, limits,
   and evidence.
 - 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)** — enter the Hexanomicon and see
@@ -48,6 +49,10 @@ This pre-alpha revision does not yet have a public `lychd` package and Vessel im
 same release. On Linux with Git, uv, and Podman, create a local CLI environment and Vessel image
 from one source checkout:
 
+If you are already in a LychD checkout, stay at its root and skip only the `git clone` and
+`cd lychd` lines below. Otherwise, begin in a parent directory that does not already contain
+`lychd`.
+
 ```bash
 git clone https://github.com/hexanomicon/lychd.git
 cd lychd
@@ -58,25 +63,24 @@ uv run lychd --help
 uv run lychd init
 ```
 
-That receipt proves only that the selected source resolves, builds, exposes the real command tree,
-and generates its initial configuration. It does **not** prove caged startup, accelerator access,
-a warm model, or a Bridge reply.
+This bootstrap check establishes only that the selected source revision resolves, builds, exposes
+the real command tree, and generates its initial configuration. It does **not** prove caged
+startup, accelerator access, a warm model, or a Bridge reply.
 
-The complete operator path is still being revalidated and is deliberately not linked from this
-threshold. Do not continue from this bootstrap to `lychd bind` or service startup yet. The
-corrected rite must first point the `image` key under `[server.web]` to
-`"localhost/lychd:dev"`, select an Animator extension and rerun `uv run lychd init`, then declare
-the hardware-specific model mounts and devices and state the temporary local-browser safety
-boundary. Until that rite and a named-host receipt land, consult **[State of the
-Work](docs/state-of-the-work.md)** for the proved envelope. Do not substitute `uv tool install
-lychd`, `pip install lychd`, or `ghcr.io/hexanomicon/lychd:latest` for this checkout yet.
+When the bootstrap passes, continue with **[The Summoning Rite](docs/summoning.md)** for the
+complete source-built, one-host path and its temporary browser boundary. If all four observations
+agree on the host that runs it, they form a bounded first-life result—not by themselves a
+maintained operator receipt. [State of the
+Work](docs/state-of-the-work.md#operator-receipt-requirements) owns the metadata and review required
+for promotion. Do not substitute `uv tool install lychd`, `pip install lychd`, or
+`ghcr.io/hexanomicon/lychd:latest` for this checkout yet.
 
 ## 🗺️ Choose Your Path
 
 The Hexanomicon is one body with several entrances. Choose the question you need answered:
 
-- 🕯️ **Operator — inspect the source bootstrap above.** The complete first-life proof ladder will
-  return here when its candidate rite and named-host boundary agree.
+- 🕯️ **Operator — [perform the Summoning Rite](docs/summoning.md).** Bring this source revision to
+  one bounded first life, then preserve the observations State requires.
 - 🔍 **Evaluator — [inspect State of the Work](docs/state-of-the-work.md).** Judge current behavior,
   boundaries, and evidence before trusting a claim.
 - ⚒️ **Developer — [enter the contributor forge](CONTRIBUTING.md).** Learn the repository contract,
