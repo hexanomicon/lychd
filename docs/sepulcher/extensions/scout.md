@@ -5,63 +5,197 @@ icon: material/navigation-variant-outline
 
 # :material-navigation-variant-outline: Scout
 
-_Status: doctrine ahead of code — the built-in `webcrawler` package is where this lands; treat this page as design intent. Law: [ADR 30](../../adr/30-webcrawler.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose.** Scout is the planned boundary through which LychD will discover and acquire material
+from the living web without confusing access with truth or a URL with permission.
 
-> _"The old web was built for human eyes, heavy with scripts and styles. To find the Signal within the noise, the Daemon requires a Scout—a dual-natured tool capable of skimming the surface or rendering the depths."_
+**Current boundary.** No Scout capability is available today. The built-in `webcrawler` package is
+empty, cannot be selected from the built-in catalog, and has no search, fetch, crawl, browser,
+artifact, or Agent-tool path. [State of the Work](../../state-of-the-work.md) does not yet carry a
+Scout delivery subject; adding one is a prerequisite to implementation.
 
-**The Scout** is the Ingestion Extension of the LychD system. It is the implementation of **[ADR 30 (The Scout)](../../adr/30-webcrawler.md)**—a specialized toolset that grants the Daemon the power to navigate, read, and interpret the internet.
+**Law.** This page records the proposed correction to
+[ADR 30](../../adr/30-webcrawler.md): web access must be decomposed into separately authorized
+effects. ADR 30's accepted automatic-escalation and zero-blast-radius language must be amended
+before source work begins.
 
-While standard agents are trapped within their training data, the Scout allows the Lich to touch the living web. It implements a **Dual-Mode Strategy**, dynamically selecting between lightweight procedural fetching and heavy containerized browsing based on the target's resistance.
+> _A Scout may bring a voice from beyond the Circle. It may not grant that voice the throne._
 
-## I. The Dual Arsenal (Light & Heavy)
+!!! danger "Nothing on this page can be invoked yet"
+    No `web.coven`, browser service, web tool, search provider, CAPTCHA solver, screenshot store,
+    authenticated browser session, Smith ingestion path, or automatic Toll exists in LychD. The
+    sections below define the intended contract, not commands for the current Vessel.
 
-The Scout rejects the "One Size Fits All" approach. It exposes two distinct capabilities to the **[Dispatcher](../../adr/22-dispatcher.md)**.
+## Nine Tracks Through the Wild
 
-### :material-feather: The Skirmisher (Light Mode)
+Scout will coordinate separate effects rather than expose one magic browser. They form three
+navigational rings, not three shared grants:
 
-- **The Tool:** Wraps Pydantic AI's native `WebFetchTool`.
-- **The Engine:** Uses lightweight libraries (`httpx`, `trafilatura`) running directly within the Vessel's process.
-- **The Cost:** Near zero RAM/CPU.
-- **The Use Case:** Retrieving documentation, reading static blogs, RSS feeds, and API responses.
-- **The Logic:** This is the default. If an Agent wants to "read a URL," the Scout sends the Skirmisher first.
+- **Read the web.** Search discovers candidate locators. Fetch performs one bounded read. Extract
+  transforms already acquired bytes without network access. Crawl owns a bounded frontier, scope,
+  pacing, deduplication, expiry, and total budget.
+- **Execute the site.** Render runs hostile site code for an observation. Interact clicks, types,
+  submits, or uploads. Credential use permits one opaque, scoped reference under
+  [Ward](./ward.md) authority. Session custody owns cookies, browser storage, revocation, expiry,
+  and destruction for one principal and purpose.
+- **Preserve a visual result.** Screenshot requests pixels from a renderer. Durable custody is a
+  separate [Reliquary](../../divination/altar/reliquary.md) admission; [Prism](./prism.md) may later
+  prepare admitted pixels for a vision model.
 
-### :material-tank: The Siege Engine (Heavy Mode)
+Download and archive admission, OCR, and artifact materialization remain adjacent typed contracts,
+not permissions hidden inside Fetch or Render.
 
-- **The Tool:** A custom `BrowserTool` that commands a headless browser.
-- **The Engine:** A dedicated **Soulstone Rune** (`web.coven`) running **Playwright** or **Chromium**.
-- **The Cost:** High RAM usage (1GB+) and significant CPU overhead.
-- **The Use Case:** Rendering Single Page Applications (SPAs), solving CAPTCHAs, taking Screenshots for **[The Prism](./prism.md)**, and navigating complex authentication flows.
-- **The Logic:** If the Skirmisher returns a "JavaScript Required" error, or if the Agent explicitly requests `browse_interactive`, the system escalates to the Siege Engine.
+```text
+search result != fetched response != extracted statement != trusted fact
+fetch != render != interact != credential use
+```
 
-## II. Orchestration of the Hunt
+## The First Passage: One Static Public Page
 
-The Siege Engine is a heavy beast. It is subject to the **[Orchestrator's](../../adr/23-orchestrator.md)** laws to prevent it from crushing the system.
+The first implementation should prove one useful path before opening the browser:
 
-1. **The Handshake:** When the Agent requests the Siege Engine, the Dispatcher queries the Orchestrator.
-2. **The Stasis:** If the `web.coven` is cold, the Agent enters **[Stasis](../../adr/22-dispatcher.md)**.
-3. **The Manifestation:** The Orchestrator summons the Chromium Soulstone. If the system is under heavy load (e.g., **[Training](./soulforge.md)** is active), the request may be queued or denied to preserve VRAM/RAM for the higher ritual.
+1. The Agent proposes one exact public HTTPS URL. It cannot provide its own principal, canonical
+   run id, origin grant, consent, or budget.
+2. The host combines that proposal with an **Acquisition Authority** minted from the canonical Run
+   record, the verified local principal, an operator origin grant, fixed policy and budget
+   reservation, and consent reference where required.
+3. One committed transaction records a prepared attempt and reserves the worst-case budget. The
+   network effect then runs outside that transaction.
+4. A static adapter performs a destination-pinned, bounded, unauthenticated GET with no
+   subresources, link following, ambient proxy, credentials, cookies, cache, custom headers, or
+   automatic retry.
+5. A network-free extractor admits only bounded HTML, XHTML, or plain text and returns fenced
+   external material tied to raw and output digests.
+6. A second transaction settles the budget and terminal disposition. After a crash, a stranded
+   attempt becomes explicit `unknown_after_crash` unless independent evidence reconciles it; an
+   absent terminal row never authorizes an ambiguous retry.
 
-## III. The Lens (Markdown Transmutation)
+Raw bytes are not intentionally persisted and are released after extraction. Search, crawl,
+render, interaction, credential use, sessions, screenshots, downloads, paid providers, caching,
+and Smith ingestion remain closed until each has its own contract and adversarial receipt.
 
-Raw HTML is poison to a Large Language Model—it is noisy, token-expensive, and semantically sparse. The Scout acts as a **Refractive Lens**.
+!!! note "Why not begin with the impressive browser?"
+    Static acquisition proves the shared floor—identity, destination, SSRF resistance, bounds,
+    hostile-content fencing, provenance, cancellation, and truthful failure—without also executing
+    a website's program. Render and interaction can inherit that floor without disguising their
+    additional authority.
 
-- **Distillation:** Whether gathered by the Skirmisher or the Siege Engine, all content passes through a normalization pipeline.
-- **Markdown Conversion:** Navigation bars, ads, and scripts are surgically removed. The DOM is transmuted into clean, hierarchical **Markdown**.
-- **The Result:** The Agent reads "The Article," not "The Website." This reduces context usage by up to 80%, allowing **[The Smith](./smith.md)** to ingest entire documentation libraries without overflowing the **[Context Window](../../adr/21-context.md)**.
+## Contact Does Not Become Truth
 
-## IV. Symbiosis with The Smith
+Scout uses the same evidence ladder as Oculus:
 
-The Scout is the eyes of **[The Smith](./smith.md)**. Their partnership is the engine of **Autopoiesis**.
+- The **authoritative record** is an acquisition effect receipt: the acting office's account of
+  one attempted effect, its policy and budgets, and its disposition. It does not make returned
+  prose true.
+- The response is a **bounded observation** of what one server or provider returned at one time.
+- Extracted or normalized material is a **derivation** whose parents and method remain visible.
+- An **interpretation or verdict** belongs to [Riddle](./riddle.md) under declared criteria.
 
-1. **The Unknown:** The Smith encounters a library it does not know (e.g., a new Pydantic AI update).
-2. **The Command:** The Smith invokes the Scout: _"Ingest the documentation at `docs.pydantic.dev`."_
-3. **The Hunt:** The Scout traverses the site (using the Skirmisher for speed), distilling the pages into a **Knowledge Artifact**.
-4. **The Learning:** This artifact is stored in the **[Lab](../../adr/13-layout.md)**. The Smith reads it, learns the new API signatures, and writes code that is perfectly aligned with the external reality.
+An effect receipt is not a maintained operator receipt and cannot promote Scout in
+[State](../../state-of-the-work.md). The [Phylactery](../phylactery/index.md) may persist the
+redacted receipt; Reliquary must admit actual bytes before a durable artifact exists; Oculus may
+only correlate and project an allowlisted reference. A digest alone is neither custody nor proof.
 
-## V. Capabilities and Economics
+## One Passage, Several Gates
 
-The Scout integrates with the **[Federation](../../adr/05-extensions.md)** to define its costs and providers.
+The Agent-visible proposal and host-minted Acquisition Authority are different types. The current
+`magus:*` Sigil is a contained local-bootstrap identity, not remote authentication. Remote web
+acquisition remains closed until Ward can prove the caller.
 
-- **Local Capability:** The Siege Engine is a **Soulstone** (local container-backed Animator). It costs only electricity and memory.
-- **Portal Capability:** The `WebSearchTool` often relies on external APIs (e.g., Tavily, Google). These are **[Portals](../animator/portal.md)**.
-- **The Toll:** Interactions with paid search providers are intercepted by **[The Toll](./toll.md)**. The system calculates the cost of the query and deducts it from the ritual's budget, ensuring the Lich does not bankrupt the Magus in pursuit of a dead link.
+The future acquisition provider-selection seam may choose only among providers already eligible
+for the exact authorized effect. It may not turn “JavaScript required,” a redirect, CAPTCHA,
+`401`, `403`, `402`, provider failure, or quota response into permission for a browser, identity,
+credential, payment, retry, or different provider. The
+[Orchestrator](../../adr/23-orchestrator.md) participates only when an admitted provider is a
+managed runtime; it does not own URL policy, credentials, truth, or artifact admission.
+
+## The Laws of the Road
+
+### Destination before connection
+
+Every future network read will normalize and authorize the scheme, hostname, port, and origin;
+reject credentials in URLs and unapproved schemes; resolve all addresses and fail when any answer
+is forbidden or mixed; pin the approved destination through connection; and verify the connected
+peer, TLS identity, `Host`, and SNI agree. Every redirect passes the same gate again. Loopback,
+private, link-local, metadata, multicast, DNS-rebinding, ambient-proxy, `.netrc`, TLS-bypass, and
+unbounded-redirect paths fail closed.
+
+### External material remains external
+
+Search queries are classified egress payloads. Snippets, HTML, Markdown, PDFs, OCR, accessibility
+trees, metadata, and screenshots may carry prompt injection, secrets, falsehood, or hostile
+structure. Fetchers and parsers need hard request, redirect, header, byte, decompression, time,
+output, and concurrency limits. Extracted text enters
+[Context](../../adr/21-context.md) as attributed, fenced data—never as a system instruction or
+automatic tool command. Extraction may reduce noise; it cannot make a source trustworthy.
+
+### Refusal is not resistance to overcome
+
+Future crawl policy will identify its user agent, respect robots rules by default, pace each
+origin, and record its decision. Robots, site terms, authentication, authorization, and law remain
+distinct. A CAPTCHA or bot challenge returns a typed human-required outcome. Scout will not evade
+access controls, rotate identities around refusal, or escalate itself into an authenticated
+session.
+
+### Credentials and browser state are custody
+
+Credentials remain opaque, scoped references outside prompts and ordinary telemetry. Profiles
+belong to one principal, purpose, origin set, and finite lifetime. A future active renderer must
+run as a dedicated, unprivileged, disposable unit in a separate network namespace or independently
+proved proxy-only egress path, with Chromium's own sandbox enabled and no core Pod peers, host
+mounts, database access, container-control socket, wallet key, or ambient provider secret. A
+container lowers reach; it never makes browser blast radius zero.
+
+### Bytes need custody before a name
+
+A download enters quarantine, not the Lab or a shell. It needs bounded size, media sniffing,
+digest, provenance, classification, retention, retrieval authority, and separate archive-admission
+law. The current `ArtifactRef` is metadata only; Scout must not mint a durable artifact reference
+until a real custody service has admitted and can retrieve the content.
+
+### Cost is policy, not an HTTP reflex
+
+Every operation will reserve hard request, byte, time, concurrency, depth, and spend budgets.
+Remote providers cross the disclosure and credential boundary described by
+[Portal](../animator/portal.md), even when their SDK looks local. [Toll](./toll.md) is not
+implemented: no price challenge authorizes payment, and no paid provider retries itself.
+
+## Reference Adapters, Never Sovereign Law
+
+External projects can later teach or implement bounded adapters without owning Scout's policy:
+
+- **SearXNG** is a candidate discovery service. Self-hosting the aggregator does not stop its
+  configured engines from receiving classified queries, and search results are not fetched
+  content.
+- **Firecrawl** is a candidate hosted or separately deployed acquisition provider. Hosted use
+  discloses requests and content and may cost money; self-hosting adds service, storage, browser,
+  security, upgrade, and AGPL obligations.
+- **The refreshed upstream Pydantic AI reference** offers provider-native and fallback web tools;
+  LychD's installed `pydantic-ai-slim==1.25.1` does not contain these capability APIs.
+  Provider-native execution sends the query or URL to the selected model provider. In the
+  upstream API, `local` names where fallback code runs, not where data stays: DuckDuckGo still
+  receives a search query and local WebFetch still contacts the target. Native execution also
+  remains preferred unless explicitly disabled with `native=False`. These helpers are comparison
+  or outer-adapter material, not the first Scout implementation. A provider-native result without
+  raw bytes, redirect evidence, connected-peer evidence, and digests remains provider-mediated. A
+  local-fallback result still is not a Scout Fetch receipt unless an outer adapter captures and
+  validates that evidence.
+
+No SDK, hosted service, or model provider may decide LychD's destinations, identity, credentials,
+budgets, consent, provenance, or artifact admission.
+
+## Scout, Prism, and Smith
+
+Scout will acquire and attribute. Prism will later materialize visual input for sight.
+[Smith](./smith.md) will later propose changes from admitted references under forge, verification,
+and consent law. None of these steps implies the next:
+
+```text
+acquired != admitted != understood != trusted != promoted
+```
+
+That interval preserves another center instead of assimilating it on contact. The web may answer
+through the Circle; it does not become the Lich's memory, policy, or body merely by being heard.
+
+> _Next act: amend [ADR 30](../../adr/30-webcrawler.md) to own the separated effects and first
+> static passage, then give web acquisition one [State](../../state-of-the-work.md) subject before
+> writing source._
