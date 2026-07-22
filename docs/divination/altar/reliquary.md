@@ -5,11 +5,17 @@ icon: material/archive-star-outline
 
 # :material-archive-star-outline: Reliquary
 
-The Reliquary is the visible shelf of artifacts.
+**Purpose:** Reliquary is the intended Altar shelf for artifacts and outputs a Magus may inspect,
+compare, export, or consecrate without replacing the
+**[Phylactery](../../sepulcher/phylactery/index.md)**.
 
-It is not the whole **[Phylactery](../../sepulcher/phylactery/index.md)**. It is the Altar-facing place for outputs the Magus may want to inspect, keep, compare, export, or consecrate.
+**Current boundary:** Today the Altar exposes only an honestly marked Reliquary route and unbuilt
+shell. It does not upload or hold artifact bytes and has no authorized retrieval, retention, or
+provenance backend. [State records the current Reliquary
+boundary](../../state-of-the-work.md#reliquary-instrument). The items below are planned shelf
+contents, not artifacts currently held by LychD.
 
-The Reliquary holds:
+The intended shelf includes:
 
 - generated files
 - reports and summaries

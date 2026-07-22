@@ -5,11 +5,15 @@ icon: material/link-lock
 
 # :material-link-lock: Bindings
 
-Bindings are the Altar's user-facing configuration surface.
+**Purpose:** Bindings is the intended Altar jurisdiction for making important Codex connections and
+policies visible without replacing the **[Codex](../../sepulcher/codex.md)** as source of truth.
 
-They reflect the **[Codex](../../sepulcher/codex.md)** without replacing it as the source of truth. The purpose is to make important connections and policies visible from the interface.
+**Current boundary:** Today the Altar exposes only an honestly marked Bindings route and unbuilt
+shell. It has no useful binding inventory, grant or lease controls, or mutation backend. [State
+records the current Bindings boundary](../../state-of-the-work.md#bindings-instrument). The handles
+below are planned responsibilities, not controls available now.
 
-Bindings expose safe handles for:
+The intended instrument may expose:
 
 - provider and Portal references
 - secret names, not secret values
