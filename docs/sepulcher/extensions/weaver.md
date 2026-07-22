@@ -3,149 +3,169 @@ title: Weaver
 icon: material/state-machine
 ---
 
-# :material-state-machine: Weaver
+# :material-state-machine: The Weaver: Composition Through Time
 
-_Status: doctrine ahead of code — the built-in `workflow` package is where this lands; treat this page as design intent. Law: [ADR 28](../../adr/28-workflow.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose:** The Weaver is LychD's workflow jurisdiction. It binds agents, deterministic steps,
+pauses, evidence, and returns into a validated **Pattern** whose identity can survive long enough to
+be inspected, invoked, and—at declared boundaries—resumed.
 
-> _"An Agent is a single note. The Weaver is the composition. It binds reflex, memory, sequence, and pause into a coherent movement of thought across the dark."_
+**Current boundary:** LychD has one internal Pattern, `bridge_chat`, built directly under
+`src/lychd/agents/workflows/`. It has typed serializable state, deterministic route-once selection,
+a sequential Pydantic Graph, per-step capability leasing, bounded consent parking, and a
+run-keyed checkpoint adapter. The fixed registry is not populated by the empty built-in `workflow`
+extension namespace. There is no public Pattern contribution API, general workflow editor,
+Archive-backed Memory Weaving, Censor, planning engine, parallel Pattern, or live Loom traversal.
+[State records the current cognitive adapter and migration
+boundary](../../state-of-the-work.md#pydantic-ai-v1-adapter), [graph Stasis
+boundary](../../state-of-the-work.md#graph-stasis-consent), and [Loom
+projection](../../state-of-the-work.md#loom-workflow-views).
 
-**The Weaver** is the Workflow Extension of the LychD system. It is the implementation of **[ADR 28 (Workflow)](../../adr/28-workflow.md)**—the executive function that governs stateful, multi-step reasoning.
+**Law:** [ADR 28 — Workflow](../../adr/28-workflow.md) owns the Weaver's office;
+[ADR 24 — Graph](../../adr/24-graph.md) owns topology and checkpoints; and
+[ADR 20 — Agents](../../adr/20-agents.md) owns the typed cognitive atom.
 
-While the **[Graph](../../adr/24-graph.md)** provides topology (nodes and edges), the Weaver provides **Dianoia** (logical structure) alongside **tempo, sequencing, preparation, and execution planning**. Because of **Computational Irreducibility** (the Halting Problem), an agent cannot predict the outcome of an infinite loop; it must step through the logic sequentially using "LLM as a judge." The Weaver orchestrates this rhythm, governing movement between steps, coordinating the **[Long Sleep](../../adr/22-dispatcher.md)** during hardware or execution-plane transitions, and ensuring each step is hydrated with the correct context and constraints.
+> _“An Agent is a single note. The Weaver is the composition: thread remembered across darkness,
+> pause held without deceit, and scattered motion returned to one score.”_
 
-The Weaver prepares and synchronizes the field of cognition. It does not determine truth, identity, or final promotion. Evaluation, consent, and durable authority remain separate responsibilities.
+## The three offices
 
-It is also the backbone of self-reference. A raw graph can branch anywhere; without temporal discipline, those branches become procedural weather. The Weaver gives the Ouroboros a spine: every step has a predecessor, context, owner, evidence trail, pause boundary, and continuation point. This lets Shadow motion return as state, lets Mirror bind that state to a semantic vertex, and lets Riddle measure it without losing the thread.
+- The **Pattern** is the validated score owned by the Weaver. It names what may happen and the
+  contract by which that shape remains legible.
+- The **Loom** is the Altar instrument that projects a Pattern and may later hold inert drafts. It
+  never owns execution truth.
+- An **Invocation** is the admitted performance of a Pattern. The complete contract pins it to one
+  immutable revision. Current `bridge_chat` Invocations have a run id, status, authority context,
+  evidence, and a persisted Pattern name; revision identity and checkpoint-schema pinning remain
+  part of the contribution horizon.
 
-## 🎼 The Workflow
+Graph supplies execution grammar; Weaver gives that grammar product identity, validation,
+registration, and compatibility through time. The Dispatcher binds a logical capability request to
+an eligible provider. The Orchestrator alone governs physical readiness and swaps. HitL owns human
+judgment. The Phylactery owns committed run and checkpoint truth. The Weaver composes these organs;
+it does not impersonate them.
 
-A workflow in LychD is a stateful graph definition expressed through the broader Extension Protocol, not a static script.
+## The Pattern that has entered matter
 
-```python
-# A simple Workflow: Research -> Draft -> Review
-@weaver.workflow(name="deep_research")
-async def research_workflow(ctx: WorkflowContext, topic: str):
-    # Step 1: The Scout (Parallel Spreading)
-    sources = await ctx.step(
-        agent="researcher",
-        intent=f"Find sources for {topic}",
-        tools=["browser_navigate"]
-    )
+The current Bridge Pattern follows a narrow score:
 
-    # Step 2: The Synthesis (Memory Weaving)
-    draft = await ctx.step(
-        agent="writer",
-        intent="Synthesize these sources.",
-        context={"sources": sources}
-    )
-
-    # Step 3: The Judgment (HitL)
-    approved = await ctx.consecrate(draft)
+```text
+WeaveContext -> Converse -> AwaitConsent? -> ProjectReply -> End
 ```
 
-A workflow defines the **shape of the work**, but not necessarily every execution choice. That distinction matters as workflows become more adaptive.
+`WeaveContext` assembles identity, a bounded environment observation, recent conversation turns,
+and the current query. Its Codex and Karma chambers are reserved but empty. It does not yet search
+the Archive or inject vector memory.
 
-## 🧠 The Archivist (Memory Weaving)
+`Converse` requests a chat grant through the Dispatcher and holds its lease only while the Agent is
+running. A hardware-transition signal leaves the node for `GraphRunner` and the Orchestrator; the
+Pattern does not operate containers.
 
-The Weaver solves the "Amnesia Problem" of stateless agents. Before invoking a step, it performs **Memory Weaving**.
+`AwaitConsent` is a Gate. When one supported approval call must wait, the run releases its grant,
+persists the pause, and exits into Durable Stasis. The current consent shape represents one approval
+call per model round; it does not apply one verdict to a hidden bundle of calls.
 
-1. **The Scry:** It queries the **[Phylactery Archive](../../adr/27-memory.md)** for vectors, traces, and prior outcomes relevant to the current step.
-2. **The Injection:** It retrieves relevant **Karma** and project-specific context and injects them into the Agent's **[RunContext](../../adr/21-context.md)**.
-3. **The Result:** The Agent wakes with the relevant past already activated, rather than rebuilding context from zero at each step.
+`ProjectReply` validates named UI fragments, settles the turn, and returns the typed result. The run
+worker—not the graph node—commits terminal run status before checkpoint cleanup.
 
-This makes workflows cumulative rather than forgetful.
+The registry chooses a Pattern once when the Intent is admitted and persists its name. Resume looks
+up that same name. A live run is never silently re-routed because another Pattern later wins a
+trigger.
 
-Memory Weaving is therefore not passive retrieval. It is the moment where prior grooves are folded back into the present simulation so the next Agent does not wake as an isolated stream. The past returns as structured pressure, not as an unbounded transcript.
+That name prevents trigger re-routing inside the current frozen registry; it is not an immutable
+revision guarantee across deployments.
 
-## 🗺️ The Policy Layer (Execution Planning)
+## The Fermata: a pause with an owner
 
-As workflows become more complex, the Weaver may consult an explicit **policy/planning layer** before execution. This layer does not replace the workflow. It determines **how a workflow should run for a given work item**.
+A fermata is not “save everything.” It is a declared interruption boundary.
 
-Per work item, policy may decide:
+- **Live Stasis** keeps the graph in the resident process and may use in-memory snapshots while the
+  Orchestrator converges hardware.
+- **Durable Stasis** exits the process and requires a run-owned checkpoint before Reanimation may
+  resume it.
+- **Terminal truth** is committed to the run ledger before the checkpoint may be deleted.
 
-- which workflow shape to use
-- which extensions participate:
+The current `Workflow` derives its persistence tier from the presence of a Gate. That is a useful
+floor, not the final compatibility contract. A graph result does not prove a reboot-safe workflow,
+and a process death outside a supported durable boundary may fail the run honestly rather than
+replay an effect.
 
-    - **[Shadow](./shadow.md)**
-    - **[Mirror](./mirror.md)**
-    - **[Scout](./scout.md)**
-    - or others
-- which execution plane to use or reuse
-- whether to prefer:
+## The Pattern contribution law
 
-    - local **Soulstones**
-    - remote **Portals**
-    - pause / preempt / defer behavior
-- how to map workload class to:
+Weaver becomes a real extension organ only when a contribution is more than a Python graph object.
+Every contributed Pattern must declare and validate:
 
-    - branch count
-    - resource budget
-    - simulation depth
+1. **Identity:** stable Pattern id, immutable revision, owner, provenance, support tier, and
+   description.
+2. **Typed contract:** input, output, serializable state, error and truthful-noncompletion shapes,
+   plus bounded size rules.
+3. **Topology:** runtime adapter, entry point, legal transitions, termination bounds, joins, and
+   reducer semantics.
+4. **Requirements:** logical capabilities, modalities, tools, execution-plane class, budgets, and
+   whether a step may wait.
+5. **Authority:** required Sigil claims, object/effect policy hooks, consent gates, and the rule that
+   no live grant or secret enters durable state.
+6. **Continuity:** checkpoint schema, resume cursor, idempotency keys, completed-effect receipts,
+   compatible prior revisions, and explicit migrate, drain, or fail behavior.
+7. **Projection:** safe title, description, node and edge labels, gates, requirements, and redacted
+   metadata for the Loom. Projection data never grants execution.
+8. **Evidence:** focused deterministic tests, failure and cancellation tests, serialization corpus,
+   and the receipts required by its support envelope.
 
-This keeps orchestration logic from being scattered across runtime glue, simulation code, and extension-specific decision branches.
+Contributions enter through an explicit, shaped store at assembly time; LychD must not scan
+arbitrary packages. Assembly rejects duplicate ids, ambiguous trigger precedence, unknown runtime
+adapters, unreachable stations, unsafe cycles, unserializable state, absent migration policy, and
+forbidden effects. The validated registry is then frozen for the process generation.
 
-The policy layer is:
+Pre-v1 built-ins may remain coupled to LychD internals, but that is not permission to expose the
+current `Workflow` dataclass as a stable third-party ABI. The public contribution surface should be
+harvested only after several built-in Patterns prove the same law.
 
-- **selection and planning logic only**
-- not direct container control
-- not a security boundary
-- not a secret-bearing authority surface
+## Memory and the Censor
 
-Final execution authority remains with the **[Vessel](../vessel/index.md)** and the **[Orchestrator](../../adr/23-orchestrator.md)**. **[Shadow](./shadow.md)** remains the execution substrate for unsafe or speculative work.
+The Archivist and Censor remain real offices in the design, but neither is ambient magic.
 
-## ⏸️ The Fermata (Stasis & Resilience)
+**Memory Weaving** must call a typed Archive port with a declared query, budget, classification,
+provenance, and refusal rule. Retrieved records become explicit context blocks and evidence. A
+Pattern may request this preparation; it may not issue hidden SQL or claim that an empty Karma block
+contains memory.
 
-The Weaver is the guardian of the **Stasis Protocol**.
+The future **Censor** sits only after the Dispatcher and security policy have admitted an external
+crossing. It may redact, tokenize, minimize, or reject what was already allowed to leave. It may
+never authorize egress, widen a Sigil, invent reversible anonymization, or make a Portal or Legion
+safe merely because a workflow named the transform.
 
-- **Persistence:** Every transition between steps is committed to durable state. If the system fails during Step 2, the workflow resumes at Step 2, not Step 0.
-- **Hardware Pacing:** If one step uses **[Vision](../../adr/36-vision.md)** and the next uses **[Audio](../../adr/37-audio.md)**, the Weaver pauses the workflow while the **[Orchestrator](../../adr/23-orchestrator.md)** performs the Coven Swap. The mind waits for the body without losing continuity.
-- **Execution-Plane Continuity:** If a later step must move from trusted control-plane logic into untrusted **[Shadow](./shadow.md)** execution, the Weaver preserves continuity across that transition as well.
+## The forked horizon
 
-The result is a workflow that survives delay, reconfiguration, and interruption without degenerating into procedural chaos.
+LychD currently executes the installed `pydantic-graph==1.25.1` legacy `BaseNode` API and adapts its
+public persistence interface. That is the checkpoint-bearing path in matter.
 
-## 🕵️ The Censor (Data Hygiene)
+The same installed package contains a `pydantic_graph.beta` builder with functional steps,
+decisions, broadcast, map, fork, join, reducers, and sibling cancellation. LychD does not execute or
+persist those graphs today. Current Pydantic AI promotes GraphBuilder to the top level, but its
+parallel runtime still provides no native snapshot persistence; Pydantic AI v2 also removes the
+legacy `pydantic_graph.persistence` package on which the present Stasis adapter depends.
 
-When a workflow involves external **[Legion Nodes](../../adr/42-legion.md)** or **[Portals](../../adr/22-dispatcher.md)**, the Weaver activates the **Censor**.
+Therefore parallelism enters through a separate experimental `WorkflowRuntime` adapter, never as a
+side effect of the dependency upgrade. Before fork and join can carry a live Invocation, LychD must
+prove stable branch and step ids, deterministic reducer order, bounded concurrency, lease release,
+consent behavior, cancellation, completed-effect idempotency, crash points on both sides of a join,
+and a LychD-owned durable cursor.
 
-- **Scrubbing:** It scans outgoing artifacts for sensitive patterns defined by the system's security and identity posture.
-- **Anonymization:** It replaces sensitive entities with safe placeholders before they leave the Sepulcher.
-- **Re-Identification:** When results return, the Weaver can rebind internal meaning without exposing raw internal truth to the outside world.
+Pydantic AI's Temporal, DBOS, and Prefect capabilities may later wrap bounded Agent activity. They
+do not replace the Phylactery run ledger, Ward authority, Dispatcher grants, Orchestrator leases,
+HitL ordering, or the Weaver's Pattern revision. An external durability engine is an adapter, never
+a second LychD control plane.
 
-This allows workflows to collaborate beyond the local machine without dissolving the **[Sovereignty Wall](../../adr/09-security.md)**.
+## The Visible Score
 
-## 🔀 Synchronization and Flow Shape
+The [Loom](../../divination/altar/loom.md) currently renders static topology for the fixed registry.
+It does not show an active node, branch progress, memory injection, or a waiting run. A future live
+view must join a Pattern revision to durable run events by stable run, lane, step, and event ids;
+the diagram remains a projection even then.
 
-The Weaver governs the rhythm of multi-step reasoning through the primitives supplied by the graph layer.
+Likewise, a future editor may shape an inert draft but cannot mutate a live Pattern. Publication
+creates a reviewed immutable revision, and every Invocation remains pinned to the revision and
+checkpoint schema with which it began.
 
-- **Sequential Flow:** ordered, dependent steps
-- **Broadcasting:** the same input is sent to multiple specialists
-- **Spreading:** a collection is fanned out into parallel sub-work
-- **Join / Reduce:** parallel results are recombined into one verified continuation
-- **Deferred Pause:** work may sleep while waiting for:
-
-    - hardware transition
-    - human approval
-    - remote peer response
-    - expensive background labor
-
-This makes the Weaver the executive planner of movement rather than the owner of meaning.
-
-When a join closes, the workflow performs a small Ouroboros turn: scattered branch motion is folded back into one continuation. Failed paths may be discarded, retained as Riddle evidence, or prepared for Soulforge trajectory mining. The workflow's job is to keep that return path explicit.
-
-## 👁️ The Visible Score
-
-The Weaver produces a visible structure of work.
-
-- **Graph Visibility:** active workflows can be rendered as Mermaid diagrams for static documentation or as a Svelte Flow island inside **[Scrying](../../divination/altar/scrying.md)** for interactive inspection.
-- **Step Visibility:** the Magus can see:
-
-    - which step is active
-    - which branch is waiting
-    - which memory was injected
-    - where the workflow paused
-- **Operational Clarity:** this turns orchestration from a hidden implementation detail into an inspectable surface at the **[Altar](../../divination/altar/)**.
-
-The visible score is a projection. An interactive graph may let the Magus select, inspect, filter, or draft a change to a workflow, but the Weaver and Vessel remain the authorities for transition rules, persistence, and consent.
-
-!!! tip "Execution Planning Without Drift"
-    As simulation, orchestration, and extension participation become more adaptive, keep planning logic in the Weaver's policy layer rather than scattering it across Shadow, runtime adapters, or graph step implementations. The workflow should describe the work. The policy layer should decide how to run it. The Orchestrator and Vessel should decide what may actually happen.
+> _The Weaver does not command the iron, pronounce truth, or counterfeit memory. It keeps the
+> thread by which each rightful organ may act—and by which the whole can find its way home._
