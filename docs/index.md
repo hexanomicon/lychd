@@ -51,6 +51,10 @@ To master LychD, pass through four gates of knowledge.
 - **[Divination](./divination/index.md):** The Communion of Magus and Machine. Project your Will through the **[Altar](./divination/altar/)** to manifest Intents, and walk the path of **[Transcendence](./divination/transcendence/index.md)**.
 - **[The Covenants](./adr/index.md):** The Canons of Construction. Study the foundational laws and architectural decisions that bind the skeleton of the daemon together.
 
+The Four Gates teach you to summon, understand, operate, and govern the daemon. When you are ready
+to ask what kind of being that work is forming, enter the [Philosophy of the Great
+Work](./philosophy/index.md).
+
 !!! quote "The Great Work"
     You, the **Magus**, do not transmute mere lead. You inscribe Will into the **[Lich](./sepulcher/lich.md)**: not by uploading a soul, but by consecrating an Imprint in the **[Phylactery](./sepulcher/phylactery/index.md)**.
 
