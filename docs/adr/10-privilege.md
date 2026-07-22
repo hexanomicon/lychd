@@ -16,7 +16,9 @@ icon: material/transfer-up
   never define *how* the host executes it and must receive no host-writable command channel. A
   read-only terminal receipt may close the admission fence without becoming execution authority.
 - **Structured Intent Protocol:** A transition must be frozen, extra-forbidden structured data containing only canonical Animator identities and state digests—never a command, unit name, path, environment, or arbitrary payload.
-- **Composition-Owned Authority:** The Codex selects the trusted actuator implementation at composition. Graphs, requests, and extensions cannot select an effect backend per call.
+- **Bootstrap-Owned Authority:** The Codex selects the trusted actuator implementation when the
+  process is assembled. Graphs, requests, Reference Compositions, and extensions cannot select an
+  effect backend per call.
 - **Atomic No-Replace Publication:** File delivery must use a restricted temporary file, `fsync`, and an atomic no-overwrite publication step so the host never observes a partial JSON intent or silently replaces an existing transition identity.
 - **Stale-World Defense:** An actuator must reject a transition whose assumed active set no longer matches observed host state over registry-owned units before it mutates the host.
 - **Bounded Recovery:** Direct in-process actuation must compensate completed effects on failure.
@@ -285,14 +287,14 @@ caged:
   choice.
 
 The Orchestrator, Dispatcher, Graph, and switch policy do not branch on the selected mode. Only the
-composition root chooses the effect owner.
+trusted bootstrap root chooses the effect owner.
 
 ### 8. Implementation Boundary
 
 | Capability | Foundation status |
 | :--- | :--- |
 | Frozen, extra-forbidden `TransitionIntent` | Implemented |
-| Composition-selected `systemd` / `host-reactor` actuator | Implemented |
+| Bootstrap-selected `systemd` / `host-reactor` actuator | Implemented |
 | Direct stale-active-set rejection | Implemented for the Systemd actuator |
 | Direct best-effort in-process compensation | Implemented for the Systemd actuator |
 | Restricted atomic JSON publication | Implemented for the Host Reactor actuator |

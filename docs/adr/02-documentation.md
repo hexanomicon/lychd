@@ -46,7 +46,7 @@ icon: material/book-cog-outline
 
 ## Decision Outcome
 
-**Zensical** is selected as the engine for **[The Hexanomicon](https://hexanomicon.github.io/lychd/).**
+**Zensical** is selected as the engine for **[The Hexanomicon](https://hexanomicon.dev/).**
 
 ### Implementation Details
 
@@ -64,11 +64,21 @@ distinct office; none is a measure of how seriously the project takes the myth.
 
 | Register | Canonical surface | Voice and burden |
 | --- | --- | --- |
-| **Law** | ADRs and security or technical contracts | Exact boundaries, decisions, failures, compatibility, and proof requirements. |
+| **Law** | ADRs, Composition specifications, and security or technical contracts | Exact boundaries, application contracts, decisions, failures, compatibility, and proof requirements. |
 | **Iron** | Commands, configuration, recovery, and troubleshooting | Literal, copyable, observable, and recoverable. |
 | **Threshold** | README, Prophecy, State, and section indexes | Lucid enchantment, current orientation, and one clear next act. |
 | **Operated doctrine** | Sepulcher and Altar | Mythic meaning joined to actual operation and explicit limits. |
 | **Great Work** | Transcendence and the philosophy canon | Full mythic voltage, exact internal relations, and distinct sources. |
+
+The [Incubator](../incubator/index.md) is deliberately **outside these five registers**. It is a
+proposal quarantine: a public place to preserve candidate directions before they acquire an
+architectural owner. Its pages may point toward Law, Iron, operated doctrine, or the Great Work,
+but they cannot establish any of them. They carry no delivery label and create no backlog
+commitment merely by being published.
+
+[Reference Composition](../compositions/index.md) pages belong to Law beneath their governing
+ADRs. They make one accepted application's Patterns, ownership, policy, data, and proving burden
+concrete. They are neither operated manuals nor delivery evidence.
 
 The Great Work is optional for executing an ordinary command; it is not optional project purpose
 or disposable theming. Technical readers may take the Iron path without first learning the full
@@ -105,8 +115,9 @@ bounded evidence named by the State record. README and Prophecy may summarize th
 envelope and route to State, but they do not copy a capability ledger.
 
 Each State subject is a vertical record: one state, one proved-now statement, one state-specific
-boundary, and concrete links to evidence and law. Topic pages own operation, ADRs own decisions,
-State owns delivery, and source, focused tests, lockfiles, and maintained receipts own proof.
+boundary, and concrete links to evidence and law. ADRs own class-wide decisions, Composition pages
+own accepted application contracts, topic pages own operation, State owns delivery, and source,
+focused tests, lockfiles, and maintained receipts own proof.
 
 ### Agent Scope Boundary
 

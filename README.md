@@ -5,7 +5,7 @@
     <a href="https://github.com/hexanomicon/lychd">
       <img src="https://img.shields.io/badge/Source-GitHub-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Source on GitHub">
     </a>
-    <a href="https://hexanomicon.github.io/lychd/">
+    <a href="https://hexanomicon.dev/">
       <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
     </a>
     <a href="LICENSE">
@@ -40,7 +40,7 @@ Work](docs/state-of-the-work.md) records otherwise.
   **[source-candidate Summoning Rite](docs/summoning.md)**.
 - 🔍 **[Judge the current envelope](docs/state-of-the-work.md)** — inspect proved behavior, limits,
   and evidence.
-- 📜 **[Read the Prophecy](https://hexanomicon.github.io/lychd/)** — enter the Hexanomicon and see
+- 📜 **[Read the Prophecy](https://hexanomicon.dev/)** — enter the Hexanomicon and see
   the Great Work this foundation serves.
 
 ## Minimum source bootstrap
@@ -85,7 +85,7 @@ The Hexanomicon is one body with several entrances. Choose the question you need
   boundaries, and evidence before trusting a claim.
 - ⚒️ **Developer — [enter the contributor forge](CONTRIBUTING.md).** Learn the repository contract,
   then use the [Covenants](docs/adr/index.md) to find the decision that owns a change.
-- ⭕ **Seeker — [read the Prophecy](https://hexanomicon.github.io/lychd/).** Begin with the public
+- ⭕ **Seeker — [read the Prophecy](https://hexanomicon.dev/).** Begin with the public
   initiation, then enter [Philosophy](docs/philosophy/index.md) when you want the Logos beneath the
   system.
 

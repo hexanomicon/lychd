@@ -36,7 +36,10 @@ icon: material/toy-brick-outline
 
     - **Pros:**
         - **Zero-Latency:** Direct execution within the kernel's event loop enables high-velocity reasoning.
-        - **Total Integration:** Extensions can manipulate any part of the system's anatomy, from the persistence layer to the web router.
+        - **Shaped Integration:** Extensions contribute only through domain-owned stores. Current
+          active stores cover Runes, Soulstone definitions, Portals, and transmutation; Vessel is
+          empty/reserved, while tools, routes, workloads, migrations, Patterns, and Compositions
+          remain target stores until individually delivered.
         - **Assimilable Source:** Standard Git tooling preserves source history while Forge/Smith verification repairs organs with the body they join.
 
 ## Decision Outcome
@@ -62,7 +65,9 @@ This creates an explicit maturity path:
 
 The system's logic resides in a structured directory hierarchy designed for modularity, distinguishing between the system's shipped capabilities and its elective augmentations:
 
-- **Built-in Extensions:** Residing in `src/lychd/extensions/builtin/`. These are core features and reference implementations shipped within the kernel's source tree. They are grafted into the memory space during every boot cycle, providing high-velocity baseline capabilities without requiring a substrate rebuild.
+- **Built-in Extensions:** Residing in `src/lychd/extensions/builtin/`. These are Core-coupled organs
+  and reference implementations shipped within the kernel source. Installed does not mean active:
+  only ids explicitly selected in Core configuration enter the boot registration pass.
 - **Crypt Extensions:** Residing in the **Crypt (13)** (`~/.local/share/lychd/extensions/`). Near-term Crypt organs are private coupled repositories unless they explicitly target a future versioned public API. They require the **Synthetic Forge (17)** to resolve dependency conflicts and manifest a new physical substrate.
 - **Future Independent Extensions:** Shareable third-party organs become meaningful at or after v1, when proven patterns can be frozen behind a versioned public API, conformance tests, and manifest-gated packaging.
 - **The Manifest:** The Daemon maintains a global lockfile that records the specific commit hash of every active repository. This ensures the Federation is a deterministic body that can be captured, snapshotted, and restored as a single, bit-for-bit reproducible unit.
@@ -76,6 +81,10 @@ The architecture relies on an **Inversion of Control** pattern to facilitate ass
 - **The Context Object:** The Core passes an `ExtensionContext` object which serves as the host registration surface for boot-time stores. Through this object, an organ binds runtime-facing logic into the Daemon's anatomy.
 - **Interface Registration:** Vessel routes, middleware, auth, and event hooks are reserved for a shaped `context.vessel` store instead of flat registration methods.
 - **Schema Exposure:** Selected in-process organs register `RuneConfig` subclasses through the extension context after import. Runtime package/source scanning is not the extension ledger.
+- **Application Contributions:** Future shaped `patterns` and `compositions` stores may accept
+  immutable Pattern revisions and metadata for the living [Reference Composition
+  Portfolio](../compositions/index.md). They do not exist in the current `ExtensionContext`;
+  application pages are design rather than runnable registration.
 - **Substrate Declarations:** Synthesis-time requirements (system libraries, binaries, container needs) belong to the wider Extension Protocol and feed the Forge manifest. They must not be confused with the boot-time context itself.
 
 The activation selector has list semantics, not boolean map semantics:
@@ -103,13 +112,27 @@ The extension manager owns the selected import list and invokes this shim.
 Codex receives the resulting rune schema list; it does not scan arbitrary
 packages on its own.
 
-### 3. Capabilities as Organs
+### 3. Contributions as Organs
 
-Extensions are more than isolated code; they are functional "Organs" of the Daemon.
+Extensions are more than isolated code, but no Extension is automatically a complete application.
+Today `ExtensionContext` exposes active Rune, Soulstone, Portal, and transmutation stores plus an
+empty reserved Vessel store. The broader list below is the Extension Protocol target; each item
+remains absent until its shaped store, lifecycle, tests, and State boundary exist:
 
-- **The Contract:** An extension registers a set of **Capabilities**—abstract identifiers of what the extension can perform (e.g., specific sensory tasks or logic operations).
-- **The Manifestation:** If an extension requires specific hardware or environment states to fulfill its capabilities, it must declare these needs during the registration phase.
-- **Evolutionary Scaling:** This ensures the Daemon's senses and skills are pluggable. The Core provides the skeleton; the Extensions provide the organs that animate it.
+- **Configuration and Runtime Definitions:** Rune schemas, Animator definitions, adapters, and
+  lifecycle hooks through their owning stores.
+- **Tools and Interfaces:** Typed toolsets, routes, projections, and external workload contracts
+  without bypassing Ward, Vessel, or execution-plane authority.
+- **Persistence:** Domain schemas and migrations only through an accepted owner, ordering,
+  recovery, export, deletion, and uninstall contract.
+- **Workflow Applications:** Future immutable Pattern revisions and Reference Composition metadata
+  through the Weaver's shaped contribution stores.
+- **Infrastructure:** Explicit binaries, images, services, resource needs, and licenses for Forge
+  synthesis.
+
+Capabilities remain abstract identifiers of what a provider can perform. A Composition assembles
+these contributions into one application; an Extension describes how contributed code and
+contracts enter the body. Neither term is a synonym for the other.
 
 ### 4. Substrate Injections
 
@@ -217,7 +240,7 @@ Blind `.so` scans are forbidden. Binary loading must be mediated by the Syntheti
 | :--- | :--- | :--- | :--- |
 | Location | `src/lychd/extensions/builtin/` | Magus-owned Crypt extension space | Forge-managed extension distribution |
 | Coupling | Internal imports and subclasses | Internal imports by choice | Versioned public API only |
-| Loader | Package import + subclass walk | Local import path chosen by operator | Deferred, manifest-gated |
+| Loader | Explicit selected import + `register(context)` | Explicit selected shim + `register(context)` | Deferred, manifest-gated |
 | Release Cycle | Atomic with Core | Operator-owned | Independent |
 | Stability Promise | Core-maintained | Best effort/local repair | Not promised until productized |
 | `from lychd import ...` | Permitted | Permitted with coupling risk | Only future public API modules |
@@ -229,7 +252,9 @@ Blind `.so` scans are forbidden. Binary loading must be mediated by the Syntheti
 
     - **Standardization:** Extensions are standard Python projects, requiring no proprietary packaging formats.
 
-    - **Coherent Evolution:** Extensions feel like native parts of the application. The system can iterate over the registered extensions to perform synchronized database migrations or physical substrate rebuilds.
+    - **Coherent Evolution:** Extensions can participate in one assembled body. Synchronized
+      migrations, Pattern/Composition stores, and physical-substrate rebuilds remain explicit
+      lifecycle work until source, tests, and State prove them.
 
 !!! failure "Negative"
     - **Systemic Risk:** A poorly written extension can crash the entire Daemon, as it runs within the same memory space and shares database connections.

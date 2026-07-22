@@ -9,16 +9,18 @@ icon: material/vector-polyline
 validated shape through which an Intent may move. It shows the score. It does not perform the
 music.
 
-**Current boundary:** The Loom is a read-only projection over one fixed registry. Today that
+**Current boundary:** The Loom is a read-only Pattern projection over one fixed registry. Today that
 registry contains the `bridge_chat` Pattern. The page can render its name, title, description,
 trigger hint, node names, and Mermaid topology, and it can expose the same Mermaid source as plain
 text. It does not show capability requirements, typed inputs or outputs, live execution, branch
 state, injected memory, or approval metadata, and it cannot draft, publish, mutate, or invoke a
-Pattern. [State records the exact Loom boundary](../../state-of-the-work.md#loom-workflow-views).
+Pattern. It has no Portfolio or Composition projection. [State records the exact Loom
+boundary](../../state-of-the-work.md#loom-workflow-views).
 
 **Law:** [ADR 28 — Workflow](../../adr/28-workflow.md) owns the Weaver Pattern;
 [ADR 24 — Graph](../../adr/24-graph.md) owns execution topology and checkpoint law. The
-[Weaver](../../sepulcher/extensions/weaver.md) page explains how those offices meet.
+[Weaver](../../sepulcher/extensions/weaver.md) page explains how those offices meet, while the
+[Composition Portfolio](../../compositions/index.md) maps evolving application parents.
 
 > _“The score may reveal every return and fermata, yet the hall remains silent until an Invocation
 > gives it breath.”_
@@ -28,12 +30,14 @@ Pattern. [State records the exact Loom boundary](../../state-of-the-work.md#loom
     `127.0.0.1`, use the dedicated local browser profile, and do not proxy, tunnel, or port-forward
     it. Begin with the [Altar boundary](./index.md) if that containment is not already in place.
 
-## Pattern, Loom, Invocation
+## Composition, Pattern, Loom, Invocation
 
 These names are one movement, not synonyms:
 
 - A **Pattern** is the Weaver-owned workflow definition: identity, typed state and transitions,
   gates, requirements, and the compatibility law for resuming it.
+- A **Reference Composition** is the Pattern's operator-visible application parent. One
+  Composition may expose several Patterns; the Loom does not yet show that parent relation.
 - The **Loom** is a projection of that Pattern. A future editor may hold an inert draft, but the
   browser never becomes the workflow authority.
 - An **Invocation** is a runtime act. An admitted Intent selects an exact Pattern, receives a run

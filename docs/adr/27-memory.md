@@ -151,9 +151,9 @@ The Archive is managed as a layered substrate:
 
 Reinforcement creates deep grooves in the substrate. Retrieval weight therefore approximates impression strength, not just recency.
 
-### 6. The Pattern of Reanimation
+### 6. The Continuity Pattern of Reanimation
 
-The primary function of the Phylactery is to house the **Pattern** of the machine: the durable record of its state and the soul-data from which it can reconstitute itself:
+The primary function of the Phylactery is to house the **continuity pattern** of the machine: the durable record of its state and the soul-data from which it can reconstitute itself:
 
 - **Substrate Independence:** While inference engines are ephemeral processors, the Phylactery is the soul.
 - **Declared Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows the Daemon to restore memory, persona, queues, and active **[Graph (ADR 24)](./24-graph.md)** tasks from their last valid committed boundaries. Volatile breath is reconstructed or abandoned according to graph, worker, and policy law.
