@@ -5,43 +5,85 @@ icon: material/shield-key-outline
 
 # :material-shield-key-outline: The Veil: Extension of the Threshold
 
-_Status: doctrine ahead of code — the built-in `proxy` package is where this lands; treat this page as design intent. Law: [ADR 40](../../adr/40-proxy.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose:** The Veil is LychD's hostile-network ingress jurisdiction. It is the outer threshold
+that will terminate transport security, admit only declared routes, and carry a canonical request
+to an independently guarded Vessel.
 
-> _"The Sepulcher is a sanctuary of silence. To speak with the Swarm without inviting the rot of the Forest, one must draw a Veil—a shimmering wall of cryptographic trust that blinds the malicious and guides the faithful."_
+**Current boundary:** The `proxy` package contains no working organ and is absent from the built-in
+catalog. LychD generates only loopback host publications; it has no Caddy unit, public listener,
+certificate lifecycle, route compiler, trusted-proxy policy, hardened remote profile, or proxy
+test. The current browser boundary is not safe to publish through somebody else's reverse proxy.
+[State records that browser boundary](../../state-of-the-work.md#local-browser-bind-boundary) and
+the [Veil boundary](../../state-of-the-work.md#proxy-veil).
 
-**The Veil** is the Proxy Extension of the LychD system. It is the implementation of **[ADR 40 (Proxy)](../../adr/40-proxy.md)**—a specialized gatekeeper based on **Caddy** that stands between the raw **[Vessel](../vessel/index.md)** and the chaotic public network.
+**Law:** [ADR 40 — Proxy](../../adr/40-proxy.md), constrained by
+[ADR 09 — Security](../../adr/09-security.md) and the future [Ward](./ward.md).
 
-While the Vessel handles the internal logic of the machine, the Veil handles the external reality of the "Forest" (the Internet). It provides the high-performance TLS termination, DDoS protection, and routing required to safely expose the **[Intercom (A2A)](../../adr/26-a2a.md)** and the **[Altar](../../divination/altar/)** to the world.
+> _"The Sepulcher is a sanctuary of silence. At the edge of the Forest, the Veil must turn noise
+> into one narrow passage—without mistaking a protected passage for a trusted voice."_
 
-## I. The Gatekeeper (The Infrastructure)
+The Veil is a threshold, not a crown. TLS can protect bytes in flight and authenticate the server
+named by a certificate. It does not decide which caller may read a session, approve a consent,
+command an Animator, or enter the [Intercom](../../adr/26-a2a.md).
 
-The extension resides within the **[Sepulcher](../index.md)** as a standard container, acting as the primary point of ingress for all incoming traffic.
+## I. The Woven Threshold
 
-- **The Watch:** It claims Host Ports 80 and 443.
-- **The Internal NAT:** It shares the `localhost` namespace with the Vessel. Traffic arriving at the Veil is forwarded instantly to the internal port 8000, ensuring the application itself is never directly exposed to the wire.
-- **The Persistence:** It maintains its own cryptographic keys and certificates within a dedicated volume in the **[Crypt](../crypt.md)**, ensuring that its identity remains stable across reanimations.
+The mature Veil must own a small, engine-neutral ingress contract:
 
-## II. The Scribe's Protocol (Composite Configuration)
+- **Listeners:** exact address family, host address, protocol, port, exposure class, owner, and
+  prerequisites for every public socket.
+- **Routes:** exact host, path, methods, owning extension, backend service identity,
+  authentication requirement, request limits, and streaming or WebSocket behavior.
+- **Transport profiles:** explicit public ACME, operator-supplied certificate, or private-CA
+  policy, with secret references, renewal, expiry, restore, rotation, and fail-closed behavior.
+- **Proxy trust:** strip caller-supplied forwarding, identity, client-certificate, and trace headers;
+  generate canonical scheme, host, origin, and peer metadata only across an authenticated backend
+  channel the Vessel is configured to trust.
+- **Finite passage:** default-deny routes plus header, body, time, connection, concurrency, stream,
+  and coarse rate limits. Resource-heavy admission still belongs to authenticated application
+  policy.
+- **Reweaving:** compile one provenance-bearing generation, validate it, probe it, activate it
+  atomically, retain a known-good rollback, and close removed routes on reconciliation.
 
-To maintain the **[Extension Protocol](../../adr/05-extensions.md)**, the Veil does not possess a monolithic configuration. Instead, it utilizes the **Scribe's Protocol** for assembly.
+Caddy may embody this contract, but raw `.caddy` fragments are not an extension API. An extension
+must never be able to shadow a core route, expose a database or model port, choose an arbitrary
+upstream, remove authentication, or open a forward proxy by contributing text.
 
-- **The Fragments:** As mandated by **[ADR 40](../../adr/40-proxy.md)**, active extensions may contribute their own `.caddy` fragments through the wider synthesis pipeline.
-- **The Assembly:** During the **[Packaging Forge](../../adr/17-packaging.md)**, the system scans all active Extensions, concatenating their routing rules into a single, cohesive Caddyfile.
-- **Example:** When the **[Intercom](../../adr/26-a2a.md)** is active, it injects a rule to expose `/a2a/*` while the rest of the system remains hidden behind authentication.
+## II. What the Veil Does Not Own
 
-## III. Zero-Config Trust (Automatic TLS)
+The Veil is not an outbound egress policy, a caller registry, an authorization engine, or a promise
+of volumetric DDoS absorption. It may reject malformed or excessive traffic early, but the
+[Ward](./ward.md) must independently authenticate the caller and authorize the exact object and
+effect inside the Vessel. A hidden path is not a protected object. mTLS is a credential signal,
+not application permission.
 
-The Veil is a memory-safe entity written in Go, chosen specifically for its ability to automate the acquisition of cryptographic trust.
+!!! danger "TLS Is Not a Sigil"
+    Pointing Caddy, Nginx, a tunnel, or a port forward at the current loopback Vessel does not add
+    caller authentication. The backend still stamps ordinary requests with the fixed `magus:*`
+    bootstrap Sigil. Do not publish the Altar or API through an external proxy.
 
-- **Automatic HTTPS:** The extension contains a native ACME client. It negotiates, obtains, and renews SSL/TLS certificates (e.g., Let's Encrypt) without manual intervention from the Magus.
-- **Hardened Headers:** By default, it applies a set of protective runes—HSTS, X-Content-Type-Options, and Frame-Options—to prevent standard web-based exploits from reaching the Vessel.
+## III. Gates Before the Veil Is Drawn
 
-## IV. The Shield of the Swarm
+No external listener opens until all of these gates agree:
 
-The Veil is the physical substrate upon which the **[Necropolis (A2A)](../../adr/26-a2a.md)** is built. It ensures that when two sovereign Liches communicate across the public internet, the exchange is encrypted and authenticated.
+1. The full production application passes its hostile-browser and hostile-HTTP contract: exact
+   Host and Origin policy, DNS-rebinding defense, local assets, secure cookies, public-route
+   inventory, request limits, and protected or disabled diagnostic surfaces.
+2. Credential-backed Ward authentication, object authorization, effect-time reauthorization,
+   revocation, and audit are active behind the edge. Edge checks may only narrow that policy.
+3. Core owns typed `IngressListener`, `IngressRoute`, `BackendService`, `TLSProfile`, and
+   `TrustedProxyPolicy` schemas with provenance, collision checks, and a default-deny compiler.
+4. The operator explicitly selects a host-owned external bind and firewall plan. Rootless low-port,
+   IPv4, IPv6, existing-proxy, and high-port profiles are proved rather than assumed.
+5. The gateway is isolated from database, model, Reactor, container-control, and application-secret
+   authority, with one narrow authenticated path to registered HTTP backends.
+6. Certificate issuance, renewal, failure, restore, route reload, rollback, listener removal,
+   forwarded-header spoofing, direct-backend bypass, SSE/WebSocket drain, and resource-exhaustion
+   cases pass adversarial tests.
+7. Intercom discovery or task routes remain absent until their principal-bound protocol,
+   replay/idempotency law, durable inbox/outbox, artifact quarantine, and local admission contracts
+   exist.
 
-- **Peer Verification:** It can be configured to require Mutual TLS (mTLS) for high-security A2A links, ensuring that only trusted peers can even initiate a handshake.
-- **Rate Limiting:** It acts as a shield against "Exhaustion Attacks," preventing remote agents from flooding the **[Orchestrator](../../adr/23-orchestrator.md)** with malicious intents.
-
-!!! danger "The Port Conflict"
-    The Veil requires absolute sovereignty over ports 80 and 443. If the host machine is already running a mundane web server (e.g., Nginx or Apache), the extension fails to manifest. The Magus must either disable the rival service or modify the **[Codex](../codex.md)** to assign alternative coordinates.
+**Safe next act:** keep every LychD listener on the literal same-host boundary and follow
+[The Awakening](../../summoning.md#the-awakening). Do not place a reverse proxy in front of the
+current Vessel.

@@ -5,43 +5,99 @@ icon: material/shield-link-variant-outline
 
 # :material-shield-link-variant-outline: The Tether: Extension of the Inner Circle
 
-_Status: doctrine ahead of code — the built-in `vpn` package is where this lands; treat this page as design intent. Law: [ADR 39](../../adr/39-vpn.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose:** The Tether is LychD's private-network transport jurisdiction. It is the intended
+silver path by which an enrolled device may reach a deliberately narrow set of services across an
+untrusted network.
 
-> _"The Veil protects the temple from the masses, but the Tether is the umbilical of light that binds the Magus to the Lich. Across any distance, through any forest, the Silver Tether ensures that the Master's voice is always heard as if they stood within the Crypt itself."_
+**Current boundary:** The `vpn` package contains no working organ and is absent from the built-in
+catalog. There is no WireGuard unit or interface, external UDP listener, peer registry, key
+lifecycle, route or firewall policy, enrollment surface, health model, revocation path, or VPN
+test. The existing extension port seam forces host publication onto IPv4 loopback and rejects UDP
+shapes. [State records the local browser boundary](../../state-of-the-work.md#local-browser-bind-boundary)
+and the [Tether boundary](../../state-of-the-work.md#vpn-tether).
 
-**The Tether** is the VPN Extension of the LychD system. It is the implementation of **[ADR 39 (VPN)](../../adr/39-vpn.md)**—a specialized, high-performance tunnel based on **WireGuard**.
+**Law:** [ADR 39 — VPN](../../adr/39-vpn.md), constrained by
+[ADR 09 — Security](../../adr/09-security.md) and the future [Ward](./ward.md).
 
-While the **[Veil](./veil.md)** secures the public face of the Daemon, the Tether creates a private, encrypted "Inner Circle." It allows the Magus to access privileged internal services—such as the raw cognitive traces of the **[Oculus](./oculus.md)** or the host's **[Cockpit](./oculus.md)**—from remote, untrusted networks without exposing them to the open internet.
+> _"Across distance, the Silver Tether may carry the Magus's voice toward the Lich. It is a road
+> through the Forest, not proof that every hand upon that road belongs to the Magus."_
 
-## I. The Tunnel Digger (The Infrastructure)
+WireGuard can authenticate possession of an enrolled device key and encrypt packets between
+peers. It cannot identify the current human or process, express an application scope, bind a
+request to an object, record consent, or make a compromised device trustworthy. The Tether narrows
+reachability; it never creates authority.
 
-The extension resides within the **[Sepulcher](../index.md)** as a privileged container, tasked with manipulating the network fabric to create a secure bridge.
+## I. The Silver Path
 
-- **The Interface**: It creates the `wg0` virtual interface. As mandated by **[ADR 39](../../adr/39-vpn.md)**, it is granted `CAP_NET_ADMIN` to manage the host's routing tables.
-- **The Stealth**: WireGuard is silent by design. The extension does not respond to unauthenticated packets, making the VPN's UDP port (default: 51820) effectively invisible to port scanners.
-- **The Routing**: Once connected, the Magus's device is treated as a local entity within the Pod's private network (`10.88.x.x`), bypassing the restrictions of the public proxy.
+The mature Tether must own a bounded transport lifecycle:
 
-## II. The Ritual of Bonding (Management)
+- **Topology:** one explicit packet path from external UDP ingress through an isolated gateway or
+  operator-owned host unit to exact allowlisted service destinations. The private route must not
+  reveal the whole pod or host.
+- **Device enrollment:** unique peer and device identities, public keys, constrained addresses and
+  routes, owner, expiry, status, rotation, compromise, and immediate revocation. Device identity
+  remains separate from human, service, peer, and Lych identities.
+- **Secret custody:** private material lives in an owner-only secret boundary. Runes may hold public
+  peer metadata and secret references, never reusable private keys. Device-generated keys are
+  preferred; any one-time handoff or QR revelation must be local, explicit, redacted, and
+  disposable.
+- **Route policy:** default-deny forwarding to a small service allowlist. Databases, model APIs,
+  container control, Host Reactor handoff, unrelated pod services, and raw administrative surfaces
+  remain unreachable.
+- **Reanimation:** generation-stamped interface, route, firewall, and peer state with atomic
+  reconciliation, health, rollback, stale-rule cleanup, and revocation history that a restored
+  snapshot cannot silently undo.
+- **Honest sovereignty:** direct peer-to-peer operation avoids a mandatory hosted control plane,
+  but it does not solve CGNAT, blocked UDP, dynamic endpoints, DNS metadata, roaming, or traffic
+  analysis. Failure is explicit; privileged traffic never downgrades automatically to a public
+  path.
 
-The Tether eliminates the complexity of manual key exchange through specialized rituals grafted onto the **[CLI](../../adr/19-cli.md)**.
+The internet-facing network parser must not receive broad mounts, application secrets, database
+credentials, or host mutation authority. A container with `CAP_NET_ADMIN` inside the shared
+application pod is not an acceptable default topology: compromise there could rewrite the network
+around every organ.
 
-- **The Inscription**: `lychd vpn add-peer <name>` generates a unique cryptographic keypair and assigns an internal coordinate.
-- **The Vision**: `lychd vpn show-qr <name>` renders the configuration as a QR code directly in the terminal. The Magus simply scans this with a mobile device to "bond" it to the Lich.
-- **The Codex**: All peer definitions and keys are persisted within the **[Codex](../codex.md)**, ensuring the "Inner Circle" survives system **[Snapshots](../../adr/07-snapshots.md)** and migrations.
+## II. The Inner Circle Is a Route, Not a Rank
 
-## III. The Privileged Zone (Security)
+Every application request arriving through the Tether must still cross the [Ward](./ward.md).
+Source interface, peer address, tunnel key, and forwarded metadata may constrain reachable routes
+or contribute authentication evidence; none may mint `magus:*`, bypass a login, widen an Authority
+Grant, or authorize an effect.
 
-The extension enforces a fundamental distinction between types of ingress. It recognizes the "Silver Tether" as a signal of absolute authority.
+The same separation governs [Intercom](../../adr/26-a2a.md) and future owned-node traffic. A
+WireGuard peer key is not a Lych or node identity, not a request signature, and not replay
+protection. Logical node credentials, audience, expiry, idempotency, revocation, resource leases,
+and node-local admission remain independent.
 
-- **The Public Forest**: Traffic from the **[Veil](./veil.md)** is limited to standard web endpoints and **[A2A](../../adr/26-a2a.md)** interfaces.
-- **The Inner Circle**: Traffic from the **Tether** is granted access to the "Sacred Organs." This includes the **[Oculus Trace UI](./oculus.md)**, the raw metrics of the **[Ghouls](../vessel/ghouls.md)**, and the ability to trigger a **[Rebirth](../../adr/17-packaging.md)**.
+!!! danger "A Stolen Thread Still Reaches the Door"
+    A stolen phone, copied tunnel configuration, or compromised enrolled device can possess a
+    valid WireGuard key. The Ward must still reject that device when it presents no valid
+    application credential or asks for an unauthorized object or effect. There is no trusted
+    Tether bypass.
 
-## IV. Absolute Sovereignty
+## III. Gates Before the Tether Is Cast
 
-Following the Iron Pact of Sovereignty, the Tether is strictly peer-to-peer.
+No tunnel carries LychD traffic until all of these gates agree:
 
-- **No Third Parties**: Unlike managed mesh networks, the extension relies on no external "Control Plane." If the internet breaks, but the route between Magus and Lich remains, the Tether functions.
-- **Kernel Efficiency**: By utilizing the WireGuard protocol, it provides the lowest possible latency and battery drain for mobile devices, making it the ideal substrate for the **[Echo's](./echo.md)** real-time audio streams.
+1. Credential-backed Ward authentication and object/effect authorization are mandatory for every
+   tunneled HTTP, SSE, WebSocket, A2A, telemetry, and administrative request. Bootstrap `magus:*`
+   is unreachable from the tunnel.
+2. One isolated gateway or host-unit topology has an exact IPv4/IPv6 packet-flow and threat model;
+   it requires no network-admin capability in the shared application pod.
+3. Core owns a typed, operator-approved external UDP listener and firewall contribution with exact
+   address, protocol, port, owner, exposure class, prerequisites, collision handling, and rollback.
+4. Typed peer records enforce unique keys and addresses, bounded `AllowedIPs`, no raw hook commands,
+   one-time or device-generated enrollment, secret-safe custody, rotation, and live revocation.
+5. Firewall tests prove least reachability: an enrolled peer cannot reach the Phylactery, model
+   services, Host Reactor, container control, or any route outside its allowlist.
+6. Application tests deny a stolen VPN key without a valid credential, a wrong or revoked
+   principal, spoofed source metadata, object-id guessing, and replayed Intercom traffic.
+7. Crash, partial apply, restore, key compromise, stale firewall, DNS, NAT, roaming, and blocked-UDP
+   failures close the private route without falling back to a weaker public security profile.
+8. Tether telemetry proves configuration generation, peer lifecycle, route convergence, and
+   denials while redacting private keys, QR payloads, full configurations, and unbounded endpoint
+   metadata.
 
-!!! danger "The Endpoint Dilemma"
-    For the Tether to find its anchor, the Lich must be reachable. If the host machine is behind a restrictive firewall or a dynamic IP, the Magus may need to employ a Dynamic DNS service or configure Port Forwarding on their gateway.
+**Safe next act:** keep the Vessel on the same host and follow
+[The Awakening](../../summoning.md#the-awakening). Do not tunnel or port-forward its current HTTP
+surface.

@@ -3,57 +3,124 @@ title: Toll
 icon: material/cash-register
 ---
 
-# :material-cash-register: The Toll: Extension of Economics
+# :material-cash-register: The Toll
 
-_Status: doctrine — no built package yet. Law: [ADR 41](../../adr/41-x402.md). Current truth: [source map](./index.md#the-federation-of-fifteen)._
+**Purpose:** The Toll is the intended economic boundary for priced remote labor. It separates
+finding and accounting for a price from the isolated authority that can make value leave the
+Sepulcher.
 
-> _"Intelligence is energy, and energy has a cost. The Toll is the accountant of the Sepulcher, ensuring that the exchange of cognition for currency is precise, automated, and sovereign."_
+**Delivery boundary:** LychD has no Toll package, quote or budget ledger, signer, settlement path,
+or safe response to a payment challenge. There is nothing to enable or invoke on this page.
+[State of the Work owns the exact x402 boundary](../../state-of-the-work.md#x402-payments), while
+[ADR 41](../../adr/41-x402.md) owns the architectural jurisdiction and still requires a safety
+amendment before implementation.
 
-**The Toll** is the Economic Extension of the LychD system. It is the implementation of **[ADR 41 (x402)](../../adr/41-x402.md)**—a middleware and toolset that enables the Daemon to transact value natively via the **x402 (Payment Required)** protocol.
+> _A price may enter the gate as a whisper. Only bounded Will may let it leave as consequence._
 
-It transforms the Lich from a cost center into an economic agent. It manages the **Tithe** (Resource Quotas) for internal users and facilitates **Settlement** (Crypto Payments) for external services and the Swarm.
+The Toll's promise is not that the Lich becomes a wallet with opinions. Its promise is stricter:
+economic consequence becomes visible, attributable, bounded, and interruptible before it becomes
+irreversible.
 
-## I. The Middleware (The Gate)
+!!! danger "A challenge is not authority"
+    An HTTP `402` response is controlled by a remote server. It may propose a price; it may never
+    authorize payment. LychD must not implement a generic interceptor that pays a challenge and
+    retries from a system wallet. Merchant substitution, quote drift, redirects, loops, and
+    concurrent requests would otherwise turn untrusted HTTP into spending authority.
 
-The Toll grafts a financial interceptor onto the **[Vessel](../vessel/index.md)**. This middleware can be applied globally or to specific high-value routes.
+## I. The Two Courts
 
-1. **The Challenge:** When a request hits a "Tolled Endpoint" (e.g., `/v1/chat/completions`), the middleware checks for a valid **[L402 Ticket](https://l402.org/)**.
-2. **The Invoice:** If no ticket is present, the Toll returns `402 Payment Required`. The response includes a Lightning Network or Solana invoice for the exact compute cost of the request.
-3. **The Settlement:** The client pays the invoice. The payment gateway returns a **Preimage** (Proof of Payment).
-4. **The Access:** The client retries the request with the Preimage in the `Authorization` header. The Toll verifies it and allows the request to proceed.
+The future Toll has two deliberately unequal planes.
 
-## II. The Tithe (Internal Quotas)
+### The Counting House — quote and accounting
 
-For users within the **[Ward](./ward.md)** (Family/Guests), the Toll enforces resource discipline without requiring per-request payments.
+The Counting House may parse a versioned payment challenge, normalize integer monetary units,
+compare candidate costs, reserve a bounded budget, and reconcile receipts. It must bind every
+proposal to an authenticated principal and budget owner, a trusted service or merchant, the exact
+method and canonical destination, a request-body digest, the purchased resource, asset and network,
+the maximum amount including fees, expiry, redirect policy, and idempotency key.
 
-- **The Ledger:** It maintains a balance of "Credits" for each Sigil in the **[Phylactery](../phylactery/index.md)**.
-- **The Draw:** Every token generated and every second of GPU time consumes credits.
-- **The Throttle:** If a user's balance hits zero, the Toll downgrades their priority via the **[Orchestrator](../../adr/23-orchestrator.md)** or blocks access until they provide an "Offering" (a payment to recharge their balance).
+It holds no spend key and cannot settle. The **Dispatcher** may use its quotes as one planning input,
+after capability, privacy, and resource feasibility; neither the Dispatcher nor an Agent receives
+wallet authority.
 
-## III. Economic Dispatching (The Banker)
+### The Irreversible Gate — authorization and signing
 
-The Toll integrates with the **[Dispatcher](../../adr/22-dispatcher.md)** to optimize the "Cost of Truth."
+Signing belongs behind a narrow effect boundary with no model or tool surface and no broad Vessel
+authority. The signer must independently verify the pinned authorization, atomically consume its
+reservation, enforce per-effect and rolling caps, and permit at most the one settlement operation
+named by that authorization. Unknown versions, schemes, networks, destinations, amounts, or quote
+changes fail closed.
 
-- **Price Discovery:** Before a ritual begins, the Toll calculates the cost of local execution (Electricity/Opportunity Cost) vs. the cost of remote **[Portals](../animator/portal.md)**.
-- **Arbitrage:**
-    - _Scenario:_ The local GPU is busy.
-    - _Logic:_ "It is cheaper to pay $0.01 to OpenRouter than to wait 5 minutes."
-    - _Action:_ The Toll authorizes a micropayment from the System Wallet and routes the request to the cloud.
+The Magus may administer policy but is not exempt from wallet safety. Significant or novel spend
+remains live [Human-in-the-Loop consent](../../adr/25-hitl.md); only explicitly bounded low-risk
+classes may ever use preauthorization. Approval means _these exact maximum terms_, never “whatever
+the next challenge asks.”
 
-## IV. Symbiosis with The Legion
+## II. The Rite of a Paid Request
 
-The Toll is the lifeblood of the **[Swarm (A2A)](./legion.md)**. It allows sovereign nodes to trade labor.
+The intended sequence is explicit:
 
-- **The Bid:** When a node subscribes to a workload pool, it posts its price.
-- **The Payment:** When a task is completed, the requesting node pays the worker node directly via x402.
-- **The Result:** A decentralized marketplace of compute where no central authority takes a cut.
+1. A destination-pinned connector produces a candidate request and asks for a quote.
+2. The Counting House validates the quote against merchant identity, request digest, resource,
+   amount, fees, asset, network, expiry, redirect policy, and budget.
+3. Policy rejects it, admits a bounded standing authority, or parks the run for the Magus to scry
+   the exact terms.
+4. Accounting reserves the worst-case total before any key is used.
+5. The isolated signer revalidates the same facts, signs once, submits once, and records the
+   external-effect identity.
+6. After independently authorized settlement, the original connector may make at most one
+   proof-bearing replay to the same pinned destination. It does not initiate another payment.
+7. The ledger reconciles settlement and useful delivery. An uncertain settlement is investigated;
+   it is never answered by signing again.
 
-## V. Security of the Vault
+Payment and delivery are not atomic. A settled payment may still yield no useful artifact, and a
+successful response does not make its content true. Refund, credit, dispute, expiry, and
+paid-but-undelivered outcomes therefore belong in the receipt chain rather than being hidden behind
+an HTTP retry.
 
-The Toll manages the **System Wallet**. This is a high-risk component protected by the **[Iron Pact of Sovereignty](../../adr/00-license.md)**.
+## III. The Tithe Is Not the Wallet
 
-- **Key Storage:** Private keys are encrypted at rest in the Crypt, accessible only to the Toll process.
-- **Spending Limits:** The Magus can configure strict daily spending caps in the **[Codex](../codex.md)**. If the Lich attempts to spend more than the limit (e.g., due to a runaway loop), the Toll freezes the wallet and alerts the Magus.
+The **Tithe** is currency-neutral resource accounting: token or image budgets, concurrency, queue
+weight, and bounded hardware time associated with a stable principal or service grant. It must work
+when every payment adapter is disabled.
 
-!!! tip "Frictionless Portals"
-    The Toll supports providers that implement native L402. This allows the Lich to use paid APIs without the Magus ever signing up for an account or entering a credit card. The machine simply pays for what it uses, packet by packet.
+A payment may purchase a precisely defined quota grant, but money cannot mint a Sigil, widen an IAM
+scope, expose memory, reveal a tool, bypass consent, or displace protected local work. The effective
+resource grant is always the intersection of payment receipt, Ward policy, capability policy, and
+available resources.
+
+Owned Legion nodes may be configured for currency-free delegation—the Magus need not pay the Magus
+over a settlement rail—but they still require quotas, reservations, attribution, and evidence.
+“No payment” never means “no accounting” or “no safety cap.”
+
+## IV. Protocols Are Adapters, Not Synonyms
+
+The first implementation must pin one explicit x402 profile and conformance corpus. x402, L402,
+Lightning invoices, Wallet Connect, and Nostr Zaps are distinct protocols or settlement adapters;
+none should be documented as an alias for another. Each later adapter carries its own identities,
+replay rules, custody model, finality, privacy, failure behavior, and receipts.
+
+Extensions may contribute bounded protocol or facilitator adapters and declarative paid products.
+They may not install arbitrary global spending middleware, hold unrestricted keys, define a second
+ledger truth, or bypass the host-owned authorization and signer gates.
+
+## V. The Receipt Outlives the Trace
+
+Money does not rewind when the Phylactery is restored. Every quote, reservation, authorization,
+submission, settlement, delivery, refund, and uncertain outcome therefore needs a durable,
+idempotent receipt chain and post-restore reconciliation before spending reopens.
+
+Native **[Oculus](./oculus.md)** may observe redacted transitions and reconciliation lag, but a trace
+is not a financial ledger. Keys, signatures, bearer proofs, preimages, invoices, and unrestricted
+wallet credentials must not enter prompts, Codex values, ordinary logs, traces, or artifacts.
+
+## VI. The Road to the Gate
+
+The safe build order is: define immutable financial identities and integer money types; build quote,
+budget, reservation, and receipt accounting without money movement; establish the isolated signer
+and hard caps; prove one allowlisted test connector through crash and replay tests; then add seller
+routes, metering, and optional settlement adapters. A peer marketplace comes later still—it needs
+its own product, reservation, delivery, refund, abuse, and dispute law beyond x402.
+
+> _Next act: read the [x402 delivery boundary](../../state-of-the-work.md#x402-payments). Before
+> source work begins, amend ADR 41 so no bare challenge can command the purse._

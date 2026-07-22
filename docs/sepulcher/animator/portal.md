@@ -5,149 +5,200 @@ icon: material/weather-hurricane
 
 # :material-weather-hurricane: Portal: The Rift to the Remote Sky
 
-> _"Not all spirits can be contained within the Crypt. Some are distant, rented, and sharp enough to matter. To commune with them, the sky is opened under seal."_
+> _"A rift is not a rescue that opens itself. It is named, sealed, and entered under the Magus's
+> authority."_
 
-A **Portal** is a configured connection to an external service: cloud intelligence, hosted tooling, remote observability, paid APIs, or another sovereign node. Unlike a **[Soulstone](./soulstone.md)**, which lives and breathes on local iron through Quadlet/systemd, a Portal delegates the capability to a network boundary.
+A **Portal** is a remote, API-backed [Animator](./index.md) declared by a provider-specific Rune in
+the Codex. It gives the Dispatcher a typed capability backed by another service rather than local
+iron. The Portal has no container of its own and consumes no local VRAM; its connector runs inside
+the trusted Vessel, where it may read the one Podman secret explicitly mounted for it.
 
-Technically, a **Portal Rune** is the Codex TOML declaration for a Portal. The runtime **Portal** is the remote Animator hydrated from that Rune. It generates no Quadlet manifests and consumes no local VRAM. It teaches the **[Dispatcher](../../adr/22-dispatcher.md)** and binder how to hydrate a remote endpoint into live capability surfaces such as Pydantic AI models, deferred tools, query clients, or peer calls.
+LychD does not own the remote service's lifecycle. A Portal capability is therefore
+`dedicated=False` and `is_dynamic=False`: the Orchestrator cannot start, stop, load, or repair it.
+Current delivery is bounded by the [Animator dispatch
+spine](../../state-of-the-work.md#animator-dispatch-spine) and [extension contribution
+path](../../state-of-the-work.md#extension-activation-contributions).
 
-## 🌀 The Nature of the Rift
+## The law of the rift
 
-Portals serve specific strategic purposes in the Necromancer's arsenal:
+!!! danger "Declaring a Portal grants a path to egress and cost"
+    A matching Portal joins the Dispatcher's ordinary candidate set. The current foundation does
+    **not** yet enforce the designed payload-privatization, secure-mode, local-before-paid, or x402
+    gates. Do not declare a routable model unless its credential, data boundary, and spend are
+    acceptable for every matching run.
 
-- **The Frontier Reasoning:** When the logic required is too complex for a local model, summon the crushing intellect of a frontier model (e.g., `gpt-4o`, `claude-3-5-sonnet`).
-- **The Prototyping:** Before the Magus commits to downloading terabytes of weights, a Portal can test prompts against a reference intelligence.
-- **The Burst Overflow:** If local VRAM is fully occupied by a high-priority **[Simulation](../../adr/31-simulation.md)**, the system can route simpler tasks through a Portal.
-- **The External Instrument:** If a capability lives outside the Sepulcher, such as hosted search, remote metrics, payment-gated APIs, or peer-node labor, a Portal lets LychD call it without pretending it is local.
+Three limits are easy to confuse:
 
-## 📜 The Pydantic Bridge
+1. **No automatic cloud replay.** If a local provider call fails, LychD does not replay that
+   request through a Portal. There is no current `FallbackModel` recovery path.
+2. **No probe egress by default.** `probe = false` prevents the registry's optional `/models`
+   request. It does not prevent a later model call after the Dispatcher selects this Portal.
+3. **No hidden remote lifecycle.** Binding a Portal writes no Portal Quadlet and performs no
+   provider request. It validates intent, verifies named secrets, and mounts the reference into the
+   Vessel; runtime selection and the provider call happen later.
 
-LychD leverages adapter-backed binding so Portals are first-class citizens of the runtime.
+With probing off, a non-empty `base_url` is projected as passively `WARM`. That word means
+**declared and eligible**, not “the provider answered.” With probing on, current source performs a
+two-second, unauthenticated `GET <base_url>/models`; a credentialed provider may reject that probe
+even when its ordinary authenticated model path would work.
 
-- **Endpoint + Connector Identity:** Runtime binding is driven by `provider_name`, optional `base_url`, and connector-owned capability semantics.
-- **Standardized Runtime Contract:** Regardless of the vendor, the Portal enters the system through the same **[Animator](./index.md)** runtime/binder path.
-- **Capability Surface:** Portal capabilities are exposed by the resolved connector, not by Portal-specific tool fields.
-- **The Fallback Ritual:** The system often wraps a local Soulstone and a remote Portal into a `FallbackModel`. If local hardware returns a 4xx or 5xx error, the Lich automatically tears the sky and replays the request through the Portal to ensure the thought is completed.
+## The connector boundary
 
-Current implementation scope:
+The built-in `animator` extension currently contributes two concrete Portal Rune leaves:
 
-- Model-backed Portals are hydrated through the OpenAI-compatible path (`OpenAIProvider` + `OpenAIChatModel`).
-- Additional provider-native binders (Anthropic, Google, etc.) and non-model service binders are extension points, not hardcoded in the core registry.
+- `runes/animator/portals/openai/` uses OpenAI's default API URL; and
+- `runes/animator/portals/google-gemini/` uses Google's OpenAI-compatible endpoint.
 
-## 🖋️ Inscribing a Portal
+Both hydrate through the OpenAI-compatible Pydantic AI connector. Other provider names require an
+extension-owned Rune schema and connector factory. An unknown provider may be represented by a
+passive Portal, but a model-bearing grant cannot become callable merely because a URL exists.
 
-To open a rift, define its properties under a provider-specific Portal anchor in the Codex. `PortalConfig` is the abstract branch at `runes/animator/portals/`; concrete provider Runes such as `OpenAIPortalConfig` and `GoogleGeminiPortalConfig` own the TOML files below their own leaf directories.
+Each `[[models]]` block creates one or more declared capability keys. A Portal with no model blocks
+is safely unadvertised: it contributes zero routable capabilities. LychD never downloads or guesses
+a provider catalog.
 
-```toml
-# ~/.config/lychd/runes/animator/portals/openai/main.toml
+## Open one intentionally
 
-name = "gpt4"
-description = "The Frontier Intelligence."
+This is an **already-summoned-host** operation. If LychD's preflight, units, local runtime
+readiness, and Bridge reply have not already agreed, begin with [The Summoning
+Rite](../../summoning.md) instead of extracting commands from this page.
 
-# The Offering (Security)
-# Reference a Podman secret name, not a raw API key value.
-api_key_secret_name = "portal_openai_main"
+### 1. Activate the Portal schema
 
-```
+Resolve the Codex without hardcoding one home:
 
 ```bash
-printf '%s' "$OPENAI_API_KEY" | podman secret create --replace portal_openai_main -
+CODEX_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/lychd"
+vi "$CODEX_DIR/lychd.toml"
 ```
 
-## :material-key-link: Secret Lifecycle
-
-Portal auth is reference-driven:
-
-1. Portal Rune stores only `api_key_secret_name = "<name>"`.
-2. `lychd bind` verifies the named Podman secret exists.
-3. If missing, bind fails closed before writing units.
-4. Vessel receives `Secret=<name>` and connector reads `/run/secrets/<name>`.
-
-Core app secrets (`APP` signing key and DB password) are auto-generated as startup fallbacks only when no secret source is configured. Portal secrets are never auto-generated and must be explicitly created.
-
-A Portal API secret name may never alias either core secret name. Multiple Portals may
-deliberately reference the same provider credential because their connectors all execute inside
-the trusted Vessel; doing so also deliberately shares that credential's rotation and blast radius.
-
-For policy and boundary details, see [Security (ADR 09)](../../adr/09-security.md) and [Configuration (ADR 12)](../../adr/12-configuration.md).
-
-!!! danger "The Tithe (Token Creep)"
-    Beware, Magus. While a [Soulstone](./soulstone.md) serves for the cost of electricity, a Portal demands a **Tithe**.
-    Every thought processed draws credits from an external account. The Lich does not care about the balance; it can loop and generate until the work is done or the card is declined.
-
-!!! warning "The Leak of Secrets"
-    Portal use sends data through the Rift. The **[Sovereignty Wall](../../adr/09-security.md)** and Dispatcher privatization policy are the shield.
-    - In sovereignty-restricted modes, Portals may be disabled entirely.
-    - Sensitive intents or high-privatization context may forbid Portal egress, forcing the work to local iron or sanitization workflows.
-
-## Opening a Portal
-
-Connect a remote provider end to end and confirm it on the [Nexus](../../divination/altar/nexus.md). Prerequisites: a running daemon ([the Awakening](../../summoning.md#the-awakening)) and a provider API key.
-
-1. **Store the API key as a named Podman secret** (the rune references it by name, never by value — see *Secret Lifecycle* above):
-   ```bash
-   printf '%s' "$OPENAI_API_KEY" | podman secret create portal_openai_main -
-   ```
-2. **Write the Portal Rune** under `runes/animator/portals/<group>/<name>.toml` (see *Inscribing a Portal* above and the reference below). Declare at least one `[[models]]` block — a Portal with zero models yields zero capabilities.
-3. **Bind:** `lychd bind`. Portals generate no systemd units, but bind validates the rune and registers the Portal's capabilities.
-4. **Verify:** `lychd animators` shows the Portal with its capability; on the [Nexus](../../divination/altar/nexus.md) it reads **active** — a Portal (`is_dynamic=False`) is warm as soon as it is reachable. Route Intents to it from the [Bridge](../../divination/altar/index.md).
-
-!!! warning "Egress is opt-in"
-    Binding a Portal makes **no** network call: `probe` defaults to `false`. Set `probe = true` only for a live reachability check at bind. If the capability never appears, confirm the rune parsed — `lychd bind` reports a named error on an invalid rune, and a rune that fails validation is never registered.
-
-## Portal Rune reference
-
-A **Portal Rune** lives under `~/.config/lychd/runes/animator/portals/<group>/<name>.toml`. It generates no Quadlet manifest and consumes no local VRAM; its capabilities always carry `is_dynamic=False`.
-
-### Top-level fields
-
-| Field | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `name` | string (required) | — | Animator name; first segment of every capability key (`<name>:<family>:<model_id>`). |
-| `description` | string | `""` | Human note. |
-| `provider_name` | string (required) | — | Provider identity (e.g. `openai`, `google-gemini`). Set by the provider-specific schema. |
-| `base_url` | URL | provider default | Endpoint override. |
-| `api_key_secret_name` | string | `null` | **Name** of the API-key secret (never the value). |
-| `models` | list of `[[models]]` | `[]` | Declared models (below). |
-| `generation` | `[generation]` table | `null` | Default generation profile for this portal. |
-| `probe` | bool | `false` | Opt-in live reachability probe. Off by default — **no surprise egress**. |
-
-!!! note "Zero models means zero capabilities"
-    A Portal with no `[[models]]` blocks yields no routable capabilities. LychD does not guess a remote provider's catalog; declare at least one model to make the Portal usable.
-
-### The `[[models]]` blocks
-
-One entry per model you want to route to. Each yields a capability spec. A Portal `[[models]]` block has no `path` (the model lives remotely); everything else — the `[models.capabilities]` hints and `[models.generation]` table — matches the [Soulstone Rune reference](./soulstone.md#soulstone-rune-reference).
-
-| Field | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | string (required) | — | Remote model id; last segment of the capability key. |
-| `description` | string | `null` | Human note. |
-| `[models.capabilities]` | table | `null` | Capability hints (see the Soulstone reference). |
-| `[models.generation]` | table | `null` | Per-model generation overrides. |
-
-### Example
+Add `animator` to the existing `[extensions].builtins` list without removing active extensions. A
+Portal-only list is:
 
 ```toml
+[extensions]
+builtins = ["animator"]
+crypt = []
+```
+
+Then let the active extension inscribe its provider anchors and inactive samples:
+
+```bash
+uv run lychd init
+```
+
+Selecting any built-in `animator/*` runtime also registers the shared Portal base, so an existing
+Soulstone installation need not add a duplicate entry merely for inheritance.
+
+### 2. Seal the credential
+
+Create exactly the name the Rune will reference. Do not put the value in TOML:
+
+```bash
+SECRET_NAME=portal_openai_main
+read -rsp "Value for $SECRET_NAME: " LYCHD_SECRET
+printf '%s' "$LYCHD_SECRET" | podman secret create "$SECRET_NAME" -
+podman secret exists "$SECRET_NAME"
+unset LYCHD_SECRET SECRET_NAME
+```
+
+Use `podman secret create --replace` only for a deliberate rotation, then recreate the Vessel so it
+receives the new value. Portal credentials share the trusted Vessel process boundary with its
+connector; file permissions do not hide a secret from code executing inside that same unit.
+
+### 3. Inscribe one explicit model
+
+Create `"$CODEX_DIR/runes/animator/portals/openai/main.toml"`:
+
+```toml title="main.toml"
 name = "openai-main"
-description = "Reference OpenAI portal (is_dynamic=False; image admission + tool support)."
+description = "Explicit remote chat capability."
 api_key_secret_name = "portal_openai_main"
+probe = false
 
 [generation]
 temperature = 0.5
 
 [[models]]
 id = "gpt-5.2"
-description = "Frontier chat model with vision admission and tool support."
+description = "Remote tool-capable chat model."
 
 [models.capabilities]
+families = ["chat"]
+modalities_in = ["text"]
 supports_tools = true
-modalities_in = ["text", "image"]
 
 [models.generation]
 max_tokens = 4096
 ```
 
-This yields `openai-main:chat:gpt-5.2` (`is_dynamic=False`). The `provider_name` and default `base_url` come from the OpenAI portal schema; you override only what you need.
+The provider name and default URL come from the `openai` leaf schema. Override `base_url` only when
+the intended endpoint is genuinely OpenAI-compatible.
 
-> _A Portal is not a shortcut. It is a sealed opening in the sky, used only when local iron cannot finish the thought._
+### 4. Bind, restart, and distinguish the observations
+
+!!! danger "Restart only a quiescent Vessel"
+    The current CLI has no complete active-run census or graceful drain command. Restarting the
+    Vessel fails work in `RUNNING` or `AWAITING_HARDWARE`; it is not a transparent configuration
+    reload. For this bounded local operation, stop new submissions and wait for every run visible
+    in the Bridge to settle before continuing. That visual check is not a system-wide proof. If
+    work may still be active or its continuity matters, stop here and do not restart.
+
+```bash
+uv run lychd bind
+systemctl --user restart lychd-vessel.service
+systemctl --user is-active lychd-vessel.service
+podman exec lychd-vessel lychd animators
+```
+
+Read the results narrowly:
+
+- successful `bind` proves Rune validation, secret presence, and atomic unit reconciliation; it
+  does not contact the provider;
+- the `openai-main:chat:gpt-5.2` row proves capability synthesis and registration;
+- `warm` with `probe = false` is passive declaration, not live reachability; and
+- only a successful model invocation proves the credentialed request path.
+
+The current Bridge has no provider picker. To attribute an end-to-end test to this Portal, make it
+the only eligible `chat` + tools candidate for that bounded test, open the [Bridge under the Altar's
+browser boundary](../../divination/altar/index.md), and send only a benign, public-safe prompt. Do
+not infer Portal use from an unattributed reply when another candidate was eligible.
+
+If the row is missing, confirm the active extension, the exact provider anchor, at least one
+`[[models]]` block, and the Vessel restart. If a real request fails, inspect the Vessel journal and
+the provider account separately; an unauthenticated `probe = true` failure does not validate or
+invalidate the mounted key.
+
+## Portal Rune reference
+
+A concrete Portal Rune lives below
+`runes/animator/portals/<provider>/<instance>.toml` in the Codex. It declares remote intent; it is
+not the connector object and not a generated unit.
+
+### Top-level fields
+
+| Field | Default | Office |
+| --- | --- | --- |
+| `name` | required | Animator name; first segment of each capability key. |
+| `description` | `""` | Operator note. |
+| `provider_name` | provider leaf | Connector identity; normally supplied by the concrete Rune schema. |
+| `base_url` | provider leaf | HTTP(S) endpoint root. |
+| `api_key_secret_name` | `null` | One option-free Podman secret name, never the value. |
+| `models` | `[]` | Explicit remote model declarations; empty means zero capabilities. |
+| `generation` | `null` | Portal-wide generation overlay. |
+| `probe` | `false` | Opt in to the current unauthenticated `/models` reachability request. |
+
+### `[[models]]` fields
+
+| Field | Default | Office |
+| --- | --- | --- |
+| `id` | required | Provider-facing model id and final capability-key segment. |
+| `description` | `null` | Operator note. |
+| `[models.capabilities]` | chat/text defaults | Declared families, modalities, surface, tools, and streaming hints. |
+| `[models.generation]` | `null` | Per-model overlay above the Portal generation profile. |
+
+Declared capability hints may narrow or describe a model; verification may downgrade them. It may
+not invent a model or a power absent from the Rune.
+
+> _Close the sky by removing its routable model declarations, binding the new intent, and
+> restarting the Vessel. A rift is safest when its opening and closing are equally explicit._
