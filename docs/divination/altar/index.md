@@ -5,65 +5,83 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-> _"Altus - the high place. From here, the Magus acts as the Arbiter: intent is offered, candidate futures are weighed, and only witnessed truth is allowed to harden."_
+The **Altar** is LychD's server-rendered local web surface. Its conversational instrument is the
+**Bridge**. The navigation also names Nexus, Loom, Scrying, Reliquary, and Bindings, but a visible
+door is not proof that the instrument behind it is complete. [State of the
+Work](../../state-of-the-work.md#altar-and-observability) owns what can answer now.
 
-Access the Altar at **`http://localhost:7134`**.
+!!! danger "Temporary local-browser boundary"
+    Before using the Altar, use a dedicated browser profile on the same host, keep the listener on
+    literal `127.0.0.1`, and do not publish, reverse-proxy, tunnel, or port-forward its port. Do not
+    enable the SAQ UI or open `/schema/scalar`. Loopback and the fixed `magus:*` Sigil are not caller
+    authentication or browser-origin isolation. Follow the canonical [browser and bind
+    boundary](../../state-of-the-work.md#local-browser-bind-boundary) and the full warning in [The
+    Awakening](../../summoning.md#the-awakening).
 
-The Altar maps the instruments; [State of the Work](../../state-of-the-work.md) is the sole record
-of which can answer now.
+> _“At the high place, Intent is offered, truth is witnessed, and judgment returns to the hands
+> that must bear it.”_
 
-The first screen (index) is **the Bridge**: a full-page terminal-chat surface where the Magus speaks his Intent and the Vessel resolves it into the proper rite. It is both the captain's bridge of the Sepulcher and the bridge between Magus and Machine.
+The glass is a projection, never a second mind or source of authority. Live execution remains in
+the [Vessel](../../sepulcher/vessel/index.md) and committed truth in the
+[Phylactery](../../sepulcher/phylactery/index.md); where a supported flow asks, the Altar carries
+consent or refusal back into that body.
 
-A simple question may return a direct answer. A deeper request may become a Ghoul job, Weaver workflow, Scrying stream, Reliquary artifact, Nexus routing concern, or approval wait.
+## The doors that answer now
 
-## The Six Instruments
+Three instruments have useful but bounded implementations:
 
-The running Altar is organized around six instruments:
+- **Bridge — conversation and consent.** It supports local sessions, a New Séance action, message
+  submission, pending consent cards and decisions, session inspection, and per-run process-local
+  event streaming. It does not provide durable cross-process delivery, a general multi-approval
+  round, or a continuous feed of the Lich's thoughts. [Current Bridge
+  boundary](../../state-of-the-work.md#bridge-surface)
+- **[Nexus](./nexus.md) — orchestration projection.** It renders Coven state, transition plans,
+  process-local swap tickets, and settled outcomes. It is not yet a general resource, queue, VRAM,
+  or hardware-pressure dashboard. [Current Nexus
+  boundary](../../state-of-the-work.md#nexus-transition-board)
+- **[Loom](./loom.md) — workflow projection.** It renders diagrams from the fixed workflow registry
+  and exposes their plain-text Mermaid source. It is a viewer, not a general Weaver editor or
+  workflow-mutation surface. [Current Loom
+  boundary](../../state-of-the-work.md#loom-workflow-views)
 
-- **Altar:** offer Intent from the Bridge.
-- **[Scrying](./scrying.md):** observe live workflows, logs, traces, and approval waits.
-- **[Nexus](./nexus.md):** inspect orchestration, queues, Covens, Portals, and hardware pressure.
-- **[Loom](./loom.md):** browse and design Weaver workflow Patterns.
-- **[Reliquary](./reliquary.md):** inspect artifacts, outputs, reports, and blessed results.
-- **[Bindings](./bindings.md):** manage user-facing settings, provider references, policy surfaces, and preferences.
+## The doors still being shaped
 
-These names form the Altar's navigation map.
+These routes preserve the intended instrument map, but each currently opens an honestly marked
+unbuilt shell:
 
-## The Bridge
+- **[Scrying](./scrying.md)** has no useful trace query, timeline, health read model, or native
+  observability backend yet. [Current Scrying
+  boundary](../../state-of-the-work.md#scrying-instrument)
+- **[Reliquary](./reliquary.md)** has no artifact upload, byte custody, authorized retrieval,
+  retention, or provenance backend yet. [Current Reliquary
+  boundary](../../state-of-the-work.md#reliquary-instrument)
+- **[Bindings](./bindings.md)** has no useful binding inventory, grant control, lease control, or
+  mutation backend yet. [Current Bindings
+  boundary](../../state-of-the-work.md#bindings-instrument)
 
-The Bridge is the Altar's default chamber. Its main surface holds the transcript, active output, worker responses, approval prompts, and the input where Intent is offered.
+## The observing boundary
 
-Natural language is the primary interface. The Magus describes the desired outcome; the Vessel resolves the Intent behind the surface through typed handling, Dispatcher policy, Weaver Patterns, and server-side validation.
+The native **Oculus** is LychD's intended evidence plane and future Altar-facing observability
+surface. It does not yet provide native ingestion, a durable query/read model, retention, or a
+working HTMX Scrying view. [Current Oculus
+boundary](../../state-of-the-work.md#native-oculus)
 
-The left rail belongs to the current Altar session rather than global navigation. It groups local surfaces such as:
+**Phoenix** remains an optional Arize-owned external Eye. LychD does not require it for Oculus and
+does not currently prove application trace export to it. [Current Phoenix
+boundary](../../state-of-the-work.md#phoenix-eye)
 
-- **Conversation History:** past conversations and Invocations.
-- **Session Settings:** temperature, behavior preferences, and other controls scoped to the current session.
-- **Pinned Context:** selected files, notes, memories, or artifacts brought into the current Intent field.
-- **Coven Request:** a lightweight way to request a different Coven, Animator, or capability for this session.
+## Enter through the Bridge
 
-Coven control is deliberately limited here. The Altar may show the active Coven or allow a request, but deep availability, queue pressure, warming, sleeping, and manual intervention belong in the [Nexus](./nexus.md). If a requested Coven is occupied by background work, Nexus is where the Magus inspects the tradeoff.
+After the four observations in [Summoning](../../summoning.md) agree on this host—and only while the
+temporary browser boundary above holds—open:
 
-A contextual inspector may appear when a selected message, artifact, approval, worker, log line, or branch needs detail. It is a detail surface, not a second dashboard.
+```text
+http://127.0.0.1:7134/
+```
 
-!!! abstract "The Sanctum of Interaction"
-    The Altar is not a static page, but a living conduit. Its surface shifts and updates in real-time to reflect the Lich's inner state. Its core functions are:
+The bare root redirects to `/bridge`. On a fresh Phylactery, choose **New Séance**, offer one
+bounded Intent, and answer an inline consent card only if the run asks. If the page does not answer
+or first life is incomplete, close it and return to [The
+Awakening](../../summoning.md#the-awakening); do not weaken containment to make it work.
 
-    1. **The Offering Plate (Input):** This is where you submit **Intents**. The Altar receives *Desire* rather than hand-written implementation. ("Refactor this module," "Analyze this log," "Plan the deployment.")
-    2. **The Scrying Threshold (Observation):** When Intent becomes active work, the Altar exposes enough state to follow the rite and opens the path to [Scrying](./scrying.md), where the live run, logs, traces, and approval waits become inspectable.
-    3. **The Judgment Seat (Consecration):** When the Ghouls return from the **[Shadow Realm](../../sepulcher/extensions/shadow.md)** with potential timelines, they present them here.
-
-!!! info "The Collapse of the Wavefunction"
-    This is the Altar's most critical purpose.
-
-    The Lich may present three different implementations of a feature.
-    - *Timeline A:* Elegant but incomplete.
-    - *Timeline B:* Functional but ugly.
-    - *Timeline C:* The hallucinations of an unmeasured oracle.
-
-    At the Altar, you perform the **Consecration**. You select, edit, and bless.
-
-    By choosing one timeline you collapse the alternatives: the chosen path is written to disk and recorded in the **[Phylactery](../../sepulcher/phylactery/index.md)** as Karma; the rejected paths are discarded (their traces may be kept for learning). Your selection is the external judgment the daemon cannot perform on itself — the act the [cognitive map](../../sepulcher/lich.md) calls **Viveka**.
-
-!!! tip "Spectral Threads (Server-Sent Events)"
-    The Altar maintains a constant, ethereal connection to the Vessel. Through **Server-Sent Events (SSE)**, the thoughts of the Lich are pushed to your glass in real time. You watch the daemon think without refreshing the page.
+> _Enter by the **Bridge**. Offer one bounded Intent. Witness what the body returns._
