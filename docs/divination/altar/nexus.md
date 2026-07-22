@@ -5,51 +5,127 @@ icon: material/transit-connection-variant
 
 # :material-transit-connection-variant: Nexus
 
-The Nexus is the capability board — the machine's power state as seen from the
-[Altar](index.md). It is the operator surface for the
-**[Dispatcher](../../adr/22-dispatcher.md)** (which capability a request resolves to) and
-the **[Orchestrator](../../adr/23-orchestrator.md)** (which hardware is warm and what is
-swapping).
+**Purpose.** The **Nexus** is the Altar's local capability and transition board: the place where a
+Magus can witness how declared ability currently meets physical iron.
 
-## Reading a capability's state
+**Current boundary.** The page projects cached capability state into Soulstone Coven cards and a
+Portal column, previews local transition plans, and can launch one managed transition through a
+process-local polling ticket. It is not yet a queue, lease, GPU, VRAM, topology, thermal, or
+hardware-pressure console. [State of the Work owns the exact delivery
+boundary](../../state-of-the-work.md#nexus-transition-board).
 
-Every capability the daemon knows about appears on the Nexus in one of five states. This is
-the projection the Orchestrator and Dispatcher agree on — the state you read here is the
-state a run will actually see.
+**Safety law.** Looking is not commanding. The board is a projection, not a readiness grant, and a
+plan is not a reservation. **Consecrate the Swap** is a real maximum-priority lifecycle mutation,
+not a simulation or ordinary navigation action.
 
-| State | Meaning | What you can do |
-| :--- | :--- | :--- |
-| **active** | Warm and accepting requests right now. | Route to it immediately; no swap needed. |
-| **warming** | Activation in flight — the model is loading. | Wait; it will become **active** shortly. |
-| **awaited** | A capability with `is_dynamic=True` that is reachable but not yet loaded (the container is up; the model needs an in-runtime activation step). | Request it; the Dispatcher signals stasis and the Orchestrator alone drives soft activation. |
-| **cold** | The unit is down or the endpoint is unreachable. | Requesting it triggers a hardware transition (a coven swap) if LychD owns its lifecycle. |
-| **fault** | The capability is in error. | Check the unit's logs (`journalctl --user -u <service> -e`). |
+!!! danger "Temporary local-browser boundary"
+    Use the Nexus only from a dedicated browser profile on the same host, with the listener on
+    literal `127.0.0.1`. Do not publish, reverse-proxy, tunnel, or port-forward the Altar. The fixed
+    `magus:*` Sigil is not a login, and the current hostile-browser boundary is incomplete. Follow
+    [The Awakening](../../summoning.md#the-awakening) and the canonical [browser and bind
+    boundary](../../state-of-the-work.md#local-browser-bind-boundary).
 
-These map directly to a capability's underlying **`is_dynamic` flag** and **phase**, explained for
-users in [Capabilities](../../sepulcher/animator/capabilities.md) and canonically in the
-[Dispatcher (22)](../../adr/22-dispatcher.md). The Nexus never shows raw enum values — it
-shows this operator vocabulary.
+> _At the crossing of Intent and iron, the glass bears witness. It does not become the Physical
+> Will by naming what it sees._
 
-## What else the Nexus shows
+The authority split is exact: the [Dispatcher](../../adr/22-dispatcher.md) selects a capability;
+the [Orchestrator](../../adr/23-orchestrator.md) readies managed physical state; the Nexus projects
+their current records and submits an explicit operator request. The Altar never becomes a second
+scheduler.
 
-- Which **[Coven](../../adr/23-orchestrator.md)** is active, and which are warming, cold, or
-  in a swap.
-- Which **[Soulstones](../../sepulcher/animator/soulstone.md)** and
-  **[Portals](../../sepulcher/animator/portal.md)** are available.
-- Queue depth and active work per queue, and the **leases** currently held — the live
-  grants a run holds against a capability. A capability with an active lease is protected:
-  the Orchestrator's drain waits for it to release before a swap. See
-  [Coven](../../sepulcher/animator/coven.md).
-- The hardware pressure and swap tickets behind any pending transition.
+## What the board witnesses
 
-## Driving a transition
+The board loads after the page, refreshes every five seconds, and refreshes once more when a swap
+ticket settles. Each local card is labelled by the first group on its Soulstone Rune, or by its
+Animator name when no group exists. That **Coven** label is an operator grouping and systemd target,
+not a co-residency, eviction, or GPU-placement rule.
 
-If you want a model or coven that is currently occupied by background work, the Nexus is
-where the tradeoff becomes legible — and, where policy allows, where you request the swap.
-A hard swap is gated by priority: a low-priority request against a busy coven is declined
-rather than allowed to thrash the hardware. The full rite is
-[Coven](../../sepulcher/animator/coven.md).
+A card currently shows:
 
-The Altar surface may expose a small coven status or request control elsewhere, but the
-Nexus is where the full routing and power state becomes inspectable. Orchestration is never
-hidden behind a casual dropdown.
+- its Coven label and runtime kind;
+- each canonical capability key, shaped as `{animator}:{family}:{model_id}`;
+- a coarse visible state chip;
+- the first row's model id; and
+- whether the underlying service is dedicated or shared.
+
+Portals appear in one separate column. Their transition button is disabled because LychD can route
+to a Portal but cannot start, stop, or swap the remote provider. A Portal row is not proof of safe
+egress, payment policy, or live reachability; its [owning page](../../sepulcher/animator/portal.md)
+defines what was declared and what was actually probed.
+
+The board poll reads the latest registry snapshot. It does not perform a new readiness probe, and
+it does not guarantee what a later run will receive.
+
+## Read the state without guessing
+
+The current human chip is intentionally treated here as coarse evidence, because its text does not
+expose the full phase:
+
+- **active** may mean raw phase `warm` **or** `warming`;
+- **sleeping** may mean `activatable`, `cold`, `error`, or `unknown`.
+
+Do not diagnose a transition or fault from that chip alone. The read-only
+`/orchestrator/status` JSON projection exposes each capability's raw `phase`, `warm`, `health`, and
+`reason`, plus the process-wide `mutation_containment` reason.
+
+The raw phase ladder is:
+
+- `warm` — the last observation said requests were accepted;
+- `warming` — activation or readiness convergence was in flight;
+- `activatable` — a dynamic runtime was up while this model was not loaded;
+- `cold` — the runtime was down or the endpoint was unreachable;
+- `error` — the capability had a recorded fault; and
+- `unknown` — no usable observation was available.
+
+These remain observations, not timeless facts. A fresh dispatch still applies its own admission and
+lease boundary before it can issue a capability grant.
+
+## Observation and control are different rites
+
+Choosing **scry swap** asks the Orchestrator to refresh lifecycle-managed runtimes and calculate a
+dry-run plan. The drawer may show:
+
+- `NO_OP` — the target was already observed warm;
+- `SOFT_SWAP` — the runtime was already started and the target needed target-only readiness
+  convergence;
+  the label does not promise that a model-load call will occur; or
+- `HARD_SWAP` — a managed runtime had to be launched and the listed Animators selected for
+  eviction.
+
+The displayed **metabolic cost** is currently only the number of selected evictions. It is not a
+VRAM, load-time, energy, topology, or context-reconstruction estimate. The current resource-aware
+scheduling boundary is recorded in [State](../../state-of-the-work.md#resource-aware-scheduling).
+
+A dry run changes no runtime. If the plan is not `NO_OP`, **Consecrate the Swap** submits a real
+HTMX transition at maximum operator priority. The Orchestrator replans inside its serialized
+arbiter, closes admission for the affected Animators, waits for existing leases to release, applies
+the bounded transition, and converges on honest warmth or fail-closed containment. The preview is
+therefore an explanation of the observed world, not a promise that its exact evict set is reserved.
+
+## What a swap ticket proves
+
+The initiating page receives one self-polling ticket with one of three states:
+
+- `warming` — the ticket has not yet observed a terminal task result; the initial 202 response uses
+  this state even if the task settles before its first poll;
+- `settled` — the task returned and the board will refresh; or
+- `failed` — the task raised or was cancelled.
+
+The ticket is process-local UI state. It has no durable owner, history, cancel action, timestamps,
+retention promise, restart recovery, or detailed failure record. Queue depth and live leases exist
+on the separate `/orchestrator/queues` JSON surface, but they are not shown by the Nexus or
+`/orchestrator/status`. Durable evidence, resource intelligence, and native Oculus remain separate
+contracts.
+
+## Enter after first life
+
+Only after the four observations in [The Awakening](../../summoning.md#the-awakening) agree—and only
+inside the temporary browser boundary above—open:
+
+```text
+http://127.0.0.1:7134/nexus
+```
+
+Witness one capability card before requesting any transition. If the visible chip and raw status
+disagree with the host, stop there and diagnose the owning runtime; do not consecrate a swap merely
+to make the glass look calm.
