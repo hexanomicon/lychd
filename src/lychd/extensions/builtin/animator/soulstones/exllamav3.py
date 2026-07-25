@@ -22,7 +22,7 @@ def exllamav3_runtime_model_name(model: LocalModelConfig) -> str:
 
 
 class ExLlamaV3SoulstoneConfig(SoulstoneConfig):
-    """Builtin dynamic ExLlamaV3 runtime served by the official TabbyAPI."""
+    """ExLlamaV3 runtimes served through TabbyAPI."""
 
     path_fragment: ClassVar[Path] = Path("exllamav3")
     sample_template: ClassVar[str | None] = """

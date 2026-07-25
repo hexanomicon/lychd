@@ -7,9 +7,12 @@ from functools import wraps
 from typing import TYPE_CHECKING
 
 import click
+import structlog
 
 if TYPE_CHECKING:
     from rich.console import Console
+
+logger = structlog.get_logger(__name__)
 
 
 def get_console() -> Console:
@@ -25,7 +28,11 @@ def get_console() -> Console:
 
 
 def ritual_command(
-    *, name: str, help_text: str, start_message: str
+    *,
+    name: str,
+    help_text: str,
+    start_message: str,
+    hidden: bool = False,
 ) -> Callable[[Callable[..., object]], click.Command]:
     """Build a Click command wrapper with shared UX and error policy.
 
@@ -41,7 +48,7 @@ def ritual_command(
         # `Callable[P, R]` then uses that pack as "all params of func", while `R` is the return type
         # More: https://docs.python.org/3/library/typing.html#typing.ParamSpec
 
-        @click.command(name=name, help=help_text)
+        @click.command(name=name, help=help_text, hidden=hidden)
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Lazy creation keeps command registration/help path lightweight.
@@ -54,10 +61,17 @@ def ritual_command(
             try:
                 # Forward the same args/kwargs we received to the original callback.
                 return func(*args, **kwargs)
-            except Exception as e:
+            except (click.ClickException, click.Abort, click.exceptions.Exit):
+                raise
+            except Exception as exc:
                 # Normalize failures into one CLI-style abort path with readable output.
-                console.print(f"\n[bold red]✖ Ritual Failed:[/][red] {e}[/]")
-                raise click.Abort from e
+                logger.exception(
+                    "cli_command_failed",
+                    command=name,
+                    error_type=type(exc).__name__,
+                )
+                console.print(f"\n[bold red]✖ Ritual Failed:[/][red] {exc}[/]")
+                raise click.Abort from exc
 
         return wrapper
 

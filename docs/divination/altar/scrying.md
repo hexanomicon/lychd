@@ -61,10 +61,11 @@ relations explicit:
 - an explicit path to [Nexus](./nexus.md) for physical transition evidence, to
   [Loom](./loom.md) for Pattern topology, and to [Reliquary](./reliquary.md) for a retained output
 
-A later graph-dense view may justify a Svelte island. That island may own selection, layout,
-pan/zoom, and other temporary presentation state. It may not own run transitions, persistence,
-authorization, or consent. Ordinary motion remains server-rendered hypermedia; model output is
-never interpreted as markup.
+The canonical Svelte route may own selection, layout, pan/zoom, filters, and other temporary
+presentation state. It may not own run transitions, persistence, authorization, or consent.
+Snapshots and semantic JSON SSE come from the Vessel; model output is never interpreted as markup.
+Graph rendering remains behind one LychD-owned adapter so the Oculus evidence contract is not
+coupled to Svelte Flow or another canvas library.
 
 ## Witness Without Possession
 

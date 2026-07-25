@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
@@ -136,6 +137,110 @@ def test_init_dry_run_is_side_effect_free_on_fresh_xdg(
     assert plan.mutates is True
     assert any(action.disposition is LifecycleDisposition.WOULD_CREATE for action in plan.actions)
     assert _tree_snapshot(base) == before
+
+
+def test_successful_init_seals_exact_dedicated_root_authority(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """The final init seal binds all dedicated roots to their kernel identities."""
+    roots = (
+        isolated_roots["crypt"],
+        isolated_roots["cache"],
+        isolated_roots["codex"],
+    )
+    for root in roots:
+        root.mkdir(parents=True)
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+
+    before = store.plan_dedicated_root_attestation()
+    store.seal_dedicated_roots()
+    identities = store.require_dedicated_root_identities(roots)
+    after = store.plan_dedicated_root_attestation()
+
+    assert before.disposition is LifecycleDisposition.WOULD_CREATE
+    assert tuple(identity.path for identity in identities) == roots
+    assert after.disposition is LifecycleDisposition.PRESERVE
+    assert isolated_roots["receipt"].stat().st_mode & 0o777 == 0o600
+
+
+def test_absent_receipt_and_missing_peer_never_mask_an_unsafe_existing_root(
+    isolated_roots: IsolatedRoots,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Root adoption blocks before init can write through an existing mount."""
+    crypt = isolated_roots["crypt"]
+    crypt.mkdir(parents=True)
+
+    def reject_mount_boundary(path: Path) -> os.stat_result:
+        if path == crypt:
+            msg = f"Lifecycle authority target is a mount boundary: {path}"
+            raise LifecycleError(msg)
+        return path.stat()
+
+    monkeypatch.setattr(
+        "lychd.system.services.lifecycle.receipt.directory_identity_on_parent_mount",
+        reject_mount_boundary,
+    )
+    plan = InitializationPlanner(
+        reactor_directories=(),
+        anchor_paths=(),
+        sample_paths=(),
+        receipt_store=LifecycleReceiptStore(isolated_roots["receipt"]),
+    ).plan()
+
+    assert not isolated_roots["receipt"].exists()
+    assert any(
+        action.disposition is LifecycleDisposition.BLOCKED
+        and action.kind is LifecycleResourceKind.RECEIPT
+        and "mount boundary" in action.detail
+        for action in plan.actions
+    )
+
+
+def test_directory_mount_identity_rejects_same_device_mount_boundary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Distinct mount IDs block adoption even when both paths share st_dev."""
+    from lychd.system.services.lifecycle import mount_identity
+
+    root = tmp_path / "dedicated"
+    root.mkdir()
+    mount_ids = iter((41, 42))
+
+    def next_mount_id(_descriptor: int) -> int:
+        return next(mount_ids)
+
+    monkeypatch.setattr(
+        mount_identity,
+        "mount_id_for_fd",
+        next_mount_id,
+    )
+
+    assert root.stat().st_dev == root.parent.stat().st_dev
+    with pytest.raises(LifecycleError, match="mount boundary"):
+        mount_identity.directory_identity_on_parent_mount(root)
+
+
+def test_dedicated_root_authority_detects_identity_drift(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """Replacing an adopted root never inherits the prior init authority."""
+    roots = (
+        isolated_roots["crypt"],
+        isolated_roots["cache"],
+        isolated_roots["codex"],
+    )
+    for root in roots:
+        root.mkdir(parents=True)
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+    store.seal_dedicated_roots()
+    original = isolated_roots["cache"].with_name("lychd-original")
+    isolated_roots["cache"].rename(original)
+    isolated_roots["cache"].mkdir()
+
+    with pytest.raises(LifecycleError, match="identity drifted"):
+        store.require_dedicated_root_identities(roots)
 
 
 def test_init_blocks_absent_custom_reactor_outside_receipt_authority(

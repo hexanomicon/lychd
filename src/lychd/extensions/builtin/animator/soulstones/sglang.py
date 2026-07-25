@@ -7,7 +7,7 @@ from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
 class SglangSoulstoneConfig(SoulstoneConfig):
-    """Builtin Soulstone profile for SGLang.
+    """SGLang runtime declarations and launch recipes.
 
     Exec-passthrough-by-default: the operator supplies the full SGLang serve
     command as the ``exec`` list (authoritative). Container-level concerns

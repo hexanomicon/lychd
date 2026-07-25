@@ -48,7 +48,11 @@ The extension registers `lychd-vpn.container` within the pod, claiming Host UDP 
 
 ### 2. Sovereign Identity and Bonding
 
-To eliminate the complexity of manual key exchange, the extension grafts management subcommands onto the **[CLI (19)](19-cli.md)**. These rituals generate unique keypairs and assign internal IP coordinates, rendering the configuration as a QR code for instantaneous mobile bonding. All peer definitions are persisted in the **[Codex (12)](12-configuration.md)**.
+To eliminate the complexity of manual key exchange, the extension contributes typed bonding
+operations beneath **`lychd run`** through the **[CLI (19)](19-cli.md)** operation registry. It
+never grafts a public root command. These operations generate unique keypairs, assign internal IP
+coordinates, and render the configuration as a QR code for instantaneous mobile bonding. All peer
+definitions are persisted in the **[Codex (12)](12-configuration.md)**.
 
 ### 3. Transport Tiering (The Inner Circle)
 

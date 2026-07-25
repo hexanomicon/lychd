@@ -7,6 +7,7 @@ import os
 import stat
 from pathlib import Path
 
+from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.services.lifecycle._authority import LifecycleAuthority, current_authority
 from lychd.system.services.lifecycle.models import (
     LifecycleAction,
@@ -37,22 +38,6 @@ def is_within(path: Path, root: Path) -> bool:
     return path == root or root in path.parents
 
 
-def path_has_symlink_component(path: Path) -> Path | None:
-    """Return the first symlink component inside the user's home, if any."""
-    home = Path.home()
-    current = path
-    candidates: list[Path] = []
-    while current != current.parent:
-        candidates.append(current)
-        if current == home:
-            break
-        current = current.parent
-    for candidate in reversed(candidates):
-        if os.path.lexists(candidate) and candidate.is_symlink():
-            return candidate
-    return None
-
-
 def is_allowed_init_directory(
     path: Path,
     *,
@@ -60,19 +45,14 @@ def is_allowed_init_directory(
 ) -> bool:
     """Bound initialization deletion authority to dedicated roots/shared anchors."""
     current = authority or current_authority()
-    return (
-        any(
-            is_within(path, root)
-            for root in (current.codex_root, current.crypt_root, current.cache_root)
-        )
-        or path
-        in {
-            current.systemd_units.parent,
-            current.systemd_units,
-            current.systemd_user_units.parent,
-            current.systemd_user_units,
-        }
-    )
+    return any(
+        is_within(path, root) for root in (current.codex_root, current.crypt_root, current.cache_root)
+    ) or path in {
+        current.systemd_units.parent,
+        current.systemd_units,
+        current.systemd_user_units.parent,
+        current.systemd_user_units,
+    }
 
 
 def is_allowed_init_file(

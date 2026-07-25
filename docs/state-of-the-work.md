@@ -91,27 +91,75 @@ or running service.
 
 ### Core CLI rites {#core-cli-rites}
 
-**State:** Available
+**State:** Partial
 
-**Proved now:** The `init`, `destroy`, `bind`, and `doctor` commands have focused repository tests
-for their current orchestration and failure behavior. Initialization and destruction expose
-side-effect-free dry runs over their execution planners. `destroy` removes only inactive exact
-Scribe-owned bindings plus unchanged files and empty directories recorded as created by `init`;
-foreign, pre-existing, mounted, durable-data, model, and secret state remains outside its deletion
-authority. Real `init`, `bind`, and `destroy` serialize their effect boundary; binding generations
-and init-created path identities are revalidated before removal.
+**Proved now:** Public help exposes the closed `init`, `bind`, `start`, `stop`, `status`, `logs`,
+`run`, and `del` grammar; `st` resolves to `status` without becoming a ninth root. `init` and
+`bind` have side-effect-free planners. `init` revalidates and consumes its exact plan, rejects
+unplanned creations, journals partial progress, proves convergence before its terminal seal, and
+records device/inode plus parent-mount authority for the dedicated roots. Its default projection
+collapses the exact plan beneath Codex/config, Crypt/share, and Forge/cache XDG tiers, with Binding
+inside Codex and the Phylactery inside Crypt; `--verbose` restores routine host anchors without
+changing the plan. Shared host anchors have a distinct role color and explicit planned/present state,
+so their materialization is not presented as recursive LychD ownership. Initialization also
+concurrently awaits bounded host-foundation probes for systemd user-manager reachability,
+Podman/Quadlet compatibility, cgroup v2, SELinux, Btrfs, both Binding sites, and observed
+PostgreSQL No-COW policy. Those volatile facts remain outside lifecycle equality; after apply,
+Binding sites and storage are reinspected. Shared anchors say `will prepare`/`present`, verified
+sites say `prepared`, and only the aggregate next phase says `ready`. The first line of each
+static path's adjacent attribute
+docstring—and each dynamic Rune class docstring—owns the concise description shown beside its node;
+generic existence prose remains internal. Binding shares one typed
+preflight across preview and apply for Codex permissions, trusted host tools, Reactor boundaries,
+deployment mode, and secret wiring; apply rechecks both binding and secret generations under the
+lifecycle lock. The Scribe now requires initialization-prepared Quadlet and plain-user-unit sites
+during planning and immediately before commit rather than silently creating them. Bootstrap-safe
+`status`/`st` can render exact local ownership, unit, declaration,
+and mount inventory as human output or JSON, degrading split or corrupt authority instead of
+guessing. `logs` reads a bounded journal tail over exact owned units. The direct dead-Vessel
+`start` path refuses a split runtime, while direct `stop` covers every exact owned unit. The
+callback-free `run` registry carries typed
+execution, mutation, consent, progress, result, input, scope, and provider metadata. `del` renders
+one fingerprinted staged plan, confirms it, retires exact owned units, pauses with retained evidence
+for a filesystem UUID plus subvolume UUID/ID-bound privileged Btrfs handoff, removes exact bindings
+and receipt-verified dedicated roots through descriptor-relative, mount-ID-checked traversal, keeps
+the lifecycle receipt until the other Codex entries have gone, and replans between irreversible
+stages. The installed entrypoint initializes the shared Structlog pipeline before dispatching any
+verb.
 
-**Boundary:** `animators` has command-registration coverage but no focused inspection test; the
-end-to-end CLI placeholder contains no tests. Destruction refuses active or enabled units and
-modified or unsafe recorded state; it is not package uninstallation and has no purge mode. No real
-host, systemd/Podman lifecycle, or GPU execution is claimed here.
+**Boundary — Not yet:** `status` does not probe HTTP or database readiness, migration result, queue
+health, durable runs, or model warmth; extension-contributed status sections are not delivered.
+`stop` refuses an active Vessel until its authenticated lifecycle port exists. `logs` neither
+follows nor joins Podman, run-event, and Oculus records. `run` discovers operations but its default
+client refuses submission until a Ward-authenticated Vessel route exists. `del` deliberately
+preserves Podman containers, pods, secrets, the installed package, and the source checkout because
+their immutable creation provenance is absent or separately owned; unknown unit or mount truth
+blocks rather than guesses. No real systemd/Podman startup, shutdown, deletion, or GPU receipt is
+claimed by repository tests.
 
 **Evidence**
 
-- **Source:** [CLI command implementations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py)
-  and [lifecycle planning and ownership](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/lifecycle/__init__.py)
-- **Verification:** [Focused CLI command tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py)
-  and [lifecycle safety and round-trip tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_lifecycle.py)
+- **Source:** [CLI assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/__main__.py),
+  [lifecycle plan view](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/lifecycle_view.py),
+  [operator commands](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/operator.py),
+  [run projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/run.py),
+  [run-operation schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/operations.py),
+  [deletion command](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/deletion.py),
+  [binding preflight](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/binding_preflight.py),
+  [host-readiness probes](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/readiness),
+  [operator services](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/operator),
+  and [lifecycle services](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/services/lifecycle)
+- **Verification:** [Focused CLI command tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py),
+  [lifecycle tree tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_lifecycle_view.py),
+  [CLI run tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_run.py),
+  [CLI deletion tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_deletion.py),
+  [operator tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/system/operator),
+  [run-operation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_operations.py),
+  [binding-preflight tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_binding_preflight.py),
+  [host-readiness tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/system/readiness),
+  [initialization transaction tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_initialization.py),
+  [deletion safety tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion.py),
+  and [Btrfs checkpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion_storage.py)
 - **Law:** [ADR 19 — CLI](./adr/19-cli.md)
 
 ### Public release artifact chain {#public-release-artifact-chain}
@@ -522,6 +570,18 @@ not capacity admission.
 
 ## Altar and observability {#altar-and-observability}
 
+!!! warning "Canonical client migration"
+    ADR 15 fixes one target architecture: a Svelte 5 runes client, SvelteKit static routing/build,
+    Bun-managed dependencies, generated Litestar OpenAPI contracts, and semantic JSON SSE.
+    Litestar/Granian remains the only production server and authority.
+
+    That client is not implemented. The repository still installs npm dependencies and serves the
+    useful but bounded Jinja/HTMX/Alpine Bridge, Nexus, and Loom slices listed below. It pins
+    `litestar-vite` 0.14.0 and has no SvelteKit source tree, Bun lockfile, generated browser SDK,
+    versioned `/api/v1` surface, semantic JSON event stream, static deep-link receipt, or
+    production proof without a JavaScript server. Existing HTML routes and tests prove only their
+    literal legacy behavior; they are not evidence of the accepted Svelte client.
+
 ### Bridge conversation and consent surface {#bridge-surface}
 
 **State:** Partial
@@ -530,7 +590,9 @@ not capacity admission.
 decisions, inspection, and process-local event streaming with focused web tests.
 
 **Boundary — Not yet:** There is no complete production-factory receipt, durable cross-process
-event delivery, general multi-approval round, Attention contract, or external notification channel.
+event delivery, general multi-approval round, Attention contract, or external notification
+channel. This HTML/HTMX path is a legacy projection and does not prove the canonical Svelte Bridge,
+generated client, or JSON event contract.
 
 **Evidence**
 
@@ -551,7 +613,8 @@ through concrete HTMX and JSON controller paths.
 
 **Boundary — Not yet:** It has no general resource truth. Tickets wrap process-local tasks without
 a durable owner, created/settled times, retention deadline, or abandoned-completion cleanup law;
-the production lifespan also lacks a receipt.
+the production lifespan also lacks a receipt. These HTMX and JSON routes do not prove the
+canonical Svelte Nexus or versioned client API.
 
 **Evidence**
 
@@ -569,7 +632,7 @@ the production lifespan also lacks a receipt.
 full-page and HTMX routes.
 
 **Boundary — Not yet:** It is a view over the fixed workflow registry, not a general Weaver editor,
-workflow mutation surface, or production-lifespan receipt.
+workflow mutation surface, canonical Svelte/Svelte Flow route, or production-lifespan receipt.
 
 **Evidence**
 
@@ -585,8 +648,8 @@ workflow mutation surface, or production-lifespan receipt.
 
 **Proved now:** The Altar exposes an honestly marked Scrying route and shell.
 
-**Do not expect yet:** The route renders an unbuilt skeleton; there is no useful trace query,
-timeline, health read model, or native observability backend.
+**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
+route, useful trace query, timeline, health read model, or native observability backend.
 
 **Evidence**
 
@@ -602,8 +665,8 @@ timeline, health read model, or native observability backend.
 
 **Proved now:** The Altar exposes an honestly marked Reliquary route and shell.
 
-**Do not expect yet:** The route renders an unbuilt skeleton; there is no artifact upload, byte
-custody, authorized retrieval, retention, or provenance backend.
+**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
+route, artifact upload, byte custody, authorized retrieval, retention, or provenance backend.
 
 **Evidence**
 
@@ -618,8 +681,8 @@ custody, authorized retrieval, retention, or provenance backend.
 
 **Proved now:** The Altar exposes an honestly marked Bindings route and shell.
 
-**Do not expect yet:** The route renders an unbuilt skeleton; there is no useful binding inventory,
-grant control, lease control, or mutation backend.
+**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
+route, useful binding inventory, grant control, lease control, or mutation backend.
 
 **Evidence**
 
@@ -632,17 +695,24 @@ grant control, lease control, or mutation backend.
 
 **State:** Available
 
-**Proved now:** The shared logging builder and direct bootstrap helper produce tested human-readable
-and JSON stdlib/Structlog output.
+**Proved now:** The shared logging builder produces tested human-readable and JSON
+stdlib/Structlog output. The installed CLI entrypoint invokes the same bootstrap before Click
+dispatch, with a settings-independent fallback that keeps help and recovery verbs available when
+operator configuration is malformed; Litestar composition consumes its injected Settings through
+the same builder. Direct and stdlib diagnostics share level policy and remain on stderr, preserving
+stdout for stable command results. Human rendering retains the event as the primary line, JSON
+renames it to `message`, and unexpected `init`/`bind` failures emit one semantic command-failure
+event. Granian server/access and SQLAlchemy engine/pool logger families are explicitly covered.
 
-**Boundary:** The CLI bootstrap does not currently invoke `apply_logging`; this record does not
-prove CLI-wide or application-lifespan logging composition. It also does not prove trace storage,
-OpenTelemetry export, capture-class redaction, retention, resource correlation, or Oculus.
+**Boundary:** Shared configuration does not prove that every lifecycle effect emits a complete
+semantic audit event. This record also does not prove trace storage, OpenTelemetry export,
+capture-class redaction, retention, resource correlation, or Oculus.
 
 **Evidence**
 
 - **Source:** [Logging configuration and bootstrap helper](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/logging.py)
 - **Verification:** [Logging configuration and output tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/config/test_logging.py)
+  and [CLI bootstrap tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py)
 - **Law:** [ADR 29 — Observability](./adr/29-observability.md)
 
 ### Native Oculus {#native-oculus}
@@ -653,8 +723,8 @@ OpenTelemetry export, capture-class redaction, retention, resource correlation, 
 a telemetry class has a narrow direct unit test.
 
 **Do not expect yet:** The telemetry class is not installed by current application or extension
-composition. There is no native ingestion, durable query/read model, retention path, or HTMX
-Scrying view.
+composition. There is no native ingestion, durable query/read model, retention path, or canonical
+Svelte Scrying projection.
 
 **Evidence**
 
@@ -721,10 +791,10 @@ and the production application composes Litestar CSRF protection.
 
 **Boundary — Not yet:** The hostile-browser contract fails. Production configuration permits
 wildcard CORS, does not constrain the Host authority, and stamps ordinary requests with the fixed
-`magus:*` bootstrap Sigil rather than authenticating a caller. Foreground `lychd serve` arguments
-or environment can bypass the typed loopback host setting, while `/schema/scalar` loads mutable CDN
-assets into the local browser origin. CSRF remains a useful unsafe-method layer, but it does not
-protect GET or SSE confidentiality or stop DNS rebinding. Remote, proxied, tunneled,
+`magus:*` bootstrap Sigil rather than authenticating a caller. The internal foreground server
+entrypoint and its environment can bypass the typed loopback host setting, while `/schema/scalar`
+loads mutable CDN assets into the local browser origin. CSRF remains a useful unsafe-method layer,
+but it does not protect GET or SSE confidentiality or stop DNS rebinding. Remote, proxied, tunneled,
 direct-image-public, foreground non-loopback, and untrusted-browser use are unsupported until the
 bind, Host, Origin, local-asset, security-header, full-production-app, and hostile-browser
 contracts pass.

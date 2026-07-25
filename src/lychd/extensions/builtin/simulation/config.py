@@ -9,7 +9,7 @@ from lychd.config.runes import RuneConfig
 
 
 class ShadowSimulationConfig(RuneConfig):
-    """Configuration for Shadow simulation behavior."""
+    """Speculative Shadow simulation policy."""
 
     path_fragment: ClassVar[Path] = Path("simulation")
 

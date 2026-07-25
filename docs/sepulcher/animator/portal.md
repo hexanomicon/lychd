@@ -145,10 +145,10 @@ the intended endpoint is genuinely OpenAI-compatible.
     work may still be active or its continuity matters, stop here and do not restart.
 
 ```bash
+uv run lychd bind --dry-run
 uv run lychd bind
 systemctl --user restart lychd-vessel.service
-systemctl --user is-active lychd-vessel.service
-podman exec lychd-vessel lychd animators
+uv run lychd status
 ```
 
 Read the results narrowly:

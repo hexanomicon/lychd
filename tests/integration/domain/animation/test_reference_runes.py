@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.schemas import (
@@ -25,6 +28,7 @@ from lychd.extensions.builtin.animator.runtimes import (
     SglangRuntimeAdapter,
     VllmRuntimeAdapter,
 )
+from lychd.lib.http import HttpJsonError
 
 _REF_RUNES = Path(__file__).resolve().parents[3] / "fixtures" / "runes"
 
@@ -39,6 +43,26 @@ _SCHEMAS = [
     OpenAIPortalConfig,
     GoogleGeminiPortalConfig,
 ]
+
+
+@pytest.fixture(autouse=True)
+def isolate_reference_runes_from_live_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep declaration-contract tests independent of services on localhost."""
+
+    async def unavailable(*_args: Any, **_kwargs: Any) -> dict[str, object]:
+        message = "reference probe is intentionally offline"
+        raise HttpJsonError(message, transport=True)
+
+    monkeypatch.setattr(
+        "lychd.extensions.builtin.animator.llamacpp.control_plane.request_json",
+        unavailable,
+    )
+    monkeypatch.setattr(
+        "lychd.domain.animation.services.adapters.runtimes.shared.request_json",
+        unavailable,
+    )
 
 
 def _reference_registry() -> AnimatorRegistry:

@@ -1,14 +1,25 @@
 from __future__ import annotations
 
-import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
+from lychd.system.operator.process import (
+    InputProcessRunner,
+    ProcessInvocationError,
+    ProcessResult,
+    SubprocessRunner,
+)
 from lychd.system.services.secrets import PodmanSecretStore, PodmanSecretStoreError
 
 if TYPE_CHECKING:
+    from unittest.mock import MagicMock
+
     from pytest_mock import MockerFixture
+
+
+def _runner(mocker: MockerFixture) -> MagicMock:
+    return mocker.MagicMock(spec=SubprocessRunner)
 
 
 def test_secret_store_requires_podman_binary(mocker: MockerFixture) -> None:
@@ -18,24 +29,69 @@ def test_secret_store_requires_podman_binary(mocker: MockerFixture) -> None:
         PodmanSecretStore()
 
 
-def test_secret_store_exists_uses_podman_secret_exists(mocker: MockerFixture) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
-    mock_run = mocker.patch("lychd.system.services.secrets.subprocess.run")
-    mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+def test_secret_store_exists_uses_bounded_podman_probe(
+    mocker: MockerFixture,
+) -> None:
+    runner = _runner(mocker)
+    runner.run.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "secret", "exists", "alpha"),
+        returncode=0,
+    )
 
-    store = PodmanSecretStore()
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
+
     assert store.exists("alpha") is True
-    mock_run.assert_called_once_with(
-        ["/usr/bin/podman", "secret", "exists", "alpha"],
-        check=False,
-        capture_output=True,
-        text=True,
+    runner.run.assert_called_once_with(
+        ("/usr/bin/podman", "secret", "exists", "alpha"),
+        timeout_s=5.0,
     )
 
 
-def test_secret_store_ensure_present_creates_only_when_missing(mocker: MockerFixture) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
-    store = PodmanSecretStore()
+def test_secret_store_treats_only_exit_one_as_absent(
+    mocker: MockerFixture,
+) -> None:
+    runner = _runner(mocker)
+    runner.run.side_effect = (
+        ProcessResult(argv=("/usr/bin/podman",), returncode=1),
+        ProcessResult(
+            argv=("/usr/bin/podman",),
+            returncode=125,
+            stderr="storage unavailable",
+        ),
+    )
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
+
+    assert store.exists("missing") is False
+    with pytest.raises(PodmanSecretStoreError, match="storage unavailable"):
+        store.exists("unknown")
+
+
+def test_secret_store_wraps_probe_timeout(mocker: MockerFixture) -> None:
+    runner = _runner(mocker)
+    runner.run.side_effect = ProcessInvocationError("timed out")
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
+
+    with pytest.raises(PodmanSecretStoreError, match="timed out"):
+        store.exists("alpha")
+
+
+def test_secret_store_ensure_present_creates_only_when_missing(
+    mocker: MockerFixture,
+) -> None:
+    runner = _runner(mocker)
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
     mocker.patch.object(store, "exists", return_value=False)
     create = mocker.patch.object(store, "create")
 
@@ -46,37 +102,69 @@ def test_secret_store_ensure_present_creates_only_when_missing(mocker: MockerFix
 
 
 @pytest.mark.parametrize("version", ["podman version 5.4.0", "podman version 6.1.2"])
-def test_secret_store_accepts_supported_quadlet_version(mocker: MockerFixture, version: str) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
-    mocker.patch(
-        "lychd.system.services.secrets.subprocess.run",
-        return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout=version),
+def test_secret_store_accepts_supported_quadlet_version(
+    mocker: MockerFixture,
+    version: str,
+) -> None:
+    runner = _runner(mocker)
+    runner.run.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "--version"),
+        returncode=0,
+        stdout=version,
     )
 
-    PodmanSecretStore().require_quadlet_version()
+    PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    ).require_quadlet_version()
 
 
 @pytest.mark.parametrize("version", ["podman version 4.9.4", "podman version 5.3.2"])
-def test_secret_store_rejects_unsupported_quadlet_version(mocker: MockerFixture, version: str) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
-    mocker.patch(
-        "lychd.system.services.secrets.subprocess.run",
-        return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout=version),
+def test_secret_store_rejects_unsupported_quadlet_version(
+    mocker: MockerFixture,
+    version: str,
+) -> None:
+    runner = _runner(mocker)
+    runner.run.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "--version"),
+        returncode=0,
+        stdout=version,
+    )
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
     )
 
     with pytest.raises(PodmanSecretStoreError, match="Podman >= 5.4"):
-        PodmanSecretStore().require_quadlet_version()
+        store.require_quadlet_version()
 
 
-def test_secret_store_create_raises_domain_error(mocker: MockerFixture) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value="/usr/bin/podman")
-    mock_run = mocker.patch("lychd.system.services.secrets.subprocess.run")
-    mock_run.side_effect = subprocess.CalledProcessError(
+def test_secret_store_create_uses_bounded_non_echoed_stdin(
+    mocker: MockerFixture,
+) -> None:
+    runner = _runner(mocker)
+    runner.run_with_input.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "secret", "create"),
         returncode=125,
-        cmd=["podman", "secret", "create"],
         stderr="boom",
     )
-    store = PodmanSecretStore()
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
 
     with pytest.raises(PodmanSecretStoreError, match="Failed to create podman secret"):
         store.create("alpha", "value")
+
+    runner.run_with_input.assert_called_once_with(
+        (
+            "/usr/bin/podman",
+            "secret",
+            "create",
+            "--replace",
+            "alpha",
+            "-",
+        ),
+        timeout_s=30.0,
+        input_text="value",
+    )

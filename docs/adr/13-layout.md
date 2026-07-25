@@ -84,7 +84,8 @@ This Domain contains the persistent reality of the system. It is the primary sto
 - **`lychd.lock`:** The Federated Lockfile. Living in the root of the Crypt, it pins the exact hashes of all logic.
 - **`core/`:** Core source code. Mounted **Read-Only** at runtime to maintain the **[Security (09)](09-security.md)** seal.
 - **`extensions/`:** Private Crypt extension source. Pre-v1 this is assimilable, Forge-composed code rather than a stable third-party plugin ABI. Mounted **Read-Only** at runtime.
-- **`postgres/`:** The site of the **Phylactery**. A dedicated subvolume containing the partitioned database chambers. Mounted **Read-Write**.
+- **`postgres/`:** The **Phylactery** boundary. `data/` may be an external mount, a LychD-created
+  Btrfs subvolume, or an ordinary directory; it is mounted **Read-Write** into PostgreSQL.
 - **`lab/`:** The site of Genesis. A **Read-Write** region containing isolated subdirectories for **Shadow Realm** branches, allowing the machine to dream of new code without impacting reality.
 
 ### 3. The Forge (`XDG_CACHE_HOME`)
@@ -102,20 +103,42 @@ This Domain contains disposable, machine-generated artifacts. It is excluded fro
 
 ## Lifecycle Ownership
 
-`lychd init` distinguishes removable paths it creates from paths it merely encounters and from
-durable substrate it may provision. It journals only the removable class in an owner-only
-lifecycle receipt; shared XDG roots and Postgres data never become deletion authority. This
-distinction matters even beneath a dedicated LychD root: a pre-existing Codex, Crypt, Forge, model
-shelf, foreign file, or mounted Phylactery is not adopted merely because the map knows its
-location.
+`lychd init` distinguishes exact paths it creates from durable substrate it may provision. It
+journals each successful creation batch in an owner-only lifecycle receipt. After the complete
+transaction converges, the same receipt deliberately adopts the current device/inode identities of
+the dedicated Codex, Crypt, and Forge roots as recursively removable installation authority. Each
+root is opened relative to its parent and must share the parent's Linux mount ID; an unsafe
+existing root blocks before any effect, even when another root is still absent. The dry run states
+this grant; geography alone does not create it.
 
-`lychd destroy` is the bounded inverse of that recorded host inscription, not recursive deletion of
-the Three Domains. It removes unchanged receipt-owned files and exact Scribe-owned binding sources;
-recorded directories are removed deepest-first only when empty. Modified files, foreign children,
-unsafe ownership, active or enabled units, and invalid receipts block the operation. External
-mounts, Postgres contents, model artifacts, secrets, and all unrecorded state remain in place.
-`destroy --dry-run` renders the same plan without changing files, modes, mounts, services, or
-secrets.
+Shared XDG parents and mounted Postgres data never enter that root authority. An ordinary
+unmounted Phylactery directory beneath Crypt is inside the explicitly adopted dedicated root; a
+model shelf, source checkout, foreign mount, or mounted Phylactery is not adopted merely because
+the map knows its location. A mounted Phylactery instead requires live mount and Btrfs identity
+evidence during `del`.
+
+Initialization observes the nearest existing filesystem beneath the PostgreSQL target. When
+`data/` is absent on Btrfs and trusted `btrfs`, `chattr`, and `lsattr` tools are available, it
+attempts a subvolume plus `+C` and verifies both. Existing storage is never retrofitted: the CLI
+reports its filesystem and No-COW directory policy while preserving it exactly. `+C` governs new
+file extents beneath that directory; it does not prove that pre-existing PostgreSQL extents were
+rewritten. Non-Btrfs hosts receive an ordinary directory fallback.
+
+`lychd del` is a separate, explicitly destructive installation lifecycle. Its dry run joins exact
+receipt ownership with a live inventory of LychD services, containers, bindings, the Three
+Domains, snapshots, and the Phylactery. Execution stops the installation before deleting managed
+state and requires clear confirmation; it may therefore remove durable LychD data that `init`
+correctly refused to claim as ordinary rollback authority.
+
+That explicit scope does not turn path geography into permission to guess. Symlinks, unknown
+mounts, ambiguous external resources, invalid receipts, or identity drift fail closed. Recursive
+walks are descriptor-relative and reject mount-ID crossings. If an inspected Btrfs subvolume needs
+elevation, LychD checkpoints the canonical filesystem UUID, subvolume UUID, subvolume ID, source
+mapping, and mount target before printing a trusted absolute operator command; resume blocks unless
+that whole identity can be re-attested. LychD never invokes `sudo`. A source checkout and external
+model shelves remain outside the Three-Domain deletion scope unless a distinct installer or
+artifact owner proves authority over them. Until equivalent immutable creation receipts exist,
+Podman containers, pods, secrets, and the installed package are also reported as preserved residue.
 
 ## The Outlands (External Mounts)
 

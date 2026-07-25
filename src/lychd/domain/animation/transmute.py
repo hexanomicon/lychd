@@ -18,7 +18,6 @@ from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
     CONTAINER_POSTGRES_PORT,
-    PATH_CACHE_ROOT,
     PATH_CODEX_ROOT,
     PATH_CORE_DIR,
     PATH_CRYPT_ROOT,
@@ -606,11 +605,17 @@ class Transmuter:
 
     def _runtime_path_env(self) -> dict[str, str]:
         """Keep XDG-derived host/container paths symmetric under ``User=%U``."""
+        from lychd.system.constants import (
+            PATH_XDG_CACHE_HOME,
+            PATH_XDG_CONFIG_HOME,
+            PATH_XDG_DATA_HOME,
+        )
+
         return {
             "HOME": str(Path.home()),
-            "XDG_CONFIG_HOME": str(PATH_CODEX_ROOT.parent),
-            "XDG_DATA_HOME": str(PATH_CRYPT_ROOT.parent),
-            "XDG_CACHE_HOME": str(PATH_CACHE_ROOT.parent),
+            "XDG_CONFIG_HOME": str(PATH_XDG_CONFIG_HOME),
+            "XDG_DATA_HOME": str(PATH_XDG_DATA_HOME),
+            "XDG_CACHE_HOME": str(PATH_XDG_CACHE_HOME),
         }
 
     def _secret_file(self, secret_name: str) -> str:

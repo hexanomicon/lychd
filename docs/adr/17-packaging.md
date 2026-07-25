@@ -59,8 +59,10 @@ non-negotiable contract:
 - `[dependency-groups]` contains contributor tooling only (`docs`, `test`, `lint`, `typing`, and
   their `dev` aggregate). A production image uses the locked project dependencies without asking
   for a development group or a nonexistent optional extra.
-- The installed `lychd --help`, `lychd init`, and lazy `serve`/`database` bridges must resolve from
-  the wheel without a source checkout on `PYTHONPATH`.
+- The installed `lychd --help`, its closed eight-root public grammar, and the internal server,
+  migration, worker, and Reactor process entrypoints used by generated units must resolve from the
+  wheel without a source checkout on `PYTHONPATH`. Framework-native `serve` and `database`
+  commands are not public roots.
 - A release gate builds the wheel, creates a clean environment, installs that wheel alone, checks
   its dependency metadata, imports the runtime composition root, and invokes the CLI help surface.
   Passing inside the developer's already-synchronized `.venv` is not evidence of installability.

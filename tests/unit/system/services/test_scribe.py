@@ -54,6 +54,24 @@ def _container(*, description: str = "desc") -> QuadletContainer:
     )
 
 
+def test_scribe_requires_initialization_prepared_binding_sites(
+    templates_dir: Path,
+    tmp_path: Path,
+) -> None:
+    """Binding compilation never recreates shared host directories."""
+    scribe = ScribeService(
+        templates_dir=templates_dir,
+        output_dir=tmp_path / "containers" / "systemd",
+        systemd_dir=tmp_path / "systemd" / "user",
+    )
+
+    with pytest.raises(ScribeOwnershipError, match=r"run `lychd init` first"):
+        scribe.plan_reconcile_all([_container()], plain_units={})
+
+    assert not (tmp_path / "containers").exists()
+    assert not (tmp_path / "systemd").exists()
+
+
 def _ownership(output_dir: Path) -> dict[str, object]:
     return json.loads((output_dir / ".lychd-owned.json").read_text(encoding="utf-8"))
 
@@ -81,6 +99,49 @@ def test_scribe_inscribes_split_sites_and_exact_ownership(
     assert ownership_path.stat().st_uid == os.getuid()
     assert ownership_path.stat().st_mode & 0o777 == 0o600
     assert not (output_dir / ".git").exists()
+
+
+def test_scribe_reconcile_plan_is_effect_free_and_matches_execution(
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """Bind preview classifies the same desired files without creating them."""
+    initial = scribe.plan_reconcile_all([_container()], plain_units={})
+
+    assert {change.kind for change in initial.changes} == {"create"}
+    assert not (output_dir / "lychd-hermes.container").exists()
+    assert not (output_dir / ".lychd-owned.json").exists()
+
+    scribe.reconcile_all([_container()], plain_units={})
+    settled = scribe.plan_reconcile_all([_container()], plain_units={})
+    assert not settled.mutates
+    assert {change.kind for change in settled.changes} == {"preserve"}
+
+    changed = scribe.plan_reconcile_all([_container(description="new")], plain_units={})
+    assert any(change.kind == "update" and change.path.name == "lychd-hermes.container" for change in changed.changes)
+
+    empty = scribe.plan_reconcile_all([], plain_units={})
+    assert any(change.kind == "remove" and change.path.name == "lychd-hermes.container" for change in empty.changes)
+
+
+def test_reconcile_plan_generation_distinguishes_same_disposition_content_drift(
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """An update-to-update drift changes the plan precondition fingerprint."""
+    filename = "lychd-reactor.service"
+    target = systemd_dir / filename
+    desired = {filename: "desired\n"}
+    scribe.reconcile_all([], plain_units=desired)
+
+    target.write_text("drift-a\n", encoding="utf-8")
+    first = scribe.plan_reconcile_all([], plain_units=desired)
+    target.write_text("drift-b\n", encoding="utf-8")
+    second = scribe.plan_reconcile_all([], plain_units=desired)
+
+    assert first.changes == second.changes
+    assert first.observed_generation != second.observed_generation
+    assert first != second
 
 
 def test_scribe_preserves_every_unowned_file_even_with_managed_suffix(
@@ -464,7 +525,7 @@ def test_clear_owned_bindings_never_recreates_a_missing_systemd_site(
     output_dir: Path,
     systemd_dir: Path,
 ) -> None:
-    """Dissolution removes exact sources but never creates a binding directory."""
+    """Dissolution removes sources but retains exact authority through reload."""
     scribe.reconcile_all([_container()], plain_units={})
     snapshot = scribe.inspect_owned_bindings()
     systemd_dir.rmdir()
@@ -473,4 +534,24 @@ def test_clear_owned_bindings_never_recreates_a_missing_systemd_site(
 
     assert not systemd_dir.exists()
     assert not (output_dir / "lychd-hermes.container").exists()
-    assert _ownership(output_dir) == {"quadlet": [], "systemd": [], "version": 1}
+    assert _ownership(output_dir) == {
+        "quadlet": ["lychd-hermes.container"],
+        "systemd": [],
+        "version": 1,
+    }
+
+
+def test_release_owned_binding_authority_requires_absent_sources(
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    scribe.reconcile_all([_container()], plain_units={})
+    snapshot = scribe.inspect_owned_bindings()
+
+    with pytest.raises(ScribeOwnershipError, match="binding sources remain"):
+        scribe.release_owned_binding_authority(
+            expected_generation=snapshot.generation or "",
+        )
+
+    assert (output_dir / ".lychd-owned.json").exists()
+    assert (output_dir / "lychd-hermes.container").exists()

@@ -249,8 +249,9 @@ This adds a kernel-enforced MAC layer on top of UID-based posture. SELinux does 
 
 The caged default does not mount the user Systemd bus into the Vessel. Instead, the Vessel can write
 only typed `TransitionIntent` files into an owner-only Reactor inbox. `lychd-reactor.path` watches
-new inbox files and crash-surviving journal processing records, waking the host-side
-`lychd reactor consume` oneshot. It claims a pending entry out of the Vessel-writable
+new inbox files and crash-surviving journal processing records, waking the host-side private
+Reactor consumer oneshot. This is generated-service machinery, not a public Pulse root. It claims
+a pending entry out of the Vessel-writable
 directory before parsing, then validates it through a no-follow descriptor: file type, bounded size,
 owner, mode, schema/set invariants, filename/transition identity, configuration digest, configured
 switch-policy plan, expected user-systemd state, and host-owned Animator-to-unit mappings all pass

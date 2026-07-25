@@ -48,9 +48,7 @@ def current_authority() -> LifecycleAuthority:
         return value
 
     raw_layout: object = (
-        getattr(facade, "HOST_LAYOUT", constants.HOST_LAYOUT)
-        if facade is not None
-        else constants.HOST_LAYOUT
+        getattr(facade, "HOST_LAYOUT", constants.HOST_LAYOUT) if facade is not None else constants.HOST_LAYOUT
     )
     if not isinstance(raw_layout, tuple):
         msg = "Lifecycle authority HOST_LAYOUT must be a tuple of pathlib.Path values."

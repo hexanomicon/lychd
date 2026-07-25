@@ -32,7 +32,8 @@ icon: material/telescope
     - **Cons:** Raw telemetry is not domain truth. Curated run, transition, cost, and hardware facts belong in Postgres, but unlimited vendor-shaped spans need explicit retention and must not define the domain schema.
 
 !!! success "Option 3: Native Oculus with Pluggable Eyes"
-    A native Litestar/HTMX inspection surface over LychD-owned evidence, with standards-based exports and optional external viewers.
+    A native Litestar evidence service projected through the Svelte Altar, with standards-based
+    exports and optional external viewers.
     - **Pros:**
         - **Native view:** Domain vocabulary, grants, transitions, consent, Legion, and GPU pressure can be correlated without a second control plane or required container.
         - **OpenTelemetry:** Existing Pydantic AI/HTTP instrumentation remains an interoperable signal source.
@@ -43,10 +44,12 @@ icon: material/telescope
 **The Oculus** is adopted as LychD's native observability extension and Altar surface. Its canonical input is structured LychD evidence connecting intent, graph movement, tool use, consent, runtime pressure, and outcome. It must not require another application container. Phoenix is retained only as a compatibility extension and possible external **Eye** during the transition; it is not the Oculus and never owns run, identity, scheduling, or retention truth.
 
 !!! warning "Implementation state"
-    The native HTMX Oculus is the accepted redesign but is not yet complete. The repository still
-    ships `observability/phoenix` and its historical `lychd-oculus` unit stem for compatibility.
-    That extension is optional and deprecated as the default view; removing or renaming its unit is
-    a separate migration. Documentation must not present the compatibility container as native Oculus.
+    The native Oculus service and Svelte Scrying projection are accepted but not yet complete. The
+    repository still ships `observability/phoenix` and its historical `lychd-oculus` unit stem for
+    compatibility, while the current Altar contains a legacy HTMX shell. The Phoenix extension is
+    optional and deprecated as the default view; removing or renaming its unit is a separate
+    migration. Documentation must not present either the compatibility container or an unbuilt
+    Svelte route as native Oculus delivery.
 
 !!! note "Trace Correlation Contract"
     Runtime evidence must preserve correlation keys across layers: `run_id`, `step_id`, `tool_call_id`, `lane_id`, peer task IDs, and relevant hardware lease IDs. This lets an incident, Riddle failure, HitL decision, or A2A callback be followed from visible surface to graph movement to provider call without granting the trace authority over the underlying state.
@@ -57,8 +60,9 @@ icon: material/telescope
 
 To satisfy the requirement of sovereignty, the Oculus is implemented through shaped extension seams:
 
-- **The Native Surface:** Oculus routes and HTMX fragments belong to the Altar-facing observability
-  extension. They query typed application services; templates do not query tables or SDKs directly.
+- **The Native Surface:** Oculus contributes typed query/event routes and schemas through the
+  shaped Vessel boundary. The Svelte Scrying instrument consumes their generated SDK and semantic
+  event contract; components do not query tables or observability SDKs directly.
 - **Compatibility Eye:** `observability/phoenix` registers `PhoenixSettings` under
   `runes/observability/phoenix/`. Its image, exporter endpoint, and ports remain extension-owned TOML.
 - **The Store:** Vessel telemetry registration is reserved for a future shaped

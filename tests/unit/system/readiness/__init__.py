@@ -1,0 +1,1 @@
+"""Focused host-readiness verification."""

@@ -17,13 +17,13 @@ CONTAINER_PHOENIX_OTLP_PORT: Final[int] = 4317
 
 
 class ObservabilityConfig(RuneConfig):
-    """Abstract branch Rune for observability-owned configuration."""
+    """Observability service declarations."""
 
     path_fragment: ClassVar[Path] = Path("observability")
 
 
 class PhoenixSettings(ObservabilityConfig):
-    """Rune config for the built-in Arize Phoenix observability service."""
+    """Optional external Phoenix tracing service."""
 
     path_fragment: ClassVar[Path] = Path("phoenix")
     sample_template: ClassVar[str | None] = """

@@ -51,6 +51,11 @@ A **Hybrid Snapshot Strategy** governed by a **Checkpoint Protocol** is adopted.
     checkpoints for declared durable waits. Sections below specify the whole-body target and
     must not be read as an available recovery command.
 
+    [The Pulse](19-cli.md) deliberately reserves no `snapshot` or `restore` root command. Inventory
+    belongs under `status`; capture and recovery must eventually compose beneath the closed public
+    verbs only after this ADR's freeze and reconciliation contract exists. Their exact target or
+    `run` operation syntax remains unsettled.
+
 !!! note "Replay Is Not Snapshot Rollback"
     Workflow replay is normally a Phylactery concern. The current foundation records run/queue truth and durable Pydantic Graph checkpoints in Postgres. A transactional graph/queue outbox remains later work. Snapshot rollback is heavier: it restores whole reality when the Body (code, lockfiles, VCS state) and every durable Soul component must move together after Creation, Assimilation, Evolution, migration, or failed promotion.
 

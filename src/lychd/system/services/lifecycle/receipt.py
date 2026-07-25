@@ -15,11 +15,15 @@ from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, mo
 from lychd.system.services.lifecycle._authority import LifecycleAuthority, current_authority
 from lychd.system.services.lifecycle.models import (
     CreatedResources,
+    DedicatedRootIdentity,
     LifecycleAction,
     LifecycleDisposition,
     LifecycleError,
     LifecyclePlan,
     LifecycleResourceKind,
+)
+from lychd.system.services.lifecycle.mount_identity import (
+    directory_identity_on_parent_mount,
 )
 from lychd.system.services.lifecycle.paths import (
     digest_file,
@@ -89,15 +93,21 @@ class _LifecycleReceipt(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     version: Literal[1] = 1
+    dedicated_roots: tuple[_ReceiptDirectory, ...] = ()
     directories: tuple[_ReceiptDirectory, ...] = ()
     files: tuple[_ReceiptFile, ...] = ()
 
     @model_validator(mode="after")
     def validate_unique_paths(self) -> _LifecycleReceipt:
         """Reject duplicate paths and file/directory overlap."""
+        dedicated_roots = [entry.path for entry in self.dedicated_roots]
         directories = [entry.path for entry in self.directories]
         files = [entry.path for entry in self.files]
-        if len(set(directories)) != len(directories) or len(set(files)) != len(files):
+        if (
+            len(set(dedicated_roots)) != len(dedicated_roots)
+            or len(set(directories)) != len(directories)
+            or len(set(files)) != len(files)
+        ):
             msg = "Lifecycle receipt contains duplicate paths."
             raise ValueError(msg)
         overlap = set(directories).intersection(files)
@@ -151,6 +161,16 @@ class LifecycleReceiptStore:
                 kind=LifecycleResourceKind.DIRECTORY,
                 authority=authority,
             )
+        expected_roots = {
+            authority.codex_root,
+            authority.crypt_root,
+            authority.cache_root,
+        }
+        for root in receipt.dedicated_roots:
+            path = Path(root.path)
+            if path not in expected_roots:
+                msg = f"Lifecycle receipt contains an unknown dedicated root: {path}"
+                raise LifecycleError(msg)
         for entry in receipt.files:
             validate_receipt_path(
                 Path(entry.path),
@@ -203,8 +223,13 @@ class LifecycleReceiptStore:
             msg = f"Lifecycle receipt exceeds {_MAX_RECEIPT_BYTES} bytes: {self.path}"
             raise LifecycleError(msg)
 
-    def record(self, resources: CreatedResources) -> None:
-        """Merge resources actually created by initialization into the receipt."""
+    def record(
+        self,
+        resources: CreatedResources,
+        *,
+        attest_dedicated_roots: bool = False,
+    ) -> None:
+        """Merge one init effect and optionally seal the dedicated-root authority."""
         current = self.load()
         authority = current_authority()
         directories = {Path(entry.path): entry for entry in current.directories}
@@ -218,14 +243,159 @@ class LifecycleReceiptStore:
             directories[directory] = self._directory_entry(directory, authority=authority)
         for path in resources.files:
             files[path] = self._file_entry(path, authority=authority)
+        dedicated_roots = current.dedicated_roots
+        if attest_dedicated_roots:
+            dedicated_roots = tuple(
+                self._dedicated_root_entry(root, authority=authority)
+                for root in self._expected_dedicated_roots(authority)
+            )
         next_receipt = _LifecycleReceipt(
             version=1,
+            dedicated_roots=dedicated_roots,
             directories=tuple(directories[path] for path in sorted(directories)),
             files=tuple(files[path] for path in sorted(files)),
         )
         if next_receipt == current and self.exists:
             return
         self._write(next_receipt)
+
+    def seal_dedicated_roots(self) -> None:
+        """Commit the final init attestation after every root exists."""
+        self.record(CreatedResources(), attest_dedicated_roots=True)
+
+    def plan_dedicated_root_attestation(self) -> LifecycleAction:
+        """Plan the final init seal over all exact dedicated root identities."""
+        authority = current_authority()
+        expected = self._expected_dedicated_roots(authority)
+        receipt = self.load()
+        current: list[_ReceiptDirectory] = []
+        missing: list[Path] = []
+        for root in expected:
+            if not os.path.lexists(root):
+                missing.append(root)
+                continue
+            try:
+                current.append(self._dedicated_root_entry(root, authority=authority))
+            except LifecycleError as exc:
+                return LifecycleAction(
+                    LifecycleDisposition.BLOCKED,
+                    LifecycleResourceKind.RECEIPT,
+                    str(self.path),
+                    f"dedicated-root authority cannot be sealed: {exc}",
+                )
+        if missing:
+            return LifecycleAction(
+                LifecycleDisposition.WOULD_CREATE,
+                LifecycleResourceKind.RECEIPT,
+                str(self.path),
+                ("after creation, deliberately adopt the exact dedicated XDG roots as recursively removable"),
+            )
+        current_identities = tuple(current)
+        if receipt.dedicated_roots == current_identities:
+            return LifecycleAction(
+                LifecycleDisposition.PRESERVE,
+                LifecycleResourceKind.RECEIPT,
+                str(self.path),
+                "dedicated-root authority matches the current device and inode identities",
+            )
+        return LifecycleAction(
+            LifecycleDisposition.WOULD_CREATE,
+            LifecycleResourceKind.RECEIPT,
+            str(self.path),
+            (
+                "successful init will deliberately adopt these exact dedicated XDG "
+                "roots as recursively removable and refresh their device/inode seal"
+            ),
+        )
+
+    def require_dedicated_root_identities(
+        self,
+        expected_roots: tuple[Path, ...],
+    ) -> tuple[DedicatedRootIdentity, ...]:
+        """Return current receipt-bound identities or fail closed."""
+        if len(set(expected_roots)) != len(expected_roots):
+            msg = "Dedicated root authority request contains duplicate roots."
+            raise LifecycleError(msg)
+        receipt = self.load()
+        recorded = {Path(entry.path): entry for entry in receipt.dedicated_roots}
+        if set(recorded) != set(expected_roots):
+            msg = (
+                "Lifecycle receipt does not authorize the exact dedicated-root set; "
+                "run `lychd init` successfully before deletion."
+            )
+            raise LifecycleError(msg)
+
+        identities: list[DedicatedRootIdentity] = []
+        for root in expected_roots:
+            entry = recorded[root]
+            if not os.path.lexists(root):
+                identities.append(
+                    DedicatedRootIdentity(
+                        path=root,
+                        device=entry.device,
+                        inode=entry.inode,
+                    )
+                )
+                continue
+            if symlink := path_has_symlink_component(root):
+                msg = f"Dedicated root traverses an untrusted symlink component: {symlink}"
+                raise LifecycleError(msg)
+            metadata = directory_identity_on_parent_mount(root)
+            if metadata.st_uid != os.getuid():
+                msg = f"Dedicated root is no longer a safe owner directory: {root}"
+                raise LifecycleError(msg)
+            if metadata.st_dev != entry.device or metadata.st_ino != entry.inode:
+                msg = f"Dedicated root identity drifted after initialization: {root}"
+                raise LifecycleError(msg)
+            identities.append(
+                DedicatedRootIdentity(
+                    path=root,
+                    device=entry.device,
+                    inode=entry.inode,
+                )
+            )
+        return tuple(identities)
+
+    @staticmethod
+    def _expected_dedicated_roots(
+        authority: LifecycleAuthority,
+    ) -> tuple[Path, Path, Path]:
+        """Return the canonical root set in final deletion order."""
+        return (
+            authority.crypt_root,
+            authority.cache_root,
+            authority.codex_root,
+        )
+
+    @staticmethod
+    def _dedicated_root_entry(
+        root: Path,
+        *,
+        authority: LifecycleAuthority,
+    ) -> _ReceiptDirectory:
+        """Capture one exact recursively removable root after successful init."""
+        if root not in LifecycleReceiptStore._expected_dedicated_roots(authority):
+            msg = f"Refusing to attest an unknown dedicated root: {root}"
+            raise LifecycleError(msg)
+        if not lexically_normal(root) or root in {Path("/"), Path.home()}:
+            msg = f"Refusing to attest a broad or non-canonical dedicated root: {root}"
+            raise LifecycleError(msg)
+        if symlink := path_has_symlink_component(root):
+            msg = f"Refusing to attest a root through a symlink component: {symlink}"
+            raise LifecycleError(msg)
+        try:
+            metadata = directory_identity_on_parent_mount(root)
+        except LifecycleError as exc:
+            msg = f"Refusing to attest an unsafe dedicated root: {root}: {exc}"
+            raise LifecycleError(msg) from exc
+        if metadata.st_uid != os.getuid():
+            msg = f"Refusing to attest an unsafe dedicated root: {root}"
+            raise LifecycleError(msg)
+        return _ReceiptDirectory(
+            path=str(root),
+            device=metadata.st_dev,
+            inode=metadata.st_ino,
+        )
 
     @staticmethod
     def _directory_entry(
@@ -292,13 +462,9 @@ class LifecycleReceiptStore:
             *directories,
         }
         authority = current_authority()
-        durable_paths: set[Path] = (
-            {authority.postgres_data} if os.path.lexists(authority.postgres_data) else set()
-        )
+        durable_paths: set[Path] = {authority.postgres_data} if os.path.lexists(authority.postgres_data) else set()
         durable_ancestors = {
-            directory
-            for directory in directories
-            if any(is_within(durable, directory) for durable in durable_paths)
+            directory for directory in directories if any(is_within(durable, directory) for durable in durable_paths)
         }
         actions.extend(
             self._plan_owned_directory(
@@ -439,11 +605,7 @@ class LifecycleReceiptStore:
                 str(path),
                 "ancestor of durable Postgres state; destruction never removes through it",
             )
-        unknown = [
-            child.name
-            for child in path.iterdir()
-            if child != self.path and child not in owned_paths
-        ]
+        unknown = [child.name for child in path.iterdir() if child != self.path and child not in owned_paths]
         if unknown:
             summary = ", ".join(sorted(unknown)[:_UNKNOWN_PREVIEW_LIMIT])
             suffix = ", …" if len(unknown) > _UNKNOWN_PREVIEW_LIMIT else ""
@@ -534,9 +696,7 @@ class LifecycleReceiptStore:
         temporary = Path(raw_path)
         try:
             os.fchmod(descriptor, _RECEIPT_MODE)
-            content = (
-                json.dumps(receipt.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
-            ).encode()
+            content = (json.dumps(receipt.model_dump(mode="json"), indent=2, sort_keys=True) + "\n").encode()
             with os.fdopen(descriptor, "wb") as stream:
                 descriptor = -1
                 stream.write(content)

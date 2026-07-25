@@ -18,7 +18,7 @@ class LlamaCppMode(StrEnum):
 
 
 class LlamaCppSoulstoneConfig(SoulstoneConfig):
-    """Builtin Soulstone profile for llama.cpp.
+    """llama.cpp single-model or router runtime declarations.
 
     Contract:
     - ``exec`` present => passthrough mode (command is authoritative)

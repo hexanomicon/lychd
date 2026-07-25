@@ -34,6 +34,9 @@ documentation changes that define system truth.
   `docs/adr/23-orchestrator.md`, `docs/adr/24-graph.md`, `docs/adr/31-simulation.md`
 - Persistence: `docs/adr/06-persistence.md`, `src/lychd/db/`,
   `src/lychd/domain/cortex/`
+- Host lifecycle and Pulse: `docs/adr/13-layout.md`, `docs/adr/19-cli.md`,
+  `src/lychd/cli/`, `src/lychd/system/readiness/`,
+  `src/lychd/system/services/lifecycle/`
 - Anatomy and assembly: `docs/adr/13-layout.md`, `src/lychd/system/constants.py`,
   `src/lychd/app.py`, `src/lychd/extensions/host.py`, `src/lychd/config/components.py`
 

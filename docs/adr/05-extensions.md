@@ -37,9 +37,10 @@ icon: material/toy-brick-outline
     - **Pros:**
         - **Zero-Latency:** Direct execution within the kernel's event loop enables high-velocity reasoning.
         - **Shaped Integration:** Extensions contribute only through domain-owned stores. Current
-          active stores cover Runes, Soulstone definitions, Portals, and transmutation; Vessel is
-          empty/reserved, while tools, routes, workloads, migrations, Patterns, and Compositions
-          remain target stores until individually delivered.
+          active stores cover Runes, Soulstone definitions, Portals, transmutation, and typed
+          `run` operations; Vessel is empty/reserved, while tools, routes, status sections,
+          workloads, migrations, Patterns, and Compositions remain target stores until
+          individually delivered.
         - **Assimilable Source:** Standard Git tooling preserves source history while Forge/Smith verification repairs organs with the body they join.
 
 ## Decision Outcome
@@ -80,6 +81,10 @@ The architecture relies on an **Inversion of Control** pattern to facilitate ass
 - **The Entry Point:** Any organ participating in in-process boot registration exposes a `register(context)` function in its selected `register.py` shim.
 - **The Context Object:** The Core passes an `ExtensionContext` object which serves as the host registration surface for boot-time stores. Through this object, an organ binds runtime-facing logic into the Daemon's anatomy.
 - **Interface Registration:** Vessel routes, middleware, auth, and event hooks are reserved for a shaped `context.vessel` store instead of flat registration methods.
+- **Pulse Operations:** An extension may register typed work through
+  `context.run_operations`. The contribution appears beneath `lychd run`, inherits the shared
+  admission/authority/traceability path, and never becomes a public root command. Its declaration
+  is inert metadata rather than an arbitrary host-side Click callback.
 - **Schema Exposure:** Selected in-process organs register `RuneConfig` subclasses through the extension context after import. Runtime package/source scanning is not the extension ledger.
 - **Application Contributions:** Future shaped `patterns` and `compositions` stores may accept
   immutable Pattern revisions and metadata for the living [Reference Composition
@@ -115,9 +120,10 @@ packages on its own.
 ### 3. Contributions as Organs
 
 Extensions are more than isolated code, but no Extension is automatically a complete application.
-Today `ExtensionContext` exposes active Rune, Soulstone, Portal, and transmutation stores plus an
-empty reserved Vessel store. The broader list below is the Extension Protocol target; each item
-remains absent until its shaped store, lifecycle, tests, and State boundary exist:
+Today `ExtensionContext` exposes active Rune, Soulstone, Portal, transmutation, and `run` operation
+stores plus an empty reserved Vessel store. Read-only `status` sections remain a target store. The
+broader list below is the Extension Protocol target; each item remains absent until its shaped
+store, lifecycle, tests, and State boundary exist:
 
 - **Configuration and Runtime Definitions:** Rune schemas, Animator definitions, adapters, and
   lifecycle hooks through their owning stores.
@@ -169,7 +175,10 @@ Built-in Extensions (`src/lychd/extensions/builtin/`) are versioned and updated 
 
 The **Extension Manager** imports only configured built-in ids and Crypt ids. A selected organ exposes `register(context)`, receives the host `ExtensionContext`, and contributes through explicit registration stores. Core built-ins resolve by convention inside `lychd.extensions.builtin`; private Crypt organs resolve through their selected shim path. Codex never scans arbitrary packages to decide what is active.
 
-Runtime-facing contributions use the same explicit registration pass. `register(context)` is the authoritative ledger for boot-time stores such as rune schemas, Animator Soulstone definitions, future Vessel bundles, lifecycle hooks, or future command stores. Runtime mutation should be explicit.
+Runtime-facing contributions use the same explicit registration pass. `register(context)` is the
+authoritative ledger for boot-time stores such as rune schemas, Animator Soulstone definitions,
+typed `run` operations, future Vessel bundles, or lifecycle hooks. Public Pulse roots remain
+closed; runtime mutation should be explicit.
 
 #### The Private Coupled Path
 

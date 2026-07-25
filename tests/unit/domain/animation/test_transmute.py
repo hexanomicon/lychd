@@ -113,8 +113,8 @@ def test_transmute_soulstone_to_manifest(transmuter: Transmuter) -> None:
     assert manifest.pod_service == "lychd-pod.service"
     assert manifest.wants == ["lychd-pod.service"]
     assert manifest.after == ["lychd-pod.service"]
-    assert manifest.env_vars["XDG_CONFIG_HOME"] == str(constants.PATH_CODEX_ROOT.parent)
-    assert manifest.env_vars["XDG_DATA_HOME"] == str(constants.PATH_CRYPT_ROOT.parent)
+    assert manifest.env_vars["XDG_CONFIG_HOME"] == str(constants.PATH_XDG_CONFIG_HOME)
+    assert manifest.env_vars["XDG_DATA_HOME"] == str(constants.PATH_XDG_DATA_HOME)
 
     # Data-plane runtimes never inherit the trusted control-plane mounts. Only
     # explicit model/runtime volumes are present.

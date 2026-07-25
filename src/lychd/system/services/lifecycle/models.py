@@ -121,6 +121,15 @@ class CreatedResources:
         return cls(directories=directories, files=files)
 
 
+@dataclass(frozen=True)
+class DedicatedRootIdentity:
+    """Initialization-attested identity of one recursively removable root."""
+
+    path: Path
+    device: int
+    inode: int
+
+
 def created_resources(*, directories: Iterable[Path] = (), files: Iterable[Path] = ()) -> CreatedResources:
     """Build one normalized created-resource report."""
     return CreatedResources(
