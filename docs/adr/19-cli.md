@@ -15,6 +15,9 @@ icon: material/console-line
 - **Highest Command:** The CLI must be the only entity capable of triggering the "Rebirth"—the manual confirmation required to activate a newly packaged substrate.
 - **Extension Registry:** Pluggable command injection; extensions must be able to graft their own subcommands into the primary management group.
 - **Dual-Mode Execution:** Lightweight bootstrapping that allows management tasks to run without the overhead of initializing the full web-server stack.
+- **Reversible Inscription:** Each initialization or destruction dry run must inspect through the
+  same planner its execution path consumes, while deletion authority comes from exact ownership
+  receipts rather than known path geography.
 
 ## Considered Options
 
@@ -44,7 +47,8 @@ A **native Click root with lazy framework bridges** is adopted as "The Pulse"—
 The `lychd` entry point owns its root command. Importing it does not construct the Litestar
 application and does not connect to Postgres, start SAQ, initialize Pydantic AI, or load Vite.
 
-- `init`, `bind`, `doctor`, `animators`, and `--help` execute through local command services.
+- `init`, `destroy`, `bind`, `doctor`, `animators`, and `--help` execute through local command
+  services.
 - `serve` imports Litestar only inside its callback and delegates to the supported ASGI `run`
   surface.
 - `database` imports Litestar only inside its callback and delegates to its database lifecycle
@@ -57,7 +61,14 @@ This is a process boundary, not an environment heuristic: local commands do not 
 
 The Pulse defines the fundamental rituals required to govern the system:
 
-- **The Inscription (`lychd init`):** Initializes the **[Codex](12-configuration.md)** and layout. It generates a round-trippable `lychd.toml`, assembles enabled extensions, creates rune anchors, and writes marked sample TOML without overwriting existing intent.
+- **The Inscription (`lychd init`):** Initializes the **[Codex](12-configuration.md)** and layout. It generates a round-trippable `lychd.toml`, assembles enabled extensions, creates rune anchors, and writes marked sample TOML without overwriting existing intent. `lychd init --dry-run` executes the same planning boundary and reports `WOULD CREATE`, `PRESERVE`, and `BLOCKED` without changing files, modes, mounts, services, or secrets.
+- **The Dissolution (`lychd destroy`):** Reverses only the inactive host inscription that LychD can
+  prove it owns. It removes exact Scribe-manifest binding files and unchanged files recorded by
+  initialization, then removes recorded directories only when empty. Modified or unsafe recorded
+  state blocks the whole plan; pre-existing and foreign state, mounts, Postgres data, model
+  shelves, and secrets are preserved. This is not Python-package uninstallation and it is not a
+  data-purge command. `lychd destroy --dry-run` uses the same plan as execution; `--yes` confirms a
+  safe plan non-interactively but never bypasses a blocker.
 - **The Transmutation (`lychd bind`):** The primary infrastructure ritual. It reads the current configuration and installed extensions, generates the required Systemd Quadlet files, and reloads the host daemon. It turns "Config" into "Infrastructure."
 - **The Examination (`lychd doctor`):** Performs a read-only preflight over Codex permissions, runes, host tools, secret references, and the selected caged/uncaged deployment shape.
 - **The Census (`lychd animators`):** Lists declared Animator capabilities and their observed readiness without changing lifecycle state.
@@ -107,6 +118,9 @@ The **Pulse** (CLI) resides on the **Host Substrate**, physically separated from
 ```bash
 # The Pulse operates through these specific incantations:
 lychd init                   # Inscribe the Codex and establish the layout.
+lychd init --dry-run         # Preview the same Inscription plan without effects.
+lychd destroy --dry-run      # Preview exact, ownership-bounded Dissolution.
+lychd destroy                # Remove only an inactive, pristine inscription.
 lychd doctor                 # Read-only foundation preflight.
 lychd animators              # Inspect declared capability/readiness truth.
 lychd bind                   # Transmute validated intent into units.
@@ -120,6 +134,12 @@ The Pulse and the Vessel can both actuate the same Covens. Two wills issuing `sy
 
 - **Observation commands** (`list`, `status`, `logs`, `animators`) act directly. Reading the substrate contends with nothing.
 - **Actuation commands** (`start`, `stop`, `promote`, `rebirth`) SHALL first attempt the Vessel API—while the Vessel lives, its Orchestrator is the sole physical will (**[Orchestrator (23)](23-orchestrator.md)**)—and act directly only when the Vessel is provably down.
+- **Bootstrap lifecycle commands** (`init`, `destroy`) operate outside the Vessel. `destroy` may
+  remove bound source files only after every exact receipt-derived runtime unit is both inactive
+  and disabled; otherwise it fails closed. It never stops or disables a unit on the operator's
+  behalf, so it cannot become a competing physical will. Real `init`, `bind`, and `destroy`
+  serialize their host effects through one interprocess lifecycle lock; previews create no lock
+  file and perform no effect.
 - **The Mundane Anchor path** (`restore`, `rollback`) is exempt by design. It exists precisely for the dead-Vessel case (see [§4](#4-the-mundane-anchor-and-elevation-path)) and must never route through a Vessel it may be recovering.
 
 ### 7. Implementation Status
@@ -128,7 +148,8 @@ xDDD permits doctrine-first specification, but the Logos should state which limb
 
 | Command | Status | Notes |
 | :--- | :--- | :--- |
-| `init` | Implemented | Inscribes the Codex, discovers `RuneConfig` schemas, writes samples, forges the Crypt. |
+| `init` | Implemented | Inscribes the Codex, discovers `RuneConfig` schemas, writes samples, forges the Crypt; `--dry-run` previews the same plan without effects. |
+| `destroy` | Implemented | Removes only inactive exact Scribe-owned bindings plus pristine receipt-owned init files and empty recorded directories; `--dry-run` previews and `--yes` confirms without weakening blockers. |
 | `bind` | Implemented | Transmutes Codex into Systemd Quadlets and reloads the host daemon. |
 | `doctor` | Implemented | Read-only validation of the minimum runnable foundation. |
 | `animators` | Implemented | Read-only capability probes over declared animators. |
@@ -143,9 +164,9 @@ xDDD permits doctrine-first specification, but the Logos should state which limb
 | `restore` / `rollback` | Specified | The Mundane Anchor; must avoid importing `lychd.domain`. |
 
 The native root and the commands marked implemented above are the foundation. Extension command
-injection, CLI/Rebirth use of Host Reactor mediation, lifecycle actuation commands, Rebirth, and the independent
-Mundane Anchor remain later work; prose in §3–§6 defines their constraints, not their present
-availability.
+injection, CLI/Rebirth use of Host Reactor mediation, service lifecycle actuation commands
+(`start`/`stop`), Rebirth, and the independent Mundane Anchor remain later work; prose in §3–§6
+defines their constraints, not their present availability.
 
 ### Consequences
 

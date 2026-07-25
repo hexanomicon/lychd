@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import shutil
+import os
+import stat
+from collections.abc import Callable
 from pathlib import Path
 from typing import Final
 
@@ -11,6 +13,7 @@ from lychd.system.constants import (
     PATH_POSTGRESS_DATA_DIR,
 )
 from lychd.system.services.btrfs import Btrfs
+from lychd.system.services.lifecycle import CreatedResources, created_resources
 
 logger = structlog.get_logger()
 
@@ -40,77 +43,77 @@ class Layout:
         self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if selected_paths is None else tuple(selected_paths)
         self.btrfs: Final[Btrfs] = Btrfs()
 
-    def initialize(self) -> None:
+    def initialize(
+        self,
+        *,
+        on_created: Callable[[CreatedResources], None] | None = None,
+    ) -> CreatedResources:
         """Synchronize the physical layout using the public CLI-facing API."""
-        self.mkdirs()
+        return self.mkdirs(on_created=on_created)
 
-    def mkdirs(self) -> None:
+    def mkdirs(
+        self,
+        *,
+        on_created: Callable[[CreatedResources], None] | None = None,
+    ) -> CreatedResources:
         """Synchronize the physical layout with the system blueprint."""
-        created_paths: list[str] = []
+        created_paths: list[Path] = []
         skipped_paths: list[str] = []
 
         for path in self.paths:
-            if path.exists():
+            if os.path.lexists(path):
+                self._validate_existing_directory(path)
                 logger.debug("layout_path_exists_skipped", path=str(path))
                 skipped_paths.append(str(path))
                 continue
 
-            if self._provision_path(path):
-                created_paths.append(str(path))
+            missing = self._missing_path_chain(path)
+            try:
+                created = self._provision_path(path)
+                resources = created_resources(directories=created)
+                if on_created is not None:
+                    on_created(resources)
+            except BaseException:
+                self._rollback_empty_directories(missing)
+                raise
+            created_paths.extend(created)
 
         # Single summary log at the end, perfect for JSON and CLI rendering
         logger.info(
             "layout_synchronization_complete",
-            created=created_paths,
+            created=[str(path) for path in created_paths],
             skipped=skipped_paths,
         )
+        return created_resources(directories=created_paths)
 
-    def teardown(self) -> None:
-        """Erase the physical layout with Btrfs safety boundaries."""
-        # Reverse iteration ensures we clean children before parents if nested
-        for path in reversed(self.paths):
-            if not path.exists():
-                logger.debug("layout_teardown_skipped_not_found", path=str(path))
-                continue
+    @staticmethod
+    def _validate_existing_directory(path: Path) -> None:
+        """Fail closed when a managed layout path is not a safe user directory."""
+        metadata = path.lstat()
+        if path.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+            msg = f"Managed layout path must be a real directory: {path}"
+            raise RuntimeError(msg)
+        if metadata.st_uid != os.getuid():
+            msg = f"Managed layout path must be owned by uid {os.getuid()}: {path}"
+            raise RuntimeError(msg)
 
-            # The Routing Logic: Kernel Subvolume vs User Directory
-            if self.btrfs.is_subvolume(path):
-                if not self.btrfs.delete_subvolume(path):
-                    logger.critical(
-                        "layout_teardown_blocked_by_kernel",
-                        path=str(path),
-                        detail="Subvolume must be removed manually.",
-                        instruction=f"sudo btrfs subvolume delete {path}",
-                    )
-                continue
-
-            # Standard Deletion Fallback
-            try:
-                if path.is_dir():
-                    shutil.rmtree(path)
-                else:
-                    path.unlink()
-            except OSError as e:
-                logger.critical("layout_teardown_failed", path=str(path), error=str(e))
-            else:
-                logger.info("layout_path_removed", path=str(path))
-
-    def _provision_path(self, path: Path) -> bool:
+    def _provision_path(self, path: Path) -> tuple[Path, ...]:
         """Provision a specific path, applying filesystem optimizations if targeted.
 
         Args:
             path: The directory path to provision.
 
         Returns:
-            bool: True if the path was successfully created.
+            Every directory created while provisioning the target, shallowest first.
 
         """
+        missing = self._missing_path_chain(path)
         # Specialized Provisioning: Postgres Data Subvolume
         if path == PATH_POSTGRESS_DATA_DIR:
             if self.btrfs.create_subvolume(path):
                 if not self.btrfs.apply_no_cow(path):
                     logger.warning("layout_db_subvolume_unoptimized", path=str(path))
-                return True
+                return missing
 
             # If Btrfs ritual fails completely, log the fallback hint
             logger.info(
@@ -123,11 +126,30 @@ class Layout:
         try:
             path.mkdir(parents=True, exist_ok=True)
         except OSError as e:
-            logger.critical("layout_mkdir_failed", path=str(path), error=str(e))
-            return False
+            msg = f"Could not create managed layout directory {path}: {e}"
+            raise RuntimeError(msg) from e
         else:
             logger.info("layout_directory_created", path=str(path))
-            return True
+            return missing
+
+    @staticmethod
+    def _missing_path_chain(path: Path) -> tuple[Path, ...]:
+        """Return missing ancestors that ``mkdir(parents=True)`` will create."""
+        missing: list[Path] = []
+        current = path
+        while current != current.parent and not os.path.lexists(current):
+            missing.append(current)
+            current = current.parent
+        return tuple(reversed(missing))
+
+    @staticmethod
+    def _rollback_empty_directories(paths: tuple[Path, ...]) -> None:
+        """Best-effort rollback for directories materialized by one failed step."""
+        for path in reversed(paths):
+            try:
+                path.rmdir()
+            except OSError:
+                continue
 
 
 LayoutService = Layout

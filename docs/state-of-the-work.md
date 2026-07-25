@@ -93,16 +93,25 @@ or running service.
 
 **State:** Available
 
-**Proved now:** The `init`, `bind`, and `doctor` commands have focused repository tests for their
-current orchestration and failure behavior.
+**Proved now:** The `init`, `destroy`, `bind`, and `doctor` commands have focused repository tests
+for their current orchestration and failure behavior. Initialization and destruction expose
+side-effect-free dry runs over their execution planners. `destroy` removes only inactive exact
+Scribe-owned bindings plus unchanged files and empty directories recorded as created by `init`;
+foreign, pre-existing, mounted, durable-data, model, and secret state remains outside its deletion
+authority. Real `init`, `bind`, and `destroy` serialize their effect boundary; binding generations
+and init-created path identities are revalidated before removal.
 
 **Boundary:** `animators` has command-registration coverage but no focused inspection test; the
-end-to-end CLI placeholder contains no tests. No real host or GPU execution is claimed here.
+end-to-end CLI placeholder contains no tests. Destruction refuses active or enabled units and
+modified or unsafe recorded state; it is not package uninstallation and has no purge mode. No real
+host, systemd/Podman lifecycle, or GPU execution is claimed here.
 
 **Evidence**
 
 - **Source:** [CLI command implementations](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py)
+  and [lifecycle planning and ownership](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/lifecycle/__init__.py)
 - **Verification:** [Focused CLI command tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py)
+  and [lifecycle safety and round-trip tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_lifecycle.py)
 - **Law:** [ADR 19 — CLI](./adr/19-cli.md)
 
 ### Public release artifact chain {#public-release-artifact-chain}

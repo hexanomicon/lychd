@@ -207,6 +207,7 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     mock_transmuter.transmute_all.return_value = ["rune1"]
 
     mock_scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     mock_subprocess = mocker.patch("subprocess.run")
     mocker.patch("shutil.which").return_value = systemctl
     return SimpleNamespace(scribe=mock_scribe, subprocess=mock_subprocess)

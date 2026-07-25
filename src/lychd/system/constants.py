@@ -59,6 +59,9 @@ PATH_CODEX_ROOT: Final[Path] = _config_root / DEFAULT_MODULE_NAME  # ~/.config/l
 PATH_LYCHD_TOML: Final[Path] = PATH_CODEX_ROOT / "lychd.toml"  # ~/.config/lychd/lychd.toml
 """The Prime Directive configuration file."""
 
+PATH_LIFECYCLE_RECEIPT: Final[Path] = PATH_CODEX_ROOT / ".lychd-lifecycle.json"
+"""Owner-only authority recording resources actually created by ``lychd init``."""
+
 PATH_RUNES_DIR: Final[Path] = PATH_CODEX_ROOT / "runes"  # ~/.config/lychd/runes
 """Codex TOML Rune archive."""
 
@@ -158,8 +161,6 @@ HOST_LAYOUT: Final[tuple[Path,...]] = (
     # --- The Body ---
     PATH_CRYPT_ROOT,           # ~/.local/share/lychd/
     PATH_TRIGGERS_DIR,         # ├── triggers/        <-- The Signal (Nervous System)
-    PATH_REACTOR_INBOX_DIR,    # │   ├── inbox/      <-- Vessel -> host intents
-    PATH_REACTOR_JOURNAL_DIR,  # │   └── journal/    <-- Host consumption record
     PATH_LAB_DIR,              # ├── lab/             <-- The Workspace
     PATH_EXTENSIONS_DIR,       # ├── extensions/      <-- The Tissue
     PATH_CORE_DIR,             # ├── core/            <-- The lychd source dir

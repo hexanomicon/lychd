@@ -60,12 +60,20 @@ git rev-parse --verify HEAD
 uv sync --frozen
 podman build --file Containerfile --tag localhost/lychd:dev .
 uv run lychd --help
+uv run lychd init --dry-run
 uv run lychd init
 ```
 
 This bootstrap check establishes only that the selected source revision resolves, builds, exposes
-the real command tree, and generates its initial configuration. It does **not** prove caged
-startup, accelerator access, a warm model, or a Bridge reply.
+the real command tree, safely plans its initial host inscription, and generates its initial
+configuration. It does **not** prove caged startup, accelerator access, a warm model, or a Bridge
+reply.
+
+For a reversible developer rehearsal, `uv run lychd destroy --dry-run` previews the same guarded
+ownership boundary used by `destroy`. The command is not package uninstallation or data purging:
+it removes only inactive exact bound files plus unchanged resources recorded as created by
+`init`, and preserves mounts, Postgres data, model shelves, secrets, pre-existing paths, and
+foreign files.
 
 When the bootstrap passes, continue with **[The Summoning Rite](docs/summoning.md)** for the
 complete source-built, one-host path and its temporary browser boundary. If all four observations

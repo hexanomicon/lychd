@@ -442,3 +442,35 @@ def test_write_user_unit_uses_the_owned_plain_unit_path(
     assert path == systemd_dir / "lychd-vessel.service"
     assert "ExecStart=/opt/lychd/bin/lychd serve" in path.read_text(encoding="utf-8")
     assert _ownership(output_dir)["systemd"] == ["lychd-vessel.service"]
+
+
+def test_clear_owned_bindings_rejects_generation_drift(
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """Destroy cannot clear sources that changed after its ownership snapshot."""
+    scribe.reconcile_all([_container(description="old")], plain_units={})
+    snapshot = scribe.inspect_owned_bindings()
+    scribe.reconcile_all([_container(description="new")], plain_units={})
+
+    with pytest.raises(ScribeOwnershipError, match="changed after lifecycle planning"):
+        scribe.clear_owned_bindings(expected_generation=snapshot.generation)
+
+    assert "Description=new" in (output_dir / "lychd-hermes.container").read_text(encoding="utf-8")
+
+
+def test_clear_owned_bindings_never_recreates_a_missing_systemd_site(
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Dissolution removes exact sources but never creates a binding directory."""
+    scribe.reconcile_all([_container()], plain_units={})
+    snapshot = scribe.inspect_owned_bindings()
+    systemd_dir.rmdir()
+
+    scribe.clear_owned_bindings(expected_generation=snapshot.generation)
+
+    assert not systemd_dir.exists()
+    assert not (output_dir / "lychd-hermes.container").exists()
+    assert _ownership(output_dir) == {"quadlet": [], "systemd": [], "version": 1}

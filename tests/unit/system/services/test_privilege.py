@@ -21,11 +21,22 @@ def test_initialize_registry_creation(tmp_path: Path) -> None:
 def test_initialize_registry_idempotency(tmp_path: Path) -> None:
     """Verify that initialize_registry identifies an existing registry."""
     signals_dir = tmp_path / "triggers"
-    signals_dir.mkdir()
+    signals_dir.mkdir(mode=0o700)
 
     initialize_registry(signals_dir=signals_dir)
     assert signals_dir.exists()
     assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o700
+
+
+def test_initialize_registry_rejects_wrong_mode_without_changing_it(tmp_path: Path) -> None:
+    """An existing operator path is never silently chmodded into ownership."""
+    signals_dir = tmp_path / "triggers"
+    signals_dir.mkdir(mode=0o755)
+
+    with pytest.raises(RuntimeError, match="expected 0o700"):
+        initialize_registry(signals_dir=signals_dir)
+
+    assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o755
 
 
 def test_initialize_registry_rejects_symlink(tmp_path: Path) -> None:

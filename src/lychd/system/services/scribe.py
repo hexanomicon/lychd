@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -142,6 +143,22 @@ class _PreparedCommit:
     manifest_file: Path
 
 
+@dataclass(frozen=True)
+class OwnedBindings:
+    """Exact binding sources and runtime units authorized by the Scribe receipt."""
+
+    receipt_present: bool
+    generation: str | None = None
+    quadlet_sources: tuple[Path, ...] = ()
+    systemd_sources: tuple[Path, ...] = ()
+    runtime_units: tuple[str, ...] = ()
+
+    @property
+    def source_count(self) -> int:
+        """Return the number of exact generated source files recorded."""
+        return len(self.quadlet_sources) + len(self.systemd_sources)
+
+
 class ScribeService:
     """Render and transactionally bind LychD-owned Quadlet/systemd units.
 
@@ -177,6 +194,11 @@ class ScribeService:
     @property
     def _ownership_path(self) -> Path:
         return self._output_dir / _OWNERSHIP_FILENAME
+
+    @property
+    def ownership_path(self) -> Path:
+        """Return the exact Scribe authority path for lifecycle reporting."""
+        return self._ownership_path
 
     def generate_all(self, manifests: Sequence[QuadletBase]) -> None:
         """Render and replace exactly the previously owned generated file set.
@@ -300,9 +322,147 @@ class ScribeService:
         """Inscribe an uncaged daemon ``.service`` through the ownership gate."""
         return self.write_plain_unit(service.filename, service.render())
 
+    def inspect_owned_bindings(self) -> OwnedBindings:
+        """Return validated exact binding ownership without mutating either site."""
+        receipt_present = os.path.lexists(self._ownership_path)
+        if not receipt_present:
+            return OwnedBindings(receipt_present=False)
+        self._validate_binding_site(self._output_dir)
+        try:
+            content = self._read_authority_manifest()
+            previous = self._parse_ownership(content)
+        except ScribeOwnershipError:
+            raise
+        except (OSError, UnicodeError, ValueError, ValidationError, TypeError) as exc:
+            msg = f"Invalid Scribe ownership manifest at {self._ownership_path}: {exc}"
+            raise ScribeOwnershipError(msg) from exc
+        if previous.systemd and os.path.lexists(self._systemd_dir):
+            self._validate_binding_site(self._systemd_dir)
+        plans = [
+            _SitePlan(
+                directory=self._output_dir,
+                owned_names=frozenset(previous.quadlet),
+                previous_names=frozenset(previous.quadlet),
+                files={},
+            )
+        ]
+        if os.path.lexists(self._systemd_dir):
+            plans.append(
+                _SitePlan(
+                    directory=self._systemd_dir,
+                    owned_names=frozenset(previous.systemd),
+                    previous_names=frozenset(previous.systemd),
+                    files={},
+                )
+            )
+        self._validate_plans(plans)
+        quadlet_sources = tuple(self._output_dir / name for name in previous.quadlet)
+        systemd_sources = tuple(self._systemd_dir / name for name in previous.systemd)
+        generation = self._binding_generation(
+            authority=content,
+            sources=(*quadlet_sources, *systemd_sources),
+        )
+        runtime_units = tuple(
+            sorted(
+                {
+                    self._runtime_unit_for_source(name)
+                    for name in (*previous.quadlet, *previous.systemd)
+                }
+            )
+        )
+        return OwnedBindings(
+            receipt_present=True,
+            generation=generation,
+            quadlet_sources=quadlet_sources,
+            systemd_sources=systemd_sources,
+            runtime_units=runtime_units,
+        )
+
+    @staticmethod
+    def _binding_generation(*, authority: bytes, sources: Sequence[Path]) -> str:
+        """Fingerprint the authority and exact source identities/content."""
+        digest = hashlib.sha256(authority)
+        for path in sorted(sources):
+            digest.update(os.fsencode(path))
+            if not os.path.lexists(path):
+                digest.update(b"\0missing")
+                continue
+            metadata = path.lstat()
+            digest.update(f"\0{metadata.st_dev}:{metadata.st_ino}:".encode())
+            with path.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+        return digest.hexdigest()
+
+    def clear_owned_bindings(self, *, expected_generation: str | None = None) -> None:
+        """Transactionally remove exact sources when authority has not drifted."""
+        owned = self.inspect_owned_bindings()
+        if expected_generation is not None and owned.generation != expected_generation:
+            msg = "Scribe ownership changed after lifecycle planning; rerun destroy."
+            raise ScribeOwnershipError(msg)
+        if not owned.receipt_present or owned.source_count == 0:
+            return
+        previous = self._load_ownership()
+        plans = [
+            _SitePlan(
+                directory=self._output_dir,
+                owned_names=frozenset(previous.quadlet),
+                previous_names=frozenset(previous.quadlet),
+                files={},
+            )
+        ]
+        if os.path.lexists(self._systemd_dir):
+            self._validate_binding_site(self._systemd_dir)
+            plans.append(
+                _SitePlan(
+                    directory=self._systemd_dir,
+                    owned_names=frozenset(previous.systemd),
+                    previous_names=frozenset(previous.systemd),
+                    files={},
+                )
+            )
+        self._commit(plans, _OwnershipManifest(version=1))
+
+    def remove_empty_ownership_receipt(self) -> None:
+        """Remove the Scribe receipt only after it records no remaining sources."""
+        if not os.path.lexists(self._ownership_path):
+            return
+        ownership = self._load_ownership()
+        if ownership.quadlet or ownership.systemd:
+            msg = "Refusing to remove a non-empty Scribe ownership receipt."
+            raise ScribeOwnershipError(msg)
+        self._ownership_path.unlink()
+        self._fsync_directory(self._output_dir)
+
     def _ensure_binding_sites(self) -> None:
         self._output_dir.mkdir(parents=True, exist_ok=True)
         self._systemd_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _validate_binding_site(path: Path) -> None:
+        """Require a real current-user directory before trusting binding paths."""
+        metadata = path.lstat()
+        if path.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+            msg = f"Binding site must be a real directory: {path}"
+            raise ScribeOwnershipError(msg)
+        if metadata.st_uid != os.getuid():
+            msg = f"Binding site must be owned by uid {os.getuid()}: {path}"
+            raise ScribeOwnershipError(msg)
+
+    @staticmethod
+    def _runtime_unit_for_source(filename: str) -> str:
+        """Map one supported source filename to its generated runtime unit."""
+        path = Path(filename)
+        suffix = path.suffix
+        stem = path.stem
+        if suffix == ".container":
+            return f"{stem}.service"
+        if suffix == ".pod":
+            return f"{stem}-pod.service"
+        if suffix in {".target", ".service", ".path"}:
+            return filename
+        msg = f"Cannot derive a runtime unit for owned source: {filename}"
+        raise ScribeOwnershipError(msg)
 
     def _render_generated(
         self,
@@ -348,14 +508,19 @@ class ScribeService:
         if not os.path.lexists(path):
             return _OwnershipManifest(version=1)
         try:
-            content = self._read_authority_manifest().decode("utf-8")
-            raw = json.loads(content, object_pairs_hook=_unique_json_object)
-            return _OwnershipManifest.model_validate(raw)
+            return self._parse_ownership(self._read_authority_manifest())
         except ScribeOwnershipError:
             raise
         except (OSError, UnicodeError, ValueError, ValidationError, TypeError) as exc:
             msg = f"Invalid Scribe ownership manifest at {path}: {exc}"
             raise ScribeOwnershipError(msg) from exc
+
+    @staticmethod
+    def _parse_ownership(content: bytes) -> _OwnershipManifest:
+        """Parse one already authority-checked manifest byte sequence."""
+        decoded = content.decode("utf-8")
+        raw = json.loads(decoded, object_pairs_hook=_unique_json_object)
+        return _OwnershipManifest.model_validate(raw)
 
     def _read_authority_manifest(self) -> bytes:
         """Read the manifest through a no-follow descriptor after authority checks."""

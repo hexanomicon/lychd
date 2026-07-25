@@ -15,6 +15,7 @@ from lychd.cli.commands import (
     _merge_reserved_ports,
     _required_secret_names_from_soulstones,
     bind_quadlets,
+    destroy,
     doctor,
     init_codex,
 )
@@ -73,7 +74,7 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
     result = runner.invoke(cli, ["--help"])
 
     assert result.exit_code == 0
-    for command in ("init", "bind", "doctor", "animators", "reactor", "serve", "database"):
+    for command in ("init", "destroy", "bind", "doctor", "animators", "reactor", "serve", "database"):
         assert command in result.output
     create_app.assert_not_called()
 
@@ -172,8 +173,11 @@ def test_doctor_validates_foundation_without_mutation(
 
 def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: Path) -> None:
     """Verify init command orchestrates Codex properly."""
+    from lychd.system.services.lifecycle import LifecyclePlan
+
     # Patch the classes inside the command
-    mocker.patch("lychd.system.services.layout.LayoutService")
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    layout = mocker.patch("lychd.system.services.layout.LayoutService")
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     inbox = tmp_path / "reactor" / "inbox"
     journal = tmp_path / "reactor" / "journal"
@@ -189,6 +193,9 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: 
     mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mock_codex_cls = mocker.patch("lychd.system.services.codex.CodexService")
     mock_codex_instance = mock_codex_cls.return_value
+    receipt = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore").return_value
+    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value
+    planner.plan.return_value = LifecyclePlan()
 
     result = runner.invoke(init_codex)
 
@@ -198,13 +205,143 @@ def test_init_codex_success(runner: CliRunner, mocker: MockerFixture, tmp_path: 
 
     # Verify interaction
     mock_codex_cls.assert_called_once()
-    mock_codex_instance.inscribe.assert_called_once()
+    mock_codex_instance.inscribe.assert_called_once_with(on_created=receipt.record)
+    layout.return_value.initialize.assert_called_once_with(on_created=receipt.record)
     assert [entry.args[0] for entry in privilege.call_args_list] == [inbox, journal]
     assert privilege.return_value.initialize.call_count == 2
+    assert all(call.kwargs == {"on_created": receipt.record} for call in privilege.return_value.initialize.call_args_list)
+
+
+def test_init_dry_run_never_invokes_effect_services(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    tmp_path: Path,
+) -> None:
+    """The preview uses the real planner boundary and performs no effects."""
+    from lychd.system.services.lifecycle import (
+        LifecycleAction,
+        LifecycleDisposition,
+        LifecyclePlan,
+        LifecycleResourceKind,
+    )
+
+    settings = SimpleNamespace(
+        orchestration=SimpleNamespace(
+            switching=SimpleNamespace(
+                host_reactor_dir=tmp_path / "inbox",
+                host_reactor_journal_dir=tmp_path / "journal",
+            )
+        )
+    )
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
+    mocker.patch("lychd.extensions.host.get_extensions", return_value=SimpleNamespace(rune_schemas=()))
+    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value
+    planner.plan.return_value = LifecyclePlan(
+        actions=(
+            LifecycleAction(
+                LifecycleDisposition.WOULD_CREATE,
+                LifecycleResourceKind.DIRECTORY,
+                str(tmp_path / "codex"),
+                "managed directory is absent",
+            ),
+        )
+    )
+    layout = mocker.patch("lychd.system.services.layout.LayoutService")
+    privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
+    codex = mocker.patch("lychd.system.services.codex.CodexService")
+    receipt = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore")
+
+    result = runner.invoke(init_codex, ["--dry-run"])
+
+    assert result.exit_code == 0
+    assert "WOULD CREATE" in result.output
+    assert "No changes made" in result.output
+    layout.assert_not_called()
+    privilege.assert_not_called()
+    codex.assert_not_called()
+    receipt.return_value.record.assert_not_called()
+
+
+def test_destroy_dry_run_renders_plan_without_effects(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    tmp_path: Path,
+) -> None:
+    """A destruction preview never asks for confirmation or consumes either receipt."""
+    from lychd.system.services.lifecycle import (
+        LifecycleAction,
+        LifecycleDisposition,
+        LifecyclePlan,
+        LifecycleResourceKind,
+    )
+
+    removal = LifecyclePlan(
+        actions=(
+            LifecycleAction(
+                LifecycleDisposition.WOULD_REMOVE,
+                LifecycleResourceKind.FILE,
+                str(tmp_path / "lychd.toml"),
+                "pristine file recorded as created by initialization",
+            ),
+        )
+    )
+    binding_cls = mocker.patch("lychd.system.services.lifecycle.BindingLifecycleService")
+    binding_cls.return_value.plan_destroy.return_value = LifecyclePlan()
+    receipt_cls = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore")
+    receipt_cls.return_value.plan_destroy.return_value = removal
+    confirm = mocker.patch("click.confirm")
+
+    result = runner.invoke(destroy, ["--dry-run"])
+
+    assert result.exit_code == 0
+    assert "WOULD REMOVE" in result.output
+    assert "No changes made" in result.output
+    confirm.assert_not_called()
+    binding_cls.return_value.destroy.assert_not_called()
+    receipt_cls.return_value.destroy.assert_not_called()
+
+
+def test_destroy_declined_confirmation_preserves_both_authorities(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    tmp_path: Path,
+) -> None:
+    """The default-negative prompt leaves bindings and initialization untouched."""
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    from lychd.system.services.lifecycle import (
+        LifecycleAction,
+        LifecycleDisposition,
+        LifecyclePlan,
+        LifecycleResourceKind,
+    )
+
+    removal = LifecyclePlan(
+        actions=(
+            LifecycleAction(
+                LifecycleDisposition.WOULD_REMOVE,
+                LifecycleResourceKind.RECEIPT,
+                str(tmp_path / ".lychd-lifecycle.json"),
+                "remove lifecycle authority after successful cleanup",
+            ),
+        )
+    )
+    binding_cls = mocker.patch("lychd.system.services.lifecycle.BindingLifecycleService")
+    binding_cls.return_value.plan_destroy.return_value = LifecyclePlan()
+    receipt_cls = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore")
+    receipt_cls.return_value.plan_destroy.return_value = removal
+
+    result = runner.invoke(destroy, input="n\n")
+
+    assert result.exit_code == 0
+    assert "cancelled" in result.output
+    assert "No changes made" in result.output
+    binding_cls.return_value.destroy.assert_not_called()
+    receipt_cls.return_value.destroy.assert_not_called()
 
 
 def test_init_codex_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify error handling when Codex fails."""
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     mocker.patch("lychd.system.services.layout.LayoutService")
     mocker.patch("lychd.system.services.privilege.PrivilegeService")
     mock_codex_cls = mocker.patch("lychd.system.services.codex.CodexService")
@@ -267,6 +404,7 @@ async def test_consent_cli_connects_queue_before_enqueue_and_disconnects(
 
 def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify bind command orchestrates Loader, Scribe, and Systemd."""
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     # 1. Mock Loader
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader = mock_loader_cls.return_value
@@ -329,6 +467,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
 
 def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify we catch subprocess errors if systemd fails."""
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader_cls.return_value.load_all.return_value = (
         [GenericSoulstoneConfig(name="test", image="example/runtime")],
