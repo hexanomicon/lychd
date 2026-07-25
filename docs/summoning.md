@@ -146,8 +146,8 @@ uv run lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-The help output must include `init`, `bind`, `doctor`, `animators`, `database`, `serve`, and
-`reactor`; the image inspection must print an image ID.
+The help output must include `init`, `destroy`, `bind`, `doctor`, `animators`, `database`, `serve`,
+and `reactor`; the image inspection must print an image ID.
 
 **If it fails.** Use Python `>=3.12,<3.15` for the locked environment and read the first failing
 build step. Do not work around a failure by installing the old PyPI placeholder or by assuming a
@@ -170,12 +170,34 @@ configuration. If this Codex already contains custom extensions or active Runes,
 them through their owning guides; additional active declarations invalidate this rite's
 one-Soulstone proof.
 
-Run the first inscription:
+Preview and then perform the first inscription:
 
 ```bash
+uv run lychd init --dry-run
 uv run lychd init
 vi "$CODEX_DIR/lychd.toml"
 ```
+
+The preview uses the same planner as the real command and reports `WOULD CREATE`, `PRESERVE`, and
+`BLOCKED`; it does not change files, modes, mounts, services, or secrets. Continue only when it
+ends with `Initialization plan is safe`.
+
+??? info "Optional developer round trip before editing"
+    A pristine first inscription can be dissolved and repeated before you place any intent in the
+    Codex:
+
+    ```bash
+    uv run lychd destroy --dry-run
+    uv run lychd destroy
+    uv run lychd init --dry-run
+    uv run lychd init
+    ```
+
+    `destroy` asks for confirmation. It is neither package uninstallation nor a purge: it removes
+    only inactive exact binding files and unchanged resources recorded as created by `init`.
+    Mounts, Postgres data, model shelves, Podman secrets, pre-existing paths, and foreign files are
+    preserved. A modified generated file or unsafe ownership blocks the operation instead of
+    deleting through it.
 
 In the existing `[server.web]` table, change its existing `image` value to:
 
@@ -194,6 +216,7 @@ exists. Run `init` a second time so the now-active extension can contribute its 
 marked, inactive sample:
 
 ```bash
+uv run lychd init --dry-run
 uv run lychd init
 ```
 
@@ -479,6 +502,11 @@ systemctl --user stop \
   lychd-reactor.path \
   lychd-pod.service
 ```
+
+Stopping and destroying are separate acts. After this rite the Codex has been deliberately edited,
+so `lychd destroy --dry-run` may correctly report `BLOCKED` and preserve it rather than treating a
+known path as disposable. Review that plan; do not delete the Codex or Phylactery by hand merely
+to force a clean result.
 
 ??? info "Development alternative: uncaged execution"
     Uncaged execution is a distinct development profile, not a fallback for a broken caged rite. It

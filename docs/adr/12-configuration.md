@@ -519,7 +519,10 @@ Infrastructure is never generated from invalid state.
 
 ## 6. Runtime Realization (`lychd init`)
 
-At runtime, initialization follows a deterministic inscription path:
+At runtime, initialization first compiles one deterministic lifecycle plan. Both
+`lychd init --dry-run` and `lychd init` consume that planner: the dry run renders the complete
+`WOULD CREATE` / `PRESERVE` / `BLOCKED` classification and exits before every effect service,
+while execution refuses the same blockers before entering the inscription path:
 
 1. `lychd init` calls `CodexService.inscribe()`.
 2. Runtime/extension composition supplies the active `RuneConfig` schema classes.
@@ -528,6 +531,15 @@ At runtime, initialization follows a deterministic inscription path:
 
 This keeps extension activation outside the rune filesystem layer.
 Animation follows the same path: `AnimatorLoader` consumes the same `RuneConfig` runes under `runes/animator/`.
+
+Initialization journals each removable file and directory batch immediately after creation in the
+owner-only `~/.config/lychd/.lychd-lifecycle.json` receipt. Entries bind the path to its device and
+inode; generated files also carry a SHA-256 digest. Shared XDG namespace roots and the durable
+Postgres data path may be provisioned but never become deletion authority. Existing paths are
+validated and preserved, never adopted merely because they occupy known Codex, Crypt, Forge,
+Reactor, or binding geography. The receipt must be a regular non-symlink owned by the invoking UID
+with exact mode `0600`; malformed, oversized, duplicate, unsafe, or out-of-bound entries fail
+closed.
 
 The global `lychd.toml` is emitted from the validated default `Settings` tree by a real TOML
 writer. `None` values are omitted; mappings, arrays, paths, and nested models retain their TOML
@@ -555,6 +567,17 @@ exact mode `0600`. Duplicate or unsafe manifest entries, invalid authority metad
 ownership data, and a generated name already occupied by an unowned file fail closed. Staging,
 same-filesystem replacement, and prepared backups allow a failure at either binding site to restore
 the previous files and ownership manifest.
+
+`lychd destroy` joins these two authorities without widening either one. It first requires every
+runtime unit derived from the Scribe receipt to be inactive and disabled, then transactionally
+clears only the exact recorded binding sources and reloads the user manager. It removes an
+init-receipt file only while its device, inode, digest, and ownership remain unchanged, and removes
+a recorded directory only while its identity is unchanged and it is empty. `init`, `bind`, and
+real `destroy` share one interprocess lifecycle lock; dry runs remain lock-file-free and
+effect-free. A changed generated file, foreign child, unsafe path, active or enabled unit, drifted
+binding generation, or invalid receipt blocks destruction rather than being repaired or discarded.
+Pre-existing state, external mounts, Postgres data, model shelves, and Podman secrets are outside
+this command's deletion authority. There are no purge flags in this contract.
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 

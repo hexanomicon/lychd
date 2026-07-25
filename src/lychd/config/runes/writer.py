@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from collections.abc import Callable
 from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
@@ -37,7 +39,12 @@ class ConfigWriter:
         """
         self._runes_dir = runes_dir or PATH_RUNES_DIR
 
-    def initialize_anchors(self, schemas: list[type[RuneConfig]]) -> None:
+    def initialize_anchors(
+        self,
+        schemas: list[type[RuneConfig]],
+        *,
+        on_created: Callable[[tuple[Path, ...]], None] | None = None,
+    ) -> list[Path]:
         """Ensure every provided rune class has an anchor directory.
 
         Branch anchors are still materialized so the filesystem mirrors the
@@ -45,14 +52,43 @@ class ConfigWriter:
 
         Args:
             schemas: Rune classes whose anchors should exist.
+            on_created: Optional durable journal called after each new anchor batch.
 
         """
+        created: list[Path] = []
         for schema in schemas:
             anchor = schema.anchor_dir(self._runes_dir)
+            missing: list[Path] = []
+            current = anchor
+            while current != current.parent and not current.exists():
+                missing.append(current)
+                current = current.parent
+            created_now = tuple(reversed(missing))
             anchor.mkdir(parents=True, exist_ok=True)
+            try:
+                if on_created is not None and created_now:
+                    on_created(created_now)
+            except BaseException:
+                for path in reversed(created_now):
+                    try:
+                        path.rmdir()
+                    except OSError:
+                        continue
+                raise
+            created.extend(created_now)
             logger.debug("anchor_initialized", schema=schema.__name__, anchor=str(anchor))
+        return sorted(set(created))
 
-    def inscribe_samples(self, schemas: list[type[RuneConfig]]) -> list[Path]:
+    def planned_sample_paths(self, schemas: list[type[RuneConfig]]) -> list[Path]:
+        """Return sample paths a mutation-free inscription would create."""
+        return [target for schema in schemas if (target := self._target_sample_file(schema)) is not None]
+
+    def inscribe_samples(
+        self,
+        schemas: list[type[RuneConfig]],
+        *,
+        on_created: Callable[[Path], None] | None = None,
+    ) -> list[Path]:
         """Write first-run sample TOMLs for empty leaf anchors.
 
         Existing TOML files are treated as operator-owned configuration, so the
@@ -60,6 +96,7 @@ class ConfigWriter:
 
         Args:
             schemas: Rune classes considered for sample generation.
+            on_created: Optional durable journal called after each new sample.
 
         Returns:
             Paths of sample TOMLs created during this call.
@@ -73,11 +110,45 @@ class ConfigWriter:
                 continue
 
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(self._render_sample(schema), encoding="utf-8")
+            if not self._write_sample_exclusive(target, self._render_sample(schema)):
+                continue
+            try:
+                if on_created is not None:
+                    on_created(target)
+            except BaseException:
+                target.unlink(missing_ok=True)
+                raise
             created.append(target)
             logger.info("rune_sample_inscribed", schema=schema.__name__, path=str(target))
 
         return created
+
+    @staticmethod
+    def _write_sample_exclusive(path: Path, content: str) -> bool:
+        """Create one owner-only sample durably without a permissive-mode window."""
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except FileExistsError:
+            return False
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                descriptor = -1
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+        return True
 
     def _target_sample_file(self, schema: type[RuneConfig]) -> Path | None:
         """Return the sample path for an empty leaf anchor.

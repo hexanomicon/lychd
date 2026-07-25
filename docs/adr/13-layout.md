@@ -17,6 +17,8 @@ icon: material/file-tree
 - **Shadow Realm Infrastructure:** Support for isolated subdirectories within the **Lab** to facilitate speculative execution and branching during creation rituals.
 - **Anatomical Persistence:** A dedicated region for the **[Phylactery's (06)](06-persistence.md)** chambers, optimized for Copy-on-Write snapshots.
 - **Cartographic Rigidity:** Hardcoded locations for all critical domains to prevent fragmentation of the system's body.
+- **Ownership Before Removal:** A known LychD path identifies geography, not deletion authority;
+  teardown must be bounded by exact creation and binding receipts.
 
 ## Considered Options
 
@@ -97,6 +99,23 @@ This Domain contains disposable, machine-generated artifacts. It is excluded fro
 
 - Build artifacts for the physical image.
 - Temporary environment manifests used during the **[Packaging (17)](17-packaging.md)** ritual.
+
+## Lifecycle Ownership
+
+`lychd init` distinguishes removable paths it creates from paths it merely encounters and from
+durable substrate it may provision. It journals only the removable class in an owner-only
+lifecycle receipt; shared XDG roots and Postgres data never become deletion authority. This
+distinction matters even beneath a dedicated LychD root: a pre-existing Codex, Crypt, Forge, model
+shelf, foreign file, or mounted Phylactery is not adopted merely because the map knows its
+location.
+
+`lychd destroy` is the bounded inverse of that recorded host inscription, not recursive deletion of
+the Three Domains. It removes unchanged receipt-owned files and exact Scribe-owned binding sources;
+recorded directories are removed deepest-first only when empty. Modified files, foreign children,
+unsafe ownership, active or enabled units, and invalid receipts block the operation. External
+mounts, Postgres contents, model artifacts, secrets, and all unrecorded state remain in place.
+`destroy --dry-run` renders the same plan without changing files, modes, mounts, services, or
+secrets.
 
 ## The Outlands (External Mounts)
 

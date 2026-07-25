@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+    from lychd.system.services.lifecycle import LifecyclePlan
 
 
 def _raise_missing_portal_secrets_error(secret_names: list[str]) -> None:
@@ -96,7 +97,13 @@ def _raise_uncaged_control_plane_error(secret_names: Sequence[str]) -> None:
     help_text="Initialize the Codex config files and system layout.",
     start_message="[bold blue]🕯️  Beginning the Inscription (lychd init)...[/]",
 )
-def init_codex() -> None:
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show the exact initialization plan without changing files, modes, mounts, or services.",
+)
+def init_codex(dry_run: bool) -> None:  # noqa: FBT001 - Click owns this boolean option contract
     """Perform the Initialization Ritual (I. The Inscription).
 
     1. Creates the XDG directory structure (Codex, Crypt, Forge).
@@ -104,30 +111,145 @@ def init_codex() -> None:
     3. Establishes the Intent Registry (Triggers).
     4. Inscribes default configuration files.
     """
+    from contextlib import nullcontext
+
+    from lychd.config.runes import ConfigWriter
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions
+    from lychd.system.constants import PATH_RUNES_DIR
     from lychd.system.services.codex import CodexService
     from lychd.system.services.layout import LayoutService
+    from lychd.system.services.lifecycle import (
+        InitializationPlanner,
+        LifecycleLock,
+        LifecycleReceiptStore,
+    )
     from lychd.system.services.privilege import PrivilegeService
 
     console = get_console()
-    # 1. Physical Layout & Speculative Btrfs (ADR 13 & ADR 08)
-    console.print("[dim]  Establishing the XDG Trinity (Codex, Crypt, Forge) + Btrfs...[/]")
-    LayoutService().initialize()
+    lock = nullcontext() if dry_run else LifecycleLock()
+    with lock:
+        settings = get_settings()
+        extensions = get_extensions()
+        schemas = list(extensions.rune_schemas)
+        writer = ConfigWriter(runes_dir=PATH_RUNES_DIR)
+        plan = InitializationPlanner(
+            reactor_directories=(
+                settings.orchestration.switching.host_reactor_dir,
+                settings.orchestration.switching.host_reactor_journal_dir,
+            ),
+            anchor_paths=tuple(schema.anchor_dir(PATH_RUNES_DIR) for schema in schemas),
+            sample_paths=writer.planned_sample_paths(schemas),
+        ).plan()
+        _render_lifecycle_plan(plan=plan, console=console)
+        plan.require_executable()
+        if dry_run:
+            console.print("\n[bold green]✓ Initialization plan is safe.[/] [dim]No changes made.[/]")
+            return
 
-    # 2. Load the current Codex (or defaults on first init) and provision its
-    # validated control roots, rather than silently provisioning only constants.
-    settings = get_settings()
-    console.print("[dim]  Performing the Rite of Signaling (Intent Registry)...[/]")
-    PrivilegeService(settings.orchestration.switching.host_reactor_dir).initialize()
-    PrivilegeService(settings.orchestration.switching.host_reactor_journal_dir).initialize()
+        receipt = LifecycleReceiptStore()
 
-    # 3. Inscribe the Laws (Settings)
-    console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
-    CodexService(rune_schemas=get_extensions().rune_schemas).inscribe()
+        # 1. Physical Layout & Speculative Btrfs (ADR 13 & ADR 08)
+        console.print("[dim]  Establishing the XDG Trinity (Codex, Crypt, Forge) + Btrfs...[/]")
+        LayoutService().initialize(on_created=receipt.record)
 
-    console.print("\n[bold green]✓ Initialization complete.[/]")
-    console.print("  [dim]You may now edit your scrolls in ~/.config/lychd/[/]")
+        # 2. Provision validated control roots. Journal each successful effect
+        # batch immediately rather than waiting until the whole ritual ends.
+        console.print("[dim]  Performing the Rite of Signaling (Intent Registry)...[/]")
+        for signals_dir in (
+            settings.orchestration.switching.host_reactor_dir,
+            settings.orchestration.switching.host_reactor_journal_dir,
+        ):
+            PrivilegeService(signals_dir).initialize(on_created=receipt.record)
+
+        # 3. Inscribe the Laws (Settings)
+        console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
+        CodexService(rune_schemas=schemas).inscribe(on_created=receipt.record)
+
+        console.print("\n[bold green]✓ Initialization complete.[/]")
+        console.print("  [dim]You may now edit your scrolls in ~/.config/lychd/[/]")
+
+
+def _render_lifecycle_plan(*, plan: LifecyclePlan, console: Console) -> None:
+    """Render deterministic lifecycle categories without exposing implementation data."""
+    from lychd.system.services.lifecycle import LifecycleDisposition
+
+    console.print()
+    for disposition in LifecycleDisposition:
+        actions = tuple(action for action in plan.actions if action.disposition is disposition)
+        if not actions:
+            continue
+        style = {
+            LifecycleDisposition.WOULD_CREATE: "cyan",
+            LifecycleDisposition.WOULD_REMOVE: "yellow",
+            LifecycleDisposition.PRESERVE: "dim",
+            LifecycleDisposition.BLOCKED: "bold red",
+        }[disposition]
+        console.print(f"[{style}]{disposition.value}[/]")
+        for action in actions:
+            console.print(f"  [{style}]•[/] {action.target} [dim]— {action.detail}[/]")
+
+
+@ritual_command(
+    name="destroy",
+    help_text="Remove pristine resources recorded as created by LychD.",
+    start_message="[bold blue]⌁ Beginning the Dissolution (lychd destroy)...[/]",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Show the exact destruction plan without stopping services or changing host state.",
+)
+@click.option(
+    "--yes",
+    is_flag=True,
+    default=False,
+    help="Confirm a safe destruction plan non-interactively; never bypasses blockers.",
+)
+def destroy(
+    dry_run: bool,  # noqa: FBT001 - Click owns these boolean option contracts
+    yes: bool,  # noqa: FBT001
+) -> None:
+    """Remove only inactive bindings and pristine init-owned resources.
+
+    Edited files, foreign entries, active/enabled units, mounts, secrets, and
+    unrecorded data are preserved or block the operation.
+    """
+    from contextlib import nullcontext
+
+    from lychd.system.services.lifecycle import (
+        BindingLifecycleService,
+        LifecycleLock,
+        LifecyclePlan,
+        LifecycleReceiptStore,
+    )
+    from lychd.system.services.scribe import ScribeService
+
+    console = get_console()
+    lock = nullcontext() if dry_run else LifecycleLock()
+    with lock:
+        receipt = LifecycleReceiptStore()
+        bindings = BindingLifecycleService(ScribeService())
+        binding_plan = bindings.plan_destroy()
+        receipt_plan = receipt.plan_destroy(anticipated_removals=binding_plan.removal_paths)
+        plan = LifecyclePlan.combine(binding_plan, receipt_plan)
+        _render_lifecycle_plan(plan=plan, console=console)
+        plan.require_executable()
+
+        if dry_run:
+            console.print("\n[bold green]✓ Destruction plan is safe.[/] [dim]No changes made.[/]")
+            return
+        if not plan.mutates:
+            console.print("\n[dim]Nothing owned by this installation needs removal.[/]")
+            return
+        if not yes and not click.confirm("\nApply this exact destruction plan?", default=False):
+            console.print("[dim]Dissolution cancelled. No changes made.[/]")
+            return
+
+        bindings.destroy()
+        receipt.destroy()
+        console.print("\n[bold green]✓ Recorded LychD inscription destroyed.[/]")
 
 
 @ritual_command(
@@ -164,6 +286,7 @@ def bind_quadlets(  # noqa: C901, PLR0915 - the command intentionally narrates o
     from lychd.domain.animation.transmute import Transmuter, transmute_uncaged_vessel
     from lychd.extensions.host import get_extensions
     from lychd.system.constants import PATH_SYSTEMD_USER_UNITS_DIR
+    from lychd.system.services.lifecycle import LifecycleLock
     from lychd.system.services.scribe import ScribeService
     from lychd.system.services.secrets import PodmanSecretStore
 
@@ -237,16 +360,18 @@ def bind_quadlets(  # noqa: C901, PLR0915 - the command intentionally narrates o
 
     # 4. Summon the Scribe (one complete desired-fileset transaction).
     scribe = ScribeService()
-    with console.status("[bold blue]Transmuting Soulstone Runes into Quadlet manifests...", spinner="moon"):
-        scribe.reconcile_all(manifests, plain_units=plain_units)
+    with LifecycleLock():
+        with console.status("[bold blue]Transmuting Soulstone Runes into Quadlet manifests...", spinner="moon"):
+            scribe.reconcile_all(manifests, plain_units=plain_units)
 
-    # 5. Reload Daemon (The "Bind" part) exactly once after the transaction.
-    systemctl = shutil.which("systemctl")
-    if systemctl:
-        console.print("  [dim]Invoking systemd daemon-reload...[/]")
-        subprocess.run([systemctl, "--user", "daemon-reload"], check=True)  # noqa: S603
-    else:
-        console.print("  [yellow]![/] [dim]Systemctl not found. Manual daemon-reload required.[/]")
+        # 5. Reload Daemon (The "Bind" part) exactly once while the lifecycle
+        # lock still prevents destroy from inspecting an intermediate generation.
+        systemctl = shutil.which("systemctl")
+        if systemctl:
+            console.print("  [dim]Invoking systemd daemon-reload...[/]")
+            subprocess.run([systemctl, "--user", "daemon-reload"], check=True)  # noqa: S603
+        else:
+            console.print("  [yellow]![/] [dim]Systemctl not found. Manual daemon-reload required.[/]")
 
     console.print("\n[bold green]✓ The circle is bound.[/]")
     console.print("  [dim]You may now summon the vessel: systemctl --user start lychd-vessel.service[/]")
@@ -617,6 +742,7 @@ async def _consume_reactor_intents() -> None:
 
 COMMANDS: tuple[click.Command, ...] = (
     init_codex,
+    destroy,
     bind_quadlets,
     doctor,
     inspect_animators,
