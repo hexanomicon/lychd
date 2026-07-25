@@ -21,6 +21,7 @@ from lychd.system.constants import (
     PATH_SYSTEMD_UNITS_DIR,
     PATH_SYSTEMD_USER_UNITS_DIR,
 )
+from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.schemas import (
     QuadletBase,
     QuadletContainer,
@@ -159,6 +160,31 @@ class OwnedBindings:
         return len(self.quadlet_sources) + len(self.systemd_sources)
 
 
+type BindingChangeKind = Literal["create", "update", "remove", "preserve"]
+
+
+@dataclass(frozen=True)
+class BindingChange:
+    """One deterministic filesystem effect in a Scribe reconciliation."""
+
+    kind: BindingChangeKind
+    path: Path
+    detail: str
+
+
+@dataclass(frozen=True)
+class BindingReconcilePlan:
+    """Read-only projection of the exact transaction ``reconcile_all`` applies."""
+
+    changes: tuple[BindingChange, ...]
+    observed_generation: str
+
+    @property
+    def mutates(self) -> bool:
+        """Return whether reconciliation would change binding state."""
+        return any(change.kind != "preserve" for change in self.changes)
+
+
 class ScribeService:
     """Render and transactionally bind LychD-owned Quadlet/systemd units.
 
@@ -209,7 +235,7 @@ class ScribeService:
         :meth:`write_plain_unit`.
         """
         logger.info("beginning_inscription", count=len(manifests))
-        self._ensure_binding_sites()
+        self._require_binding_sites()
         previous = self._load_ownership()
         quadlet_files, systemd_files = self._render_generated(manifests)
         previous_targets = frozenset(
@@ -235,6 +261,7 @@ class ScribeService:
                 files=systemd_files,
             ),
         )
+        self._require_binding_sites()
         self._commit(plans, next_ownership)
 
         logger.info("inscription_complete")
@@ -256,8 +283,81 @@ class ScribeService:
             manifest_count=len(manifests),
             plain_unit_count=len(plain_units),
         )
+        self._require_binding_sites()
+        plans, next_ownership = self._complete_reconcile_transaction(
+            manifests,
+            plain_units=plain_units,
+        )
+        self._require_binding_sites()
+        self._commit(plans, next_ownership)
+        logger.info("complete_inscription_finished")
+
+    def plan_reconcile_all(
+        self,
+        manifests: Sequence[QuadletBase],
+        *,
+        plain_units: Mapping[str, str],
+    ) -> BindingReconcilePlan:
+        """Inspect the exact complete-fileset transaction without mutation."""
+        self._require_binding_sites()
+        plans, next_ownership = self._complete_reconcile_transaction(
+            manifests,
+            plain_units=plain_units,
+        )
+        self._validate_plans(plans)
+
+        changes: list[BindingChange] = []
+        for plan in plans:
+            changes.extend(self._plan_site_changes(plan))
+        changes.append(self._plan_ownership_change(next_ownership))
+        return BindingReconcilePlan(
+            changes=tuple(changes),
+            observed_generation=self._observed_reconcile_generation(plans),
+        )
+
+    def _observed_reconcile_generation(self, plans: Sequence[_SitePlan]) -> str:
+        """Fingerprint authority plus every affected source identity and content."""
+        authority = self._read_authority_manifest() if os.path.lexists(self._ownership_path) else b"\0absent-authority"
+        sources = tuple(
+            plan.directory / name for plan in plans for name in sorted(plan.previous_names | frozenset(plan.files))
+        )
+        return self._binding_generation(authority=authority, sources=sources)
+
+    @staticmethod
+    def _plan_site_changes(plan: _SitePlan) -> list[BindingChange]:
+        """Classify one binding site's exact desired-fileset transition."""
+        changes: list[BindingChange] = []
+        for name, content in sorted(plan.files.items()):
+            target = plan.directory / name
+            if not os.path.lexists(target):
+                changes.append(BindingChange("create", target, "desired binding is absent"))
+            elif target.read_bytes() == content:
+                changes.append(BindingChange("preserve", target, "binding already matches intent"))
+            else:
+                changes.append(BindingChange("update", target, "owned binding differs from intent"))
+        for name in sorted(plan.previous_names - frozenset(plan.files)):
+            target = plan.directory / name
+            if os.path.lexists(target):
+                changes.append(BindingChange("remove", target, "stale owned binding"))
+        return changes
+
+    def _plan_ownership_change(self, ownership: _OwnershipManifest) -> BindingChange:
+        """Classify the authority receipt written by the transaction."""
+        ownership_content = self._encode_ownership(ownership)
+        if not os.path.lexists(self._ownership_path):
+            return BindingChange("create", self._ownership_path, "binding ownership receipt is absent")
+        if self._read_authority_manifest() == ownership_content:
+            return BindingChange("preserve", self._ownership_path, "binding ownership already matches")
+        return BindingChange("update", self._ownership_path, "binding ownership differs from intent")
+
+    def _complete_reconcile_transaction(
+        self,
+        manifests: Sequence[QuadletBase],
+        *,
+        plain_units: Mapping[str, str],
+    ) -> tuple[tuple[_SitePlan, _SitePlan], _OwnershipManifest]:
+        """Build the shared transaction consumed by preview and execution."""
         plain_files = self._encode_plain_units(plain_units)
-        self._ensure_binding_sites()
         previous = self._load_ownership()
         quadlet_files, generated_systemd_files = self._render_generated(manifests)
         systemd_files = {**generated_systemd_files, **plain_files}
@@ -266,22 +366,23 @@ class ScribeService:
             quadlet=tuple(sorted(quadlet_files)),
             systemd=tuple(sorted(systemd_files)),
         )
-        plans = (
-            _SitePlan(
-                directory=self._output_dir,
-                owned_names=frozenset(previous.quadlet),
-                previous_names=frozenset(previous.quadlet),
-                files=quadlet_files,
+        return (
+            (
+                _SitePlan(
+                    directory=self._output_dir,
+                    owned_names=frozenset(previous.quadlet),
+                    previous_names=frozenset(previous.quadlet),
+                    files=quadlet_files,
+                ),
+                _SitePlan(
+                    directory=self._systemd_dir,
+                    owned_names=frozenset(previous.systemd),
+                    previous_names=frozenset(previous.systemd),
+                    files=systemd_files,
+                ),
             ),
-            _SitePlan(
-                directory=self._systemd_dir,
-                owned_names=frozenset(previous.systemd),
-                previous_names=frozenset(previous.systemd),
-                files=systemd_files,
-            ),
+            next_ownership,
         )
-        self._commit(plans, next_ownership)
-        logger.info("complete_inscription_finished")
 
     def write_plain_unit(self, filename: str, content: str) -> Path:
         """Atomically write one LychD-namespaced plain user unit.
@@ -292,7 +393,7 @@ class ScribeService:
         """
         plain_file = self._encode_plain_units({filename: content})
 
-        self._ensure_binding_sites()
+        self._require_binding_sites()
         previous = self._load_ownership()
         next_ownership = _OwnershipManifest(
             version=1,
@@ -313,6 +414,7 @@ class ScribeService:
                 files=plain_file,
             ),
         )
+        self._require_binding_sites()
         self._commit(plans, next_ownership)
         target = self._systemd_dir / filename
         logger.info("user_unit_inscribed", path=str(target))
@@ -363,12 +465,7 @@ class ScribeService:
             sources=(*quadlet_sources, *systemd_sources),
         )
         runtime_units = tuple(
-            sorted(
-                {
-                    self._runtime_unit_for_source(name)
-                    for name in (*previous.quadlet, *previous.systemd)
-                }
-            )
+            sorted({self._runtime_unit_for_source(name) for name in (*previous.quadlet, *previous.systemd)})
         )
         return OwnedBindings(
             receipt_present=True,
@@ -395,7 +492,7 @@ class ScribeService:
         return digest.hexdigest()
 
     def clear_owned_bindings(self, *, expected_generation: str | None = None) -> None:
-        """Transactionally remove exact sources when authority has not drifted."""
+        """Transactionally remove exact sources while retaining their authority."""
         owned = self.inspect_owned_bindings()
         if expected_generation is not None and owned.generation != expected_generation:
             msg = "Scribe ownership changed after lifecycle planning; rerun destroy."
@@ -421,7 +518,46 @@ class ScribeService:
                     files={},
                 )
             )
+        self._commit(plans, previous)
+
+    def release_owned_binding_authority(
+        self,
+        *,
+        expected_generation: str,
+    ) -> None:
+        """Clear exact authority only after every recorded source is absent."""
+        owned = self.inspect_owned_bindings()
+        if owned.generation != expected_generation:
+            msg = "Scribe ownership changed before authority release; rerun destroy."
+            raise ScribeOwnershipError(msg)
+        if not owned.receipt_present:
+            return
+        remaining = tuple(path for path in (*owned.quadlet_sources, *owned.systemd_sources) if os.path.lexists(path))
+        if remaining:
+            msg = "Refusing to release Scribe authority while owned binding sources remain."
+            raise ScribeOwnershipError(msg)
+
+        previous = self._load_ownership()
+        plans = [
+            _SitePlan(
+                directory=self._output_dir,
+                owned_names=frozenset(previous.quadlet),
+                previous_names=frozenset(previous.quadlet),
+                files={},
+            )
+        ]
+        if os.path.lexists(self._systemd_dir):
+            self._validate_binding_site(self._systemd_dir)
+            plans.append(
+                _SitePlan(
+                    directory=self._systemd_dir,
+                    owned_names=frozenset(previous.systemd),
+                    previous_names=frozenset(previous.systemd),
+                    files={},
+                )
+            )
         self._commit(plans, _OwnershipManifest(version=1))
+        self.remove_empty_ownership_receipt()
 
     def remove_empty_ownership_receipt(self) -> None:
         """Remove the Scribe receipt only after it records no remaining sources."""
@@ -434,19 +570,29 @@ class ScribeService:
         self._ownership_path.unlink()
         self._fsync_directory(self._output_dir)
 
-    def _ensure_binding_sites(self) -> None:
-        self._output_dir.mkdir(parents=True, exist_ok=True)
-        self._systemd_dir.mkdir(parents=True, exist_ok=True)
+    def _require_binding_sites(self) -> None:
+        """Require initialization-prepared sites; Binding never creates them."""
+        for path in (self._output_dir, self._systemd_dir):
+            if not os.path.lexists(path):
+                msg = f"Binding site is absent; run `lychd init` first: {path}"
+                raise ScribeOwnershipError(msg)
+            self._validate_binding_site(path)
 
     @staticmethod
     def _validate_binding_site(path: Path) -> None:
-        """Require a real current-user directory before trusting binding paths."""
+        """Require a real current-user, writable, searchable binding directory."""
+        if symlink := path_has_symlink_component(path):
+            msg = f"Binding site traverses an untrusted symlink component: {symlink}"
+            raise ScribeOwnershipError(msg)
         metadata = path.lstat()
-        if path.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+        if not stat.S_ISDIR(metadata.st_mode):
             msg = f"Binding site must be a real directory: {path}"
             raise ScribeOwnershipError(msg)
         if metadata.st_uid != os.getuid():
             msg = f"Binding site must be owned by uid {os.getuid()}: {path}"
+            raise ScribeOwnershipError(msg)
+        if not os.access(path, os.W_OK | os.X_OK):
+            msg = f"Binding site must be writable and searchable: {path}"
             raise ScribeOwnershipError(msg)
 
     @staticmethod
@@ -663,7 +809,7 @@ class ScribeService:
                     mode=_AUTHORITY_MODE,
                     prefix="manifest-backup-",
                 )
-            manifest_content = (json.dumps(ownership.model_dump(mode="json"), indent=2, sort_keys=True) + "\n").encode()
+            manifest_content = self._encode_ownership(ownership)
             manifest_file = self._prepare_file(
                 output_transaction,
                 manifest_content,
@@ -683,6 +829,11 @@ class ScribeService:
                 shutil.rmtree(transaction_dir, ignore_errors=True)
             raise
         return prepared
+
+    @staticmethod
+    def _encode_ownership(ownership: _OwnershipManifest) -> bytes:
+        """Encode authority identically for preview and atomic commit."""
+        return (json.dumps(ownership.model_dump(mode="json"), indent=2, sort_keys=True) + "\n").encode()
 
     def _validate_plans(self, plans: Sequence[_SitePlan]) -> None:
         for plan in plans:

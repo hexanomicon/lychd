@@ -58,6 +58,8 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
 def _write_and_collect(manifests: list[QuadletBase], tmp_path: Path) -> dict[str, list[str]]:
     quadlet_dir = tmp_path / "containers"
     systemd_dir = tmp_path / "systemd"
+    quadlet_dir.mkdir()
+    systemd_dir.mkdir()
     scribe = ScribeService(output_dir=quadlet_dir, systemd_dir=systemd_dir)
     scribe.generate_all(manifests)
     return {

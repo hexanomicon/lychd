@@ -96,11 +96,13 @@ The displayed **metabolic cost** is currently only the number of selected evicti
 VRAM, load-time, energy, topology, or context-reconstruction estimate. The current resource-aware
 scheduling boundary is recorded in [State](../../state-of-the-work.md#resource-aware-scheduling).
 
-A dry run changes no runtime. If the plan is not `NO_OP`, **Consecrate the Swap** submits a real
-HTMX transition at maximum operator priority. The Orchestrator replans inside its serialized
-arbiter, closes admission for the affected Animators, waits for existing leases to release, applies
-the bounded transition, and converges on honest warmth or fail-closed containment. The preview is
-therefore an explanation of the observed world, not a promise that its exact evict set is reserved.
+A dry run changes no runtime. In the current legacy surface, if the plan is not `NO_OP`,
+**Consecrate the Swap** submits a real HTMX transition at maximum operator priority. The canonical
+Svelte route will submit the equivalent typed API intent; neither transport changes its authority.
+The Orchestrator replans inside its serialized arbiter, closes admission for the affected
+Animators, waits for existing leases to release, applies the bounded transition, and converges on
+honest warmth or fail-closed containment. The preview is therefore an explanation of the observed
+world, not a promise that its exact evict set is reserved.
 
 ## What a swap ticket proves
 

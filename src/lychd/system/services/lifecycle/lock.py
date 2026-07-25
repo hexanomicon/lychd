@@ -19,7 +19,7 @@ _LOCK_MODE = 0o600
 
 
 class LifecycleLock(AbstractContextManager["LifecycleLock"]):
-    """Serialize real init/bind/destroy effects across local processes.
+    """Serialize real lifecycle effects across local processes.
 
     Dry runs never acquire this lock because creating a lock file would itself
     violate their zero-effect contract. Real commands re-plan only after
@@ -47,7 +47,7 @@ class LifecycleLock(AbstractContextManager["LifecycleLock"]):
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
-                msg = "Another LychD init, bind, or destroy operation is already in progress."
+                msg = "Another LychD init, bind, start, stop, or del operation is already in progress."
                 raise LifecycleError(msg) from exc
         except BaseException:
             os.close(descriptor)

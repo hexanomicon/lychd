@@ -1,18 +1,8 @@
-"""Defines the application's *Runtime Blueprint*.
+"""Canonical host addresses and internal container ports.
 
-This module contains constants that describe the physical and network footprint
-of the LychD application on the end-user's host system. These values define
-"where the application lives" in the wild.
-
-Think of this as the application's "Address Book" and "Physical Manifest":
-- It defines the runtime paths based on XDG standards (`PATH_CODEX_ROOT`).
-- It declares the core network ports for container exposure (`PORT_LYCHD`).
-- It provides a comprehensive list (`HOST_LAYOUT`) of all files and directories
-  the application owns on the host.
-
-This module is the single source of truth for any component that needs to
-interact with the host filesystem or network, such as the settings loader
-or the rune baker.
+``HOST_LAYOUT`` describes initialization geography. It deliberately includes
+shared XDG and Binding anchors plus persistent storage, so membership never
+grants ownership or deletion authority.
 """
 
 from __future__ import annotations
@@ -30,19 +20,30 @@ from lychd.config.constants import BASE_DIR, DEFAULT_MODULE_NAME
 CONTAINER_LYCHD_PORT: Final[int] = 8000
 CONTAINER_POSTGRES_PORT: Final[int] = 5432
 
-
 # ==============================================================================
 # I. THE PHYSICAL LAYER (XDG Standard Roots)
 # ==============================================================================
 
 _xdg_data = os.getenv("XDG_DATA_HOME")
-_data_root = Path(_xdg_data) if _xdg_data else Path.home() / ".local" / "share"
+PATH_XDG_DATA_HOME: Final[Path] = Path(_xdg_data) if _xdg_data else Path.home() / ".local" / "share"
+"""Shared XDG root for the Crypt.
+
+This shared parent is an anchor, never recursive LychD deletion authority.
+"""
 
 _xdg_config = os.getenv("XDG_CONFIG_HOME")
-_config_root = Path(_xdg_config) if _xdg_config else Path.home() / ".config"
+PATH_XDG_CONFIG_HOME: Final[Path] = Path(_xdg_config) if _xdg_config else Path.home() / ".config"
+"""Shared XDG root for the Codex and Binding.
+
+This shared parent is an anchor, never recursive LychD deletion authority.
+"""
 
 _xdg_cache = os.getenv("XDG_CACHE_HOME")
-_cache_root = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache"
+PATH_XDG_CACHE_HOME: Final[Path] = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache"
+"""Shared XDG root for the Forge.
+
+This shared parent is an anchor, never recursive LychD deletion authority.
+"""
 
 
 # ==============================================================================
@@ -53,94 +54,105 @@ _cache_root = Path(_xdg_cache) if _xdg_cache else Path.home() / ".cache"
 
 # --- A. The Codex (The Mind: Configuration) ---
 
-PATH_CODEX_ROOT: Final[Path] = _config_root / DEFAULT_MODULE_NAME  # ~/.config/lychd
-"""The Root of all configuration."""
+PATH_CODEX_ROOT: Final[Path] = PATH_XDG_CONFIG_HOME / DEFAULT_MODULE_NAME  # ~/.config/lychd
+"""LychD settings and typed Runes."""
 
 PATH_LYCHD_TOML: Final[Path] = PATH_CODEX_ROOT / "lychd.toml"  # ~/.config/lychd/lychd.toml
-"""The Prime Directive configuration file."""
+"""Primary settings loaded before Rune documents."""
 
 PATH_LIFECYCLE_RECEIPT: Final[Path] = PATH_CODEX_ROOT / ".lychd-lifecycle.json"
-"""Owner-only authority recording resources actually created by ``lychd init``."""
+"""Receipt governing later ``lychd del`` authority."""
 
 PATH_RUNES_DIR: Final[Path] = PATH_CODEX_ROOT / "runes"  # ~/.config/lychd/runes
-"""Codex TOML Rune archive."""
+"""Typed TOML intent and inactive examples."""
 
 PATH_ANIMATOR_DIR: Final[Path] = PATH_RUNES_DIR / "animator"  # ~/.config/lychd/runes/animator
-"""Animator configuration root."""
+"""Local and remote capability endpoints."""
 
 PATH_SOULSTONES_DIR: Final[Path] = PATH_ANIMATOR_DIR / "soulstones"  # ~/.config/lychd/runes/animator/soulstones
-"""Local Soulstone definitions."""
+"""Local container-backed capability runtimes."""
 
 PATH_PORTALS_DIR: Final[Path] = PATH_ANIMATOR_DIR / "portals"  # ~/.config/lychd/runes/animator/portals
-"""Network Portal definitions."""
+"""Remote capability endpoints."""
 
 
 # --- B. The Crypt (The Body: Persistence) ---
 
-PATH_CRYPT_ROOT: Final[Path] = _data_root / DEFAULT_MODULE_NAME  # ~/.local/share/lychd
-"""The Root of persistent data."""
+PATH_CRYPT_ROOT: Final[Path] = PATH_XDG_DATA_HOME / DEFAULT_MODULE_NAME  # ~/.local/share/lychd
+"""Persistent LychD data and workspaces."""
 
 PATH_TRIGGERS_DIR: Final[Path] = PATH_CRYPT_ROOT / "triggers"  # ~/.local/share/lychd/triggers
-"""The Nervous System. Host-watched folder for privilege escalation (ADR 10)."""
+"""Vessel-to-host Reactor exchange."""
 
 PATH_REACTOR_INBOX_DIR: Final[Path] = PATH_TRIGGERS_DIR / "inbox"
-"""Vessel-writable, host-consumed transition inbox."""
+"""Owner-only Host Reactor intent queue."""
 
 PATH_REACTOR_JOURNAL_DIR: Final[Path] = PATH_TRIGGERS_DIR / "journal"
-"""Host-owned journal exposed to the Vessel only for read-only terminal receipts."""
+"""Host Reactor outcomes exposed read-only to the Vessel."""
 
 PATH_POSTGRES_ROOT_DIR: Final[Path] = PATH_CRYPT_ROOT / "postgres"  # ~/.local/share/lychd/postgres
-"""Live Database Storage."""
+"""PostgreSQL bootstrap and live Phylactery storage."""
+
+PATH_POSTGRES_INIT_SCRIPT: Final[Path] = PATH_POSTGRES_ROOT_DIR / "init_db.sh"
+"""PostgreSQL bootstrap enabling pgvector and the current Phoenix compatibility database."""
 
 PATH_POSTGRESS_DATA_DIR: Final[Path] = PATH_POSTGRES_ROOT_DIR / "data"
-"""Live Database Storage. Optimized with No-COW."""
+"""Live PostgreSQL data within the Phylactery."""
 
 PATH_POSTGRESS_SNAPSHOTS_DIR: Final[Path] = PATH_CRYPT_ROOT / "snapshots"  # ~/.local/share/lychd/snapshots
-"""Database Btrfs snapshots."""
+"""Reserved recovery-snapshot shelf."""
 
 PATH_LAB_DIR: Final[Path] = PATH_CRYPT_ROOT / "lab"  # ~/.local/share/lychd/lab
-"""The Internal Workspace."""
+"""Operator workspace mounted read-write."""
 
 PATH_EXTENSIONS_DIR: Final[Path] = PATH_CRYPT_ROOT / "extensions"  # ~/.local/share/lychd/extensions
-"""Living Tissue (Third-party extensions)."""
+"""Selected private extension source."""
 
 PATH_CORE_DIR: Final[Path] = PATH_CRYPT_ROOT / "core"  # ~/.local/share/lychd/core
-"""The LychD Source Mirror."""
+"""Reserved read-only core source."""
 
 
 # --- C. The Assembly (The Forge: Cache) ---
 
-PATH_CACHE_ROOT: Final[Path] = _cache_root / DEFAULT_MODULE_NAME  # ~/.cache/lychd
-"""The disposable cache root."""
+PATH_CACHE_ROOT: Final[Path] = PATH_XDG_CACHE_HOME / DEFAULT_MODULE_NAME  # ~/.cache/lychd
+"""Rebuildable LychD cache."""
 
 PATH_ASSEMBLY_DIR: Final[Path] = PATH_CACHE_ROOT / "assembly"  # ~/.cache/lychd/assembly
-"""The build area for transient assets."""
+"""Reserved disposable assembly staging."""
 
 
 # --- D. The Binding (Host Integration) ---
 
-PATH_SYSTEMD_UNITS_DIR: Final[Path] = _config_root / "containers" / "systemd"  # ~/.config/containers/systemd
-"""The anchor where Quadlets are inscribed to interface with the Host OS.
+PATH_CONTAINERS_CONFIG_DIR: Final[Path] = PATH_XDG_CONFIG_HOME / "containers"
+"""Shared Podman configuration root; LychD only ensures the path to its Quadlet directory exists."""
 
-Quadlet's generator ONLY processes ``.container/.volume/.network/.kube/.image/
+PATH_SYSTEMD_UNITS_DIR: Final[Path] = PATH_CONTAINERS_CONFIG_DIR / "systemd"  # ~/.config/containers/systemd
+"""Shared Quadlet source site.
+
+Binding writes only Scribe-owned LychD sources here. Quadlet's generator
+processes ``.container/.volume/.network/.kube/.image/
 .build/.pod`` files here. Plain systemd units (e.g. ``.target``) dropped in this
 directory are silently ignored, so they must live in ``PATH_SYSTEMD_USER_UNITS_DIR``.
 """
 
-PATH_SYSTEMD_USER_UNITS_DIR: Final[Path] = _config_root / "systemd" / "user"  # ~/.config/systemd/user
-"""The systemd user unit directory (loaded directly by ``systemctl --user``).
+PATH_SYSTEMD_CONFIG_DIR: Final[Path] = PATH_XDG_CONFIG_HOME / "systemd"
+"""Shared systemd user-configuration root; never a LychD-owned tree."""
 
-Non-Quadlet units the Scribe generates -- the Coven ``.target`` files -- are
-inscribed here so systemd can actually load them and resolve the
+PATH_SYSTEMD_USER_UNITS_DIR: Final[Path] = PATH_SYSTEMD_CONFIG_DIR / "user"  # ~/.config/systemd/user
+"""Shared plain user-unit site.
+
+LychD owns only Scribe-recorded non-Quadlet units here. The Coven ``.target``
+files live here so systemd can load them and resolve the
 ``WantedBy=``/``Conflicts=`` edges that reference them (the Law of Exclusivity)."""
 
 PATH_RUNE_TEMPLATES_DIR: Final[Path] = BASE_DIR / "system" / "templates"
-"""Jinja2 source templates used to generate Systemd Quadlet files."""
+"""Jinja2 templates for generated Quadlets, units, and database bootstrap."""
 
 # ==============================================================================
 # III. HOST LAYOUT (The Physical Manifest)
 # ==============================================================================
-# A comprehensive list of all directories and key files the application owns.
+# Required initialization geography. This includes shared host anchors and a
+# mounted storage target, so membership never proves deletion ownership.
 # The `fmt: off/on` directives prevent auto-formatters like Black or Ruff
 # from destroying the visual layout of the comments below.
 
@@ -164,9 +176,9 @@ HOST_LAYOUT: Final[tuple[Path,...]] = (
     PATH_LAB_DIR,              # ├── lab/             <-- The Workspace
     PATH_EXTENSIONS_DIR,       # ├── extensions/      <-- The Tissue
     PATH_CORE_DIR,             # ├── core/            <-- The lychd source dir
-    PATH_POSTGRES_ROOT_DIR,    # └── postgres/        <-- The Memory
-    PATH_POSTGRESS_DATA_DIR,   #     ├── /data/       <-- Live DB Data
-    PATH_POSTGRESS_SNAPSHOTS_DIR, #  └── /snapshots/  <-- btrfs snapshots of /data
+    PATH_POSTGRES_ROOT_DIR,    # ├── postgres/        <-- The Memory
+    PATH_POSTGRESS_DATA_DIR,   # │   └── data/        <-- Live DB Data
+    PATH_POSTGRESS_SNAPSHOTS_DIR, # └── snapshots/    <-- Future recovery shelf
 
     # --- The Forge ---
     PATH_CACHE_ROOT,           # ~/.cache/lychd/

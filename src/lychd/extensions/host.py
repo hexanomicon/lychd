@@ -23,6 +23,7 @@ if TYPE_CHECKING:
         SoulstoneRuntimeAdapter,
     )
     from lychd.domain.animation.transmute import QuadletContributor
+    from lychd.domain.cortex.operations import RunOperationCatalog
     from lychd.extensions.context import ExtensionContext
 
 
@@ -52,6 +53,11 @@ class AssembledExtensions:
     @property
     def quadlet_contributors(self) -> tuple[QuadletContributor, ...]:
         return self.context.transmutation.contributors
+
+    @property
+    def run_operation_catalog(self) -> RunOperationCatalog:
+        """Read-only catalogue admitted beneath ``lychd run``."""
+        return self.context.run_operations
 
 
 def assemble_extensions(settings: Settings | None = None) -> AssembledExtensions:

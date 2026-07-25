@@ -216,8 +216,9 @@ absolute operator-owned path whose final segment remains `inbox`. Its sibling jo
 
 - **`host-reactor` (caged default):** writes one `0600` JSON intent using sibling-temp creation,
   file and directory `fsync`, and atomic no-overwrite publication into an owner-only inbox. Bind
-  generates `lychd-reactor.path` and the host-side `lychd reactor consume` oneshot. The consumer
-  claims before parsing through a no-follow bounded descriptor read, then validates the typed
+  generates `lychd-reactor.path` and a host-side oneshot that invokes the private Reactor consumer
+  process entrypoint. That process is generated-service machinery, not a public Pulse root. The
+  consumer claims before parsing through a no-follow bounded descriptor read, then validates the typed
   schema/set invariants, filename/transition identity, configuration digest, configured switch
   plan, expected user-unit active set, and host registry mappings before acting. It retains
   processing, completed, declined, or rejected records in a host-owned journal; an existing journal

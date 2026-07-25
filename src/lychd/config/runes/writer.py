@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 from collections.abc import Callable
 from pathlib import Path
@@ -82,6 +83,32 @@ class ConfigWriter:
     def planned_sample_paths(self, schemas: list[type[RuneConfig]]) -> list[Path]:
         """Return sample paths a mutation-free inscription would create."""
         return [target for schema in schemas if (target := self._target_sample_file(schema)) is not None]
+
+    def planned_path_descriptions(self, schemas: list[type[RuneConfig]]) -> dict[Path, str]:
+        """Project Rune class docstrings onto their planned anchors and samples."""
+        descriptions: dict[Path, str] = {}
+        for schema in schemas:
+            lineage = tuple(
+                ancestor
+                for ancestor in reversed(schema.mro())
+                if issubclass(ancestor, RuneConfig) and ancestor is not RuneConfig
+            )
+            for ancestor in lineage:
+                summary = self._schema_summary(ancestor)
+                if summary is not None:
+                    descriptions[ancestor.anchor_dir(self._runes_dir)] = summary
+            target = self._target_sample_file(schema)
+            if target is not None:
+                descriptions[target] = "Generated inactive example; remove its marker before use."
+        return descriptions
+
+    @staticmethod
+    def _schema_summary(schema: type[RuneConfig]) -> str | None:
+        """Return exactly the first line of a Rune class docstring."""
+        if schema.__doc__ is None:
+            return None
+        description = inspect.cleandoc(schema.__doc__)
+        return description.partition("\n")[0] or None
 
     def inscribe_samples(
         self,

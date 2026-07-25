@@ -5,10 +5,12 @@ icon: fontawesome/solid/dungeon
 
 # :fontawesome-solid-dungeon: Altar
 
-The **Altar** is LychD's server-rendered local web surface. Its conversational instrument is the
+The **Altar** is LychD's local web surface. Its accepted architecture is a static Svelte 5/SvelteKit
+client projecting typed Litestar API and event truth; the repository still serves a legacy
+Jinja/HTMX/Alpine surface while that client is rebuilt. Its conversational instrument is the
 **Bridge**. The navigation also names Nexus, Loom, Scrying, Reliquary, and Bindings, but a visible
 door is not proof that the instrument behind it is complete. [State of the
-Work](../../state-of-the-work.md#altar-and-observability) owns what can answer now.
+Work](../../state-of-the-work.md#altar-and-observability) owns the migration and what can answer now.
 
 !!! danger "Temporary local-browser boundary"
     Before using the Altar, use a dedicated browser profile on the same host, keep the listener on
@@ -24,7 +26,7 @@ Work](../../state-of-the-work.md#altar-and-observability) owns what can answer n
 The glass is a projection, never a second mind or source of authority. Live execution remains in
 the [Vessel](../../sepulcher/vessel/index.md) and committed truth in the
 [Phylactery](../../sepulcher/phylactery/index.md); where a supported flow asks, the Altar carries
-consent or refusal back into that body.
+one typed consent or refusal intent back into that body. Svelte owns presentation mechanics only.
 
 ## The doors that answer now
 
@@ -63,7 +65,7 @@ unbuilt shell:
 
 The native **Oculus** is LychD's intended evidence plane and future Altar-facing observability
 surface. It does not yet provide native ingestion, a durable query/read model, retention, or a
-working HTMX Scrying view. [Current Oculus
+working Svelte Scrying projection. [Current Oculus
 boundary](../../state-of-the-work.md#native-oculus)
 
 **Phoenix** remains an optional Arize-owned external Eye. LychD does not require it for Oculus and

@@ -9,7 +9,7 @@ from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
 class VllmSoulstoneConfig(SoulstoneConfig):
-    """Builtin Soulstone profile for vLLM.
+    """vLLM runtime declarations and launch recipes.
 
     Exec-passthrough-by-default: the operator supplies the full vLLM serve
     command as the ``exec`` list (权威). Container-level concerns (image,

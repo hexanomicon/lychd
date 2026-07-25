@@ -197,9 +197,11 @@ delayed post-timeout application window without inventing a TTL inside `Transiti
 
 - `lychd-reactor.path` watches complete `inbox/*.json` names and crash-surviving
   `journal/*.processing.json` records.
-- `lychd-reactor.service` is a host-side oneshot that runs `lychd reactor consume` with a
-  deterministic host environment. `Restart=on-failure` retries a failed invocation; once a terminal
-  outcome has been journaled, the next empty invocation succeeds instead of creating a restart loop.
+- `lychd-reactor.service` is a host-side oneshot that runs the private Reactor consumer process
+  entrypoint (currently spelled `lychd reactor consume`) with a deterministic host environment.
+  It is generated-service machinery, not a public Pulse root. `Restart=on-failure` retries a failed
+  invocation; once a terminal outcome has been journaled, the next empty invocation succeeds
+  instead of creating a restart loop.
 
 The consumer validates both directories as real, current-UID-owned `0700` directories. A pending
 name must first match `<32-lowercase-hex>.json` and identify a regular entry. The host then moves it
@@ -298,7 +300,7 @@ trusted bootstrap root chooses the effect owner.
 | Direct stale-active-set rejection | Implemented for the Systemd actuator |
 | Direct best-effort in-process compensation | Implemented for the Systemd actuator |
 | Restricted atomic JSON publication | Implemented for the Host Reactor actuator |
-| Host path/service consumer and `lychd reactor consume` | Implemented |
+| Host path/service consumer and private Reactor process entrypoint | Implemented |
 | Host schema/set invariants, fd-safe ownership/size checks, config generation, policy recomputation, and stale user-unit-state validation | Implemented |
 | Durable processing/completed/declined/rejected records and transition-ID replay suppression | Implemented |
 | Read-only terminal receipt, unclaimed-timeout retraction, cancellation fence, and startup idle fence | Implemented |

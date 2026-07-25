@@ -69,11 +69,34 @@ the real command tree, safely plans its initial host inscription, and generates 
 configuration. It does **not** prove caged startup, accelerator access, a warm model, or a Bridge
 reply.
 
-For a reversible developer rehearsal, `uv run lychd destroy --dry-run` previews the same guarded
-ownership boundary used by `destroy`. The command is not package uninstallation or data purging:
-it removes only inactive exact bound files plus unchanged resources recorded as created by
-`init`, and preserves mounts, Postgres data, model shelves, secrets, pre-existing paths, and
-foreign files.
+The init preview also names one deliberate authority grant: only after the complete transaction
+converges does initialization seal the exact dedicated Codex, Crypt, and cache-root identities so
+a later confirmed `del` can remove the installation. Each root must remain on its parent's mount;
+shared XDG parents, external model shelves, the source checkout, and foreign mounts are never
+included. The default preview collapses this plan beneath three XDG tiers—Codex/config (including
+Binding), Crypt/share (including the Phylactery), and Forge/cache; add `--verbose` only when you
+need every inspected host anchor. Blue paths are shared host anchors whose `will prepare`/`present`
+state is separate from LychD ownership. The preceding host-foundation panel independently checks
+systemd, Podman/Quadlet, cgroup v2, SELinux, Btrfs, PostgreSQL No-COW policy, and whether both
+Binding sites are actually prepared. Each tree node reuses the first line of the attribute
+docstring beside its path constant, or the contributing Rune class docstring.
+
+The public Pulse is intentionally small:
+
+```text
+init · bind · start · stop · status (st) · logs · run · del
+```
+
+Extensions place typed work beneath `run`; read-only extension projections belong beneath
+`status`, not at the root. Use `uv run lychd del --dry-run` to inspect the staged removal plan
+before testing a fresh inscription. `del` stops and disables exact-owned units, clears exact
+bindings, and removes verified LychD Codex, Crypt, and cache roots—including snapshots and
+Phylactery data. An attested Btrfs mount pauses for an explicit root handoff bound to its filesystem
+and subvolume UUID/ID. Unreceipted Podman objects and secrets, the package, and the source checkout
+remain preserved. [ADR
+19](docs/adr/19-cli.md) owns the grammar; [State of the
+Work](docs/state-of-the-work.md#core-cli-rites) records which verbs and extension projections are
+useful in this revision.
 
 When the bootstrap passes, continue with **[The Summoning Rite](docs/summoning.md)** for the
 complete source-built, one-host path and its temporary browser boundary. If all four observations
@@ -165,11 +188,13 @@ release license inventory.
   **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)**, and
   **[PostgreSQL](https://www.postgresql.org/)** with
   **[pgvector](https://github.com/pgvector/pgvector)** anchor the Phylactery.
-- **[Jinja](https://github.com/pallets/jinja)**,
-  **[HTMX](https://github.com/bigskysoftware/htmx)**,
-  **[Alpine.js](https://github.com/alpinejs/alpine)**, and
-  **[Tailwind CSS](https://github.com/tailwindlabs/tailwindcss)** shape the server-owned Altar;
-  **[Vite](https://github.com/vitejs/vite)** forges its static assets.
+- **[Svelte](https://github.com/sveltejs/svelte)** and
+  **[SvelteKit](https://github.com/sveltejs/kit)** are the accepted Altar client;
+  **[Vite](https://github.com/vitejs/vite)** forges its static assets and
+  **[Bun](https://github.com/oven-sh/bun)** owns the JavaScript dependency/build ritual.
+  Litestar remains the only production server and authority. The current partial surface still
+  contains Jinja/HTMX/Alpine migration code; [State of the
+  Work](docs/state-of-the-work.md#altar-and-observability) owns that boundary.
 - **[OpenTelemetry](https://opentelemetry.io/)** and
   **[Structlog](https://github.com/hynek/structlog)** are the chosen telemetry substrate for the
   designed native Oculus.

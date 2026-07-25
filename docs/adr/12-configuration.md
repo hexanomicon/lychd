@@ -136,8 +136,8 @@ It carries no multi-instance infrastructure definitions.
 If secret references are declared in Codex:
 
 - The file must be owned by the Magus.
-- File permissions must be `0600`.
-- `lychd doctor` fails its preflight if ownership or group/other permissions are unsafe.
+- LychD generates mode `0600`; an existing file must keep every group/other permission bit closed.
+- `lychd bind --dry-run` fails its preflight if ownership or group/other permissions are unsafe.
 
 The Global config defines global truth.
 
@@ -568,16 +568,23 @@ ownership data, and a generated name already occupied by an unowned file fail cl
 same-filesystem replacement, and prepared backups allow a failure at either binding site to restore
 the previous files and ownership manifest.
 
-`lychd destroy` joins these two authorities without widening either one. It first requires every
-runtime unit derived from the Scribe receipt to be inactive and disabled, then transactionally
-clears only the exact recorded binding sources and reloads the user manager. It removes an
-init-receipt file only while its device, inode, digest, and ownership remain unchanged, and removes
-a recorded directory only while its identity is unchanged and it is empty. `init`, `bind`, and
-real `destroy` share one interprocess lifecycle lock; dry runs remain lock-file-free and
-effect-free. A changed generated file, foreign child, unsafe path, active or enabled unit, drifted
-binding generation, or invalid receipt blocks destruction rather than being repaired or discarded.
-Pre-existing state, external mounts, Postgres data, model shelves, and Podman secrets are outside
-this command's deletion authority. There are no purge flags in this contract.
+The lifecycle and Scribe receipts remain exact inputs to `lychd del`; they are not its entire
+contract. Receipt identity proves which generated files may be removed as pristine owned
+projections. The broader, explicitly destructive command separately inventories LychD services,
+containers, XDG roots, snapshots, and Phylactery state, stops the live installation, and requires
+confirmation before removing them. Known geography alone never authorizes following a symlink,
+crossing an unknown mount, or deleting an ambiguous foreign resource.
+
+The current provenance boundary can remove exact bindings and verified dedicated XDG trees. It
+reports unreceipted Podman containers, pods, and secrets plus package/source ownership as preserved
+rather than treating conventional names as deletion evidence.
+
+`init`, `bind`, and real `del` share one interprocess lifecycle lock; dry runs remain
+lock-file-free and effect-free. A changed generated file, unsafe path, drifted binding generation,
+or invalid receipt blocks the affected removal rather than being silently repaired or discarded.
+When a known Phylactery mount or subvolume requires root authority, `del` leaves the deletion
+evidence intact and prints an inspected operator handoff instead of invoking `sudo`. [CLI (ADR
+19)](19-cli.md) owns the complete destructive lifecycle.
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 

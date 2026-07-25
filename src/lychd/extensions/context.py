@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from lychd.config.runes.extension import RuneConfigStore
 from lychd.domain.animation.extension import PortalStore, SoulstoneStore
 from lychd.domain.animation.transmute import TransmutationStore
+from lychd.domain.cortex.operations import AGENT_RUN_OPERATION, RunOperationStore
 from lychd.extensions.base import ExtensionStore
 
 if TYPE_CHECKING:
@@ -35,6 +36,10 @@ class ExtensionContext:
         self.portals = PortalStore(self.runes)
         self.transmutation = TransmutationStore()
         self.vessel = VesselStore()
+        self.run_operations = RunOperationStore(
+            current_provider=lambda: self.current_extension_id,
+            core_operations=(AGENT_RUN_OPERATION,),
+        )
 
     @contextmanager
     def provenance(self, extension_id: str) -> Iterator[None]:

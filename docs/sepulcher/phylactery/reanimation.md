@@ -85,38 +85,33 @@ belong to the Orchestrator and whole-pod actions remain explicit break glass.
 This rite assumes the four observations in [Summoning](../../summoning.md#the-awakening) have
 already agreed. If they have not, return there; Reanimation cannot repair an incomplete first life.
 
-The current CLI can decide a known consent but cannot enumerate every active run or perform a
-graceful system-wide drain. This page therefore cannot offer a copyable zero-loss precondition. For
-a bounded local demonstration, stop new submissions and wait for every run visible in the Bridge
-to settle; that observation is incomplete. If unseen work may exist or continuity matters, do not
-restart the Vessel. Build the missing census and drain path first.
+The public Pulse reserves `status` for the active-run census and `stop` for graceful system-wide
+drain. [State](../../state-of-the-work.md#core-cli-rites) owns whether this revision has proved
+those boundaries. Until both are useful, this page cannot offer a copyable zero-loss precondition.
+For a bounded local demonstration, stop new submissions and wait for every run visible in the
+Bridge to settle; that observation is incomplete. If unseen work may exist or continuity matters,
+do not restart the Vessel.
 
 If Codex intent changed, bind the new projection first. If no configuration or unit intent changed,
 do not bind merely to restart:
 
 ```bash
 # Only when Codex or generated-unit intent changed:
+uv run lychd bind --dry-run
 uv run lychd bind
 
 systemctl --user restart lychd-vessel.service
-systemctl --user is-active \
-  lychd-pod.service \
-  lychd-phylactery.service \
-  lychd-reactor.path \
-  lychd-vessel.service
+uv run lychd status
 systemctl --user show lychd-migrate.service \
   --property=Result --property=ExecMainStatus
-uv run lychd doctor
-journalctl --user -u lychd-vessel.service -n 200 --no-pager
+uv run lychd logs services --lines 200
 ```
 
-The pod, Phylactery, Reactor path, and Vessel must report `active`; the migration gate must report
-`Result=success` and `ExecMainStatus=0`; and `doctor` must report a coherent foundation. Then repeat
-the runtime and Bridge observations rather than trusting process state alone:
-
-```bash
-podman exec lychd-vessel lychd animators
-```
+The public `stop` verb cannot yet perform this restart: while the Vessel is active, arbitration
+correctly refuses direct actuation until an authenticated Vessel lifecycle port exists. The status
+projection proves exact owned unit activity and mount truth, while the separate migration probe
+must show `Result=success` and `ExecMainStatus=0`. Neither proves model warmth. Repeat the Nexus and
+Bridge observations rather than trusting process state alone.
 
 Open the [Bridge](../../divination/altar/index.md) only through its stated same-host browser
 boundary and send one benign message. If unit state, runtime readiness, and the reply do not agree,

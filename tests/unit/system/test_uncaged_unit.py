@@ -21,6 +21,10 @@ from lychd.cli.commands import bind_quadlets
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.transmute import transmute_uncaged_vessel
 from lychd.system.schemas import SystemdService
+from lychd.system.services.binding_preflight import (
+    BindingPreflightIssue,
+    BindingPreflightReport,
+)
 from lychd.system.services.scribe import ScribeService
 
 if TYPE_CHECKING:
@@ -207,14 +211,37 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     mock_transmuter.transmute_all.return_value = ["rune1"]
 
     mock_scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    preflight = mocker.patch("lychd.system.services.binding_preflight.BindingPreflightService").return_value
+    preflight.inspect.return_value = BindingPreflightReport(
+        issues=(
+            ()
+            if systemctl is not None
+            else (
+                BindingPreflightIssue(
+                    code="systemctl-missing",
+                    target="systemctl",
+                    detail="systemctl is not available on PATH",
+                ),
+            )
+        ),
+        systemctl_bin=systemctl,
+    )
     mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     mock_subprocess = mocker.patch("subprocess.run")
-    mocker.patch("shutil.which").return_value = systemctl
+    mock_subprocess.return_value = subprocess.CompletedProcess(
+        args=("/usr/bin/systemctl", "--user", "daemon-reload"),
+        returncode=0,
+        stdout="",
+        stderr="",
+    )
     return SimpleNamespace(scribe=mock_scribe, subprocess=mock_subprocess)
 
 
-def test_bind_uncaged_writes_unit_and_prints_enable_hint(runner: CliRunner, mocker: MockerFixture) -> None:
-    """--uncaged writes the unit + hints enable, but NEVER auto-enables."""
+def test_bind_uncaged_writes_unit_and_prints_canonical_start_hint(
+    runner: CliRunner,
+    mocker: MockerFixture,
+) -> None:
+    """--uncaged writes the unit but keeps raw systemd out of operator guidance."""
     mocks = _mock_bind_pass(mocker, systemctl="/usr/bin/systemctl")
 
     result = runner.invoke(bind_quadlets, ["--uncaged"])
@@ -223,7 +250,8 @@ def test_bind_uncaged_writes_unit_and_prints_enable_hint(runner: CliRunner, mock
     mocks.scribe.reconcile_all.assert_called_once()
     plain_units = mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
     assert "lychd-uncaged-vessel.service" in plain_units
-    assert "systemctl --user enable --now lychd-uncaged-vessel.service" in result.output
+    assert "lychd start" in result.output
+    assert "systemctl --user enable" not in result.output
     assert "flip the switch" in result.output
     # daemon-reload runs; enable/start is NEVER auto-invoked.
     reload_calls = [c for c in mocks.subprocess.call_args_list if c.args and "daemon-reload" in c.args[0]]
@@ -232,17 +260,20 @@ def test_bind_uncaged_writes_unit_and_prints_enable_hint(runner: CliRunner, mock
     assert not enable_calls, "the Magus flips the switch — bind must not auto-enable"
 
 
-def test_bind_uncaged_no_systemd_degrades_to_file_and_warning(runner: CliRunner, mocker: MockerFixture) -> None:
-    """Without systemd the unit is still written; daemon-reload is skipped with a warning."""
+def test_bind_uncaged_without_systemd_blocks_before_writing(
+    runner: CliRunner,
+    mocker: MockerFixture,
+) -> None:
+    """A missing lifecycle substrate is a preflight blocker, not a partial bind."""
     mocks = _mock_bind_pass(mocker, systemctl=None)
 
     result = runner.invoke(bind_quadlets, ["--uncaged"])
 
-    assert result.exit_code == 0
-    mocks.scribe.reconcile_all.assert_called_once()
-    assert "lychd-uncaged-vessel.service" in mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
-    assert "Manual daemon-reload required" in result.output
-    assert mocks.subprocess.call_args_list == []  # nothing invoked without systemctl
+    assert result.exit_code != 0
+    assert "PREFLIGHT" in result.output
+    assert "systemctl is not available on PATH" in result.output
+    mocks.scribe.reconcile_all.assert_not_called()
+    assert mocks.subprocess.call_args_list == []
 
 
 def test_bind_without_uncaged_writes_no_user_unit(runner: CliRunner, mocker: MockerFixture) -> None:

@@ -20,13 +20,17 @@ __all__ = ["CodexPreauthRune", "CodexRune"]
 
 
 class CodexRune(RuneConfig):
-    """Abstract branch rune for Codex-owned configuration (owns no TOML itself)."""
+    """Typed policy declarations governing authority and consent."""
 
     path_fragment: ClassVar[Path] = Path("codex")
 
 
 class CodexPreauthRune(CodexRune):
-    """A bounded standing approval. ZTE is a bounded class of this, never blanket."""
+    """Standing approvals for matching Sigils and tools.
+
+    Standard approvals match patterns. ZTE approvals additionally carry
+    constraints, expiry, and a use budget.
+    """
 
     path_fragment: ClassVar[Path] = Path("preauth")
     sample_template: ClassVar[str | None] = """

@@ -26,7 +26,10 @@ make frontend-install    # Altar frontend dependencies (node_modules)
 make help                # View all available rituals
 ```
 
-The Altar's frontend contract is **Vite compatibility**, not a specific JavaScript package manager. The default rituals currently use `npm`; alternatives such as `bun` are acceptable only if they preserve the Litestar/Vite workflow and environment semantics.
+The current legacy ritual still invokes `npm`. [ADR 15](docs/adr/15-frontend.md) fixes Bun as the
+canonical package manager for the Svelte replacement while retaining Vite as the compiler. Until
+the implementation migration lands, `make frontend-install` is evidence only for the current
+HTMX-era package tree and must not be described as the accepted Bun workflow.
 
 ### Purification (Quality Control)
 
@@ -75,9 +78,15 @@ jj git push         # Synchronize with the external world (Git remotes)
     1. **Unbound Routing**: Use standalone `Controller` or `Router`. Never use `@app.get`.
     2. **DTO Mandate**: Use `SQLAlchemyDTO`. Never write redundant Pydantic models for ORM.
     3. **Repository Law**: Use `SQLAlchemyAsyncRepository`. Never write raw `session.execute` in routes.
-    4. **Native Responses**: Use Litestar's built-in HTMX and OpenTelemetry plugins. No external shims.
+    4. **Native Protocols**: Derive client contracts from Litestar OpenAPI and use its native
+       OpenTelemetry plugin. No handwritten frontend schema mirrors or foreign telemetry shims.
 - **Dependencies**: Use `uv add` or `uv remove` with proper groups. Ideally do not hand-edit `pyproject.toml`.
-- **Frontend Tooling**: Keep the default Altar surface thin (`HTMX + Alpine + Jinja`). Introduce TypeScript and Vite-compiled Svelte only for bounded instrument islands with enough client-side logic to justify stronger contracts; do not add a thick SPA runtime by default.
+- **Frontend Tooling**: The canonical Altar target is Svelte 5 runes with SvelteKit in static SPA
+  mode, built by Vite and managed by Bun. Litestar remains the only production server and API
+  authority; SvelteKit server routes/actions and a Bun/Node production runtime are forbidden.
+  Current HTMX/Jinja/Alpine commands are migration evidence only. Follow
+  [ADR 15](docs/adr/15-frontend.md) and [State of the
+  Work](docs/state-of-the-work.md#altar-and-observability) before changing the surface.
 - **Logging**: Use `structlog` with semantic event IDs.
     - Our global config uses `log_exceptions="always"` and an `EventRenamer`.
     - **Convention**: For fatal initialization errors, simply `raise` the exception with a descriptive message. The logger will automatically capture the message and the traceback. Manual `logger.critical()` calls are only needed if you must log an event *without* stopping execution.

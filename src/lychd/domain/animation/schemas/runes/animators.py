@@ -18,7 +18,7 @@ _ENV_NAME: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class AnimatorConfig(RuneConfig, ABC):
-    """Abstract branch config for animator-owned Rune schemas.
+    """Local and remote capability endpoints.
 
     ``AnimatorConfig`` is intentionally generic. It should only contain defaults
     that make sense across all animator kinds (local Soulstones and remote
@@ -40,7 +40,7 @@ class AnimatorConfig(RuneConfig, ABC):
 
 
 class SoulstoneConfig(AnimatorConfig, ABC):
-    """Abstract branch config for local/container-backed animator schemas.
+    """Local container-backed capability runtimes.
 
     Soulstones may declare local models because the system typically owns the
     artifact path and runtime process for local execution. Connectors later turn
@@ -156,13 +156,13 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
 
 class GenericSoulstoneConfig(SoulstoneConfig):
-    """Leaf Soulstone Rune for simple container-backed generic runtimes."""
+    """Generic container-backed runtime declarations."""
 
     path_fragment: ClassVar[Path] = Path("generic")
 
 
 class PortalConfig(AnimatorConfig, ABC):
-    """Abstract branch config for remote/API-backed animator schemas.
+    """Remote capability endpoints.
 
     Portals declare endpoint identity and authentication references. Provider
     subclasses own the concrete TOML anchors because ``portals/`` is only the
@@ -206,7 +206,7 @@ class PortalConfig(AnimatorConfig, ABC):
 
 
 class OpenAIPortalConfig(PortalConfig):
-    """Leaf Portal Rune for OpenAI's native API."""
+    """OpenAI-compatible remote model declarations."""
 
     path_fragment: ClassVar[Path] = Path("openai")
 
@@ -218,7 +218,7 @@ class OpenAIPortalConfig(PortalConfig):
 
 
 class GoogleGeminiPortalConfig(PortalConfig):
-    """Leaf Portal Rune for Google's OpenAI-compatible Gemini endpoint."""
+    """Google Gemini remote model declarations."""
 
     path_fragment: ClassVar[Path] = Path("google-gemini")
 

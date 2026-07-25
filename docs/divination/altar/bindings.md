@@ -50,7 +50,7 @@ Before Bindings earns any write control, its read model must be able to show:
 - the declared value separately from observed runtime state
 - validation failures at the field and owning-policy boundary
 - the expected effect of a proposal: reload, rebind, restart, later run only, or no current effect
-- a server-rendered diff before any accepted change
+- a server-computed, typed diff projected before any accepted change
 - the authority and consent needed for the effect, checked again when the effect occurs
 - the generated projections affected by a lawful bind, without inviting direct edits to them
 

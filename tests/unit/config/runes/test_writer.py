@@ -9,12 +9,19 @@ from lychd.config.runes import ConfigWriter, RuneConfig
 
 
 class WriterRootConfig(RuneConfig):
+    """Writer test declarations."""
+
     path_fragment: ClassVar[Path] = Path("writer")
 
     marker: str = "root"
 
 
 class WriterSampleConfig(WriterRootConfig):
+    """Writer sample declarations.
+
+    A longer explanation must not leak into the compact lifecycle tree.
+    """
+
     path_fragment: ClassVar[Path] = Path("sample")
 
     required_name: str
@@ -72,6 +79,18 @@ def test_writer_generates_commented_defaults(tmp_path: Path) -> None:
     assert "# retries = 0" in content
     assert "# default: True" in content
     assert "# enabled = false" in content
+
+
+def test_writer_projects_first_docstring_line_onto_planned_paths(tmp_path: Path) -> None:
+    writer = ConfigWriter(runes_dir=tmp_path)
+
+    descriptions = writer.planned_path_descriptions([WriterSampleConfig])
+
+    assert descriptions[tmp_path / "writer"] == "Writer test declarations."
+    assert descriptions[tmp_path / "writer" / "sample"] == "Writer sample declarations."
+    assert descriptions[tmp_path / "writer" / "sample" / "writersampleconfig.toml"] == (
+        "Generated inactive example; remove its marker before use."
+    )
 
 
 def test_writer_prefers_custom_sample_template(tmp_path: Path) -> None:

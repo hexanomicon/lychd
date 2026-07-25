@@ -1,3 +1,5 @@
+"""Journal-aware creation of the initialization filesystem geography."""
+
 from __future__ import annotations
 
 import os
@@ -19,7 +21,7 @@ logger = structlog.get_logger()
 
 
 class Layout:
-    """Orchestrate the host physical directory architecture and lifecycles."""
+    """Create missing layout paths without adopting existing host resources."""
 
     def __init__(
         self,
@@ -38,7 +40,6 @@ class Layout:
             msg = "Use either paths or layout, not both."
             raise ValueError(msg)
 
-        # Strictly check for None so an empty tuple () can be respected if passed.
         selected_paths = layout if layout is not None else paths
         self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if selected_paths is None else tuple(selected_paths)
         self.btrfs: Final[Btrfs] = Btrfs()
@@ -78,7 +79,6 @@ class Layout:
                 raise
             created_paths.extend(created)
 
-        # Single summary log at the end, perfect for JSON and CLI rendering
         logger.info(
             "layout_synchronization_complete",
             created=[str(path) for path in created_paths],
@@ -108,21 +108,18 @@ class Layout:
 
         """
         missing = self._missing_path_chain(path)
-        # Specialized Provisioning: Postgres Data Subvolume
         if path == PATH_POSTGRESS_DATA_DIR:
             if self.btrfs.create_subvolume(path):
                 if not self.btrfs.apply_no_cow(path):
                     logger.warning("layout_db_subvolume_unoptimized", path=str(path))
                 return missing
 
-            # If Btrfs ritual fails completely, log the fallback hint
             logger.info(
                 "layout_btrfs_fallback",
                 path=str(path),
-                hint=f"For optimal DB performance, manually create a No-COW Btrfs subvolume at: {path}",
+                hint=f"Using an ordinary directory; inspect optional Btrfs/No-COW preparation for {path}",
             )
 
-        # Standard Provisioning (or Fallback from Btrfs failure)
         try:
             path.mkdir(parents=True, exist_ok=True)
         except OSError as e:

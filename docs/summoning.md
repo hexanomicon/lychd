@@ -146,8 +146,10 @@ uv run lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
-The help output must include `init`, `destroy`, `bind`, `doctor`, `animators`, `database`, `serve`,
-and `reactor`; the image inspection must print an image ID.
+The public help output must contain only the compact Pulse grammar—`init`, `bind`, `start`, `stop`,
+`status` (with `st` as its alias), `logs`, `run`, and `del`—while the image inspection must print
+an image ID. Server, migration, consent, and Reactor process entrypoints are internal machinery,
+not operator roots.
 
 **If it fails.** Use Python `>=3.12,<3.15` for the locked environment and read the first failing
 build step. Do not work around a failure by installing the old PyPI placeholder or by assuming a
@@ -178,26 +180,49 @@ uv run lychd init
 vi "$CODEX_DIR/lychd.toml"
 ```
 
-The preview uses the same planner as the real command and reports `WOULD CREATE`, `PRESERVE`, and
-`BLOCKED`; it does not change files, modes, mounts, services, or secrets. Continue only when it
-ends with `Initialization plan is safe`.
+The preview uses the same planner as the real command and renders three concise XDG tiers:
+**Codex** beneath `~/.config` (including host Binding), **Crypt** beneath `~/.local/share`
+(including the Phylactery), and **Forge** beneath `~/.cache`. It does not change files, modes,
+mounts, services, or secrets. A preceding host-foundation panel concurrently verifies the systemd
+user manager, Podman/Quadlet versions, cgroup v2, Binding sites, SELinux mode, Btrfs substrate, and
+the observed PostgreSQL No-COW directory policy. Systemd, Podman/Quadlet, cgroup v2, and prepared
+Binding sites govern the aggregate `BIND` verdict; SELinux and Btrfs remain optional hardening and
+storage optimization.
 
-??? info "Optional developer round trip before editing"
-    A pristine first inscription can be dissolved and repeated before you place any intent in the
-    Codex:
+Blockers and external mounts remain explicit. Cyan paths will be created by LychD; green LychD
+paths already exist. Shared XDG, Podman, and systemd anchors are blue with a separate `will prepare`
+or `present` suffix because LychD may prepare them but never owns their namespace. `present` does
+not mean `ready`: the Binding panel says `prepared` only after proving shape, current-user
+ownership, and write/search access. Yellow means removal and red means blocked. Add `--verbose`
+only when you need every inspected intermediate host anchor. Continue only when it ends with
+`Initialization plan is safe`. Read the
+lifecycle-receipt node carefully: a successful
+non-dry initialization first proves full convergence, then explicitly adopts the exact Codex,
+Crypt, and Forge root identities as the recursive authority for a later confirmed `del`. Each root
+must share its parent's mount ID. Shared XDG parents, external shelves, foreign mounts, and the
+mounted Phylactery remain outside that grant.
+
+??? danger "Optional destructive developer round trip before editing"
+    A pristine first inscription can be deleted and repeated before you place any intent or useful
+    data in the Codex and Phylactery:
 
     ```bash
-    uv run lychd destroy --dry-run
-    uv run lychd destroy
+    uv run lychd del --dry-run
+    uv run lychd del
     uv run lychd init --dry-run
     uv run lychd init
     ```
 
-    `destroy` asks for confirmation. It is neither package uninstallation nor a purge: it removes
-    only inactive exact binding files and unchanged resources recorded as created by `init`.
-    Mounts, Postgres data, model shelves, Podman secrets, pre-existing paths, and foreign files are
-    preserved. A modified generated file or unsafe ownership blocks the operation instead of
-    deleting through it.
+    `del` asks for confirmation because its intended scope is the whole LychD installation,
+    including exact-owned services and bindings plus verified Codex, Crypt, cache, snapshots, and
+    Phylactery data. Read every group in the preview. Unreceipted Podman objects and secrets, the
+    package, and the source checkout are preserved explicitly. `del` must not follow symlinks,
+    cross an unknown mount, or delete an external model shelf. If an attested mount or subvolume
+    requires root, LychD retires its exact-owned units, retains a mode-`0600` continuation
+    checkpoint bound to the filesystem UUID and subvolume UUID/ID, and pauses with an
+    absolute-tool privileged operator handoff rather than invoking `sudo`; run `del` again after
+    completing that handoff. If any plan group is `BLOCKED`, no deletion effect runs and no
+    copyable root command is offered; clear the blocker and preview again.
 
 In the existing `[server.web]` table, change its existing `image` value to:
 
@@ -223,8 +248,12 @@ uv run lychd init
 `init` does not overwrite the existing `lychd.toml`. The second pass reads your extension selection
 and creates `runes/animator/soulstones/llamacpp/` if needed.
 
-On Btrfs, initialization may establish native subvolume boundaries. On another filesystem it uses
-ordinary directories and does not claim snapshot rollback.
+When PostgreSQL data is absent on a Btrfs substrate and the trusted tools are available,
+initialization attempts a subvolume plus a No-COW directory policy. It verifies the result after
+apply. Existing storage—including an external mount—is preserved and only observed; `init` never
+retrofits `+C` onto existing data. The directory flag governs newly created extents and does not
+rewrite existing PostgreSQL files. On another filesystem LychD uses an ordinary directory and does
+not claim snapshot rollback.
 
 **Proof.** Inspect the homes and their owner-only boundaries:
 
@@ -345,17 +374,17 @@ grep -F "$MODEL_DIR:/models:ro,Z" \
 podman pull ghcr.io/ggml-org/llama.cpp:server-cuda
 podman image inspect ghcr.io/ggml-org/llama.cpp:server-cuda \
   --format '{{.Id}} {{json .RepoDigests}}'
+uv run lychd bind --dry-run
 uv run lychd bind
-uv run lychd doctor
 ```
 
-`bind` validates the active settings and Rune, creates missing core secrets, writes the complete
-owned Quadlet/plain-unit generation, and reloads the user manager. It does **not** start the
-services. `doctor` is configuration and host preflight; it is not liveness, readiness, or inference
-proof.
+The dry run validates the active settings and Rune, host prerequisites, ports, mount boundaries,
+and secret references, then renders the owned unit generation without mutation. Real `bind`
+creates missing core secrets, writes that complete Quadlet/plain-unit generation, and reloads the
+user manager. It does **not** start the services. Live state belongs to `status`, not binding.
 
-**Proof.** `doctor` ends with `Foundation is coherent`. Confirm the two generated boundaries and
-the core secret references:
+**Proof.** The dry run reports no blockers and real binding completes. Confirm the two generated
+boundaries and the core secret references:
 
 ```bash
 podman secret exists lychd_app_secret_key && echo "application secret present"
@@ -385,14 +414,22 @@ transition actuator watches for typed intents, and only then does the web proces
 **Goal.** Obtain four agreeing first-life observations through the capability **Dispatcher** and
 runtime **Orchestrator** path.
 
-Start the normal caged Vessel:
+Start the normal caged installation:
 
 ```bash
-systemctl --user start lychd-vessel.service
+uv run lychd start
 ```
 
-Do not manually enable the generated caged Quadlet. Verify the live core and the completed one-shot
-migration separately:
+Do not manually enable the generated caged Quadlet. Ask the Pulse for live inventory and
+readiness:
+
+```bash
+uv run lychd status
+```
+
+The Phase-1 report distinguishes initialization, binding ownership, exact unit activity, and the
+Phylactery mount. It does **not** yet prove the migration result, database or HTTP readiness, queue
+health, or model warmth. Preserve the two missing raw observations for this candidate rite:
 
 ```bash
 systemctl --user is-active \
@@ -404,14 +441,15 @@ systemctl --user show lychd-migrate.service \
   --property=Result --property=ExecMainStatus
 ```
 
-The four active units must each print `active`; migration must show `Result=success` and
-`ExecMainStatus=0`. If startup is still in progress, follow the Vessel:
+The four units must each print `active`; migration must show `Result=success` and
+`ExecMainStatus=0`. If startup is still in progress, inspect the bounded operational tail and rerun
+it as needed:
 
 ```bash
-journalctl --user -fu lychd-vessel.service
+uv run lychd logs --lines 120
 ```
 
-Press `Ctrl-C` after the Vessel is active; that stops only the log follow, not the service.
+The Phase-1 log projection is a bounded read, not a live follow.
 
 !!! danger "Temporary local-browser boundary"
     **Before opening the Altar:** use a dedicated browser profile on this same host. Keep the HTTP
@@ -425,8 +463,9 @@ Press `Ctrl-C` after the Vessel is active; that stops only the log follow, not t
     cross-origin requests, but it does not protect GET/SSE confidentiality or DNS rebinding. Do
     not use the Altar from a browser profile that also visits untrusted sites.
 
-    Until the S0 ingress gate lands, use exactly the documented generated deployment or
-    `lychd serve --host 127.0.0.1`; neither choice is permission to expose the port remotely.
+    Until the S0 ingress gate lands, use exactly the documented generated deployment. The internal
+    ASGI process entrypoint is not a public Pulse command and is not permission to expose the port
+    remotely.
 
 Open the loopback Altar:
 
@@ -446,12 +485,10 @@ dedicated Soulstone through the Host Reactor, asks the router to load `first-mod
 readiness, and then retries dispatch. The Rune's `supports_tools = true` is an operator assertion
 used for admission; the settled reply does not prove arbitrary tool calling.
 
-When a non-empty response settles in the Bridge, repeat preflight from the host and inspect the
-runtime from inside the Vessel's shared pod network:
+When a non-empty response settles in the Bridge, ask the Pulse for the joined live truth again:
 
 ```bash
-uv run lychd doctor
-podman exec lychd-vessel lychd animators
+uv run lychd status
 ```
 
 You can witness the same cached capability through the **Nexus transition board** at
@@ -461,10 +498,10 @@ settled turn.
 
 **Proof.** First life exists only when all four observations agree:
 
-1. `doctor` reports a coherent foundation;
-2. the pod, Phylactery, Reactor path, and Vessel are active and migration succeeded;
-3. the in-Vessel `lychd animators` probe reports `atelier` / `chat` / `first-model` as warm after
-   the turn;
+1. `status` reports a coherent bound installation rather than an unknown or drifted one;
+2. its exact owned inventory plus the migration observation above report the expected pod,
+   Phylactery, Reactor path, Vessel, Soulstone activity, and successful migration;
+3. the Nexus projection reports `atelier` / `chat` / `first-model` as warm after the turn;
 4. the Bridge contains a non-empty settled reply.
 
 !!! success "The foundation has answered"
@@ -474,25 +511,21 @@ settled turn.
     receipt. They do not prove every accelerator, model, engine, later organ, or hostile-browser
     boundary.
 
-**If it fails.** Read the smallest journal that owns the failed boundary:
+**If it fails.** Start with the joined report, then narrow the log target shown by that report:
 
 ```bash
-systemctl --user --no-pager status \
-  lychd-phylactery.service lychd-migrate.service lychd-reactor.path \
-  lychd-vessel.service lychd-atelier.service
-journalctl --user \
-  -u lychd-migrate.service \
-  -u lychd-reactor.service \
-  -u lychd-atelier.service \
-  -u lychd-vessel.service \
-  --no-pager --lines=120
+uv run lychd status
+uv run lychd logs services --lines 120
 ```
 
 If the core is healthy but inference fails, recheck the exact model filename, the CDI selector,
 VRAM fit, and the model's real tool/chat-template support. Correct the owning Rune and run `bind`
-again. Do not start the Soulstone by hand as a second activation path.
+again. `status --help` and `logs --help` expose the target identities implemented by this revision;
+do not start the Soulstone by hand as a second activation path.
 
-To stop this first-life stack without deleting configuration, data, secrets, or generated files:
+The canonical `stop` verb already exists, but this revision deliberately refuses to actuate while
+the Vessel is alive because its authenticated lifecycle port is not wired. Until that port can
+perform a real drain, stop this bounded candidate stack through the explicit host fallback:
 
 ```bash
 systemctl --user stop \
@@ -503,30 +536,16 @@ systemctl --user stop \
   lychd-pod.service
 ```
 
-Stopping and destroying are separate acts. After this rite the Codex has been deliberately edited,
-so `lychd destroy --dry-run` may correctly report `BLOCKED` and preserve it rather than treating a
-known path as disposable. Review that plan; do not delete the Codex or Phylactery by hand merely
-to force a clean result.
+Stopping and deleting are separate acts. After this rite, `lychd del --dry-run` must show the
+edited Codex and durable Phylactery explicitly because real `del` is intended to erase them. Review
+that plan; do not delete the Codex or Phylactery by hand merely to force a clean result.
 
 ??? info "Development alternative: uncaged execution"
-    Uncaged execution is a distinct development profile, not a fallback for a broken caged rite. It
-    requires an external Postgres matching `[server.database]`, explicit application-key and
-    database-password files, and direct systemd actuation:
-
-    ```bash
-    export LYCHD_DB_PASSWORD_FILE=/secure/path/db-password
-    export LYCHD_APP_SECRET_KEY_FILE=/secure/path/app-key
-    export ORCHESTRATION__SWITCHING__ACTUATOR=systemd
-    uv run lychd doctor --uncaged
-    uv run lychd database --wait-seconds 60 upgrade head --no-prompt
-    uv run lychd serve --host 127.0.0.1 --port 7134
-    ```
-
-    The same temporary local-browser boundary above still applies; a literal loopback foreground
-    bind does not add caller authentication, Host admission, or origin isolation. There is no
-    `lychd run` command. Although `bind --uncaged` can currently generate a distinct host service,
-    that unit does not yet carry the two secret-file paths required at process start; do not use its
-    printed enable hint as a working deployment recipe.
+    Uncaged execution is a distinct developer profile, not a fallback for a broken caged rite. Its
+    server, migration, and direct-Systemd entrypoints are intentionally internal rather than public
+    Pulse roots. This Summoning therefore provides no copyable uncaged recipe. Keep the caged path
+    above as the operator contract until a maintained developer guide proves the complete secret,
+    migration, startup, and browser boundary.
 
 You have awakened one bounded body and heard it answer. Enter the [Sepulcher](sepulcher/index.md)
 next to learn which organ owns configuration, persistence, inference, execution, and extension. If

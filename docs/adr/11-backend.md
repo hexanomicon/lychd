@@ -36,7 +36,10 @@ icon: material/star-shooting-outline
         -   **Unbound Decorators:** Enables a composable Router system where logic is collected by the application factory.
         -   **Automated DTOs:** Native support for generating API schemas directly from persistence models, ensuring the Database remains the single source of truth without writing Pydantic schemas multiple times.
         -   **Advanced Alchemy Repository Pattern:** Out-of-the-box async Repository patterns (`SQLAlchemyAsyncRepository`) provide robust, type-safe CRUD operations, pagination, and UUID handling without writing raw SQL or repetitive session logic.
-        -   **Built-in HTMX & Telemetry:** First-class support for returning HTMX fragments natively (aligning with the **[Frontend (15)](15-frontend.md)** Altar strategy) and built-in OpenTelemetry for tracing Agent "Thought Traces" (aligning with the **[Observability (29)](29-observability.md)** Oculus strategy).
+        -   **Typed OpenAPI & Telemetry:** First-class OpenAPI generation from typed route
+            contracts (aligning with the **[Frontend (15)](15-frontend.md)** Altar strategy) and
+            built-in OpenTelemetry for tracing Agent "Thought Traces" (aligning with the
+            **[Observability (29)](29-observability.md)** Oculus strategy).
         -   **Plugin Protocols:** First-party support for `InitPluginProtocol` and `CLIPluginProtocol` allows for elegant, context-aware bootstrapping.
         -   **Native msgspec Integration:** Offers the high-performance serialization required for the system's binary transmutation strategy.
 
@@ -163,29 +166,36 @@ async def list_runes(repo: RuneRepository) -> list[RuneReadDTO]:
     return await repo.list()
 ```
 
-#### IV. The Native Response Law
+#### IV. The Native Protocol Law
 
 !!! warning "Forbidden"
-    Installing external HTMX middleware or a third-party OpenTelemetry integration library when Litestar provides these natively. External middleware for natively-supported features adds dependency weight and can conflict with Litestar's plugin lifecycle.
+    Handwriting frontend mirror types for a Litestar API contract, or installing a third-party
+    OpenTelemetry integration library when Litestar provides the owning schema or instrumentation
+    surface. These shims create drift and can conflict with Litestar's plugin lifecycle.
 
 **Mandate:**
-- **Altar (HTMX):** Use Litestar's `HTMXRequest` and `HTMXResponse` types. Use `HTMXPlugin` for global configuration. Return `Template` responses with `hx-swap` headers natively. The `litestar[htmx]` extra is a first-class dependency of the Vessel, not an optional add-on; the HTMX request/response surface is always present.
+- **Altar (OpenAPI):** Define typed request, response, error, and event payloads on unbound
+  Litestar controllers. OpenAPI is the source for the generated Svelte TypeScript types, runtime
+  schemas, route helpers, and Fetch SDK. The browser may add a small EventSource transport, but it
+  must consume the same named event schemas.
 - **Oculus (Observability):** Use Litestar's built-in `OpenTelemetryPlugin` for tracing Agent Thought Traces. Do not introduce `opentelemetry-instrumentation-fastapi` or equivalent shims.
 - **Graph Scrying (Mermaid):** Graph visualizations render client-side from the `stateDiagram-v2` source produced by `graph.mermaid_code()` (see **[Graph (24)](24-graph.md)**). The Vessel ships diagram source as text; there is no server-side image-rendering API.
 
 ```python
 # ✅ Correct — native plugins, no external shims
-from litestar.contrib.htmx.plugins import HTMXPlugin
 from litestar.plugins.opentelemetry import OpenTelemetryPlugin, OpenTelemetryConfig
 from litestar import Litestar
 
 app = Litestar(
     plugins=[
-        HTMXPlugin(),
         OpenTelemetryPlugin(config=OpenTelemetryConfig(tracer_provider=...)),
     ],
 )
 ```
+
+The current HTMX plugin and Template routes are migration evidence for the pre-alpha Altar, not
+the accepted client boundary. [State of the Work](../state-of-the-work.md#altar-and-observability)
+owns that delivery distinction.
 
 ### Policy Table
 
