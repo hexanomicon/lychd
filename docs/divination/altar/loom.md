@@ -54,14 +54,13 @@ These names are one movement, not synonyms:
 Under the contained same-host profile, open:
 
 ```text
-http://127.0.0.1:7134/loom/
+http://127.0.0.1:7134/loom
 ```
 
-The Pattern rail currently offers **Bridge Chat**. The legacy implementation replaces the graph
-panel through HTMX and gives the selection an honest URL; direct navigation renders the full Altar
-page. The source link returns `stateDiagram-v2` text, and bundled browser code renders it locally
-rather than sending the graph to an external renderer. This is current evidence, not the accepted
-Svelte implementation.
+The Pattern rail currently offers **Bridge Chat**. The Svelte route loads the typed catalogue and
+graph projection from `/api/v1`, gives the selection an honest deep link, and reconstructs it on
+direct navigation. The source link returns `stateDiagram-v2` text, and bundled browser code renders
+it locally rather than sending the graph to an external renderer.
 
 The visible Bridge score contains four possible stations:
 
@@ -90,15 +89,13 @@ A future editing surface must preserve the difference between charcoal and law:
 5. Removing a revision requires an explicit drain, migration, or honest failure policy for every
    parked run that still names it.
 
-The canonical Loom is a Svelte route. It may use Svelte Flow through one bounded adapter for pan,
-zoom, layout, edges, and local draft gestures. It owns presentation state only. Validation,
-persistence, authorization, publication, and Invocation remain in the Vessel and Weaver. The
-current HTMX/Jinja route is removed when the Svelte route proves equivalent browsing and source
-access.
+The current Loom is a Svelte route with a read-only Mermaid renderer. A future editor may use
+Svelte Flow through one bounded adapter for pan, zoom, layout, edges, and local draft gestures. It
+owns presentation state only. Validation, persistence, authorization, publication, and Invocation
+remain in the Vessel and Weaver.
 
-The Loom must also project through a LychD-owned adapter. Today's legacy graph produces Mermaid
-through `mermaid_code()`; the newer GraphBuilder generation uses `render()`. Changing an upstream
-graph library must not change the Loom's URL, turn a draft into authority, or make a diagram the
-checkpoint format.
+The Loom must continue to project through a LychD-owned adapter. Changing an upstream graph library
+must not change the Loom's URL, turn a draft into authority, or make a diagram the checkpoint
+format.
 
 > _Read the score here. Offer the act elsewhere. Let only the Weaver bind the two._

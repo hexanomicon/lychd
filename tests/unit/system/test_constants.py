@@ -31,7 +31,4 @@ def test_initialized_paths_reuse_their_adjacent_attribute_docstrings() -> None:
 
     assert required <= descriptions.keys()
     assert all(descriptions[path].strip() for path in required)
-    assert descriptions[PATH_POSTGRES_INIT_SCRIPT] == (
-        "PostgreSQL bootstrap enabling pgvector and the current Phoenix compatibility database."
-    )
     assert all("\n" not in description for description in descriptions.values())

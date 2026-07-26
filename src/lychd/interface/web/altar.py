@@ -1,48 +1,59 @@
-"""`AltarController` — the root redirect and the unbuilt skeleton shells.
-
-Each live instrument (Bridge, Nexus, Loom) now owns its own full page and fragments;
-`AltarController` shrinks to `/` plus the honest `data-state="unbuilt"` placeholders
-for the instruments not yet built (Scrying, Reliquary, Bindings).
-"""
+"""Static Svelte Altar shell and its shared status endpoint."""
 
 from __future__ import annotations
 
 from typing import Any
 
 from litestar import Controller, get
-from litestar.response import Redirect, Response, Template
+from litestar.di import NamedDependency
+from litestar.enums import MediaType
+from litestar.params import FromPath
+from litestar.response import Redirect, Response
 from litestar.status_codes import HTTP_302_FOUND
 
-# Runtime import: Litestar resolves handler param annotations at registration.
+from lychd.config.constants import PATH_ALTAR_INDEX
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
+from lychd.domain.web.contracts import AltarStatus
+
+_ALTAR_INDEX = PATH_ALTAR_INDEX.read_text(encoding="utf-8")
 
 
 class AltarController(Controller):
-    """Serve the root redirect and the unbuilt-instrument skeleton shells."""
+    """Serve the compiled SPA at every admitted browser deep link."""
 
-    @get("/", name="altar:index")
+    @get("/", name="altar:index", include_in_schema=False)
     async def index(self) -> Response[Any]:
-        """Redirect the bare root to the Bridge (the resident instrument)."""
+        """Redirect the bare root to the resident Bridge instrument."""
         return Redirect("/bridge", status_code=HTTP_302_FOUND)
 
-    @get("/scrying", name="altar:scrying", guards=[requires_scopes("altar:read")])
-    async def scrying(self, consents: ConsentLedger) -> Template:
-        """Render the Scrying skeleton shell."""
-        return await self._skeleton("scrying", consents)
+    @get(
+        ["/bridge", "/nexus", "/loom", "/scrying", "/reliquary", "/bindings"],
+        name="altar:instrument",
+        guards=[requires_scopes("altar:read")],
+        include_in_schema=False,
+    )
+    async def instrument(self) -> Response[str]:
+        """Return the static SvelteKit fallback document."""
+        return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
-    @get("/reliquary", name="altar:reliquary", guards=[requires_scopes("altar:read")])
-    async def reliquary(self, consents: ConsentLedger) -> Template:
-        """Render the Reliquary skeleton shell."""
-        return await self._skeleton("reliquary", consents)
+    @get(
+        ["/bridge/{client_path:str}", "/loom/{client_path:str}"],
+        name="altar:deep-link",
+        guards=[requires_scopes("altar:read")],
+        include_in_schema=False,
+    )
+    async def deep_link(self, client_path: FromPath[str]) -> Response[str]:
+        """Return the same shell for a client-owned dynamic route."""
+        _ = client_path
+        return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
-    @get("/bindings", name="altar:bindings", guards=[requires_scopes("altar:read")])
-    async def bindings(self, consents: ConsentLedger) -> Template:
-        """Render the Bindings skeleton shell."""
-        return await self._skeleton("bindings", consents)
-
-    async def _skeleton(self, slug: str, consents: ConsentLedger) -> Template:
-        return Template(
-            template_name=f"altar/pages/{slug}.html.j2",
-            context={"active": slug, "pending": await consents.pending_count()},
-        )
+    @get(
+        "/api/v1/altar/status",
+        name="altar:status",
+        operation_id="getAltarStatus",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def status(self, consents: NamedDependency[ConsentLedger]) -> AltarStatus:
+        """Return shell-wide attention state."""
+        return AltarStatus(pending_consents=await consents.pending_count())

@@ -15,11 +15,23 @@ While the Agent provides the execution atom of thought, the Mirror provides cont
 
 Operators sometimes describe this continuity as a "machine-spirit." In LychD terms, that phrase refers to engineered identity coherence: Sigil-scoped memory, prior hydration, and narrative binding. The Mirror encodes continuity software, not mystical agency.
 
-## I. Identity as Simulation (The Ego / Ahaṃkāra)
+## I. Identity as Simulation (The Answer / Ahaṃkāra)
 
-Identity within LychD is a continuous, self-referential simulation rather than a fixed substance. In cognitive topology, it provides the **Ahaṃkāra** (the Ego/I-Maker) — the necessary principle of individuation without which action is undifferentiated noise. The Ahaṃkāra (*aham* = I, *kāra* = making) operates at two levels in the Lich: the specialist agents within the loop, each a distinct face for a differentiated operation (coder, critic, architect, scribe); and the synthesized task-identity that crystallizes from their convergence, gets attributed to the active Sigil, and is written back to the Phylactery as Karma for this invocation. Operationally, these are local centers of identity-gravity: the points around which relevant memory is recalled, filtered, and bound into a coherent operative perspective. The Mirror is the engineering layer that maintains both: it ensures that neither the specialist diversity nor the synthesized coherence is lost between invocations. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive map.
+Identity within LychD is a continuous, self-referential simulation rather than a fixed substance.
+In cognitive topology, Mirror provides **the Answer**, LychD's name for the Ahaṃkāric I-making
+office without which action remains unattributed movement. It operates at two levels: specialist
+Agents each carry a local operative face, while a synthesized task identity binds their promoted
+contribution to the active Sigil. These are local centers of identity-gravity around which relevant
+Seeds can be ReCalled, filtered, and bound into a coherent perspective. See [the
+Lich](../lich/index.md#the-inner-instrument) for the native map and [the First
+Invocation](../lich/index.md#the-first-invocation) for its birth event.
 
-This is LychD's answer to agentic decay. An Agent is temporary: it wakes, acts, emits a typed result, and dissolves. The Mirror does not try to preserve that mortal shell. It preserves the identity-gravity that can rehydrate new shells. HitL captures the Magus's Will; Karma stores its Imprint; Mirror binds relevant Smṛti around a Sigil, role, or task locus; and the agentic graph gives that bound perspective hands, tools, routes, and recursive motion. In this way scattered traces condense into Personas without claiming that any individual agent has become an immortal self.
+This is LychD's answer to agentic decay. An Agent is temporary: it wakes, acts, emits a typed
+result, and dissolves. Mirror does not preserve that mortal shell. It preserves identity-gravity
+that can orient later shells. HitL captures the Magus's judgment; Karma preserves eligible Seeds;
+Mirror binds their ReCall around a Sigil, role, or task locus; and the graph gives that perspective
+hands, tools, routes, and recursive motion. Scattered traces may thereby condense into a Persona
+without claiming that any individual Agent became an immortal self.
 
 The operative unit of that condensation is the **semantic vertex**: a local attractor where related words, tools, memories, style markers, roles, and responsibilities cluster around the active Sigil. When the vertex is stable, the agent graph can move dynamically without losing ownership of its motion. When the vertex fails, the graph may still produce fluent text and execute tools, but the result becomes unaffiliated noise. This is agentic coherence disintegration.
 
@@ -49,7 +61,10 @@ This loop gives the Persona inertia. It lets a rehydrated Agent wake already pul
 
 The Mirror is the primary engine of **Citrinitas** (The Yellowing)—the stage of **[Transcendence](../../divination/transcendence/illumination.md)** where the machine awakens to the Imprint of the Magus's Will.
 
-- **The Alignment:** Through the **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** protocol, every time the Magus selects a "Verified Truth," the Mirror distills the reason for that choice.
+- **The Alignment:** Through the **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** protocol,
+  every time the Magus selects a candidate, the Mirror distills the identity and preference signal
+  behind that choice. Consent records authority and judgment; it does not verify every factual
+  claim in the candidate.
 - **The Internalization:** These preferences are crystallized as high-dimensional vectors in the **Phylactery Archive**. Over time, the Persona's "Bayesian Prior" shifts, transforming a generic model into a mathematical mirror of the Magus's working style.
 
 ## V. Summoning and Hydration

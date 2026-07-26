@@ -84,7 +84,7 @@ def is_persistent_directory(
     *,
     authority: LifecycleAuthority | None = None,
 ) -> bool:
-    """Return whether init may provision a directory but destroy must preserve it."""
+    """Return whether init may provision a directory but deletion must preserve it."""
     current = authority or current_authority()
     return path == current.postgres_data
 
@@ -162,7 +162,7 @@ def inspect_init_directory(
             str(path),
             (
                 "durable database path is absent; init may create a Btrfs/No-COW substrate "
-                "or a directory fallback, and destroy preserves it"
+                "or a directory fallback, and `lychd del` preserves it"
             ),
         )
     return action

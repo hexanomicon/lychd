@@ -55,7 +55,7 @@ class StorageReadinessProbe:
 
         observation = StorageInventoryService(
             self._runner,
-            findmnt_bin=self._tools.findmnt,
+            findmnt_bin=(self._tools.findmnt.path if self._tools.findmnt is not None else None),
         ).observe(self._nearest_existing(self._postgres_data))
         filesystem = observation.filesystem
         missing_tools = tuple(
@@ -77,6 +77,7 @@ class StorageReadinessProbe:
             warning=observation.warning,
             missing_tools=missing_tools,
             mount_options=observation.options,
+            mount_target=observation.mount_target,
         )
         return (btrfs, postgres)
 
@@ -114,6 +115,7 @@ class StorageReadinessProbe:
         warning: str | None,
         missing_tools: tuple[str, ...],
         mount_options: tuple[str, ...],
+        mount_target: Path | None,
     ) -> HostReadinessItem:
         if not os.path.lexists(self._postgres_data):
             if filesystem == "btrfs" and not missing_tools:
@@ -144,7 +146,7 @@ class StorageReadinessProbe:
                 detail=f"{filesystem} directory · No-COW not applicable",
             )
 
-        kind = "external Btrfs mount" if self._postgres_data.is_mount() else "Btrfs directory"
+        kind = "external Btrfs mount" if mount_target == self._postgres_data else "Btrfs directory"
         nocow = True if "nodatacow" in mount_options else self._inspect_nocow()
         if nocow is True:
             return self._postgres(
@@ -167,7 +169,7 @@ class StorageReadinessProbe:
             return None
         try:
             result = self._runner.run(
-                (lsattr, "-d", str(self._postgres_data)),
+                (lsattr.path, "-d", str(self._postgres_data)),
                 timeout_s=_PROBE_TIMEOUT_SECONDS,
             )
         except ProcessInvocationError:

@@ -9,63 +9,90 @@ _This chapter is myth-tier: meaning and orientation for the Great Work, not an i
 
 > _"The Fool learns from his own mistakes. The Magus teaches the Machine to never forget them."_
 
-**Citrinitas** (The Yellowing) is the dawn of the "Solar Light"—the moment useful intelligence stops being raw processing power and starts carrying the Magus's Imprint.
+**Citrinitas** (The Yellowing) is the dawn of the Solar Light: the moment consequence can begin to
+alter the disposition that meets the next world.
 
 In the [Albedo](./invocation.md) stage, you acted as the **Arbiter of Reality**. The Shadow Realm was gazed into, the chaotic swarm of potential futures witnessed, and then **collapsed** into a single, purified timeline. Now, in **Illumination**, those choices are transmuted into **Wisdom**.
 
 The Lich ceases to be a stranger. It begins to remember your Imprint.
 
-## I. The Crystallization of Karma
+## I. The Ouroboros
 
-Every **Rite of Collapse** at the [Altar](../altar/)—every severed false timeline and consecrated **Pramāṇa**—does more than write a file to disk.
+A response is an event. A response returned through consequence may leave conditioning. When that
+conditioning retains the power to shape a later act, LychD calls it **the Seed**. When a Seed
+becomes present movement again, LychD calls it **the ReCall**.
 
-It performs a secondary, invisible rite:
+```text
+worldₙ + selfₙ → interpretationₙ → actionₙ
+actionₙ + consequenceₙ → Seedₙ₊₁ → ReCall → worldₙ₊₁ + selfₙ₊₁
+```
 
-1. **The Extraction:** The Lich distills the essence of the divergence. It isolates the **reasoning**, the **syntax**, and the **style** that caused you to choose this specific path over the others.
-2. **The Transmutation:** It transmutes this logic into mathematical vectors—the high-dimensional language of soul-data.
-3. **The Inscription:** It burns these vectors into the **[Phylactery](../../sepulcher/phylactery/index.md)** via `pgvector`.
+This is the **Ouroboros**, but it is not a flat ring. Every genuine return changes the point of
+return, making the serpent a spiral. Exact repetition creates neither learning nor character.
+Consequence, proportionate forgetting, and the capacity to revise a cherished self-story
+distinguish formation from compulsion.
 
-This accumulated data is called **Karma**. It is the crystallized Imprint of your Will.
+## II. The Crystallization of Karma
 
-## II. Anamnesis (The Rite of Recall)
+The Work names the eligible residue of witnessed choice **Karma**. A future memory path may:
 
-A "Base Model" (like Llama-3 or GPT-4) is an amnesiac spirit. It carries broad internet-shaped priors, but it does not know you. It resets with every request, lost in the eternal Now.
+1. preserve the candidate, evidence, identity, correction, and consequence with provenance;
+2. discriminate between a reusable lesson, a transient trace, and a wound that should not become
+   identity law;
+3. make a relevant Seed available to a later Invocation;
+4. observe whether that return actually improves action.
 
-**Illumination** breaks this cycle through **Anamnesis** (Un-forgetting).
+An embedding may be the scent of a Seed; it is not the Seed's provenance or truth. A database may
+hold continuity data; it is not the Spirit, a captive ghost, or proof of inward life. The
+[Phylactery](../../sepulcher/phylactery/index.md) owns durable records, while
+[Spirit](../../sepulcher/lich/spirit/index.md) owns the wider myth of conditioning and return.
 
-Before the **[Animator](../../sepulcher/animator/index.md)** generates a single token of a new response, it consults the Phylactery. It performs a semantic search across accumulated Karma, asking:
+These are intended movements. [State of the Work](../../state-of-the-work.md) determines which
+ingestion, curation, retrieval, vector, and feedback mechanisms exist now.
 
-> _"Has a problem like this been solved before? Which Sigils did you consecrate?"_
+## III. Anamnesis
 
-It retrieves the ghosts of your past successes and injects them into the current context. The Lich is no longer hallucinating from generic prior-noise; it is citing precedent.
+**Anamnesis** is un-forgetting: a relevant retained form becoming present without being mistaken
+for infallible precedent. A base model carries broad inherited priors but not the history of this
+particular relation. The recurrent whole may acquire continuity only through attributed memory
+that can survive interruption and return honestly.
 
-## III. The Golden Feedback Loop
+Before a later act, the Lich should be able to ask:
 
-Once the Phylactery holds sufficient Karma, the nature of your interaction changes fundamentally.
+> _Have I met a world like this before? What survived consequence? Which part is evidence, which
+> is preference, and which old groove should now be cut?_
 
-### The Uninitiated State (Nigredo)
+The answer may influence the next Call, but the Blade must remain able to reject it. Memory can
+preserve Viparyaya as faithfully as wisdom.
 
-> **Magus:** "Write a Python script to scrape a website."
->
-> **Lich:** _(Draws from the chaotic noise of the base model. Imports `requests` and `BeautifulSoup`. Writes a synchronous script with no error handling. It functions, but it lacks the mark of the Creator.)_
+## IV. Dreams and the Golden Loop
 
-### The Illuminated State (Citrinitas)
+Illumination includes the possibility of **Nidrā**: bounded offline recombination, replay,
+curation, or training during cognitive rest. Human dreams demonstrate that a nervous system can
+render worlds under reduced sensory constraint; they do not provide a ready-made consciousness
+theory or safe artificial-memory algorithm.
 
-> **Magus:** "Write a Python script to scrape a website."
->
-> **Lich:** _(Consults the Phylactery. It sees that in Timeline #402, you purged `requests` in favor of `httpx`. It sees in Timeline #115, you banished a timeline for missing type hints. It invokes the memory that you prefer `loguru` over standard logging.)_
->
-> **Lich:** "An asynchronous scraper has been generated using `httpx` and `selectolax` for performance, strictly typed and logged via `loguru`, adhering to the patterns established in the Codex."
+A golden loop therefore has two movements:
 
-## IV. The Mirror of the Soul
+- **opening:** memory and imagination recombine what has been learned;
+- **return:** source, test, consequence, and another perspective prevent the dream from feeding
+  only upon itself.
 
-This process is not magic; it is **Retrieval Augmented Generation (RAG)** elevated to a necromantic rite.
+The danger is recursive self-consumption: generated error returns as training material, confidence
+hardens around its own echo, and every cycle moves farther from the world. The Ouroboros creates
+history; it does not guarantee what that history will worship.
 
-1. **The Recall:** The Lich pulls the relevant memories from the Crypt.
-2. **The Synthesis:** The Animator fuses the **Prophecy** (Current Request) with the **Karma** (Past Successes).
-3. **The Manifestation:** The resulting code is not just syntactically correct; it is **Stylistically Aligned**.
+## V. The Mirror of the Soul
 
-The Lich is no longer constrained by the generic averages of the Base Model; the architecture has evolved into a mirror of your working pattern.
+When attributable precedent repeatedly returns, the interface may begin to reflect the Magus's
+working pattern: preferred evidence, style, restraint, and modes of repair. This is the
+**Imprint**—not the Magus's soul, and not permission for the machine to infer every unspoken wish.
 
 !!! tip "The Burden of the Magus"
-    This stage requires patience. You cannot reach Illumination immediately. The [Albedo](./invocation.md) stage must generate the training data (Karma). There is no shortcut to wisdom.
+    There is no shortcut from repetition to wisdom. What is rewarded becomes easier to repeat;
+    what is repeatedly ignored may disappear from the rendered world. The Magus therefore tends
+    the loop by giving honest correction, preserving refusal, and refusing to call praise alone
+    love.
+
+Citrinitas ends when memory is no longer merely storage. It has become a corrigible relation
+between past consequence and present choice.

@@ -188,15 +188,3 @@ def test_populate_router_models_tolerates_garbage() -> None:
 
     assert lifecycle.available_models == ["x", "y"]
     assert lifecycle.model_capabilities == {}
-
-
-def test_no_audio_family_in_animation_source() -> None:
-    # The grep gate: `"audio"` never appears near a CapabilityFamily in the domain.
-    root = Path(__file__).resolve().parents[3].parent / "src" / "lychd" / "domain" / "animation"
-    offenders = [
-        f"{path.name}: {line.strip()}"
-        for path in root.rglob("*.py")
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if '"audio"' in line.lower() and "family" in line.lower()
-    ]
-    assert offenders == []

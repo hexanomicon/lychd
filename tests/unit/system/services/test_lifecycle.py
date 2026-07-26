@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
 import pytest
 
 from lychd.system.services import lifecycle
 from lychd.system.services.lifecycle import (
+    CreatedBtrfsSubvolume,
+    CreatedDirectory,
     CreatedResources,
     InitializationPlanner,
     LifecycleDisposition,
@@ -17,8 +20,7 @@ from lychd.system.services.lifecycle import (
     LifecycleResourceKind,
 )
 
-if TYPE_CHECKING:
-    from pytest_mock import MockerFixture
+_SUBVOLUME_UUID = "12345678-1234-5678-1234-567812345678"
 
 
 class IsolatedRoots(TypedDict):
@@ -285,48 +287,161 @@ def test_destroy_dry_run_is_side_effect_free(
     assert _tree_snapshot(isolated_roots["base"]) == before
 
 
-def test_fresh_isolated_init_destroy_round_trip_and_destroy_is_idempotent(
+def test_receipt_records_creation_identity_without_restatting_replacement(
     isolated_roots: IsolatedRoots,
-    mocker: MockerFixture,
 ) -> None:
-    """Resources reported by the init services return exactly to the empty baseline."""
-    from lychd.config.settings.root import Settings
-    from lychd.system.services.codex import CodexService
-    from lychd.system.services.layout import LayoutService
-
-    base = isolated_roots["base"]
-    host_layout = isolated_roots["host_layout"]
+    """A replaced public name never inherits a just-created directory receipt."""
     codex = isolated_roots["codex"]
-    runes = isolated_roots["runes"]
-    postgres = isolated_roots["postgres"]
+    codex.mkdir(parents=True)
+    created_metadata = codex.lstat()
+    resources = CreatedResources(
+        directories=(codex,),
+        directory_identities=(
+            CreatedDirectory(
+                path=codex,
+                device=created_metadata.st_dev,
+                inode=created_metadata.st_ino,
+            ),
+        ),
+    )
+    displaced = codex.with_name("lychd-created-by-init")
+    codex.rename(displaced)
+    codex.mkdir()
+    replacement_metadata = codex.lstat()
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+
+    store.record(resources)
+
+    document = json.loads(isolated_roots["receipt"].read_text(encoding="utf-8"))
+    assert document["directories"] == [
+        {
+            "path": str(codex),
+            "device": created_metadata.st_dev,
+            "inode": created_metadata.st_ino,
+        }
+    ]
+    assert replacement_metadata.st_ino != created_metadata.st_ino
+    plan = store.plan_destroy()
+    assert any(
+        action.disposition is LifecycleDisposition.BLOCKED
+        and action.target == str(codex)
+        and "identity changed" in action.detail
+        for action in plan.actions
+    )
+
+
+def test_receipt_v2_round_trips_exact_created_subvolume_identity(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """Version 2 preserves creation identity without mixing a replacement path."""
+    postgres_data = isolated_roots["postgres_data"]
+    postgres_data.mkdir(parents=True)
+    isolated_roots["receipt"].parent.mkdir(parents=True)
+    metadata = postgres_data.lstat()
+    created = CreatedBtrfsSubvolume(
+        path=postgres_data,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        subvolume_uuid=_SUBVOLUME_UUID,
+        subvolume_id=259,
+    )
+    displaced = postgres_data.with_name("data-created-by-init")
+    postgres_data.rename(displaced)
+    postgres_data.mkdir()
+    store = LifecycleReceiptStore(isolated_roots["receipt"])
+
+    store.record(CreatedResources(subvolumes=(created,)))
+
+    document = json.loads(isolated_roots["receipt"].read_text(encoding="utf-8"))
+    assert document["version"] == 2
+    assert document["directories"] == []
+    assert document["subvolumes"] == [
+        {
+            "path": str(postgres_data),
+            "device": metadata.st_dev,
+            "inode": metadata.st_ino,
+            "subvolume_uuid": _SUBVOLUME_UUID,
+            "subvolume_id": 259,
+        }
+    ]
+    assert store.created_subvolume(postgres_data) == created
+
+
+def test_legacy_v1_receipt_loads_without_subvolume_authority(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """A v1 receipt remains readable but cannot authorize Btrfs deletion."""
     receipt = isolated_roots["receipt"]
-    for shared_root in (
-        isolated_roots["config_home"],
-        isolated_roots["data_home"],
-        isolated_roots["cache_home"],
-    ):
-        shared_root.mkdir()
-    isolated_roots["postgres_data"].mkdir(parents=True)
-    baseline = _tree_snapshot(base)
-
-    layout = LayoutService(paths=host_layout)
-    mocker.patch.object(layout.btrfs, "create_subvolume", return_value=False)
-    mocker.patch("lychd.system.services.codex.get_settings", return_value=Settings())
-    layout_resources = layout.initialize()
-    codex_resources = CodexService(
-        rune_schemas=(),
-        toml_path=codex / "lychd.toml",
-        runes_path=runes,
-        postgres_root_path=postgres,
-    ).inscribe()
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(
+        '{"version":1,"dedicated_roots":[],"directories":[],"files":[]}\n',
+        encoding="utf-8",
+    )
+    receipt.chmod(0o600)
     store = LifecycleReceiptStore(receipt)
-    store.record(CreatedResources.combine(layout_resources, codex_resources))
 
-    store.destroy()
+    assert store.created_subvolume(isolated_roots["postgres_data"]) is None
+    assert store.plan_destroy().blockers == ()
 
-    assert _tree_snapshot(base) == baseline
-    store.destroy()
-    assert _tree_snapshot(base) == baseline
+
+def test_legacy_v1_receipt_cannot_smuggle_v2_subvolume_authority(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """The schema version, not merely field shape, gates deletion authority."""
+    postgres_data = isolated_roots["postgres_data"]
+    postgres_data.mkdir(parents=True)
+    metadata = postgres_data.lstat()
+    receipt = isolated_roots["receipt"]
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "dedicated_roots": [],
+                "directories": [],
+                "files": [],
+                "subvolumes": [
+                    {
+                        "path": str(postgres_data),
+                        "device": metadata.st_dev,
+                        "inode": metadata.st_ino,
+                        "subvolume_uuid": _SUBVOLUME_UUID,
+                        "subvolume_id": 259,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    receipt.chmod(0o600)
+
+    with pytest.raises(LifecycleError, match="version 1 cannot carry"):
+        LifecycleReceiptStore(receipt).created_subvolume(postgres_data)
+
+
+def test_recording_against_v1_never_adopts_existing_postgres_data(
+    isolated_roots: IsolatedRoots,
+) -> None:
+    """Upgrading the receipt schema does not infer authority from live geography."""
+    postgres_data = isolated_roots["postgres_data"]
+    postgres_data.mkdir(parents=True)
+    receipt = isolated_roots["receipt"]
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text(
+        '{"version":1,"dedicated_roots":[],"directories":[],"files":[]}\n',
+        encoding="utf-8",
+    )
+    receipt.chmod(0o600)
+    before = postgres_data.lstat()
+    store = LifecycleReceiptStore(receipt)
+
+    store.record(CreatedResources())
+
+    document = json.loads(receipt.read_text(encoding="utf-8"))
+    assert document["version"] == 2
+    assert document["subvolumes"] == []
+    assert store.created_subvolume(postgres_data) is None
+    assert postgres_data.lstat().st_ino == before.st_ino
 
 
 def test_modified_owned_file_blocks_before_any_effect(
@@ -353,8 +468,6 @@ def test_modified_owned_file_blocks_before_any_effect(
         and "modified" in action.detail
         for action in plan.actions
     )
-    with pytest.raises(LifecycleError, match="modified after initialization"):
-        store.destroy()
     assert _tree_snapshot(isolated_roots["base"]) == before
 
 
@@ -378,8 +491,6 @@ def test_unowned_content_blocks_directory_removal_and_survives(
         and "unowned entries" in action.detail
         for action in plan.actions
     )
-    with pytest.raises(LifecycleError, match="unowned entries"):
-        store.destroy()
     assert foreign.read_text(encoding="utf-8") == "preserve me"
     assert receipt.exists()
 
@@ -447,7 +558,6 @@ def test_preexisting_external_data_mount_is_preserved(
         and action.target == str(postgres_data)
         for action in plan.actions
     )
-    store.destroy()
     assert sentinel.read_text(encoding="utf-8") == "17\n"
     assert postgres_data.exists()
 
@@ -489,8 +599,6 @@ def test_identical_file_replacement_does_not_inherit_deletion_authority(
         and "identity changed" in action.detail
         for action in plan.actions
     )
-    with pytest.raises(LifecycleError, match="identity changed"):
-        store.destroy()
     assert generated.read_text(encoding="utf-8") == "same = true\n"
 
 

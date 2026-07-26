@@ -23,7 +23,10 @@ def _runner(mocker: MockerFixture) -> MagicMock:
 
 
 def test_secret_store_requires_podman_binary(mocker: MockerFixture) -> None:
-    mocker.patch("lychd.system.services.secrets.shutil.which", return_value=None)
+    mocker.patch(
+        "lychd.system.services.secrets.trusted_host_tool",
+        return_value=None,
+    )
 
     with pytest.raises(PodmanSecretStoreError, match="Podman is required"):
         PodmanSecretStore()
@@ -88,17 +91,48 @@ def test_secret_store_ensure_present_creates_only_when_missing(
     mocker: MockerFixture,
 ) -> None:
     runner = _runner(mocker)
+    runner.run_with_input.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        returncode=0,
+    )
     store = PodmanSecretStore(
         "/usr/bin/podman",
         runner=cast("InputProcessRunner", runner),
     )
     mocker.patch.object(store, "exists", return_value=False)
-    create = mocker.patch.object(store, "create")
 
     created = store.ensure_present("alpha", "value")
 
     assert created is True
-    create.assert_called_once_with("alpha", "value")
+    runner.run_with_input.assert_called_once_with(
+        ("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        timeout_s=30.0,
+        input_text="value",
+    )
+
+
+def test_secret_store_ensure_present_preserves_a_raced_secret(
+    mocker: MockerFixture,
+) -> None:
+    """Create-if-absent never replaces an operator secret that wins the race."""
+    runner = _runner(mocker)
+    runner.run_with_input.return_value = ProcessResult(
+        argv=("/usr/bin/podman", "secret", "create", "alpha", "-"),
+        returncode=125,
+        stderr="secret already exists",
+    )
+    store = PodmanSecretStore(
+        "/usr/bin/podman",
+        runner=cast("InputProcessRunner", runner),
+    )
+    exists = mocker.patch.object(store, "exists", side_effect=(False, True))
+
+    created = store.ensure_present("alpha", "generated-value")
+
+    assert created is False
+    assert exists.call_count == 2
+    argv = runner.run_with_input.call_args.args[0]
+    assert "--replace" not in argv
 
 
 @pytest.mark.parametrize("version", ["podman version 5.4.0", "podman version 6.1.2"])

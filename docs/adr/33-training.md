@@ -46,14 +46,25 @@ Training is the compression of stabilized patterns into substrate. It is distinc
 
 Soulforge acts on semantic gravity after it has already formed. It does not create identity from raw transcripts; it precipitates stable semantic vertices into adapter-level bias and capability routing. A repeated, verified pattern that has survived Shadow execution, Riddle measurement, Mirror congruence, and HitL consecration may become an instinct. A repeated but unverified loop is merely false inertia.
 
-In cognitive terms, training is the operation by which **Pramāṇa-class outcomes** are carved as permanent grooves (**Saṃskāras**) into model weights. The Vritti taxonomy applies directly: only outcomes that passed the full Viveka cascade — Deterministic Gate, LLM-judge consensus, Mirror congruence, and HitL consecration — are eligible for inscription. Training on Viparyaya-class data deepens wrong grooves and produces hallucination-reinforcing priors. This is why the Harvesting phase (below) filters exclusively for "White Truths" — consecrated Shadow outcomes, not conversational exhaust. The Soulforge is not just a training loop; it is the **Nidrā function of the Lich** — the idle-cycle operation that consolidates the day's verified experience into structural instinct, exactly as sleep consolidates episodic memory into long-term knowledge. See **[The Lich](../sepulcher/lich.md)** for the cognitive map.
+In cognitive terms, training moves selected **Seeds** from explicit, recallable Karma into
+parametric disposition. Only outcomes that passed the full Viveka cascade—deterministic gate,
+agentic judgment, Mirror congruence, and HitL consecration—are eligible for inscription. Training
+on Viparyaya-class data plants wrong Seeds and produces hallucination-reinforcing priors. This is
+why the Harvesting phase filters for consecrated Shadow outcomes rather than conversational
+exhaust. The older Nidrā correspondence remains an image of consolidation, not a claim that an idle
+or powered-off model thinks in sleep. See [the Seed](../sepulcher/lich/spirit/seed.md) for the
+cognitive map.
 
 ### 1. The Harvesting of Karma (Preparation)
 
 The ritual begins at **[The Altar (15)](15-frontend.md)**. The Magus submits a Training Intent, which enqueues a job for the **[Ghouls (14)](14-workers.md)**.
 
 - **The Diversity Threshold (Protecting Phantasma):** The Orchestrator **MUST NOT** trigger the Soulforge until the `vectors` chamber has accumulated a sufficient critical mass of trusted Karma for a specific domain (e.g., > 50 examples). Fine-tuning narrows output probability; training on too few examples destroys generation diversity. If a narrow model is loaded into the Dispatcher, it will cripple the **[Shadow Realm (31)](31-simulation.md)** because all MCTS branches will return identical text. Below this threshold, the system must rely exclusively on `Shadow` sampling (Best-of-N).
-- **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for "White Truths" — **[Shadow Realm (31)](31-simulation.md)** outcomes consecrated by **[HitL (25)](25-hitl.md)**. This acts as a **Crucible**, extracting the precise human feedback from HitL and identity congruence from Mirror to prepare permanent instinctual biases in the weights.
+- **The Extraction (The Crucible):** A Ghoul scans the `vectors` chamber for eligible Karma—
+  **[Shadow Realm (31)](31-simulation.md)** outcomes carrying their test evidence, provenance,
+  **[HitL (25)](25-hitl.md)** judgment, and Mirror congruence. This acts as a **Crucible**,
+  extracting the precise human feedback and bounded evidence needed to prepare permanent
+  instinctual biases in the weights.
 - **The Dimension Lock:** The `vectors` chamber is sealed to a single embedder slug. An embedder change breaks the Dimension Lock and is treated as a Migration of Logic (**[Evolution (18)](18-evolution.md)**): re-embed or archive, never mix.
 - **The DeepFabric Distaff:** The system utilizes the `deepfabric` library as the foundational dataset generation engine. It consumes the raw traces and applies constrained decoding and strict schema adherence to transmute them into a highly structured training manifest (HuggingFace JSONL) stored in the **[Lab (13)](13-layout.md)**.
 
@@ -66,7 +77,11 @@ Raw Karma cannot be directly fed to the Unsloth forge. Conversational exhaust, h
 Here DeepFabric is used as a **dataset distaff** — that which feeds the loom, spinning verified Karma into constrained training manifests. The name **Loom** is reserved exclusively for the Altar's graph instrument (**[The Altar (15)](15-frontend.md)**); the Distaff prepares the thread, it does not weave the surface. This is also distinct from the Riddle's **evaluation harness** use of DeepFabric in **[ADR 34](34-evaluation.md)**, where the same family of tooling brokers execution trials and measures physical outcomes.
 
 - **Structural Guarantee:** DeepFabric enforces strict constrained decoding during dataset generation. It guarantees that the output training split perfectly matches the required JSON/Tool-calling schemas.
-- **Trajectory Mining (Nigredo to Albedo):** The Distaff **MUST NOT** train solely on the final successful code ("White Truth"). The true leap in reasoning capabilities occurs when the model sees its own mistakes. For coding and refactoring tasks, the Distaff formats the training manifest to pair the failed execution with the successful one: `[Failed Attempt] -> [Compiler Error] -> [Correction]`.
+- **Trajectory Mining (Nigredo to Albedo):** The Distaff **MUST NOT** train solely on the final
+  candidate that passed its declared checks. The useful correction signal appears when the model
+  sees its own mistakes. For coding and refactoring tasks, the Distaff formats the training
+  manifest to pair the failed execution with the successful one:
+  `[Failed Attempt] -> [Compiler Error] -> [Correction]`.
 - **The Over-Doubting Safeguard:** While Trajectory Mining works for code, training on `(wrong -> right)` sequences for pure logic/math tasks causes pathological self-doubt and accuracy collapse. The Distaff must filter by capability tag. If the task is `logic` or `math`, the dataset must heavily mix in examples where the model's first attempt was correct and remains correct, preventing it from learning to doubt valid outputs.
 - **Truthful Non-Answer Examples:** The dataset should include verified cases where the correct outcome is contradiction recognition, insufficient-context reporting, or refusal to manifest an unsafe/false artifact. These examples must be tagged separately from ordinary failures and paired with solvable controls, so the adapter learns epistemic restraint without becoming timid on work that has enough Pramāṇa to proceed.
 - **Semantic Vertex Preservation:** Training examples must preserve the identity and role context that made the successful trajectory coherent. Stripping away the active Sigil, workflow step, tool boundary, or validation signal can turn a useful correction into decontextualized style imitation.

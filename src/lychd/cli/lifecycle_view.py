@@ -57,31 +57,33 @@ def render_lifecycle_plan(
     path_descriptions: Mapping[Path, str] | None = None,
     verbose: bool = False,
 ) -> None:
-    """Render an exact plan as compact domain and filesystem trees."""
+    """Render an exact plan, adding source-owned path prose only when verbose."""
     from lychd.system import constants
     from lychd.system.attribute_docs import path_attribute_summaries
 
     topology = HostTopology.current()
-    static_paths = {
-        *constants.HOST_LAYOUT,
-        *(Path(action.target) for action in plan.actions),
-        constants.PATH_XDG_CACHE_HOME,
-        constants.PATH_XDG_CONFIG_HOME,
-        constants.PATH_XDG_DATA_HOME,
-    }
-    descriptions = path_attribute_summaries(constants, include=static_paths)
-    canonical_roots = {
-        HostTier.CODEX: constants.PATH_XDG_CONFIG_HOME,
-        HostTier.CRYPT: constants.PATH_XDG_DATA_HOME,
-        HostTier.FORGE: constants.PATH_XDG_CACHE_HOME,
-    }
-    for tier, canonical_root in canonical_roots.items():
-        description = descriptions.get(canonical_root)
-        tier_root = topology.root(tier)
-        if description is not None and tier_root is not None:
-            descriptions[tier_root] = description
-    if path_descriptions is not None:
-        descriptions.update(path_descriptions)
+    descriptions: dict[Path, str] = {}
+    if verbose:
+        static_paths = {
+            *constants.HOST_LAYOUT,
+            *(Path(action.target) for action in plan.actions),
+            constants.PATH_XDG_CACHE_HOME,
+            constants.PATH_XDG_CONFIG_HOME,
+            constants.PATH_XDG_DATA_HOME,
+        }
+        descriptions.update(path_attribute_summaries(constants, include=static_paths))
+        canonical_roots = {
+            HostTier.CODEX: constants.PATH_XDG_CONFIG_HOME,
+            HostTier.CRYPT: constants.PATH_XDG_DATA_HOME,
+            HostTier.FORGE: constants.PATH_XDG_CACHE_HOME,
+        }
+        for tier, canonical_root in canonical_roots.items():
+            description = descriptions.get(canonical_root)
+            tier_root = topology.root(tier)
+            if description is not None and tier_root is not None:
+                descriptions[tier_root] = description
+        if path_descriptions is not None:
+            descriptions.update(path_descriptions)
     grouped: dict[HostTier, list[LifecycleAction]] = {}
     for action in plan.actions:
         grouped.setdefault(_lifecycle_group(action, topology=topology), []).append(action)
@@ -103,6 +105,7 @@ def render_lifecycle_plan(
                 actions=actions,
                 path_descriptions=descriptions,
                 topology=topology,
+                show_descriptions=verbose,
             )
         )
         console.print()
@@ -135,6 +138,7 @@ def _domain_tree(
     actions: tuple[LifecycleAction, ...],
     path_descriptions: Mapping[Path, str],
     topology: HostTopology,
+    show_descriptions: bool,
 ) -> Tree:
     """Build one domain tree whose path colors carry lifecycle disposition."""
     domain_root = topology.root(domain)
@@ -160,7 +164,9 @@ def _domain_tree(
         )
     else:
         title.append(" — ", style="dim")
-    description = path_descriptions.get(domain_root) if domain_root is not None else _HOST_DESCRIPTION
+    description = None
+    if show_descriptions:
+        description = path_descriptions.get(domain_root) if domain_root is not None else _HOST_DESCRIPTION
     if description is not None:
         if domain_root is not None:
             title.append(" · ", style="dim")
@@ -306,7 +312,7 @@ def _shared_anchor_state(
         return None
     disposition = _strongest_disposition(actions)
     if disposition is LifecycleDisposition.WOULD_CREATE:
-        return ("will prepare", "cyan")
+        return ("will create", "cyan")
     if disposition is LifecycleDisposition.PRESERVE:
         return ("present", "green")
     return None
@@ -369,7 +375,7 @@ def _summary(
         summary.append("\nSHARED ", style="bold bright_blue")
         shared_parts: list[tuple[str, str]] = []
         if shared_planned:
-            shared_parts.append((f"{shared_planned} will prepare", "cyan"))
+            shared_parts.append((f"{shared_planned} will create", "cyan"))
         if shared_present:
             shared_parts.append((f"{shared_present} present", "green"))
         _append_summary_parts(summary, shared_parts)

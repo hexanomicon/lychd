@@ -24,16 +24,13 @@ from lychd.domain.animation.connectors import ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
-from lychd.domain.animation.services.loader import AnimatorLoader
 from lychd.lib.http import run_sync
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
 
-    from lychd.config.runes import RuneConfig
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
     from lychd.domain.animation.services.adapters.contracts import (
         PortalRuntimeFactory,
@@ -41,6 +38,7 @@ if TYPE_CHECKING:
         SoulstoneRuntimeAdapter,
     )
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+    from lychd.domain.animation.services.declarations import AnimatorDeclarations
     from lychd.system.schemas import QuadletContainer
 
 
@@ -53,48 +51,44 @@ _ACTIVATION_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
 class AnimatorRegistry:
-    """Registry for animation Runes and resolved runtime animators.
+    """Runtime registry over one injected Animator declaration snapshot.
 
     Stores two distinct layers:
-    - rune declarations (``SoulstoneConfig`` / ``PortalConfig``)
+    - hydrated declarations (``SoulstoneConfig`` / ``PortalConfig``)
     - resolved runtime animators (``Animator`` handles with connectors/links)
 
-    Runtime animator creation is delegated to factories. By default, the registry
-    wires in ``RuntimeAdapterRegistry.runtime_factory`` so built-in Soulstone and
-    portal runtimes resolve without extra setup.
+    Rune discovery and collision policy belong to the declaration compiler.
+    Runtime creation is delegated to factories; the built-in adapter registry
+    supplies the default Soulstone and Portal factory.
     """
 
     def __init__(
         self,
         *,
-        rune_schemas: Sequence[type[RuneConfig]],
+        settings: Settings,
+        declarations: AnimatorDeclarations,
         runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
         binder: AnimatorBinder | None = None,
-        runes_dir: Path | None = None,
-        reserved_ports: dict[str, int] | None = None,
         runtime_factories: Sequence[AnimatorFactory] | None = None,
         portal_factories: Sequence[PortalRuntimeFactory] = (),
     ) -> None:
-        """Initialize with required rune schemas and runtime adapters (injected by the host).
+        """Initialize from one compiled declaration and Settings snapshot.
 
-        ``runes_dir``/``reserved_ports`` are optional overrides threaded to the
-        internally-built ``AnimatorLoader`` (used by tests to load fixtures from a
-        temporary directory); production composition roots pass only the injected
-        schemas + adapters.
+        Filesystem discovery, extension assembly, port collision policy, and
+        declaration hydration stay outside the live registry. Production
+        composition injects the same snapshot used by bind and status.
         """
         from lychd.domain.animation.services.adapters.registry import (
             RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
         )
 
-        self._loader = AnimatorLoader(
-            rune_schemas=list(rune_schemas),
-            runes_dir=runes_dir,
-            reserved_ports=reserved_ports,
-        )
+        self._settings = settings
+        self._declarations = declarations
         self._binder = binder or AnimatorBinder()
         self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(
             adapters=list(runtime_adapters),
             portal_factories=list(portal_factories),
+            settings=settings,
         )
         self._runtime_factories: list[AnimatorFactory] = (
             list(runtime_factories) if runtime_factories is not None else [self._runtime_adapters.runtime_factory]
@@ -117,8 +111,9 @@ class AnimatorRegistry:
         self._animators[animator.id] = animator
 
     def load(self) -> None:
-        """Load Runes and build runtime animators via registered factories."""
-        raw_soulstones, raw_portals = self._loader.load_all()
+        """Build runtime animators from the injected declaration snapshot."""
+        raw_soulstones = list(self._declarations.soulstones)
+        raw_portals = list(self._declarations.portals)
 
         new_soulstones = {stone.name: stone for stone in raw_soulstones}
         new_portals = {portal.name: portal for portal in raw_portals}
@@ -160,7 +155,7 @@ class AnimatorRegistry:
         self._capability_states = {}
         self._loaded = True
 
-        # Rune parse + transmute + spec synthesis is CPU-bound and stays sync; the
+        # Transmutation + spec synthesis is CPU-bound and stays sync; the
         # initial capability probe is async and bridged here so the state cache is warm
         # after load. This is the ONLY sanctioned ``run_sync`` in this module — every
         # other probe/activate surface is async. Composition roots that want an explicit
@@ -200,7 +195,10 @@ class AnimatorRegistry:
         from lychd.domain.animation.transmute import Transmuter
         from lychd.system.schemas import QuadletContainer
 
-        manifests = Transmuter(runtime_planner=self._runtime_adapters).transmute_all(soulstones, portals=portals)
+        manifests = Transmuter(
+            settings=self._settings,
+            runtime_planner=self._runtime_adapters,
+        ).transmute_all(soulstones, portals=portals)
         soulstone_names = {stone.name for stone in soulstones}
         quadlets: dict[str, QuadletContainer] = {}
         for manifest in manifests:

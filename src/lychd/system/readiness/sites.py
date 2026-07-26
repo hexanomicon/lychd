@@ -1,12 +1,13 @@
-"""Read-only verification of initialization-owned Binding preparation."""
+"""Read-only projection of the shared binding-site authority law."""
 
 from __future__ import annotations
 
-import os
-import stat
 from pathlib import Path
 
-from lychd.system.path_safety import path_has_symlink_component
+from lychd.system.binding_sites import (
+    BindingSiteState,
+    inspect_binding_site,
+)
 from lychd.system.readiness.models import (
     HostReadinessItem,
     ReadinessSection,
@@ -29,10 +30,7 @@ class BindingSiteReadinessProbe:
 
     def inspect(self) -> tuple[HostReadinessItem, ...]:
         """Return one stable result for each required Binding site."""
-        return tuple(
-            self._inspect_site(key=key, label=label, target=target)
-            for key, label, target in self._sites
-        )
+        return tuple(self._inspect_site(key=key, label=label, target=target) for key, label, target in self._sites)
 
     def _inspect_site(
         self,
@@ -41,61 +39,30 @@ class BindingSiteReadinessProbe:
         label: str,
         target: Path,
     ) -> HostReadinessItem:
-        if symlink := path_has_symlink_component(target):
+        inspection = inspect_binding_site(
+            target,
+            current_uid=self._current_uid,
+        )
+        if inspection.state is BindingSiteState.BLOCKED:
             return self._failed(
                 key=key,
                 label=label,
                 target=target,
-                detail=f"symlink component is not trusted: {symlink}",
+                detail=inspection.detail,
             )
-        if os.path.lexists(target):
-            metadata = target.lstat()
-            if not stat.S_ISDIR(metadata.st_mode):
-                detail = "target exists but is not a directory"
-            elif metadata.st_uid != self._current_uid:
-                detail = f"owned by uid {metadata.st_uid}, expected {self._current_uid}"
-            elif not os.access(target, os.W_OK | os.X_OK):
-                detail = "present but not writable and searchable"
-            else:
-                return HostReadinessItem(
-                    key=key,
-                    label=label,
-                    section=ReadinessSection.BINDING_SITES,
-                    state=ReadinessState.VERIFIED,
-                    detail="prepared",
-                    required_for_bind=True,
-                    target=target,
-                )
-            return self._failed(key=key, label=label, target=target, detail=detail)
-
-        parent = self._nearest_existing(target.parent)
-        try:
-            parent_metadata = parent.stat()
-        except OSError as exc:
-            detail = f"cannot inspect creation parent: {' '.join(str(exc).split())[:240]}"
-        else:
-            if not stat.S_ISDIR(parent_metadata.st_mode):
-                detail = f"creation parent is not a directory: {parent}"
-            elif not os.access(parent, os.W_OK | os.X_OK):
-                detail = f"creation parent is not writable and searchable: {parent}"
-            else:
-                return HostReadinessItem(
-                    key=key,
-                    label=label,
-                    section=ReadinessSection.BINDING_SITES,
-                    state=ReadinessState.PLANNED,
-                    detail="will prepare",
-                    required_for_bind=True,
-                    target=target,
-                )
-        return self._failed(key=key, label=label, target=target, detail=detail)
-
-    @staticmethod
-    def _nearest_existing(path: Path) -> Path:
-        candidate = path
-        while not candidate.exists() and candidate != candidate.parent:
-            candidate = candidate.parent
-        return candidate
+        return HostReadinessItem(
+            key=key,
+            label=label,
+            section=ReadinessSection.BINDING_SITES,
+            state=(
+                ReadinessState.VERIFIED if inspection.state is BindingSiteState.PREPARED else ReadinessState.PLANNED
+            ),
+            detail=inspection.detail,
+            required_for_bind=True,
+            repairable_by_init=inspection.state is BindingSiteState.CREATABLE,
+            target=target,
+            site_identity=inspection.identity,
+        )
 
     @staticmethod
     def _failed(

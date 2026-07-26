@@ -1,1 +1,1 @@
-"""Web-surface tests: create_test_client + fake AltarServices (spec §TD-8)."""
+"""Web-surface tests over direct ASGI transport and fake AltarServices."""

@@ -21,15 +21,15 @@ There is no CLA to sign, no private relicensing grant, and no required git sign-
 
 ```bash
 make install             # Python dependencies (.venv)
-make init                # Initialize local Codex (~/.config/lychd)
-make frontend-install    # Altar frontend dependencies (node_modules)
+make init                # Initialize the local LychD host layout
+make frontend-install    # Pinned Svelte Altar dependencies via npm
 make help                # View all available rituals
 ```
 
-The current legacy ritual still invokes `npm`. [ADR 15](docs/adr/15-frontend.md) fixes Bun as the
-canonical package manager for the Svelte replacement while retaining Vite as the compiler. Until
-the implementation migration lands, `make frontend-install` is evidence only for the current
-HTMX-era package tree and must not be described as the accepted Bun workflow.
+The Altar lives under `frontend/`. The repository pins Node.js 24 LTS in `.nvmrc`; npm 11 owns the
+exact `frontend/package-lock.json`, SvelteKit owns client routing, Vite compiles the static build,
+and Litestar serves the result. Run `make frontend-check` after API or client changes and
+`make frontend-build` before testing the packaged browser shell.
 
 ### Purification (Quality Control)
 
@@ -39,7 +39,10 @@ make type-check [TYPECHECK_TARGETS="..."] # Targeted or repo-wide BasedPyright
 make check                       # Full purification (Lint -> Type -> Test)
 ```
 
-When `rtk` is available on `PATH`, Makefile targets automatically route noisy CLI calls through it for compact agent-facing output. If `rtk` is absent, the targets fall back to the underlying tools (`uv`, `npm`, `curl`, `grep`) so bootstrap remains plain.
+When `rtk` is available on `PATH`, Makefile targets automatically route noisy CLI calls through it
+for compact agent-facing output. If `rtk` is absent, the targets fall back to the underlying tools
+(`uv`, `curl`, `grep`) so bootstrap remains plain. Frontend commands invoke npm directly; the
+canonical Node and npm ranges are also recorded in `frontend/package.json`.
 
 Use `VERBOSE=1` when an agent or human needs full logs in the terminal/LLM context. It disables RTK filtering for that invocation and makes pytest stream stdout plus long tracebacks. Pytest's debug log streaming is already configured in `pyproject.toml`.
 
@@ -51,6 +54,10 @@ make test N=0                    # Run tests Serially (Better for debugging)
 make test PYTEST_TARGETS="..."   # Targeted file/directory
 make test VERBOSE=1              # Full raw pytest output/logs; no RTK filtering
 ```
+
+`make test` keeps fixture scratch under `.cache/pytest` so strict path-authority tests behave
+consistently in containers and coding sandboxes; override `PYTEST_BASETEMP` when isolation requires
+a different current-user-owned directory.
 
 ### The Ritual of Jujutsu (JJ)
 
@@ -82,10 +89,16 @@ jj git push         # Synchronize with the external world (Git remotes)
        OpenTelemetry plugin. No handwritten frontend schema mirrors or foreign telemetry shims.
 - **Dependencies**: Use `uv add` or `uv remove` with proper groups. Ideally do not hand-edit `pyproject.toml`.
 - **Frontend Tooling**: The canonical Altar target is Svelte 5 runes with SvelteKit in static SPA
-  mode, built by Vite and managed by Bun. Litestar remains the only production server and API
-  authority; SvelteKit server routes/actions and a Bun/Node production runtime are forbidden.
-  Current HTMX/Jinja/Alpine commands are migration evidence only. Follow
-  [ADR 15](docs/adr/15-frontend.md) and [State of the
+  mode, built by Vite and managed by Node.js 24 LTS with npm 11. Litestar remains the only
+  production server and API authority; SvelteKit server routes/actions and a JavaScript production
+  runtime are forbidden. Keep transport, validation, and domain logic in framework-neutral
+  TypeScript; confine runes to components and typed presentation modules. Use native CSS variables,
+  cascade layers, and semantic classes rather than Tailwind, Sass, or project-owned PostCSS.
+  Before analyzing or changing Svelte files, load
+  [.agents/scopes/frontend.md](.agents/scopes/frontend.md); it owns the official Svelte
+  documentation-discovery and autofixer workflow.
+  Generate client types from Litestar OpenAPI; do not add parallel handwritten transport
+  contracts or a second server-rendered UI stack. Follow [ADR 15](docs/adr/15-frontend.md) and [State of the
   Work](docs/state-of-the-work.md#altar-and-observability) before changing the surface.
 - **Logging**: Use `structlog` with semantic event IDs.
     - Our global config uses `log_exceptions="always"` and an `EventRenamer`.

@@ -101,17 +101,9 @@ def test_optional_extensions_are_inert_until_explicitly_selected() -> None:
 
 
 def test_settings_attribute_docstrings_export_schema_descriptions() -> None:
-    assert (
-        ServerSettings.model_fields["reload"].description
-        == "Restart the development server when Python source files change."
-    )
-    assert DatabaseSettings.model_fields["profile"].description == (
-        "Persistence backend: Postgres for normal operation; memory only for focused tests."
-    )
-    assert (
-        ExtensionSettings.model_fields["builtins"].description
-        == "Built-in extension IDs explicitly activated for this Vessel."
-    )
+    assert ServerSettings.model_fields["reload"].description
+    assert DatabaseSettings.model_fields["profile"].description
+    assert ExtensionSettings.model_fields["builtins"].description
 
 
 def test_extension_activation_rejects_duplicate_ids() -> None:

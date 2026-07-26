@@ -16,11 +16,19 @@ icon: material/sitemap
 
 Before arriving at the solution, two dead ends were mapped and rejected:
 
-1. **The Split-Brain Error:** Running a full, independent LychD stack (Daemon + Postgres Phylactery + Phoenix Telemetry) on every home PC. A single Magus would have fragmented memories across multiple databases — the Lich's soul torn into shards, each incomplete, none authoritative. Reconciliation requires distributed consensus (Raft, Paxos), which is operational complexity designed for organizations with SRE teams, not for a sovereign individual running machines in a living room.
+1. **The Split-Brain Error:** Running a full, independent LychD stack (Daemon + Postgres
+   Phylactery + Phoenix Telemetry) on every home PC. A single Magus would have fragmented one
+   continuity jurisdiction across multiple databases, each incomplete and none authoritative.
+   Reconciliation requires distributed consensus (Raft, Paxos), which is operational complexity
+   designed for organizations with SRE teams, not for a sovereign individual running machines in
+   a living room.
 
 2. **The Dumb Portal Error:** Treating remote home nodes as bare inference endpoints (raw llamaswap or vLLM). This loses the native **[Orchestrator (23)](23-orchestrator.md)** — the node cannot smartly execute the Stasis Protocol, cannot generate Systemd Quadlets for native VRAM exclusivity, and provides zero OpenTelemetry traces to the central dashboard. The Magus gains compute but loses visibility and control.
 
-**The Revelation:** A node's compute authority (Orchestrator, Vessel, Quadlets) must be decoupled from its state authority (Phylactery, Identity, Memory). The same `app.py` can run as a sovereign Master or as a soulless **Thrall** — a Vessel without a Phylactery, managing its own hardware but thinking with the Master's brain.
+**The Revelation:** A node's compute authority (Orchestrator, Vessel, Quadlets) must be decoupled
+from its state authority (Phylactery, Identity, Memory). The same `app.py` can run as a sovereign
+Master or as a continuity-less **Thrall**—a Vessel without a Phylactery, managing its own hardware
+while the Master retains memory and cognitive authority.
 
 ## Requirements
 
@@ -50,7 +58,7 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 !!! failure "Option 3: Cross-Platform Abstraction (e.g., LlamaSwap)"
     Using a multi-service Go router (like LlamaSwap) to manage execution and conflicts across Windows/Mac/Linux.
 
-    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a different lifecycle stack and breaks native integration with rootless user-systemd observation, Host Reactor mediation, Landlock (`nono`), and Podman identity symmetry. Let other platforms build independent implementations and speak the inter-daemon law. LychD remains pure Linux.
+    - **Cons:** **The Cross-Platform Complexity Trap.** LlamaSwap introduces a different lifecycle stack and breaks native integration with rootless user-systemd observation, Host Reactor mediation, Landlock (`nono`), and Podman identity symmetry. It also violates the [source-sovereign Linux host boundary](08-containers.md#platform-support-boundary). Independent implementations may speak the inter-daemon law; they are not supported LychD hosts.
 
 !!! failure "Option 4: Simple API Webhooks"
     Exposing agents as standard REST endpoints.
@@ -68,7 +76,9 @@ Before arriving at the solution, two dead ends were mapped and rejected:
 
 ## Decision Outcome
 
-**The Legion** is adopted as the extension governing the Magus's personal army of Thralls — soulless Vessels bound to a single Master Phylactery, extending the Lich's reach across every machine the Magus owns.
+**The Legion** is adopted as the extension governing the Magus's personal army of
+Thralls—continuity-less Vessels bound to a single Master Phylactery, extending the Lich's reach
+across every machine the Magus owns.
 
 ### 1. The Thrall (A Soulless Lich)
 

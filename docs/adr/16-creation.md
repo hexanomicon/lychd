@@ -50,9 +50,13 @@ When a Magus or an authorized process initiates a change, the system creates a n
 - **Freedom:** This directory is the site of conception. The process can break things here, install experimental dependencies, and generate files without affecting the active Daemon.
 - **Context:** The process is provided with the current state of the Core and the **[Crypt lockfile (13)](13-layout.md)** to ensure the new creation is compliant with the system's existing laws.
 
-### 2. Speculation (The Shadow Realm / Manas)
+### 2. Speculation (The Shadow Realm / The Call)
 
-The initial labor is performed using a divergent VCS revision. This state of "Speculative Execution" allows for the exploration of multiple branching paths for a given problem. It is the domain of **Manas** (the divergent router), where the machine is permitted to generate "Vṛttis" (fluctuations and parallel branches) to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus as "Visions" at the **[Altar (15)](15-frontend.md)**.
+The initial labor is performed using a divergent VCS revision. This state of "Speculative
+Execution" allows the exploration of multiple branching paths for a given problem. It is the domain
+of **the Call** (Manas correspondence), where the machine may open movements within **the Flux**
+to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus
+as "Visions" at the **[Altar (15)](15-frontend.md)**.
 
 Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
 
@@ -63,9 +67,11 @@ raw execution payloads (code edits, test suites, linter invocations, arbitrary s
 tool calls) must be dispatched to it through a dedicated queue for sandboxed execution. The Tomb
 will return bounded, untrusted results only; it must not run agent logic or LLM calls.
 
-### 3. Creation (The Sequential Deep-Dive / Buddhi)
+### 3. Creation (The Sequential Deep-Dive / The Blade)
 
-Once a valid path is found in the Shadow Realm, the machine must transition from exploration to execution. This is the domain of **Buddhi** (the convergent intelligence).
+Once a valid path is found in the Shadow Realm, the machine must transition from exploration to
+execution. This is the domain of **the Blade** (Buddhi correspondence), the convergent
+intelligence.
 
 When writing core logic with causal dependencies, the agent must operate in a **Single-Threaded, Deep Sequential** mode. Massive parallelism here is a "hallucination trap." Because of **Computational Irreducibility**, the agent cannot predict the end state of a complex logical loop; it must walk the path step-by-step. By enforcing **Stillness** (Metabolic Discipline) during the actual creation phase, the system maximizes logic-per-watt and prevents the introduction of recursive errors.
 
@@ -99,7 +105,8 @@ In the event of a "Temporal Collision"—where a file in Primary Reality has bee
 !!! success "Positive"
     - **Crash Immunity:** Syntax errors are trapped in the Lab, making it physically impossible for an autonomous process to lobotomize the running Daemon.
     - **Auditability:** Every evolution of the system is a VCS revision (commit/change), allowing the Magus to trace the "Chain of Thought" that led to a specific code change.
-    - **Disciplined Autonomy:** The system handles the labor of debugging and testing, only presenting the Magus with a "Verified Truth."
+    - **Disciplined Autonomy:** The system handles bounded debugging and testing labor, presenting
+      the Magus with the surviving candidate, its evidence, and any unresolved limits.
 
 !!! failure "Negative"
     - **Operational Latency:** Creating even a simple script requires the full ceremony of "Create -> Test -> Promote."

@@ -23,6 +23,7 @@ from lychd.lib.http import HttpJsonError, request_json
 from lychd.system.schemas import QuadletContainer
 
 if TYPE_CHECKING:
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 
@@ -77,11 +78,15 @@ def transmute_single_soulstone_quadlet(
     soulstone: SoulstoneConfig,
     *,
     runtime_planner: SoulstoneRuntimePlanner,
+    settings: Settings,
 ) -> QuadletContainer:
     """Build the generated Quadlet manifest for a single Soulstone context."""
     from lychd.domain.animation.transmute import Transmuter
 
-    manifests = Transmuter(runtime_planner=runtime_planner).transmute_all([soulstone])
+    manifests = Transmuter(
+        settings=settings,
+        runtime_planner=runtime_planner,
+    ).transmute_all([soulstone])
     container_name = f"lychd-{soulstone.name}"
     for manifest in manifests:
         if isinstance(manifest, QuadletContainer) and manifest.container_name == container_name:

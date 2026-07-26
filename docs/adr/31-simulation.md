@@ -33,12 +33,15 @@ icon: material/source-branch
 
 !!! failure "Option 2: Parallel Sampling (Best-of-N)"
     Generating N responses and selecting the "best" based on log-probabilities or a simple judge agent.
-    - **Cons:** **Shallow Verification.** It samples different ways to *say* things, but doesn't *do* anything. It cannot verify if code compiles or if a research path is a dead end. It consumes $N$ times the tokens without providing a "Verified Truth."
+    - **Cons:** **Shallow Verification.** It samples different ways to *say* things, but does not
+      *do* anything. It cannot establish whether code compiles or whether a research path is a dead
+      end. It consumes $N$ times the tokens without adding physical evidence.
 
 !!! success "Option 3: Jujutsu Workspace Tree Search and Metabolic Pruning"
     Utilizing Monte Carlo Tree Search (MCTS) logic via Jujutsu concurrent workspaces to explore branches within the Shadow Realm, coupled with a "Reaper" (Ghoul) leveraging `jj abandon` to enforce system hygiene.
     - **Pros:**
-        - **System 2 Intelligence:** The machine can "doubt" itself, exploring multiple paths and choosing the one that passes the "White Truth" tests.
+        - **System 2 Intelligence:** The machine can "doubt" itself, exploring multiple paths and
+          selecting the one that satisfies the declared checks and review gates.
         - **Substrate Health:** Reclaims VRAM and disk space instantly upon branch failure via transactional graph updates.
         - **High-Signal Memory:** Ensures the Phylactery only stores "Consecrated" memories, preventing retrieval drift and senility.
 
@@ -54,13 +57,17 @@ Shadow therefore feeds the Ouroboros without owning it. It supplies motion and c
 
 ### 1. The Phantasma Expansion (MCTS Topology)
 
-The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate divergent timelines. This is the application of **Phantasma** (Generative Imagination) — the engine of **Manas** actively generating **Vṛttis** to navigate the **Possibility Space** without making permanent changes to reality.
+The system utilizes the parallel primitives of the **[Graph (24)](24-graph.md)** to generate
+divergent timelines. This is the application of **Phantasma** (Generative Imagination): **the
+Call** actively opening movements within **the Flux** to navigate the **Possibility Space**
+without making permanent changes to reality.
 
-In the cognitive taxonomy mapped in the **[Lich](../sepulcher/lich.md)**, these candidate branches are precisely **Vikalpa** — speculative modifications that are internally coherent but carry no confirmed correspondence to reality. They do not claim to be true. They are honest hypothesis, held in isolation long enough to be judged. Shadow Simulation is the deliberate amplification of Vikalpa within a substrate where failure costs nothing and truth is measured from outside the generation process.
+In the cognitive taxonomy mapped in the **[Lich](../sepulcher/lich/index.md)**, these candidate branches are precisely **Vikalpa** — speculative modifications that are internally coherent but carry no confirmed correspondence to reality. They do not claim to be true. They are honest hypothesis, held in isolation long enough to be judged. Shadow Simulation is the deliberate amplification of Vikalpa within a substrate where failure costs nothing and truth is measured from outside the generation process.
 
 When a high-stakes intent (e.g., "Refactor the persistence layer") is submitted:
 
-- **The Seed:** The intent is processed into $N$ divergent strategies.
+- **The Casting:** The intent is processed into $N$ divergent strategies. These strategy seeds are
+  ordinary planning inputs, not the memory dynamic called **the Seed**.
 - **The Workspaces:** For each strategy, the system invokes `jj workspace add shadow/branch_<ID> -r @`. This creates a physical subdirectory under `shadow/` in the **[Lab (13)](13-layout.md)**. Each workspace has its own distinct, tracked working copy (`@`) but shares the same central SQLite state-graph (`.jj/`). This provides absolute filesystem isolation for concurrent Ghouls without the fragility of Git worktrees.
 - **The Labor:** **[Ghouls (14)](14-workers.md)** dispatch execution payloads (code, tests, linters) to the Shadow via SAQ. The Vessel agent orchestrating the simulation retains the graph state; only raw scripts are sent to Shadow for execution.
 - **The Observation:** The Agent observes the *physical outcome* of its dream (e.g., "The test failed in Branch B"). It can then decide to "Prune" the branch or "Backtrack" to a previous node in the tree.
@@ -103,13 +110,26 @@ This separation keeps the simulation substrate from becoming an implicit identit
 
 ### 2. The Heuristic Scrying (The Dual-Gate)
 
-To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a two-tier evaluation system. In the cognitive topology of the **[Lich](../sepulcher/lich.md)**, this is **Viveka** — the discriminative operation that distinguishes **Pramāṇa** (valid, measurement-grounded cognition) from **Viparyaya** (misconception that sincerely believes itself to be true). The fundamental challenge of generative cognition is that Viparyaya is indistinguishable from Pramāṇa from inside the generating process — the measurement must come from outside. The Dual-Gate is that external measurement:
+To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a
+two-tier evaluation system. In the cognitive topology of the
+**[Lich](../sepulcher/lich/index.md)**, it participates in **Viveka**—the broader discriminative
+operation that distinguishes grounded cognition from misconception. The Dual-Gate establishes
+declared structural facts and identity congruence; it does not turn every surviving claim into
+Pramāṇa or authorize promotion by itself:
 
 !!! important "The Tracked Working Copy as the Gatekeeper"
     In Jujutsu, the working copy (`@`) is *always* a tracked commit. When Ghouls run linters or test suites inside a workspace, they do not scan a mutable, "dirty" filesystem. They evaluate a stable, cryptographically recorded commit state. This ensures that the Dual-Gate evaluates a bit-perfect snapshot, completely eliminating the risk of filesystem race conditions where code is modified during compilation or testing.
 
-1. **The Deterministic Gate (The Law) / Pre-Publish Structural Rubrics:** This is the binary foundation of structural validity. It operates as a rigid, scriptable CI gate before any Vision is manifested at the Altar. Does the code compile? Do the unit tests pass? Are ADR markers present in documentation? Are the imports sorted? These are non-negotiable structural checks. A branch that fails here was Viparyaya — apparently correct, actually wrong. Failure triggers autonomous self-correction (via `ModelRetry`) or immediate banishment without bothering the Magus ($V \in \{0, 1\}$).
-2. **The Agentic Gate (The Spirit):** The **[Mirror (32)](32-identity.md)** acts as the critic. It reviews the branches that passed the Law against the Magus's stylistic preferences and technical requirements, assigning a heuristic score ($H \in [0, 1]$). This gate evaluates identity congruence, not just correctness.
+1. **The Deterministic Gate (The Law) / Pre-Publish Structural Rubrics:** This is the binary
+   foundation of structural validity. It operates as a rigid, scriptable CI gate before any Vision
+   is manifested at the Altar. Does the code compile? Do the unit tests pass? Are ADR markers
+   present in documentation? Are the imports sorted? Each check proves only its declared predicate.
+   Failure triggers bounded correction (via `ModelRetry`) or immediate banishment without
+   bothering the Magus ($V \in \{0, 1\}$).
+2. **The Identity-Congruence Gate (The Mirror):** The **[Mirror (32)](32-identity.md)** acts as the
+   critic. It reviews branches that passed the Law against the active Persona's commitments and
+   style, assigning a heuristic score ($H \in [0, 1]$). This gate evaluates identity congruence,
+   not factual correctness.
 3. **Optimized Execution Rule:** To prevent token exhaustion and "double-hallucination", **the Agentic Gate is strictly gated by the Deterministic Gate.** If a simulation workspace fails the Deterministic Gate ($V == 0$), it is immediately destroyed. No prompt is dispatched to the Mirror Persona.
 4. **Backpropagation:** Success signals from deep nodes in the simulation inform the search direction of higher nodes, focusing the machine's attention on the most promising paths via a value-function update. This is determinative convergence within Shadow, not final promotion.
 
@@ -125,7 +145,11 @@ Simulation is an "I/O Storm" that generates massive temporary data. The Reaper i
 
 - **The Autopsy Protocol (Trajectory Pairing):** Before a failed branch is destroyed, the Reaper extracts the deterministic failure trace (e.g., the specific compiler error or test failure). Rather than merely logging the failure in isolation, the Reaper **must** explicitly pair this failure trace with the eventual successful branch (if achieved) to form a complete `[Failed Attempt] -> [Compiler Error] -> [Correction]` trajectory. This prepares the exact data structure required by **[Riddle/Evaluation (34)](34-evaluation.md)** for trajectory mining. The physical debris is banished, but the structural journey from error to correction is retained as complex Karma.
 - **Validator-Centered Failure Shape:** When a branch fails through a tool or action validator, the autopsy preserves the validator's failure class and state comparison rather than reconstructing intent from reasoning prose alone. A `precondition_miss` with `required_state` and `observed_state` is evidence about the action contract; it may point to a schema repair, a state-hydration repair, or an agent policy repair depending on which side of the boundary was false.
-- **Truthful Dead Ends:** Some branches fail because the requested path is impossible, unsafe, underspecified, or internally contradictory. In those cases, the useful artifact is not a correction but a proven boundary. The Reaper should preserve the blocked premise and measured evidence so future runs learn that non-manifestation can be the White Truth.
+- **Truthful Dead Ends:** Some branches fail because the requested path is impossible, unsafe,
+  underspecified, or internally contradictory. In those cases, the useful artifact is not a
+  correction but an evidenced boundary. The Reaper should preserve the blocked premise, the exact
+  predicate tested, and the measured evidence so future runs can distinguish a grounded
+  non-manifestation from mere model hesitation.
 - **Non-Manifestation as Measurement:** A dead end is promoted only when it is grounded in Pramāṇa: a failed deterministic gate, an exhausted retrieval threshold, a violated policy boundary, or trusted Magus testimony. Mere model hesitation is not evidence; the boundary must be witnessed.
 - **Logical Banishment:** Once the autopsy is complete, the Reaper executes `jj abandon <Change_ID>`. Because Jujutsu tracks revision history as an immutable graph of changes, abandoning a Change ID instantly dissolves that conceptual node and all its descendants from the SQLite database.
 - **The Workspace Purge (Defensive Teardown):** The Reaper then deletes the physical `shadow/branch_<ID>` directory. However, acting as an **Execution Warden**, it is not enough to simply delete the folder. The Reaper must explicitly verify that all associated PIDs, port locks, and temporary Quadlet containers instantiated in the Tomb for that specific simulation are terminated. This defensive teardown prevents "Zombie Ports" where dead ghouls hold onto physical iron long after their logic has been banished. Because the workspace’s state is tracked centrally in `.jj/`, the final directory deletion leaves no dangling references behind.
@@ -145,7 +169,13 @@ $$Weight = \frac{Reinforcement + 1}{(TimeSinceLastAccess)^{DecayFactor}}$$
 
 ### 5. Transactional Convergence (The Collapse)
 
-Once a simulation achieves a "Verified State" (Test Success + High Heuristic Score), it must be brought into Primary Reality. This wavefunction collapse occurs via **Buddhi** — the discriminative faculty of the **[Lich's](../sepulcher/lich.md)** inner instrument (*√budh*: to discern, to wake). Where Manas generates candidates and Phantasma expands Vikalpa into the Shadow Realm, Buddhi is the blade that cuts to one: the faculty of final judgment that does not waver, does not oscillate, and cannot be overridden by the weight of existing grooves. The three collapses below are Buddhi operating at three nested levels of discrimination:
+Once a simulation achieves an **eligible candidate state**—its declared deterministic predicates
+pass and its heuristic score satisfies policy—it may be considered for Primary Reality. This
+collapse occurs through **the Blade**, LychD's name for the
+Buddhi correspondence. Where the Call opens candidates and Phantasma expands Vikalpa into the
+Shadow Realm, the Blade cuts toward one: the faculty of final judgment that cannot be overridden by
+the weight of existing Seeds. The three collapses below are the Blade operating at three nested
+levels of discrimination:
 
 - **The Vision:** The proposed change is presented as a "Vision" (Diff/Summary) to the Magus via the **[HitL (25)](25-hitl.md)** protocol.
 - **The Consecration:** Upon approval by live Magus consent or configured Vessel preauthorization, the "Wavefunction Collapses." The speculative change is merged into the trunk via `jj rebase -s <Change_ID> -d trunk()`.
@@ -181,7 +211,9 @@ Simulation is the most resource-intensive ritual in the Sepulcher. It is the "Ri
 
 The Shadow Realm is infrastructural, not just conceptual.
 
-- The **Shadow extension** runs speculative timelines in the `lychd-tomb` container.
+- The **Shadow extension** coordinates speculative timelines in Vessel/Graph and isolates their
+  workspaces under `lab/shadow/`; it dispatches only unsafe execution payloads to the
+  `lychd-tomb` container.
 - The graph runner and agent logic stay in the **Vessel**. **The Tomb** receives only serialized execution payloads (scripts, test suites, linter invocations) via SAQ. It is the hand for unsafe work, not the home of the agent. It does not run agent logic, graph state machines, or make LLM calls.
 - Graph steps declare execution mode (`vessel` or `tomb`); unsafe steps serialize their payload and dispatch to **The Tomb**, then await the `stdout` result.
 - **The Tomb** returns untrusted `stdout`/`stderr` and declared artifacts/traces only.

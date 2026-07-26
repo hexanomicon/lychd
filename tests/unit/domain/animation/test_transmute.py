@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
-import lychd.domain.animation.transmute as transmute_mod
 from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
 from lychd.config.settings.root import Settings, get_settings
 from lychd.domain.animation.schemas import (
@@ -30,7 +29,7 @@ class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
 
 @pytest.fixture
 def transmuter() -> Transmuter:
-    return Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    return Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
 
 def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
@@ -151,7 +150,7 @@ def test_transmute_merges_runtime_podman_args() -> None:
             _ = soulstone
             return RuntimePlan(exec_args=["serve", "qwen"], podman_args=["--ipc=host"])
 
-    transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
     stone = SoulstoneFactory.build(name="qwen", image="vllm/vllm-openai:latest")
 
     manifests = transmuter.transmute_all([stone])
@@ -182,7 +181,7 @@ def test_runtime_plan_podman_args_reject_standalone_systemd_command_separator() 
 
     stone = SoulstoneFactory.build(name="separator", image="example/runtime")
     with pytest.raises(ValueError, match="standalone systemd command separator"):
-        Transmuter(runtime_planner=UnsafeRuntimePlanner()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=UnsafeRuntimePlanner()).transmute_all([stone])
 
 
 def test_transmute_aggregates_runtime_shared_memory_requirement() -> None:
@@ -195,7 +194,7 @@ def test_transmute_aggregates_runtime_shared_memory_requirement() -> None:
         SoulstoneFactory.build(name="small", image="example/small"),
         SoulstoneFactory.build(name="large", image="example/large"),
     ]
-    manifests = Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all(stones)
+    manifests = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all(stones)
     pod = next(manifest for manifest in manifests if isinstance(manifest, QuadletPod))
 
     assert pod.shm_size == "10g"
@@ -212,7 +211,7 @@ def test_transmute_rejects_any_negative_shared_memory_requirement() -> None:
         SoulstoneFactory.build(name="invalid", image="example/invalid"),
     ]
     with pytest.raises(ValueError, match="negative pod shared-memory"):
-        Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all(stones)
+        Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all(stones)
 
 
 def test_soulstone_cannot_receive_a_core_secret(transmuter: Transmuter) -> None:
@@ -279,7 +278,7 @@ def test_soulstone_mount_sources_cannot_overlap_control_roots(
             _ = soulstone
             return RuntimePlan(volumes=adapter_volumes)
 
-    transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
     stone = SoulstoneFactory.build(name="confined", image="example/runtime", volumes=rune_volumes)
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
@@ -295,7 +294,7 @@ def test_soulstone_mount_check_resolves_host_symlink_aliases(
     stone = SoulstoneFactory.build(name="alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_safe_host_symlink_is_pinned_to_its_canonical_target(
@@ -308,7 +307,7 @@ def test_safe_host_symlink_is_pinned_to_its_canonical_target(
     alias.symlink_to(target, target_is_directory=True)
     stone = SoulstoneFactory.build(name="safe-alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
 
-    manifests = Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+    manifests = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
     manifest = next(
         item for item in manifests if isinstance(item, QuadletContainer) and item.container_name == "lychd-safe-alias"
     )
@@ -323,7 +322,6 @@ def test_soulstone_mounts_respect_configured_control_paths(
     control_path: str,
     side: str,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     switching = SwitchingSettings(host_reactor_dir=tmp_path / "control" / "reactor" / "inbox")
     settings = Settings(orchestration=OrchestrationSettings(switching=switching))
@@ -332,12 +330,11 @@ def test_soulstone_mounts_respect_configured_control_paths(
         "journal": switching.host_reactor_journal_dir,
     }[control_path]
     safe_host = tmp_path / "models"
-    monkeypatch.setattr(transmute_mod, "get_settings", lambda: settings)
     mounts = [f"{selected}:/models:ro"] if side == "host" else [f"{safe_host}:{selected}:ro"]
     stone = SoulstoneFactory.build(name="configured-control", image="example/runtime", volumes=mounts)
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=settings, runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_soulstone_mounts_require_absolute_endpoints(
@@ -351,7 +348,7 @@ def test_soulstone_mounts_require_absolute_endpoints(
     )
 
     with pytest.raises(ValueError, match="container path must be absolute"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_soulstone_container_mount_cannot_use_double_slash_alias(
@@ -366,7 +363,7 @@ def test_soulstone_container_mount_cannot_use_double_slash_alias(
     )
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_soulstone_mounts_reject_systemd_path_specifiers(
@@ -380,7 +377,7 @@ def test_soulstone_mounts_reject_systemd_path_specifiers(
     )
 
     with pytest.raises(ValueError, match="systemd specifier"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_soulstone_mounts_reject_systemd_environment_aliases() -> None:
@@ -391,7 +388,7 @@ def test_soulstone_mounts_reject_systemd_environment_aliases() -> None:
     )
 
     with pytest.raises(ValueError, match="systemd environment expansion"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_soulstone_rejects_duplicate_container_mount_destinations(tmp_path: Path) -> None:
@@ -405,7 +402,7 @@ def test_soulstone_rejects_duplicate_container_mount_destinations(tmp_path: Path
     )
 
     with pytest.raises(ValueError, match="more than one mount for container path /models"):
-        Transmuter(runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
+        Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
 
 
 def test_ordinary_model_and_runtime_mounts_are_preserved(
@@ -425,7 +422,7 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
         image="example/runtime",
         volumes=[f"{rune_host}:/runtime-cache:rw", f"{tmp_path / 'models'}:/models:ro,Z"],
     )
-    manifests = Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all([stone])
+    manifests = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all([stone])
     manifest = next(
         item for item in manifests if isinstance(item, QuadletContainer) and item.container_name == "lychd-ordinary"
     )

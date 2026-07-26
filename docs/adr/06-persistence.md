@@ -74,7 +74,10 @@ for the current default-schema state and SAQ tables, these schema boundaries are
 the first migration:
 
 - **`public` (State):** Relational data for user state, configuration, and extension registries.
-- **`vectors` (Karma):** High-dimensional space for storing verified artifacts and long-term memory. Entries include a `status` metadata field (e.g., `speculative`, `consecrated`) to distinguish between experimental thoughts and verified truths.
+- **`vectors` (Karma):** High-dimensional space for storing attributed artifacts and long-term
+  memory. Entries include a `status` metadata field (for example, `speculative` or `consecrated`)
+  to distinguish unreviewed candidates from governed precedent. Consecration records status and
+  authority; it does not make every factual claim inside an artifact true.
 - **`traces` (The Eye):** Specialized storage for execution traces and observability data.
 - **`queue` (Labor):** The persistence layer for the background task distribution system.
 - **`verbatim` (The Facts):** A high-priority Key-Value store (JSONB) for immutable facts (IP addresses, specific names, technical constants). The system is mandated to consult this chamber before semantic search to ensure 100% deterministic recall of critical data.

@@ -10,7 +10,8 @@ icon: material/package-variant-closed
 
 ## Requirements
 
-- **Multi-Manifest Synthesis:** Discovery and merging of `pyproject.toml` (Python), `package.json` (Node), and `tailwind.config.js` from all active extensions into a single build context.
+- **Multi-Manifest Synthesis:** Discovery and merging of `pyproject.toml` (Python) and
+  `package.json` (Node) from all active extensions into a single build context.
 - **Infrastructure Inscription:** Automatic generation of **[Systemd Quadlets (08)](08-containers.md)** based on the Soulstone definitions in the **[Codex (12)](12-configuration.md)** and extension requirements.
 - **Extension Injection:** A formal hook mechanism allowing extensions to register system-level dependencies (e.g., C-libraries) and custom container requirements during the **[Federation (05)](05-extensions.md)** phase.
 - **Deterministic Manifests:** Generation of a "Synthesis Manifest"—a pinned record of every dependency and its cryptographic hash to ensure verifiable provenance.
@@ -82,7 +83,12 @@ they may build on the wheel contract but may not weaken it.
 When a packaging ritual begins, the system performs a multi-dimensional synthesis by scanning both the **Built-in** registry and the **Crypt (13)** to prepare for the physical build:
 
 - **Anatomical Grafting:** The Manager discovers all **Built-in Extensions** and establishes the kernel's baseline runtime and substrate requirements through the in-tree registration path. This is an in-memory operation that defines the body the Forge must then manifest.
-- **The Code Layer (Substrate Synthesis):** All `pyproject.toml` (Python), `package.json` (Node), and `tailwind.config.js` manifests from active **Crypt Extensions** are merged with the core manifests. Near-term Crypt extensions are private coupled organs unless they explicitly target a future versioned public API. The system executes a frozen lock to create a single, deterministic source of truth for the **Backend (11)** environment.
+- **The Code Layer (Substrate Synthesis):** All `pyproject.toml` (Python) and `package.json` (Node)
+  manifests from active **Crypt Extensions** are merged with the core manifests. A styling
+  framework configuration is not a separately composable manifest; trusted client contributions
+  join the Altar's native CSS and compile-time component boundary. Near-term Crypt extensions are
+  private coupled organs unless they explicitly target a future versioned public API. The system
+  executes frozen Python and npm locks to create deterministic build inputs for the composed body.
 - **Substrate Injection:** During assimilation, extensions declare system-level dependencies (e.g., C-libraries like `ffmpeg` or specialized binaries) and custom container requirements as part of the composed-runtime law. These are collected into the global synthesis manifest to be Manifested during the Forge. The `register(context)` hook is only the boot-time grafting branch of that law.
 - **The Infrastructure Layer:** The system reads `Soulstone` intents from the **Codex (12)** and infrastructure requirements from all active Extensions. It dynamically calculates the `lychd.pod` configuration, aggregating all `ExposePort` requirements and hardware tags for **Containers (08)**.
 - **Global Arbitration:** The Manager performs a mandatory conflict check across the entire manifest. It enforces the **Law of Exclusivity**, ensuring no port collisions, image-name overlaps, or dependency version deadlocks exist. Only upon successful arbitration are the "Dumb Blueprints" handed to the **Quadlet Scribe** to manifest the concrete Systemd Quadlet files.

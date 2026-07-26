@@ -54,14 +54,20 @@ def test_plan_uses_domain_and_path_trees_without_repetitive_reasons() -> None:
     )
 
     output = _render(plan)
+    verbose = _render(plan, verbose=True)
 
-    assert "CODEX — ~/.config · Shared XDG root for the Codex and Binding." in output
+    assert "CODEX — ~/.config" in output
+    assert "Shared XDG root for the Codex and Binding." not in output
     assert "Create 3" not in output
-    assert "└── lychd — LychD settings and typed Runes." in output
-    assert "├── lychd.toml — Primary settings loaded before Rune documents." in output
+    assert "└── lychd" in output
+    assert "LychD settings and typed Runes." not in output
+    assert "Primary settings loaded before Rune documents." not in output
     assert "mode 0600" in output
     assert "managed directory is absent" not in output
     assert "WOULD CREATE" not in output
+    assert "CODEX — ~/.config · Shared XDG root for the Codex and Binding." in verbose
+    assert "└── lychd — LychD settings and typed Runes." in verbose
+    assert "├── lychd.toml — Primary settings loaded before Rune documents." in verbose
 
 
 def test_verbose_plan_adds_shared_anchors_without_generic_planner_reasons() -> None:
@@ -85,7 +91,8 @@ def test_verbose_plan_adds_shared_anchors_without_generic_planner_reasons() -> N
     compact = _render(plan)
     verbose = _render(plan, verbose=True)
 
-    assert "systemd/user — Shared plain user-unit site" in compact
+    assert "systemd/user" in compact
+    assert "Shared plain user-unit site" not in compact
     assert "Shared systemd user-configuration root" not in compact
     assert "systemd — Shared systemd user-configuration root" in verbose
     assert "└── user — Shared plain user-unit site" in verbose
@@ -115,9 +122,11 @@ def test_external_mount_and_blocker_details_remain_visible_by_default() -> None:
     )
 
     output = _render(plan)
+    verbose = _render(plan, verbose=True)
     flattened = " ".join(output.split())
 
-    assert "Live PostgreSQL data within the Phylactery" in output
+    assert "Live PostgreSQL data within the Phylactery" not in output
+    assert "Live PostgreSQL data within the Phylactery" in verbose
     assert "external mount kept" in flattened
     assert "symlink component is not trusted: /tmp/link" in output
     assert "1 external mount" in output
@@ -188,5 +197,5 @@ def test_shared_anchor_color_is_distinct_from_its_lifecycle_state() -> None:
         (" — ", "dim"),
         ("Shared Podman Quadlet directory.", "white"),
         (" · ", "dim"),
-        ("will prepare", "cyan"),
+        ("will create", "cyan"),
     ]

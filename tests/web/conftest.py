@@ -1,28 +1,15 @@
-"""Web test harness: `create_test_client` + a hand-rolled fake `AltarServices`.
-
-Tier A (the bulk): the real template config, the real `web_dependencies` shape, and
-a fake services container (scripted `RunEngine`, fake orchestrator/registry, real
-`FragmentRegistry`/`Projector`/`BridgeSessionStore`/`TicketStore`). A static lifespan
-stamps `state.services`, mirrors the handles, binds the engine, and registers the
-`route_path` global + `run_data_state` filter — exactly as the production lifespan
-does — then builds the `Projector` against the app's own template engine.
-
-Assertions use stdlib string/id checks (no extra dev-dep); never snapshot whole pages.
-Every SSE test pre-closes its channel (terminal `done`) so reads cannot hang.
-"""
+"""Typed Altar API harness over a hand-rolled fake `AltarServices`."""
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-from pathlib import Path
+import asyncio
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
+import httpx
 import pytest
-from litestar.contrib.jinja import JinjaTemplateEngine
-from litestar.plugins.htmx import HTMXPlugin
-from litestar.template.config import TemplateConfig
-from litestar.testing import create_test_client  # pyright: ignore[reportUnknownVariableType]
+from litestar import Litestar
+from litestar.datastructures import State
 
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
@@ -34,22 +21,14 @@ from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.domain.web.fragments import build_fragment_registry
-from lychd.domain.web.projection import Projector
-from lychd.domain.web.schemas import run_data_state
+from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
 from lychd.domain.web.tickets import TicketStore
 from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController
 from lychd.interface.web.deps import web_dependencies
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
-
-    from litestar import Litestar
-    from litestar.testing import TestClient
-
     from lychd.domain.cortex.priority import Priority
-
-TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "src" / "lychd" / "domain" / "web" / "templates"
 
 SAMPLE_STATUSES: list[dict[str, Any]] = [
     {
@@ -182,6 +161,47 @@ class FakeRegistry(AnimatorRegistry):
         """No-op warm."""
 
 
+class AsgiClient:
+    """Small sync facade over httpx's direct ASGI transport.
+
+    Litestar's blocking-portal TestClient hangs with the repository's current
+    AnyIO runtime even for an empty app. This adapter invokes the same ASGI app
+    directly and does not introduce a second web contract.
+    """
+
+    def __init__(self, app: Litestar) -> None:
+        self.app = app
+        self._loop = asyncio.new_event_loop()
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        follow_redirects: bool = True,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        async def _request() -> httpx.Response:
+            transport = httpx.ASGITransport(app=self.app)  # pyright: ignore[reportArgumentType]
+            async with httpx.AsyncClient(
+                transport=transport,
+                base_url="http://testserver.local",
+                follow_redirects=follow_redirects,
+            ) as client:
+                return await client.request(method, url, **kwargs)
+
+        async def _bounded_request() -> httpx.Response:
+            return await asyncio.wait_for(_request(), timeout=5)
+
+        return self._loop.run_until_complete(_bounded_request())
+
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        return self.request("GET", url, **kwargs)
+
+    def post(self, url: str, **kwargs: Any) -> httpx.Response:
+        return self.request("POST", url, **kwargs)
+
+
 @pytest.fixture
 def fake_services() -> SimpleNamespace:
     """Build the fake `AltarServices` container (attribute-compatible with the real one)."""
@@ -193,6 +213,7 @@ def fake_services() -> SimpleNamespace:
     # id (R4: production always mints; identity is the ledger's, not the advisory field).
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
+    projector = EventProjector(fragments=fragments, sessions=sessions, consents=consents)
     return SimpleNamespace(
         registry=FakeRegistry(),
         dispatcher=None,
@@ -204,64 +225,30 @@ def fake_services() -> SimpleNamespace:
         consents=consents,
         tickets=tickets,
         run_engine=FakeRunEngine(bus, consents),
-        projector=None,  # built in the lifespan against the app's template engine
+        projector=projector,
         ledger=ledger,
         bus=bus,
     )
 
 
-def _static_lifespan(services: SimpleNamespace) -> Any:
-    @asynccontextmanager
-    async def _lifespan(app: Litestar) -> AsyncIterator[None]:
-        app.state.services = services
-
-        engine = cast("JinjaTemplateEngine", app.template_engine)
-        template_globals = cast("dict[str, Any]", engine.engine.globals)
-        template_globals["route_path"] = app.route_reverse
-        template_globals["vite_hmr"] = _empty_template_helper
-        template_globals["vite"] = _empty_template_helper
-        engine.engine.filters["run_data_state"] = run_data_state
-        services.projector = Projector(
-            engine=engine,
-            fragments=services.fragments,
-            sessions=services.bridge_sessions,
-            consents=services.consents,
-        )
-        yield
-
-    return _lifespan
-
-
 @pytest.fixture
-def altar_client(fake_services: SimpleNamespace) -> Iterator[TestClient[Litestar]]:
-    """A test client wired to the real controllers/templates over the fake services."""
-    with create_test_client(
+def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
+    """A test client wired to the real API and SPA controllers."""
+    app = Litestar(
         route_handlers=[AltarController, BridgeController, NexusController, LoomController],
-        template_config=TemplateConfig(directory=TEMPLATES_DIR, engine=JinjaTemplateEngine),
-        plugins=[HTMXPlugin()],
         dependencies=web_dependencies,
         middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
-        lifespan=[_static_lifespan(fake_services)],
-    ) as client:
-        yield client
+        state=State({"services": fake_services}),
+    )
+    return AsgiClient(app)
 
 
 @pytest.fixture
-def projector() -> Projector:
-    """A standalone Projector bound to a fresh engine (unit tests, no HTTP)."""
-    engine = JinjaTemplateEngine(directory=TEMPLATES_DIR)
-    template_globals = cast("dict[str, Any]", engine.engine.globals)
-    template_globals["route_path"] = _test_route_path
-    engine.engine.filters["run_data_state"] = run_data_state
+def projector() -> EventProjector:
+    """A standalone semantic event projector."""
     sessions = BridgeSessionStore()
-    return Projector(
-        engine=engine, fragments=build_fragment_registry(), sessions=sessions, consents=InMemoryConsentLedger()
+    return EventProjector(
+        fragments=build_fragment_registry(),
+        sessions=sessions,
+        consents=InMemoryConsentLedger(),
     )
-
-
-def _empty_template_helper(*_args: object, **_kwargs: object) -> str:
-    return ""
-
-
-def _test_route_path(*_args: object, **_kwargs: object) -> str:
-    return "/x"

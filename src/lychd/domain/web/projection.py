@@ -1,45 +1,22 @@
-"""`Projector` — the single renderer of run events, cards, and settled turns.
+"""Semantic run-event projection for every typed client.
 
-The Projection Law made concrete: the server renders every piece of UI. This one
-service absorbs the template-render helper, the SSE event dispatch, the consent-card
-block, and the settled-turn lookup that were duplicated across `bridge.py` and
-`nexus.py`. Being engine-bound and controller-free, it is unit-testable without HTTP.
-
-Escaping contract (spec-00-FINAL C2): the emitter emits *raw* token text; the
-Projector escapes it here. Status/fragment/consent payloads are structured and are
-escaped by Jinja autoescape at template-render time.
+The Vessel validates event payloads and emits inert JSON. It does not render HTML.
+Svelte, Android, and future clients project the same versioned envelope.
 """
 
 from __future__ import annotations
 
-import html
 import json
-from typing import TYPE_CHECKING, Any
+from dataclasses import asdict
+from typing import TYPE_CHECKING, Any, Literal, cast
 
-from litestar.enums import MediaType
-from litestar.response import Response
+from pydantic import ValidationError
 
+from lychd.domain.web.contracts import RunEventEnvelope
 from lychd.domain.web.fragments import ValidatedFragment
 from lychd.domain.web.schemas import ConsentCard, SwapTicket
 
-# HTMX swaps the response body *and* stops the element's `every` polling on this code.
-_HTTP_286_STOP_POLLING = 286
-
-
-def stop_polling(html_body: str, *, trigger_after_settle: str | None = None) -> Response[str]:
-    """Return an HTTP 286 response that swaps the body and halts HTMX polling."""
-    headers = {"HX-Trigger-After-Settle": trigger_after_settle} if trigger_after_settle else {}
-    return Response(
-        content=html_body,
-        status_code=_HTTP_286_STOP_POLLING,
-        media_type=MediaType.HTML,
-        headers=headers,
-    )
-
-
 if TYPE_CHECKING:
-    from litestar.contrib.jinja import JinjaTemplateEngine
-
     from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.codex.schemas import ConsentView
     from lychd.domain.cortex.events import RunEvent
@@ -47,95 +24,96 @@ if TYPE_CHECKING:
     from lychd.domain.web.sessions import SessionStorePort
     from lychd.domain.web.tickets import TicketRecord
 
-# ConsentView.status vocabulary → the frozen ConsentState the card template reads
-# (so `bridge/consent_update.html.j2` ships unchanged). "expired" renders as a refusal,
-# consistent with `verdict()` reading expired as False.
+# ConsentView.status vocabulary → the stable client consent state.
 _CONSENT_STATE: dict[str, str] = {
     "pending": "pending_consent",
     "granted": "consented",
     "denied": "refused",
     "expired": "refused",
 }
+EventKind = Literal["token", "status", "node", "fragment", "consent", "log", "done", "resync"]
 
 
-class Projector:
-    """Renders `RunEvent`s and one-off fragments to HTML strings (Projection Law)."""
+class EventProjector:
+    """Validate and shape `RunEvent` values into versioned JSON envelopes."""
 
     def __init__(
         self,
         *,
-        engine: JinjaTemplateEngine,
         fragments: FragmentRegistry,
         sessions: SessionStorePort,
         consents: ConsentLedger,
     ) -> None:
-        """Bind the projector to the app's template engine, registry, sessions, consents."""
-        self._engine = engine
+        """Bind the projector to the descriptor registry, sessions, and consent ledger."""
         self._fragments = fragments
         self._sessions = sessions
         self._consents = consents
 
-    # -- generic render seam ---------------------------------------------
-
-    def render(self, template_name: str, context: dict[str, Any]) -> str:
-        """Render a Jinja template to an HTML string (autoescaped)."""
-        return self._engine.get_template(template_name).render(context)
-
-    # -- SSE event projection --------------------------------------------
-
-    async def project(self, event: RunEvent) -> str:
-        """Render one run event's SSE payload to HTML.
-
-        token → escaped text passthrough; status/node → controlled keyword; fragment →
-        validated genUI render; consent → card + OOB sigil (from the ConsentLedger);
-        log → escaped line; done → settled turn (OOB). The `Projector` is the sole escaper.
-        """
-        kind = str(event.kind)
-        if kind == "token":
-            return html.escape(event.data)
-        if kind in {"status", "node"}:
-            # F8/H7: status is a RunStatus/progress keyword and node is a node key —
-            # controlled vocabularies today, but escape them at the render boundary so
-            # any future model-derived value routed through `emit.status()/emit.node()`
-            # can never reflect raw HTML into the SSE stream.
-            return html.escape(event.data)
-        if kind == "log":
-            return html.escape(event.data)
-        if kind == "fragment":
-            return self._project_fragment(event.data)
-        if kind == "consent":
-            return await self._project_consent(event.data)
-        # done: replace the whole streaming slot with the settled turn (OOB).
-        return await self._project_done(event.run_id)
-
-    async def _project_consent(self, data: str) -> str:
-        consent_id = data
-        if data.startswith("{"):
-            parsed: dict[str, Any] = json.loads(data)
-            consent_id = str(parsed.get("consent_id", ""))
-        view = await self._consents.get(consent_id)
-        return (
-            self.render("bridge/consent_update.html.j2", await self.consent_context(view)) if view is not None else ""
+    async def project(self, event: RunEvent) -> RunEventEnvelope:
+        """Project one internal run event without interpreting data as markup."""
+        kind = cast("EventKind", str(event.kind))
+        payload: dict[str, Any]
+        if kind in {"token", "status", "node", "log"}:
+            payload = {"text": event.data, **event.meta}
+        elif kind == "fragment":
+            payload = self._project_fragment(event.data)
+        elif kind == "consent":
+            payload = await self._project_consent(event.data)
+        elif kind == "done":
+            payload = await self._project_done(event.run_id, event.data)
+        else:
+            payload = {"text": event.data}
+        return RunEventEnvelope(
+            run_id=event.run_id,
+            seq=event.seq,
+            kind=kind,
+            occurred_at=event.ts,
+            payload=payload,
         )
 
-    def _project_fragment(self, payload: str) -> str:
-        parsed = json.loads(payload)
+    async def _project_consent(self, data: str) -> dict[str, Any]:
+        consent_id = data
+        if data.startswith("{"):
+            try:
+                parsed: dict[str, Any] = json.loads(data)
+                consent_id = str(parsed.get("consent_id", ""))
+            except json.JSONDecodeError:
+                consent_id = ""
+        view = await self._consents.get(consent_id)
+        return {"consent": asdict(self.consent_card_view(view))} if view is not None else {}
+
+    def _project_fragment(self, payload: str) -> dict[str, Any]:
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError:
+            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
         definition = self._fragments.get(str(parsed.get("fragment", "")))
         if definition is None:
-            return ""
-        params = definition.params_model.model_validate(parsed.get("params", {}))
-        validated = ValidatedFragment(key=definition.key, template=definition.template, params=params)
-        return self._fragments.render(validated, engine=self._engine)
+            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
+        try:
+            params = definition.params_model.model_validate(parsed.get("params", {}))
+        except ValidationError:
+            return {"kind": "genui.unknown", "schema_version": 1, "props": {}, "actions": []}
+        validated = ValidatedFragment(key=definition.key, params=params)
+        return self._fragments.descriptor(validated)
 
-    async def _project_done(self, run_id: str) -> str:
+    async def _project_done(self, run_id: str, status: str) -> dict[str, Any]:
         from lychd.domain.web.schemas import BridgeTurn
 
         turn = await self._sessions.settled_turn_for_run(run_id)
         if turn is None:
             turn = BridgeTurn(role="agent", content="The turn has settled.", run_id=run_id, state="settled")
-        # `run_data_state` is registered as a Jinja filter (lifespan/conftest), so the
-        # template maps the internal state to the frozen run `data-state` vocabulary.
-        return self.render("bridge/turn_agent.html.j2", {"turn": turn, "oob": True})
+        return {
+            "status": status,
+            "turn": {
+                "role": turn.role,
+                "content": turn.content,
+                "run_id": turn.run_id,
+                "state": turn.state,
+                "fragments": list(turn.fragments),
+                "created_at": turn.created_at.isoformat(),
+            },
+        }
 
     # -- consent ----------------------------------------------------------
 
@@ -151,15 +129,6 @@ class Projector:
             vision=vision,
             state=state,
         )
-
-    async def consent_context(self, view: ConsentView) -> dict[str, Any]:
-        """Build the `bridge/consent_update.html.j2` context for a consent view."""
-        return {
-            "consent": self.consent_card_view(view),
-            "pending": await self._consents.pending_count(),
-        }
-
-    # -- swap tickets -----------------------------------------------------
 
     def ticket_view(
         self,

@@ -39,6 +39,20 @@ class InputProcessRunner(ProcessRunner, Protocol):
         ...
 
 
+class DescriptorProcessRunner(ProcessRunner, Protocol):
+    """Process port that can inherit an explicit bounded descriptor set."""
+
+    def run_with_fds(
+        self,
+        argv: tuple[str, ...],
+        *,
+        timeout_s: float,
+        pass_fds: tuple[int, ...],
+    ) -> ProcessResult:
+        """Execute literal argv while preserving only the named descriptors."""
+        ...
+
+
 class ProcessInvocationError(RuntimeError):
     """A host executable could not start or exceeded its mandatory timeout."""
 
@@ -82,6 +96,33 @@ class SubprocessRunner:
                 capture_output=True,
                 text=True,
                 timeout=timeout_s,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            message = f"Cannot execute {argv[0]!r}: {exc}"
+            raise ProcessInvocationError(message) from exc
+        return ProcessResult(
+            argv=argv,
+            returncode=completed.returncode,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+        )
+
+    def run_with_fds(
+        self,
+        argv: tuple[str, ...],
+        *,
+        timeout_s: float,
+        pass_fds: tuple[int, ...],
+    ) -> ProcessResult:
+        """Execute a bounded command with an explicit inherited descriptor set."""
+        try:
+            completed = subprocess.run(  # noqa: S603 - argv comes from typed allowlisted services
+                argv,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_s,
+                pass_fds=pass_fds,
             )
         except (OSError, subprocess.SubprocessError) as exc:
             message = f"Cannot execute {argv[0]!r}: {exc}"

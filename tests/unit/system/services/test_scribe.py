@@ -3,15 +3,42 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Protocol, cast
+from unittest.mock import MagicMock
 
 import pytest
 
+from lychd.system.atomic_paths import rename_exchange_at, rename_noreplace_at
+from lychd.system.binding_sites import AttestedBindingSite, AttestedBindingSites
 from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget, SystemdService
 from lychd.system.services.scribe import (
     ScribeConflictError,
+    ScribeGenerationError,
     ScribeOwnershipError,
     ScribeService,
+    ScribeTransactionError,
+    ScribeTransactionState,
 )
+from lychd.system.services.scribe import storage as storage_module
+from lychd.system.services.scribe.models import (
+    BindingBase,
+    BindingWriteSet,
+    OwnershipManifest,
+)
+from lychd.system.services.scribe.storage import (
+    AtomicMutation,
+    AtomicOutcome,
+    AttestedPath,
+    PathState,
+    PinnedPath,
+)
+from lychd.system.services.scribe.transaction import BindingTransaction
+from lychd.system.services.scribe.workspace import TransactionWorkspace
+
+
+class _MutableProgress(Protocol):
+    mutations: list[AtomicMutation]
 
 
 @pytest.fixture
@@ -104,6 +131,7 @@ def test_scribe_inscribes_split_sites_and_exact_ownership(
 def test_scribe_reconcile_plan_is_effect_free_and_matches_execution(
     scribe: ScribeService,
     output_dir: Path,
+    systemd_dir: Path,
 ) -> None:
     """Bind preview classifies the same desired files without creating them."""
     initial = scribe.plan_reconcile_all([_container()], plain_units={})
@@ -116,6 +144,24 @@ def test_scribe_reconcile_plan_is_effect_free_and_matches_execution(
     settled = scribe.plan_reconcile_all([_container()], plain_units={})
     assert not settled.mutates
     assert {change.kind for change in settled.changes} == {"preserve"}
+    source = output_dir / "lychd-hermes.container"
+    authority = output_dir / ".lychd-owned.json"
+    before = {
+        path: (path.stat().st_ino, path.stat().st_mtime_ns) for path in (output_dir, systemd_dir, source, authority)
+    }
+
+    committed_generation = scribe.reconcile_all(
+        [_container()],
+        plain_units={},
+        expected_generation=settled.observed_generation,
+        expected_desired_generation=settled.desired_generation,
+    )
+
+    after = {
+        path: (path.stat().st_ino, path.stat().st_mtime_ns) for path in (output_dir, systemd_dir, source, authority)
+    }
+    assert after == before
+    assert committed_generation == settled.observed_generation
 
     changed = scribe.plan_reconcile_all([_container(description="new")], plain_units={})
     assert any(change.kind == "update" and change.path.name == "lychd-hermes.container" for change in changed.changes)
@@ -142,6 +188,160 @@ def test_reconcile_plan_generation_distinguishes_same_disposition_content_drift(
     assert first.changes == second.changes
     assert first.observed_generation != second.observed_generation
     assert first != second
+
+
+def test_reconcile_all_rejects_generation_drift_at_commit(
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """The approved observation remains a compare-and-swap precondition."""
+    filename = "lychd-reactor.service"
+    target = systemd_dir / filename
+    scribe.reconcile_all([], plain_units={filename: "old\n"})
+    approved = scribe.plan_reconcile_all([], plain_units={filename: "desired\n"})
+    target.write_text("operator drift\n", encoding="utf-8")
+
+    with pytest.raises(ScribeGenerationError, match="changed after planning"):
+        scribe.reconcile_all(
+            [],
+            plain_units={filename: "desired\n"},
+            expected_generation=approved.observed_generation,
+        )
+
+    assert target.read_text(encoding="utf-8") == "operator drift\n"
+
+
+def test_reconcile_all_rejects_unapproved_desired_bytes_at_commit(
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """The CAS binds both observed state and the exact approved desired bytes."""
+    filename = "lychd-reactor.service"
+    approved = scribe.plan_reconcile_all([], plain_units={filename: "approved\n"})
+
+    with pytest.raises(ScribeGenerationError, match="Desired binding bytes changed"):
+        scribe.reconcile_all(
+            [],
+            plain_units={filename: "different\n"},
+            expected_generation=approved.observed_generation,
+            expected_desired_generation=approved.desired_generation,
+        )
+
+    assert not (systemd_dir / filename).exists()
+
+
+def test_reconcile_all_never_adopts_target_created_after_final_cas(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Atomic no-overwrite installation preserves a last-moment creator."""
+    scribe.reconcile_all([], plain_units={})
+    filename = "lychd-reactor.service"
+    target = systemd_dir / filename
+    approved = scribe.plan_reconcile_all([], plain_units={filename: "desired\n"})
+    old_ownership = (output_dir / ".lychd-owned.json").read_bytes()
+    raced = False
+
+    def create_target_before_install(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal raced
+        if destination_name == target.name and not raced:
+            raced = True
+            target.write_text("concurrent creator\n", encoding="utf-8")
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_noreplace_at",
+        create_target_before_install,
+    )
+
+    with pytest.raises(ScribeGenerationError, match="preserved it"):
+        scribe.reconcile_all(
+            [],
+            plain_units={filename: "desired\n"},
+            expected_generation=approved.observed_generation,
+            expected_desired_generation=approved.desired_generation,
+        )
+
+    assert target.read_text(encoding="utf-8") == "concurrent creator\n"
+    assert (output_dir / ".lychd-owned.json").read_bytes() == old_ownership
+
+
+def test_reconcile_all_rejects_owned_edit_after_final_cas_without_stale_restore(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """A per-path precondition protects edits made after backup preparation."""
+    old_target = QuadletTarget(name="logic", description="old target")
+    scribe.reconcile_all(
+        [_container(description="old container"), old_target],
+        plain_units={},
+    )
+    quadlet = output_dir / "lychd-hermes.container"
+    target = systemd_dir / "lychd-coven-logic.target"
+    old_quadlet = quadlet.read_bytes()
+    old_ownership = (output_dir / ".lychd-owned.json").read_bytes()
+    approved = scribe.plan_reconcile_all(
+        [
+            _container(description="new container"),
+            QuadletTarget(name="logic", description="new target"),
+        ],
+        plain_units={},
+    )
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - inject race boundary
+    real_require = getattr(transaction, "_require_generation")  # noqa: B009
+    checks = 0
+
+    def edit_after_generation_check(
+        write_set: BindingWriteSet,
+        *,
+        expected: str | None,
+        expected_desired: str | None,
+    ) -> None:
+        nonlocal checks
+        checks += 1
+        real_require(
+            write_set,
+            expected=expected,
+            expected_desired=expected_desired,
+        )
+        if checks == 2:
+            target.write_text("concurrent operator edit", encoding="utf-8")
+
+    monkeypatch.setattr(transaction, "_require_generation", edit_after_generation_check)
+
+    with pytest.raises(
+        ScribeTransactionError,
+        match="exact mutations were rolled back",
+    ) as failure:
+        scribe.reconcile_all(
+            [
+                _container(description="new container"),
+                QuadletTarget(name="logic", description="new target"),
+            ],
+            plain_units={},
+            expected_generation=approved.observed_generation,
+            expected_desired_generation=approved.desired_generation,
+        )
+
+    assert failure.value.state is ScribeTransactionState.ROLLED_BACK
+    assert quadlet.read_bytes() == old_quadlet
+    assert target.read_text(encoding="utf-8") == "concurrent operator edit"
+    assert (output_dir / ".lychd-owned.json").read_bytes() == old_ownership
 
 
 def test_scribe_preserves_every_unowned_file_even_with_managed_suffix(
@@ -242,7 +442,7 @@ def test_scribe_rejects_authority_manifest_owned_by_another_uid(
 ) -> None:
     scribe.generate_all([])
     actual_uid = os.getuid()
-    monkeypatch.setattr("lychd.system.services.scribe.os.getuid", lambda: actual_uid + 1)
+    monkeypatch.setattr("lychd.system.services.scribe.authority.os.getuid", lambda: actual_uid + 1)
 
     with pytest.raises(ScribeOwnershipError, match="must be owned by uid"):
         scribe.generate_all([])
@@ -287,25 +487,99 @@ def test_scribe_rolls_back_both_binding_sites_when_second_site_fails(
     systemd_dir: Path,
 ) -> None:
     target = QuadletTarget(name="logic", description="old target")
-    scribe.generate_all([_container(description="old container"), target])
+    pod = QuadletPod(pod_name="lychd")
+    scribe.generate_all([pod, _container(description="old container"), target])
     old_quadlet = (output_dir / "lychd-hermes.container").read_bytes()
     old_target = (systemd_dir / "lychd-coven-logic.target").read_bytes()
     old_ownership = (output_dir / ".lychd-owned.json").read_bytes()
-    real_replace = os.replace
+    preserved = output_dir / "lychd.pod"
+    preserved_identity = (preserved.stat().st_ino, preserved.stat().st_mtime_ns)
     failed = False
 
-    def fail_second_site_once(source: str | Path, destination: str | Path) -> None:
+    def fail_second_site_once(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
         nonlocal failed
-        destination_path = Path(destination)
-        if destination_path == systemd_dir / "lychd-coven-logic.target" and not failed:
+        if destination_name == "lychd-coven-logic.target" and not failed:
             failed = True
             message = "simulated systemd-site failure"
             raise OSError(message)
-        real_replace(source, destination)
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
 
-    monkeypatch.setattr("lychd.system.services.scribe.os.replace", fail_second_site_once)
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        fail_second_site_once,
+    )
 
-    with pytest.raises(OSError, match="simulated systemd-site failure"):
+    with pytest.raises(ScribeTransactionError, match="simulated systemd-site failure") as failure:
+        scribe.generate_all(
+            [
+                pod,
+                _container(description="new container"),
+                QuadletTarget(name="logic", description="new target"),
+            ]
+        )
+
+    assert failure.value.state is ScribeTransactionState.ROLLED_BACK
+    assert (output_dir / "lychd-hermes.container").read_bytes() == old_quadlet
+    assert (systemd_dir / "lychd-coven-logic.target").read_bytes() == old_target
+    assert (output_dir / ".lychd-owned.json").read_bytes() == old_ownership
+    assert (preserved.stat().st_ino, preserved.stat().st_mtime_ns) == preserved_identity
+
+
+def test_scribe_rollback_refuses_to_clobber_concurrent_edit(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Rollback is a per-path CAS, not authority to overwrite a later writer."""
+    target = QuadletTarget(name="logic", description="old target")
+    scribe.generate_all([_container(description="old container"), target])
+    quadlet = output_dir / "lychd-hermes.container"
+    systemd_target = systemd_dir / "lychd-coven-logic.target"
+    old_target = systemd_target.read_bytes()
+    old_ownership = (output_dir / ".lychd-owned.json").read_bytes()
+    failed = False
+
+    def edit_first_path_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal failed
+        if destination_name == systemd_target.name and not failed:
+            failed = True
+            quadlet.write_text("concurrent operator edit", encoding="utf-8")
+            message = "simulated failure after concurrent edit"
+            raise OSError(message)
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        edit_first_path_then_fail,
+    )
+
+    with pytest.raises(
+        ScribeTransactionError,
+        match="rollback failed",
+    ) as failure:
         scribe.generate_all(
             [
                 _container(description="new container"),
@@ -313,8 +587,9 @@ def test_scribe_rolls_back_both_binding_sites_when_second_site_fails(
             ]
         )
 
-    assert (output_dir / "lychd-hermes.container").read_bytes() == old_quadlet
-    assert (systemd_dir / "lychd-coven-logic.target").read_bytes() == old_target
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert quadlet.read_text(encoding="utf-8") == "concurrent operator edit"
+    assert systemd_target.read_bytes() == old_target
     assert (output_dir / ".lychd-owned.json").read_bytes() == old_ownership
 
 
@@ -330,7 +605,8 @@ def test_scribe_rollback_restores_a_valid_authority_manifest_after_commit_failur
     old_ownership = ownership_path.read_bytes()
     old_quadlet = (output_dir / "lychd-hermes.container").read_bytes()
     old_target = (systemd_dir / "lychd-coven-logic.target").read_bytes()
-    real_fsync = getattr(scribe, "_fsync_directory")  # noqa: B009 - inject private failure boundary
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - inject private failure boundary
+    real_fsync = getattr(transaction, "_fsync_directory")  # noqa: B009 - inject private failure boundary
     calls = 0
 
     def fail_post_manifest_fsync_once(directory: Path) -> None:
@@ -341,18 +617,21 @@ def test_scribe_rollback_restores_a_valid_authority_manifest_after_commit_failur
             raise OSError(message)
         real_fsync(directory)
 
-    monkeypatch.setattr(scribe, "_fsync_directory", fail_post_manifest_fsync_once)
+    monkeypatch.setattr(transaction, "_fsync_directory", fail_post_manifest_fsync_once)
 
-    with pytest.raises(OSError, match="post-manifest fsync failure"):
+    with pytest.raises(ScribeTransactionError, match="post-manifest fsync failure") as failure:
         scribe.generate_all(
             [
                 _container(description="new container"),
                 QuadletTarget(name="logic", description="new target"),
+                QuadletTarget(name="extra", description="new authority member"),
             ]
         )
 
+    assert failure.value.state is ScribeTransactionState.ROLLED_BACK
     assert (output_dir / "lychd-hermes.container").read_bytes() == old_quadlet
     assert (systemd_dir / "lychd-coven-logic.target").read_bytes() == old_target
+    assert not (systemd_dir / "lychd-coven-extra.target").exists()
     assert ownership_path.read_bytes() == old_ownership
     assert ownership_path.stat().st_uid == os.getuid()
     assert ownership_path.stat().st_mode & 0o777 == 0o600
@@ -440,25 +719,39 @@ def test_reconcile_all_rolls_back_generated_and_plain_units_together(
         output_dir / ".lychd-owned.json",
     )
     old_state = {path: path.read_bytes() for path in tracked_paths}
-    real_replace = os.replace
     failed = False
 
-    def fail_plain_unit_once(source: str | Path, destination: str | Path) -> None:
+    def fail_plain_unit_once(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
         nonlocal failed
-        if Path(destination) == systemd_dir / "lychd-reactor.service" and not failed:
+        if destination_name == "lychd-reactor.service" and not failed:
             failed = True
             message = "simulated plain-unit failure"
             raise OSError(message)
-        real_replace(source, destination)
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
 
-    monkeypatch.setattr("lychd.system.services.scribe.os.replace", fail_plain_unit_once)
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        fail_plain_unit_once,
+    )
 
-    with pytest.raises(OSError, match="plain-unit failure"):
+    with pytest.raises(ScribeTransactionError, match="plain-unit failure") as failure:
         scribe.reconcile_all(
             [_container(description="new"), QuadletTarget(name="vision", description="new")],
             plain_units={"lychd-reactor.service": "new reactor"},
         )
 
+    assert failure.value.state is ScribeTransactionState.ROLLED_BACK
     for path, content in old_state.items():
         assert path.read_bytes() == content
     assert not (systemd_dir / "lychd-coven-vision.target").exists()
@@ -555,3 +848,1037 @@ def test_release_owned_binding_authority_requires_absent_sources(
 
     assert (output_dir / ".lychd-owned.json").exists()
     assert (output_dir / "lychd-hermes.container").exists()
+
+
+def test_existing_replace_restores_generation_raced_inside_atomic_exchange(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """A writer in the final exchange gap keeps its bytes and authority generation."""
+    scribe.reconcile_all([_container(description="old")], plain_units={})
+    target = output_dir / "lychd-hermes.container"
+    authority = output_dir / ".lychd-owned.json"
+    old_authority = authority.read_bytes()
+    raced = False
+
+    def race_exchange(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal raced
+        if destination_name == target.name and not raced:
+            raced = True
+            target.write_text("concurrent exchange writer\n", encoding="utf-8")
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        race_exchange,
+    )
+
+    with pytest.raises(ScribeGenerationError, match="restored the concurrent generation"):
+        scribe.reconcile_all([_container(description="new")], plain_units={})
+
+    assert target.read_text(encoding="utf-8") == "concurrent exchange writer\n"
+    assert authority.read_bytes() == old_authority
+
+
+def test_existing_removal_restores_generation_raced_inside_quarantine_move(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """A writer in the final removal gap is moved back rather than deleted."""
+    scribe.reconcile_all([_container(description="old")], plain_units={})
+    target = output_dir / "lychd-hermes.container"
+    authority = output_dir / ".lychd-owned.json"
+    old_authority = authority.read_bytes()
+    raced = False
+
+    def race_removal(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal raced
+        if source_name == target.name and not raced:
+            raced = True
+            target.write_text("concurrent removal writer\n", encoding="utf-8")
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_noreplace_at",
+        race_removal,
+    )
+
+    with pytest.raises(ScribeGenerationError, match="restored the concurrent generation"):
+        scribe.reconcile_all([], plain_units={})
+
+    assert target.read_text(encoding="utf-8") == "concurrent removal writer\n"
+    assert authority.read_bytes() == old_authority
+
+
+def test_rollback_exchange_restores_writer_raced_after_rollback_precheck(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Rollback atomically reverses its own exchange when a writer wins its last gap."""
+    scribe.reconcile_all(
+        [
+            _container(description="old"),
+            QuadletTarget(name="logic", description="old"),
+        ],
+        plain_units={},
+    )
+    quadlet = output_dir / "lychd-hermes.container"
+    systemd_target = systemd_dir / "lychd-coven-logic.target"
+    quadlet_exchanges = 0
+
+    def race_rollback_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal quadlet_exchanges
+        if destination_name == quadlet.name:
+            quadlet_exchanges += 1
+            if quadlet_exchanges == 2:
+                quadlet.write_text("concurrent rollback writer\n", encoding="utf-8")
+        if destination_name == systemd_target.name:
+            message = "force rollback after first site"
+            raise OSError(message)
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        race_rollback_then_fail,
+    )
+
+    with pytest.raises(ScribeTransactionError, match="rollback failed") as failure:
+        scribe.reconcile_all(
+            [
+                _container(description="new"),
+                QuadletTarget(name="logic", description="new"),
+            ],
+            plain_units={},
+        )
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert quadlet.read_text(encoding="utf-8") == "concurrent rollback writer\n"
+    assert tuple(output_dir.glob(".lychd-transaction-*"))
+    assert tuple(systemd_dir.glob(".lychd-transaction-*"))
+
+
+def test_indeterminate_exchange_retains_quarantined_recovery_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """Unclassifiable post-exchange state leaves the old generation recoverable."""
+    scribe.reconcile_all([_container(description="old")], plain_units={})
+    target = output_dir / "lychd-hermes.container"
+    sabotaged = False
+
+    def make_exchange_indeterminate(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal sabotaged
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        if destination_name == target.name and not sabotaged:
+            sabotaged = True
+            target.write_text("unclassified live generation\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.storage.rename_exchange_at",
+        make_exchange_indeterminate,
+    )
+
+    with pytest.raises(ScribeTransactionError, match="Recovery evidence was retained") as failure:
+        scribe.reconcile_all([_container(description="new")], plain_units={})
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    recovery_dirs = tuple(output_dir.glob(".lychd-transaction-*"))
+    assert recovery_dirs
+    assert any(
+        entry.read_bytes().find(b"Description=old") >= 0
+        for directory in recovery_dirs
+        for entry in directory.iterdir()
+        if entry.is_file()
+    )
+
+
+def test_post_exchange_observation_failure_retains_recovery_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """An observation exception after rename cannot trigger evidence cleanup."""
+    scribe.reconcile_all([_container(description="old")], plain_units={})
+    target = output_dir / "lychd-hermes.container"
+
+    real_capture = storage_module.capture_pinned_path_state
+    exchange_completed = False
+
+    def exchange_then_mark(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal exchange_completed
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        if destination_name == target.name:
+            exchange_completed = True
+
+    def fail_post_exchange_capture(path: PinnedPath) -> PathState | None:
+        if exchange_completed and path.display == target:
+            message = "simulated post-exchange observation failure"
+            raise OSError(message)
+        return real_capture(path)
+
+    monkeypatch.setattr(storage_module, "rename_exchange_at", exchange_then_mark)
+    monkeypatch.setattr(
+        storage_module,
+        "capture_pinned_path_state",
+        fail_post_exchange_capture,
+    )
+
+    with pytest.raises(ScribeTransactionError, match="Recovery evidence was retained") as failure:
+        scribe.reconcile_all([_container(description="new")], plain_units={})
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    recovery_dirs = tuple(output_dir.glob(".lychd-transaction-*"))
+    assert recovery_dirs
+    assert any(
+        b"Description=old" in entry.read_bytes()
+        for directory in recovery_dirs
+        for entry in directory.iterdir()
+        if entry.is_file()
+    )
+
+
+def test_transaction_cleanup_preserves_replacement_at_workspace_path(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+) -> None:
+    """Cleanup follows its pinned inode and never recursively deletes a replacement."""
+    real_cleanup = TransactionWorkspace.cleanup
+    replacement_paths: list[Path] = []
+    intercepted = False
+
+    def replace_workspace_before_cleanup(workspace: TransactionWorkspace) -> bool:
+        nonlocal intercepted
+        if not intercepted:
+            intercepted = True
+            relocated = workspace.path.with_name(f"{workspace.path.name}-relocated")
+            workspace.path.rename(relocated)
+            workspace.path.mkdir()
+            (workspace.path / "operator-marker").write_text("preserve me", encoding="utf-8")
+            replacement_paths.append(workspace.path)
+        return real_cleanup(workspace)
+
+    monkeypatch.setattr(TransactionWorkspace, "cleanup", replace_workspace_before_cleanup)
+
+    scribe.reconcile_all([_container()], plain_units={})
+
+    assert replacement_paths
+    assert (replacement_paths[0] / "operator-marker").read_text(encoding="utf-8") == "preserve me"
+
+
+def test_workspace_creation_failure_never_deletes_unattested_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A child-open failure has no identity authority to clean its pathname."""
+    parent = tmp_path / "binding-site"
+    parent.mkdir()
+    real_open = os.open
+    replacement: Path | None = None
+
+    def replace_before_child_open(
+        path: str | bytes | Path,
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        nonlocal replacement
+        if dir_fd is not None and replacement is None:
+            original = parent / os.fsdecode(path)
+            original.rename(original.with_name(f"{original.name}-unattested"))
+            original.mkdir()
+            (original / "operator-marker").write_text("preserve me", encoding="utf-8")
+            replacement = original
+            message = "simulated child descriptor failure"
+            raise OSError(message)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(
+        "lychd.system.services.scribe.workspace.os.open",
+        replace_before_child_open,
+    )
+
+    with pytest.raises(OSError, match="child descriptor failure"):
+        TransactionWorkspace.create(parent)
+
+    assert replacement is not None
+    assert (replacement / "operator-marker").read_text(encoding="utf-8") == "preserve me"
+
+
+def test_clear_does_not_expand_deletion_when_authority_changes_after_inspection(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """The facade's inspected generation remains the transaction's deletion bound."""
+    scribe.reconcile_all([_container()], plain_units={})
+    original = output_dir / "lychd-hermes.container"
+    raced = output_dir / "lychd-raced.container"
+    authority = output_dir / ".lychd-owned.json"
+    authority_port = getattr(scribe, "_authority")  # noqa: B009 - inject authority race
+    real_snapshot = authority_port.snapshot
+    expanded = False
+
+    def expand_authority_before_snapshot() -> tuple[bytes, OwnershipManifest]:
+        nonlocal expanded
+        if not expanded:
+            expanded = True
+            raced.write_text("operator generation\n", encoding="utf-8")
+            authority.write_bytes(
+                authority_port.encode(
+                    OwnershipManifest(
+                        version=1,
+                        quadlet=("lychd-hermes.container", "lychd-raced.container"),
+                    )
+                )
+            )
+            authority.chmod(0o600)
+        return real_snapshot()
+
+    monkeypatch.setattr(
+        authority_port,
+        "snapshot",
+        expand_authority_before_snapshot,
+    )
+
+    with pytest.raises(ScribeGenerationError, match="changed after planning"):
+        scribe.clear_owned_bindings()
+
+    assert original.exists()
+    assert raced.read_text(encoding="utf-8") == "operator generation\n"
+
+
+def test_release_does_not_delete_authority_expanded_after_inspection(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """Receipt deletion is guarded inside the transaction by the inspected generation."""
+    scribe.reconcile_all([], plain_units={})
+    snapshot = scribe.inspect_owned_bindings()
+    raced = output_dir / "lychd-raced.container"
+    authority = output_dir / ".lychd-owned.json"
+    authority_port = getattr(scribe, "_authority")  # noqa: B009 - inject authority race
+    real_snapshot = authority_port.snapshot
+    expanded = False
+
+    def expand_authority_before_snapshot() -> tuple[bytes, OwnershipManifest]:
+        nonlocal expanded
+        if not expanded:
+            expanded = True
+            raced.write_text("operator generation\n", encoding="utf-8")
+            authority.write_bytes(
+                authority_port.encode(
+                    OwnershipManifest(
+                        version=1,
+                        quadlet=("lychd-raced.container",),
+                    )
+                )
+            )
+            authority.chmod(0o600)
+        return real_snapshot()
+
+    monkeypatch.setattr(
+        authority_port,
+        "snapshot",
+        expand_authority_before_snapshot,
+    )
+
+    with pytest.raises(ScribeGenerationError, match="changed after planning"):
+        scribe.release_owned_binding_authority(
+            expected_generation=snapshot.generation or "",
+        )
+
+    assert authority.exists()
+    assert raced.read_text(encoding="utf-8") == "operator generation\n"
+
+
+def test_release_removes_empty_authority_inside_binding_transaction(
+    scribe: ScribeService,
+    output_dir: Path,
+) -> None:
+    """The empty receipt is a quarantined transaction mutation, not facade cleanup."""
+    scribe.reconcile_all([], plain_units={})
+    snapshot = scribe.inspect_owned_bindings()
+
+    scribe.release_owned_binding_authority(
+        expected_generation=snapshot.generation or "",
+    )
+
+    assert not (output_dir / ".lychd-owned.json").exists()
+
+
+def test_stale_planner_write_set_cannot_reacquire_relinquished_authority(
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Every write set CASes the full receipt generation read by its planner."""
+    planner = getattr(scribe, "_planner")  # noqa: B009 - verify internal CAS boundary
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - verify internal CAS boundary
+    stale = planner.plain_unit(
+        "lychd-stale.service",
+        {"lychd-stale.service": b"stale\n"},
+    )
+    scribe.write_plain_unit("lychd-current.service", "current\n")
+
+    with pytest.raises(ScribeGenerationError, match="authority changed after planning"):
+        transaction.commit(stale)
+
+    assert (systemd_dir / "lychd-current.service").read_text(encoding="utf-8") == "current\n"
+    assert not (systemd_dir / "lychd-stale.service").exists()
+    assert _ownership(output_dir)["systemd"] == ["lychd-current.service"]
+
+
+def test_clear_accepts_recorded_missing_systemd_source_without_recreating_site(
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """The full receipt guard includes missing sources omitted from the mutation plan."""
+    target = systemd_dir / "lychd-coven-logic.target"
+    scribe.reconcile_all(
+        [QuadletTarget(name="logic", description="logic")],
+        plain_units={},
+    )
+    target.unlink()
+    systemd_dir.rmdir()
+    snapshot = scribe.inspect_owned_bindings()
+
+    scribe.clear_owned_bindings(expected_generation=snapshot.generation)
+
+    assert not systemd_dir.exists()
+    assert _ownership(output_dir)["systemd"] == ["lychd-coven-logic.target"]
+
+
+def test_release_accepts_recorded_missing_systemd_source_without_recreating_site(
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Authority retirement compares the same full missing-source observation."""
+    target = systemd_dir / "lychd-coven-logic.target"
+    scribe.reconcile_all(
+        [QuadletTarget(name="logic", description="logic")],
+        plain_units={},
+    )
+    target.unlink()
+    systemd_dir.rmdir()
+    snapshot = scribe.inspect_owned_bindings()
+
+    scribe.release_owned_binding_authority(
+        expected_generation=snapshot.generation or "",
+    )
+
+    assert not systemd_dir.exists()
+    assert not (output_dir / ".lychd-owned.json").exists()
+
+
+def test_release_restores_authority_when_missing_systemd_source_reappears(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """A source created in the final release gap remains owned and untouched."""
+    target = systemd_dir / "lychd-coven-logic.target"
+    scribe.reconcile_all(
+        [QuadletTarget(name="logic", description="logic")],
+        plain_units={},
+    )
+    target.unlink()
+    systemd_dir.rmdir()
+    snapshot = scribe.inspect_owned_bindings()
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - exact release race
+    authority = getattr(transaction, "_authority")  # noqa: B009 - exact release race
+    real_observed_generation = authority.observed_generation
+
+    def observe_then_recreate_source(*args: object, **kwargs: object) -> str:
+        generation = real_observed_generation(*args, **kwargs)
+        systemd_dir.mkdir()
+        target.write_text("concurrent source\n", encoding="utf-8")
+        return generation
+
+    monkeypatch.setattr(
+        authority,
+        "observed_generation",
+        observe_then_recreate_source,
+    )
+
+    with pytest.raises(
+        ScribeTransactionError,
+        match="exact mutations were rolled back",
+    ) as failure:
+        scribe.release_owned_binding_authority(
+            expected_generation=snapshot.generation or "",
+        )
+
+    assert failure.value.state is ScribeTransactionState.ROLLED_BACK
+    assert target.read_text(encoding="utf-8") == "concurrent source\n"
+    assert _ownership(output_dir)["systemd"] == ["lychd-coven-logic.target"]
+
+
+def test_staged_bytes_changed_after_prepare_are_never_installed(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """Commit re-attests staged identity and content through the pinned workspace."""
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - adversarial boundary
+    storage = getattr(transaction, "_storage")  # noqa: B009 - adversarial boundary
+    real_replace = storage.replace
+    target = systemd_dir / "lychd-reactor.service"
+    sabotaged = False
+
+    def replace_changed_staging(
+        staged: AttestedPath,
+        pinned_target: PinnedPath,
+        **kwargs: object,
+    ) -> AtomicOutcome:
+        nonlocal sabotaged
+        if pinned_target.display == target and not sabotaged:
+            sabotaged = True
+            staged_path = staged.path
+            descriptor = os.open(
+                staged_path.name,
+                os.O_WRONLY | os.O_TRUNC,
+                dir_fd=staged_path.directory_fd,
+            )
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(b"unapproved\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        return real_replace(staged, pinned_target, **kwargs)
+
+    monkeypatch.setattr(storage, "replace", replace_changed_staging)
+
+    with pytest.raises(ScribeGenerationError, match="replacement changed"):
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert not target.exists()
+
+
+def test_planner_generation_never_follows_source_swapped_to_symlink(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    systemd_dir: Path,
+    tmp_path: Path,
+) -> None:
+    """Receipt generation fails closed when a source changes during no-follow open."""
+    target = scribe.write_plain_unit("lychd-reactor.service", "owned\n")
+    outside = tmp_path / "outside.service"
+    outside.write_text("operator\n", encoding="utf-8")
+    real_open = storage_module.os.open
+    swapped = False
+
+    def swap_before_source_open(
+        path: str | bytes | Path,
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        nonlocal swapped
+        if dir_fd is not None and os.fsdecode(path) == target.name and not swapped:
+            swapped = True
+            target.unlink()
+            target.symlink_to(outside)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(storage_module.os, "open", swap_before_source_open)
+
+    with pytest.raises(ScribeOwnershipError, match="safely observe"):
+        scribe.plan_reconcile_all([], plain_units={})
+
+    assert target.is_symlink()
+    assert outside.read_text(encoding="utf-8") == "operator\n"
+    assert systemd_dir.exists()
+
+
+def test_planner_generation_never_blocks_on_source_swapped_to_fifo(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+) -> None:
+    """A regular-to-FIFO race is opened nonblocking and fails observation."""
+    target = scribe.write_plain_unit("lychd-reactor.service", "owned\n")
+    real_open = storage_module.os.open
+    swapped = False
+
+    def swap_before_source_open(
+        path: str | bytes | Path,
+        flags: int,
+        mode: int = 0o777,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        nonlocal swapped
+        if dir_fd is not None and os.fsdecode(path) == target.name and not swapped:
+            swapped = True
+            assert flags & os.O_NONBLOCK
+            target.unlink()
+            os.mkfifo(target)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(storage_module.os, "open", swap_before_source_open)
+
+    with pytest.raises(ScribeOwnershipError, match="safely observe"):
+        scribe.plan_reconcile_all([], plain_units={})
+
+    assert target.is_fifo()
+
+
+def test_workspace_namespace_substitution_cannot_install_foreign_staging(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """A replacement at the public workspace name is never a rename operand."""
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - adversarial boundary
+    storage = getattr(transaction, "_storage")  # noqa: B009 - adversarial boundary
+    real_replace = storage.replace
+    target = systemd_dir / "lychd-reactor.service"
+    replacement_workspace: Path | None = None
+
+    def substitute_workspace(
+        staged: AttestedPath,
+        pinned_target: PinnedPath,
+        **kwargs: object,
+    ) -> AtomicOutcome:
+        nonlocal replacement_workspace
+        if pinned_target.display == target and replacement_workspace is None:
+            staged_path = staged.path
+            public_workspace = staged_path.display.parent
+            relocated = public_workspace.with_name(f"{public_workspace.name}-relocated")
+            public_workspace.rename(relocated)
+            public_workspace.mkdir()
+            (public_workspace / staged_path.name).write_bytes(b"foreign staged bytes\n")
+            replacement_workspace = public_workspace
+        return real_replace(staged, pinned_target, **kwargs)
+
+    monkeypatch.setattr(storage, "replace", substitute_workspace)
+
+    with pytest.raises(ScribeTransactionError, match="directory identity changed") as failure:
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert not target.exists()
+    assert replacement_workspace is not None
+    assert any(entry.read_bytes() == b"foreign staged bytes\n" for entry in replacement_workspace.iterdir())
+
+
+def test_binding_site_namespace_substitution_never_mutates_replacement_site(
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    systemd_dir: Path,
+) -> None:
+    """Live transitions stay bound to the exact site descriptor opened at prepare."""
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - adversarial boundary
+    storage = getattr(transaction, "_storage")  # noqa: B009 - adversarial boundary
+    real_replace = storage.replace
+    target = systemd_dir / "lychd-reactor.service"
+    relocated_site = systemd_dir.with_name("systemd-relocated")
+    substituted = False
+
+    def substitute_site(
+        staged: AttestedPath,
+        pinned_target: PinnedPath,
+        **kwargs: object,
+    ) -> AtomicOutcome:
+        nonlocal substituted
+        if pinned_target.display == target and not substituted:
+            substituted = True
+            systemd_dir.rename(relocated_site)
+            systemd_dir.mkdir()
+            target.write_text("operator replacement\n", encoding="utf-8")
+        return real_replace(staged, pinned_target, **kwargs)
+
+    monkeypatch.setattr(storage, "replace", substitute_site)
+
+    with pytest.raises(ScribeTransactionError, match="directory identity changed") as failure:
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert target.read_text(encoding="utf-8") == "operator replacement\n"
+    assert not (relocated_site / target.name).exists()
+
+
+def test_expected_binding_site_identity_closes_foundation_to_commit_gap(
+    templates_dir: Path,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Scribe rejects a site replaced after foundation approval but before prepare."""
+    output_metadata = output_dir.stat()
+    systemd_metadata = systemd_dir.stat()
+    expected_sites = AttestedBindingSites(
+        quadlet=AttestedBindingSite(
+            path=output_dir,
+            device=output_metadata.st_dev,
+            inode=output_metadata.st_ino,
+        ),
+        systemd_user=AttestedBindingSite(
+            path=systemd_dir,
+            device=systemd_metadata.st_dev,
+            inode=systemd_metadata.st_ino,
+        ),
+    )
+    scribe = ScribeService(
+        templates_dir=templates_dir,
+        expected_sites=expected_sites,
+    )
+    relocated = systemd_dir.with_name("approved-systemd-site")
+    systemd_dir.rename(relocated)
+    systemd_dir.mkdir()
+    marker = systemd_dir / "operator-marker"
+    marker.write_text("preserve\n", encoding="utf-8")
+
+    with pytest.raises(ScribeGenerationError, match="foundation approval"):
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert marker.read_text(encoding="utf-8") == "preserve\n"
+    assert not (systemd_dir / "lychd-reactor.service").exists()
+    assert not tuple(output_dir.glob(".lychd-transaction-*"))
+    assert not tuple(systemd_dir.glob(".lychd-transaction-*"))
+
+
+def test_expected_binding_site_identity_is_checked_before_noop_return(
+    templates_dir: Path,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """A content-identical replacement site cannot pass as an approved no-op."""
+    output_metadata = output_dir.stat()
+    systemd_metadata = systemd_dir.stat()
+    scribe = ScribeService(
+        templates_dir=templates_dir,
+        expected_sites=AttestedBindingSites(
+            quadlet=AttestedBindingSite(
+                path=output_dir,
+                device=output_metadata.st_dev,
+                inode=output_metadata.st_ino,
+            ),
+            systemd_user=AttestedBindingSite(
+                path=systemd_dir,
+                device=systemd_metadata.st_dev,
+                inode=systemd_metadata.st_ino,
+            ),
+        ),
+    )
+    target = scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+    relocated = systemd_dir.with_name("approved-systemd-noop-site")
+    systemd_dir.rename(relocated)
+    systemd_dir.mkdir()
+    target.write_text("approved\n", encoding="utf-8")
+
+    with pytest.raises(ScribeGenerationError, match="foundation approval"):
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert target.read_text(encoding="utf-8") == "approved\n"
+    assert (relocated / target.name).read_text(encoding="utf-8") == "approved\n"
+    assert not tuple(output_dir.glob(".lychd-transaction-*"))
+    assert not tuple(systemd_dir.glob(".lychd-transaction-*"))
+
+
+def test_final_expected_site_drift_after_mutation_is_indeterminate(
+    monkeypatch: pytest.MonkeyPatch,
+    templates_dir: Path,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """A post-mutation namespace substitution can never claim clean rollback."""
+    output_metadata = output_dir.stat()
+    systemd_metadata = systemd_dir.stat()
+    scribe = ScribeService(
+        templates_dir=templates_dir,
+        expected_sites=AttestedBindingSites(
+            quadlet=AttestedBindingSite(
+                path=output_dir,
+                device=output_metadata.st_dev,
+                inode=output_metadata.st_ino,
+            ),
+            systemd_user=AttestedBindingSite(
+                path=systemd_dir,
+                device=systemd_metadata.st_dev,
+                inode=systemd_metadata.st_ino,
+            ),
+        ),
+    )
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - exact final-check race
+    real_require = getattr(transaction, "_require_expected_sites_now")  # noqa: B009
+    relocated = systemd_dir.with_name("systemd-final-check-relocated")
+    marker = systemd_dir / "operator-marker"
+    checks = 0
+
+    def substitute_before_final_check(*, indeterminate: bool = False) -> None:
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            systemd_dir.rename(relocated)
+            systemd_dir.mkdir()
+            marker.write_text("preserve\n", encoding="utf-8")
+        real_require(indeterminate=indeterminate)
+
+    monkeypatch.setattr(
+        transaction,
+        "_require_expected_sites_now",
+        substitute_before_final_check,
+    )
+
+    with pytest.raises(
+        ScribeTransactionError,
+        match="Recovery evidence was retained",
+    ) as failure:
+        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert marker.read_text(encoding="utf-8") == "preserve\n"
+    assert not (relocated / "lychd-reactor.service").exists()
+    assert tuple(relocated.glob(".lychd-transaction-*"))
+
+
+@pytest.mark.parametrize("interruption", [KeyboardInterrupt, SystemExit])
+def test_rollback_interruption_retains_every_recovery_workspace(
+    interruption: type[BaseException],
+    monkeypatch: pytest.MonkeyPatch,
+    scribe: ScribeService,
+    output_dir: Path,
+    systemd_dir: Path,
+) -> None:
+    """Rollback interruption is typed indeterminate and cannot trigger cleanup."""
+    scribe.reconcile_all(
+        [
+            _container(description="old"),
+            QuadletTarget(name="logic", description="old"),
+        ],
+        plain_units={},
+    )
+    transaction = getattr(scribe, "_transaction")  # noqa: B009 - adversarial boundary
+    storage = getattr(transaction, "_storage")  # noqa: B009 - adversarial boundary
+    systemd_target = systemd_dir / "lychd-coven-logic.target"
+
+    def fail_second_site(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        if destination_name == systemd_target.name:
+            message = "force rollback"
+            raise OSError(message)
+        rename_exchange_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    def interrupt_rollback(_mutation: object) -> None:
+        raise interruption()
+
+    monkeypatch.setattr(storage_module, "rename_exchange_at", fail_second_site)
+    monkeypatch.setattr(storage, "restore", interrupt_rollback)
+
+    with pytest.raises(ScribeTransactionError, match="rollback failed or was interrupted") as failure:
+        scribe.reconcile_all(
+            [
+                _container(description="new"),
+                QuadletTarget(name="logic", description="new"),
+            ],
+            plain_units={},
+        )
+
+    assert failure.value.state is ScribeTransactionState.INDETERMINATE
+    assert isinstance(failure.value.__cause__, interruption)
+    assert isinstance(failure.value.rollback_error, interruption)
+    assert isinstance(failure.value.forward_error, OSError)
+    output_recovery = tuple(output_dir.glob(".lychd-transaction-*"))
+    systemd_recovery = tuple(systemd_dir.glob(".lychd-transaction-*"))
+    assert output_recovery
+    assert systemd_recovery
+    assert any(
+        b"Description=old" in entry.read_bytes()
+        for directory in output_recovery
+        for entry in directory.iterdir()
+        if entry.is_file()
+    )
+
+
+def _cleanup_transaction(
+    *,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    first_cleanup: BaseException,
+    fail_forward: bool,
+) -> tuple[BindingTransaction, MagicMock, MagicMock]:
+    authority = MagicMock()
+    authority.observed_generation.return_value = "committed-generation"
+    transaction = BindingTransaction(authority)
+    first = MagicMock(path=tmp_path / "first-workspace")
+    first.cleanup.side_effect = first_cleanup
+    second = MagicMock(path=tmp_path / "second-workspace")
+    second.cleanup.return_value = True
+    prepared = SimpleNamespace(
+        workspaces={tmp_path / "first": first, tmp_path / "second": second},
+        sites={},
+        authority=None,
+    )
+
+    def prepared_commit(*_args: object, **_kwargs: object) -> object:
+        return prepared
+
+    def mutates(*_args: object, **_kwargs: object) -> bool:
+        return True
+
+    def no_op(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(transaction, "_prepare_commit", prepared_commit)
+    monkeypatch.setattr(transaction, "_mutates", mutates)
+    monkeypatch.setattr(transaction, "_require_generation", no_op)
+    monkeypatch.setattr(transaction, "_require_expected_sites_now", no_op)
+    monkeypatch.setattr(transaction, "_require_namespaces", no_op)
+    monkeypatch.setattr(transaction, "_apply_authority", no_op)
+    monkeypatch.setattr(transaction, "_rollback", no_op)
+
+    if fail_forward:
+
+        def fail_after_proven_mutation(
+            _plans: object,
+            *,
+            prepared: object,
+            progress: _MutableProgress,
+        ) -> None:
+            del prepared
+            progress.mutations.append(cast("AtomicMutation", object()))
+            message = "forward failure"
+            raise OSError(message)
+
+        monkeypatch.setattr(transaction, "_apply_sites", fail_after_proven_mutation)
+    else:
+        monkeypatch.setattr(transaction, "_apply_sites", no_op)
+    return transaction, first, second
+
+
+def _empty_write_set() -> BindingWriteSet:
+    ownership = OwnershipManifest(version=1)
+    return BindingWriteSet(
+        plans=(),
+        ownership=ownership,
+        base=BindingBase(
+            authority=b"",
+            ownership=ownership,
+            sources=(),
+            generation="base-generation",
+        ),
+    )
+
+
+def test_cleanup_terminal_after_commit_keeps_native_signal_and_committed_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    terminal = KeyboardInterrupt()
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=terminal,
+        fail_forward=False,
+    )
+
+    with pytest.raises(KeyboardInterrupt) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value is terminal
+    outcome = raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.state is ScribeTransactionState.COMMITTED
+    assert outcome.generation == "committed-generation"
+    assert terminal in outcome.cleanup_errors
+    first.cleanup.assert_called_once()
+    second.cleanup.assert_called_once()
+
+
+def test_cleanup_terminal_after_exact_rollback_settles_peers_and_attaches_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    terminal = SystemExit(71)
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=terminal,
+        fail_forward=True,
+    )
+
+    with pytest.raises(SystemExit) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value is terminal
+    outcome = raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.state is ScribeTransactionState.ROLLED_BACK
+    assert isinstance(outcome.forward_error, OSError)
+    assert terminal in outcome.cleanup_errors
+    first.cleanup.assert_called_once()
+    second.cleanup.assert_called_once()

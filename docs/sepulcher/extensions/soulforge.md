@@ -11,22 +11,33 @@ _Status: doctrine ahead of code — the built-in `training` package is where thi
 
 **The Soulforge** is the Training Extension of the LychD system. It is the physical implementation of **[ADR 33 (Training)](../../adr/33-training.md)**—a specialized module that transmutes the dynamic, fleeting memories of the **[Phylactery](../phylactery/index.md)** into model weights.
 
-While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from runtime memory and Mirror-bound identity gravity into adapter-level substrate bias. In the cognitive map of the **[Lich](../lich.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
+While the **Archive (Memory)** allows the Lich to consult the past, the Soulforge compresses stabilized patterns into instinct. It is the mechanism of **Soul-Forging**: the transition from runtime memory and Mirror-bound identity gravity into adapter-level substrate bias. In the cognitive map of the **[Lich](../lich/index.md)**, the Soulforge is the engineering instantiation of **Nidrā** (*ni-drā*: going-down-into) — the tending state where grooves are deepened and sorted during cognitive rest.
 
-Soulforge begins only after the Ouroboros has already done its first work. Shadow generated motion, Riddle measured it, Mirror bound it to a semantic vertex, and HitL or policy marked it eligible for durable memory. The Forge does not train on motion; it trains on stabilized return. Its task is to precipitate repeated Smṛti into reusable instinct, adapters, and eventually agentic capabilities that can hold a class of work without paying the full instruction tax every time.
+Soulforge begins only after the Ouroboros has already done its first work. Shadow generated Flux,
+Riddle measured it, Mirror bound it to a semantic vertex, and HitL or policy marked its consequence
+eligible to become a Seed. The Forge does not train on raw movement; it trains on stabilized,
+verified return. Its task is to precipitate repeatedly successful Seeds into reusable instinct,
+adapters, and eventually agentic capabilities that can hold a class of work without paying the full
+instruction tax every time.
 
 Karma injection, Mirror condensation, and Soulforging are different layers of adaptation:
 
 - **Context:** injects retrieved Karma as runtime bias for a single reasoning event.
 - **Mirror:** reflects relevant Karma around Sigils and roles until loose recall becomes identity-gravity.
-- **Soulforge:** compresses repeated, verified patterns into adapter weights as standing instinct.
+- **Soulforge:** compresses repeated, evidence-bearing and governed patterns into adapter weights
+  as standing instinct.
 
 ## I. The Harvesting of Karma
 
-Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on raw noise; it trains on **Karma**—the crystallized residue of verified successes.
+Before the forge can be ignited, the substrate must be prepared. The Soulforge does not train on
+raw noise; it trains on **Karma**—the attributed residue of measured outcomes and governed
+selection.
 
 - **The Extraction (The Crucible):** The Soulforge enqueues a **[Ghoul](../vessel/ghouls.md)** to harvest successful interaction traces from the Phylactery and the **[Oculus](./oculus.md)**. This extraction process acts as a **Crucible**, taking human feedback from **[HitL](../../adr/25-hitl.md)** and identity congruence from **Mirror**, then preparing stabilized patterns for permanent substrate bias.
-- **The DeepFabric Loom:** Raw Karma is fed into the `deepfabric` engine. DeepFabric acts as the loom, weaving the "White Truths" into a perfectly structured training manifest (JSONL) stored in the **[Lab](../crypt.md)**. It applies strict constraints to ensure that only syntactically perfect, stabilized patterns are sent to the hammer of Unsloth.
+- **The DeepFabric Loom:** Raw Karma is fed into the `deepfabric` engine. DeepFabric acts as the
+  loom, weaving eligible, provenance-bearing examples into a structured training manifest (JSONL)
+  stored in the **[Lab](../crypt.md)**. Its constraints guarantee the declared syntax and schema,
+  not the universal truth of every example.
 
 ## II. The Loom of DeepFabric
 

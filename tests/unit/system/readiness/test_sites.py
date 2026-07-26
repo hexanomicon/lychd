@@ -25,7 +25,8 @@ def test_absent_sites_are_safe_plans_then_verified_after_creation(tmp_path: Path
     prepared = probe.inspect()
 
     assert {item.state for item in planned} == {ReadinessState.PLANNED}
-    assert all(item.detail == "will prepare" for item in planned)
+    assert all(item.detail == "will create shared directory" for item in planned)
+    assert all(item.repairable_by_init for item in planned)
     assert {item.state for item in prepared} == {ReadinessState.VERIFIED}
     assert all(item.detail == "prepared" for item in prepared)
 
@@ -51,3 +52,28 @@ def test_non_directory_binding_site_is_blocked(tmp_path: Path) -> None:
 
     assert item.state is ReadinessState.BLOCKED
     assert item.detail == "target exists but is not a directory"
+
+
+def test_world_writable_binding_site_is_blocked(tmp_path: Path) -> None:
+    target = tmp_path / "systemd"
+    target.mkdir()
+    target.chmod(0o777)
+
+    item = _probe(target).inspect()[0]
+
+    assert item.state is ReadinessState.BLOCKED
+    assert "permits another principal" in item.detail
+
+
+def test_unreadable_binding_site_is_blocked(tmp_path: Path) -> None:
+    target = tmp_path / "systemd"
+    target.mkdir()
+    target.chmod(0o300)
+
+    try:
+        item = _probe(target).inspect()[0]
+    finally:
+        target.chmod(0o700)
+
+    assert item.state is ReadinessState.BLOCKED
+    assert "not readable, writable, and searchable" in item.detail

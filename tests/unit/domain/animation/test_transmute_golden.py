@@ -170,6 +170,7 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
     from lychd.extensions.builtin.observability.phoenix.contributor import PhoenixQuadletContributor
 
     transmuter = Transmuter(
+        settings=get_settings(),
         runtime_planner=RuntimeAdapterRegistry(),
         contributors=[PhoenixQuadletContributor()],
     )

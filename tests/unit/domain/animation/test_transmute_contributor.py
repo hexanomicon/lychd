@@ -7,7 +7,11 @@ import inspect
 import pytest
 
 from lychd.config.runes.registry import RuneRegistry
-from lychd.domain.animation.schemas import GenericSoulstoneConfig
+from lychd.config.settings.root import get_settings
+from lychd.domain.animation.schemas import (
+    ConcurrencyIntent,
+    GenericSoulstoneConfig,
+)
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import (
     QuadletContribution,
@@ -16,11 +20,14 @@ from lychd.domain.animation.transmute import (
     TransmutationStore,
     Transmuter,
 )
+from lychd.system.constants import CONTAINER_LYCHD_PORT
 from lychd.system.schemas import QuadletContainer, QuadletPod
 
 
 def _transmuter(*contributors: QuadletContributor) -> Transmuter:
-    return Transmuter(runtime_planner=RuntimeAdapterRegistry(), contributors=list(contributors))
+    return Transmuter(
+        settings=get_settings(), runtime_planner=RuntimeAdapterRegistry(), contributors=list(contributors)
+    )
 
 
 def test_transmute_all_has_no_extension_runes_param() -> None:
@@ -50,7 +57,7 @@ class _PortOnlyContributor:
 
     def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
         _ = ctx
-        return QuadletContribution(pod_ports=["9999:9999"])
+        return QuadletContribution(pod_ports=("9999:9999",))
 
 
 class _ContainerContributor:
@@ -59,7 +66,7 @@ class _ContainerContributor:
     def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
         _ = ctx
         return QuadletContribution(
-            containers=[QuadletContainer(description="x", image="img", container_name="lychd-extra", pod="lychd.pod")]
+            containers=(QuadletContainer(description="x", image="img", container_name="lychd-extra", pod="lychd.pod"),)
         )
 
 
@@ -69,7 +76,7 @@ class _UnsafePortContributor:
 
     def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
         _ = ctx
-        return QuadletContribution(pod_ports=[self._mapping])
+        return QuadletContribution(pod_ports=(self._mapping,))
 
 
 def test_contribution_ports_append_after_core() -> None:
@@ -118,7 +125,82 @@ def test_contribution_is_frozen_no_mutation_surface() -> None:
     """§8.4: QuadletContribution is a frozen dataclass (structural identity guarantee)."""
     contribution = QuadletContribution()
     with pytest.raises((AttributeError, TypeError)):
-        contribution.pod_ports = ["1:1"]  # type: ignore[misc]
+        contribution.pod_ports = ("1:1",)  # type: ignore[misc]
+
+
+def test_contributors_receive_isolated_deep_snapshots() -> None:
+    """One extension cannot mutate core declarations or a later contributor."""
+    settings = get_settings().model_copy(deep=True)
+    original_port = settings.server.port
+    stone = GenericSoulstoneConfig(
+        name="alpha",
+        image="registry.example/alpha:1",
+        concurrency=ConcurrencyIntent(dedicated=True),
+    )
+    observed: list[tuple[int, bool]] = []
+
+    class Mutator:
+        def contribute(
+            self,
+            ctx: TransmutationContext,
+        ) -> QuadletContribution:
+            ctx.settings.server.port = original_port + 1
+            ctx.soulstones[0].concurrency.dedicated = False
+            return QuadletContribution()
+
+    class Observer:
+        def contribute(
+            self,
+            ctx: TransmutationContext,
+        ) -> QuadletContribution:
+            observed.append(
+                (
+                    ctx.settings.server.port,
+                    ctx.soulstones[0].concurrency.dedicated,
+                )
+            )
+            return QuadletContribution()
+
+    manifests = Transmuter(
+        settings=settings,
+        runtime_planner=RuntimeAdapterRegistry(),
+        contributors=(Mutator(), Observer()),
+    ).transmute_all((stone,), runes=RuneRegistry(()))
+
+    pod = next(manifest for manifest in manifests if isinstance(manifest, QuadletPod))
+    assert observed == [(original_port, True)]
+    assert settings.server.port == original_port
+    assert stone.concurrency.dedicated is True
+    assert f"127.0.0.1:{original_port}:{CONTAINER_LYCHD_PORT}" in pod.publish_ports
+
+
+def test_transmuter_detaches_contributor_owned_payloads() -> None:
+    """A retained extension object cannot mutate the emitted manifest later."""
+    contributed = QuadletContainer(
+        description="approved",
+        image="img",
+        container_name="lychd-extra",
+        pod="lychd.pod",
+    )
+
+    class Contributor:
+        def contribute(
+            self,
+            ctx: TransmutationContext,
+        ) -> QuadletContribution:
+            del ctx
+            return QuadletContribution(containers=(contributed,))
+
+    manifests = _transmuter(Contributor()).transmute_all(())
+    emitted = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-extra"
+    )
+    contributed.env_vars["MUTATED_LATER"] = "yes"
+
+    assert emitted.description == "approved"
+    assert "MUTATED_LATER" not in emitted.env_vars
 
 
 def test_transmutation_store_registration_order() -> None:

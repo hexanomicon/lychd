@@ -61,6 +61,17 @@ definitions serve as the physical blueprint of the Daemon. They may join **Coven
 operator grouping and are paired with logical Animator capabilities for semantic discovery; the
 Orchestrator remains the only lifecycle policy owner.
 
+### Platform Support Boundary
+
+LychD supports one host embodiment: a free and open-source Linux stack with Systemd, cgroup v2,
+and rootless Podman/Quadlet. Every software layer entrusted with LychD's host authority,
+isolation, lifecycle, or recovery must be inspectable, modifiable, rebuildable, and replaceable by
+the operator. Proprietary host operating systems are outside project scope.
+
+Private operator-owned extensions and external Portals remain valid at their declared boundaries.
+They may contribute local organs or negotiated labor, but neither changes the supported host
+substrate or may become a required owner of LychD's continuity.
+
 Terminology boundary: configuration **runes** are TOML declarations in the Codex (see **[Configuration (12)](12-configuration.md)**). This ADR governs the generated **Quadlet manifests** and their Systemd lifecycle.
 
 !!! note "Manifestation Boundary"

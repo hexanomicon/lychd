@@ -8,11 +8,18 @@ from typing import Any
 import anyio
 import pytest
 
+from lychd.config.runes import ConfigLoader
+from lychd.config.runes.registry import RuneRegistry
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import GenerationProfile
 from lychd.domain.animation.services.binder import generation_to_model_settings
+from lychd.domain.animation.services.declarations import (
+    AnimatorDeclarations,
+    compile_animator_declarations,
+)
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
@@ -22,6 +29,16 @@ from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"{content.strip()}\n", encoding="utf-8")
+
+
+def _declarations(runes_dir: Path) -> AnimatorDeclarations:
+    return compile_animator_declarations(
+        settings=get_settings(),
+        runes=RuneRegistry(
+            ConfigLoader(runes_dir).load_all([LlamaCppSoulstoneConfig]),
+        ),
+        core_reserved_ports={},
+    )
 
 
 class _SingleControl(LlamaCppControlPlane):
@@ -50,10 +67,9 @@ def _single_registry(tmp_path: Path, control: LlamaCppControlPlane) -> tuple[Ani
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=[LlamaCppSoulstoneConfig],
+        settings=get_settings(),
+        declarations=_declarations(runes_dir),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
-        runes_dir=runes_dir,
-        reserved_ports={},
     )
     registry.ensure_loaded()
     key = registry.list_capabilities()[0].key
@@ -108,10 +124,9 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=[LlamaCppSoulstoneConfig],
+        settings=get_settings(),
+        declarations=_declarations(runes_dir),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=RouterControl())],
-        runes_dir=runes_dir,
-        reserved_ports={},
     )
     states = {s.capability_key: s for s in registry.list_capability_states()}
     main = registry.get_capability("router:chat:main")

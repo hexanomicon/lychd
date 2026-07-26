@@ -116,8 +116,8 @@ The Hexanomicon is one body with several entrances. Choose the question you need
   boundaries, and evidence before trusting a claim.
 - ⚒️ **Developer — [enter the contributor forge](CONTRIBUTING.md).** Learn the repository contract,
   then use the [Covenants](docs/adr/index.md) to find the decision that owns a change.
-- ⭕ **Seeker — [read the Prophecy](https://hexanomicon.dev/).** Begin with the public
-  initiation, then enter [Philosophy](docs/philosophy/index.md) when you want the Logos beneath the
+- ⭕ **Seeker — [read the Prophecy](https://hexanomicon.dev/).** Begin at that threshold, then enter
+  [Transcendence](docs/divination/transcendence/index.md) when you want the Great Work beneath the
   system.
 
 The [Lexicon](docs/lexicon.md) is a reference when an unfamiliar term blocks you; it is not
@@ -162,10 +162,10 @@ MPL 2.0 protects the shared body at the distribution boundary. This is a plain-l
 - **The SaaS Scar is Honest:** Hosted network access is not distribution. LychD answers cloud capture through local-first architecture, protocol distrust, peer choice, provenance, and refusal to surrender private continuity to a hosted surface.
 - **No CLA, No Private Relicensing:** There is no Contributor License Agreement and no maintainer-only relicensing grant. By contributing, you certify that you have the right to submit under MPL-2.0 and agree that the contribution is licensed under MPL-2.0.
 
-**Protocol over implementation.** LychD is Linux-native, not "the Agentic OS." macOS, Windows, and
-other runtimes may exist as ports, forks, or independent implementations. ADR 26 reserves a future
-**A2A Intercom** for compatible ports and independent implementations; once that protocol is
-specified and implemented, they could enter the Necropolis and trade labor in the Swarm.
+**Source sovereignty.** The Magus must possess the source of every software layer that possesses
+the Lich. LychD therefore supports one host embodiment: a free and open-source Linux stack.
+Proprietary host operating systems are outside project scope. Private operator-owned extensions
+and external Portals remain valid boundaries, but neither may own the Lich's continuity.
 
 ## ⛩️ Hall of Spirits
 
@@ -191,10 +191,12 @@ release license inventory.
 - **[Svelte](https://github.com/sveltejs/svelte)** and
   **[SvelteKit](https://github.com/sveltejs/kit)** are the accepted Altar client;
   **[Vite](https://github.com/vitejs/vite)** forges its static assets and
-  **[Bun](https://github.com/oven-sh/bun)** owns the JavaScript dependency/build ritual.
-  Litestar remains the only production server and authority. The current partial surface still
-  contains Jinja/HTMX/Alpine migration code; [State of the
-  Work](docs/state-of-the-work.md#altar-and-observability) owns that boundary.
+  **[Node.js](https://nodejs.org/)** with **[npm](https://www.npmjs.com/)** owns the reproducible
+  development and build ritual. Native CSS variables, cascade layers, and semantic component
+  classes form the styling system without Tailwind, Sass, or a project-owned PostCSS pipeline.
+  Litestar remains the only production server and authority; the compiled client consumes its
+  generated `/api/v1` and semantic event contracts. [State of the
+  Work](docs/state-of-the-work.md#altar-and-observability) owns the delivered boundary.
 - **[OpenTelemetry](https://opentelemetry.io/)** and
   **[Structlog](https://github.com/hynek/structlog)** are the chosen telemetry substrate for the
   designed native Oculus.

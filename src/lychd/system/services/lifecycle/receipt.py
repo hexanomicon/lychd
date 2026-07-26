@@ -9,11 +9,14 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
 from lychd.system.services.lifecycle._authority import LifecycleAuthority, current_authority
 from lychd.system.services.lifecycle.models import (
+    CreatedBtrfsSubvolume,
+    CreatedDirectory,
     CreatedResources,
     DedicatedRootIdentity,
     LifecycleAction,
@@ -87,30 +90,68 @@ class _ReceiptFile(_ReceiptPath):
         return value
 
 
+class _ReceiptSubvolume(_ReceiptPath):
+    """One exact init-created Btrfs subvolume eligible for storage handoff."""
+
+    subvolume_uuid: str
+    subvolume_id: int
+
+    @field_validator("subvolume_uuid")
+    @classmethod
+    def validate_uuid(cls, value: str) -> str:
+        """Require one canonical Btrfs UUID."""
+        normalized = str(UUID(value))
+        if value.casefold() != normalized:
+            message = "Lifecycle subvolume UUID must be canonical."
+            raise ValueError(message)
+        return normalized
+
+    @field_validator("subvolume_id")
+    @classmethod
+    def validate_subvolume_id(cls, value: int) -> int:
+        """Reject Btrfs's reserved object-ID range."""
+        from lychd.system.btrfs_identity import BTRFS_FIRST_FREE_OBJECTID
+
+        if value < BTRFS_FIRST_FREE_OBJECTID:
+            message = "Lifecycle subvolume ID is in Btrfs's reserved range."
+            raise ValueError(message)
+        return value
+
+
 class _LifecycleReceipt(BaseModel):
     """Owner-only record of removable resources created by ``lychd init``."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    version: Literal[1] = 1
+    version: Literal[1, 2] = 2
     dedicated_roots: tuple[_ReceiptDirectory, ...] = ()
     directories: tuple[_ReceiptDirectory, ...] = ()
     files: tuple[_ReceiptFile, ...] = ()
+    subvolumes: tuple[_ReceiptSubvolume, ...] = ()
 
     @model_validator(mode="after")
     def validate_unique_paths(self) -> _LifecycleReceipt:
-        """Reject duplicate paths and file/directory overlap."""
+        """Reject authority unavailable to the declared schema and path overlap."""
+        if self.version == 1 and self.subvolumes:
+            msg = "Lifecycle receipt version 1 cannot carry Btrfs subvolume authority."
+            raise ValueError(msg)
         dedicated_roots = [entry.path for entry in self.dedicated_roots]
         directories = [entry.path for entry in self.directories]
         files = [entry.path for entry in self.files]
+        subvolumes = [entry.path for entry in self.subvolumes]
         if (
             len(set(dedicated_roots)) != len(dedicated_roots)
             or len(set(directories)) != len(directories)
             or len(set(files)) != len(files)
+            or len(set(subvolumes)) != len(subvolumes)
         ):
             msg = "Lifecycle receipt contains duplicate paths."
             raise ValueError(msg)
-        overlap = set(directories).intersection(files)
+        overlap = (
+            set(directories).intersection(files)
+            | set(directories).intersection(subvolumes)
+            | set(files).intersection(subvolumes)
+        )
         if overlap:
             msg = f"Lifecycle receipt path has conflicting kinds: {sorted(overlap)[0]}"
             raise ValueError(msg)
@@ -177,6 +218,16 @@ class LifecycleReceiptStore:
                 kind=LifecycleResourceKind.FILE,
                 authority=authority,
             )
+        for entry in receipt.subvolumes:
+            path = Path(entry.path)
+            if path != authority.postgres_data:
+                message = f"Lifecycle receipt contains an unknown Btrfs subvolume: {path}"
+                raise LifecycleError(message)
+            validate_receipt_path(
+                path,
+                kind=LifecycleResourceKind.DIRECTORY,
+                authority=authority,
+            )
         return receipt
 
     def _read_receipt_bytes(self) -> bytes:
@@ -234,15 +285,30 @@ class LifecycleReceiptStore:
         authority = current_authority()
         directories = {Path(entry.path): entry for entry in current.directories}
         files = {Path(entry.path): entry for entry in current.files}
+        subvolumes = {Path(entry.path): entry for entry in current.subvolumes}
+        created_directory_by_path = {identity.path: identity for identity in resources.directory_identities}
         for directory in resources.directories:
             if is_shared_xdg_root(
                 directory,
                 authority=authority,
             ) or is_persistent_directory(directory, authority=authority):
                 continue
-            directories[directory] = self._directory_entry(directory, authority=authority)
+            identity = created_directory_by_path.get(directory)
+            directories[directory] = (
+                self._directory_entry(directory, authority=authority)
+                if identity is None
+                else self._created_directory_entry(
+                    identity,
+                    authority=authority,
+                )
+            )
         for path in resources.files:
             files[path] = self._file_entry(path, authority=authority)
+        for subvolume in resources.subvolumes:
+            subvolumes[subvolume.path] = self._subvolume_entry(
+                subvolume,
+                authority=authority,
+            )
         dedicated_roots = current.dedicated_roots
         if attest_dedicated_roots:
             dedicated_roots = tuple(
@@ -250,10 +316,11 @@ class LifecycleReceiptStore:
                 for root in self._expected_dedicated_roots(authority)
             )
         next_receipt = _LifecycleReceipt(
-            version=1,
+            version=2,
             dedicated_roots=dedicated_roots,
             directories=tuple(directories[path] for path in sorted(directories)),
             files=tuple(files[path] for path in sorted(files)),
+            subvolumes=tuple(subvolumes[path] for path in sorted(subvolumes)),
         )
         if next_receipt == current and self.exists:
             return
@@ -262,6 +329,27 @@ class LifecycleReceiptStore:
     def seal_dedicated_roots(self) -> None:
         """Commit the final init attestation after every root exists."""
         self.record(CreatedResources(), attest_dedicated_roots=True)
+
+    def created_subvolume(
+        self,
+        path: Path,
+    ) -> CreatedBtrfsSubvolume | None:
+        """Return init-issued subvolume authority for one exact path."""
+        receipt = self.load()
+        matches = tuple(entry for entry in receipt.subvolumes if Path(entry.path) == path)
+        if not matches:
+            return None
+        if len(matches) != 1:
+            message = f"Lifecycle receipt contains ambiguous Btrfs subvolume authority: {path}"
+            raise LifecycleError(message)
+        entry = matches[0]
+        return CreatedBtrfsSubvolume(
+            path=path,
+            device=entry.device,
+            inode=entry.inode,
+            subvolume_uuid=entry.subvolume_uuid,
+            subvolume_id=entry.subvolume_id,
+        )
 
     def plan_dedicated_root_attestation(self) -> LifecycleAction:
         """Plan the final init seal over all exact dedicated root identities."""
@@ -422,6 +510,27 @@ class LifecycleReceiptStore:
         return _ReceiptDirectory(path=str(directory), device=metadata.st_dev, inode=metadata.st_ino)
 
     @staticmethod
+    def _created_directory_entry(
+        directory: CreatedDirectory,
+        *,
+        authority: LifecycleAuthority,
+    ) -> _ReceiptDirectory:
+        """Record the creation-time identity without restatting a replaceable path."""
+        if not is_allowed_init_directory(directory.path, authority=authority):
+            msg = f"Initialization created an unreceiptable directory: {directory.path}"
+            raise LifecycleError(msg)
+        validate_receipt_path(
+            directory.path,
+            kind=LifecycleResourceKind.DIRECTORY,
+            authority=authority,
+        )
+        return _ReceiptDirectory(
+            path=str(directory.path),
+            device=directory.device,
+            inode=directory.inode,
+        )
+
+    @staticmethod
     def _file_entry(path: Path, *, authority: LifecycleAuthority) -> _ReceiptFile:
         """Validate and capture one exact init-created generated file."""
         if not is_allowed_init_file(path, authority=authority):
@@ -444,6 +553,30 @@ class LifecycleReceiptStore:
             device=metadata.st_dev,
             inode=metadata.st_ino,
             digest=digest_file(path),
+        )
+
+    @staticmethod
+    def _subvolume_entry(
+        subvolume: CreatedBtrfsSubvolume,
+        *,
+        authority: LifecycleAuthority,
+    ) -> _ReceiptSubvolume:
+        """Record one descriptor-attested creation without restatting its path."""
+        path = subvolume.path
+        if path != authority.postgres_data:
+            message = f"Initialization created an unreceiptable Btrfs subvolume: {path}"
+            raise LifecycleError(message)
+        validate_receipt_path(
+            path,
+            kind=LifecycleResourceKind.DIRECTORY,
+            authority=authority,
+        )
+        return _ReceiptSubvolume(
+            path=str(path),
+            device=subvolume.device,
+            inode=subvolume.inode,
+            subvolume_uuid=subvolume.subvolume_uuid,
+            subvolume_id=subvolume.subvolume_id,
         )
 
     def plan_destroy(self, *, anticipated_removals: Iterable[Path] = ()) -> LifecyclePlan:
@@ -603,7 +736,7 @@ class LifecycleReceiptStore:
                 LifecycleDisposition.PRESERVE,
                 LifecycleResourceKind.DIRECTORY,
                 str(path),
-                "ancestor of durable Postgres state; destruction never removes through it",
+                "ancestor of durable Postgres state; deletion never removes through it",
             )
         unknown = [child.name for child in path.iterdir() if child != self.path and child not in owned_paths]
         if unknown:
@@ -645,42 +778,13 @@ class LifecycleReceiptStore:
                     "external mount was not created by this initialization"
                     if kind is LifecycleResourceKind.MOUNT
                     else (
-                        "durable Postgres path is outside destruction authority"
+                        "durable Postgres path is outside deletion authority"
                         if persistent
                         else "path was not recorded as created by this initialization"
                     )
                 )
                 actions.append(LifecycleAction(LifecycleDisposition.PRESERVE, kind, str(path), detail))
         return actions
-
-    def destroy(self) -> None:
-        """Remove pristine receipt-owned files/directories and the receipt last."""
-        plan = self.plan_destroy()
-        plan.require_executable()
-        removals = plan.removal_paths
-        receipt = self.load()
-        for entry in receipt.files:
-            path = Path(entry.path)
-            if path in removals and path.exists():
-                path.unlink()
-
-        directories = sorted(
-            (Path(entry.path) for entry in receipt.directories),
-            key=lambda item: (-len(item.parts), str(item)),
-        )
-        receipt_ancestors = set(self.path.parents)
-        deferred = [path for path in directories if path in removals and path in receipt_ancestors]
-        for path in directories:
-            if path not in removals or path in receipt_ancestors or not path.exists():
-                continue
-            path.rmdir()
-
-        if self.path in removals and self.exists:
-            self.path.unlink()
-            self._fsync_directory(self.path.parent)
-        for path in deferred:
-            if path.exists():
-                path.rmdir()
 
     def _write(self, receipt: _LifecycleReceipt) -> None:
         """Atomically write one owner-only lifecycle receipt."""

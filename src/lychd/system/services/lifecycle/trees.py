@@ -6,7 +6,22 @@ import os
 import stat
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NoReturn
 
+from lychd.system.atomic_retirement import (
+    AtomicRetirementError,
+    AtomicRetirementService,
+    RetirementIdentity,
+    is_retirement_quarantine_name,
+)
+from lychd.system.btrfs_identity import BTRFS_SUBVOLUME_BOUNDARY_INODES
+from lychd.system.interruptions import find_terminal_interruption
+from lychd.system.protected_retirement import (
+    ProtectedRetirementEntry,
+    ProtectedRootRetirementError,
+    ProtectedRootRetirementService,
+    is_protected_authority_name,
+)
 from lychd.system.services.lifecycle.models import (
     DedicatedRootIdentity,
     LifecycleError,
@@ -25,27 +40,41 @@ _mount_id_for_fd = mount_id_for_fd
 
 def _same_identity(expected: os.stat_result, observed: os.stat_result) -> bool:
     """Compare every stable entry attribute required before deletion."""
-    return (
-        expected.st_dev == observed.st_dev
-        and expected.st_ino == observed.st_ino
-        and expected.st_uid == observed.st_uid
-        and stat.S_IFMT(expected.st_mode) == stat.S_IFMT(observed.st_mode)
-    )
+    return RetirementIdentity.from_stat(expected) == RetirementIdentity.from_stat(observed)
 
 
-def _order_final_entry(
+def _ordinary_names(
     names: tuple[str, ...],
     *,
-    final_name: str | None,
+    protected_names: tuple[str, ...],
     display_path: Path,
 ) -> tuple[str, ...]:
-    """Move one protected authority entry behind every other child."""
-    if final_name is None:
+    """Exclude protected recovery authorities from ordinary tree traversal."""
+    if not protected_names:
         return names
-    if final_name not in names:
-        msg = f"Protected final entry disappeared before deletion: {display_path / final_name}"
+    missing = next((name for name in protected_names if name not in names), None)
+    if missing is not None:
+        msg = f"Protected final entry disappeared before deletion: {display_path / missing}"
         raise LifecycleError(msg)
-    return (*(name for name in names if name != final_name), final_name)
+    protected = frozenset(protected_names)
+    return tuple(name for name in names if name not in protected)
+
+
+def _validated_final_names(
+    root: Path,
+    final_entries: tuple[Path, ...],
+) -> tuple[str, ...]:
+    """Return protected direct-child names or reject an unsafe request."""
+    names: list[str] = []
+    for final_entry in final_entries:
+        if final_entry.parent != root or final_entry.name in {"", ".", ".."}:
+            msg = f"Final protected entry is not a direct child of {root}: {final_entry}"
+            raise LifecycleError(msg)
+        if final_entry.name in names:
+            msg = f"Protected final entries contain a duplicate: {final_entry}"
+            raise LifecycleError(msg)
+        names.append(final_entry.name)
+    return tuple(names)
 
 
 def _open_root_descriptor(
@@ -94,31 +123,6 @@ def _open_root_descriptor(
     return descriptor, metadata, mount_id
 
 
-def _verify_root_before_rmdir(
-    root: Path,
-    *,
-    parent_descriptor: int,
-    expected: os.stat_result,
-    expected_mount_id: int,
-) -> None:
-    """Reopen the root name and verify it still names the traversed mount."""
-    descriptor = os.open(
-        root.name,
-        _DIRECTORY_FLAGS,
-        dir_fd=parent_descriptor,
-    )
-    try:
-        current = os.fstat(descriptor)
-        if not _same_identity(expected, current):
-            msg = f"Dedicated root identity changed before final removal: {root}"
-            raise LifecycleError(msg)
-        if _mount_id_for_fd(descriptor) != expected_mount_id:
-            msg = f"Dedicated root mount identity changed before final removal: {root}"
-            raise LifecycleError(msg)
-    finally:
-        os.close(descriptor)
-
-
 @dataclass(frozen=True)
 class ManagedTreeInspection:
     """Read-only verdict for one exact dedicated root."""
@@ -132,18 +136,28 @@ class ManagedTreeInspection:
 class ManagedTreeService:
     """Inspect and remove only constructor-authorized dedicated roots."""
 
-    def __init__(self, allowed_roots: tuple[Path, ...]) -> None:
-        """Bind an exact root allowlist; geography is never inferred later."""
+    def __init__(
+        self,
+        allowed_roots: tuple[Path, ...],
+        *,
+        retirement: AtomicRetirementService | None = None,
+    ) -> None:
+        """Bind the exact roots; every possible subvolume root remains a barrier."""
         if len(set(allowed_roots)) != len(allowed_roots):
             msg = "Dedicated deletion roots must be unique."
             raise LifecycleError(msg)
         self._allowed_roots = frozenset(allowed_roots)
+        self._retirement = retirement or AtomicRetirementService()
+        self._protected_retirement = ProtectedRootRetirementService(
+            entries=self._retirement,
+        )
 
-    def inspect(  # noqa: PLR0911 - every unsafe filesystem shape has a distinct verdict
+    def inspect(  # noqa: C901, PLR0911 - every unsafe filesystem shape has a distinct verdict
         self,
         root: Path,
         *,
         deferred_mounts: frozenset[Path] = frozenset(),
+        deferred_subvolumes: frozenset[Path] = frozenset(),
     ) -> ManagedTreeInspection:
         """Prove one root can be traversed without links or mount crossings."""
         unsafe = self._unsafe_root(root)
@@ -153,6 +167,22 @@ class ManagedTreeService:
                 exists=os.path.lexists(root),
                 removable=False,
                 detail=unsafe,
+            )
+        try:
+            residue = self._retained_sibling_residue(root)
+        except OSError as exc:
+            return ManagedTreeInspection(
+                root=root,
+                exists=os.path.lexists(root),
+                removable=False,
+                detail=f"cannot inspect sibling retirement recovery safely: {exc}",
+            )
+        if residue is not None:
+            return ManagedTreeInspection(
+                root=root,
+                exists=os.path.lexists(root),
+                removable=False,
+                detail=f"retained retirement recovery requires operator review: {residue}",
             )
         if not os.path.lexists(root):
             return ManagedTreeInspection(
@@ -185,6 +215,13 @@ class ManagedTreeService:
                 removable=False,
                 detail=f"dedicated root is owned by uid {metadata.st_uid}, expected {os.getuid()}",
             )
+        if self._is_possible_subvolume_boundary(metadata):
+            return ManagedTreeInspection(
+                root=root,
+                exists=True,
+                removable=False,
+                detail="possible Btrfs subvolume boundary occupies the dedicated root",
+            )
         try:
             if root.is_mount():
                 return ManagedTreeInspection(
@@ -196,7 +233,7 @@ class ManagedTreeService:
             blocker, deferred_count = self._scan(
                 root,
                 expected_device=metadata.st_dev,
-                deferred_mounts=deferred_mounts,
+                deferred_boundaries=(deferred_mounts | deferred_subvolumes),
             )
         except OSError as exc:
             return ManagedTreeInspection(
@@ -228,18 +265,13 @@ class ManagedTreeService:
         root: Path,
         *,
         expected_identity: DedicatedRootIdentity,
-        final_entry: Path | None = None,
+        final_entries: tuple[Path, ...] = (),
     ) -> None:
         """Remove one revalidated root through directory-relative descriptors."""
         if expected_identity.path != root:
             msg = f"Attested dedicated-root identity targets a different path: {expected_identity.path}"
             raise LifecycleError(msg)
-        final_name: str | None = None
-        if final_entry is not None:
-            if final_entry.parent != root or final_entry.name in {"", ".", ".."}:
-                msg = f"Final protected entry is not a direct child of {root}: {final_entry}"
-                raise LifecycleError(msg)
-            final_name = final_entry.name
+        final_names = _validated_final_names(root, final_entries)
         inspection = self.inspect(root)
         if not inspection.removable:
             msg = f"Refusing to remove unsafe dedicated root {root}: {inspection.detail}"
@@ -263,15 +295,36 @@ class ManagedTreeService:
                 display_path=root,
                 expected_device=metadata.st_dev,
                 expected_mount_id=mount_id,
-                final_name=final_name,
+                protected_names=final_names,
             )
-            _verify_root_before_rmdir(
-                root,
-                parent_descriptor=parent_descriptor,
-                expected=metadata,
-                expected_mount_id=mount_id,
-            )
-            os.rmdir(root.name, dir_fd=parent_descriptor)
+            if _mount_id_for_fd(descriptor) != mount_id:
+                msg = f"Dedicated root mount identity changed before final retirement: {root}"
+                raise LifecycleError(msg)
+            if final_names:
+                protected = self._protected_entries(
+                    descriptor,
+                    display_path=root,
+                    expected_device=metadata.st_dev,
+                    expected_mount_id=mount_id,
+                    names=final_names,
+                )
+                self._protected_retirement.retire(
+                    parent_fd=parent_descriptor,
+                    directory_fd=descriptor,
+                    leaf=root.name,
+                    expected=RetirementIdentity.from_stat(metadata),
+                    display_path=root,
+                    protected=protected,
+                )
+            else:
+                self._retirement.retire_directory(
+                    parent_fd=parent_descriptor,
+                    leaf=root.name,
+                    expected=RetirementIdentity.from_stat(metadata),
+                    display_path=root,
+                )
+        except AtomicRetirementError as exc:
+            self._raise_retirement_error(exc)
         except OSError as exc:
             msg = f"Could not remove dedicated root safely: {root}: {exc}"
             raise LifecycleError(msg) from exc
@@ -297,22 +350,75 @@ class ManagedTreeService:
                 return f"dedicated roots unexpectedly overlap: {root} and {other}"
         return None
 
+    @staticmethod
+    def _retained_sibling_residue(root: Path) -> Path | None:
+        """Find private recovery left beside a root by an earlier transaction."""
+        try:
+            with os.scandir(root.parent) as entries:
+                for entry in entries:
+                    if is_retirement_quarantine_name(entry.name) or is_protected_authority_name(entry.name):
+                        return root.parent / entry.name
+        except FileNotFoundError:
+            return None
+        return None
+
+    @staticmethod
+    def _recovery_detail(error: AtomicRetirementError) -> str | None:
+        """Render exact retained paths without erasing the typed cause."""
+        if isinstance(error, ProtectedRootRetirementError):
+            recovery = error.root_recovery
+            if recovery is None:
+                return None
+            paths = [
+                *((str(recovery.root_quarantine),) if recovery.root_quarantine is not None else ()),
+                *(str(authority.recovery_path) for authority in recovery.authorities),
+            ]
+            location = ", ".join(paths) or "no retained path remained"
+            return f"{location} ({recovery.reason})"
+        if error.recovery is not None:
+            return f"{error.recovery.quarantine} ({error.recovery.reason})"
+        return None
+
+    @classmethod
+    def _raise_retirement_error(
+        cls,
+        error: AtomicRetirementError,
+    ) -> NoReturn:
+        """Preserve terminal intent and attach exact recovery paths."""
+        recovery = cls._recovery_detail(error)
+        suffix = f"; recovery: {recovery}" if recovery is not None else ""
+        message = f"Could not retire dedicated tree entry safely: {error}{suffix}"
+        if terminal := find_terminal_interruption(error):
+            terminal.add_note(message)
+            raise terminal from None
+        raise LifecycleError(message) from error
+
     def _scan(
         self,
         directory: Path,
         *,
         expected_device: int,
-        deferred_mounts: frozenset[Path],
+        deferred_boundaries: frozenset[Path],
     ) -> tuple[str | None, int]:
         deferred_count = 0
         with os.scandir(directory) as entries:
             for entry in entries:
                 child = directory / entry.name
+                if is_retirement_quarantine_name(entry.name):
+                    return (
+                        f"retained atomic-retirement quarantine requires recovery: {child}",
+                        deferred_count,
+                    )
                 metadata = entry.stat(follow_symlinks=False)
                 if stat.S_ISDIR(metadata.st_mode):
-                    if child in deferred_mounts and child.is_mount():
+                    if child in deferred_boundaries:
                         deferred_count += 1
                         continue
+                    if self._is_possible_subvolume_boundary(metadata):
+                        return (
+                            f"possible Btrfs subvolume boundary exists beneath dedicated root: {child}",
+                            deferred_count,
+                        )
                     if metadata.st_dev != expected_device:
                         return (
                             f"filesystem boundary exists beneath dedicated root: {child}",
@@ -326,7 +432,7 @@ class ManagedTreeService:
                     blocker, nested_deferred = self._scan(
                         child,
                         expected_device=expected_device,
-                        deferred_mounts=deferred_mounts,
+                        deferred_boundaries=deferred_boundaries,
                     )
                     deferred_count += nested_deferred
                     if blocker is not None:
@@ -340,78 +446,172 @@ class ManagedTreeService:
         display_path: Path,
         expected_device: int,
         expected_mount_id: int,
-        final_name: str | None = None,
+        protected_names: tuple[str, ...] = (),
     ) -> None:
         with os.scandir(descriptor) as entries:
             names = tuple(entry.name for entry in entries)
-        names = _order_final_entry(
+        names = _ordinary_names(
             names,
-            final_name=final_name,
+            protected_names=protected_names,
             display_path=display_path,
         )
 
         for name in names:
+            if is_retirement_quarantine_name(name):
+                msg = f"Retained atomic-retirement quarantine requires recovery: {display_path / name}"
+                raise LifecycleError(msg)
             metadata = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
             child = display_path / name
             if stat.S_ISDIR(metadata.st_mode):
-                if metadata.st_dev != expected_device:
-                    msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
-                    raise LifecycleError(msg)
-                child_descriptor = os.open(
-                    name,
-                    _DIRECTORY_FLAGS,
-                    dir_fd=descriptor,
+                self._remove_directory(
+                    descriptor,
+                    name=name,
+                    metadata=metadata,
+                    child=child,
+                    expected_device=expected_device,
+                    expected_mount_id=expected_mount_id,
                 )
-                try:
-                    child_metadata = os.fstat(child_descriptor)
-                    if not _same_identity(metadata, child_metadata) or child_metadata.st_dev != expected_device:
-                        msg = f"Filesystem identity changed during deletion: {child}"
-                        raise LifecycleError(msg)
-                    if _mount_id_for_fd(child_descriptor) != expected_mount_id:
-                        msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
-                        raise LifecycleError(msg)
-                    self._remove_contents(
-                        child_descriptor,
-                        display_path=child,
-                        expected_device=expected_device,
-                        expected_mount_id=expected_mount_id,
-                    )
-                    current = os.stat(
-                        name,
-                        dir_fd=descriptor,
-                        follow_symlinks=False,
-                    )
-                    if not _same_identity(child_metadata, current) or not stat.S_ISDIR(current.st_mode):
-                        msg = f"Directory identity changed before final removal: {child}"
-                        raise LifecycleError(msg)
-                    os.rmdir(name, dir_fd=descriptor)
-                finally:
-                    os.close(child_descriptor)
             else:
-                entry_descriptor = os.open(
-                    name,
-                    _PATH_FLAGS,
-                    dir_fd=descriptor,
+                self._remove_file(
+                    descriptor,
+                    name=name,
+                    metadata=metadata,
+                    child=child,
+                    expected_device=expected_device,
+                    expected_mount_id=expected_mount_id,
                 )
-                try:
-                    opened = os.fstat(entry_descriptor)
-                    if not _same_identity(metadata, opened) or opened.st_dev != expected_device:
-                        msg = f"Entry identity changed during deletion: {child}"
-                        raise LifecycleError(msg)
-                    if _mount_id_for_fd(entry_descriptor) != expected_mount_id:
-                        msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
-                        raise LifecycleError(msg)
-                    current = os.stat(
-                        name,
-                        dir_fd=descriptor,
-                        follow_symlinks=False,
+
+    @staticmethod
+    def _protected_entries(
+        descriptor: int,
+        *,
+        display_path: Path,
+        expected_device: int,
+        expected_mount_id: int,
+        names: tuple[str, ...],
+    ) -> tuple[ProtectedRetirementEntry, ...]:
+        """Pin and attest the authority files retained for root retirement."""
+        protected: list[ProtectedRetirementEntry] = []
+        for name in names:
+            child = display_path / name
+            entry_descriptor = os.open(
+                name,
+                _PATH_FLAGS,
+                dir_fd=descriptor,
+            )
+            try:
+                metadata = os.fstat(entry_descriptor)
+                if (
+                    stat.S_ISDIR(metadata.st_mode)
+                    or metadata.st_dev != expected_device
+                    or _mount_id_for_fd(entry_descriptor) != expected_mount_id
+                ):
+                    msg = f"Protected final entry became unsafe before root retirement: {child}"
+                    raise LifecycleError(msg)
+                current = os.stat(
+                    name,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+                if not _same_identity(metadata, current):
+                    msg = f"Protected final entry changed before root retirement: {child}"
+                    raise LifecycleError(msg)
+                protected.append(
+                    ProtectedRetirementEntry(
+                        leaf=name,
+                        resource=child,
+                        expected=RetirementIdentity.from_stat(metadata),
                     )
-                    if not _same_identity(opened, current):
-                        msg = f"Entry identity changed before final removal: {child}"
-                        raise LifecycleError(msg)
-                    os.unlink(name, dir_fd=descriptor)
-                finally:
-                    os.close(entry_descriptor)
+                )
+            finally:
+                os.close(entry_descriptor)
+        return tuple(protected)
+
+    def _remove_directory(
+        self,
+        descriptor: int,
+        *,
+        name: str,
+        metadata: os.stat_result,
+        child: Path,
+        expected_device: int,
+        expected_mount_id: int,
+    ) -> None:
+        """Revalidate, empty, and unlink one real child directory."""
+        if self._is_possible_subvolume_boundary(metadata):
+            msg = f"Possible Btrfs subvolume boundary appeared during dedicated-root deletion: {child}"
+            raise LifecycleError(msg)
+        if metadata.st_dev != expected_device:
+            msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
+            raise LifecycleError(msg)
+        child_descriptor = os.open(
+            name,
+            _DIRECTORY_FLAGS,
+            dir_fd=descriptor,
+        )
+        try:
+            child_metadata = os.fstat(child_descriptor)
+            if not _same_identity(metadata, child_metadata) or child_metadata.st_dev != expected_device:
+                msg = f"Filesystem identity changed during deletion: {child}"
+                raise LifecycleError(msg)
+            if _mount_id_for_fd(child_descriptor) != expected_mount_id:
+                msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
+                raise LifecycleError(msg)
+            self._remove_contents(
+                child_descriptor,
+                display_path=child,
+                expected_device=expected_device,
+                expected_mount_id=expected_mount_id,
+            )
+            if _mount_id_for_fd(child_descriptor) != expected_mount_id:
+                msg = f"Mount boundary appeared before directory retirement: {child}"
+                raise LifecycleError(msg)
+            self._retirement.retire_directory(
+                parent_fd=descriptor,
+                leaf=name,
+                expected=RetirementIdentity.from_stat(child_metadata),
+                display_path=child,
+            )
+        finally:
+            os.close(child_descriptor)
+
+    def _remove_file(
+        self,
+        descriptor: int,
+        *,
+        name: str,
+        metadata: os.stat_result,
+        child: Path,
+        expected_device: int,
+        expected_mount_id: int,
+    ) -> None:
+        """Revalidate and unlink one non-directory entry without following it."""
+        entry_descriptor = os.open(
+            name,
+            _PATH_FLAGS,
+            dir_fd=descriptor,
+        )
+        try:
+            opened = os.fstat(entry_descriptor)
+            if not _same_identity(metadata, opened) or opened.st_dev != expected_device:
+                msg = f"Entry identity changed during deletion: {child}"
+                raise LifecycleError(msg)
+            if _mount_id_for_fd(entry_descriptor) != expected_mount_id:
+                msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
+                raise LifecycleError(msg)
+            self._retirement.retire_file(
+                parent_fd=descriptor,
+                leaf=name,
+                expected=RetirementIdentity.from_stat(opened),
+                display_path=child,
+            )
+        finally:
+            os.close(entry_descriptor)
+
+    @staticmethod
+    def _is_possible_subvolume_boundary(metadata: os.stat_result) -> bool:
+        """Treat every Btrfs root/stub inode signature as a fail-closed barrier."""
+        return metadata.st_ino in BTRFS_SUBVOLUME_BOUNDARY_INODES
 
 
 __all__ = ("ManagedTreeInspection", "ManagedTreeService")

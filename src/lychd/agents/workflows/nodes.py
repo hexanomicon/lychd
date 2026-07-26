@@ -1,7 +1,7 @@
 """Shared workflow-node helpers: the streaming pump + the consent park (C3).
 
 `pump_agent_events` streams one agent run (token deltas → `emit.token`, RAW; the
-Projector escapes), captures the typed output, and returns the JSONABLE message
+client renders as text), captures the typed output, and returns the JSONABLE message
 history. `park_on_consent` serializes the pause into graph STATE and writes the
 consent record — but does NOT emit (S4: the `CONSENT` event moves to `perform_run`,
 fired only AFTER `set_status(AWAITING_CONSENT)`).
@@ -71,7 +71,7 @@ async def pump_agent_events(
 ) -> tuple[Any, list[Any]]:
     """Stream one agent run; return (typed output, jsonable all_messages()).
 
-    Token deltas are emitted RAW (`emit.token`); the Projector is the sole escaper.
+    Token deltas are emitted raw (`emit.token`); clients must render them as text.
     """
     result_event: AgentRunResultEvent[Any] | None = None
     async for event in agent.run_stream_events(

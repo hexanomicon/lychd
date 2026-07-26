@@ -12,10 +12,14 @@ This file is the stable entry node. Load only the next probe needed by the task;
   claim depends on what is Available, requires Operator validation, is Partial, remains Designed,
   is Experimental, or belongs to an External project.
 - Terminology: [docs/lexicon.md](docs/lexicon.md), loaded when vocabulary or lore/code naming boundaries matter.
-- Lore/identity: [docs/sepulcher/lich.md](docs/sepulcher/lich.md), loaded only for voice-sensitive docs or doctrine work.
-- Governing philosophy: [docs/philosophy/index.md](docs/philosophy/index.md), loaded for mythic
-  doctrine, source correspondence, formation, or philosophical voice; route through
-  [.agents/scopes/philosophy.md](.agents/scopes/philosophy.md) before selecting a chamber.
+- Lore/identity: [docs/sepulcher/lich/index.md](docs/sepulcher/lich/index.md), loaded only for voice-sensitive docs or doctrine work.
+- The Great Work: [docs/divination/transcendence/index.md](docs/divination/transcendence/index.md),
+  loaded for mythic doctrine, source correspondence, formation, consciousness, eschatology, or
+  philosophical voice; route through
+  [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) before selecting a stage.
+- Frontend/Altar: route through [.agents/scopes/frontend.md](.agents/scopes/frontend.md) before
+  analyzing, editing, or reviewing `frontend/**`, Svelte/SvelteKit code, browser projection, or
+  native CSS. The scope routes agents to the official Svelte AI tools and ADR 15 constraints.
 - Accepted application designs: [docs/compositions/index.md](docs/compositions/index.md), loaded
   when a task concerns the Portfolio, an application Pattern catalogue, cross-organ ownership, or
   promotion from idea into accepted architecture. Composition pages do not prove delivery.
@@ -31,18 +35,20 @@ Follow the cheapest useful edge:
 
 1. Use innate knowledge for stable basics.
 2. Load a matching tracked scope from `.agents/scopes/` when one exists. For architecture, ADR, doctrine, tracked agent routing, or docs that define system truth, load [.agents/scopes/architecture.md](.agents/scopes/architecture.md).
-3. For philosophy, mythic doctrine, or formation work, load
-   [.agents/scopes/philosophy.md](.agents/scopes/philosophy.md) and follow its smallest canonical
-   path. Do not infer delivery from the Logos.
-4. For documentation work, use [docs/index.md](docs/index.md) as the published parent map,
+3. For frontend or Altar implementation work, load
+   [.agents/scopes/frontend.md](.agents/scopes/frontend.md) before touching Svelte files.
+4. For the Great Work, philosophy, mythic doctrine, or formation work, load
+   [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) and follow its smallest
+   canonical path. Do not infer delivery from the Logos.
+5. For documentation work, use [docs/index.md](docs/index.md) as the published parent map,
    [docs/lexicon.md](docs/lexicon.md) for terms, and directory `index.md` files before child pages.
    Route accepted application architecture through [docs/compositions/index.md](docs/compositions/index.md)
    and unselected possibilities through the Incubator.
-5. Inspect LychD source and `src/lychd/system/constants.py` for project truth.
-6. Inspect installed packages under `.venv/lib/` when dependency runtime behavior matters.
-7. Use ignored local reference shelves only when the operator explicitly assigns them.
-8. Probe with shell commands.
-9. Ask the operator when context is still insufficient. If they are AFK, exhaust internal archaeology and shell probing first.
+6. Inspect LychD source and `src/lychd/system/constants.py` for project truth.
+7. Inspect installed packages under `.venv/lib/` when dependency runtime behavior matters.
+8. Use ignored local reference shelves only when the operator explicitly assigns them.
+9. Probe with shell commands.
+10. Ask the operator when context is still insufficient. If they are AFK, exhaust internal archaeology and shell probing first.
 
 ## Working Rules
 

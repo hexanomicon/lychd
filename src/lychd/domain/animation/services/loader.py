@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from pathlib import Path
 from typing import Any, cast, overload
 from urllib.parse import urlsplit
 
 import structlog
 
-from lychd.config.runes import ConfigLoader, RuneConfig
-from lychd.config.settings.root import get_settings
+from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
     PortalConfig,
     SoulstoneConfig,
     is_placeholder,
 )
-from lychd.system.constants import PATH_RUNES_DIR
 
 logger = structlog.get_logger()
 
@@ -26,11 +23,11 @@ class AnimatorConfigError(ValueError):
 
 
 class AnimatorLoader:
-    """Load animation Runes with inherited defaults and validation.
+    """Hydrate one already-loaded Rune snapshot into animation declarations.
 
-    This loader operates purely on TOML-backed Rune declarations. It does not
-    construct runtime animator handles or connectors; that responsibility belongs
-    to runtime factories/registry code.
+    Filesystem discovery and Settings ownership remain at composition roots. This
+    service receives immutable declarations plus explicit settings-derived policy;
+    it never performs a second configuration read.
     """
 
     _INHERITABLE_FIELDS: tuple[str, ...] = ()
@@ -40,32 +37,22 @@ class AnimatorLoader:
     def __init__(
         self,
         *,
-        rune_schemas: Sequence[type[RuneConfig]],
-        reserved_ports: dict[str, int] | None = None,
-        runes_dir: Path | None = None,
-        core_secret_names: tuple[str, str] | None = None,
+        reserved_ports: Mapping[str, int],
+        core_secret_names: tuple[str, str],
     ) -> None:
-        """Initialize loader with required rune schemas and reserved host ports."""
-        settings = get_settings()
-        self._runes_dir = runes_dir or PATH_RUNES_DIR
-        self._rune_schemas = list(rune_schemas)
-        self._reserved_ports = reserved_ports or settings.server.reserved_ports_map
-        self._core_secret_names = core_secret_names or (
-            settings.server.web.secret_key_secret,
-            settings.server.database.password_secret,
-        )
+        """Bind hydration to explicit port and secret-isolation policy."""
+        self._reserved_ports = dict(reserved_ports)
+        self._core_secret_names = core_secret_names
 
-    def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
-        """Load Soulstone/Portal Runes with inherited animator defaults."""
-        try:
-            loaded = ConfigLoader(runes_dir=self._runes_dir).load_all(self._rune_schemas)
-        except ValueError as exc:
-            msg = f"Failed to load animation runes: {exc}"
-            raise AnimatorConfigError(msg) from exc
-
-        animator_defaults = self._resolve_animator_defaults(loaded)
-        soulstones = [instance for instance in loaded if isinstance(instance, SoulstoneConfig)]
-        portals = [instance for instance in loaded if isinstance(instance, PortalConfig)]
+    def hydrate_all(
+        self,
+        loaded: Sequence[RuneConfig],
+    ) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
+        """Hydrate Soulstone and Portal Runes from one validated snapshot."""
+        snapshot = tuple(loaded)
+        animator_defaults = self._resolve_animator_defaults(snapshot)
+        soulstones = [instance for instance in snapshot if isinstance(instance, SoulstoneConfig)]
+        portals = [instance for instance in snapshot if isinstance(instance, PortalConfig)]
 
         if animator_defaults is not None:
             soulstones = [self._inherit_defaults(stone, animator_defaults) for stone in soulstones]
@@ -87,7 +74,7 @@ class AnimatorLoader:
         )
         return soulstones, portals
 
-    def _resolve_animator_defaults(self, loaded: list[Any]) -> AnimatorConfig | None:
+    def _resolve_animator_defaults(self, loaded: Sequence[Any]) -> AnimatorConfig | None:
         defaults = [instance for instance in loaded if type(instance) is AnimatorConfig]
         if len(defaults) > 1:
             msg = "Animator defaults must resolve to at most one parent Rune instance."

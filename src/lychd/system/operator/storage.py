@@ -132,6 +132,7 @@ class StorageInventoryService:
         top_level = self._top_level_mount(source_device, filesystem_uuid) if source_device and filesystem_uuid else None
         options = tuple(part for part in (self._text(entry, "options") or "").split(",") if part)
         mount_target = self._path(entry, "target")
+        mounted = mount_target == target
         return MountObservation(
             target=target,
             exists=exists,

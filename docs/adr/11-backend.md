@@ -193,9 +193,9 @@ app = Litestar(
 )
 ```
 
-The current HTMX plugin and Template routes are migration evidence for the pre-alpha Altar, not
-the accepted client boundary. [State of the Work](../state-of-the-work.md#altar-and-observability)
-owns that delivery distinction.
+The current Altar follows this boundary: Litestar exposes the versioned contract and serves one
+compiled static Svelte fallback; no template or JavaScript server owns application truth.
+[State of the Work](../state-of-the-work.md#altar-and-observability) owns the delivered extent.
 
 ### Policy Table
 

@@ -1,0 +1,37 @@
+{
+  "name": "@lychd/altar",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "npm": ">=11.16.0 <12"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "generate:api": "openapi-typescript ./openapi.json -o ./src/lib/api/openapi.d.ts",
+    "verify": "npm run generate:api && npm run check && npm run test && npm run build"
+  },
+  "dependencies": {
+    "mermaid": "11.16.0",
+    "openapi-fetch": "0.17.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "3.0.10",
+    "@sveltejs/kit": "2.70.1",
+    "@sveltejs/vite-plugin-svelte": "7.2.0",
+    "@testing-library/svelte": "5.4.2",
+    "@types/node": "24.13.3",
+    "jsdom": "29.1.1",
+    "openapi-typescript": "7.13.0",
+    "svelte": "5.56.8",
+    "svelte-check": "4.7.3",
+    "typescript": "5.9.3",
+    "vite": "8.1.5",
+    "vitest": "4.1.10"
+  }
+}

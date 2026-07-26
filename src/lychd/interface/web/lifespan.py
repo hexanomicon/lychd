@@ -2,9 +2,8 @@
 
 Builds one queue-bound `AltarServices`, publishes its process `RunSubstrate`
 (Topology A: the in-process ghoul shares this bus), stamps it on
-`app.state.services`, registers the request-independent `route_path`
-Jinja global + `run_data_state` filter, warms the registry off the event loop,
-reconciles orphaned runs at startup, and drains on shutdown.
+`app.state.services`, warms the registry off the event loop, reconciles orphaned
+runs at startup, and drains on shutdown.
 
 This module is a composition root — importing `extensions.host` here is allowed.
 """
@@ -25,8 +24,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from litestar import Litestar
-    from litestar.contrib.jinja import JinjaTemplateEngine
 
+    from lychd.config.runes.registry import RuneRegistry
+    from lychd.config.settings.root import Settings
     from lychd.domain.cortex.engine import RunQueue
 
 logger = structlog.get_logger()
@@ -60,9 +60,9 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
     # so a run this process claims mid-startup is never mistaken for a dead-process orphan.
     boot_cutoff = datetime.now(UTC)
 
-    engine = cast("JinjaTemplateEngine", app.template_engine)
     exts = get_extensions()
     settings = get_settings()
+    runes = cast("RuneRegistry", app.state.runes)
     services = None
     connected_queues: tuple[ManagedRunQueue, ...] = ()
     try:
@@ -74,16 +74,16 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
         queues = _collect_run_queues(app)
         connected_queues = await connect_run_queues(queues)
         services = build_altar_services(
-            template_engine=engine,
             queues=queues,
-            rune_schemas=exts.rune_schemas,
+            runes=runes,
             runtime_adapters=exts.runtime_adapters,
             portal_factories=exts.portal_factories,
             settings=settings,
         )
 
-        # Warm the registry off the event loop: rune loading + quadlet transmutation is
-        # synchronous disk IO, so force it at startup instead of stalling the first handler.
+        # Warm the registry off the event loop: runtime synthesis, Quadlet
+        # transmutation, and initial probes are synchronous/bridged work. Rune
+        # discovery already happened once in AppInit and cannot recur here.
         await asyncio.to_thread(services.registry.ensure_loaded)
 
         # Publish the already-complete runtime only after construction and registry
@@ -92,16 +92,12 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
 
         set_run_substrate(services.substrate)
 
-        # Request-independent url reversal for every template (works in SSE too), plus
-        # the frozen run-state `data-state` mapping as a Jinja filter.
-        from lychd.domain.web.schemas import run_data_state
-
-        engine.engine.globals["route_path"] = app.route_reverse  # pyright: ignore[reportArgumentType]
-        engine.engine.filters["run_data_state"] = run_data_state
-
         # Preauthorization startup sync (DB profile only): upsert loaded Codex
         # preauthorizations before the first park.
-        await _sync_preauths_at_startup(exts)
+        await _sync_preauths_at_startup(
+            runes=runes,
+            settings=settings,
+        )
         await _reconcile_at_startup(boot_cutoff)
         await _reconcile_consents_at_startup(services.run_engine)
 
@@ -156,22 +152,25 @@ async def _reconcile_consents_at_startup(engine: Any) -> None:
         logger.exception("reconcile_consents_at_startup_failed")
 
 
-async def _sync_preauths_at_startup(exts: Any) -> None:
-    """Upsert loaded Codex preauthorization runes (DB profile only; loud on failure)."""
-    from lychd.config.settings.root import get_settings
-
-    if get_settings().server.database.profile != "postgres":
+async def _sync_preauths_at_startup(
+    *,
+    runes: RuneRegistry,
+    settings: Settings,
+) -> None:
+    """Upsert preauthorizations from the process's existing Rune snapshot."""
+    if settings.server.database.profile != "postgres":
         return
     try:
-        from lychd.config.runes.registry import load_rune_registry
         from lychd.db.engine import get_session_factory
         from lychd.domain.codex.runes import CodexPreauthRune
         from lychd.domain.codex.services import PreauthService
 
-        runes = list(load_rune_registry(exts).of(CodexPreauthRune))
+        preauthorizations = list(runes.of(CodexPreauthRune))
         factory = get_session_factory()
         async with factory() as session:
-            count = await PreauthService(session=session).sync_from_runes(runes)
+            count = await PreauthService(session=session).sync_from_runes(
+                preauthorizations,
+            )
         logger.info("preauth_sync_at_startup", count=count)
     except Exception:
         logger.exception("preauth_sync_at_startup_failed")

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system.services.scribe import ScribeService
@@ -48,6 +49,7 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
         ),
     ]
     transmuter = Transmuter(
+        settings=get_settings(),
         runtime_planner=RuntimeAdapterRegistry(),
         contributors=[PhoenixQuadletContributor()],
     )

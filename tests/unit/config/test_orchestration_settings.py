@@ -80,20 +80,17 @@ def test_job_admin_ui_path_is_an_absolute_vessel_route() -> None:
 
 def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.MonkeyPatch) -> None:
     """A bogus `switching.policy` fails at the composition root, naming the registered ones."""
-    from litestar.contrib.jinja import JinjaTemplateEngine
-
     import lychd.domain.web.altar_services as altar_mod
+    from lychd.config.runes.registry import RuneRegistry
 
     bad = Settings()
     bad.orchestration.switching.policy = "does-not-exist"
     monkeypatch.setattr(altar_mod, "get_settings", lambda: bad)
 
-    templates = Path(__file__).resolve().parents[2].parent / "src" / "lychd" / "domain" / "web" / "templates"
     with pytest.raises(ValueError, match="evict-idle"):
         altar_mod.build_altar_services(
-            template_engine=JinjaTemplateEngine(directory=templates),
             queues={},
-            rune_schemas=[],
+            runes=RuneRegistry(()),
             runtime_adapters=[],
             profile="memory",
         )
@@ -101,19 +98,15 @@ def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.M
 
 def test_missing_routed_queues_fail_before_runtime_publication(monkeypatch: pytest.MonkeyPatch) -> None:
     """A composition cannot persist a run whose configured physical queue is absent."""
-    from litestar.contrib.jinja import JinjaTemplateEngine
-
     import lychd.domain.web.altar_services as altar_mod
+    from lychd.config.runes.registry import RuneRegistry
 
     settings = Settings()
     monkeypatch.setattr(altar_mod, "get_settings", lambda: settings)
-    templates = Path(__file__).resolve().parents[2].parent / "src" / "lychd" / "domain" / "web" / "templates"
-
     with pytest.raises(RuntimeError, match=r"rites.*runs|runs.*rites"):
         altar_mod.build_altar_services(
-            template_engine=JinjaTemplateEngine(directory=templates),
             queues={},
-            rune_schemas=[],
+            runes=RuneRegistry(()),
             runtime_adapters=[],
             profile="memory",
         )

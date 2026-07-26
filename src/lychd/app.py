@@ -53,14 +53,12 @@ class AppInit(InitPluginProtocol):
         from litestar.config.response_cache import ResponseCacheConfig
         from litestar.contrib.sqlalchemy.plugins import SQLAlchemyPlugin
         from litestar.di import Provide
-        from litestar.plugins.htmx import HTMXPlugin
         from litestar.plugins.problem_details import ProblemDetailsPlugin
         from litestar.plugins.structlog import StructlogPlugin
         from litestar.stores.memory import MemoryStore
         from litestar.stores.registry import StoreRegistry
         from litestar_granian import GranianPlugin
         from litestar_saq import SAQPlugin
-        from litestar_vite import VitePlugin
 
         from lychd.__about__ import __version__ as current_version
         from lychd.config.components import (
@@ -70,8 +68,6 @@ class AppInit(InitPluginProtocol):
             build_problem_details_config,
             build_saq_config,
             build_structlog_config,
-            build_template_config,
-            build_vite_config,
         )
         from lychd.config.constants import CACHE_EXPIRATION
         from lychd.config.runes.registry import load_rune_registry
@@ -97,22 +93,19 @@ class AppInit(InitPluginProtocol):
         app_config.plugins.extend(
             [
                 GranianPlugin(),
-                VitePlugin(config=build_vite_config(settings)),
                 SQLAlchemyPlugin(config=build_db_config(settings)),
                 SAQPlugin(config=build_saq_config(settings)),
                 StructlogPlugin(config=build_structlog_config(settings)),
                 ProblemDetailsPlugin(config=build_problem_details_config(settings)),
-                HTMXPlugin(),
             ],
         )
 
-        # CORS / CSRF / HTML templates
+        # CORS / CSRF
         app_config.cors_config = build_cors_config(settings)
         app_config.csrf_config = build_csrf_config(settings)
-        app_config.template_config = build_template_config(settings)
 
         # The Ward (4C-1): stamp every request's connection.user with the settings Sigil
-        # so the scope guards can rule. Excludes /static + /schema (unauthenticated assets).
+        # so the scope guards can rule. Excludes /_app + /schema (unauthenticated assets).
         from lychd.domain.codex.middleware import sigil_auth_middleware
 
         app_config.middleware.append(sigil_auth_middleware())
@@ -126,6 +119,9 @@ class AppInit(InitPluginProtocol):
         app_config.response_cache_config = ResponseCacheConfig(default_expiration=CACHE_EXPIRATION)
 
         # Routers (core product surfaces)
+        from litestar.static_files import create_static_files_router  # pyright: ignore[reportUnknownVariableType]
+
+        from lychd.config.constants import PATH_ALTAR_ASSET_DIR
         from lychd.interface.api.orchestrator import OrchestratorController
         from lychd.interface.web import (
             AltarController,
@@ -136,6 +132,11 @@ class AppInit(InitPluginProtocol):
 
         app_config.route_handlers.extend(
             [
+                create_static_files_router(
+                    path="/_app",
+                    directories=[PATH_ALTAR_ASSET_DIR],
+                    name="altar-assets",
+                ),
                 OrchestratorController,
                 AltarController,
                 BridgeController,

@@ -16,6 +16,9 @@ from lychd.agents.services import default_sigil
 from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.config.settings.root import get_settings
+from lychd.domain.animation.services.declarations import (
+    compile_animator_declarations,
+)
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.context import ContextOrchestrator
@@ -30,15 +33,14 @@ from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import resolve_switch_policy
 from lychd.domain.web.fragments import build_fragment_registry
-from lychd.domain.web.projection import Projector
+from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.tickets import TicketStore
 from lychd.system.services.runtime import build_runtime_actuator
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-    from litestar.contrib.jinja import JinjaTemplateEngine
-
+    from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.adapters.contracts import PortalRuntimeFactory, SoulstoneRuntimeAdapter
     from lychd.domain.codex.ledger import ConsentLedger
@@ -62,7 +64,7 @@ class AltarServices:
     consents: ConsentLedger
     tickets: TicketStore
     run_engine: RunEngine
-    projector: Projector
+    projector: EventProjector
     ledger: RunLedger
     bus: InProcessEventBus
     substrate: RunSubstrate
@@ -142,9 +144,8 @@ def _build_consent_ledger(profile: str) -> ConsentLedger:
 
 def build_altar_services(
     *,
-    template_engine: JinjaTemplateEngine,
     queues: Mapping[str, RunQueue],
-    rune_schemas: Sequence[type],
+    runes: RuneRegistry,
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
     portal_factories: Sequence[PortalRuntimeFactory] = (),
     profile: str | None = None,
@@ -165,7 +166,11 @@ def build_altar_services(
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
     registry = AnimatorRegistry(
-        rune_schemas=rune_schemas,
+        settings=settings,
+        declarations=compile_animator_declarations(
+            settings=settings,
+            runes=runes,
+        ),
         runtime_adapters=runtime_adapters,
         portal_factories=portal_factories,
     )
@@ -187,7 +192,7 @@ def build_altar_services(
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
     consents = _build_consent_ledger(profile)
     tickets = TicketStore()
-    projector = Projector(engine=template_engine, fragments=fragments, sessions=bridge_sessions, consents=consents)
+    projector = EventProjector(fragments=fragments, sessions=bridge_sessions, consents=consents)
     ledger = _build_run_ledger(profile)
     bus = InProcessEventBus(ledger=ledger)
     workflows = builtin_workflow_registry()

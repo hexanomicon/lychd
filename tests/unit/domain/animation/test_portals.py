@@ -9,7 +9,10 @@ import pytest
 import respx
 from pydantic_ai.models.openai import OpenAIChatModel
 
+from lychd.config.runes import ConfigLoader, RuneConfig
 from lychd.config.runes.extension import RuneConfigStore
+from lychd.config.runes.registry import RuneRegistry
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.extension import PortalStore
 from lychd.domain.animation.schemas import (
@@ -19,6 +22,10 @@ from lychd.domain.animation.schemas import (
 )
 from lychd.domain.animation.services.adapters.contracts import PortalDefinition
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+from lychd.domain.animation.services.declarations import (
+    AnimatorDeclarations,
+    compile_animator_declarations,
+)
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.leases import LeaseLedger
@@ -26,12 +33,24 @@ from lychd.extensions.builtin.animator.register import build_openai_portal
 from lychd.extensions.context import ExtensionContext
 from lychd.extensions.host import AssembledExtensions
 
-_PORTAL_SCHEMAS = [AnimatorConfig, PortalConfig, OpenAIPortalConfig]
+_PORTAL_SCHEMAS: list[type[RuneConfig]] = [
+    AnimatorConfig,
+    PortalConfig,
+    OpenAIPortalConfig,
+]
 
 
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"{content.strip()}\n", encoding="utf-8")
+
+
+def _portal_declarations(runes_dir: Path) -> AnimatorDeclarations:
+    return compile_animator_declarations(
+        settings=get_settings(),
+        runes=RuneRegistry(ConfigLoader(runes_dir).load_all(_PORTAL_SCHEMAS)),
+        core_reserved_ports={},
+    )
 
 
 # --- synthesis --------------------------------------------------------------
@@ -87,10 +106,9 @@ def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=_PORTAL_SCHEMAS,
+        settings=get_settings(),
+        declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
-        runes_dir=runes_dir,
-        reserved_ports={},
         portal_factories=[build_openai_portal],
     )
     registry.load()  # probe=False ⇒ no live probe; respx would raise on any egress
@@ -115,10 +133,9 @@ def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=_PORTAL_SCHEMAS,
+        settings=get_settings(),
+        declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
-        runes_dir=runes_dir,
-        reserved_ports={},
         portal_factories=[build_openai_portal],
     )
     registry.load()
@@ -192,10 +209,9 @@ async def test_portal_grant_hydrates_openai_model_with_overlay(
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=_PORTAL_SCHEMAS,
+        settings=get_settings(),
+        declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
-        runes_dir=runes_dir,
-        reserved_ports={},
         portal_factories=[build_openai_portal],
     )
     dispatcher = Dispatcher(registry=registry, leases=LeaseLedger())

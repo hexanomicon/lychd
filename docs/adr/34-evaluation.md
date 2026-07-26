@@ -79,7 +79,10 @@ The results of the Riddle are serialized into a **Capability Matrix** stored thr
 
 For technical riddles, the system rejects textual evaluation in favor of **Execution-Based Scoring**, governed by the `deepfabric` Evaluator library.
 
-- **The Simulation:** The model’s response is intercepted by the DeepFabric execution harness. Instead of using default lightweight sandboxes (e.g., Spin), DeepFabric is configured to route physical tool execution trials directly into the **[Shadow Realm (31)](31-simulation.md)** containers.
+- **The Simulation:** The model's response is intercepted by the DeepFabric execution harness.
+  Instead of using default lightweight sandboxes (for example, Spin), DeepFabric coordinates
+  speculative trials with **[Shadow Realm (31)](31-simulation.md)** state while dispatching unsafe
+  physical execution payloads into the Tomb. The Shadow Realm is not a container.
 - **The Outcome:** The model’s score is derived from actual execution metrics (`execution_success_rate`, `tool_selection_accuracy`) gathered from the Shadow Realm's unit tests and environment stability after the change.
 - **Truth over Monologue:** A model that produces beautiful but broken code is penalized by the Evaluator; a model that produces concise, functional code is rewarded. This is the endgame of optimization: **Stillness**. An efficient system makes one clean, targeted cut instead of burning tokens on unbounded speculation.
 

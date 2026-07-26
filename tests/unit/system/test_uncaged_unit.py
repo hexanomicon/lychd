@@ -20,6 +20,12 @@ from click.testing import CliRunner
 from lychd.cli.commands import bind_quadlets
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.transmute import transmute_uncaged_vessel
+from lychd.system.binding_sites import (
+    AttestedBindingSite,
+    AttestedBindingSites,
+)
+from lychd.system.host_tools import TrustedExecutable
+from lychd.system.readiness import BindingFoundation
 from lychd.system.schemas import SystemdService
 from lychd.system.services.binding_preflight import (
     BindingPreflightIssue,
@@ -201,7 +207,7 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader_cls.return_value.load_all.return_value = ([stone], [portal])
+    mock_loader_cls.return_value.hydrate_all.return_value = ([stone], [portal])
 
     mock_secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
     mock_secret_store.ensure_present.return_value = False
@@ -210,7 +216,9 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     mock_transmuter = mocker.patch("lychd.domain.animation.transmute.Transmuter").return_value
     mock_transmuter.transmute_all.return_value = ["rune1"]
 
-    mock_scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    mock_scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    ).return_value
     preflight = mocker.patch("lychd.system.services.binding_preflight.BindingPreflightService").return_value
     preflight.inspect.return_value = BindingPreflightReport(
         issues=(
@@ -218,15 +226,39 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
             if systemctl is not None
             else (
                 BindingPreflightIssue(
-                    code="systemctl-missing",
-                    target="systemctl",
-                    detail="systemctl is not available on PATH",
+                    code="host-foundation",
+                    target="systemd user manager",
+                    detail="systemd user manager is not reachable",
                 ),
             )
         ),
-        systemctl_bin=systemctl,
+        foundation=(
+            BindingFoundation(
+                systemctl=TrustedExecutable(path=systemctl, device=1, inode=1),
+                podman=TrustedExecutable(path="/usr/bin/podman", device=1, inode=2),
+                quadlet_user_generator=TrustedExecutable(
+                    path="/usr/lib/systemd/user-generators/podman-user-generator",
+                    device=1,
+                    inode=3,
+                ),
+                sites=AttestedBindingSites(
+                    quadlet=AttestedBindingSite(
+                        path=Path.home() / ".config" / "containers" / "systemd",
+                        device=1,
+                        inode=4,
+                    ),
+                    systemd_user=AttestedBindingSite(
+                        path=Path.home() / ".config" / "systemd" / "user",
+                        device=1,
+                        inode=5,
+                    ),
+                ),
+            )
+            if systemctl is not None
+            else None
+        ),
     )
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     mock_subprocess = mocker.patch("subprocess.run")
     mock_subprocess.return_value = subprocess.CompletedProcess(
         args=("/usr/bin/systemctl", "--user", "daemon-reload"),
@@ -271,7 +303,7 @@ def test_bind_uncaged_without_systemd_blocks_before_writing(
 
     assert result.exit_code != 0
     assert "PREFLIGHT" in result.output
-    assert "systemctl is not available on PATH" in result.output
+    assert "systemd user manager is not reachable" in result.output
     mocks.scribe.reconcile_all.assert_not_called()
     assert mocks.subprocess.call_args_list == []
 

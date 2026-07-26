@@ -15,10 +15,10 @@ PATH_MIGRATION_DIR: Final[Path] = BASE_DIR / "db" / "migrations"
 PATH_MIGRATION_CONFIG: Final[Path] = PATH_MIGRATION_DIR / "alembic.ini"
 DB_MIGRATION_VERSION_TABLE: Final[str] = DEFAULT_MODULE_NAME + "_db_version"
 
-# --- Vite Frontend Assets ---
-PATH_VITE_BUNDLE_DIR: Final[Path] = BASE_DIR / "public"
-PATH_VITE_RESOURCE_DIR: Final[Path] = Path("resources")
-PATH_HTML_TEMPLATE_DIR: Final[Path] = BASE_DIR / "domain" / "web" / "templates"
+# --- Static Svelte Altar ---
+PATH_ALTAR_PUBLIC_DIR: Final[Path] = BASE_DIR / "public"
+PATH_ALTAR_ASSET_DIR: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "_app"
+PATH_ALTAR_INDEX: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "index.html"
 
 # APP SETTINGS
 

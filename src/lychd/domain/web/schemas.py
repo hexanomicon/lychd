@@ -1,8 +1,4 @@
-"""Typed view-models for the Altar HTMX surfaces (§2).
-
-Pure, frozen data carried from domain services into templates. No IO, no
-rendering — the controllers build these and hand them to Jinja as context.
-"""
+"""Pure view-models serialized through the Altar's typed client contract."""
 
 from __future__ import annotations
 

@@ -1,12 +1,4 @@
-"""`BridgeController` — Bridge page, session, send, SSE stream, consent, inspector.
-
-The chat surface and the mature core the rest of the Altar is normalized to. `send`
-launches a run via the single `RunEngine.submit()` law and returns the two sibling
-turn fragments plus an out-of-band rail update (one wrapper template); `stream` maps
-the run's `RunChannel` events to Server-Sent Events, rendering every payload through
-the `Projector` (Projection Law); `consent` records the Magus's verdict and re-renders
-the card (the honest park-and-resume seam lands in Wave 4).
-"""
+"""Versioned Bridge JSON API and semantic run-event stream."""
 
 from __future__ import annotations
 
@@ -14,44 +6,47 @@ import asyncio
 import contextlib
 from typing import TYPE_CHECKING, Any, cast
 
-from litestar import Controller, get, post
+from litestar import Controller, Request, get, post
 from litestar.datastructures import State
-from litestar.exceptions import NotFoundException
-from litestar.plugins.htmx import HTMXRequest, HTMXTemplate, HXLocation
-from litestar.response import Redirect, Response, ServerSentEvent, ServerSentEventMessage, Template
-from litestar.status_codes import (
-    HTTP_200_OK,
-    HTTP_303_SEE_OTHER,
-    HTTP_400_BAD_REQUEST,
-    HTTP_404_NOT_FOUND,
-)
+from litestar.di import NamedDependency
+from litestar.exceptions import NotFoundException, ValidationException
+from litestar.openapi.datastructures import ResponseSpec
+from litestar.params import FromPath
+from litestar.response import ServerSentEvent, ServerSentEventMessage
+from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 
 from lychd.agents.router import Intent
-
-# Runtime imports: Litestar resolves handler param/return annotations at registration.
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.runs import TERMINAL_STATUSES
-from lychd.domain.web.projection import Projector
-from lychd.domain.web.schemas import BridgeTurn
-from lychd.domain.web.sessions import SessionStorePort
+from lychd.domain.web.contracts import (
+    BridgeSnapshot,
+    BridgeTurnView,
+    ConsentDecisionIntent,
+    ConsentDecisionResult,
+    MessageAccepted,
+    MessageIntent,
+    RunEventEnvelope,
+    SessionCreated,
+    SessionInspector,
+    SessionSummary,
+    SessionView,
+)
+from lychd.domain.web.projection import EventProjector
+from lychd.domain.web.schemas import BridgeTurn, ConsentCard
+from lychd.domain.web.sessions import SessionRecord, SessionStorePort
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from lychd.domain.codex.sigil import Sigil
-    from lychd.domain.web.schemas import ConsentCard
-    from lychd.domain.web.sessions import SessionRecord
 
-# Keepalive cadence: litestar's `ServerSentEvent` has NO `ping_interval` param
-# (verified in .venv, saq/litestar), so a comment-event fallback keeps proxies open.
 _SSE_KEEPALIVE_S = 15.0
 
 
 def _parse_last_event_id(raw: str | None) -> int | None:
-    """Parse a `Last-Event-ID` header (an event seq) to an int, or `None`."""
     if raw is None:
         return None
     try:
@@ -60,87 +55,129 @@ def _parse_last_event_id(raw: str | None) -> int | None:
         return None
 
 
-async def _terminal_stream(projector: Projector, run_id: str, status: str) -> AsyncIterator[ServerSentEventMessage]:
-    """Synthesize a finite STATUS+DONE stream for an already-terminal run (F5/H4).
+def _turn_view(turn: BridgeTurn) -> BridgeTurnView:
+    return BridgeTurnView(
+        role=turn.role,
+        content=turn.content,
+        run_id=turn.run_id,
+        state=turn.state,
+        fragments=list(turn.fragments),
+        created_at=turn.created_at,
+    )
 
-    A client that (re)connects after the run finished and its channel was dropped
-    gets an immediate, honest resync — the settled status then the terminal — and the
-    stream ends. It never subscribes to a minted-empty channel and never hangs.
-    """
+
+def _session_summary(session: SessionRecord) -> SessionSummary:
+    return SessionSummary(id=session.id, title=session.title, created_at=session.created_at)
+
+
+def _session_view(session: SessionRecord) -> SessionView:
+    return SessionView(
+        id=session.id,
+        title=session.title,
+        created_at=session.created_at,
+        turns=[_turn_view(turn) for turn in session.turns],
+    )
+
+
+async def _terminal_stream(
+    projector: EventProjector,
+    run_id: str,
+    status: str,
+) -> AsyncIterator[ServerSentEventMessage]:
     status_event = RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data=status)
     done_event = RunEvent(run_id=run_id, seq=1, kind=RunEventKind.DONE, data=status)
-    yield ServerSentEventMessage(event="status", data=await projector.project(status_event), id="0")
-    yield ServerSentEventMessage(event="done", data=await projector.project(done_event), id="1")
+    for event in (status_event, done_event):
+        envelope = await projector.project(event)
+        yield ServerSentEventMessage(
+            event=envelope.kind,
+            data=envelope.model_dump_json(),
+            id=str(envelope.seq),
+        )
 
 
 class BridgeController(Controller):
-    """Serve the Bridge page and all of its fragments, SSE, and consent endpoints."""
+    """Serve the Bridge through one typed `/api/v1` contract."""
 
-    path = "/bridge"
+    path = "/api/v1/bridge"
 
-    @get("/", name="bridge:page", guards=[requires_scopes("altar:read")])
-    async def page(
-        self, bridge_sessions: SessionStorePort, consents: ConsentLedger, projector: Projector, state: State
-    ) -> Template:
-        """Render the Bridge over the newest session (or an empty shell)."""
+    @get("", name="bridge:snapshot", operation_id="getBridgeSnapshot", guards=[requires_scopes("altar:read")])
+    async def snapshot(
+        self,
+        bridge_sessions: NamedDependency[SessionStorePort],
+        consents: NamedDependency[ConsentLedger],
+        projector: NamedDependency[EventProjector],
+        state: State,
+    ) -> BridgeSnapshot:
+        """Return the newest session or an empty reconstructable Bridge."""
         sessions = await bridge_sessions.list_sessions()
         session = sessions[0] if sessions else None
-        cards = await self._pending_cards(consents, projector, state, session)
-        return self._bridge_page(sessions, session, await consents.pending_count(), cards)
+        return await self._snapshot(sessions, session, consents, projector, state)
 
-    @get("/{session_id:str}", name="bridge:session", guards=[requires_scopes("altar:read")])
-    async def session_page(
+    @get(
+        "/sessions/{session_id:str}",
+        name="bridge:session",
+        operation_id="getBridgeSession",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def session_snapshot(
         self,
-        session_id: str,
-        bridge_sessions: SessionStorePort,
-        consents: ConsentLedger,
-        projector: Projector,
+        session_id: FromPath[str],
+        bridge_sessions: NamedDependency[SessionStorePort],
+        consents: NamedDependency[ConsentLedger],
+        projector: NamedDependency[EventProjector],
         state: State,
-    ) -> Template:
-        """Render the Bridge over the selected session."""
-        sessions = await bridge_sessions.list_sessions()
-        session = await bridge_sessions.get_session(session_id)
-        cards = await self._pending_cards(consents, projector, state, session)
-        return self._bridge_page(sessions, session, await consents.pending_count(), cards)
-
-    @post("/sessions", status_code=HTTP_200_OK, name="bridge:create", guards=[requires_scopes("runs:submit")])
-    async def create_session(
-        self,
-        request: HTMXRequest,
-        bridge_sessions: SessionStorePort,
-    ) -> Response[Any]:
-        """Open a new séance and steer the client onto it."""
-        session = await bridge_sessions.create_session()
-        target = f"/bridge/{session.id}"
-        if request.htmx:
-            return HXLocation(target, target="#altar-main", swap="innerHTML")
-        return Redirect(target, status_code=HTTP_303_SEE_OTHER)
-
-    @post("/{session_id:str}/messages", name="bridge:send", guards=[requires_scopes("runs:submit")])
-    async def send(
-        self,
-        request: HTMXRequest,
-        session_id: str,
-        bridge_sessions: SessionStorePort,
-        run_engine: RunEngine,
-    ) -> Template | Response[str]:
-        """Record the user turn, launch the run, and return the two turn fragments."""
-        if not request.htmx:
-            return Response(content="Bridge send is an HTMX-only endpoint.", status_code=HTTP_400_BAD_REQUEST)
-
+    ) -> BridgeSnapshot:
+        """Return one selected session and the full session rail."""
         session = await bridge_sessions.get_session(session_id)
         if session is None:
-            return Response(content="Unknown session.", status_code=HTTP_404_NOT_FOUND)
+            raise NotFoundException(detail="Unknown session.")
+        return await self._snapshot(
+            await bridge_sessions.list_sessions(),
+            session,
+            consents,
+            projector,
+            state,
+        )
 
-        form = await request.form()
-        prompt = str(form.get("prompt", "")).strip()
+    @post(
+        "/sessions",
+        status_code=HTTP_201_CREATED,
+        name="bridge:create",
+        operation_id="createBridgeSession",
+        guards=[requires_scopes("runs:submit")],
+    )
+    async def create_session(
+        self,
+        bridge_sessions: NamedDependency[SessionStorePort],
+    ) -> SessionCreated:
+        """Open a new séance and return its typed identity."""
+        return SessionCreated(session=_session_view(await bridge_sessions.create_session()))
+
+    @post(
+        "/sessions/{session_id:str}/messages",
+        status_code=HTTP_200_OK,
+        name="bridge:send",
+        operation_id="sendBridgeMessage",
+        guards=[requires_scopes("runs:submit")],
+    )
+    async def send(
+        self,
+        request: Request[Any, Any, Any],
+        data: MessageIntent,
+        session_id: FromPath[str],
+        bridge_sessions: NamedDependency[SessionStorePort],
+        run_engine: NamedDependency[RunEngine],
+    ) -> MessageAccepted:
+        """Record a complete text command and admit one run."""
+        session = await bridge_sessions.get_session(session_id)
+        if session is None:
+            raise NotFoundException(detail="Unknown session.")
+        prompt = data.prompt.strip()
         if not prompt:
-            return Response(content="An empty offering cannot be spoken.", status_code=HTTP_400_BAD_REQUEST)
+            raise ValidationException(detail="An empty offering cannot be spoken.")
 
-        # S3: the bridge no longer mints a `run_…` id. The run identity is the
-        # ledger's to assign; `engine.submit` returns the canonical id on the handle,
-        # and every downstream surface (this SSE slot, Step rows, stasis) uses it.
-        await bridge_sessions.add_turn(session_id, BridgeTurn(role="user", content=prompt))
+        turn = BridgeTurn(role="user", content=prompt)
+        await bridge_sessions.add_turn(session_id, turn)
         sigil = cast("Sigil", request.user)
         handle = await run_engine.submit(
             Intent(
@@ -151,50 +188,39 @@ class BridgeController(Controller):
                 sigil_scopes=frozenset(sigil.scopes),
             )
         )
-        return HTMXTemplate(
-            template_name="bridge/message_accepted.html.j2",
-            context={
-                "turn": BridgeTurn(role="user", content=prompt),
-                "run_id": handle.run_id,
-                "item": session,
-                "current": True,
-                "oob": True,
-            },
-        )
+        return MessageAccepted(run_id=handle.run_id, turn=_turn_view(turn))
 
-    @get("/runs/{run_id:str}/stream", name="bridge:stream", guards=[requires_scopes("altar:read")])
-    async def stream(
+    @get(
+        "/runs/{run_id:str}/events",
+        name="bridge:events",
+        operation_id="streamBridgeRunEvents",
+        guards=[requires_scopes("altar:read")],
+        responses={
+            HTTP_200_OK: ResponseSpec(
+                RunEventEnvelope,
+                generate_examples=False,
+                media_type="text/event-stream",
+                description="Versioned semantic run events.",
+            ),
+        },
+    )
+    async def events(
         self,
-        request: HTMXRequest,
-        run_id: str,
-        run_bus: InProcessEventBus,
-        projector: Projector,
+        request: Request[Any, Any, Any],
+        run_id: FromPath[str],
+        run_bus: NamedDependency[InProcessEventBus],
+        projector: NamedDependency[EventProjector],
         state: State,
     ) -> ServerSentEvent:
-        """Stream the run's events as SSE, rendered through the Projector.
-
-        Ledger-first (F5/H4): consult the run ledger BEFORE subscribing so the stream
-        never mints an empty channel that hangs on keepalives forever.
-        - unknown run → 404;
-        - already-terminal run → synthetic STATUS + DONE, then end;
-        - live run → subscribe to its channel.
-
-        Reconnect (A2-U5): a `Last-Event-ID` header replays events strictly after that
-        seq over `RunChannel.subscribe(from_seq)`; a cursor that does not align with
-        the live head yields a fresh STATUS resync (never silence, never an error). A
-        keepalive comment fires on idle since litestar's `ServerSentEvent` has no
-        `ping_interval`.
-        """
+        """Stream versioned JSON envelopes with replay and terminal synthesis."""
         from_seq = _parse_last_event_id(request.headers.get("Last-Event-ID"))
-
-        ledger = state.services.ledger
-        run = await ledger.get(run_id)
+        run = await state.services.ledger.get(run_id)
         if run is None:
             raise NotFoundException(detail="Unknown run.")
         if run.status in TERMINAL_STATUSES:
             return ServerSentEvent(_terminal_stream(projector, run_id, run.status.value))
 
-        async def events() -> AsyncIterator[ServerSentEventMessage]:
+        async def stream() -> AsyncIterator[ServerSentEventMessage]:
             source = run_bus.subscribe(run_id, from_seq=from_seq)
             pending: asyncio.Task[Any] | None = None
             try:
@@ -202,7 +228,7 @@ class BridgeController(Controller):
                     if pending is None:
                         pending = asyncio.ensure_future(source.__anext__())
                     done, _ = await asyncio.wait({pending}, timeout=_SSE_KEEPALIVE_S)
-                    if not done:  # idle: keep proxies open without dropping the queued item
+                    if not done:
                         yield ServerSentEventMessage(comment="keepalive")
                         continue
                     try:
@@ -211,15 +237,13 @@ class BridgeController(Controller):
                         return
                     finally:
                         pending = None
+                    envelope = await projector.project(event)
                     yield ServerSentEventMessage(
-                        event=str(event.kind),
-                        data=await projector.project(event),
-                        id=str(event.seq),
+                        event=envelope.kind,
+                        data=envelope.model_dump_json(),
+                        id=str(envelope.seq),
                     )
             finally:
-                # F10: await the cancelled pending task before closing the generator, so
-                # its subscriber queue is discarded (in `subscribe`'s finally) before we
-                # walk away — no lingering entry in `RunChannel._subscribers`.
                 if pending is not None:
                     pending.cancel()
                     with contextlib.suppress(BaseException):
@@ -229,99 +253,89 @@ class BridgeController(Controller):
                     with contextlib.suppress(Exception):
                         await aclose()
 
-        return ServerSentEvent(events())
+        return ServerSentEvent(stream())
 
-    @post("/consents/{consent_id:str}", name="bridge:consent", guards=[requires_scopes("runs:approve")])
+    @post(
+        "/consents/{consent_id:str}/decision",
+        status_code=HTTP_200_OK,
+        name="bridge:consent",
+        operation_id="decideBridgeConsent",
+        guards=[requires_scopes("runs:approve")],
+    )
     async def consent(
         self,
-        request: HTMXRequest,
-        consent_id: str,
-        consents: ConsentLedger,
-        run_engine: RunEngine,
-        projector: Projector,
-    ) -> Template | Response[str]:
-        """Record the Magus's verdict, resume the parked run, re-render the card.
-
-        Ordering is load-bearing (C3): the verdict row commits (`consents.decide`)
-        BEFORE `run_engine.approve` re-enqueues, so the resumed `AwaitConsent` always
-        reads a non-None verdict. Idempotent: a settled verdict re-renders, never re-resolves.
-        """
-        if not request.htmx:
-            return Response(content="Consent is an HTMX-only endpoint.", status_code=HTTP_400_BAD_REQUEST)
-
+        request: Request[Any, Any, Any],
+        data: ConsentDecisionIntent,
+        consent_id: FromPath[str],
+        consents: NamedDependency[ConsentLedger],
+        run_engine: NamedDependency[RunEngine],
+        projector: NamedDependency[EventProjector],
+    ) -> ConsentDecisionResult:
+        """Commit one idempotent verdict before re-admitting the parked run."""
         view = await consents.get(consent_id)
         if view is None:
-            return Response(content="Unknown consent.", status_code=HTTP_404_NOT_FOUND)
-
-        if view.status != "pending":  # idempotent: settled verdicts re-render, never re-resolve
-            return HTMXTemplate(
-                template_name="bridge/consent_update.html.j2",
-                context=await projector.consent_context(view),
-            )
-
-        form = await request.form()
-        approved = str(form.get("verdict", "")) == "approve"
-        sigil = cast("Sigil", request.user)  # the middleware Sigil (4C-1)
-        decided = await consents.decide(consent_id, approved=approved, decided_by=sigil.name)
-        await run_engine.approve(consent_id, approved=approved)  # AFTER the row commit — load-bearing
-        return HTMXTemplate(
-            template_name="bridge/consent_update.html.j2",
-            context=await projector.consent_context(decided or view),
+            raise NotFoundException(detail="Unknown consent.")
+        if view.status == "pending":
+            approved = data.verdict == "approve"
+            sigil = cast("Sigil", request.user)
+            decided = await consents.decide(consent_id, approved=approved, decided_by=sigil.name)
+            await run_engine.approve(consent_id, approved=approved)
+            view = decided or view
+        return ConsentDecisionResult(
+            consent=projector.consent_card_view(view),
+            pending_count=await consents.pending_count(),
         )
 
-    @get("/{session_id:str}/inspector", name="bridge:inspector", guards=[requires_scopes("altar:read")])
+    @get(
+        "/sessions/{session_id:str}/inspector",
+        name="bridge:inspector",
+        operation_id="getBridgeSessionInspector",
+        guards=[requires_scopes("altar:read")],
+    )
     async def inspector(
         self,
-        session_id: str,
-        bridge_sessions: SessionStorePort,
-        consents: ConsentLedger,
-    ) -> Template:
-        """Render the contextual inspector for the selected session."""
+        session_id: FromPath[str],
+        bridge_sessions: NamedDependency[SessionStorePort],
+        consents: NamedDependency[ConsentLedger],
+    ) -> SessionInspector:
+        """Return a compact contextual inspector."""
         session = await bridge_sessions.get_session(session_id)
-        return Template(
-            template_name="bridge/inspector.html.j2",
-            context={
-                "session": session,
-                "session_id": session_id,
-                "pending": await consents.pending_count(),
-            },
+        if session is None:
+            raise NotFoundException(detail="Unknown session.")
+        return SessionInspector(
+            session_id=session_id,
+            title=session.title,
+            turn_count=len(session.turns),
+            pending_count=await consents.pending_count(),
         )
 
-    # -- helpers ----------------------------------------------------------
+    async def _snapshot(
+        self,
+        sessions: list[SessionRecord],
+        session: SessionRecord | None,
+        consents: ConsentLedger,
+        projector: EventProjector,
+        state: State,
+    ) -> BridgeSnapshot:
+        return BridgeSnapshot(
+            sessions=[_session_summary(item) for item in sessions],
+            session=_session_view(session) if session is not None else None,
+            pending_consents=await self._pending_cards(consents, projector, state, session),
+            pending_count=await consents.pending_count(),
+        )
 
     async def _pending_cards(
         self,
         consents: ConsentLedger,
-        projector: Projector,
+        projector: EventProjector,
         state: State,
         session: SessionRecord | None,
     ) -> list[ConsentCard]:
-        """Still-pending consent cards belonging to the rendered session (restart re-render)."""
         if session is None:
             return []
-        ledger = state.services.ledger
         cards: list[ConsentCard] = []
         for view in await consents.pending_views():
-            run = await ledger.get(view.run_id)
+            run = await state.services.ledger.get(view.run_id)
             if run is not None and run.session_id == session.id:
                 cards.append(projector.consent_card_view(view))
         return cards
-
-    def _bridge_page(
-        self,
-        sessions: list[SessionRecord],
-        session: SessionRecord | None,
-        pending: int,
-        pending_consents: list[ConsentCard],
-    ) -> Template:
-        return Template(
-            template_name="altar/pages/bridge.html.j2",
-            context={
-                "active": "bridge",
-                "pending": pending,
-                "pending_consents": pending_consents,
-                "sessions": sessions,
-                "session": session,
-                "turns": session.turns if session is not None else [],
-            },
-        )

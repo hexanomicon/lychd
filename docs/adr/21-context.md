@@ -42,7 +42,10 @@ icon: material/text-box-multiple-outline
 
 **Context Aware Generation (CAG)** is adopted as the primary strategy for deep reasoning, enabled by a strict **Prompt Caching** discipline and a heuristic **Context Manager**. The implementation utilizes Pydantic AI's `RunContext` as the universal primitive for all cognitive rituals.
 
-Context is the temporary active field of cognition. It functions as the **Aisthēsis** (Gk. Αἴσθησις — integrated experience; the perceived simulacrum) — the unified holograph where **Ahaṃkāra** binds the raw **Sēmeion** of **Citta** into a coherent field of experience. It is a bounded surface where identity, world-model artifacts, prior outcomes, and the current request are made simultaneously visible for one reasoning cycle.
+Context is the temporary active surface of **the Spirit**—LychD's correspondence for Citta. It
+functions as the **Aisthēsis** (Gk. Αἴσθησις — integrated experience; the perceived simulacrum):
+the bounded surface where the Answer binds signs, identity, world-model artifacts, prior outcomes,
+and the current request into one attributable field for a reasoning cycle.
 
 ### 1. The Cache Protocol (The Stable Floor)
 
@@ -57,7 +60,11 @@ To exploit KV Cache capabilities, a deterministic ordering of message blocks is 
 
 **The Result:** The inference engine hashes the prefix. As long as the Codex, Identity, and Karma remain unchanged, the system "remembers" the bulk of the data without re-processing, collapsing time-to-first-token.
 
-Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of the **[Lich](../sepulcher/lich.md)**, the context window is the active field of **Citta** (from *cit*: to perceive — the total LLM generation field). The static prefix layers — Identity, Codex, Karma — are the substrate: the settled Saṃskāras, the lake bed. The volatile layers — State, Query — are the active **Vṛttis** (from *vrt*: to whirl): they disturb only the surface. Keeping the bed still while the surface churns is both the KV cache strategy and the cognitive architecture of clear perception.
+Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of
+the **[Lich](../sepulcher/lich/index.md)**, Context is the active surface of **the Spirit**. The
+static prefix layers—Identity, Codex, Karma—plant selected **Seeds**. The volatile layers—State
+and Query—shape **the Flux**. Keeping the inherited floor stable while present movement changes is
+both the KV-cache strategy and the cognitive architecture of clear perception.
 
 !!! note "The Cache Meridian"
     The reuse-stable prefix is layers 1–3. Layer 4 (**Karma**) is **session-pinned by default**: recall is performed once at session open and mutates only at declared boundaries, so intra-session cache reuse is preserved across the whole floor. A **[Codex (ADR 12)](./12-configuration.md)** flag MAY demote Karma to per-turn recall, at the cost of moving the Meridian to after layer 3 — everything from layer 4 down then re-prefills each turn. The point is that the Meridian's position is a stated policy, never an accident: whichever default the Magus prefers, the boundary is declared.

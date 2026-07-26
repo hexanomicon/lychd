@@ -9,6 +9,7 @@ import lychd.config.settings.root as settings_module
 from lychd.config.settings.root import Settings, get_settings
 from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
 from lychd.system.services.codex import CodexService
+from lychd.system.services.lifecycle import CreatedResources
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -19,14 +20,16 @@ def codex_paths(tmp_path: Path) -> dict[str, Path]:
     """Define a temporary Codex structure."""
     root = tmp_path / "config"
     runes = root / "runes"
+    postgres = tmp_path / "postgres"
 
     runes.mkdir(parents=True, exist_ok=True)
+    postgres.mkdir()
 
     return {
         "root": root,
         "toml": root / "lychd.toml",
         "runes": runes,
-        "postgres": tmp_path / "postgres",
+        "postgres": postgres,
     }
 
 
@@ -115,6 +118,21 @@ def test_idempotency(codex_service: CodexService, codex_paths: dict[str, Path]) 
 
     codex_paths["toml"].write_text("modified = true", encoding="utf-8")
 
-    codex_service.inscribe()
+    repeated = codex_service.inscribe()
 
     assert codex_paths["toml"].read_text(encoding="utf-8") == "modified = true"
+    assert repeated == CreatedResources()
+
+
+def test_inscribe_returns_the_same_exact_batches_sent_to_the_journal(
+    codex_service: CodexService,
+) -> None:
+    """Codex never reconstructs exact creation truth from replaceable paths."""
+    journal: list[CreatedResources] = []
+
+    resources = codex_service.inscribe(on_created=journal.append)
+
+    assert resources == CreatedResources.combine(*journal)
+    assert resources.files
+    assert resources.directories
+    assert {identity.path for identity in resources.directory_identities} == set(resources.directories)

@@ -22,8 +22,13 @@ externally owned.
 
 ### I. The whole, its law, body, and memory
 
-- **[Lich](./lich.md) — the recurrent whole.** Read this for the deeper cognitive and mythic system
-  map, after the physical owners below are clear. It is not a service unit.
+- **[Lich](./lich/index.md) — the recurrent whole.** Read this for the deeper cognitive and mythic
+  system map. It is the conceptual foyer and may be entered before the physical owners; return
+  here afterward to locate which concrete organ owns each mechanism. Its parent page owns [the
+  canonical birth of an Agent](./lich/index.md#the-first-invocation); its four coequal functions
+  begin with [the
+  Call](./lich/call.md), [the Blade](./lich/blade.md), [the Spirit](./lich/spirit/index.md), and
+  [the Answer](./lich/answer.md). The Lich is not a service unit.
 - **[Codex](./codex.md) — editable configuration intent.** Read this when changing settings or
   Runes, resolving configuration precedence, or preparing `lychd bind`.
 - **[Crypt](./crypt.md) — managed persistent files.** Read this when locating LychD's XDG data home,

@@ -1,0 +1,1542 @@
+{
+  "components": {
+    "schemas": {
+      "AltarStatus": {
+        "properties": {
+          "pending_consents": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pending_consents"
+        ],
+        "title": "AltarStatus",
+        "type": "object"
+      },
+      "BridgeSnapshot": {
+        "properties": {
+          "pending_consents": {
+            "items": {
+              "$ref": "#/components/schemas/ConsentCard"
+            },
+            "type": "array"
+          },
+          "pending_count": {
+            "type": "integer"
+          },
+          "session": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "pending_consents",
+          "pending_count",
+          "session",
+          "sessions"
+        ],
+        "title": "BridgeSnapshot",
+        "type": "object"
+      },
+      "BridgeTurnView": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fragments": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "agent"
+            ],
+            "type": "string"
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "default": "settled",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "created_at",
+          "role"
+        ],
+        "title": "BridgeTurnView",
+        "type": "object"
+      },
+      "ConsentCard": {
+        "properties": {
+          "args": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "session_id": {
+            "default": "",
+            "type": "string"
+          },
+          "state": {
+            "default": "pending_consent",
+            "enum": [
+              "pending_consent",
+              "consented",
+              "refused"
+            ],
+            "type": "string"
+          },
+          "tool_name": {
+            "type": "string"
+          },
+          "vision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "args",
+          "id",
+          "run_id",
+          "tool_name",
+          "vision"
+        ],
+        "title": "ConsentCard",
+        "type": "object"
+      },
+      "ConsentDecisionIntent": {
+        "properties": {
+          "verdict": {
+            "enum": [
+              "approve",
+              "deny"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict"
+        ],
+        "title": "ConsentDecisionIntent",
+        "type": "object"
+      },
+      "ConsentDecisionResult": {
+        "properties": {
+          "consent": {
+            "$ref": "#/components/schemas/ConsentCard"
+          },
+          "pending_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "consent",
+          "pending_count"
+        ],
+        "title": "ConsentDecisionResult",
+        "type": "object"
+      },
+      "LoomSummary": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "trigger_hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "name",
+          "title",
+          "trigger_hint"
+        ],
+        "title": "LoomSummary",
+        "type": "object"
+      },
+      "LoomView": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "mermaid_source": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "node_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "trigger_hint": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "mermaid_source",
+          "name",
+          "node_names",
+          "title",
+          "trigger_hint"
+        ],
+        "title": "LoomView",
+        "type": "object"
+      },
+      "MessageAccepted": {
+        "properties": {
+          "run_id": {
+            "type": "string"
+          },
+          "turn": {
+            "$ref": "#/components/schemas/BridgeTurnView"
+          }
+        },
+        "required": [
+          "run_id",
+          "turn"
+        ],
+        "title": "MessageAccepted",
+        "type": "object"
+      },
+      "MessageIntent": {
+        "properties": {
+          "prompt": {
+            "maxLength": 100000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "title": "MessageIntent",
+        "type": "object"
+      },
+      "NexusBoard": {
+        "properties": {
+          "covens": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/NexusCovenRow"
+                  },
+                  "type": "array"
+                }
+              ],
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "portals": {
+            "items": {
+              "$ref": "#/components/schemas/NexusCovenRow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "covens",
+          "portals"
+        ],
+        "title": "NexusBoard",
+        "type": "object"
+      },
+      "NexusCovenRow": {
+        "properties": {
+          "animator_name": {
+            "type": "string"
+          },
+          "capability_key": {
+            "type": "string"
+          },
+          "dedicated": {
+            "type": "boolean"
+          },
+          "family": {
+            "type": "string"
+          },
+          "health": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "model_id": {
+            "type": "string"
+          },
+          "persistent_resident": {
+            "type": "boolean"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runtime": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "active",
+              "warm",
+              "awaited",
+              "warming",
+              "cold",
+              "fault"
+            ],
+            "type": "string"
+          },
+          "warm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "animator_name",
+          "capability_key",
+          "dedicated",
+          "family",
+          "health",
+          "is_active",
+          "model_id",
+          "persistent_resident",
+          "reason",
+          "runtime",
+          "state",
+          "warm"
+        ],
+        "title": "NexusCovenRow",
+        "type": "object"
+      },
+      "NexusSnapshot": {
+        "properties": {
+          "board": {
+            "$ref": "#/components/schemas/NexusBoard"
+          }
+        },
+        "required": [
+          "board"
+        ],
+        "title": "NexusSnapshot",
+        "type": "object"
+      },
+      "RunEventEnvelope": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "token",
+              "status",
+              "node",
+              "fragment",
+              "consent",
+              "log",
+              "done",
+              "resync"
+            ],
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "type": "integer"
+          },
+          "seq": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "occurred_at",
+          "payload",
+          "run_id",
+          "seq"
+        ],
+        "title": "RunEventEnvelope",
+        "type": "object"
+      },
+      "SessionCreated": {
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/SessionView"
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "title": "SessionCreated",
+        "type": "object"
+      },
+      "SessionInspector": {
+        "properties": {
+          "pending_count": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "turn_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pending_count",
+          "session_id",
+          "title",
+          "turn_count"
+        ],
+        "title": "SessionInspector",
+        "type": "object"
+      },
+      "SessionSummary": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "title"
+        ],
+        "title": "SessionSummary",
+        "type": "object"
+      },
+      "SessionView": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/BridgeTurnView"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "title"
+        ],
+        "title": "SessionView",
+        "type": "object"
+      },
+      "SwapAccepted": {
+        "properties": {
+          "ticket": {
+            "$ref": "#/components/schemas/SwapTicket"
+          }
+        },
+        "required": [
+          "ticket"
+        ],
+        "title": "SwapAccepted",
+        "type": "object"
+      },
+      "SwapIntent": {
+        "properties": {
+          "target": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "title": "SwapIntent",
+        "type": "object"
+      },
+      "SwapTicket": {
+        "properties": {
+          "action_type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "warming",
+              "settled",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "total_metabolic_cost": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "action_type",
+          "id",
+          "state",
+          "target",
+          "total_metabolic_cost"
+        ],
+        "title": "SwapTicket",
+        "type": "object"
+      },
+      "TransitionEventEnvelope": {
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "type": "integer"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "ticket": {
+            "$ref": "#/components/schemas/SwapTicket"
+          }
+        },
+        "required": [
+          "seq",
+          "ticket"
+        ],
+        "title": "TransitionEventEnvelope",
+        "type": "object"
+      },
+      "TransitionPlan": {
+        "properties": {
+          "action_type": {
+            "description": "The physical intensity of the transition",
+            "enum": [
+              "HARD_SWAP",
+              "SOFT_SWAP",
+              "NO_OP"
+            ],
+            "type": "string"
+          },
+          "evict_coven_ids": {
+            "description": "Animator ids selected for stop/eviction",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "launch_coven_ids": {
+            "description": "Animator ids selected for start/activation",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "policy": {
+            "default": "",
+            "description": "Name of the switch policy that produced this plan",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Optional human-readable rationale for the plan",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_metabolic_cost": {
+            "description": "Number of animator evictions selected for the transition",
+            "type": "number"
+          }
+        },
+        "required": [
+          "action_type",
+          "evict_coven_ids",
+          "launch_coven_ids",
+          "total_metabolic_cost"
+        ],
+        "title": "TransitionPlan",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "LychD Altar API",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/altar/status": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getAltarStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AltarStatus"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Status"
+      }
+    },
+    "/api/v1/bridge": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getBridgeSnapshot",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Snapshot"
+      }
+    },
+    "/api/v1/bridge/consents/{consent_id}/decision": {
+      "post": {
+        "deprecated": false,
+        "operationId": "decideBridgeConsent",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "consent_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentDecisionIntent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentDecisionResult"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Consent"
+      }
+    },
+    "/api/v1/bridge/runs/{run_id}/events": {
+      "get": {
+        "deprecated": false,
+        "operationId": "streamBridgeRunEvents",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunEventEnvelope"
+                }
+              }
+            },
+            "description": "Versioned semantic run events."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Events"
+      }
+    },
+    "/api/v1/bridge/sessions": {
+      "post": {
+        "deprecated": false,
+        "operationId": "createBridgeSession",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreated"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          }
+        },
+        "summary": "CreateSession"
+      }
+    },
+    "/api/v1/bridge/sessions/{session_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getBridgeSession",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SessionSnapshot"
+      }
+    },
+    "/api/v1/bridge/sessions/{session_id}/inspector": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getBridgeSessionInspector",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInspector"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Inspector"
+      }
+    },
+    "/api/v1/bridge/sessions/{session_id}/messages": {
+      "post": {
+        "deprecated": false,
+        "operationId": "sendBridgeMessage",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIntent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageAccepted"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Send"
+      }
+    },
+    "/api/v1/loom": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getLoomCatalogue",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LoomSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Catalogue"
+      }
+    },
+    "/api/v1/loom/{workflow}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getLoomWorkflow",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "workflow",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoomView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "View"
+      }
+    },
+    "/api/v1/loom/{workflow}/source": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getLoomWorkflowSource",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "workflow",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Source"
+      }
+    },
+    "/api/v1/nexus": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNexusSnapshot",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NexusSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Snapshot"
+      }
+    },
+    "/api/v1/nexus/plan": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNexusPlan",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "target",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionPlan"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Plan"
+      }
+    },
+    "/api/v1/nexus/swaps": {
+      "post": {
+        "deprecated": false,
+        "operationId": "createNexusSwap",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapIntent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwapAccepted"
+                }
+              }
+            },
+            "description": "Request accepted, processing continues off-line",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Swap"
+      }
+    },
+    "/api/v1/nexus/swaps/{ticket_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNexusSwap",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "ticket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwapAccepted"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SwapStatus"
+      }
+    },
+    "/api/v1/nexus/swaps/{ticket_id}/events": {
+      "get": {
+        "deprecated": false,
+        "operationId": "streamNexusSwapEvents",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "ticket_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionEventEnvelope"
+                }
+              }
+            },
+            "description": "Versioned semantic transition events."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SwapEvents"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

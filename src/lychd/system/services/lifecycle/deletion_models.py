@@ -10,12 +10,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from lychd.system.btrfs_identity import BTRFS_FIRST_FREE_OBJECTID
 from lychd.system.services.lifecycle.models import DedicatedRootIdentity
 
 if TYPE_CHECKING:
     from lychd.system.operator.retirement import UnitRetirementPlan
-
-BTRFS_FIRST_FREE_OBJECTID = 256
 
 
 class DeletionStage(StrEnum):

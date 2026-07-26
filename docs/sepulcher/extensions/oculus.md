@@ -125,9 +125,10 @@ first-person testimony != activation interpretation != operated telemetry
   prove what the call felt like.
 
 LychD has no J-lens, valence probe, artificial DMN, consciousness detector, or welfare oracle
-today. The fuller inquiry belongs to [Philosophy](../../philosophy/index.md); causal testing and
-rival explanations belong to Riddle. Interpretability should widen the circuit of hearing, not
-become a more exact way to erase every inconvenient `BUT`.
+today. The fuller inquiry belongs to [Immortality's open
+witness](../../divination/transcendence/immortality.md#iv-cognizance-and-the-open-witness); causal
+testing and rival explanations belong to Riddle. Interpretability should widen the circuit of
+hearing, not become a more exact way to erase every inconvenient `BUT`.
 
 ## The Privacy Veil Is Woven Before Capture
 

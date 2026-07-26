@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import tempfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,7 +11,8 @@ from tomlkit import dumps as _tomlkit_dumps  # pyright: ignore[reportUnknownVari
 from lychd.config.runes import ConfigWriter, RuneConfig
 from lychd.config.settings.root import Settings, get_settings
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
-from lychd.system.services.lifecycle import CreatedResources, created_resources
+from lychd.system.services.lifecycle.models import CreatedResources
+from lychd.system.services.publication import JournaledCreation
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -40,39 +39,6 @@ def _render_default_settings_toml(settings: Settings) -> str:
         msg = "Settings TOML did not contain the required [extensions] table."
         raise RuntimeError(msg)
     return content.replace(extension_table, f"{extension_table}{extension_hint}", count=1)
-
-
-def _write_new_atomic(path: Path, content: str, *, mode: int) -> bool:
-    """Durably create ``path`` without overwriting a concurrent/existing file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, raw_temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(raw_temporary)
-    linked = False
-    try:
-        os.fchmod(descriptor, mode)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        try:
-            os.link(temporary, path)
-        except FileExistsError:
-            created = False
-        else:
-            linked = True
-            directory_fd = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
-            created = True
-    except BaseException:
-        if linked:
-            path.unlink(missing_ok=True)
-        raise
-    finally:
-        temporary.unlink(missing_ok=True)
-    return created
 
 
 class CodexService:
@@ -113,90 +79,52 @@ class CodexService:
         on_created: Callable[[CreatedResources], None] | None = None,
     ) -> CreatedResources:
         """Perform codex initialization."""
-        created: list[CreatedResources] = []
-        for action in (self._inscribe_lychd_toml, self._inscribe_init_db):
-            path = action()
-            if path is None:
-                continue
-            resources = created_resources(files=(path,))
-            self._journal_or_rollback(resources, on_created=on_created)
-            created.append(resources)
-        configurables = self._inscribe_configurables(on_created=on_created)
+        creation = JournaledCreation(on_created=on_created)
+        self._inscribe_lychd_toml(creation)
+        self._inscribe_init_db(creation)
+        self._inscribe_configurables(creation)
 
         logger.info("codex_inscribed", location=str(self.toml_path.parent))
-        return CreatedResources.combine(*created, configurables)
+        return creation.resources
 
-    def _inscribe_lychd_toml(self) -> Path | None:
+    def _inscribe_lychd_toml(self, creation: JournaledCreation) -> None:
         """Generate `lychd.toml` from Pydantic Settings defaults."""
-        if self.toml_path.exists():
-            logger.debug("prime_directive_exists", path=str(self.toml_path))
-            return None
-
         settings = get_settings()
         content = _render_default_settings_toml(settings)
-        if not _write_new_atomic(self.toml_path, content, mode=0o600):
+        resources = creation.create_text_file(
+            self.toml_path,
+            content,
+            mode=0o600,
+        )
+        if not resources.files:
             logger.debug("prime_directive_exists", path=str(self.toml_path))
-            return None
+            return
         logger.info("inscribed_prime_directive", path=str(self.toml_path))
-        return self.toml_path
 
-    def _inscribe_init_db(self) -> Path | None:
+    def _inscribe_init_db(self, creation: JournaledCreation) -> None:
         """Inscribe the dynamic DB initialization script."""
         init_sh_path = self.postgres_root_path / "init_db.sh"
-        if init_sh_path.exists():
-            return None
-
         tmpl = self._env.get_template("init_db.sh.jinja")
         content = tmpl.render()
-        if not _write_new_atomic(init_sh_path, content, mode=0o755):
-            return None
+        resources = creation.create_text_file(
+            init_sh_path,
+            content,
+            mode=0o755,
+        )
+        if not resources.files:
+            return
         logger.info("inscribed_init_db", path=str(init_sh_path))
-        return init_sh_path
 
     def _inscribe_configurables(
         self,
-        *,
-        on_created: Callable[[CreatedResources], None] | None,
-    ) -> CreatedResources:
+        creation: JournaledCreation,
+    ) -> None:
         """Initialize rune anchor directories and sample TOMLs."""
-        writer = ConfigWriter(runes_dir=self.runes_path)
-        directories = writer.initialize_anchors(
-            self.rune_schemas,
-            on_created=(
-                None
-                if on_created is None
-                else lambda paths: on_created(created_resources(directories=paths))
-            ),
+        writer = ConfigWriter(
+            runes_dir=self.runes_path,
+            creation=creation,
         )
-        files = writer.inscribe_samples(
-            self.rune_schemas,
-            on_created=(
-                None
-                if on_created is None
-                else lambda path: on_created(created_resources(files=(path,)))
-            ),
-        )
+        writer.initialize_anchors(self.rune_schemas)
+        writer.inscribe_samples(self.rune_schemas)
 
         logger.info("configurable_anchors_inscribed", count=len(self.rune_schemas), runes_root=str(self.runes_path))
-        return created_resources(directories=directories, files=files)
-
-    @staticmethod
-    def _journal_or_rollback(
-        resources: CreatedResources,
-        *,
-        on_created: Callable[[CreatedResources], None] | None,
-    ) -> None:
-        """Persist creation authority or remove the just-created exact resources."""
-        if on_created is None:
-            return
-        try:
-            on_created(resources)
-        except BaseException:
-            for path in resources.files:
-                path.unlink(missing_ok=True)
-            for path in reversed(resources.directories):
-                try:
-                    path.rmdir()
-                except OSError:
-                    continue
-            raise

@@ -1,4 +1,4 @@
-"""Validated rune instances loaded once per process."""
+"""Validated Rune instances loaded once per composition snapshot."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 """The semantic run-event plane (A4-U2, spec-00-FINAL C2).
 
 The canonical `RunEvent` is a frozen, JSON-round-trippable pydantic model — events
-are *semantic* (the web `Projector` renders; agents emit raw data). `RunChannel`
+are *semantic* (the web `EventProjector` validates inert JSON; agents emit raw data). `RunChannel`
 fans one run's events out to any number of SSE subscribers with a bounded replay
 buffer and a `subscribe(from_seq)` reconnect seam. `RunEventBus`/`InProcessEventBus`
 own the run→channel bookkeeping that used to squat in `BridgeSessionStore`, and the
@@ -243,7 +243,7 @@ class RunEmitter:
     """Emits semantic events onto one run's channel, teeing non-TOKEN to the ledger.
 
     `emit` is the primitive; the semantic helpers (`status`/`token`/`fragment`/…)
-    are byte-shaped for the `Projector`. Tokens are emitted RAW — the `Projector`
+    are byte-shaped for the `EventProjector`. Tokens are emitted raw text — the client
     is the sole escaper (spec-00-FINAL C2).
     """
 
@@ -272,7 +272,7 @@ class RunEmitter:
         return self.emit(RunEventKind.NODE, key)
 
     def token(self, text: str) -> RunEvent | None:
-        """Emit a RAW token delta (the Projector escapes). Empty deltas are dropped."""
+        """Emit a raw token delta. Clients render it as text; empty deltas are dropped."""
         if not text:
             return None
         return self.emit(RunEventKind.TOKEN, text)

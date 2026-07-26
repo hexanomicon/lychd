@@ -4,11 +4,11 @@ import asyncio
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, cast
-from unittest.mock import patch
 
 import httpx
 import pytest
 
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
@@ -160,7 +160,7 @@ def test_exllamav3_plan_is_dynamic_and_uses_pinned_private_envelope(
     _write_auth_secret(tmp_path, monkeypatch)
     stone = _stone()
     adapter = ExLlamaV3RuntimeAdapter()
-    registry = RuntimeAdapterRegistry(adapters=[adapter])
+    registry = RuntimeAdapterRegistry(settings=get_settings(), adapters=[adapter])
 
     runtime = registry.build_runtime(stone)
     assert runtime is not None
@@ -188,8 +188,8 @@ def test_exllamav3_plan_is_dynamic_and_uses_pinned_private_envelope(
 
 
 def test_exllamav3_transmutation_isolates_auth_and_sizes_shared_ipc() -> None:
-    registry = RuntimeAdapterRegistry(adapters=[ExLlamaV3RuntimeAdapter()])
-    manifests = Transmuter(runtime_planner=registry).transmute_all([_stone()])
+    registry = RuntimeAdapterRegistry(settings=get_settings(), adapters=[ExLlamaV3RuntimeAdapter()])
+    manifests = Transmuter(settings=get_settings(), runtime_planner=registry).transmute_all([_stone()])
     pod = next(manifest for manifest in manifests if isinstance(manifest, QuadletPod))
     containers = {manifest.container_name: manifest for manifest in manifests if isinstance(manifest, QuadletContainer)}
     tabby = containers["lychd-exl3-router"]
@@ -209,7 +209,7 @@ def test_exllamav3_transmutation_isolates_auth_and_sizes_shared_ipc() -> None:
 
 
 def test_exllamav3_control_secret_cannot_be_mounted_by_another_soulstone() -> None:
-    registry = RuntimeAdapterRegistry(adapters=[ExLlamaV3RuntimeAdapter()])
+    registry = RuntimeAdapterRegistry(settings=get_settings(), adapters=[ExLlamaV3RuntimeAdapter()])
     reader = GenericSoulstoneConfig.model_validate(
         {
             "name": "secret-reader",
@@ -219,19 +219,19 @@ def test_exllamav3_control_secret_cannot_be_mounted_by_another_soulstone() -> No
     )
 
     with pytest.raises(ValueError, match="cannot alias a Soulstone control-plane secret"):
-        Transmuter(runtime_planner=registry).transmute_all([_stone(), reader])
+        Transmuter(settings=get_settings(), runtime_planner=registry).transmute_all([_stone(), reader])
 
 
 def test_exllamav3_rendered_quadlets_keep_auth_scoped_and_opaque(tmp_path: Path) -> None:
-    manifests = Transmuter(runtime_planner=RuntimeAdapterRegistry(adapters=[ExLlamaV3RuntimeAdapter()])).transmute_all(
-        [_stone()]
-    )
+    manifests = Transmuter(
+        settings=get_settings(),
+        runtime_planner=RuntimeAdapterRegistry(settings=get_settings(), adapters=[ExLlamaV3RuntimeAdapter()]),
+    ).transmute_all([_stone()])
     output_dir = tmp_path / "quadlet"
     systemd_dir = tmp_path / "systemd"
     output_dir.mkdir()
     systemd_dir.mkdir()
-    with patch("lychd.system.services.scribe.shutil.which", return_value=None):
-        ScribeService(output_dir=output_dir, systemd_dir=systemd_dir).generate_all(manifests)
+    ScribeService(output_dir=output_dir, systemd_dir=systemd_dir).generate_all(manifests)
 
     tabby = (output_dir / "lychd-exl3-router.container").read_text(encoding="utf-8")
     vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8")
@@ -273,7 +273,9 @@ async def test_two_tabby_runtimes_keep_data_and_admin_keys_isolated(
         }
     )
     control = TabbyAPIControlPlane()
-    registry = RuntimeAdapterRegistry(adapters=[ExLlamaV3RuntimeAdapter(control_plane=control)])
+    registry = RuntimeAdapterRegistry(
+        settings=get_settings(), adapters=[ExLlamaV3RuntimeAdapter(control_plane=control)]
+    )
     first_runtime = registry.build_runtime(_stone())
     second_runtime = registry.build_runtime(second)
     assert first_runtime is not None
@@ -815,7 +817,7 @@ async def test_exllamav3_probe_maps_stable_ids_and_dynamic_phases() -> None:
             )
 
     adapter = ExLlamaV3RuntimeAdapter(control_plane=StubControl())
-    registry = RuntimeAdapterRegistry(adapters=[adapter])
+    registry = RuntimeAdapterRegistry(settings=get_settings(), adapters=[adapter])
     runtime = registry.build_runtime(stone)
     assert runtime is not None
     specs = registry.build_capability_specs(stone)

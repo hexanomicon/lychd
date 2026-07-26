@@ -5,6 +5,7 @@ from typing import cast
 
 import pytest
 
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
 from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
@@ -27,6 +28,7 @@ from lychd.extensions.builtin.animator.runtimes import (
 def _runtime_registry() -> RuntimeAdapterRegistry:
     """Build a registry wired with the builtin runtime adapters under test."""
     return RuntimeAdapterRegistry(
+        settings=get_settings(),
         adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
     )
 
@@ -281,7 +283,11 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
             )
 
     adapter = LlamaCppRuntimeAdapter(control_plane=cast("LlamaCppControlPlane", StubControlPlane()))
-    quadlet = transmute_single_soulstone_quadlet(soulstone, runtime_planner=adapter)
+    quadlet = transmute_single_soulstone_quadlet(
+        soulstone,
+        runtime_planner=adapter,
+        settings=get_settings(),
+    )
     runtime = adapter.build_runtime(soulstone, quadlet)
     assert runtime is not None
     runtime.connector.link.up = True
@@ -334,7 +340,11 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
     adapter = LlamaCppRuntimeAdapter(
         control_plane=cast("LlamaCppControlPlane", RejectingControlPlane()),
     )
-    quadlet = transmute_single_soulstone_quadlet(soulstone, runtime_planner=adapter)
+    quadlet = transmute_single_soulstone_quadlet(
+        soulstone,
+        runtime_planner=adapter,
+        settings=get_settings(),
+    )
     runtime = adapter.build_runtime(soulstone, quadlet)
     target = next(spec for spec in adapter.build_capability_specs(soulstone) if spec.model_id == "target")
     assert runtime is not None
