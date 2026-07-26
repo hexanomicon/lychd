@@ -1,6 +1,0 @@
-{# Wrapper for BridgeController.send: the settled user turn + the SSE-wired agent
-   stream slot (both appended to #bridge-thread), plus the OOB rail refresh. Replaces
-   the old Python string-concatenation in `send` (one template, one swap). #}
-{% include 'bridge/turn_user.html.j2' %}
-{% include 'bridge/stream_slot.html.j2' %}
-{% include 'bridge/session_rail.html.j2' %}

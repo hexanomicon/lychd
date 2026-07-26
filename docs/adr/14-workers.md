@@ -140,7 +140,7 @@ and warm-up, consent/reanimation, and graph-specific operations own their explic
 layer that can interpret failure and recovery. SAQ owns claiming, retries, and job bookkeeping; it
 must not kill a valid long-running graph simply because inference exceeds a queue default.
 
-The ghoul (`perform_run`) claims the job, writes `RUNNING`, drives the graph, and writes the terminal status. Events are **semantic** `RunEvent`s (`STATUS/NODE/TOKEN/FRAGMENT/CONSENT/LOG/DONE`); the web `Projector` renders them. Non-`TOKEN` events tee into the `RunLedger` as `Step` rows (`TOKEN` is too chatty — settled text lands on the session turn). A `reconcile_runs` rite sweeps runs left `RUNNING` by a crash back to a safe state on restart.
+The ghoul (`perform_run`) claims the job, writes `RUNNING`, drives the graph, and writes the terminal status. Events are **semantic** `RunEvent`s (`STATUS/NODE/TOKEN/FRAGMENT/CONSENT/LOG/DONE`); the web `EventProjector` validates and envelopes them as inert versioned JSON. Non-`TOKEN` events tee into the `RunLedger` as `Step` rows (`TOKEN` is too chatty — settled text lands on the session turn). A `reconcile_runs` rite sweeps runs left `RUNNING` by a crash back to a safe state on restart.
 
 ### 2. The Doctrine: Brain in the Vessel, Hands in the Tomb (Target Topology)
 

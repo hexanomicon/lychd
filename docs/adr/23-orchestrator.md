@@ -76,7 +76,12 @@ or a provider binder.
 
     **The Whim** described below is a *named future strategy*, not the current default. Its constants — Momentum, Inertia Bias, the Tipping Point — become Codex-tunable policy when it lands. The transition ritual (Pause → Drain → Signal → Transmutation → Awakening) is shared by every strategy; only the swap *decision* differs.
 
-Decisions regarding hardware state transitions are not binary; they are calculated using a priority-weighting algorithm called **The Whim**. The Whim decides when exploration must yield to convergence: it prevents VRAM thrashing by refusing swaps whose cost exceeds their priority. (In the cognitive map: it disciplines Manas in favor of Buddhi — see [The Lich](../sepulcher/lich.md).) Critically, this algorithm respects the **Discipline** of the active Soulstone.
+Decisions regarding hardware state transitions are not binary; they are calculated using a
+priority-weighting algorithm called **The Whim**. The Whim decides when exploration must yield to
+convergence: it prevents VRAM thrashing by refusing swaps whose cost exceeds their priority. In the
+cognitive map, it disciplines the Call in favor of the Blade—see [The
+Lich](../sepulcher/lich/index.md). Critically, this algorithm respects the **Discipline** of the
+active Soulstone.
 
 - **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
 - **Inertia Bias:** A configurable constant used to prevent thrashing.

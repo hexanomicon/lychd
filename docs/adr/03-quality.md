@@ -83,8 +83,8 @@ Quality controls extend beyond the Python backend. The project's recommended VS 
 
 - **Markdown:** Linted via `markdownlint` for documentation consistency.
 - **Configuration:** Formatted via `prettier` (TOML, YAML, JSON).
-- **Frontend:** TailwindCSS and PostCSS tooling ensures UI layer quality.
-- **Jinja:** Syntax highlighting and validation for `.jinja` templates.
+- **Frontend:** TypeScript strict mode, `svelte-check`, Vitest, and real-browser tests validate the
+  Svelte client. Native CSS is inspected directly; a styling preprocessor is not a quality gate.
 
 ### Consequences
 

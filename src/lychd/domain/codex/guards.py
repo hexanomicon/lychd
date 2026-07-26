@@ -10,14 +10,17 @@ from lychd.domain.codex.scopes import scopes_satisfied
 from lychd.domain.codex.sigil import Sigil
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Coroutine
 
     from litestar.connection import ASGIConnection
     from litestar.handlers.base import BaseRouteHandler
 
     # A Litestar guard: called with (connection, handler); raises to deny. Typed
     # concretely (litestar's own `Guard` alias is partially unknown to the checker).
-    _Guard = Callable[[ASGIConnection[Any, Any, Any, Any], BaseRouteHandler], None]
+    _Guard = Callable[
+        [ASGIConnection[Any, Any, Any, Any], BaseRouteHandler],
+        Coroutine[Any, Any, None],
+    ]
 
 __all__ = ["requires_scopes"]
 
@@ -25,7 +28,10 @@ __all__ = ["requires_scopes"]
 def requires_scopes(*required: str) -> _Guard:
     """Build a guard requiring every named scope on the connection Sigil."""
 
-    def guard(connection: ASGIConnection[Any, Any, Any, Any], _handler: BaseRouteHandler) -> None:
+    async def guard(
+        connection: ASGIConnection[Any, Any, Any, Any],
+        _handler: BaseRouteHandler,
+    ) -> None:
         # Reading `connection.user` raises a framework configuration error when
         # authentication middleware is absent. Missing identity is an ordinary
         # authorization denial, never a 500.

@@ -68,7 +68,7 @@ distinct office; none is a measure of how seriously the project takes the myth.
 | **Iron** | Commands, configuration, recovery, and troubleshooting | Literal, copyable, observable, and recoverable. |
 | **Threshold** | README, Prophecy, State, and section indexes | Lucid enchantment, current orientation, and one clear next act. |
 | **Operated doctrine** | Sepulcher and Altar | Mythic meaning joined to actual operation and explicit limits. |
-| **Great Work** | Transcendence and the philosophy canon | Full mythic voltage, exact internal relations, and distinct sources. |
+| **Great Work** | Transcendence | Full mythic voltage, exact internal relations, and distinct sources. |
 
 The [Incubator](../incubator/index.md) is deliberately **outside these five registers**. It is a
 proposal quarantine: a public place to preserve candidate directions before they acquire an

@@ -8,6 +8,9 @@ import pytest
 import respx
 from pydantic_ai.models.openai import OpenAIChatModel
 
+from lychd.config.runes import ConfigLoader
+from lychd.config.runes.registry import RuneRegistry
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
@@ -15,6 +18,10 @@ from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, OpenAIPortalConfig, PortalConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
+from lychd.domain.animation.services.declarations import (
+    AnimatorDeclarations,
+    compile_animator_declarations,
+)
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, VllmSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import LlamaCppControlPlane
@@ -40,13 +47,23 @@ def _builtin_adapters() -> list[Any]:
     return [LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()]
 
 
+def _declarations(
+    runes_dir: Path,
+    schemas: list[type] | tuple[type, ...] = _SOULSTONE_SCHEMAS,
+) -> AnimatorDeclarations:
+    return compile_animator_declarations(
+        settings=get_settings(),
+        runes=RuneRegistry(ConfigLoader(runes_dir).load_all(list(schemas))),
+        core_reserved_ports={},
+    )
+
+
 def _registry(runes_dir: Path, **kwargs: Any) -> AnimatorRegistry:
     kwargs.setdefault("portal_factories", [build_openai_portal])
     return AnimatorRegistry(
-        rune_schemas=list(_SOULSTONE_SCHEMAS),
+        settings=get_settings(),
+        declarations=_declarations(runes_dir),
         runtime_adapters=_builtin_adapters(),
-        runes_dir=runes_dir,
-        reserved_ports={},
         **kwargs,
     )
 
@@ -199,10 +216,9 @@ async def test_registry_inspect_lifecycle_delegates_to_control_plane(tmp_path: P
 
     control = StubControl()
     registry = AnimatorRegistry(
-        rune_schemas=[LlamaCppSoulstoneConfig],
+        settings=get_settings(),
+        declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
-        runes_dir=runes_dir,
-        reserved_ports={},
     )
 
     lifecycle = await registry.inspect_lifecycle("qwen-local")
@@ -285,10 +301,9 @@ def _warm_registry(runes_dir: Path, *, health: str) -> tuple[AnimatorRegistry, s
         """,
     )
     registry = AnimatorRegistry(
-        rune_schemas=[LlamaCppSoulstoneConfig],
+        settings=get_settings(),
+        declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=_HealthControl(health))],
-        runes_dir=runes_dir,
-        reserved_ports={},
     )
     registry.ensure_loaded()
     return registry, registry.list_capabilities()[0].key
@@ -342,10 +357,9 @@ def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest
     caplog.set_level("WARNING")
 
     registry = AnimatorRegistry(
-        rune_schemas=[LlamaCppSoulstoneConfig],
+        settings=get_settings(),
+        declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=_builtin_adapters(),
-        runes_dir=runes_dir,
-        reserved_ports={},
         runtime_factories=[unresolved],
     )
     registry.load()

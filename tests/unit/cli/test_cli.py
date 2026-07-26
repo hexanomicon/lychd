@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-# This unit suite intentionally exercises the module's pure port-merge helper.
 # pyright: reportPrivateUsage=false
+from collections.abc import Callable
+from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import ANY, MagicMock
@@ -11,34 +12,91 @@ from click.testing import CliRunner
 
 from lychd.__main__ import _run_litestar, cli, run_cli
 from lychd.cli.commands import (
-    _merge_reserved_ports,
-    _required_secret_names_from_soulstones,
+    _consume_reactor_intents,
     bind_quadlets,
     init_codex,
 )
+from lychd.config.runes.registry import RuneRegistry
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
+from lychd.domain.animation.services.declarations import (
+    AnimatorDeclarations,
+    merge_reserved_ports,
+)
+from lychd.system.binding_sites import (
+    AttestedBindingSite,
+    AttestedBindingSites,
+)
+from lychd.system.host_tools import TrustedExecutable
 from lychd.system.readiness import (
+    BindingFoundation,
+    HostFoundationInspection,
     HostReadinessItem,
     HostReadinessReport,
+    HostReadinessTools,
     ReadinessSection,
     ReadinessState,
 )
+from lychd.system.services.bind_compilation import required_secret_names_from_soulstones
 from lychd.system.services.binding_preflight import (
     BindingPreflightIssue,
     BindingPreflightReport,
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from pytest_mock import MockerFixture
+
+
+def _binding_foundation() -> BindingFoundation:
+    return BindingFoundation(
+        systemctl=TrustedExecutable(
+            path="/usr/bin/systemctl",
+            device=1,
+            inode=1,
+        ),
+        podman=TrustedExecutable(
+            path="/usr/bin/podman",
+            device=1,
+            inode=2,
+        ),
+        quadlet_user_generator=TrustedExecutable(
+            path="/usr/lib/systemd/user-generators/podman-user-generator",
+            device=1,
+            inode=3,
+        ),
+        sites=AttestedBindingSites(
+            quadlet=AttestedBindingSite(
+                path=Path.home() / ".config" / "containers" / "systemd",
+                device=1,
+                inode=4,
+            ),
+            systemd_user=AttestedBindingSite(
+                path=Path.home() / ".config" / "systemd" / "user",
+                device=1,
+                inode=5,
+            ),
+        ),
+    )
+
+
+def _animator_declarations(
+    *,
+    soulstones: tuple[object, ...] = (),
+    portals: tuple[object, ...] = (),
+) -> AnimatorDeclarations:
+    """Build one detached compiler result for CLI boundary tests."""
+    return AnimatorDeclarations(
+        runes=RuneRegistry(()),
+        soulstones=soulstones,  # type: ignore[arg-type]
+        portals=portals,  # type: ignore[arg-type]
+        port_reservations=(),
+    )
 
 
 def test_merge_reserved_ports_disjoint() -> None:
     core = {"LychD Server": 8000, "Phylactery (Postgres)": 5432}
     extension = {"Oculus (Phoenix UI)": 6006}
-    assert _merge_reserved_ports(core, extension) == {
+    assert merge_reserved_ports(core, extension) == {
         "LychD Server": 8000,
         "Phylactery (Postgres)": 5432,
         "Oculus (Phoenix UI)": 6006,
@@ -50,7 +108,7 @@ def test_merge_reserved_ports_core_extension_collision_names_both() -> None:
     core = {"LychD Server": 8000}
     extension = {"Oculus (Phoenix UI)": 8000}
     with pytest.raises(ValueError, match="8000") as exc:
-        _merge_reserved_ports(core, extension)
+        merge_reserved_ports(core, extension)
     message = str(exc.value)
     assert "LychD Server" in message
     assert "Oculus (Phoenix UI)" in message
@@ -62,10 +120,94 @@ def test_merge_reserved_ports_repeated_label_raises() -> None:
     core = {"Oculus (Phoenix UI)": 6006}
     extension = {"Oculus (Phoenix UI)": 7007}
     with pytest.raises(ValueError, match="Oculus") as exc:
-        _merge_reserved_ports(core, extension)
+        merge_reserved_ports(core, extension)
     message = str(exc.value)
     assert "6006" in message
     assert "7007" in message
+
+
+@pytest.mark.asyncio
+async def test_reactor_consumer_uses_the_configured_journal_path(
+    mocker: MockerFixture,
+    tmp_path: Path,
+) -> None:
+    """The host consumer must not derive a sibling that configuration did not declare."""
+    # Import this lazy composition module before replacing the root accessor so
+    # its own stable alias cannot retain a test-local mock after teardown.
+    from lychd.extensions import host as _extension_host
+
+    _ = _extension_host
+
+    inbox = tmp_path / "custom" / "intent-inbox"
+    journal = tmp_path / "elsewhere" / "outcomes"
+    switching = SimpleNamespace(
+        host_reactor_dir=inbox,
+        host_reactor_journal_dir=journal,
+        policy="evict-idle",
+    )
+    settings = SimpleNamespace(
+        orchestration=SimpleNamespace(switching=switching),
+    )
+    extensions = SimpleNamespace(
+        runtime_adapters=(),
+        portal_factories=(),
+    )
+    runes = RuneRegistry(())
+    declarations = _animator_declarations()
+    registry = MagicMock()
+    policy = object()
+
+    async def run_inline(function: Callable[[], object]) -> object:
+        return function()
+
+    to_thread = mocker.patch(
+        "asyncio.to_thread",
+        side_effect=run_inline,
+    )
+    mocker.patch(
+        "lychd.config.settings.root.get_settings",
+        return_value=settings,
+    )
+    mocker.patch(
+        "lychd.extensions.host.get_extensions",
+        return_value=extensions,
+    )
+    mocker.patch(
+        "lychd.config.runes.registry.load_rune_registry",
+        return_value=runes,
+    )
+    mocker.patch(
+        "lychd.domain.animation.services.declarations.compile_animator_declarations",
+        return_value=declarations,
+    )
+    registry_type = mocker.patch(
+        "lychd.domain.animation.services.registry.AnimatorRegistry",
+        return_value=registry,
+    )
+    resolve_policy = mocker.patch(
+        "lychd.domain.orchestration.policies.resolve_switch_policy",
+        return_value=policy,
+    )
+    reactor_type = mocker.patch("lychd.system.services.reactor.HostReactor")
+    reactor_type.return_value.consume_all = mocker.AsyncMock(return_value=0)
+
+    await _consume_reactor_intents()
+
+    registry_type.assert_called_once_with(
+        settings=settings,
+        declarations=declarations,
+        runtime_adapters=extensions.runtime_adapters,
+        portal_factories=extensions.portal_factories,
+    )
+    resolve_policy.assert_called_once_with(switching.policy)
+    reactor_type.assert_called_once_with(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        policy=policy,
+    )
+    reactor_type.return_value.consume_all.assert_awaited_once_with()
+    to_thread.assert_awaited_once_with(registry.ensure_loaded)
 
 
 @pytest.fixture
@@ -80,7 +222,7 @@ def binding_preflight(mocker: MockerFixture) -> MagicMock:
     service = mocker.patch("lychd.system.services.binding_preflight.BindingPreflightService").return_value
     service.inspect.return_value = BindingPreflightReport(
         issues=(),
-        systemctl_bin="/usr/bin/systemctl",
+        foundation=_binding_foundation(),
     )
     return service
 
@@ -88,40 +230,63 @@ def binding_preflight(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture(autouse=True)
 def host_readiness(mocker: MockerFixture) -> MagicMock:
     """Keep CLI orchestration tests independent from the developer host."""
+    foundation = _binding_foundation()
     service = mocker.patch("lychd.system.readiness.HostReadinessService").return_value
-    service.inspect.return_value = HostReadinessReport(
-        items=(
-            HostReadinessItem(
-                key="systemd-user",
-                label="systemd user manager",
-                section=ReadinessSection.FOUNDATION,
-                state=ReadinessState.VERIFIED,
-                detail="reachable",
-                required_for_bind=True,
-            ),
-            HostReadinessItem(
-                key="podman-quadlet",
-                label="Podman / Quadlet",
-                section=ReadinessSection.FOUNDATION,
-                state=ReadinessState.VERIFIED,
-                detail="compatible",
-                required_for_bind=True,
-            ),
-            *(
+    service.inspect.return_value = HostFoundationInspection(
+        report=HostReadinessReport(
+            items=(
                 HostReadinessItem(
-                    key=key,
-                    label=label,
-                    section=ReadinessSection.BINDING_SITES,
+                    key="systemd-user",
+                    label="systemd user manager",
+                    section=ReadinessSection.FOUNDATION,
                     state=ReadinessState.VERIFIED,
-                    detail="prepared",
+                    detail="reachable",
                     required_for_bind=True,
-                )
-                for key, label in (
-                    ("quadlet-sources", "Quadlet sources"),
-                    ("systemd-user-units", "systemd user units"),
-                )
-            ),
-        )
+                ),
+                HostReadinessItem(
+                    key="podman-quadlet",
+                    label="Podman / Quadlet",
+                    section=ReadinessSection.FOUNDATION,
+                    state=ReadinessState.VERIFIED,
+                    detail="compatible",
+                    required_for_bind=True,
+                ),
+                *(
+                    HostReadinessItem(
+                        key=key,
+                        label=label,
+                        section=ReadinessSection.BINDING_SITES,
+                        state=ReadinessState.VERIFIED,
+                        detail="prepared",
+                        required_for_bind=True,
+                        target=identity.path,
+                        site_identity=identity,
+                    )
+                    for key, label, identity in (
+                        (
+                            "quadlet-sources",
+                            "Quadlet sources",
+                            foundation.sites.quadlet,
+                        ),
+                        (
+                            "systemd-user-units",
+                            "systemd user units",
+                            foundation.sites.systemd_user,
+                        ),
+                    )
+                ),
+            )
+        ),
+        tools=HostReadinessTools(
+            systemctl=foundation.systemctl,
+            podman=foundation.podman,
+            quadlet_user_generator=foundation.quadlet_user_generator,
+            findmnt=None,
+            btrfs=None,
+            chattr=None,
+            lsattr=None,
+            getenforce=None,
+        ),
     )
     return service
 
@@ -362,7 +527,7 @@ def test_init_codex_success(
     )
 
     # Patch the classes inside the command
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     layout = mocker.patch("lychd.system.services.layout.LayoutService")
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     inbox = tmp_path / "reactor" / "inbox"
@@ -460,12 +625,71 @@ def test_init_dry_run_never_invokes_effect_services(
     assert "Create 1" not in result.output
     assert "└──" in result.output
     assert "managed directory is absent" not in result.output
-    assert "No changes made" in result.output
+    assert "No LychD-managed changes made" in result.output
     layout.assert_not_called()
     privilege.assert_not_called()
     codex.assert_not_called()
     receipt.return_value.record.assert_not_called()
     host_readiness.inspect.assert_called_once_with()
+
+
+def test_init_dry_run_reports_bind_blockers_without_blocking_layout(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    tmp_path: Path,
+    host_readiness: MagicMock,
+) -> None:
+    """Bind capabilities are reported but do not govern safe layout creation."""
+    from lychd.system.services.lifecycle import LifecyclePlan
+
+    host_readiness.inspect.return_value = HostFoundationInspection(
+        report=HostReadinessReport(
+            items=(
+                HostReadinessItem(
+                    key="podman-quadlet",
+                    label="Podman / Quadlet",
+                    section=ReadinessSection.FOUNDATION,
+                    state=ReadinessState.BLOCKED,
+                    detail="trusted Podman unavailable",
+                    required_for_bind=True,
+                ),
+            )
+        ),
+        tools=HostReadinessTools(
+            systemctl=None,
+            podman=None,
+            quadlet_user_generator=None,
+            findmnt=None,
+            btrfs=None,
+            chattr=None,
+            lsattr=None,
+            getenforce=None,
+        ),
+    )
+    settings = SimpleNamespace(
+        orchestration=SimpleNamespace(
+            switching=SimpleNamespace(
+                host_reactor_dir=tmp_path / "inbox",
+                host_reactor_journal_dir=tmp_path / "journal",
+            )
+        )
+    )
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
+    mocker.patch(
+        "lychd.extensions.host.get_extensions",
+        return_value=SimpleNamespace(rune_schemas=()),
+    )
+    mocker.patch(
+        "lychd.system.services.lifecycle.InitializationPlanner",
+    ).return_value.plan.return_value = LifecyclePlan()
+    layout = mocker.patch("lychd.system.services.layout.LayoutService")
+
+    result = runner.invoke(init_codex, ["--dry-run"])
+
+    assert result.exit_code == 0
+    assert "host prerequisites incomplete" in result.output
+    assert "Initialization plan is safe" in result.output
+    layout.assert_not_called()
 
 
 def test_init_codex_failure(
@@ -511,14 +735,22 @@ def test_init_codex_failure(
 
 
 def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None:
-    """Verify bind command orchestrates Loader, Scribe, and Systemd."""
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
-    # 1. Mock Loader
-    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader = mock_loader_cls.return_value
+    """Verify bind orchestrates declaration compilation, Scribe, and systemd."""
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
+    registry = RuneRegistry(())
+    load_registry = mocker.patch(
+        "lychd.config.runes.registry.load_rune_registry",
+        return_value=registry,
+    )
     stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     portal = SimpleNamespace(api_key_secret_name=None)
-    mock_loader.load_all.return_value = ([stone], [portal])
+    compiler = mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(
+            soulstones=(stone,),
+            portals=(portal,),
+        ),
+    )
 
     # 1.5. Mock Podman secret provisioning
     mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
@@ -532,7 +764,9 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     mock_transmuter.transmute_all.return_value = ["rune1"]
 
     # 3. Mock Scribe
-    mock_scribe_cls = mocker.patch("lychd.system.services.scribe.ScribeService")
+    mock_scribe_cls = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    )
     mock_scribe = mock_scribe_cls.return_value
 
     # 4. Mock the verified, bounded systemctl invocation.
@@ -547,22 +781,24 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
     assert "systemctl --user start" not in result.output
 
     # Verify interactions
-    mock_loader_cls.assert_called_once()
-    mock_loader.load_all.assert_called_once()
+    load_registry.assert_called_once()
+    assert compiler.call_args.kwargs["runes"] is registry
 
     mock_transmuter_cls.assert_called_once()
-    from lychd.config.runes.registry import RuneRegistry
 
     transmute_call = mock_transmuter.transmute_all.call_args
-    assert transmute_call.args == ([stone],)
-    assert transmute_call.kwargs["portals"] == [portal]
+    assert transmute_call.args == ((stone,),)
+    assert transmute_call.kwargs["portals"] == (portal,)
     assert isinstance(transmute_call.kwargs["runes"], RuneRegistry)
     assert len(transmute_call.kwargs["runtime_plans"]) == 1
 
-    mock_scribe_cls.assert_called_once()
+    mock_secret_store_cls.assert_called_once_with("/usr/bin/podman")
+    mock_scribe_cls.assert_called_once_with(
+        expected_sites=_binding_foundation().sites,
+    )
     mock_scribe.reconcile_all.assert_called_once()
     reconcile = mock_scribe.reconcile_all.call_args
-    assert reconcile.args == (["rune1"],)
+    assert reconcile.args == (("rune1",),)
     assert sorted(reconcile.kwargs["plain_units"]) == [
         "lychd-reactor.path",
         "lychd-reactor.service",
@@ -582,17 +818,20 @@ def test_bind_dry_run_uses_real_planner_without_effects(
     """Preview renders the execution transaction without secrets, locking, or writes."""
     from lychd.system.services.scribe import BindingChange, BindingReconcilePlan
 
-    lock = mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    lock = mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     mocker.patch(
-        "lychd.domain.animation.services.loader.AnimatorLoader",
-    ).return_value.load_all.return_value = ([stone], [])
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(soulstones=(stone,)),
+    )
     mocker.patch(
         "lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry",
     ).return_value.plan.return_value = RuntimePlan()
     transmuter = mocker.patch("lychd.domain.animation.transmute.Transmuter").return_value
     transmuter.transmute_all.return_value = ["rune1"]
-    scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    ).return_value
     scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
         changes=(
             BindingChange(
@@ -602,6 +841,7 @@ def test_bind_dry_run_uses_real_planner_without_effects(
             ),
         ),
         observed_generation="generation",
+        desired_generation="desired",
     )
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
     secret_store.exists.return_value = False
@@ -610,6 +850,7 @@ def test_bind_dry_run_uses_real_planner_without_effects(
     result = runner.invoke(bind_quadlets, ["--dry-run"])
 
     assert result.exit_code == 0
+    assert "No LychD-managed changes made." in result.output
     assert "WOULD CREATE" in result.output
     assert "Binding plan is coherent" in result.output
     scribe.plan_reconcile_all.assert_called_once()
@@ -627,16 +868,19 @@ def test_bind_apply_rejects_generation_only_drift_before_effects(
     """Apply treats the dry-run observation fingerprint as a lock-time precondition."""
     from lychd.system.services.scribe import BindingChange, BindingReconcilePlan
 
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     mocker.patch(
-        "lychd.domain.animation.services.loader.AnimatorLoader",
-    ).return_value.load_all.return_value = ([], [])
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(),
+    )
     mocker.patch(
         "lychd.domain.animation.transmute.Transmuter",
     ).return_value.transmute_all.return_value = []
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
     secret_store.exists.return_value = True
-    scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    ).return_value
     unchanged_disposition = (
         BindingChange(
             "update",
@@ -648,10 +892,12 @@ def test_bind_apply_rejects_generation_only_drift_before_effects(
         BindingReconcilePlan(
             changes=unchanged_disposition,
             observed_generation="drift-a",
+            desired_generation="desired",
         ),
         BindingReconcilePlan(
             changes=unchanged_disposition,
             observed_generation="drift-b",
+            desired_generation="desired",
         ),
     )
     systemd = mocker.patch("lychd.system.services.systemd.SystemdUserManager")
@@ -672,19 +918,23 @@ def test_bind_apply_rejects_secret_generation_drift_before_effects(
     """A required secret cannot disappear between preview and binding commit."""
     from lychd.system.services.scribe import BindingReconcilePlan
 
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     mocker.patch(
-        "lychd.domain.animation.services.loader.AnimatorLoader",
-    ).return_value.load_all.return_value = ([], [])
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(),
+    )
     mocker.patch(
         "lychd.domain.animation.transmute.Transmuter",
     ).return_value.transmute_all.return_value = []
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
     secret_store.exists.side_effect = (True, True, True, False)
-    scribe = mocker.patch("lychd.system.services.scribe.ScribeService").return_value
+    scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    ).return_value
     scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
         changes=(),
         observed_generation="stable",
+        desired_generation="desired",
     )
     systemd = mocker.patch("lychd.system.services.systemd.SystemdUserManager")
 
@@ -706,24 +956,29 @@ def test_bind_dry_run_renders_structured_preflight_and_blocks_before_effects(
     binding_preflight.inspect.return_value = BindingPreflightReport(
         issues=(
             BindingPreflightIssue(
-                code="systemctl-missing",
-                target="systemctl",
-                detail="systemctl is not available on PATH",
+                code="host-foundation",
+                target="systemd user manager",
+                detail="systemd user manager is not reachable",
             ),
         ),
-        systemctl_bin=None,
+        foundation=None,
     )
-    mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader").return_value.load_all.return_value = ([], [])
-    scribe = mocker.patch("lychd.system.services.scribe.ScribeService")
+    mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(),
+    )
+    scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    )
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
-    lock = mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    lock = mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
 
     result = runner.invoke(bind_quadlets, ["--dry-run"])
 
     assert result.exit_code != 0
     assert "PREFLIGHT" in result.output
     assert "BLOCKED" in result.output
-    assert "systemctl-missing" in result.output
+    assert "host-foundation" in result.output
     assert "Binding preflight failed" in result.output
     scribe.assert_not_called()
     secret_store.assert_not_called()
@@ -732,11 +987,17 @@ def test_bind_dry_run_renders_structured_preflight_and_blocks_before_effects(
 
 def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture) -> None:
     """Verify typed daemon-reload failures remain visible at the CLI boundary."""
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
-    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader_cls.return_value.load_all.return_value = (
-        [GenericSoulstoneConfig(name="test", image="example/runtime")],
-        [],
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
+    mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(
+            soulstones=(
+                GenericSoulstoneConfig(
+                    name="test",
+                    image="example/runtime",
+                ),
+            ),
+        ),
     )
     mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
     mock_transmuter_cls.return_value.transmute_all.return_value = ["rune1"]
@@ -744,7 +1005,10 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
     mock_secret_store = mock_secret_store_cls.return_value
     mock_secret_store.ensure_present.return_value = False
     mock_secret_store.exists.return_value = True
-    mocker.patch("lychd.system.services.scribe.ScribeService")
+    scribe = mocker.patch(
+        "lychd.system.services.scribe.facade.ScribeService",
+    ).return_value
+    scribe.reconcile_all.return_value = "bindings-after"
 
     from lychd.system.services.systemd import SystemdUserManagerError
 
@@ -767,11 +1031,13 @@ def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mo
         image="example/runtime",
         secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
     )
-    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader_cls.return_value.load_all.return_value = ([stone], [])
+    mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(soulstones=(stone,)),
+    )
 
     mocker.patch("lychd.domain.animation.transmute.Transmuter")
-    mocker.patch("lychd.system.services.scribe.ScribeService")
+    mocker.patch("lychd.system.services.scribe.facade.ScribeService")
 
     mock_secret_store_cls = mocker.patch("lychd.system.services.secrets.PodmanSecretStore")
     mock_secret_store = mock_secret_store_cls.return_value
@@ -788,7 +1054,7 @@ def test_runtime_plan_secrets_are_included_in_generic_preflight() -> None:
     stone = GenericSoulstoneConfig(name="test", image="example/runtime")
     plan = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
 
-    assert _required_secret_names_from_soulstones([stone], [plan]) == ["adapter_token"]
+    assert required_secret_names_from_soulstones([stone], [plan]) == ["adapter_token"]
 
 
 def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(
@@ -796,14 +1062,14 @@ def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(
     mocker: MockerFixture,
 ) -> None:
     stone = GenericSoulstoneConfig(name="test", image="example/runtime")
-    mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader").return_value.load_all.return_value = (
-        [stone],
-        [],
+    mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(soulstones=(stone,)),
     )
     planner = mocker.patch("lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry").return_value
     planner.plan.return_value = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
     mocker.patch("lychd.domain.animation.transmute.Transmuter")
-    mocker.patch("lychd.system.services.scribe.ScribeService")
+    mocker.patch("lychd.system.services.scribe.facade.ScribeService")
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
     secret_store.ensure_present.return_value = False
 
@@ -828,8 +1094,10 @@ def test_bind_quadlets_rejects_uncaged_control_plane_secrets(
         secret_env_files={},
         control_plane_secret_names=("tabby_exl3_auth",),
     )
-    mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
-    mock_loader_cls.return_value.load_all.return_value = ([stone], [])
+    mocker.patch(
+        "lychd.cli.binding.compile_animator_declarations",
+        return_value=_animator_declarations(soulstones=(stone,)),
+    )
     mock_transmuter = mocker.patch("lychd.domain.animation.transmute.Transmuter")
     binding_preflight.inspect.return_value = BindingPreflightReport(
         issues=(
@@ -839,7 +1107,7 @@ def test_bind_quadlets_rejects_uncaged_control_plane_secrets(
                 detail="uncaged Vessel cannot receive Podman-mounted secrets: tabby_exl3_auth",
             ),
         ),
-        systemctl_bin="/usr/bin/systemctl",
+        foundation=_binding_foundation(),
     )
 
     result = runner.invoke(bind_quadlets, ["--uncaged"])

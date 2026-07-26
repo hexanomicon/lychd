@@ -1,0 +1,23 @@
+"""Stable keys for the host gates that refine into Binding authority."""
+
+from typing import Final
+
+SYSTEMD_USER_READINESS_KEY: Final = "systemd-user"
+PODMAN_QUADLET_READINESS_KEY: Final = "podman-quadlet"
+QUADLET_SOURCES_READINESS_KEY: Final = "quadlet-sources"
+SYSTEMD_USER_UNITS_READINESS_KEY: Final = "systemd-user-units"
+
+BINDING_FOUNDATION_READINESS_KEYS: Final[tuple[str, ...]] = (
+    SYSTEMD_USER_READINESS_KEY,
+    PODMAN_QUADLET_READINESS_KEY,
+    QUADLET_SOURCES_READINESS_KEY,
+    SYSTEMD_USER_UNITS_READINESS_KEY,
+)
+
+__all__ = (
+    "BINDING_FOUNDATION_READINESS_KEYS",
+    "PODMAN_QUADLET_READINESS_KEY",
+    "QUADLET_SOURCES_READINESS_KEY",
+    "SYSTEMD_USER_READINESS_KEY",
+    "SYSTEMD_USER_UNITS_READINESS_KEY",
+)

@@ -11,7 +11,10 @@ icon: material/telescope
 ## Requirements
 
 - **Extension Assimilation:** Implementation as an optional coupled extension; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent (ADR 20)](./20-agents.md)** run. It must capture structured events: the flickers of movement through the agentic graph (**Vṛttis**), including tool arguments, validation retries, and the raw request/response exchanges with providers.
+- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent
+  (ADR 20)](./20-agents.md)** run. It must capture structured events: the observable portion of
+  **the Flux** through the agentic graph, including tool arguments, validation retries, and the raw
+  request/response exchanges with providers.
 - **Dual-Layer Scrying:** Separation of concerns into the "Mind" (Agent reasoning traces) and the "Body" (Host hardware and container status).
 - **Runtime Evidence:** Traces, metrics, and structured events must remain available to the runtime as evidence for diagnosis, routing, evaluation, and repair while remaining readable to the Magus.
 - **Physical Integration:** Mirroring of critical hardware metrics (GPU memory pressure) into the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to inform scheduling decisions.
@@ -46,10 +49,10 @@ icon: material/telescope
 !!! warning "Implementation state"
     The native Oculus service and Svelte Scrying projection are accepted but not yet complete. The
     repository still ships `observability/phoenix` and its historical `lychd-oculus` unit stem for
-    compatibility, while the current Altar contains a legacy HTMX shell. The Phoenix extension is
-    optional and deprecated as the default view; removing or renaming its unit is a separate
-    migration. Documentation must not present either the compatibility container or an unbuilt
-    Svelte route as native Oculus delivery.
+    compatibility. The static Svelte Altar has an honest Scrying placeholder, not a native Oculus
+    implementation. The Phoenix extension is optional and deprecated as the default view; removing
+    or renaming its unit is a separate migration. Documentation must not present either the
+    compatibility container or that placeholder as native Oculus delivery.
 
 !!! note "Trace Correlation Contract"
     Runtime evidence must preserve correlation keys across layers: `run_id`, `step_id`, `tool_call_id`, `lane_id`, peer task IDs, and relevant hardware lease IDs. This lets an incident, Riddle failure, HitL decision, or A2A callback be followed from visible surface to graph movement to provider call without granting the trace authority over the underlying state.

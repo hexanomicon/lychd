@@ -7,11 +7,11 @@
     "njpwerner.autodocstring",        // For generating the Grimoire's docstrings
     "ms-toolsai.jupyter",             // For testing agents in notebooks
 
-    // --- 📜 Documentation & confi ---
+    // --- 📜 Documentation & config ---
     "tamasfe.even-better-toml",       // Essential for pyproject.toml and config runes
     "redhat.vscode-yaml",             // Essential for mkdocs.yml & GitHub Actions
     "yzhang.markdown-all-in-one",     // Essential for writing docs
-    "samuelcolvin.jinjahtml",         // For Litestar/HTML templates
+    "svelte.svelte-vscode",           // Svelte 5 language server and diagnostics
 
     // --- 👁️Visual Aids ---
     "eamodio.gitlens",                // See history
@@ -21,8 +21,6 @@
 
     // --- ⚙️ The Infrastructure---
     "hangxingliu.vscode-systemd-support",     // For .service/.quadlet files
-    "davidanson.vscode-markdownlint",         // Markdown linting with special rules in settings
-    "csstools.postcss",
-    "bradlc.vscode-tailwindcss",
+    "davidanson.vscode-markdownlint"          // Markdown linting with special rules in settings
   ]
 }

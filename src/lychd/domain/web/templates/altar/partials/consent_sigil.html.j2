@@ -1,9 +1,0 @@
-{# The global consent sigil. Rendered standalone so it can be returned with
-   hx-swap-oob="outerHTML" from any response (including SSE) that changes the
-   pending count. Pass `oob=True` for the out-of-band form. #}
-{% set pending = pending | default(0) %}
-<a id="consent-sigil" href="{{ route_path('bridge:page') }}" role="status"
-   aria-label="{{ pending }} pending consents"
-   data-fragment="altar.consent-sigil" data-count="{{ pending }}"
-   {% if oob %}hx-swap-oob="outerHTML"{% endif %}
-   class="sigil"{% if pending %} data-state="lit"{% endif %}>◈ {{ pending }}</a>

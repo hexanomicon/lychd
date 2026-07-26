@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import ClassVar
 
+import pytest
 from pydantic import Field
 
 from lychd.config.runes import ConfigWriter, RuneConfig
+from lychd.system.services.lifecycle import CreatedResources
+from lychd.system.services.publication import JournaledCreation
 
 
 class WriterRootConfig(RuneConfig):
@@ -110,6 +114,25 @@ def test_writer_prefers_custom_sample_template(tmp_path: Path) -> None:
     assert "required_value" not in content
 
 
+def test_writer_legacy_callbacks_run_at_the_creation_commit_boundary(tmp_path: Path) -> None:
+    """Public path callbacks remain compatible while publication owns rollback."""
+    writer = ConfigWriter(runes_dir=tmp_path)
+    directory_batches: list[tuple[Path, ...]] = []
+    samples: list[Path] = []
+
+    directories = writer.initialize_anchors(
+        [WriterCustomTemplateConfig],
+        on_created=directory_batches.append,
+    )
+    created_samples = writer.inscribe_samples(
+        [WriterCustomTemplateConfig],
+        on_created=samples.append,
+    )
+
+    assert tuple(path for batch in directory_batches for path in batch) == tuple(directories)
+    assert samples == created_samples
+
+
 def test_writer_only_creates_leaf_samples(tmp_path: Path) -> None:
     """Branch samples are not created; leaf descendants still get samples."""
     writer = ConfigWriter(runes_dir=tmp_path)
@@ -134,3 +157,50 @@ def test_writer_keeps_parent_anchor_distinct_from_grandchild_anchor(tmp_path: Pa
     created = writer.inscribe_samples([WriterParentConfig])
 
     assert tmp_path / "writer" / "tree" / "writerparentconfig.toml" not in created
+
+
+def test_writer_preserves_and_never_journals_a_peer_sample(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The initial empty-anchor observation cannot adopt a publication racer."""
+    anchor = tmp_path / "writer" / "sample"
+    anchor.mkdir(parents=True)
+    target = anchor / "writersampleconfig.toml"
+    journal: list[CreatedResources] = []
+    creation = JournaledCreation(on_created=journal.append)
+    writer = ConfigWriter(runes_dir=tmp_path, creation=creation)
+    raced = False
+
+    def install_peer_then_link(
+        source: str,
+        destination: str,
+        *,
+        src_dir_fd: int,
+        dst_dir_fd: int,
+        follow_symlinks: bool,
+    ) -> None:
+        del source, src_dir_fd, follow_symlinks
+        nonlocal raced
+        if not raced:
+            raced = True
+            descriptor = os.open(
+                destination,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o600,
+                dir_fd=dst_dir_fd,
+            )
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write('required_name = "peer"\n')
+        raise FileExistsError(destination)
+
+    monkeypatch.setattr(
+        "lychd.system.services.publication.os.link",
+        install_peer_then_link,
+    )
+
+    created = writer.inscribe_samples([WriterSampleConfig])
+
+    assert created == []
+    assert journal == []
+    assert target.read_text(encoding="utf-8") == 'required_name = "peer"\n'

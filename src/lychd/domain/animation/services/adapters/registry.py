@@ -45,6 +45,7 @@ from lychd.system.schemas import QuadletContainer
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import ModelCapabilityHints
 
 
@@ -60,16 +61,20 @@ class RuntimeAdapterRegistry:
         adapters: Sequence[SoulstoneRuntimeAdapter] | None = None,
         *,
         portal_factories: Sequence[PortalRuntimeFactory] | None = None,
+        settings: Settings | None = None,
     ) -> None:
         """Initialize active runtime adapters plus generic fallback.
 
         Portal factories are injected by the composition root (the OpenAI factory
         is an extension, no longer a domain-side default); the passive fallback
-        still applies when no factory matches a provider.
+        still applies when no factory matches a provider. ``settings`` is needed
+        only when a standalone caller asks the registry to synthesize a Soulstone
+        runtime without supplying its already-approved Quadlet.
         """
         self._fallback: SoulstoneRuntimeAdapter = GenericRuntimeAdapter()
         self._adapters = list(adapters or [])
         self._portal_factories: list[PortalRuntimeFactory] = list(portal_factories or [])
+        self._settings = settings
 
     def register_portal_factory(self, factory: PortalRuntimeFactory) -> None:
         """Register an additional portal runtime factory."""
@@ -105,7 +110,19 @@ class RuntimeAdapterRegistry:
             return self._build_portal_runtime(rune)
 
         adapter = self.adapter_for(rune)
-        resolved_quadlet = quadlet or transmute_single_soulstone_quadlet(rune, runtime_planner=self)
+        resolved_quadlet = quadlet
+        if resolved_quadlet is None:
+            if self._settings is None:
+                msg = (
+                    "Soulstone runtime construction requires either an approved "
+                    "Quadlet or an injected Settings snapshot."
+                )
+                raise RuntimeError(msg)
+            resolved_quadlet = transmute_single_soulstone_quadlet(
+                rune,
+                runtime_planner=self,
+                settings=self._settings,
+            )
         return adapter.build_runtime(rune, resolved_quadlet)
 
     def runtime_factory(

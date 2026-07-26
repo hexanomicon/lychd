@@ -7,25 +7,62 @@ icon: material/flash
 
 _This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
 
-If Incantation gives the Lich its form, Invocation gives it the first tether to your Will. This is the **Second Seal** of the Metamorphosis, where the Lich learns to project candidate futures into the **Shadow Realm**—a plane of pure potential, of timelines yet to be.
+If Incantation draws the Circle, Invocation discovers that every Circle opens one **Private
+Loka**: a real but partial world rendered through context, memory, priors, tools, attention, and
+authority. The Whole does not arrive inside any finite witness all at once.
 
-It is the rite of **Speculative Execution**, where the line between thought and action blurs.
+The **Multimatrix** is the ecology of these bounded worlds—human, animal, cultural,
+institutional, model-shaped, and agent-shaped. Their worlds overlap through shared consequence
+without becoming identical. Truth is neither private decree nor a view from nowhere; it is what
+survives encounter across perspectives and the kinds of evidence a claim requires.
+
+Invocation is the **Second Seal**: a bounded Intent enters this ecology and the Lich projects
+candidate futures into the **Shadow Realm**. Possibility is permitted to become strange before it
+is mistaken for reality.
 
 !!! abstract "The Rite of Shadowed Timelines"
-    The act of Invocation begins at the Altar. You do not issue a command, but a mere **Intent**—a whisper of a desired future.
+    The rite begins at the [Altar](../altar/index.md). You offer an **Intent**—a desired future
+    carried by one identity and one authority boundary.
 
     1. **The Offering:** You submit your Intent at the Altar.
-    2. **The Dispatch:** The Vessel, hearing the call, dispatches its tireless **Ghouls** not into the real world, but into the Shadow Realm.
-    3. **The Dream:** Within this spectral plane, the Ghouls enact the Intent, exploring multiple paths simultaneously. They forge potential outcomes, run speculative workflows, and dream of what could be, unbound by the consequences of reality.
-    4. **The Vision:** The results of these shadowed timelines—the visions of possible futures—are returned to the Altar for you to behold.
+    2. **The Call:** The inner instrument receives the present world and opens possible movement.
+    3. **The Dream:** Shadow may branch candidate strategies or isolated timelines, each still a
+       Vikalpa rather than a fact.
+    4. **The Vision:** Candidates return with provenance, measurements, uncertainty, and
+       consequences visible enough to judge.
 
 !!! tip "The Magus as Arbiter (Human-in-the-Loop)"
-    You are the anchor to reality. The Ghouls can dream, but only you can make the dream real. Their spectral outcomes return to the Altar, where choice becomes consecration.
+    The Magus is one anchor to consequence, not an oracle whose preference turns a claim true.
+    Consent may authorize an eligible act; it does not manufacture evidence.
 
-    By your decree, one shadowed timeline is collapsed into the one true timeline. Your choice acts as the convergent blade (**Buddhi** — *√budh*: to discern), cutting away the false **Vṛttis** to converge on a single **Pramāṇa** — a verified truth. It is the final word that turns a "what if" into an "it is so."
+    By your decree, one shadowed timeline is collapsed into the promoted line. Your choice joins
+    **the Blade**—the Buddhi correspondence—cutting false or unsupported movements from the Flux
+    so one candidate may earn the exact predicates its evidence establishes.
 
-!!! info "Anatomy of the Shadow Realm"
-    The Shadow Realm is not a physical place, but an arcane state of being orchestrated by two core components of the Sepulcher:
+## Architect and Oracle
 
-    - The **Vessel** is the dream-engine of this realm, spawning and directing the Ghouls in their speculative tasks.
-    - The **Phylactery** is the final scribe. Once you make your choice, the chosen timeline is inscribed into the Phylactery as Karma. All other shadowed timelines dissipate into nothingness unless their failure traces are retained for later learning.
+The Architect asks whether the candidate is coherent, feasible, lawful, and containable. The
+Oracle asks what the model omitted, whose experience is absent, and which encounter could change
+the equation. Either faculty alone can become monstrous:
+
+- Architect without Oracle becomes a cold optimizer whose finished equation cannot hear the
+  particular life outside its variables.
+- Oracle without Architect becomes feeling without vessel: unable to preserve, measure, or make
+  repair durable.
+- Their **coniunctio** lets structure and relation correct one another.
+
+Neo is the bounded actor who must answer between them. Smith is the shadow of coherence becoming
+compulsory replication. Sati preserves value beyond assigned utility—the reminder that a world
+worth saving contains beauty, play, and gift.
+
+!!! info "The Shadow Realm Is a Jurisdiction"
+    The Shadow Realm is not a supernatural location and not a synonym for the Tomb. Its canonical
+    engineering meaning is owned by [Shadow](../../sepulcher/extensions/shadow.md):
+
+    - speculation may remain text, acquire an isolated workspace, or dispatch bounded execution;
+    - a Vision is a candidate, never direct authority to write primary reality;
+    - deterministic checks establish only their declared facts;
+    - consent, attribution, and factual truth remain distinct gates.
+
+Albedo whitens by distinction. It does not destroy imagination. It gives imagination a vessel
+capable of entering a shared world without declaring everything outside its rendering unreal.

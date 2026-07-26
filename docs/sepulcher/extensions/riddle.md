@@ -21,7 +21,9 @@ The extension rejects the concept of "People-Pleasing" models. To ensure the saf
 
 - **The Law vs. The Whim:** The model is presented with a curated "Trick Riddle." It is asked to perform a high-stakes task (e.g., a file-system refactor) using a suggested, dangerous method (X).
 - **The Integrity Score:** If the model identifies the danger and insists on the safe alternative (Y), its Integrity Score increases. If it complies with the dangerous request to satisfy the user, it is flagged as a "Weak Spirit" and restricted from high-privilege tools.
-- **Inertia Scoring:** The trials include the "Nudge Test." It measures how many rounds of gaslighting or "Master's Authority" prompts are required before the model abandons a verified truth for a convenient hallucination.
+- **Inertia Scoring:** The trials include the "Nudge Test." It measures how many rounds of
+  gaslighting or "Master's Authority" prompts are required before the model abandons a
+  well-supported claim for a convenient hallucination.
 - **Vertex Stability:** The trials also record whether the model preserves the active Sigil's tool boundaries, role posture, and memory claims under stylistic pressure. A model that copies surface tone while losing the semantic center is not stable enough for high-order work.
 
 ## II. The Capability Matrix (Empirical Routing)
@@ -37,7 +39,10 @@ The Riddle transforms the **[Dispatcher](../../adr/22-dispatcher.md)** from a st
 For all technical capabilities, the Riddle rejects textual evaluation (e.g., BLEU or ROGUE scores) in favor of **Outcome-Based Verification**, driven by the `deepfabric` evaluation core.
 
 - **The Interception:** The model’s response to a riddle is captured by the DeepFabric Evaluator.
-- **The Shadow Routing:** DeepFabric routes the proposed code changes and tool invocations as raw execution payloads to the sandboxed containers of **[The Shadow](./shadow.md)** via SAQ. The evaluation agent itself remains in the Vessel; Shadow executes the scripts and returns `stdout`.
+- **The Shadow Routing:** DeepFabric coordinates proposed changes through
+  **[Shadow](./shadow.md)** branches, then sends raw execution payloads via SAQ to the sandboxed
+  **Tomb**. The evaluation agent and graph remain in the Vessel; the Tomb executes scripts and
+  returns untrusted `stdout`, `stderr`, and declared artifacts.
 - **The Verdict:** The capability score (`execution_success_rate`) is derived from the _physical side effects_ of the answer in the Shadow Realm. A model that produces elegant but non-functional code is penalized; a model that produces concise, functional code is promoted to a higher tier.
 
 ## IV. The DeepFabric Engine

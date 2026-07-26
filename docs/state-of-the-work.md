@@ -95,37 +95,113 @@ or running service.
 
 **Proved now:** Public help exposes the closed `init`, `bind`, `start`, `stop`, `status`, `logs`,
 `run`, and `del` grammar; `st` resolves to `status` without becoming a ninth root. `init` and
-`bind` have side-effect-free planners. `init` revalidates and consumes its exact plan, rejects
+`bind` have planners that perform no LychD-managed mutation. Their bounded external observations
+may still let Podman or another inspected tool maintain its own runtime metadata. `init` revalidates
+and consumes its exact plan, rejects
 unplanned creations, journals partial progress, proves convergence before its terminal seal, and
 records device/inode plus parent-mount authority for the dedicated roots. Its default projection
 collapses the exact plan beneath Codex/config, Crypt/share, and Forge/cache XDG tiers, with Binding
-inside Codex and the Phylactery inside Crypt; `--verbose` restores routine host anchors without
-changing the plan. Shared host anchors have a distinct role color and explicit planned/present state,
+inside Codex and the Phylactery inside Crypt; `--verbose` restores routine host anchors and
+source-owned path descriptions without changing the plan. Shared host anchors have a distinct role
+color and explicit planned/present state,
 so their materialization is not presented as recursive LychD ownership. Initialization also
-concurrently awaits bounded host-foundation probes for systemd user-manager reachability,
-Podman/Quadlet compatibility, cgroup v2, SELinux, Btrfs, both Binding sites, and observed
-PostgreSQL No-COW policy. Those volatile facts remain outside lifecycle equality; after apply,
-Binding sites and storage are reinspected. Shared anchors say `will prepare`/`present`, verified
-sites say `prepared`, and only the aggregate next phase says `ready`. The first line of each
-static path's adjacent attribute
-docstring—and each dynamic Rune class docstring—owns the concise description shown beside its node;
-generic existence prose remains internal. Binding shares one typed
-preflight across preview and apply for Codex permissions, trusted host tools, Reactor boundaries,
-deployment mode, and secret wiring; apply rechecks both binding and secret generations under the
-lifecycle lock. The Scribe now requires initialization-prepared Quadlet and plain-user-unit sites
-during planning and immediately before commit rather than silently creating them. Bootstrap-safe
-`status`/`st` can render exact local ownership, unit, declaration,
+concurrently awaits one typed host-foundation inspection for systemd user-manager reachability,
+Podman/Quadlet/cgroup-v2 compatibility, SELinux, Btrfs, both Binding sites, and observed PostgreSQL
+No-COW directory policy. The report retains the exact trusted executable discoveries behind it:
+resolved files and their complete ancestor chains must remain owned by UID 0 or on a
+kernel-reported read-only mount and
+unwritable by the invoking user, while effective user-generator discovery honors systemd priority
+and masks. Those volatile facts remain outside lifecycle equality; after apply, Binding sites and
+storage are reinspected. Shared anchors say `will create`/`present`, verified sites say
+`prepared`, and only the aggregate next phase says `ready`. Missing Binding-site path components
+are created with mode `0700`; an existing site must be a non-symlink current-UID directory with
+owner and effective read/write/search access, no group/other writes, and no unsafe writable
+ancestor. SELinux `enforcing` remains a mode observation rather than proof that a particular `:Z`
+relabel succeeds, and `+C` proves policy for new extents rather than conversion of existing files.
+The first line of each static path's adjacent attribute
+docstring—and each dynamic Rune class docstring—owns the concise description shown beside its node
+in the verbose projection; generic existence prose remains internal. Binding refines the same inspection into one typed
+foundation carrying the resolved path plus device/inode identity of systemctl, Podman, the user
+generator, and both Binding sites. Preview injects those values into the secret, Scribe, and
+user-manager ports; apply rechecks the whole foundation plus binding and secret generations under
+the lifecycle lock before any effect. Settings, extensions, and the Rune filesystem are loaded once
+per bind command into one immutable session; Animator hydration consumes that same registry
+snapshot instead of reopening the Codex. One declaration compiler merges the Settings-owned core
+ports with every `PortReserver` Rune before hydration; bind, status, the Host Reactor, and the web
+runtime all consume that policy, and the live `AnimatorRegistry` receives compiled declarations
+rather than reparsing TOML. Web preauthorization synchronization also consumes the existing process
+Rune snapshot, so one startup cannot split Animator and consent truth across two filesystem reads.
+Transmutation receives the session `Settings` explicitly instead of
+reading the process cache, while each extension contributor sees an isolated deep copy of settings
+and declarations behind tuple collections. Contributor-returned containers are copied
+before admission, so the typed additive seam cannot mutate core output or later contributors.
+The Scribe requires initialization-prepared Quadlet and plain-user-unit sites during planning and
+immediately before commit rather than silently creating them. Bind supplies the approved
+`AttestedBindingSites`, and Scribe compares each newly pinned site descriptor with that exact
+device/inode before staging and re-attests both sites before a no-op return. Every planned write set carries a
+mandatory base compare-and-swap over the exact authority bytes and every source recorded by that
+receipt, including missing sources at an intentionally absent site; the caller's observed token and
+the exact desired-byte generation are additional guards. Stable no-follow observations derive those
+tokens, settled reconciliation preserves inode/mtime identity, and a failed later bind phase reports
+any confirmed secret creation or committed binding generation plus rejected, cleanly rolled-back,
+or indeterminate commit state. Terminal cancellation is logged with that progress and then
+re-raised as `KeyboardInterrupt` or `SystemExit`, including through Scribe's rollback wrapper.
+Scribe-managed generations are replaced, removed, and rolled back
+through descriptor-relative atomic exchange/quarantine operations pinned to the prepared site and
+workspace identities. Staged inode/content is re-attested before installation, final-gap writers are
+restored or preserved, and binding-site or workspace pathname substitution cannot redirect a
+transition. Indeterminate recovery workspaces remain on disk—including after rollback interruption
+by `KeyboardInterrupt` or `SystemExit`—and successful flat cleanup refuses a replaced workspace
+pathname. Empty Scribe authority deletion is part of the same generation-guarded transaction, so
+post-inspection manifest drift cannot enlarge destructive authority. Workspace cleanup settles
+every peer before re-raising a native terminal signal, with a typed cause
+that preserves whether the public generation committed, rolled back exactly, or remains
+indeterminate. Existing and newly created layout paths use no-follow directory descriptors;
+rollback authority remains
+pinned to exact parent/device/inode creations through receipt persistence. Missing directories
+are attested under private staging names and installed with atomic no-replace semantics. Their
+creation identities pass directly into the receipt; rollback quarantines before comparison,
+restores replacements, and never pathname-deletes a published quarantine because Linux cannot
+condition `rmdir` on the attested inode. The typed failure names that recovery location. A shared
+journal-bound creation session now also owns Codex files, Rune anchors and samples, and configured
+Reactor directories. It never infers ownership from precomputed absence: directory race losers are
+excluded, text-file parents must already exist, and complete file candidates are file-`fsync`ed,
+no-clobber published, descriptor-relative re-attested, and parent-`fsync`ed before the receipt
+callback. Clean interruption rollback preserves native terminal signals, concurrent replacements
+are never unlinked, and Codex returns the exact committed ledger rather than reconstructing it from
+public names. The just-created Btrfs target is created and inspected as
+`/proc/self/fd/<inherited-parent>/<leaf>`
+after the parent matches the transaction's earlier device/inode observation. The child remains
+pinned while No-COW is applied through its descriptor and re-attested before journaling. Its
+canonical substrate ancestry is retained after identity drift, exceptional preparation, or
+receipt failure, with creation identity logged for an attested recovery handoff rather than unsafe
+pathname deletion. Failed, timed-out, and terminally interrupted creation commands first classify
+the pinned leaf as absent, present-but-unattested, or indeterminate. Only proven absence after a
+nonterminal command failure permits directory fallback; residue is retained without adopting a
+post-failure UUID/ID that could belong to a racer. Bootstrap-safe `status`/`st` can
+render exact local ownership, unit, declaration,
 and mount inventory as human output or JSON, degrading split or corrupt authority instead of
 guessing. `logs` reads a bounded journal tail over exact owned units. The direct dead-Vessel
 `start` path refuses a split runtime, while direct `stop` covers every exact owned unit. The
 callback-free `run` registry carries typed
 execution, mutation, consent, progress, result, input, scope, and provider metadata. `del` renders
 one fingerprinted staged plan, confirms it, retires exact owned units, pauses with retained evidence
-for a filesystem UUID plus subvolume UUID/ID-bound privileged Btrfs handoff, removes exact bindings
-and receipt-verified dedicated roots through descriptor-relative, mount-ID-checked traversal, keeps
-the lifecycle receipt until the other Codex entries have gone, and replans between irreversible
-stages. The installed entrypoint initializes the shared Structlog pipeline before dispatching any
-verb.
+for a live-attested mounted Btrfs handoff or, more narrowly, an init-created unmounted PostgreSQL
+subvolume whose version-2 lifecycle receipt device/inode and UUID/ID still match live evidence. The
+unmounted path also requires a canonical covering-filesystem UUID/device and safe mounted top-level
+anchor before it emits an ID-based privileged command; a missing receipt or any drift blocks
+globally. Deletion removes exact bindings and receipt-verified dedicated roots through
+descriptor-relative, mount-ID-checked traversal. Root, child, and file retirement uses an atomic
+random-name quarantine beneath the pinned parent, descriptor re-attestation, no-clobber restoration
+of mismatches, and typed retained-quarantine recovery on a blocked restore. Observable/accidental
+namespace races are contained; malicious mutation by the same host UID is explicitly outside this
+boundary because that UID already has equivalent deletion authority. Codex ordinary entries retire
+while the privileged-handoff checkpoint and lifecycle receipt remain protected. The Codex root is
+then detached; both authorities move to private sibling backups and are finalized only after root
+retirement is confirmed. Failure or cancellation restores them with the root when possible, and
+typed sibling recovery markers block later plans instead of disappearing from inventory.
+Execution replans between irreversible stages. The installed entrypoint initializes the shared
+Structlog pipeline before dispatching any verb.
 
 **Boundary — Not yet:** `status` does not probe HTTP or database readiness, migration result, queue
 health, durable runs, or model warmth; extension-contributed status sections are not delivered.
@@ -145,8 +221,14 @@ claimed by repository tests.
   [run projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/run.py),
   [run-operation schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/operations.py),
   [deletion command](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/deletion.py),
+  [bind transaction](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/bind.py),
+  [Scribe transaction](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scribe/transaction.py),
+  [Scribe atomic storage](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scribe/storage.py),
   [binding preflight](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/binding_preflight.py),
+  [binding-site authority](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/binding_sites.py),
+  [trusted host-tool discovery](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/host_tools.py),
   [host-readiness probes](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/readiness),
+  [lifecycle receipt](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/lifecycle/receipt.py),
   [operator services](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/operator),
   and [lifecycle services](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/services/lifecycle)
 - **Verification:** [Focused CLI command tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py),
@@ -155,9 +237,14 @@ claimed by repository tests.
   [CLI deletion tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_deletion.py),
   [operator tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/system/operator),
   [run-operation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_operations.py),
+  [bind-transaction tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_bind.py),
+  [Scribe safety tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scribe.py),
   [binding-preflight tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_binding_preflight.py),
+  [trusted host-tool tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_host_tools.py),
   [host-readiness tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/system/readiness),
   [initialization transaction tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_initialization.py),
+  [layout tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_layout.py),
+  [lifecycle-receipt tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_lifecycle.py),
   [deletion safety tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion.py),
   and [Btrfs checkpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_deletion_storage.py)
 - **Law:** [ADR 19 — CLI](./adr/19-cli.md)
@@ -202,7 +289,7 @@ a real host.
 **Evidence**
 
 - **Source:** [Deployment transmutation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/transmute.py)
-  and [Scribe materialization](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scribe.py)
+  and [Scribe materialization](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/scribe/facade.py)
 - **Verification:** [Transmutation contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute.py),
   [extension contribution contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_contributor.py),
   and [Scribe rendering tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_scribe_render.py)
@@ -396,8 +483,9 @@ expiry or escalation policy, redacted notification delivery, or external channel
 
 **Evidence**
 
-- **Source:** [Bridge consent projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py)
-  and [consent sigil template](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/templates/altar/partials/consent_sigil.html.j2)
+- **Source:** [Bridge consent projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py),
+  [client consent card](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/ConsentCard.svelte),
+  and [shared Altar attention](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/AltarShell.svelte)
 - **Verification:** [Consent-card endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_consent_endpoint.py)
   and [SSE refresh tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
@@ -570,34 +658,41 @@ not capacity admission.
 
 ## Altar and observability {#altar-and-observability}
 
-!!! warning "Canonical client migration"
-    ADR 15 fixes one target architecture: a Svelte 5 runes client, SvelteKit static routing/build,
-    Bun-managed dependencies, generated Litestar OpenAPI contracts, and semantic JSON SSE.
-    Litestar/Granian remains the only production server and authority.
+!!! success "Canonical client foundation"
+    ADR 15's client architecture is present: a Svelte 5 runes-only source tree, SvelteKit static
+    SPA build, Node/npm lock and commands, native CSS system, generated Litestar OpenAPI types,
+    runtime-validated semantic JSON SSE, and a versioned `/api/v1` surface. Litestar serves the
+    compiled fallback and assets; Granian remains the only production server. Tailwind,
+    project-owned PostCSS, Jinja Altar templates, HTMX markup and client behavior, Alpine,
+    `litestar-vite`, and LychD's direct `litestar-htmx` dependency are absent from this surface.
+    Litestar 2.24 still resolves `litestar-htmx` as an unused transitive framework dependency;
+    removing that installed helper requires the future Litestar 3 migration, not a second LychD
+    frontend.
 
-    That client is not implemented. The repository still installs npm dependencies and serves the
-    useful but bounded Jinja/HTMX/Alpine Bridge, Nexus, and Loom slices listed below. It pins
-    `litestar-vite` 0.14.0 and has no SvelteKit source tree, Bun lockfile, generated browser SDK,
-    versioned `/api/v1` surface, semantic JSON event stream, static deep-link receipt, or
-    production proof without a JavaScript server. Existing HTML routes and tests prove only their
-    literal legacy behavior; they are not evidence of the accepted Svelte client.
+    Focused Python and Svelte tests prove the contract and static shell, not a complete
+    operator-browser acceptance pass. There is not yet a Playwright receipt over the production
+    factory, durable cross-process browser events, Android client, or useful implementation behind
+    every named instrument.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 
 **State:** Partial
 
-**Proved now:** Bridge supports local sessions, message submission, pending consent cards and
-decisions, inspection, and process-local event streaming with focused web tests.
+**Proved now:** The Svelte Bridge consumes generated `/api/v1` contracts for local sessions,
+message submission, pending consent cards and decisions, and inspection. Per-run events arrive as
+versioned semantic JSON SSE and closed GenUI descriptors; focused Python and component tests cover
+admission, consent ordering, terminal replay, descriptor safety, and client projection.
 
 **Boundary — Not yet:** There is no complete production-factory receipt, durable cross-process
 event delivery, general multi-approval round, Attention contract, or external notification
-channel. This HTML/HTMX path is a legacy projection and does not prove the canonical Svelte Bridge,
-generated client, or JSON event contract.
+channel. Text is the implemented command modality; the designed record-then-send voice path and
+continuous voice mode are not delivered.
 
 **Evidence**
 
-- **Source:** [Bridge controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py)
-  and [Bridge templates](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/web/templates/bridge)
+- **Source:** [Bridge controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py),
+  [client Bridge](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/BridgeView.svelte),
+  and [event contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/contracts.py)
 - **Verification:** [Bridge behavior tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py),
   [consent endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_consent_endpoint.py),
   and [event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py)
@@ -608,17 +703,19 @@ generated client, or JSON event contract.
 
 **State:** Partial
 
-**Proved now:** Nexus renders Coven state, transition plans, swap tickets, and settled outcomes
-through concrete HTMX and JSON controller paths.
+**Proved now:** The Svelte Nexus consumes typed Coven state and transition plans from `/api/v1`,
+submits explicit swap intents, and follows process-local tickets to settled or failed outcomes over
+semantic JSON SSE.
 
 **Boundary — Not yet:** It has no general resource truth. Tickets wrap process-local tasks without
 a durable owner, created/settled times, retention deadline, or abandoned-completion cleanup law;
-the production lifespan also lacks a receipt. These HTMX and JSON routes do not prove the
-canonical Svelte Nexus or versioned client API.
+the production lifespan also lacks an operator-browser receipt. It is not a general resource,
+queue, GPU, VRAM, topology, thermal, or hardware-pressure dashboard.
 
 **Evidence**
 
-- **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py)
+- **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py),
+  [client Nexus](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.svelte),
   and [process-local ticket store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/tickets.py)
 - **Verification:** [Nexus board and ticket tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
@@ -628,15 +725,17 @@ canonical Svelte Nexus or versioned client API.
 
 **State:** Partial
 
-**Proved now:** Loom renders registered workflow diagrams and plain-text Mermaid source through
-full-page and HTMX routes.
+**Proved now:** The Svelte Loom browses the registered workflow catalogue, renders inert Mermaid
+source locally, gives each Pattern an honest deep link, and exposes the same source as plain text
+through `/api/v1`.
 
 **Boundary — Not yet:** It is a view over the fixed workflow registry, not a general Weaver editor,
-workflow mutation surface, canonical Svelte/Svelte Flow route, or production-lifespan receipt.
+workflow mutation surface, Svelte Flow drafting canvas, or production-browser receipt.
 
 **Evidence**
 
-- **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py)
+- **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py),
+  [client Loom](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/LoomView.svelte),
   and [workflow registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py)
 - **Verification:** [Loom rendering tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
@@ -646,10 +745,10 @@ workflow mutation surface, canonical Svelte/Svelte Flow route, or production-lif
 
 **State:** Designed
 
-**Proved now:** The Altar exposes an honestly marked Scrying route and shell.
+**Proved now:** The static Svelte Altar exposes an honestly marked Scrying route and placeholder.
 
-**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
-route, useful trace query, timeline, health read model, or native observability backend.
+**Do not expect yet:** There is no useful trace query, timeline, health read model, or native
+observability backend behind that client route.
 
 **Evidence**
 
@@ -663,10 +762,10 @@ route, useful trace query, timeline, health read model, or native observability 
 
 **State:** Designed
 
-**Proved now:** The Altar exposes an honestly marked Reliquary route and shell.
+**Proved now:** The static Svelte Altar exposes an honestly marked Reliquary route and placeholder.
 
-**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
-route, artifact upload, byte custody, authorized retrieval, retention, or provenance backend.
+**Do not expect yet:** There is no artifact upload, byte custody, authorized retrieval, retention,
+or provenance backend behind that client route.
 
 **Evidence**
 
@@ -679,10 +778,10 @@ route, artifact upload, byte custody, authorized retrieval, retention, or proven
 
 **State:** Designed
 
-**Proved now:** The Altar exposes an honestly marked Bindings route and shell.
+**Proved now:** The static Svelte Altar exposes an honestly marked Bindings route and placeholder.
 
-**Do not expect yet:** The legacy route renders an unbuilt skeleton; there is no canonical Svelte
-route, useful binding inventory, grant control, lease control, or mutation backend.
+**Do not expect yet:** There is no useful binding inventory, grant control, lease control, or
+mutation backend behind that client route.
 
 **Evidence**
 

@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Final
 
+from lychd.system.host_foundation import (
+    PODMAN_QUADLET_READINESS_KEY,
+    SYSTEMD_USER_READINESS_KEY,
+)
 from lychd.system.operator.process import (
     ProcessInvocationError,
     ProcessResult,
     ProcessRunner,
+)
+from lychd.system.podman import (
+    PodmanVersion,
+    format_podman_version,
+    minimum_podman_version_text,
+    parse_podman_version,
+    podman_version_supported,
 )
 from lychd.system.readiness.models import (
     HostReadinessItem,
@@ -19,8 +29,6 @@ from lychd.system.readiness.models import (
 from lychd.system.readiness.tools import HostReadinessTools
 
 _PROBE_TIMEOUT_SECONDS: Final = 3.0
-_MINIMUM_PODMAN_VERSION: Final = (5, 4)
-_VERSION_PATTERN: Final = re.compile(r"\b(\d+)\.(\d+)(?:\.(\d+))?\b")
 
 
 class FoundationReadinessProbe:
@@ -48,7 +56,7 @@ class FoundationReadinessProbe:
         if systemctl is None:
             return self._failed_systemd("trusted systemctl executable is unavailable")
         result = self._run(
-            (systemctl, "--user", "show", "--property=Version", "--value"),
+            (systemctl.path, "--user", "show", "--property=Version", "--value"),
         )
         if isinstance(result, str):
             return self._failed_systemd(f"manager probe failed: {result}")
@@ -58,7 +66,7 @@ class FoundationReadinessProbe:
             )
         version = self._display_version(result.stdout)
         return HostReadinessItem(
-            key="systemd-user",
+            key=SYSTEMD_USER_READINESS_KEY,
             label="systemd user manager",
             section=ReadinessSection.FOUNDATION,
             state=ReadinessState.VERIFIED,
@@ -79,31 +87,30 @@ class FoundationReadinessProbe:
         if not self._cgroup_v2_controllers_path.is_file():
             return self._failed_podman("cgroup v2 controllers are unavailable")
 
-        podman_version = self._probe_version(podman)
-        generator_version = self._probe_version(generator)
+        podman_version = self._probe_version(podman.path)
+        generator_version = self._probe_version(generator.path)
         if isinstance(podman_version, str):
             return self._failed_podman(f"Podman version probe failed: {podman_version}")
         if isinstance(generator_version, str):
             return self._failed_podman(f"Quadlet version probe failed: {generator_version}")
-        minimum = ".".join(str(part) for part in _MINIMUM_PODMAN_VERSION)
-        if podman_version[:2] < _MINIMUM_PODMAN_VERSION:
+        minimum = minimum_podman_version_text()
+        if not podman_version_supported(podman_version):
             return self._failed_podman(
-                f"Podman {self._version_text(podman_version)} is older than required {minimum}",
+                f"Podman {format_podman_version(podman_version)} is older than required {minimum}",
             )
-        if generator_version[:2] < _MINIMUM_PODMAN_VERSION:
+        if not podman_version_supported(generator_version):
             return self._failed_podman(
-                f"Quadlet {self._version_text(generator_version)} is older than required {minimum}",
+                f"Quadlet {format_podman_version(generator_version)} is older than required {minimum}",
             )
         versions = (
-            f"Podman {self._version_text(podman_version)}"
+            f"Podman {format_podman_version(podman_version)}"
             if podman_version == generator_version
             else (
-                f"Podman {self._version_text(podman_version)} · "
-                f"Quadlet {self._version_text(generator_version)}"
+                f"Podman {format_podman_version(podman_version)} · Quadlet {format_podman_version(generator_version)}"
             )
         )
         return HostReadinessItem(
-            key="podman-quadlet",
+            key=PODMAN_QUADLET_READINESS_KEY,
             label="Podman / Quadlet",
             section=ReadinessSection.FOUNDATION,
             state=ReadinessState.VERIFIED,
@@ -120,7 +127,7 @@ class FoundationReadinessProbe:
         mode = raw_mode.casefold()
         if mode in {"1", "enforcing"}:
             state = ReadinessState.VERIFIED
-            detail = "enforcing · private :Z labels active"
+            detail = "enforcing"
         elif mode in {"0", "permissive"}:
             state = ReadinessState.DEGRADED
             detail = "permissive · label enforcement inactive"
@@ -138,23 +145,22 @@ class FoundationReadinessProbe:
             detail=detail,
         )
 
-    def _probe_version(self, executable: str) -> tuple[int, int, int] | str:
+    def _probe_version(self, executable: str) -> PodmanVersion | str:
         result = self._run((executable, "--version"))
         if isinstance(result, str):
             return result
         if result.returncode != 0:
             return self._result_error(result)
-        match = _VERSION_PATTERN.search(f"{result.stdout}\n{result.stderr}")
-        if match is None:
+        version = parse_podman_version(f"{result.stdout}\n{result.stderr}")
+        if version is None:
             return "version could not be verified"
-        major, minor, patch = match.groups()
-        return (int(major), int(minor), int(patch or 0))
+        return version
 
     def _getenforce_mode(self) -> str:
         getenforce = self._tools.getenforce
         if getenforce is None:
             return ""
-        result = self._run((getenforce,))
+        result = self._run((getenforce.path,))
         return result.stdout.strip() if isinstance(result, ProcessResult) and result.returncode == 0 else ""
 
     def _run(self, argv: tuple[str, ...]) -> ProcessResult | str:
@@ -172,20 +178,16 @@ class FoundationReadinessProbe:
         return cls._brief(result.stderr) or f"exit {result.returncode}"
 
     @staticmethod
-    def _version_text(version: tuple[int, int, int]) -> str:
-        return ".".join(str(part) for part in version)
-
-    @staticmethod
     def _display_version(value: str) -> str:
-        match = _VERSION_PATTERN.search(value)
-        if match is None:
+        version = parse_podman_version(value)
+        if version is None:
             return ""
-        return ".".join(part for part in match.groups() if part is not None)
+        return format_podman_version(version).removesuffix(".0")
 
     @staticmethod
     def _failed_systemd(detail: str) -> HostReadinessItem:
         return HostReadinessItem.failed(
-            key="systemd-user",
+            key=SYSTEMD_USER_READINESS_KEY,
             label="systemd user manager",
             detail=detail,
             required=True,
@@ -194,7 +196,7 @@ class FoundationReadinessProbe:
     @staticmethod
     def _failed_podman(detail: str) -> HostReadinessItem:
         return HostReadinessItem.failed(
-            key="podman-quadlet",
+            key=PODMAN_QUADLET_READINESS_KEY,
             label="Podman / Quadlet",
             detail=detail,
             required=True,

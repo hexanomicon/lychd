@@ -38,8 +38,9 @@ def build_operator_services(
     vessel: VesselControlPort | None = None,
 ) -> OperatorServices:
     """Compose local operator services without importing or constructing ASGI."""
-    from lychd.system.services.lifecycle import LifecycleLock, LifecycleReceiptStore
-    from lychd.system.services.scribe import ScribeService
+    from lychd.system.services.lifecycle.lock import LifecycleLock
+    from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
+    from lychd.system.services.scribe.facade import ScribeService
 
     process = runner or SubprocessRunner()
     locations = paths or OperatorPaths.current()

@@ -1,39 +1,63 @@
-"""Template discipline guards: no inline styles, no hardcoded instrument paths."""
+"""Static-client architectural boundaries not covered by Svelte tooling."""
 
 from __future__ import annotations
 
-import re
+import json
 from pathlib import Path
 
-TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "src" / "lychd" / "domain" / "web" / "templates"
-
-_STYLE = re.compile(r'style="([^"]*)"')
-_HARDCODED_PATH = re.compile(
-    r'(?:href|hx-get|hx-post|hx-push-url|hx-put|hx-delete|sse-connect|action)="/(?:bridge|nexus|loom|scrying|reliquary|bindings)'
-)
+REPO = Path(__file__).resolve().parents[2]
+FRONTEND = REPO / "frontend" / "src"
 
 
-def _templates() -> list[Path]:
-    return sorted(TEMPLATES_DIR.rglob("*.j2"))
+def test_svelte_uses_no_raw_html_sink() -> None:
+    offenders = [
+        str(path.relative_to(REPO))
+        for path in FRONTEND.rglob("*.svelte")
+        if "{@html" in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
 
 
-def test_templates_exist() -> None:
-    """Sanity: the template tree is discoverable."""
-    assert _templates(), "no templates found — check TEMPLATES_DIR"
+def test_static_client_has_no_sveltekit_server_modules() -> None:
+    offenders = [
+        str(path.relative_to(REPO))
+        for path in FRONTEND.rglob("*")
+        if path.is_file()
+        and (
+            path.name.startswith("+page.server")
+            or path.name.startswith("+layout.server")
+            or path.name.startswith("+server")
+        )
+    ]
+    assert offenders == []
 
 
-def test_no_inline_styles() -> None:
-    """`style=` is banned unless every declaration sets a `--custom-property`."""
-    offenders: list[tuple[str, str]] = []
-    for path in _templates():
-        for match in _STYLE.finditer(path.read_text(encoding="utf-8")):
-            declarations = [d.strip() for d in match.group(1).split(";") if d.strip()]
-            if any(not decl.startswith("--") for decl in declarations):
-                offenders.append((path.name, match.group(1)))
-    assert offenders == [], f"inline styles found: {offenders}"
+def test_frontend_styling_is_native_css() -> None:
+    package = json.loads((REPO / "frontend" / "package.json").read_text(encoding="utf-8"))
+    declared = {*package.get("dependencies", {}), *package.get("devDependencies", {})}
+    forbidden_dependencies = {
+        "autoprefixer",
+        "postcss",
+        "sass",
+        "tailwindcss",
+        "@tailwindcss/postcss",
+        "@tailwindcss/vite",
+    }
+    app_css = (FRONTEND / "app.css").read_text(encoding="utf-8").lower()
+
+    assert declared.isdisjoint(forbidden_dependencies)
+    assert '@import "tailwindcss"' not in app_css
+    assert "@theme" not in app_css
+    assert not (REPO / "postcss.config.js").exists()
+    assert not (REPO / "tailwind.config.cjs").exists()
 
 
-def test_no_hardcoded_instrument_paths() -> None:
-    """Instrument routes go through `route_path`, never hardcoded literals."""
-    offenders = [path.name for path in _templates() if _HARDCODED_PATH.search(path.read_text(encoding="utf-8"))]
-    assert offenders == [], f"hardcoded instrument paths found in: {offenders}"
+def test_runes_do_not_enter_framework_neutral_typescript() -> None:
+    runes = ("$state", "$derived", "$effect", "$props", "$bindable", "$inspect")
+    offenders = [
+        str(path.relative_to(REPO))
+        for path in FRONTEND.rglob("*.ts")
+        if not path.name.endswith(".svelte.ts")
+        and any(rune in path.read_text(encoding="utf-8") for rune in runes)
+    ]
+    assert offenders == []

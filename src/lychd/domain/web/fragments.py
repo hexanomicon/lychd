@@ -1,8 +1,8 @@
-"""The Projection Law generative-UI registry (§7.4).
+"""The Projection Law generative-UI descriptor registry.
 
-The agent's `BridgeReply.fragments` names registry keys and params; model output
-is never interpreted as markup. Unknown keys are dropped and logged; params are
-Pydantic-validated; all text is escaped by Jinja autoescape at render time.
+Agents select closed descriptor keys and provide data. The Vessel validates that
+data and emits inert JSON; the Svelte Altar owns the compile-time component map.
+Model output is never interpreted as markup or executable code.
 """
 
 from __future__ import annotations
@@ -14,8 +14,6 @@ import structlog
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 if TYPE_CHECKING:
-    from litestar.contrib.jinja import JinjaTemplateEngine
-
     from lychd.agents.workflows.bridge_chat import FragmentCall
 
 logger = structlog.get_logger()
@@ -60,19 +58,17 @@ class VisionSummaryParams(BaseModel):
 
 @dataclass(frozen=True)
 class FragmentDef:
-    """One registered generative-UI fragment: key, template, validation schema."""
+    """One registered generative-UI descriptor and its validation schema."""
 
     key: str
-    template: str
     params_model: type[BaseModel]
 
 
 @dataclass(frozen=True)
 class ValidatedFragment:
-    """A fragment call that passed registry validation, params bound to its model."""
+    """A descriptor call that passed registry validation."""
 
     key: str
-    template: str
     params: BaseModel
 
 
@@ -108,14 +104,17 @@ class FragmentRegistry:
             except ValidationError as exc:
                 logger.warning("fragment_invalid_params", fragment=call.fragment, error=str(exc))
                 continue
-            validated.append(ValidatedFragment(key=definition.key, template=definition.template, params=params))
+            validated.append(ValidatedFragment(key=definition.key, params=params))
         return validated
 
-    def render(self, fragment: ValidatedFragment, *, engine: JinjaTemplateEngine) -> str:
-        """Render a validated fragment to HTML via the Jinja engine (autoescaped)."""
-        template = engine.get_template(fragment.template)
-        context: dict[str, Any] = {"params": fragment.params, **fragment.params.model_dump()}
-        return template.render(context)
+    def descriptor(self, fragment: ValidatedFragment) -> dict[str, Any]:
+        """Return the inert client descriptor for a validated fragment."""
+        return {
+            "kind": fragment.key,
+            "schema_version": 1,
+            "props": fragment.params.model_dump(mode="json"),
+            "actions": [],
+        }
 
 
 def build_fragment_registry() -> FragmentRegistry:
@@ -124,17 +123,14 @@ def build_fragment_registry() -> FragmentRegistry:
         {
             "genui.plan_checklist": FragmentDef(
                 key="genui.plan_checklist",
-                template="genui/plan_checklist.html.j2",
                 params_model=PlanChecklistParams,
             ),
             "genui.capability_table": FragmentDef(
                 key="genui.capability_table",
-                template="genui/capability_table.html.j2",
                 params_model=CapabilityTableParams,
             ),
             "genui.vision_summary": FragmentDef(
                 key="genui.vision_summary",
-                template="genui/vision_summary.html.j2",
                 params_model=VisionSummaryParams,
             ),
         }

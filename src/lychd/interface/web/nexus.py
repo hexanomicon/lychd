@@ -1,147 +1,152 @@
-"""`NexusController` — Nexus page, coven board, transition plan, and swaps.
-
-The board is a read-only projection of the orchestrator's capability statuses; a
-swap is a long mutation surfaced as a self-polling ticket (tracked in the
-`TicketStore`, not a module global) that settles with an HTTP 286 (stop-polling)
-plus a body event the board hears to refresh once.
-"""
+"""Versioned Nexus JSON API and transition event stream."""
 
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+import json
+from dataclasses import asdict
+from typing import TYPE_CHECKING
 
 from litestar import Controller, get, post
+from litestar.di import NamedDependency
 from litestar.exceptions import NotFoundException
-from litestar.plugins.htmx import HTMXRequest, HTMXTemplate
-from litestar.response import Response, Template
+from litestar.openapi.datastructures import ResponseSpec
+from litestar.params import FromPath, FromQuery
+from litestar.response import ServerSentEvent, ServerSentEventMessage
 from litestar.status_codes import HTTP_202_ACCEPTED
 
-# Runtime imports: Litestar resolves handler param/return annotations at registration.
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.guards import requires_scopes
-from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.priority import PRIORITY_MAX
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
-from lychd.domain.web.projection import Projector, stop_polling
-from lychd.domain.web.schemas import build_nexus_board
-from lychd.domain.web.tickets import TicketStore
+from lychd.domain.web.contracts import NexusSnapshot, SwapAccepted, SwapIntent, TransitionEventEnvelope
+from lychd.domain.web.projection import EventProjector
+from lychd.domain.web.schemas import SwapTicket, build_nexus_board
+from lychd.domain.web.tickets import TicketRecord, TicketStore
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class NexusController(Controller):
-    """Serve the Nexus coven board, plan drawer, and swap lifecycle."""
+    """Serve capability state and typed transition intents."""
 
-    path = "/nexus"
+    path = "/api/v1/nexus"
 
-    @get("/", name="nexus:page", guards=[requires_scopes("altar:read")])
-    async def page(self, consents: ConsentLedger) -> Template:
-        """Render the Nexus page; the coven board self-loads over HTMX."""
-        return Template(
-            template_name="altar/pages/nexus.html.j2",
-            context={"active": "nexus", "pending": await consents.pending_count()},
-        )
-
-    @get("/board", name="nexus:board", guards=[requires_scopes("altar:read")])
-    async def board(
+    @get("", name="nexus:snapshot", operation_id="getNexusSnapshot", guards=[requires_scopes("altar:read")])
+    async def snapshot(
         self,
-        request: HTMXRequest,
-        orchestrator: OrchestratorManager,
-        registry: AnimatorRegistry,
-    ) -> Template:
-        """Return the coven board fragment (htmx) or the full Nexus page (dual-render)."""
-        ctx: dict[str, Any] = {"board": build_nexus_board(orchestrator, registry)}
-        if request.htmx:
-            return HTMXTemplate(template_name="nexus/board.html.j2", context=ctx)
-        ctx["active"] = "nexus"
-        return Template(template_name="altar/pages/nexus.html.j2", context=ctx)
+        orchestrator: NamedDependency[OrchestratorManager],
+        registry: NamedDependency[AnimatorRegistry],
+    ) -> NexusSnapshot:
+        """Return the current capability board."""
+        return NexusSnapshot(board=build_nexus_board(orchestrator, registry))
 
-    @get("/plan", name="nexus:plan", guards=[requires_scopes("altar:read")])
+    @get("/plan", name="nexus:plan", operation_id="getNexusPlan", guards=[requires_scopes("altar:read")])
     async def plan(
         self,
-        request: HTMXRequest,
-        orchestrator: OrchestratorManager,
-        target: str,
-    ) -> Template | TransitionPlan:
-        """Dry-run the transition solver: drawer fragment (htmx) or JSON."""
+        orchestrator: NamedDependency[OrchestratorManager],
+        target: FromQuery[str],
+    ) -> TransitionPlan:
+        """Dry-run the transition solver."""
         try:
-            transition_plan = await orchestrator.calculate_transition_plan(target)
+            return await orchestrator.calculate_transition_plan(target)
         except ValueError as exc:
-            msg = f"Unknown capability target: {target}"
-            raise NotFoundException(msg) from exc
-        if request.htmx:
-            return HTMXTemplate(
-                template_name="nexus/swap_plan.html.j2",
-                context={"plan": transition_plan, "target": target},
-            )
-        return transition_plan
+            raise NotFoundException(detail=f"Unknown capability target: {target}") from exc
 
     @post(
-        "/swap",
+        "/swaps",
         status_code=HTTP_202_ACCEPTED,
         name="nexus:swap",
+        operation_id="createNexusSwap",
         guards=[requires_scopes("orchestrator:transition")],
     )
     async def swap(
         self,
-        request: HTMXRequest,
-        orchestrator: OrchestratorManager,
-        tickets: TicketStore,
-        projector: Projector,
-    ) -> Response[str] | Template:
-        """Launch a transition and return the self-polling ticket strip (202)."""
-        if not request.htmx:
-            return Response(content="Swap is an HTMX-only endpoint.", status_code=400)
-
-        form = await request.form()
-        target = str(form.get("target", "")).strip()
-        if not target:
-            return Response(content="No swap target named.", status_code=400)
-
+        data: SwapIntent,
+        orchestrator: NamedDependency[OrchestratorManager],
+        tickets: NamedDependency[TicketStore],
+        projector: NamedDependency[EventProjector],
+    ) -> SwapAccepted:
+        """Launch one transition and return a process-local ticket."""
         try:
-            transition_plan = await orchestrator.calculate_transition_plan(target)
+            plan = await orchestrator.calculate_transition_plan(data.target)
         except ValueError as exc:
-            msg = f"Unknown capability target: {target}"
-            raise NotFoundException(msg) from exc
-
+            raise NotFoundException(detail=f"Unknown capability target: {data.target}") from exc
         task = asyncio.create_task(
-            orchestrator.request_transition(target, priority=PRIORITY_MAX),
-            name=f"swap:{target}",
+            orchestrator.request_transition(data.target, priority=PRIORITY_MAX),
+            name=f"swap:{data.target}",
         )
         record = tickets.open(
-            target=target,
-            action_type=transition_plan.action_type,
-            total_metabolic_cost=transition_plan.total_metabolic_cost,
+            target=data.target,
+            action_type=plan.action_type,
+            total_metabolic_cost=plan.total_metabolic_cost,
             task=task,
         )
-        return HTMXTemplate(
-            template_name="nexus/swap_ticket.html.j2",
-            context={"ticket": projector.ticket_view(record)},
-            re_target="#nexus-plan",
-            re_swap="innerHTML",
-            status_code=HTTP_202_ACCEPTED,
-        )
+        return SwapAccepted(ticket=projector.ticket_view(record))
 
-    @get("/swap/{ticket_id:str}", name="nexus:ticket", guards=[requires_scopes("altar:read")])
+    @get(
+        "/swaps/{ticket_id:str}",
+        name="nexus:ticket",
+        operation_id="getNexusSwap",
+        guards=[requires_scopes("altar:read")],
+    )
     async def swap_status(
         self,
-        ticket_id: str,
-        tickets: TicketStore,
-        projector: Projector,
-    ) -> Template | Response[str]:
-        """Return the ticket strip; settle with 286 + a board-refresh trigger."""
+        ticket_id: FromPath[str],
+        tickets: NamedDependency[TicketStore],
+        projector: NamedDependency[EventProjector],
+    ) -> SwapAccepted:
+        """Return the current state of one transition ticket."""
         record = tickets.get(ticket_id)
         if record is None:
-            return Response(content="Unknown ticket.", status_code=404)
+            raise NotFoundException(detail="Unknown ticket.")
+        return SwapAccepted(ticket=self._ticket(record, projector))
 
-        if not record.task.done():
-            return HTMXTemplate(
-                template_name="nexus/swap_ticket.html.j2",
-                context={"ticket": projector.ticket_view(record)},
-            )
+    @get(
+        "/swaps/{ticket_id:str}/events",
+        name="nexus:ticket-events",
+        operation_id="streamNexusSwapEvents",
+        guards=[requires_scopes("altar:read")],
+        responses={
+            200: ResponseSpec(
+                TransitionEventEnvelope,
+                generate_examples=False,
+                media_type="text/event-stream",
+                description="Versioned semantic transition events.",
+            ),
+        },
+    )
+    async def swap_events(
+        self,
+        ticket_id: FromPath[str],
+        tickets: NamedDependency[TicketStore],
+        projector: NamedDependency[EventProjector],
+    ) -> ServerSentEvent:
+        """Stream warming and terminal ticket state without HTML polling."""
+        record = tickets.get(ticket_id)
+        if record is None:
+            raise NotFoundException(detail="Unknown ticket.")
 
-        failed = record.task.cancelled() or record.task.exception() is not None
-        ticket = projector.ticket_view(record, settled=True, failed=failed)
-        tickets.settle(ticket_id)
-        html = projector.render("nexus/swap_ticket.html.j2", {"ticket": ticket})
-        return stop_polling(html, trigger_after_settle="nexus:swap-settled")
+        async def stream() -> AsyncIterator[ServerSentEventMessage]:
+            warming = projector.ticket_view(record)
+            yield self._ticket_event(warming, seq=0)
+            if not record.task.done():
+                await asyncio.wait({record.task})
+            yield self._ticket_event(self._ticket(record, projector), seq=1)
+
+        return ServerSentEvent(stream())
+
+    @staticmethod
+    def _ticket(record: TicketRecord, projector: EventProjector) -> SwapTicket:
+        failed = record.task.cancelled() or (record.task.done() and record.task.exception() is not None)
+        return projector.ticket_view(record, settled=record.task.done(), failed=failed)
+
+    @staticmethod
+    def _ticket_event(ticket: SwapTicket, *, seq: int) -> ServerSentEventMessage:
+        return ServerSentEventMessage(
+            event="transition",
+            id=str(seq),
+            data=json.dumps({"schema_version": 1, "seq": seq, "ticket": asdict(ticket)}),
+        )

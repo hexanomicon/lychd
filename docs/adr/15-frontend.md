@@ -27,7 +27,10 @@ icon: material/language-html5
 - **Generated Contracts:** TypeScript types, runtime schemas, route helpers, and the browser Fetch
   SDK derive from Litestar OpenAPI rather than handwritten mirror interfaces.
 - **Static Production:** Production runs Litestar/Granian only. The Svelte application is a static
-  build served from the Vessel; Node or Bun never becomes a second production server.
+  build served from the Vessel; no JavaScript runtime becomes a second production server.
+- **Replaceable Renderer:** Framework-specific reactivity remains inside the presentation
+  boundary. Transport, schemas, validation, event reduction, and domain rules remain ordinary
+  TypeScript that another renderer can consume.
 - **Multi-Instrument Map:** Bridge, Scrying, Nexus, Loom, Reliquary, and Bindings remain distinct,
   deep-linkable instruments under one application shell.
 - **Live Projection:** Snapshots plus resumable SSE must project token flow, run movement,
@@ -111,7 +114,8 @@ The canonical Altar is a **Svelte 5 application using SvelteKit in static SPA mo
 - `adapter-static` emits the production assets and fallback document.
 - `+page.server.*`, `+layout.server.*`, SvelteKit form actions, remote functions, private server
   modules, and a SvelteKit production server are forbidden.
-- Bun is the canonical JavaScript package manager and development script executor.
+- Node.js 24 LTS is the canonical JavaScript development/build runtime; npm 11 owns dependency
+  installation and script execution.
 - Vite remains the frontend compiler and asset pipeline.
 - Litestar/Granian is the only production application server.
 - The native Android client remains Kotlin/Compose. It shares protocol, not UI code.
@@ -159,21 +163,34 @@ Svelte state follows these constraints:
 - `$derived` expresses values determined by other state.
 - `$effect` is an escape hatch for external synchronization, not a general derivation mechanism.
 - Large immutable snapshots may use raw state and replacement rather than deep mutation.
-- Shared reactive logic may live in typed `.svelte.ts` modules but may not become a browser domain
-  layer.
+- Runes are compiler directives, not ordinary JavaScript functions. They may appear only in
+  components and explicitly presentation-owned `.svelte.ts` modules.
+- Generated OpenAPI code, the Fetch SDK, runtime schemas, protocol types, pure event reducers, and
+  domain rules remain framework-neutral `.ts`.
+- A Svelte proxy never crosses Fetch, SSE, IndexedDB, structured-clone, or extension boundaries.
+  External admission receives a plain validated value; use a deliberate snapshot at the
+  presentation boundary when reactive state must leave it.
+- Shared reactive modules may coordinate views but may not become a browser domain layer.
+
+Svelte is therefore a replaceable compiled view language, not the language of the application.
+The compiler's concise reactivity is admitted precisely where the browser projects state; it does
+not acquire authority over the protocol or the Work.
 
 ### 2. API and Type Generation
 
 The stable browser boundary lives beneath `/api/v1`. Litestar route annotations, DTOs, Pydantic
 models, msgspec structures, and dataclasses feed OpenAPI 3.1.
 
-The audited Litestar-Vite TypeGen path generates:
+The audited OpenAPI generation path exports the real Litestar controller schema and uses
+`openapi-typescript` plus `openapi-fetch`. It provides:
 
 - TypeScript request and response types;
-- runtime validation schemas for hostile or evolving inputs;
 - a typed Fetch SDK;
-- stable route helpers; and
-- named schema modules for event payloads and GenUI descriptors.
+- stable path and operation identifiers; and
+- named schemas for event payloads and client contracts.
+
+Hostile stream input is parsed by Zod schemas statically constrained to those generated event
+types. The runtime validator may not invent a broader or incompatible parallel contract.
 
 Generated code is committed or deterministically reproduced in CI. A schema-drift gate exports the
 OpenAPI document from the real application factory, regenerates the client, and fails if tracked
@@ -255,7 +272,25 @@ Loom and graph-shaped Scrying views may use Svelte Flow behind one LychD-owned a
 owns pan, zoom, selection, edges, and inert draft gestures. Weaver and the Vessel own validation,
 publication, execution, persistence, and consent.
 
-### 6. Development, Build, and Production
+### 6. Styling Boundary
+
+The Altar uses native CSS custom properties, cascade layers, media queries, and semantic component
+classes. Component state is expressed through meaningful classes, attributes, and `data-state`
+values rather than generated utility strings.
+
+Tailwind is rejected because the Altar already owns a small semantic design vocabulary. A utility
+compiler would duplicate that vocabulary, expand the dependency and generated-code surface, and
+force agents to translate between component meaning and styling tokens. Sass is rejected because
+the current design needs no compile-time mixins, functions, or inheritance beyond capabilities
+provided by modern CSS. A project-owned PostCSS configuration is rejected because no required
+project transform remains.
+
+Vite and its dependencies may internally process CSS as an implementation detail. That does not
+authorize a LychD PostCSS configuration, Tailwind plugin, Sass compiler, or styling DSL. A new
+transform requires a concrete browser requirement that native CSS cannot satisfy and a deliberate
+revision of this Covenant.
+
+### 7. Development, Build, and Production
 
 The frontend source lives in one bounded monorepo client root. Python and frontend sources share
 one repository and one release, but not one runtime authority.
@@ -272,26 +307,26 @@ Browser
 Production:
 
 ```text
-bun ci
+npm ci
   → SvelteKit adapter-static build
       → hashed assets + fallback document
           → packaged with LychD
               → Litestar/Granian serves UI, API, and SSE on one origin
 ```
 
-Bun law:
+Node/npm law:
 
-- pin the exact Bun version in repository tooling;
-- commit the text `bun.lock`;
-- use `bun ci` for reproducible installs;
+- pin the Node.js 24 LTS build line in repository tooling;
+- record the canonical npm 11 release in `packageManager`;
+- commit `frontend/package-lock.json` and use `npm ci` for reproducible installs;
 - keep Vite as the compiler;
-- do not use Bun-specific server APIs in application code;
-- do not place Bun, Node, or a SvelteKit server in the production runtime image.
+- do not use Node-specific server APIs in browser application code;
+- do not place Node.js or a SvelteKit server in the production runtime image.
 
 Static UI fallback routes must never swallow `/api`, `/schema`, `/static`, health, A2A, or other
 non-Altar namespaces. Hashed immutable assets and the fallback document use distinct cache policy.
 
-### 7. Quality Gates
+### 8. Quality Gates
 
 The canonical client must pass:
 
@@ -302,30 +337,35 @@ The canonical client must pass:
 - keyboard navigation and automated accessibility checks;
 - direct deep-link refresh for every instrument;
 - snapshot, SSE disconnect, resume, duplicate, gap, reset, consent, and terminal-flow scenarios;
-- a production-image assertion that no Bun/Node/SvelteKit server is present;
+- a production-image assertion that no Node.js/SvelteKit server is present;
+- a static guard against Tailwind, Sass, project-owned PostCSS, and Svelte runes outside the
+  presentation boundary;
 - hermetic build and local-asset checks; and
 - measured bundle and high-frequency event budgets.
 
 Semantic roles, instrument identifiers, visible states, and explicit `PASS`, `FAIL`, `BLOCKED`, or
 `SKIP` verdicts remain machine-readable runtime evidence. The DOM is evidence, not authority.
 
-### 8. Migration Law
+### 9. Migration Law
 
-The rewrite is a replacement, not a permanent hybrid:
+The rewrite was a replacement, not a permanent hybrid:
 
 1. Update the Logos and delivery boundary before claiming the new client.
-2. Audit and upgrade Litestar-Vite separately from the renderer rewrite.
+2. Separate OpenAPI generation and static serving, then retire Litestar-Vite with the legacy shell.
 3. Establish `/api/v1`, generated contracts, semantic JSON SSE, and the shared error law.
 4. Build Bridge as the first complete vertical slice: send, stream, reconnect, consent, settle,
    refresh.
 5. Port Nexus, Scrying, Loom, Reliquary, and Bindings by route.
-6. Use current HTMX behavior only as a temporary parity oracle.
+6. Use the former HTMX behavior only as a temporary parity oracle.
 7. Remove Jinja Altar templates, HTMX, Alpine, HTML SSE projection, polling fragments, and their
    obsolete tests once the corresponding Svelte behavior is proved.
 
-New Altar features must not deepen the legacy HTMX/Jinja surface during the rewrite.
+This migration boundary has now been crossed for the existing Altar: steps 1–7 are represented in
+source, generated assets, focused tests, and State of the Work. Scrying, Reliquary, and Bindings
+remain honest client-side placeholders rather than fabricated feature parity. New Altar work must
+extend the Svelte contract and must not reintroduce the retired HTMX/Jinja surface.
 
-### 9. Decision Reopening Criteria
+### 10. Decision Reopening Criteria
 
 This decision is not reopened by:
 
@@ -357,8 +397,8 @@ Any replacement must preserve the API, event, GenUI, authority, and production-r
 - [Litestar-Vite type generation](https://litestar-org.github.io/litestar-vite/usage/types.html)
 - [React external-store integration](https://react.dev/reference/react/useSyncExternalStore) and
   [React Compiler](https://react.dev/learn/react-compiler/introduction)
-- [Bun lockfile](https://bun.com/docs/pm/lockfile) and
-  [reproducible install](https://bun.com/docs/pm/cli/install)
+- [Node.js release lines](https://nodejs.org/en/about/previous-releases) and
+  [`npm ci`](https://docs.npmjs.com/cli/v11/commands/npm-ci)
 
 ## Consequences
 
@@ -374,6 +414,8 @@ Any replacement must preserve the API, event, GenUI, authority, and production-r
     - The useful existing hypermedia surface must be rewritten rather than incrementally extended.
     - Svelte 5 and SvelteKit require exact-version and runes discipline; stale Svelte 3/4 patterns
       are invalid guidance.
+    - Runes are compiler-transformed semantics, so proxy admission, serialization, and debugger
+      behavior require an explicit boundary rather than assumptions based on ordinary JavaScript.
     - Static SPA startup depends on JavaScript and needs explicit loading, failure, and recovery UI.
     - The team must prevent accidental use of SvelteKit server features.
     - Some specialized JavaScript libraries will require a small owned adapter.

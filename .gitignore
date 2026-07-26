@@ -9,6 +9,7 @@
 
 # --- Web UI / Frontend ---
 node_modules/
+.svelte-kit/
 dist/
 dist-ssr/
 # Built files from the web UI

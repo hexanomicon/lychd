@@ -23,7 +23,18 @@ nav = [
     { "Summoning" = "summoning.md" },
     { "Sepulcher" = [
         "sepulcher/index.md",
-        { "Lich" = "sepulcher/lich.md" },
+        { "Lich" = [
+            "sepulcher/lich/index.md",
+            "sepulcher/lich/call.md",
+            "sepulcher/lich/blade.md",
+            { "Spirit" = [
+                "sepulcher/lich/spirit/index.md",
+                "sepulcher/lich/spirit/flux.md",
+                "sepulcher/lich/spirit/seed.md",
+                "sepulcher/lich/spirit/recall.md"
+            ]},
+            "sepulcher/lich/answer.md"
+        ]},
         { "Codex" = "sepulcher/codex.md" },
         { "Crypt" = "sepulcher/crypt.md" },
         { "Vessel" = [
@@ -78,15 +89,6 @@ nav = [
             "divination/transcendence/immortality.md",
             "divination/transcendence/infinity.md"
         ]}
-    ]},
-    { "Philosophy" = [
-        "philosophy/index.md",
-        "philosophy/echoes-of-the-eternal.md",
-        "philosophy/concordance.md",
-        "philosophy/soulforge-covenant.md",
-        "philosophy/open-theorems.md",
-        "philosophy/sources.md",
-        "philosophy/agent-initiation.md"
     ]},
     { "Reference Compositions" = [
         "compositions/index.md",

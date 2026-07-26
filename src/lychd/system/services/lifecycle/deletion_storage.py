@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 import os
+import stat
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Protocol
 from uuid import UUID
 
+from lychd.system.btrfs_identity import (
+    BTRFS_FIRST_FREE_OBJECTID,
+    BTRFS_SUBVOLUME_BOUNDARY_INODES,
+    parse_subvolume_show,
+)
 from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.process import ProcessInvocationError, ProcessRunner
 from lychd.system.operator.storage import MountObservation, MountTreeObservation
+from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
 )
 from lychd.system.services.lifecycle.deletion_models import (
-    BTRFS_FIRST_FREE_OBJECTID,
     BtrfsSubvolumeIdentity,
     DeletionAction,
     DeletionActionKind,
@@ -24,11 +29,14 @@ from lychd.system.services.lifecycle.deletion_models import (
     DeletionStage,
     PrivilegedHandoff,
 )
-from lychd.system.services.lifecycle.models import LifecycleError
-from lychd.system.services.lifecycle.paths import (
-    lexically_normal,
-    path_has_symlink_component,
+from lychd.system.services.lifecycle.deletion_ports import (
+    BtrfsSubvolumeProbe,
+    InitializedSubvolumeAuthorityPort,
+    ObservedBtrfsSubvolume,
+    StorageInventoryPort,
 )
+from lychd.system.services.lifecycle.models import CreatedBtrfsSubvolume, LifecycleError
+from lychd.system.services.lifecycle.paths import lexically_normal
 
 _BTRFS_PROBE_TIMEOUT_SECONDS = 5.0
 _MAX_BTRFS_OUTPUT_BYTES = 64 * 1024
@@ -40,34 +48,6 @@ _SUDO_FALLBACKS = (
 )
 
 
-class StorageInventoryPort(Protocol):
-    """Complete read-only mount inventory beneath dedicated roots."""
-
-    def observe(self, target: Path) -> MountObservation:
-        """Return the exact covering filesystem for one path."""
-        ...
-
-    def observe_under(self, roots: tuple[Path, ...]) -> MountTreeObservation:
-        """Return every exact nested mount or one fail-closed warning."""
-        ...
-
-
-@dataclass(frozen=True)
-class ObservedBtrfsSubvolume:
-    """Identity returned by a bounded read-only Btrfs probe."""
-
-    uuid: str
-    subvolume_id: int
-
-
-class BtrfsSubvolumeProbe(Protocol):
-    """Attest a path as one exact Btrfs subvolume."""
-
-    def inspect(self, path: Path) -> ObservedBtrfsSubvolume | None:
-        """Return stable identity, or ``None`` when it cannot be proven."""
-        ...
-
-
 class CommandBtrfsSubvolumeProbe:
     """Attest subvolumes through an injected argv-only process boundary."""
 
@@ -76,7 +56,7 @@ class CommandBtrfsSubvolumeProbe:
         self._runner = runner
         self._btrfs = btrfs_bin
 
-    def inspect(self, path: Path) -> ObservedBtrfsSubvolume | None:  # noqa: PLR0911
+    def inspect(self, path: Path) -> ObservedBtrfsSubvolume | None:
         """Parse UUID and subvolume ID from ``btrfs subvolume show``."""
         if self._btrfs is None:
             return None
@@ -89,31 +69,7 @@ class CommandBtrfsSubvolumeProbe:
             return None
         if result.returncode != 0 or len(result.stdout.encode(errors="replace")) > _MAX_BTRFS_OUTPUT_BYTES:
             return None
-        fields = self._parse_fields(result.stdout)
-        raw_uuid = fields.get("uuid")
-        raw_subvolume_id = fields.get("subvolume id")
-        if raw_uuid is None or raw_subvolume_id is None:
-            return None
-        try:
-            normalized_uuid = str(UUID(raw_uuid))
-            subvolume_id = int(raw_subvolume_id)
-        except (ValueError, TypeError):
-            return None
-        if subvolume_id <= 0:
-            return None
-        return ObservedBtrfsSubvolume(
-            uuid=normalized_uuid,
-            subvolume_id=subvolume_id,
-        )
-
-    @staticmethod
-    def _parse_fields(content: str) -> dict[str, str]:
-        fields: dict[str, str] = {}
-        for raw_line in content.splitlines():
-            key, separator, value = raw_line.strip().partition(":")
-            if separator:
-                fields.setdefault(key.casefold(), value.strip())
-        return fields
+        return parse_subvolume_show(result.stdout)
 
 
 @dataclass(frozen=True)
@@ -134,6 +90,7 @@ class DeletionStoragePlanner:
         paths: DeletionPaths,
         storage: StorageInventoryPort,
         subvolumes: BtrfsSubvolumeProbe,
+        initialized_subvolumes: InitializedSubvolumeAuthorityPort,
         checkpoint: DeletionCheckpointStore,
         umount_bin: str | None,
         btrfs_bin: str | None,
@@ -143,6 +100,7 @@ class DeletionStoragePlanner:
         self._paths = paths
         self._storage = storage
         self._subvolumes = subvolumes
+        self._initialized_subvolumes = initialized_subvolumes
         self._checkpoint = checkpoint
         self._umount = umount_bin
         self._btrfs = btrfs_bin
@@ -201,15 +159,182 @@ class DeletionStoragePlanner:
                 identity=evidence.identity,
                 handoffs=evidence.handoffs,
             )
-        actions.append(
-            self._action(
-                DeletionDisposition.SATISFIED,
-                DeletionActionKind.VERIFY,
-                str(self._paths.postgres_data),
-                "no nested mount or pending subvolume deletion exists",
-            )
+        evidence = self._plan_initialized_subvolume()
+        return StorageDeletionEvidence(
+            actions=(*actions, *evidence.actions),
+            identity=evidence.identity,
+            handoffs=evidence.handoffs,
         )
-        return StorageDeletionEvidence(actions=tuple(actions))
+
+    def _plan_initialized_subvolume(self) -> StorageDeletionEvidence:  # noqa: PLR0911
+        """Classify an unmounted target without ever adopting live state."""
+        target = self._paths.postgres_data
+        try:
+            authority = self._initialized_subvolumes.created_subvolume(target)
+        except LifecycleError as exc:
+            return self._initialized_subvolume_blocked(
+                f"cannot read initialization subvolume authority: {exc}",
+            )
+        if not os.path.lexists(target):
+            return StorageDeletionEvidence(
+                actions=(
+                    self._action(
+                        DeletionDisposition.SATISFIED,
+                        DeletionActionKind.DELETE_SUBVOLUME,
+                        str(target),
+                        (
+                            "init-created subvolume is absent"
+                            if authority is not None
+                            else "no unmounted subvolume exists"
+                        ),
+                    ),
+                ),
+            )
+        try:
+            metadata = target.lstat()
+        except OSError as exc:
+            return self._initialized_subvolume_blocked(
+                f"cannot inspect unmounted PostgreSQL storage: {exc}",
+            )
+        if target.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+            return self._initialized_subvolume_blocked(
+                "unmounted PostgreSQL storage is not a real directory",
+            )
+        observed = self._subvolumes.inspect(target)
+        if observed is None:
+            if authority is not None:
+                return self._initialized_subvolume_blocked(
+                    "cannot re-attest the init-created Btrfs subvolume",
+                )
+            return self._plan_unattested_directory(
+                target,
+                inode=metadata.st_ino,
+            )
+        if authority is None:
+            return self._initialized_subvolume_blocked(
+                "unmounted Btrfs subvolume lacks initialization receipt authority",
+            )
+        return self._plan_attested_initialized_subvolume(
+            target=target,
+            metadata=metadata,
+            observed=observed,
+            authority=authority,
+        )
+
+    def _plan_attested_initialized_subvolume(
+        self,
+        *,
+        target: Path,
+        metadata: os.stat_result,
+        observed: ObservedBtrfsSubvolume,
+        authority: CreatedBtrfsSubvolume,
+    ) -> StorageDeletionEvidence:
+        """Re-attest receipt, path, and covering filesystem as one identity."""
+        observed_uuid = self._canonical_subvolume_uuid(observed)
+        if (
+            metadata.st_dev != authority.device
+            or metadata.st_ino != authority.inode
+            or observed_uuid != authority.subvolume_uuid
+            or observed.subvolume_id != authority.subvolume_id
+        ):
+            return self._initialized_subvolume_blocked(
+                "init-created Btrfs subvolume identity drifted",
+            )
+
+        filesystem = self._storage.observe(target)
+        covering_mount = filesystem.mount_target
+        top_level = filesystem.top_level_mount
+        filesystem_uuid = filesystem.filesystem_uuid
+        covering_root = PurePosixPath(filesystem.fs_root or "")
+        if (
+            filesystem.warning is not None
+            or filesystem.filesystem != "btrfs"
+            or filesystem.source_device is None
+            or filesystem_uuid is None
+            or covering_mount is None
+            or top_level is None
+            or not covering_root.is_absolute()
+            or ".." in covering_root.parts
+        ):
+            return self._initialized_subvolume_blocked(
+                "covering Btrfs filesystem lacks a top-level deletion anchor",
+            )
+        try:
+            relative = target.relative_to(covering_mount)
+            filesystem_uuid = str(UUID(filesystem_uuid))
+        except (TypeError, ValueError):
+            return self._initialized_subvolume_blocked(
+                "init-created subvolume cannot be mapped beneath its top-level mount",
+            )
+        fs_root = covering_root.joinpath(*relative.parts)
+        source_path = top_level.joinpath(*fs_root.parts[1:])
+        if (
+            relative == Path()
+            or fs_root == PurePosixPath("/")
+            or not lexically_normal(covering_mount)
+            or not lexically_normal(top_level)
+            or not lexically_normal(source_path)
+            or source_path == top_level
+            or not os.path.lexists(source_path)
+            or path_has_symlink_component(source_path) is not None
+        ):
+            return self._initialized_subvolume_blocked(
+                "init-created subvolume has an unsafe top-level mapping",
+            )
+        identity = BtrfsSubvolumeIdentity(
+            mount_target=target,
+            top_level_mount=top_level,
+            source_device=filesystem.source_device,
+            filesystem_uuid=filesystem_uuid,
+            subvolume_uuid=authority.subvolume_uuid,
+            fs_root=fs_root.as_posix(),
+            source_path=source_path,
+            subvolume_id=authority.subvolume_id,
+        )
+        return self._root_handoff(identity, include_unmount=False)
+
+    def _plan_unattested_directory(
+        self,
+        target: Path,
+        *,
+        inode: int,
+    ) -> StorageDeletionEvidence:
+        """Distinguish an ordinary directory from an unverifiable Btrfs boundary."""
+        filesystem = self._storage.observe(target)
+        if filesystem.warning is not None or filesystem.filesystem is None:
+            detail = filesystem.warning or "covering filesystem identity is unknown"
+            return self._initialized_subvolume_blocked(
+                f"cannot prove PostgreSQL storage is an ordinary directory: {detail}",
+            )
+        if filesystem.filesystem == "btrfs" and inode in BTRFS_SUBVOLUME_BOUNDARY_INODES:
+            return self._initialized_subvolume_blocked(
+                "possible Btrfs subvolume boundary cannot be re-attested",
+            )
+        return StorageDeletionEvidence(
+            actions=(
+                self._action(
+                    DeletionDisposition.SATISFIED,
+                    DeletionActionKind.VERIFY,
+                    str(target),
+                    ("covering filesystem and inode identify PostgreSQL storage as an ordinary directory"),
+                ),
+            ),
+        )
+
+    def _initialized_subvolume_blocked(
+        self,
+        detail: str,
+    ) -> StorageDeletionEvidence:
+        return StorageDeletionEvidence(
+            actions=(
+                self._action(
+                    DeletionDisposition.BLOCKED,
+                    DeletionActionKind.VERIFY,
+                    str(self._paths.postgres_data),
+                    detail,
+                ),
+            ),
+        )
 
     def _load_checkpoint(
         self,
@@ -514,6 +639,7 @@ __all__ = (
     "BtrfsSubvolumeProbe",
     "CommandBtrfsSubvolumeProbe",
     "DeletionStoragePlanner",
+    "InitializedSubvolumeAuthorityPort",
     "ObservedBtrfsSubvolume",
     "StorageDeletionEvidence",
     "StorageInventoryPort",

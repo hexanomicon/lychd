@@ -39,14 +39,11 @@ and later-instrument boundaries; an item appearing in navigation is not delivery
 ### Read the journey through Transcendence
 
 Choose [Transcendence](./transcendence/index.md) when the question is what sustained operation may
-mean for an operator and a recurrent system. It owns the journey through Nigredo, Albedo,
-Citrinitas, Rubedo, and Infinity. It is not setup, a feature ladder, a software roadmap, or a
-release sequence.
-
-[Philosophy](../philosophy/index.md) owns the constitutional **telos**—why recurrence, memory,
-authority, refusal, relation, and repair matter. Transcendence owns the **journey** through which
-those transformations are imagined and lived. Neither page proves that a mechanism has entered
-matter; State does.
+mean for an operator and a recurrent system. It owns both the Great Work's constitutional
+**telos**—why recurrence, memory, authority, refusal, relation, and repair matter—and its journey
+through Nigredo, Albedo, Citrinitas, Rubedo, and Infinity. It is not setup, a feature ladder, a
+software roadmap, or a release sequence. It never proves that a mechanism has entered matter;
+State does.
 
 ## The Return to Practice
 

@@ -22,7 +22,7 @@ from lychd.system.operator.storage import StorageInventoryService
 from lychd.system.operator.units import OwnedUnitInventoryService
 
 if TYPE_CHECKING:
-    from lychd.system.services.lifecycle import LifecycleReceiptStore
+    from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 
 
 @dataclass(frozen=True)
@@ -72,14 +72,20 @@ class ConfiguredAnimatorDeclarations:
 
     def declarations(self) -> tuple[DeclaredAnimator, ...]:
         """Load Soulstones and Portals without claiming model-level readiness."""
-        from lychd.domain.animation.services.loader import AnimatorLoader
+        from lychd.config.runes.registry import load_rune_registry
+        from lychd.config.settings.root import get_settings
+        from lychd.domain.animation.services.declarations import (
+            compile_animator_declarations,
+        )
         from lychd.extensions.host import get_extensions
 
         extensions = get_extensions()
-        soulstones, portals = AnimatorLoader(
-            rune_schemas=extensions.rune_schemas,
-            runes_dir=self._runes_dir,
-        ).load_all()
+        settings = get_settings()
+        runes = load_rune_registry(extensions, self._runes_dir)
+        declarations = compile_animator_declarations(
+            settings=settings,
+            runes=runes,
+        )
         local = (
             DeclaredAnimator(
                 name=stone.name,
@@ -87,7 +93,7 @@ class ConfiguredAnimatorDeclarations:
                 runtime=stone.runtime_name,
                 unit_name=f"{stone.service_name}.service",
             )
-            for stone in soulstones
+            for stone in declarations.soulstones
         )
         remote = (
             DeclaredAnimator(
@@ -95,7 +101,7 @@ class ConfiguredAnimatorDeclarations:
                 kind="portal",
                 runtime=portal.provider_name,
             )
-            for portal in portals
+            for portal in declarations.portals
         )
         return tuple(sorted((*local, *remote), key=lambda item: (item.kind, item.name)))
 

@@ -7,11 +7,17 @@ import stat
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Protocol
 
-from lychd.system.constants import PATH_LYCHD_TOML
-from lychd.system.host_tools import trusted_host_tool
+from lychd.system.constants import PATH_LYCHD_TOML, PATH_SYSTEMD_USER_UNITS_DIR
 from lychd.system.path_safety import path_has_symlink_component
+from lychd.system.readiness import (
+    BindingFoundation,
+    HostFoundationError,
+    HostFoundationInspection,
+    HostReadinessService,
+    ReadinessState,
+)
 
 _REACTOR_DIRECTORY_MODE = 0o700
 
@@ -23,7 +29,8 @@ type BindingPreflightIssueCode = Literal[
     "codex-shape",
     "codex-mode",
     "codex-owner",
-    "systemctl-missing",
+    "host-foundation",
+    "legacy-vessel-unit",
     "caged-actuator",
     "reactor-shape",
     "reactor-mode",
@@ -32,6 +39,14 @@ type BindingPreflightIssueCode = Literal[
     "uncaged-web-secret",
     "uncaged-database-secret",
 ]
+
+
+class HostReadinessPort(Protocol):
+    """Read-only source of the one authoritative host-foundation report."""
+
+    def inspect(self) -> HostFoundationInspection:
+        """Return current capability, site, and trusted-tool evidence."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,21 +63,26 @@ class BindingPreflightReport:
     """The complete read-only prerequisite result for one bind plan."""
 
     issues: tuple[BindingPreflightIssue, ...]
-    systemctl_bin: str | None
+    foundation: BindingFoundation | None
+
+    @property
+    def systemctl_bin(self) -> str | None:
+        """Retain the concise renderer projection of trusted systemctl."""
+        return self.foundation.systemctl_bin if self.foundation is not None else None
 
     @property
     def ready(self) -> bool:
         """Return whether the same plan may be previewed or applied as coherent."""
         return not self.issues
 
-    def require_ready(self) -> str:
-        """Return the verified systemctl path or fail with the complete report."""
+    def require_ready(self) -> BindingFoundation:
+        """Return every attested authority tool or fail with the full report."""
         if self.issues:
             raise BindingPreflightError(self)
-        if self.systemctl_bin is None:  # pragma: no cover - enforced by the systemctl issue
-            msg = "A ready binding preflight must contain the verified systemctl path."
+        if self.foundation is None:  # pragma: no cover - enforced by the foundation issue
+            msg = "A ready binding preflight must contain trusted host-foundation evidence."
             raise AssertionError(msg)
-        return self.systemctl_bin
+        return self.foundation
 
 
 class BindingPreflightError(RuntimeError):
@@ -82,15 +102,19 @@ class BindingPreflightService:
         self,
         *,
         codex_path: Path = PATH_LYCHD_TOML,
+        legacy_vessel_unit_path: Path = PATH_SYSTEMD_USER_UNITS_DIR / "lychd-vessel.service",
         current_uid: int | None = None,
-        systemctl_lookup: Callable[[str], str | None] | None = None,
+        host_readiness: HostReadinessPort | None = None,
         web_secret_resolver: Callable[[WebSettings], str] | None = None,
         database_secret_resolver: Callable[[DatabaseSettings], str] | None = None,
     ) -> None:
         """Bind inspection to explicit, replaceable host and resolver dependencies."""
         self._codex_path = codex_path
+        self._legacy_vessel_unit_path = legacy_vessel_unit_path
         self._current_uid = os.getuid() if current_uid is None else current_uid
-        self._systemctl_lookup = systemctl_lookup or trusted_host_tool
+        self._host_readiness = host_readiness or HostReadinessService(
+            current_uid=self._current_uid,
+        )
         self._web_secret_resolver = web_secret_resolver
         self._database_secret_resolver = database_secret_resolver
 
@@ -102,16 +126,30 @@ class BindingPreflightService:
         uncaged_control_plane_secrets: Sequence[str] = (),
     ) -> BindingPreflightReport:
         """Return every bind blocker observed from one already-loaded Settings object."""
-        issues = self._inspect_codex()
-        systemctl_bin = self._systemctl_lookup("systemctl")
-        if systemctl_bin is None:
-            issues.append(
-                BindingPreflightIssue(
-                    code="systemctl-missing",
-                    target="systemctl",
-                    detail="systemctl is not available from a trusted host path",
-                )
+        issues = [*self._inspect_codex(), *self._inspect_legacy_vessel_unit()]
+        host = self._host_readiness.inspect()
+        report = host.report
+        foundation: BindingFoundation | None = None
+        issues.extend(
+            BindingPreflightIssue(
+                code="host-foundation",
+                target=item.label,
+                detail=item.detail,
             )
+            for item in report.items
+            if item.required_for_bind and item.state is not ReadinessState.VERIFIED
+        )
+        if not any(issue.code == "host-foundation" for issue in issues):
+            try:
+                foundation = host.require_ready_for_bind()
+            except HostFoundationError as exc:
+                issues.append(
+                    BindingPreflightIssue(
+                        code="host-foundation",
+                        target="host foundation",
+                        detail=str(exc),
+                    )
+                )
 
         if uncaged:
             issues.extend(
@@ -123,7 +161,25 @@ class BindingPreflightService:
         else:
             issues.extend(self._inspect_caged(settings))
 
-        return BindingPreflightReport(issues=tuple(issues), systemctl_bin=systemctl_bin)
+        return BindingPreflightReport(
+            issues=tuple(issues),
+            foundation=foundation,
+        )
+
+    def _inspect_legacy_vessel_unit(self) -> list[BindingPreflightIssue]:
+        """Reject the obsolete static unit before preview and locked apply."""
+        if not os.path.lexists(self._legacy_vessel_unit_path):
+            return []
+        return [
+            BindingPreflightIssue(
+                code="legacy-vessel-unit",
+                target=str(self._legacy_vessel_unit_path),
+                detail=(
+                    "legacy static unit shadows the caged Quadlet service; disable and remove it "
+                    "before binding (uncaged mode uses lychd-uncaged-vessel.service)"
+                ),
+            )
+        ]
 
     def _inspect_codex(self) -> list[BindingPreflightIssue]:
         issues: list[BindingPreflightIssue] = []

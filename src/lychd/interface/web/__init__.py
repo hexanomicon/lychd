@@ -1,4 +1,4 @@
-"""The Altar's web interface: HTMX controllers for the four live instruments."""
+"""The Altar's static Svelte shell and versioned semantic API controllers."""
 
 from __future__ import annotations
 

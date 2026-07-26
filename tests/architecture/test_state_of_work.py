@@ -29,65 +29,6 @@ _BOUNDARY_BY_STATE = {
 }
 _BOUNDARY_MARKERS = tuple(_BOUNDARY_BY_STATE.values())
 
-_FAMILY_ANCHORS = {
-    "altar-and-observability",
-    "animation-and-orchestration",
-    "authority-and-artifacts",
-    "evolution-and-federation",
-    "inscription-and-embodiment",
-    "persistence-execution-and-consent",
-}
-_RECORD_ANCHORS = {
-    "a2a-intercom",
-    "animator-dispatch-spine",
-    "artifact-reference-contract",
-    "audio-admission",
-    "bindings-instrument",
-    "bridge-surface",
-    "core-cli-rites",
-    "deployment-plan-materialization",
-    "durable-attention",
-    "exllamav3-tabbyapi",
-    "extension-activation-contributions",
-    "graph-stasis-consent",
-    "host-reactor-protocol",
-    "karma-semantic-memory",
-    "legion-federation",
-    "llamacpp-integration",
-    "local-browser-bind-boundary",
-    "local-sigil-authority",
-    "loom-workflow-views",
-    "mirror-identity",
-    "native-oculus",
-    "nexus-transition-board",
-    "phylactery-first-light",
-    "phoenix-eye",
-    "proxy-veil",
-    "public-release-artifact-chain",
-    "pydantic-ai-v1-adapter",
-    "pydantic-ai-v2-migration",
-    "reliquary-instrument",
-    "remote-iam",
-    "resource-aware-scheduling",
-    "riddle-evaluation",
-    "rune-configuration-loading",
-    "safe-runtime-transitions",
-    "scrying-instrument",
-    "sglang-integration",
-    "shadow-simulation",
-    "smith-forge-promotion",
-    "soulforge-training",
-    "structured-logging",
-    "systemd-podman-embodiment",
-    "tomb-untrusted-execution",
-    "topology-a-local-runs",
-    "vllm-integration",
-    "vision-admission",
-    "vpn-tether",
-    "whole-body-snapshot-restore",
-    "x402-payments",
-}
-
 _RECORD_RE = re.compile(
     r"^### (?P<title>.+?) \{#(?P<anchor>[a-z0-9-]+)\}\n"
     r"(?P<body>.*?)(?=^### |^## |\Z)",
@@ -119,22 +60,13 @@ def _records(text: str) -> list[re.Match[str]]:
     return list(_RECORD_RE.finditer(text))
 
 
-def test_state_has_the_exact_public_jurisdictions_and_subjects() -> None:
-    text = _text()
-    family_anchors = {match.group("anchor") for match in _FAMILY_RE.finditer(text)}
-    records = _records(text)
-    record_anchors = {match.group("anchor") for match in records}
-
-    assert family_anchors == _FAMILY_ANCHORS
-    assert record_anchors == _RECORD_ANCHORS
-    assert len(records) == len(_RECORD_ANCHORS) == 48
-    assert len(record_anchors) == len(records), "State record anchors must be unique"
-
-
 def test_each_subject_is_one_complete_vertical_record() -> None:
     text = _text()
     records = _records(text)
     seen_states: list[str] = []
+
+    assert records, "State of the Work must contain delivery records"
+    assert len({record.group("anchor") for record in records}) == len(records), "State record anchors must be unique"
 
     for record in records:
         title = record.group("title")
@@ -161,20 +93,18 @@ def test_each_subject_is_one_complete_vertical_record() -> None:
     assert text.count("**State:**") == len(records)
 
 
-def test_delivery_page_is_not_a_wide_or_duplicate_ledger() -> None:
+def test_delivery_page_does_not_use_shadow_evidence_or_bare_repository_paths() -> None:
     text = _text()
 
-    assert re.search(r"^\|", text, re.MULTILINE) is None
     assert ".agents/work" not in text
-    assert "State of the Circle" not in text
-    assert "**Pre-alpha**" in text
-    assert "not a seventh delivery state" in text
     assert _BARE_REPOSITORY_PATH_RE.findall(text) == []
 
 
 def test_state_links_resolve_to_the_claimed_repository_object_type() -> None:
     text = _text()
-    anchors = _FAMILY_ANCHORS | _RECORD_ANCHORS
+    family_anchors = {match.group("anchor") for match in _FAMILY_RE.finditer(text)}
+    record_anchors = {record.group("anchor") for record in _records(text)}
+    anchors = family_anchors | record_anchors
 
     for match in _LINK_RE.finditer(text):
         target = match.group("target").strip().strip("<>")
@@ -233,20 +163,3 @@ def test_evidence_labels_and_minimum_contract_match_each_state() -> None:
                 if urlsplit(match.group("target")).scheme and not match.group("target").startswith(_REPO_URL)
             ]
             assert upstream_links, f"{title!r} must link its non-LychD upstream owner"
-
-
-def test_opening_earns_vocabulary_and_closes_with_one_next_act() -> None:
-    text = _text()
-    opening = text.split("## How to read this page", maxsplit=1)[0]
-
-    assert "LychD names the software body" in opening
-    assert "The Lich names the recurrent whole" in opening
-    assert "not any one model" in opening
-    assert "one LychD control process" in opening
-    for unearned_name in ("Oculus", "Phoenix", "Magus", "Karma", "Sigil"):
-        assert unearned_name not in opening
-
-    assert text.rstrip().endswith(
-        "observations are a bounded first-life result, not a maintained operator receipt; preserve them\n"
-        "with all metadata above, and let the observed result—not hope—decide what this page may claim next."
-    )

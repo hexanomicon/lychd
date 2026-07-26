@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 
+from lychd.config.runes import ConfigLoader, RuneConfig
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
     CapabilityFamily,
@@ -13,7 +15,12 @@ from lychd.domain.animation.schemas import (
     PortalConfig,
     SoulstoneConfig,
 )
-from lychd.domain.animation.services.loader import AnimatorConfigError, AnimatorLoader
+from lychd.domain.animation.services.loader import (
+    AnimatorConfigError,
+)
+from lychd.domain.animation.services.loader import (
+    AnimatorLoader as _PureAnimatorLoader,
+)
 from lychd.extensions.builtin.animator import (
     ExLlamaV3SoulstoneConfig,
     LlamaCppSoulstoneConfig,
@@ -36,6 +43,39 @@ _SCHEMAS = [
     OpenAIPortalConfig,
     GoogleGeminiPortalConfig,
 ]
+
+
+class _FilesystemAnimatorLoader:
+    """Test composition adapter around the pure production hydrator."""
+
+    def __init__(
+        self,
+        *,
+        runes_dir: Path,
+        rune_schemas: Sequence[type[RuneConfig]],
+        reserved_ports: dict[str, int],
+        core_secret_names: tuple[str, str] = (
+            "lychd_app_secret_key",
+            "lychd_db_password",
+        ),
+    ) -> None:
+        self._runes_dir = runes_dir
+        self._rune_schemas = list(rune_schemas)
+        self._hydrator = _PureAnimatorLoader(
+            reserved_ports=reserved_ports,
+            core_secret_names=core_secret_names,
+        )
+
+    def load_all(self) -> tuple[list[SoulstoneConfig], list[PortalConfig]]:
+        try:
+            runes = ConfigLoader(self._runes_dir).load_all(self._rune_schemas)
+        except ValueError as exc:
+            message = f"Failed to load animation runes: {exc}"
+            raise AnimatorConfigError(message) from exc
+        return self._hydrator.hydrate_all(runes)
+
+
+_loader = _FilesystemAnimatorLoader
 
 
 @pytest.fixture
@@ -61,7 +101,7 @@ def test_load_concrete_soulstone_from_top_level_payload(runes_dir: Path) -> None
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     soulstones, portals = loader.load_all()
 
     assert len(soulstones) == 1
@@ -82,7 +122,7 @@ def test_animator_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="AnimatorConfig"):
         loader.load_all()
@@ -97,7 +137,7 @@ def test_portal_branch_config_rejects_direct_toml(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="PortalConfig"):
         loader.load_all()
@@ -121,7 +161,7 @@ def test_port_conflict_detection(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="Port conflicts detected"):
         loader.load_all()
@@ -137,7 +177,7 @@ def test_reserved_port_conflict(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={"Postgres": 5432})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={"Postgres": 5432})
 
     with pytest.raises(AnimatorConfigError, match="conflicts with Postgres"):
         loader.load_all()
@@ -153,7 +193,7 @@ def test_portal_api_key_secret_reference(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     _, portals = loader.load_all()
 
     assert len(portals) == 1
@@ -168,7 +208,7 @@ def test_portal_api_secret_cannot_alias_a_core_secret(runes_dir: Path) -> None:
         api_key_secret_name = "core_db"
         """,
     )
-    loader = AnimatorLoader(
+    loader = _loader(
         runes_dir=runes_dir,
         rune_schemas=_SCHEMAS,
         reserved_ports={},
@@ -189,7 +229,7 @@ def test_portals_may_deliberately_share_one_provider_secret(runes_dir: Path) -> 
             """,
         )
 
-    _, portals = AnimatorLoader(
+    _, portals = _loader(
         runes_dir=runes_dir,
         rune_schemas=_SCHEMAS,
         reserved_ports={},
@@ -216,7 +256,7 @@ def test_soulstones_cannot_share_one_control_plane_secret(runes_dir: Path) -> No
         )
 
     with pytest.raises(AnimatorConfigError, match="cannot share control-plane secret"):
-        AnimatorLoader(
+        _loader(
             runes_dir=runes_dir,
             rune_schemas=_SCHEMAS,
             reserved_ports={},
@@ -236,7 +276,7 @@ def test_soulstone_secret_env_files_reference(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     soulstones, _ = loader.load_all()
 
     assert len(soulstones) == 1
@@ -252,7 +292,7 @@ def test_generated_placeholder_samples_are_ignored(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     soulstones, portals = loader.load_all()
 
     assert soulstones == []
@@ -268,7 +308,7 @@ def test_loader_hydrates_builtin_soulstone_subclass(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     soulstones, _ = loader.load_all()
 
     assert len(soulstones) == 1
@@ -286,7 +326,7 @@ def test_llamacpp_exec_passthrough_rejects_managed_field_mixing(runes_dir: Path)
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="exec passthrough"):
         loader.load_all()
@@ -303,7 +343,7 @@ def test_vllm_rejects_reintroduced_framework_field(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="tensor_parallel_size"):
         loader.load_all()
@@ -319,7 +359,7 @@ def test_vllm_exec_passthrough_rejects_framework_field(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="max_model_len"):
         loader.load_all()
@@ -334,7 +374,7 @@ def test_sglang_rejects_reintroduced_framework_field(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="tensor_parallel_size"):
         loader.load_all()
@@ -350,7 +390,7 @@ def test_sglang_exec_passthrough_rejects_framework_field(runes_dir: Path) -> Non
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="quantization"):
         loader.load_all()
@@ -374,7 +414,7 @@ def test_duplicate_soulstone_names_are_rejected(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="duplicate soulstone name"):
         loader.load_all()
@@ -405,7 +445,7 @@ def test_soulstone_models_and_generation_round_trip(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     soulstones, _ = loader.load_all()
 
     assert len(soulstones) == 1
@@ -433,7 +473,7 @@ def test_portal_models_and_probe_round_trip(runes_dir: Path) -> None:
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
     _, portals = loader.load_all()
 
     assert len(portals) == 1
@@ -462,7 +502,7 @@ def test_duplicate_name_across_soulstone_and_portal_is_rejected(runes_dir: Path)
         """,
     )
 
-    loader = AnimatorLoader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
+    loader = _loader(runes_dir=runes_dir, rune_schemas=_SCHEMAS, reserved_ports={})
 
     with pytest.raises(AnimatorConfigError, match="used by both soulstone and portal"):
         loader.load_all()

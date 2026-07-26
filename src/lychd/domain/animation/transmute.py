@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
-from lychd.config.settings.root import get_settings
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
@@ -104,17 +103,22 @@ class QuadletContribution:
     soulstone containers, core manifests, or targets (brief §8, property 4).
     """
 
-    containers: list[QuadletContainer] = field(default_factory=list)
-    pod_ports: list[str] = field(default_factory=list)  # "host:container"
+    containers: tuple[QuadletContainer, ...] = field(default_factory=tuple)
+    pod_ports: tuple[str, ...] = field(default_factory=tuple)  # "host:container"
 
 
 @dataclass(frozen=True)
 class TransmutationContext:
-    """Everything a contributor may read. No mutation surface (frozen)."""
+    """An isolated declaration snapshot for one contributor invocation.
+
+    The dataclass and collections are immutable. Mutable Pydantic settings and
+    nested declaration values are deep copies, so a contributor cannot alter
+    core output or the context observed by a later contributor.
+    """
 
     settings: Settings
-    soulstones: Sequence[SoulstoneConfig]
-    portals: Sequence[PortalConfig]
+    soulstones: tuple[SoulstoneConfig, ...]
+    portals: tuple[PortalConfig, ...]
     runes: RuneRegistry  # contributors find their own rune: runes.one_or_none(X)
 
 
@@ -159,10 +163,11 @@ class Transmuter:
     def __init__(
         self,
         *,
+        settings: Settings,
         runtime_planner: SoulstoneRuntimePlanner,
         contributors: Sequence[QuadletContributor] = (),
     ) -> None:
-        """Initialize transmuter with an injected runtime planner and contributors.
+        """Initialize from one explicit settings snapshot and extension set.
 
         INVARIANT (brief §8, property 4): ``QuadletContribution`` can add ONLY
         containers and pod ports; it can never mutate soulstone containers, core
@@ -170,6 +175,7 @@ class Transmuter:
         Transmuter with NO contributors to extract soulstone containers -- a
         contribution cannot alter a soulstone container by type.
         """
+        self._settings = settings
         self._runtime_planner = runtime_planner
         self._contributors = tuple(contributors)
 
@@ -184,27 +190,38 @@ class Transmuter:
         """Convert Soulstone Runes into a complete Quadlet manifest set."""
         from lychd.config.runes.registry import RuneRegistry
 
-        settings = get_settings()
+        settings = self._settings
+        resolved_soulstones = tuple(soulstones)
         resolved_portals = tuple(portals or ())
         resolved_runes = runes if runes is not None else RuneRegistry(())
-
-        ctx = TransmutationContext(
-            settings=settings,
-            soulstones=soulstones,
-            portals=resolved_portals,
-            runes=resolved_runes,
+        contributions = tuple(
+            self._normalize_contribution(
+                contributor.contribute(
+                    self._contributor_context(
+                        settings=settings,
+                        soulstones=resolved_soulstones,
+                        portals=resolved_portals,
+                        runes=resolved_runes,
+                    )
+                )
+            )
+            for contributor in self._contributors
         )
-        contributions = [contributor.contribute(ctx) for contributor in self._contributors]
         resolved_runtime_plans = (
-            list(runtime_plans)
+            tuple(runtime_plans)
             if runtime_plans is not None
-            else [self._runtime_planner.plan(stone) for stone in soulstones]
+            else tuple(self._runtime_planner.plan(stone) for stone in resolved_soulstones)
         )
-        if len(resolved_runtime_plans) != len(soulstones):
+        if len(resolved_runtime_plans) != len(resolved_soulstones):
             msg = "Runtime plan count must match the Soulstone count"
             raise ValueError(msg)
 
-        self._validate_secret_isolation(settings, resolved_portals, soulstones, resolved_runtime_plans)
+        self._validate_secret_isolation(
+            settings,
+            resolved_portals,
+            resolved_soulstones,
+            resolved_runtime_plans,
+        )
 
         manifests: list[QuadletBase] = []
 
@@ -213,7 +230,13 @@ class Transmuter:
         manifests.append(self._create_pod(settings, contribution_ports, resolved_runtime_plans))
 
         # 2. The Core Rituals (Vessel, Phylactery).
-        manifests.extend(self._create_core_manifests(settings, resolved_portals, soulstones))
+        manifests.extend(
+            self._create_core_manifests(
+                settings,
+                resolved_portals,
+                resolved_soulstones,
+            )
+        )
 
         # 3. Contribution containers (contributor order) -- e.g. the Oculus.
         for contribution in contributions:
@@ -221,7 +244,7 @@ class Transmuter:
 
         # 4. Calculate Covens.
         covens: dict[str, list[SoulstoneConfig]] = {}
-        for stone in soulstones:
+        for stone in resolved_soulstones:
             for group in stone.groups:
                 covens.setdefault(group, []).append(stone)
 
@@ -239,10 +262,42 @@ class Transmuter:
         # encode hidden stop side effects. The Orchestrator owns exclusivity.
         manifests.extend(
             self._transmute_soulstone(stone, covens, settings, runtime_plan)
-            for stone, runtime_plan in zip(soulstones, resolved_runtime_plans, strict=True)
+            for stone, runtime_plan in zip(
+                resolved_soulstones,
+                resolved_runtime_plans,
+                strict=True,
+            )
         )
 
         return manifests
+
+    @staticmethod
+    def _contributor_context(
+        *,
+        settings: Settings,
+        soulstones: tuple[SoulstoneConfig, ...],
+        portals: tuple[PortalConfig, ...],
+        runes: RuneRegistry,
+    ) -> TransmutationContext:
+        """Give each contributor a private deep snapshot of readable inputs."""
+        from lychd.config.runes.registry import RuneRegistry
+
+        return TransmutationContext(
+            settings=settings.model_copy(deep=True),
+            soulstones=tuple(stone.model_copy(deep=True) for stone in soulstones),
+            portals=tuple(portal.model_copy(deep=True) for portal in portals),
+            runes=RuneRegistry(tuple(rune.model_copy(deep=True) for rune in runes.all())),
+        )
+
+    @staticmethod
+    def _normalize_contribution(
+        contribution: QuadletContribution,
+    ) -> QuadletContribution:
+        """Detach returned extension values from contributor-owned references."""
+        return QuadletContribution(
+            containers=tuple(container.model_copy(deep=True) for container in contribution.containers),
+            pod_ports=tuple(contribution.pod_ports),
+        )
 
     def _create_pod(
         self,

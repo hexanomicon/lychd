@@ -1,7 +1,7 @@
 """`SigilAuthMiddleware` — stamp requests with the loopback bootstrap Sigil.
 
 This is not caller authentication. IAM replaces ``default_local_sigil()`` with
-credential-backed resolution before LychD accepts remote traffic. Static and
+credential-backed resolution before LychD accepts remote traffic. Compiled client assets and
 OpenAPI schema paths are excluded from the bootstrap middleware.
 """
 
@@ -35,5 +35,5 @@ class SigilAuthMiddleware(AbstractAuthenticationMiddleware):
 
 
 def sigil_auth_middleware() -> DefineMiddleware:
-    """Return the sigil auth middleware, excluding static + schema paths."""
-    return DefineMiddleware(SigilAuthMiddleware, exclude=["^/static", "^/schema"])
+    """Return the sigil auth middleware, excluding client assets and schema paths."""
+    return DefineMiddleware(SigilAuthMiddleware, exclude=["^/_app", "^/schema"])

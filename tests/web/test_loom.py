@@ -1,4 +1,4 @@
-"""Loom: dual-render graph view, mermaid source surface, unknown workflow."""
+"""Loom workflow catalogue, typed graph projection, and Mermaid source."""
 
 from __future__ import annotations
 
@@ -10,34 +10,33 @@ if TYPE_CHECKING:
     from litestar import Litestar
     from litestar.testing import TestClient
 
-_HX = {"HX-Request": "true"}
 _NAME = WORKFLOW_REGISTRY.default.name
 
 
-def test_view_htmx_returns_fragment_with_push_url(altar_client: TestClient[Litestar]) -> None:
-    """The HTMX graph view returns a fragment and pushes the honest URL."""
-    response = altar_client.get(f"/loom/{_NAME}", headers=_HX)
+def test_catalogue_lists_registered_workflow(
+    altar_client: TestClient[Litestar],
+) -> None:
+    response = altar_client.get("/api/v1/loom")
+
     assert response.status_code == 200
-    assert "<html" not in response.text
-    assert 'data-fragment="loom.graph"' in response.text
-    assert response.headers["hx-push-url"] == f"/loom/{_NAME}"
+    assert _NAME in {item["name"] for item in response.json()}
 
 
-def test_view_direct_nav_returns_full_page(altar_client: TestClient[Litestar]) -> None:
-    """Direct navigation to a workflow renders the full Loom page."""
-    response = altar_client.get(f"/loom/{_NAME}")
+def test_view_returns_typed_graph(altar_client: TestClient[Litestar]) -> None:
+    response = altar_client.get(f"/api/v1/loom/{_NAME}")
+
     assert response.status_code == 200
-    assert "<html" in response.text
+    assert response.json()["name"] == _NAME
+    assert "stateDiagram-v2" in response.json()["mermaid_source"]
 
 
 def test_source_is_plaintext_mermaid(altar_client: TestClient[Litestar]) -> None:
-    """The source surface returns text/plain mermaid stateDiagram-v2."""
-    response = altar_client.get(f"/loom/{_NAME}/source")
+    response = altar_client.get(f"/api/v1/loom/{_NAME}/source")
+
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/plain")
     assert "stateDiagram-v2" in response.text
 
 
 def test_view_unknown_workflow_404(altar_client: TestClient[Litestar]) -> None:
-    """An unknown pattern is 404."""
-    assert altar_client.get("/loom/nope", headers=_HX).status_code == 404
+    assert altar_client.get("/api/v1/loom/nope").status_code == 404

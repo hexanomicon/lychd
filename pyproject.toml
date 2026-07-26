@@ -32,11 +32,9 @@ dependencies = [
     "click>=8.1.0",
     "httpx<=0.28.1", # PINNED, review later
     "jinja2>=3.1.6",
-    "litestar[sqlalchemy,structlog,jinja,pydantic,opentelemetry]>=2.18.0,<3", # v3 migration not audited
+    "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
     "litestar-granian>=0.14.2",
-    "litestar-htmx>=0.5.0",
     "litestar-saq[psycopg]>=0.5.3",
-    "litestar-vite",
     "pgvector>=0.4.0",
     "pydantic>=2.10.0",
     "pydantic-ai-slim[openai,logfire]==1.25.1", # exact until the v2 durability/message migration suite lands

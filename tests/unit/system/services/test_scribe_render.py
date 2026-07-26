@@ -14,11 +14,11 @@ import re
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
@@ -45,8 +45,7 @@ def _inscribe(manifests: list[QuadletBase], tmp_path: Path) -> tuple[Path, Path]
     output_dir.mkdir()
     systemd_dir.mkdir()
     scribe = ScribeService(output_dir=output_dir, systemd_dir=systemd_dir)
-    with patch("lychd.system.services.scribe.shutil.which", return_value=None):
-        scribe.generate_all(manifests)
+    scribe.generate_all(manifests)
     return output_dir, systemd_dir
 
 
@@ -57,7 +56,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
     old mirror branch dropped all options, losing `:ro,Z` -> SELinux EACCES /
     read-only law lost.
     """
-    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
     stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
@@ -78,7 +77,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
 
 def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> None:
     """Host identity is explicit for agent containers, never forced on Postgres."""
-    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
     stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
@@ -97,7 +96,7 @@ def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> No
 
 def test_migration_gate_renders_as_required_oneshot(tmp_path: Path) -> None:
     """Vessel starts only after the in-pod, secret-bearing Alembic gate succeeds."""
-    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
     output_dir, _ = _inscribe(transmuter.transmute_all([]), tmp_path)
     vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8").splitlines()
@@ -124,7 +123,7 @@ def test_f3_exec_and_env_are_systemd_quoted_not_html_escaped(tmp_path: Path) -> 
                 env_overrides={"UPSTREAM_URL": 'http://x/y?a=1&b=2 label="two words" token=${HOST_TOKEN}'},
             )
 
-    transmuter = Transmuter(runtime_planner=StubRuntimePlanner())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
     stone = SoulstoneFactory.build(name="qwen", image="vllm/vllm-openai:latest", groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
@@ -152,7 +151,7 @@ def test_real_quadlet_generator_preserves_literal_environment_and_command_bounda
 
     stone = SoulstoneFactory.build(name="generator", image="example/runtime")
     output_dir, _ = _inscribe(
-        Transmuter(runtime_planner=StubRuntimePlanner()).transmute_all([stone]),
+        Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all([stone]),
         tmp_path,
     )
     environment = os.environ.copy()
@@ -180,7 +179,7 @@ def test_real_quadlet_generator_preserves_literal_environment_and_command_bounda
 
 def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
     """F4: dedicated stones must NOT be WantedBy=default.target; persistent residents must be."""
-    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
     dedicated = SoulstoneFactory.build(
         name="loner", image="ollama/ollama", groups=[], concurrency=ConcurrencyIntent(dedicated=True)
@@ -202,7 +201,7 @@ def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
 
 def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     """F1: `.target` units go to the systemd user dir; containers reference them there."""
-    transmuter = Transmuter(runtime_planner=RuntimeAdapterRegistry())
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
     alpha = SoulstoneFactory.build(name="alpha", image="ollama/ollama", groups=["logic"])
     beta = SoulstoneFactory.build(name="beta", image="ollama/ollama", groups=["logic"])

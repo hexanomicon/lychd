@@ -21,7 +21,7 @@ from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.fragments import FragmentRegistry
-from lychd.domain.web.projection import Projector
+from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import SessionStorePort
 from lychd.domain.web.tickets import TicketStore
 
@@ -76,8 +76,8 @@ def provide_run_bus(state: State) -> InProcessEventBus:
     return state.services.bus
 
 
-def provide_projector(state: State) -> Projector:
-    """Return the engine-bound Projector (the sole renderer)."""
+def provide_projector(state: State) -> EventProjector:
+    """Return the semantic event projector."""
     return state.services.projector
 
 

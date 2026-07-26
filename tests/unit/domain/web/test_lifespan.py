@@ -2,13 +2,26 @@ from __future__ import annotations
 
 # White-box shutdown-order tests exercise the narrow lifespan helper directly.
 # pyright: reportPrivateUsage=false
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
 
-from lychd.interface.web.lifespan import _stop_in_process_workers
+from lychd.config.runes.registry import RuneRegistry
+from lychd.config.settings.root import Settings
+from lychd.domain.codex.runes import CodexPreauthRune
+from lychd.interface.web.lifespan import (
+    _stop_in_process_workers,
+    _sync_preauths_at_startup,
+)
 from lychd.system.services.queues import connect_run_queues, disconnect_run_queues
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from pytest_mock import MockerFixture
 
 
 class _Queue:
@@ -85,3 +98,41 @@ async def test_worker_stop_is_optional_for_focused_apps_without_saq() -> None:
     app = SimpleNamespace(plugins=SimpleNamespace(get=missing))
 
     await _stop_in_process_workers(app)  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_preauth_sync_reuses_the_app_rune_snapshot(
+    mocker: MockerFixture,
+) -> None:
+    """Web startup cannot discover a second Rune generation for preauth."""
+    settings = Settings()
+    preauth = CodexPreauthRune(
+        slug="existing-snapshot",
+        tool_pattern="request_coven_swap",
+    )
+    runes = RuneRegistry((preauth,))
+    rediscovery = mocker.patch(
+        "lychd.config.runes.registry.load_rune_registry",
+        side_effect=AssertionError("Rune discovery must not recur"),
+    )
+    session = object()
+
+    @asynccontextmanager
+    async def session_factory() -> AsyncIterator[object]:
+        yield session
+
+    mocker.patch(
+        "lychd.db.engine.get_session_factory",
+        return_value=session_factory,
+    )
+    service = mocker.patch("lychd.domain.codex.services.PreauthService")
+    service.return_value.sync_from_runes = AsyncMock(return_value=1)
+
+    await _sync_preauths_at_startup(
+        runes=runes,
+        settings=settings,
+    )
+
+    rediscovery.assert_not_called()
+    service.assert_called_once_with(session=session)
+    service.return_value.sync_from_runes.assert_awaited_once_with([preauth])

@@ -6,6 +6,14 @@ import os
 from pathlib import Path
 
 
+def filesystem_is_read_only(path: Path) -> bool:
+    """Return positive kernel evidence that a mounted substrate is read-only."""
+    try:
+        return bool(os.statvfs(path).f_flag & os.ST_RDONLY)
+    except OSError:
+        return False
+
+
 def path_has_symlink_component(path: Path) -> Path | None:
     """Return the first existing symlink component between root/home and ``path``."""
     home = Path.home()
@@ -22,4 +30,7 @@ def path_has_symlink_component(path: Path) -> Path | None:
     return None
 
 
-__all__ = ("path_has_symlink_component",)
+__all__ = (
+    "filesystem_is_read_only",
+    "path_has_symlink_component",
+)

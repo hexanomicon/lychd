@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from lychd.system.host_tools import TrustedExecutable
 from lychd.system.operator import ProcessResult
 from lychd.system.readiness import HostReadinessTools, ReadinessState
 from lychd.system.readiness.foundation import FoundationReadinessProbe
@@ -21,15 +22,22 @@ class _Runner:
 
 
 def _tools() -> HostReadinessTools:
+    def tool(path: str) -> TrustedExecutable:
+        return TrustedExecutable(
+            path=path,
+            device=1,
+            inode=abs(hash(path)) + 1,
+        )
+
     return HostReadinessTools(
-        systemctl="/systemctl",
-        podman="/podman",
-        quadlet_user_generator="/quadlet",
-        findmnt="/findmnt",
-        btrfs="/btrfs",
-        chattr="/chattr",
-        lsattr="/lsattr",
-        getenforce="/getenforce",
+        systemctl=tool("/systemctl"),
+        podman=tool("/podman"),
+        quadlet_user_generator=tool("/quadlet"),
+        findmnt=tool("/findmnt"),
+        btrfs=tool("/btrfs"),
+        chattr=tool("/chattr"),
+        lsattr=tool("/lsattr"),
+        getenforce=tool("/getenforce"),
     )
 
 

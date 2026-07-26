@@ -110,7 +110,9 @@ class InitializationPlanner:
                         str(self._receipt_store.path),
                         (
                             f"valid lifecycle receipt records {len(receipt.directories)} "
-                            f"directories, {len(receipt.files)} files, and exact dedicated-root identities"
+                            f"directories, {len(receipt.files)} files, "
+                            f"{len(receipt.subvolumes)} Btrfs subvolumes, and "
+                            "exact dedicated-root identities"
                         ),
                     )
                 )
@@ -186,9 +188,16 @@ class InitializationExecutor:
         def record(resources: CreatedResources) -> None:
             unexpected_directories = set(resources.directories) - allowed_directories
             unexpected_files = set(resources.files) - allowed_files
-            if unexpected_directories or unexpected_files:
+            unexpected_subvolumes = {
+                subvolume.path for subvolume in resources.subvolumes if subvolume.path not in allowed_directories
+            }
+            if unexpected_directories or unexpected_files or unexpected_subvolumes:
                 unexpected = sorted(
-                    (*unexpected_directories, *unexpected_files),
+                    (
+                        *unexpected_directories,
+                        *unexpected_files,
+                        *unexpected_subvolumes,
+                    ),
                     key=str,
                 )
                 msg = "Initialization attempted an unplanned creation: " + ", ".join(str(path) for path in unexpected)

@@ -29,6 +29,7 @@ from lychd.system.operator.models import (
     VesselAuthority,
 )
 from lychd.system.operator.process import (
+    DescriptorProcessRunner,
     ProcessInvocationError,
     ProcessResult,
     ProcessRunner,
@@ -48,6 +49,7 @@ __all__ = [
     "ConfiguredAnimatorDeclarations",
     "ControlResult",
     "DeclaredAnimator",
+    "DescriptorProcessRunner",
     "InventoryItem",
     "InventoryReport",
     "JournalRead",

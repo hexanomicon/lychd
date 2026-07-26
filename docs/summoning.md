@@ -182,19 +182,21 @@ vi "$CODEX_DIR/lychd.toml"
 
 The preview uses the same planner as the real command and renders three concise XDG tiers:
 **Codex** beneath `~/.config` (including host Binding), **Crypt** beneath `~/.local/share`
-(including the Phylactery), and **Forge** beneath `~/.cache`. It does not change files, modes,
-mounts, services, or secrets. A preceding host-foundation panel concurrently verifies the systemd
+(including the Phylactery), and **Forge** beneath `~/.cache`. It makes no LychD-managed change to
+files, modes, mounts, services, or secrets; bounded external probes may let Podman or another host
+tool maintain its own runtime metadata. A preceding host-foundation panel concurrently verifies the systemd
 user manager, Podman/Quadlet versions, cgroup v2, Binding sites, SELinux mode, Btrfs substrate, and
 the observed PostgreSQL No-COW directory policy. Systemd, Podman/Quadlet, cgroup v2, and prepared
 Binding sites govern the aggregate `BIND` verdict; SELinux and Btrfs remain optional hardening and
 storage optimization.
 
 Blockers and external mounts remain explicit. Cyan paths will be created by LychD; green LychD
-paths already exist. Shared XDG, Podman, and systemd anchors are blue with a separate `will prepare`
-or `present` suffix because LychD may prepare them but never owns their namespace. `present` does
+paths already exist. Shared XDG, Podman, and systemd anchors are blue with a separate `will create`
+or `present` suffix because LychD may create a missing directory but never owns its namespace. `present` does
 not mean `ready`: the Binding panel says `prepared` only after proving shape, current-user
-ownership, and write/search access. Yellow means removal and red means blocked. Add `--verbose`
-only when you need every inspected intermediate host anchor. Continue only when it ends with
+ownership, and write/search access. Yellow means removal and red means blocked. The default tree
+keeps only paths, states, and safety-relevant qualifiers; add `--verbose` when you also want the
+source-owned description of each path and every inspected intermediate host anchor. Continue only when it ends with
 `Initialization plan is safe`. Read the
 lifecycle-receipt node carefully: a successful
 non-dry initialization first proves full convergence, then explicitly adopts the exact Codex,
@@ -379,7 +381,8 @@ uv run lychd bind
 ```
 
 The dry run validates the active settings and Rune, host prerequisites, ports, mount boundaries,
-and secret references, then renders the owned unit generation without mutation. Real `bind`
+and secret references, then renders the owned unit generation without LychD-managed mutation.
+External probes such as Podman may maintain their own rootless runtime metadata. Real `bind`
 creates missing core secrets, writes that complete Quadlet/plain-unit generation, and reloads the
 user manager. It does **not** start the services. Live state belongs to `status`, not binding.
 

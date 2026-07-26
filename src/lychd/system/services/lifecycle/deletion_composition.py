@@ -8,25 +8,23 @@ from pathlib import Path
 from typing import Any, cast
 
 from lychd.system.host_tools import trusted_host_tool
-from lychd.system.operator import (
-    OperatorPaths,
-    ProcessRunner,
-    SubprocessRunner,
-    build_operator_services,
-)
+from lychd.system.operator.composition import build_operator_services
+from lychd.system.operator.inventory import OperatorPaths
+from lychd.system.operator.process import ProcessRunner, SubprocessRunner
 from lychd.system.services.lifecycle.bindings import BindingLifecycleService
-from lychd.system.services.lifecycle.deletion import DeletionExecutor, DeletionPlanner
 from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
 )
+from lychd.system.services.lifecycle.deletion_execution import DeletionExecutor
 from lychd.system.services.lifecycle.deletion_models import DeletionPaths
+from lychd.system.services.lifecycle.deletion_planning import DeletionPlanner
 from lychd.system.services.lifecycle.deletion_storage import (
     CommandBtrfsSubvolumeProbe,
 )
 from lychd.system.services.lifecycle.paths import is_within, lexically_normal
 from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 from lychd.system.services.lifecycle.trees import ManagedTreeService
-from lychd.system.services.scribe import ScribeService
+from lychd.system.services.scribe.facade import ScribeService
 
 
 @dataclass(frozen=True)

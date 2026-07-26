@@ -248,8 +248,9 @@ lychd.toml
 runes/
   animator/
     soulstones/
-      vision.toml
-      ocr.toml
+      llamacpp/
+        vision.toml
+        ocr.toml
     portals/
       openai/
         main.toml
@@ -473,7 +474,7 @@ Registration automatically binds the rune class to:
 ~/.config/lychd/runes/<relative_path>/
 ```
 
-If an extension is installed:
+If an extension is selected and enabled:
 
 1. Its selected `register(context)` shim contributes `RuneConfig` subclasses into `context.runes`.
 2. Their Anchors become valid Codex territories.
@@ -521,25 +522,73 @@ Infrastructure is never generated from invalid state.
 
 At runtime, initialization first compiles one deterministic lifecycle plan. Both
 `lychd init --dry-run` and `lychd init` consume that planner: the dry run renders the complete
-`WOULD CREATE` / `PRESERVE` / `BLOCKED` classification and exits before every effect service,
-while execution refuses the same blockers before entering the inscription path:
+classified XDG tree, shared-host checks, plan totals, and blockers, then exits before every LychD
+mutation service. Execution refuses the same lifecycle blockers before entering the inscription
+path. Host capability probes are parallel evidence for the later `bind`; missing Podman,
+Quadlet, cgroup v2, or a reachable user manager does not prevent safe layout initialization:
 
 1. `lychd init` calls `CodexService.inscribe()`.
 2. Runtime/extension composition supplies the active `RuneConfig` schema classes.
 3. `ConfigWriter.initialize_anchors()` materializes all anchor directories.
-4. `ConfigWriter.inscribe_samples()` writes one sample TOML per schema only when no instance file exists yet.
+4. `ConfigWriter.inscribe_samples()` writes one inactive sample TOML per empty leaf schema.
 
 This keeps extension activation outside the rune filesystem layer.
-Animation follows the same path: `AnimatorLoader` consumes the same `RuneConfig` runes under `runes/animator/`.
+Animation follows the same path without a second filesystem pass: the command composition root loads
+one immutable `RuneRegistry`, then the pure declaration compiler merges Settings-owned core port
+claims with every `PortReserver` Rune before `AnimatorLoader` hydrates the Animator and Portal
+declarations from that exact snapshot. This compiler is the shared truth for bind, operator status,
+the Host Reactor, and the web runtime. Web preauthorization startup consumes that same
+`RuneRegistry` rather than discovering a second generation. `AnimatorRegistry` receives the
+compiled declarations and cannot reopen the Rune filesystem. Core-secret names enter the hydrator as explicit policy; the
+domain loader neither reaches back into global settings nor reconstructs Rune provenance. Bind
+compilation also injects that same `Settings` instance into the `Transmuter`; Quadlets, plain units,
+contributor contexts, core secrets, and preflight therefore cannot split across separate
+process-global reads. Every Quadlet contributor
+receives its own deep declaration copy behind tuple collections, and returned containers are copied
+before they enter the core manifest set. The additive extension seam cannot mutate core inputs,
+another contributor's view, or an already emitted manifest through retained references.
+
+Volatile host evidence remains outside `LifecyclePlan`. `init` and `bind` enter through one typed
+host-foundation inspection contract: an immutable readiness report travels with the exact trusted
+tool discoveries from which it was produced. Only a report whose required systemd user manager,
+Podman/Quadlet/cgroup-v2 foundation, and two Binding sites are verified may refine into the
+`BindingFoundation` authority token. That token contains the resolved path plus device/inode
+identity of `systemctl`, Podman, and the effective Podman user generator, together with the path plus
+device/inode identity of the exact Quadlet and plain-user-unit directories. A caller may not
+reconstruct those authorities later from `PATH` or conventional locations, and a bind plan cannot
+be applied through adapters assembled for a different foundation.
+
+Trusted executable discovery resolves the final file and its complete ancestor chain. Every
+component must remain owned by UID 0 or sit on a kernel-reported read-only mount, remain closed to
+group/other writes, and be unwritable by the
+invoking user. The Podman user generator is selected through systemd's user-generator priority
+order; a higher-priority empty, non-executable, or `/dev/null` entry masks lower copies rather than
+allowing LychD to fall through to one that systemd itself would not execute.
 
 Initialization journals each removable file and directory batch immediately after creation in the
 owner-only `~/.config/lychd/.lychd-lifecycle.json` receipt. Entries bind the path to its device and
-inode; generated files also carry a SHA-256 digest. Shared XDG namespace roots and the durable
-Postgres data path may be provisioned but never become deletion authority. Existing paths are
-validated and preserved, never adopted merely because they occupy known Codex, Crypt, Forge,
-Reactor, or binding geography. The receipt must be a regular non-symlink owned by the invoking UID
-with exact mode `0600`; malformed, oversized, duplicate, unsafe, or out-of-bound entries fail
-closed.
+inode; generated files also carry a SHA-256 digest. Shared XDG namespace roots and an ordinary or
+mounted PostgreSQL data path may be provisioned but never become independent deletion authority.
+The narrow exception is an unmounted Btrfs subvolume actually created by that initialization
+transaction: receipt version 2 records its device/inode and canonical subvolume UUID/ID as a
+separate resource kind. Existing paths are validated and preserved, never adopted merely because
+they occupy known Codex, Crypt, Forge, Reactor, or binding geography. A version-1 receipt remains
+readable but grants no subvolume authority. The receipt must be a regular non-symlink owned by the
+invoking UID with exact mode `0600`; malformed, oversized, duplicate, unsafe, or out-of-bound
+entries fail closed.
+
+Codex inscription, Rune anchor creation, generated samples, and the two Reactor directories enter
+that receipt through one journal-bound creation service. Directory chains use descriptor-relative,
+no-follow, atomic no-replace provisioning and retain their creation-time device/inode identities
+until the receipt callback commits. A racer-created directory is validated where required but is
+never reported as an initialization winner. Generated text files require their Layout-created
+parent to exist already; inscription never performs a hidden parent `mkdir`. Each file is written
+under a private same-directory name, mode-set, flushed, and `fsync`ed before no-clobber hard-link
+publication. The public name is re-attested relative to the pinned parent, private staging is
+removed, and the parent directory is `fsync`ed before the lifecycle callback. Callback failure or
+terminal interruption rolls back only the captured file identity; a concurrent replacement is
+preserved, and a race loser is never journaled. `CodexService` returns the exact committed creation
+ledger rather than rebuilding an aggregate by inspecting replaceable paths.
 
 The global `lychd.toml` is emitted from the validated default `Settings` tree by a real TOML
 writer. `None` values are omitted; mappings, arrays, paths, and nested models retain their TOML
@@ -559,14 +608,51 @@ default this includes the host-only `lychd-reactor.path` and `lychd-reactor.serv
 Vessel receives the configured Reactor inbox read-write and its host-owned sibling journal
 read-only so the actuation barrier can observe terminal receipts.
 
+Initialization creates a missing Binding-site path chain with mode `0700`; it does not chmod or
+adopt an existing shared namespace. An existing site is prepared only when it is a real
+non-symlink directory owned by the invoking UID, its owner permissions and effective access are
+read/write/search, no group or other principal may write it, and no ancestor is writable by
+another principal unless that ancestor is a sticky directory owned by UID 0 or the invoking UID,
+or the foreign-owned ancestor is on a kernel-reported read-only mount. `bind` never creates these
+sites. The same inspection law gates readiness, Scribe
+planning, and Scribe commit. Bind passes the approved `AttestedBindingSites` identities into
+Scribe; each directory descriptor opened for a transaction must match the approved device/inode
+before staging begins, and content-identical no-op commits re-attest both sites before returning.
+
 The Scribe's authority is exact, not suffix-based. The Quadlet binding site contains one owner-only
 `.lychd-owned.json` manifest whose separate sets name the exact LychD-owned Quadlet and
 plain-systemd files across both shared binding sites. A bind may replace or remove only those
 recorded names. The authority file must be a regular non-symlink owned by the invoking UID with
 exact mode `0600`. Duplicate or unsafe manifest entries, invalid authority metadata, malformed
 ownership data, and a generated name already occupied by an unowned file fail closed. Staging,
-same-filesystem replacement, and prepared backups allow a failure at either binding site to restore
-the previous files and ownership manifest.
+same-filesystem atomic exchange, and no-overwrite quarantine moves keep each displaced generation
+as the rollback object itself. Every rename is relative to the exact binding-site and workspace
+directory descriptors pinned during preparation; public pathname replacement cannot redirect a
+transition. The staged inode, metadata, and bytes are captured when written and re-attested before
+installation. Both forward mutation and rollback attest the live and quarantined identities after
+the kernel operation; a writer that wins the final gap is restored or preserved, never silently
+overwritten or deleted. Rollback records and restores only paths whose mutation was proved, never
+rewrites a byte-identical preserved file, and refuses to clobber a concurrent edit. An indeterminate
+attempt retains every private recovery workspace instead of cleaning away evidence, including when
+`KeyboardInterrupt` or `SystemExit` interrupts rollback. Successful cleanup is flat,
+descriptor-pinned, and refuses a transaction-directory pathname whose identity changed. The
+resulting failure state is explicit as cleanly rolled back or indeterminate.
+
+Each write set carries the exact authority bytes and full recorded-source generation from which it
+was planned. That base generation includes recorded missing sources even when their absent binding
+site is intentionally omitted from the mutation plan. Commit always compare-and-swaps this base
+before mutation, independently of an optional caller generation, so a stale planner cannot regain a
+filename relinquished by a newer receipt. Source fingerprints and previews use stable no-follow
+observations rather than a separate `lstat` followed by a pathname read. Planning also fingerprints
+the exact desired paths, bytes, and ownership receipt, and commit rechecks both generations
+immediately before its first mutation. A
+settled reconcile is a real no-op: matching source files, binding directories, and the authority
+receipt retain their inode and modification time rather than being rewritten merely because
+`bind` ran again. Destructive clearing forwards the exact inspected generation into the transaction;
+the transaction also owns quarantine and deletion of an empty authority receipt, so a manifest
+changed after facade inspection cannot expand the authorized removal set. Authority release
+re-attests the complete recorded source set after receipt removal and restores the receipt when a
+source omitted with an absent site reappears in the final commit gap.
 
 The lifecycle and Scribe receipts remain exact inputs to `lychd del`; they are not its entire
 contract. Receipt identity proves which generated files may be removed as pristine owned
@@ -580,11 +666,27 @@ reports unreceipted Podman containers, pods, and secrets plus package/source own
 rather than treating conventional names as deletion evidence.
 
 `init`, `bind`, and real `del` share one interprocess lifecycle lock; dry runs remain
-lock-file-free and effect-free. A changed generated file, unsafe path, drifted binding generation,
-or invalid receipt blocks the affected removal rather than being silently repaired or discarded.
-When a known Phylactery mount or subvolume requires root authority, `del` leaves the deletion
-evidence intact and prints an inspected operator handoff instead of invoking `sudo`. [CLI (ADR
-19)](19-cli.md) owns the complete destructive lifecycle.
+lock-file-free and perform no LychD-managed mutation. Bounded readiness and secret-presence probes
+invoke external tools; Podman may maintain its own rootless runtime metadata even for a read
+operation. Before the first bind effect, the locked apply path reruns the
+complete preflight and requires the newly refined `BindingFoundation`, binding generation, and
+secret-presence generation to equal the preview. The approved foundation supplies the Podman path
+to secret reconciliation, both site paths to the Scribe, and the systemctl path to the one final
+daemon reload. A changed tool, site, generated file, unsafe path, drifted binding generation, or
+invalid receipt fails closed rather than being rediscovered during mutation. Binding reports
+confirmed partial progress if a later phase fails: newly created core-secret names, a committed
+binding generation, whether a rejected commit made no binding mutation, whether mutations rolled
+back cleanly, whether binding state is indeterminate, and whether the systemd reload completed
+remain explicit operator and log truth. `KeyboardInterrupt` and `SystemExit` retain their native
+control-flow semantics after that truth is logged and attached, including when Scribe has wrapped
+the signal while classifying rollback. Secret values are never included.
+
+When a known Phylactery mount requires root authority, `del` leaves its deletion evidence intact
+and prints an inspected operator handoff instead of invoking `sudo`. An unmounted Btrfs subvolume
+receives that authority only when the version-2 lifecycle receipt proves that the same
+initialization transaction created the exact PostgreSQL target and recorded its device, inode,
+canonical subvolume UUID, and subvolume ID. [Layout (ADR 13)](13-layout.md) owns the complete
+storage-identity law, and [CLI (ADR 19)](19-cli.md) owns the destructive lifecycle.
 
 Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/lychd/config/runes/writer.py:16`:
 

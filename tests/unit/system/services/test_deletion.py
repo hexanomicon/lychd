@@ -11,9 +11,32 @@ from typing import cast
 
 import pytest
 
+from lychd.system import (
+    protected_retirement as protected_retirement_module,
+)
+from lychd.system import (
+    protected_retirement_recovery as protected_retirement_recovery_module,
+)
+from lychd.system.atomic_paths import rename_noreplace_at
+from lychd.system.atomic_retirement import (
+    AtomicRetirementError,
+    AtomicRetirementService,
+    RetirementIdentity,
+    is_retirement_quarantine_name,
+)
 from lychd.system.operator.retirement import UnitRetirementPlan
 from lychd.system.operator.storage import MountObservation, MountTreeObservation
+from lychd.system.protected_retirement import ProtectedRootRetirementService
+from lychd.system.protected_retirement_models import (
+    ProtectedRetirementEntry,
+    ProtectedRootRetirementError,
+)
+from lychd.system.protected_retirement_naming import (
+    is_protected_authority_name,
+    new_protected_authority_name,
+)
 from lychd.system.services.lifecycle import (
+    CreatedBtrfsSubvolume,
     DedicatedRootIdentity,
     DeletionActionKind,
     DeletionCheckpointStore,
@@ -40,7 +63,11 @@ from lychd.system.services.lifecycle.deletion import (
     StorageInventoryPort,
     UnitRetirementPort,
 )
-from lychd.system.services.scribe import OwnedBindings
+from lychd.system.services.scribe import (
+    OwnedBindings,
+    ScribeTransactionError,
+    ScribeTransactionState,
+)
 
 _SUBVOLUME_UUID = "12345678-1234-5678-1234-567812345678"
 _FILESYSTEM_UUID = "87654321-4321-8765-4321-876543218765"
@@ -58,6 +85,16 @@ def _root_identity(root: Path) -> DedicatedRootIdentity:
         device=metadata.st_dev,
         inode=metadata.st_ino,
     )
+
+
+def _retirement_identity(path: Path) -> RetirementIdentity:
+    return RetirementIdentity.from_stat(path.lstat())
+
+
+def test_protected_authority_producer_matches_recovery_recognizer() -> None:
+    name = new_protected_authority_name()
+
+    assert is_protected_authority_name(name)
 
 
 @dataclass
@@ -114,6 +151,7 @@ class _Storage:
                 target=target,
                 exists=os.path.lexists(target),
                 mounted=False,
+                filesystem="ext4",
             ),
         )
 
@@ -161,6 +199,15 @@ class _RootAuthority:
     path: Path
     identities: dict[Path, DedicatedRootIdentity]
     error: str | None = None
+    subvolume: CreatedBtrfsSubvolume | None = None
+
+    def created_subvolume(
+        self,
+        path: Path,
+    ) -> CreatedBtrfsSubvolume | None:
+        if self.subvolume is None or self.subvolume.path != path:
+            return None
+        return self.subvolume
 
     def require_dedicated_root_identities(
         self,
@@ -418,6 +465,7 @@ def test_late_codex_removal_failure_retains_receipt_for_retry(
     planner, executor = _wire_root_authority(harness, root_authority)
     late_entry = harness.paths.codex_root / "late-failure"
     late_entry.write_text("retry me", encoding="utf-8")
+    late_inode = late_entry.lstat().st_ino
     real_unlink = os.unlink
     failed_once = False
 
@@ -427,14 +475,15 @@ def test_late_codex_removal_failure_retains_receipt_for_retry(
         dir_fd: int | None = None,
     ) -> None:
         nonlocal failed_once
-        if path == late_entry.name and dir_fd is not None and not failed_once:
+        metadata = os.stat(path, dir_fd=dir_fd, follow_symlinks=False) if dir_fd is not None else None
+        if metadata is not None and metadata.st_ino == late_inode and not failed_once:
             failed_once = True
             message = "simulated late Codex removal failure"
             raise OSError(message)
         real_unlink(path, dir_fd=dir_fd)
 
     monkeypatch.setattr(
-        "lychd.system.services.lifecycle.trees.os.unlink",
+        "lychd.system.atomic_retirement.os.unlink",
         fail_one_codex_unlink,
     )
 
@@ -584,6 +633,88 @@ def test_unknown_nested_mount_is_a_true_storage_blocker(tmp_path: Path) -> None:
     )
     assert result.outcome is DeletionOutcome.BLOCKED
     assert harness.bindings.destroy_calls == 0
+
+
+def test_init_receipted_unmounted_subvolume_pauses_before_generic_tree_removal(
+    tmp_path: Path,
+) -> None:
+    """The joined plan defers a typed subvolume to the ID-bound storage handoff."""
+    harness = _build_harness(tmp_path, active=False)
+    target = harness.paths.postgres_data
+    metadata = target.lstat()
+    harness.root_authority.subvolume = CreatedBtrfsSubvolume(
+        path=target,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        subvolume_uuid=_SUBVOLUME_UUID,
+        subvolume_id=259,
+    )
+    harness.subvolumes.identities[target] = ObservedBtrfsSubvolume(
+        uuid=_SUBVOLUME_UUID,
+        subvolume_id=259,
+    )
+    harness.storage.exact[target] = MountObservation(
+        target=target,
+        exists=True,
+        mounted=False,
+        mount_target=tmp_path,
+        source="/dev/nvme0n1p3",
+        source_device="/dev/nvme0n1p3",
+        filesystem="btrfs",
+        filesystem_uuid=_FILESYSTEM_UUID,
+        fs_root="/",
+        subvolume_id=5,
+        options=("rw", "subvolid=5", "subvol=/"),
+        top_level_mount=tmp_path,
+    )
+
+    plan = harness.planner.plan()
+    result = harness.executor.execute(plan.fingerprint)
+
+    assert [(action.kind, action.disposition) for action in plan.actions_for(DeletionStage.STORAGE)] == [
+        (
+            DeletionActionKind.DELETE_SUBVOLUME,
+            DeletionDisposition.REQUIRES_ROOT,
+        )
+    ]
+    assert not any(
+        action.disposition is DeletionDisposition.BLOCKED for action in plan.actions_for(DeletionStage.FILESYSTEM)
+    )
+    assert len(plan.handoffs) == 1
+    assert plan.handoffs[0].argv[-3:] == (
+        "--subvolid",
+        "259",
+        str(tmp_path),
+    )
+    assert result.outcome is DeletionOutcome.PARTIAL
+    assert harness.checkpoint.exists
+    assert harness.bindings.destroy_calls == 0
+    assert target.exists()
+
+
+def test_unreceipted_unmounted_subvolume_blocks_every_generic_effect(
+    tmp_path: Path,
+) -> None:
+    """Live Btrfs identity alone cannot become deletion authority."""
+    harness = _build_harness(tmp_path)
+    target = harness.paths.postgres_data
+    harness.subvolumes.identities[target] = ObservedBtrfsSubvolume(
+        uuid=_SUBVOLUME_UUID,
+        subvolume_id=259,
+    )
+
+    plan = harness.planner.plan()
+    result = harness.executor.execute(plan.fingerprint)
+
+    assert any(
+        action.disposition is DeletionDisposition.BLOCKED and "lacks initialization receipt authority" in action.detail
+        for action in plan.actions_for(DeletionStage.STORAGE)
+    )
+    assert plan.handoffs == ()
+    assert result.outcome is DeletionOutcome.BLOCKED
+    assert harness.retirement.execute_calls == 0
+    assert harness.bindings.destroy_calls == 0
+    assert target.exists()
 
 
 def test_attested_btrfs_handoff_retires_units_and_retains_evidence(
@@ -994,6 +1125,76 @@ def test_final_root_identity_replacement_is_detected(
     assert root.exists()
 
 
+def test_any_subvolume_boundary_is_never_removed_generically(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unlisted Btrfs boundary cannot be emptied by recursive deletion."""
+    root = tmp_path / "crypt"
+    candidate = root / "postgres-data"
+    candidate.mkdir(parents=True)
+    sentinel = candidate / "keep"
+    sentinel.write_text("operator data", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    real_stat = os.stat
+
+    def boundary_stat(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes] | int,
+        *,
+        dir_fd: int | None = None,
+        follow_symlinks: bool = True,
+    ) -> os.stat_result:
+        result = real_stat(
+            path,
+            dir_fd=dir_fd,
+            follow_symlinks=follow_symlinks,
+        )
+        if path == candidate.name and dir_fd is not None and follow_symlinks is False:
+            values = list(result)
+            values[stat.ST_INO] = 256
+            return os.stat_result(values)
+        return result
+
+    monkeypatch.setattr(
+        "lychd.system.services.lifecycle.trees.os.stat",
+        boundary_stat,
+    )
+
+    with pytest.raises(LifecycleError, match="Btrfs subvolume boundary"):
+        service.remove(root, expected_identity=_root_identity(root))
+
+    assert sentinel.read_text(encoding="utf-8") == "operator data"
+
+
+def test_dedicated_root_subvolume_boundary_is_never_emptied(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A dedicated root may itself be a subvolume without being a mountpoint."""
+    root = tmp_path / "crypt"
+    root.mkdir()
+    sentinel = root / "keep"
+    sentinel.write_text("operator data", encoding="utf-8")
+    expected_identity = _root_identity(root)
+    service = ManagedTreeService((root,))
+    real_lstat = Path.lstat
+
+    def boundary_lstat(path: Path) -> os.stat_result:
+        result = real_lstat(path)
+        if path == root:
+            values = list(result)
+            values[stat.ST_INO] = 256
+            return os.stat_result(values)
+        return result
+
+    monkeypatch.setattr(Path, "lstat", boundary_lstat)
+
+    with pytest.raises(LifecycleError, match="Btrfs subvolume boundary"):
+        service.remove(root, expected_identity=expected_identity)
+
+    assert sentinel.read_text(encoding="utf-8") == "operator data"
+
+
 def test_nested_directory_identity_replacement_is_detected(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1070,6 +1271,749 @@ def test_root_replacement_between_stat_and_descriptor_open_is_preserved(
 
     assert (original / original_sentinel.name).read_text(encoding="utf-8") == ("original")
     assert (root / replacement_sentinel.name).read_text(encoding="utf-8") == ("replacement")
+
+
+def test_root_swap_at_retirement_is_restored_without_clobbering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Atomic quarantine detects a replacement after root traversal."""
+    root = tmp_path / "codex"
+    displaced = tmp_path / "codex-traversed"
+    replacement = tmp_path / "codex-replacement"
+    root.mkdir()
+    replacement.mkdir()
+    sentinel = replacement / "keep"
+    sentinel.write_text("replacement", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    swapped = False
+
+    def swap_before_quarantine(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal swapped
+        if source_name == root.name and destination_name.startswith(".lychd-retire-") and not swapped:
+            root.rename(displaced)
+            replacement.rename(root)
+            swapped = True
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.atomic_retirement.rename_noreplace_at",
+        swap_before_quarantine,
+    )
+
+    with pytest.raises(LifecycleError, match="identity changed before retirement"):
+        service.remove(root, expected_identity=_root_identity(root))
+
+    assert displaced.is_dir()
+    assert (root / sentinel.name).read_text(encoding="utf-8") == "replacement"
+
+
+def test_child_directory_swap_at_retirement_is_restored_without_clobbering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A traversed child cannot transfer deletion authority to a replacement."""
+    root = tmp_path / "codex"
+    child = root / "managed"
+    displaced = tmp_path / "managed-traversed"
+    replacement = tmp_path / "managed-replacement"
+    child.mkdir(parents=True)
+    replacement.mkdir()
+    sentinel = replacement / "keep"
+    sentinel.write_text("replacement", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    swapped = False
+
+    def swap_before_quarantine(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal swapped
+        if source_name == child.name and destination_name.startswith(".lychd-retire-") and not swapped:
+            child.rename(displaced)
+            replacement.rename(child)
+            swapped = True
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.atomic_retirement.rename_noreplace_at",
+        swap_before_quarantine,
+    )
+
+    with pytest.raises(LifecycleError, match="identity changed before retirement"):
+        service.remove(root, expected_identity=_root_identity(root))
+
+    assert displaced.is_dir()
+    assert (child / sentinel.name).read_text(encoding="utf-8") == "replacement"
+
+
+def test_file_swap_at_retirement_is_restored_without_clobbering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An opened file cannot transfer unlink authority to a replacement."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    target = root / "owned.txt"
+    displaced = tmp_path / "owned-opened.txt"
+    replacement = tmp_path / "owned-replacement.txt"
+    target.write_text("owned", encoding="utf-8")
+    replacement.write_text("replacement", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    swapped = False
+
+    def swap_before_quarantine(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal swapped
+        if source_name == target.name and destination_name.startswith(".lychd-retire-") and not swapped:
+            target.rename(displaced)
+            replacement.rename(target)
+            swapped = True
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    monkeypatch.setattr(
+        "lychd.system.atomic_retirement.rename_noreplace_at",
+        swap_before_quarantine,
+    )
+
+    with pytest.raises(LifecycleError, match="identity changed before retirement"):
+        service.remove(root, expected_identity=_root_identity(root))
+
+    assert displaced.read_text(encoding="utf-8") == "owned"
+    assert target.read_text(encoding="utf-8") == "replacement"
+
+
+def test_retained_file_quarantine_surfaces_through_lifecycle_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Managed-tree failure preserves typed recovery evidence and blocks retry."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    target = root / "owned.txt"
+    target.write_text("owned", encoding="utf-8")
+    service = ManagedTreeService((root,))
+
+    def occupy_public_name_then_fail(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        del path, dir_fd
+        target.write_text("foreign", encoding="utf-8")
+        message = "simulated unlink failure"
+        raise OSError(message)
+
+    monkeypatch.setattr(
+        "lychd.system.atomic_retirement.os.unlink",
+        occupy_public_name_then_fail,
+    )
+
+    with pytest.raises(LifecycleError, match="preserved the quarantined entry") as raised:
+        service.remove(root, expected_identity=_root_identity(root))
+
+    cause = raised.value.__cause__
+    assert isinstance(cause, AtomicRetirementError)
+    assert cause.recovery is not None
+    assert cause.recovery.quarantine.exists()
+    assert target.read_text(encoding="utf-8") == "foreign"
+    assert service.inspect(root).detail.startswith("retained atomic-retirement quarantine requires recovery")
+
+
+def test_tree_failure_preserves_receipt_and_checkpoint_for_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recovery authorities are retired only after ordinary Codex entries."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    ordinary = root / "late-failure"
+    checkpoint = root / ".lychd-del-state.json"
+    receipt = root / ".lychd-lifecycle.json"
+    ordinary.write_text("retry", encoding="utf-8")
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    receipt.write_text("receipt", encoding="utf-8")
+    ordinary_inode = ordinary.lstat().st_ino
+    root_identity = _root_identity(root)
+    service = ManagedTreeService((root,))
+    real_unlink = os.unlink
+    failed_once = False
+
+    def fail_ordinary_once(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        nonlocal failed_once
+        metadata = os.stat(path, dir_fd=dir_fd, follow_symlinks=False) if dir_fd is not None else None
+        if metadata is not None and metadata.st_ino == ordinary_inode and not failed_once:
+            failed_once = True
+            message = "simulated ordinary-entry failure"
+            raise OSError(message)
+        real_unlink(path, dir_fd=dir_fd)
+
+    monkeypatch.setattr(
+        "lychd.system.atomic_retirement.os.unlink",
+        fail_ordinary_once,
+    )
+
+    with pytest.raises(LifecycleError, match="restored"):
+        service.remove(
+            root,
+            expected_identity=root_identity,
+            final_entries=(checkpoint, receipt),
+        )
+
+    assert ordinary.exists()
+    assert checkpoint.read_text(encoding="utf-8") == "checkpoint"
+    assert receipt.read_text(encoding="utf-8") == "receipt"
+
+    service.remove(
+        root,
+        expected_identity=root_identity,
+        final_entries=(checkpoint, receipt),
+    )
+
+    assert not root.exists()
+
+
+def test_late_root_writer_restores_root_and_authorities_for_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A late child cannot strand deletion after its authorities disappear."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    checkpoint = root / ".lychd-del-state.json"
+    receipt = root / ".lychd-lifecycle.json"
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    receipt.write_text("receipt", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    real_rmdir = os.rmdir
+
+    def populate_detached_root(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        assert isinstance(path, str)
+        assert dir_fd is not None
+        if path.startswith(".lychd-retire-"):
+            parent = Path(f"/proc/self/fd/{dir_fd}").readlink()
+            (parent / path / "late.txt").write_text("preserve", encoding="utf-8")
+        real_rmdir(path, dir_fd=dir_fd)
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.os.rmdir",
+        populate_detached_root,
+    )
+
+    with pytest.raises(LifecycleError, match="restored for retry"):
+        service.remove(
+            root,
+            expected_identity=_root_identity(root),
+            final_entries=(checkpoint, receipt),
+        )
+
+    assert (root / "late.txt").read_text(encoding="utf-8") == "preserve"
+    assert checkpoint.read_text(encoding="utf-8") == "checkpoint"
+    assert receipt.read_text(encoding="utf-8") == "receipt"
+    assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
+
+
+@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(43)])
+def test_root_retirement_interruption_before_effect_restores_authorities(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: BaseException,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    checkpoint = root / ".lychd-del-state.json"
+    receipt = root / ".lychd-lifecycle.json"
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    receipt.write_text("receipt", encoding="utf-8")
+    service = ManagedTreeService((root,))
+
+    def interrupt_rmdir(
+        _path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        del dir_fd
+        raise terminal
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.os.rmdir",
+        interrupt_rmdir,
+    )
+
+    with pytest.raises(type(terminal)):
+        service.remove(
+            root,
+            expected_identity=_root_identity(root),
+            final_entries=(checkpoint, receipt),
+        )
+
+    assert root.is_dir()
+    assert checkpoint.read_text(encoding="utf-8") == "checkpoint"
+    assert receipt.read_text(encoding="utf-8") == "receipt"
+    assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
+
+
+@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(47)])
+def test_root_retirement_interruption_after_effect_finalizes_authorities(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: BaseException,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    checkpoint = root / ".lychd-del-state.json"
+    receipt = root / ".lychd-lifecycle.json"
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    receipt.write_text("receipt", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    real_rmdir = os.rmdir
+
+    def remove_then_interrupt(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        real_rmdir(path, dir_fd=dir_fd)
+        raise terminal
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.os.rmdir",
+        remove_then_interrupt,
+    )
+
+    with pytest.raises(type(terminal)):
+        service.remove(
+            root,
+            expected_identity=_root_identity(root),
+            final_entries=(checkpoint, receipt),
+        )
+
+    assert not root.exists()
+    assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
+    assert not tuple(tmp_path.glob(".lychd-retire-*"))
+
+
+@pytest.mark.parametrize("observation_failure", [OSError("EIO"), KeyboardInterrupt(), SystemExit(61)])
+def test_post_detach_observation_failure_names_exact_root_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    observation_failure: BaseException,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    authority = root / ".lychd-lifecycle.json"
+    authority.write_text("receipt", encoding="utf-8")
+    root_expected = _retirement_identity(root)
+    entry = ProtectedRetirementEntry(
+        leaf=authority.name,
+        resource=authority,
+        expected=_retirement_identity(authority),
+    )
+    real_observe = protected_retirement_module.observe_retirement_name
+
+    def fail_detached_observation(
+        *,
+        parent_fd: int,
+        name: str,
+    ) -> RetirementIdentity | None:
+        if name.startswith(".lychd-retire-") and not name.startswith(".lychd-retire-authority-"):
+            raise observation_failure
+        return real_observe(parent_fd=parent_fd, name=name)
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.observe_retirement_name",
+        fail_detached_observation,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            ProtectedRootRetirementService().retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=root_expected,
+                display_path=root,
+                protected=(entry,),
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    recovery = raised.value.root_recovery
+    assert recovery is not None
+    assert recovery.root_quarantine is not None
+    assert recovery.root_quarantine.parent == tmp_path
+    assert recovery.root_quarantine.exists()
+    assert raised.value.__cause__ is observation_failure
+
+
+@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(67)])
+def test_authority_restore_terminal_settles_all_peers_before_native_signal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: BaseException,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
+    for authority in authorities:
+        authority.write_text(authority.name, encoding="utf-8")
+    entries = tuple(
+        ProtectedRetirementEntry(
+            leaf=authority.name,
+            resource=authority,
+            expected=_retirement_identity(authority),
+        )
+        for authority in authorities
+    )
+    real_rename = rename_noreplace_at
+    interrupted = False
+
+    def restore_then_interrupt(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal interrupted
+        real_rename(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        if source_name.startswith(".lychd-retire-authority-") and not interrupted:
+            interrupted = True
+            raise terminal
+
+    def reject_root_removal(
+        _path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        del dir_fd
+        message = "late writer"
+        raise OSError(message)
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement_recovery.rename_noreplace_at",
+        restore_then_interrupt,
+    )
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.os.rmdir",
+        reject_root_removal,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(type(terminal)) as raised:
+            ProtectedRootRetirementService().retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=_retirement_identity(root),
+                display_path=root,
+                protected=entries,
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    assert raised.value is terminal
+    assert all(authority.exists() for authority in authorities)
+    assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
+    assert not tuple(tmp_path.glob(".lychd-retire-*"))
+
+
+@pytest.mark.parametrize("candidate_kind", ["root-quarantine", "authority-backup"])
+@pytest.mark.parametrize(
+    "observation_failure",
+    [OSError("unreadable absence"), KeyboardInterrupt(), SystemExit(69)],
+)
+def test_expected_absence_observation_failure_never_proves_exact_recovery(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    candidate_kind: str,
+    observation_failure: BaseException,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    authority = root / "receipt.json"
+    authority.write_text("receipt", encoding="utf-8")
+    entry = ProtectedRetirementEntry(
+        leaf=authority.name,
+        resource=authority,
+        expected=_retirement_identity(authority),
+    )
+    real_observe = protected_retirement_recovery_module.observe_retirement_name
+    observations = 0
+
+    def fail_expected_absence(
+        *,
+        parent_fd: int,
+        name: str,
+    ) -> RetirementIdentity | None:
+        nonlocal observations
+        targets_root = candidate_kind == "root-quarantine" and is_retirement_quarantine_name(name)
+        targets_authority = candidate_kind == "authority-backup" and is_protected_authority_name(name)
+        if targets_root or targets_authority:
+            observations += 1
+            failure_threshold = 2 if targets_root else 3
+            if observations >= failure_threshold:
+                raise observation_failure
+        return real_observe(parent_fd=parent_fd, name=name)
+
+    def reject_root_removal(
+        _path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        del dir_fd
+        message = "force protected-root recovery"
+        raise OSError(message)
+
+    monkeypatch.setattr(
+        protected_retirement_recovery_module,
+        "observe_retirement_name",
+        fail_expected_absence,
+    )
+    monkeypatch.setattr(
+        protected_retirement_module.os,
+        "rmdir",
+        reject_root_removal,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            ProtectedRootRetirementService().retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=_retirement_identity(root),
+                display_path=root,
+                protected=(entry,),
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    recovery = raised.value.root_recovery
+    assert recovery is not None
+    assert observation_failure in raised.value.failures
+    assert root.is_dir()
+    assert authority.read_text(encoding="utf-8") == "receipt"
+    if candidate_kind == "root-quarantine":
+        assert recovery.root_quarantine is not None
+        assert is_retirement_quarantine_name(recovery.root_quarantine.name)
+    else:
+        assert any(
+            retained.observed is None and is_protected_authority_name(retained.recovery_path.name)
+            for retained in recovery.authorities
+        )
+    if not isinstance(observation_failure, Exception):
+        assert raised.value.__cause__ is observation_failure
+
+
+def test_retained_finalization_uses_later_peer_terminal_as_cause(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
+    for authority in authorities:
+        authority.write_text(authority.name, encoding="utf-8")
+    entries = tuple(
+        ProtectedRetirementEntry(
+            leaf=authority.name,
+            resource=authority,
+            expected=_retirement_identity(authority),
+        )
+        for authority in authorities
+    )
+    terminal = KeyboardInterrupt()
+
+    class FailingEntries(AtomicRetirementService):
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def retire_file(
+            self,
+            *,
+            parent_fd: int,
+            leaf: str,
+            expected: RetirementIdentity,
+            display_path: Path,
+        ) -> None:
+            del parent_fd, leaf, expected, display_path
+            self.calls += 1
+            if self.calls == 1:
+                message = "ordinary peer failure"
+                raise AtomicRetirementError(message)
+            raise terminal
+
+    failing_entries = FailingEntries()
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            ProtectedRootRetirementService(entries=failing_entries).retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=_retirement_identity(root),
+                display_path=root,
+                protected=entries,
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    assert failing_entries.calls == 2
+    assert raised.value.__cause__ is terminal
+    assert terminal in raised.value.failures
+    assert raised.value.root_recovery is not None
+    assert len(raised.value.root_recovery.authorities) == 2
+    assert not root.exists()
+
+
+def test_terminal_root_failure_names_retained_recovery_without_flattening(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "codex"
+    root.mkdir()
+    checkpoint = root / ".lychd-del-state.json"
+    receipt = root / ".lychd-lifecycle.json"
+    checkpoint.write_text("checkpoint", encoding="utf-8")
+    receipt.write_text("receipt", encoding="utf-8")
+    service = ManagedTreeService((root,))
+    real_rename = rename_noreplace_at
+
+    def fail_checkpoint_restore(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        if source_name.startswith(".lychd-retire-authority-") and destination_name == checkpoint.name:
+            message = "simulated authority restoration failure"
+            raise OSError(message)
+        real_rename(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+
+    def interrupt_root_removal(
+        _path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        del dir_fd
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement_recovery.rename_noreplace_at",
+        fail_checkpoint_restore,
+    )
+    monkeypatch.setattr(
+        "lychd.system.protected_retirement.os.rmdir",
+        interrupt_root_removal,
+    )
+
+    with pytest.raises(KeyboardInterrupt) as raised:
+        service.remove(
+            root,
+            expected_identity=_root_identity(root),
+            final_entries=(checkpoint, receipt),
+        )
+
+    recovery_note = "\n".join(raised.value.__notes__)
+    assert ".lychd-retire-" in recovery_note
+    assert ".lychd-retire-authority-" in recovery_note
+    assert tuple(tmp_path.glob(".lychd-retire-*"))
+
+
+def test_retained_sibling_authority_blocks_a_later_delete_plan(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "codex"
+    residue = tmp_path / f".lychd-retire-authority-{'a' * 32}"
+    residue.write_text("recovery", encoding="utf-8")
+
+    inspection = ManagedTreeService((root,)).inspect(root)
+
+    assert not inspection.removable
+    assert inspection.exists is False
+    assert str(residue) in inspection.detail
+
+
+@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(53)])
+def test_wrapped_scribe_interruption_is_not_flattened_into_partial_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: BaseException,
+) -> None:
+    harness = _build_harness(tmp_path)
+
+    def interrupt_bindings() -> None:
+        error = ScribeTransactionError(
+            "binding cleanup interrupted",
+            state=ScribeTransactionState.ROLLED_BACK,
+            forward_error=terminal,
+        )
+        raise error from terminal
+
+    monkeypatch.setattr(harness.bindings, "destroy", interrupt_bindings)
+    plan = harness.planner.plan()
+
+    with pytest.raises(type(terminal)) as raised:
+        harness.executor.execute(plan.fingerprint)
+
+    assert any("Rerun `lychd del`" in note for note in raised.value.__notes__)
+    assert harness.scribe.ownership_path.exists()
 
 
 def test_root_mount_id_change_blocks_before_contents(

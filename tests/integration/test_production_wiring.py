@@ -20,17 +20,17 @@ from __future__ import annotations
 # Litestar's create_test_client callback surface contains third-party Unknowns.
 # pyright: reportUnknownVariableType=false
 import asyncio
-from pathlib import Path
 from typing import Any
 
+import httpx
 import pydantic_ai.models
 import pytest
-from litestar.contrib.jinja import JinjaTemplateEngine
 from pydantic_ai.models.test import TestModel
 
 from lychd.agents.router import Intent
 from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
+from lychd.config.runes.registry import RuneRegistry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.engine import QueueRouter
 from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
@@ -41,9 +41,6 @@ from lychd.domain.web.altar_services import build_altar_services
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
-
-_TEMPLATES_DIR = Path(__file__).resolve().parents[1].parent / "src" / "lychd" / "domain" / "web" / "templates"
-
 
 class _InProcessQueue:
     """A SAQ-queue stand-in that runs `perform_run` on the loop with an EMPTY ctx.
@@ -80,12 +77,10 @@ class _InProcessQueue:
 @pytest.mark.asyncio
 async def test_production_wiring_no_injection_queued_running_done_and_sse() -> None:
     """Submit → QUEUED → RUNNING → DONE + SSE, all on one loop, substrate read from the memo."""
-    engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
     queues = {"runs": _InProcessQueue(), "rites": _InProcessQueue()}
     services = build_altar_services(
-        template_engine=engine_template,
         queues=queues,
-        rune_schemas=[],
+        runes=RuneRegistry(()),
         runtime_adapters=[],
         profile="memory",  # DB-free: the InMemoryRunLedger
     )
@@ -175,12 +170,11 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
     the queues from that process memo (NOT an injected value) and the leases from the
     services container, returning real SAQ numbers + live lease rows.
     """
-    from contextlib import asynccontextmanager
     from datetime import UTC, datetime
     from types import SimpleNamespace
 
     from litestar import Litestar
-    from litestar.testing import create_test_client
+    from litestar.datastructures import State
 
     from lychd.domain.animation.capabilities import GrantLease
     from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -190,12 +184,10 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
     from lychd.interface.api.orchestrator import OrchestratorController
     from lychd.interface.web.deps import web_dependencies
 
-    engine_template = JinjaTemplateEngine(directory=_TEMPLATES_DIR)
     queues = {"runs": _InfoQueue(queued=3, active=1), "rites": _InfoQueue(queued=0, active=0)}
     services = build_altar_services(
-        template_engine=engine_template,
         queues=queues,
-        rune_schemas=[],
+        runes=RuneRegistry(()),
         runtime_adapters=[],
         profile="memory",
     )
@@ -209,19 +201,18 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
     services.leases.acquire(grant, priority=70)
     _ = CapabilityFamily  # imported for parity with the rest of the suite
 
-    @asynccontextmanager
-    async def _lifespan(app: Litestar) -> Any:
-        app.state.services = services
-        yield
-
     try:
-        with create_test_client(
+        app = Litestar(
             route_handlers=[OrchestratorController],
             dependencies=web_dependencies,
-            lifespan=[_lifespan],
             middleware=[sigil_auth_middleware()],
+            state=State({"services": services}),
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://testserver.local",
         ) as client:
-            resp = client.get("/orchestrator/queues")
+            resp = await client.get("/orchestrator/queues")
         assert resp.status_code == 200
         body = resp.json()
         depths = {q["name"]: q for q in body["queues"]}
@@ -252,6 +243,7 @@ def test_production_wiring_real_factory_over_postgres() -> None:
     #   2. Apply migration 0001 (alembic upgrade head).
     #   3. app = create_app(); with TestClient(app) as client:  (on_app_startup launches
     #      the in-process worker on the web loop — no forks).
-    #   4. POST /bridge/{session}/messages → 200; GET /bridge/runs/{id}/stream →
+    #   4. POST /api/v1/bridge/sessions/{session}/messages → 200;
+    #      GET /api/v1/bridge/runs/{id}/events →
     #      status→…→done; assert the Run row is DONE and Step.seq == emit order.
     pytest.skip("[LINUX] production-wiring over real Postgres — deferred to the Linux runtime pass")

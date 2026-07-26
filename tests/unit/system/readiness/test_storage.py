@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from lychd.system.host_tools import TrustedExecutable
 from lychd.system.operator import ProcessResult
 from lychd.system.readiness import HostReadinessTools, ReadinessState
 from lychd.system.readiness.storage import StorageReadinessProbe
@@ -35,7 +36,7 @@ class _StorageRunner:
                     {
                         "filesystems": [
                             {
-                                "target": target,
+                                "target": str(Path(target).anchor),
                                 "source": "/dev/test",
                                 "fstype": self.filesystem,
                                 "options": self.mount_options,
@@ -52,15 +53,22 @@ class _StorageRunner:
 
 
 def _tools(*, complete: bool = True) -> HostReadinessTools:
+    def tool(path: str) -> TrustedExecutable:
+        return TrustedExecutable(
+            path=path,
+            device=1,
+            inode=abs(hash(path)) + 1,
+        )
+
     return HostReadinessTools(
-        systemctl="/systemctl",
-        podman="/podman",
-        quadlet_user_generator="/quadlet",
-        findmnt="/findmnt",
-        btrfs="/btrfs" if complete else None,
-        chattr="/chattr" if complete else None,
-        lsattr="/lsattr" if complete else None,
-        getenforce="/getenforce",
+        systemctl=tool("/systemctl"),
+        podman=tool("/podman"),
+        quadlet_user_generator=tool("/quadlet"),
+        findmnt=tool("/findmnt"),
+        btrfs=tool("/btrfs") if complete else None,
+        chattr=tool("/chattr") if complete else None,
+        lsattr=tool("/lsattr") if complete else None,
+        getenforce=tool("/getenforce"),
     )
 
 

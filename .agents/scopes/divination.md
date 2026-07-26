@@ -20,7 +20,7 @@ navigation touching `docs/divination/**`.
 - Divination map: `docs/divination/index.md`
 - Altar surface: `docs/divination/altar/index.md`
 - Transcendence: `docs/divination/transcendence/index.md` and its immediate children
-- System bridges: `docs/sepulcher/lich.md`, `docs/sepulcher/vessel/index.md`,
+- System bridges: `docs/sepulcher/lich/index.md`, `docs/sepulcher/vessel/index.md`,
   `docs/sepulcher/phylactery/index.md`, `docs/sepulcher/extensions/`
 - Navigation and presentation: `zensical.toml`, `docs/overrides/`, `docs/assets/`
 

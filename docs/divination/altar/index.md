@@ -6,11 +6,11 @@ icon: fontawesome/solid/dungeon
 # :fontawesome-solid-dungeon: Altar
 
 The **Altar** is LychD's local web surface. Its accepted architecture is a static Svelte 5/SvelteKit
-client projecting typed Litestar API and event truth; the repository still serves a legacy
-Jinja/HTMX/Alpine surface while that client is rebuilt. Its conversational instrument is the
+client projecting generated Litestar API and semantic event truth. Litestar serves its compiled
+fallback and remains the sole production authority. Its conversational instrument is the
 **Bridge**. The navigation also names Nexus, Loom, Scrying, Reliquary, and Bindings, but a visible
 door is not proof that the instrument behind it is complete. [State of the
-Work](../../state-of-the-work.md#altar-and-observability) owns the migration and what can answer now.
+Work](../../state-of-the-work.md#altar-and-observability) owns what can answer now.
 
 !!! danger "Temporary local-browser boundary"
     Before using the Altar, use a dedicated browser profile on the same host, keep the listener on

@@ -15,7 +15,9 @@ icon: material/brain
 - **Standardized Embedding Interface:** Adoption of a unified API for generating vectors across pluggable local and remote providers, utilizing the Pydantic AI `Embedder` class.
 - **Capability-Driven Recall:** Treatment of text-to-vector conversion as a functional capability, allowing the machine to manifest specialized hardware containers for heavy ingestion rituals.
 - **Asynchronous Ingestion:** Offloading of document partitioning and embedding to background labor to prevent blocking the primary cognitive reasoning loop.
-- **Karma-Based Evolution:** Provision of a mechanism to inscribe consecrated outcomes (verified truths) as prioritized semantic context to shift the model’s Bayesian Prior toward success.
+- **Karma-Based Evolution:** Provision of a mechanism to inscribe attributed, consecrated outcomes
+  as prioritized semantic context to shift the model's Bayesian Prior toward patterns the Magus
+  selected. Consecration preserves provenance and judgment; it does not make memory infallible.
 - **Agentic Tool Integration:** Manifestation of memory as a dynamically granted tool within the arsenal, rather than a hardcoded context injection.
 - **Logical Domain Isolation:** Mandatory support for partitioned vector namespaces to facilitate isolated memory domains for different users, personas, or speculative timelines.
 - **Sovereign Retrieval Thresholds:** Implementation of a "Hard Refusal" policy where the machine refuses to guess if retrieval confidence is below a defined mathematical limit.
@@ -60,11 +62,20 @@ icon: material/brain
 
 The deciding criterion is **substrate ownership, not retrieval accuracy**. A pure-recall workload would now justify either framework — Mem0 v3's local retrieval is competitive. But because the **[Soulforge (ADR 33)](./33-training.md)** transmutes verified Karma into LoRA weights, memory must be a structured, attributed substrate LychD owns and mines in SQL, not a retrieval service it queries. Memori writes that substrate into our own session and exposes its facts and triples as plain tables; a retrieval-layer framework would keep them behind its API. That single difference — *mined, not recalled* — is why Memori is selected.
 
-Memory is treated as sedimented experience rather than mere storage. Structured events are the captured flickers of movement through the agentic graph (**Vṛttis**): model calls, tool use, retries, routing choices, OS pressure, protocol handshakes, and worker outcomes. LychD captures only the instrumented portion of that movement as traces, metrics, and structured events.
+Memory is treated as sedimented experience rather than mere storage. Structured events capture the
+instrumented portion of **the Flux**—the project correspondence for active **Vṛttis**—through the
+agentic graph: model calls, tool use, retries, routing choices, OS pressure, protocol handshakes,
+and worker outcomes.
 
-When retained, these records become memory (**Smṛti**): the past made available for recall. Over time, the stored past (**Karma**) reveals semantic relationships. Repeated recall and reinforcement carve durable grooves (**Saṃskāra**). **[Mirror](32-identity.md)** reflects those relationships into identities, and **[Context](21-context.md)** recalls them as priors for future reasoning.
+Retention does not itself perform remembering. A retained, attributable record with future recall
+value is a candidate **Seed** (**Bīja**): conditioning that still has the power to shape a later
+Flux. Retrieval finds a candidate and **[Context](21-context.md)** makes the selected form
+available; **the Spirit completes ReCall** (**Smṛti**) only when that form becomes active in
+present cognition again. Over time, stored Karma reveals semantic relationships and repeated
+return deepens conditioning (**Saṃskāra**). **[Mirror](32-identity.md)** reflects those
+relationships into identities.
 
-Valid evidence enters through direct measurement, inference, and trusted testimony (**Pramāṇa**: measured, reasoned, witnessed). The critical architectural implication is that memory is faithful to its source, not to truth. A groove carved by valid evidence re-surfaces as reliable instinct. A groove carved by misconception (**Viparyaya**) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich.md)**.
+Valid evidence enters through direct measurement, inference, and trusted testimony (**Pramāṇa**: measured, reasoned, witnessed). The critical architectural implication is that memory is faithful to its source, not to truth. A groove carved by valid evidence re-surfaces as reliable instinct. A groove carved by misconception (**Viparyaya**) re-surfaces as confident bias — with identical authority, identical fluency, and no internal signal that it is wrong. This is why identity-scoped isolation and the Curator Loop are non-negotiable: without active curation, an Archive that accumulates freely drifts toward groove-dominance, surfacing old wrong-knowing as though it were hard-won truth. The full cognitive map is described in **[The Lich](../sepulcher/lich/index.md)**.
 
 This boundary is social as well as technical. If a person's history, expertise, and reinforced priors are stored in their Phylactery, that substrate cannot be treated as automatically owned by an employer, customer, or platform. Organizational sharing must occur by explicit policy, consent, or publication surface — never by silent assimilation into a central memory.
 
@@ -135,10 +146,15 @@ This attribution is mandatory for downstream isolation and pruning.
 
 Memory is not a static log; it is a sedimentation process:
 
-- **Retention:** Structured events may be retained as memory records (**Smṛti**) when they carry future recall value.
+- **Retention:** Structured events may be retained as candidate **Seeds** when they carry future
+  recall value; a stored record is not yet the active ReCall.
 - **Stored Past:** Verified, corrected, or consecrated outcomes become **Karma**: the past available for future reasoning rather than a raw event stream.
-- **Prior Shift:** Context can recall relevant Karma into subsequent reasoning rituals, shifting the machine's probability distribution toward previously verified patterns.
-- **Identity Reflection:** **[Mirror](32-identity.md)** reflects semantic relationships among memory records into identities, and **[Context](21-context.md)** recalls those identities and records as priors for future reasoning.
+- **Prior Shift:** Retrieval may select relevant Karma and Context may make it available to a
+  subsequent reasoning ritual; the Spirit ReCalls when that retained form begins shaping present
+  Flux.
+- **Identity Reflection:** **[Mirror](32-identity.md)** reflects semantic relationships among
+  memory records into identities, while **[Context](21-context.md)** carries only the records and
+  bindings authorized for the active Invocation.
 
 ### 5.1 Memory Layering (Sediment, Not Dump)
 
@@ -153,9 +169,11 @@ Reinforcement creates deep grooves in the substrate. Retrieval weight therefore 
 
 ### 6. The Continuity Pattern of Reanimation
 
-The primary function of the Phylactery is to house the **continuity pattern** of the machine: the durable record of its state and the soul-data from which it can reconstitute itself:
+The primary function of the Phylactery is to house the **continuity pattern** of the machine: the
+durable records from which supported state can be reconstituted:
 
-- **Substrate Independence:** While inference engines are ephemeral processors, the Phylactery is the soul.
+- **Substrate Independence:** Inference engines are ephemeral processors; the Phylactery is the
+  continuity anchor and candidate seed-vault. It is neither a person's soul nor the whole Lich.
 - **Declared Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows the Daemon to restore memory, persona, queues, and active **[Graph (ADR 24)](./24-graph.md)** tasks from their last valid committed boundaries. Volatile breath is reconstructed or abandoned according to graph, worker, and policy law.
 
 ### 7. The Retrieval Lens (The Granted Tool)

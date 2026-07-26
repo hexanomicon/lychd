@@ -49,8 +49,10 @@ While a standard **[Agent](../../adr/20-agents.md)** produces one linear answer,
 
 ### A. Expansion (Branching)
 
-- The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread) as the engine of **Manas**, generating active **Vṛttis** to navigate the **Possibility Space**.
-- Each branch the Lich generates here is precisely **Vikalpa** — honest speculation: internally coherent, structurally plausible, and carrying no confirmed correspondence to reality. Vikalpa does not claim to be true. It exists to be judged. The Shadow Realm is the space where Vikalpa is held safely long enough for Viveka (the Dual-Gate) to determine which candidates have crossed into Pramāṇa and which are Viparyaya in disguise. See **[The Lich](../../sepulcher/lich.md)** for the full cognitive taxonomy.
+- The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread) as
+  the engine of **the Call**, opening movements within **the Flux** to navigate the **Possibility
+  Space**.
+- Each branch the Lich generates here is precisely **Vikalpa** — honest speculation: internally coherent, structurally plausible, and carrying no confirmed correspondence to reality. Vikalpa does not claim to be true. It exists to be judged. The Shadow Realm is the space where Vikalpa is held safely long enough for Viveka (the Dual-Gate) to determine which candidates have crossed into Pramāṇa and which are Viparyaya in disguise. See **[The Lich](../lich/index.md)** for the full cognitive taxonomy.
 - For open-ended strategy work, Shadow may first run cheap, text-only idea branches through isolated operational lenses. These seed branches widen the pool without creating filesystem debris; only review-selected candidates become physical timelines.
 - It spawns $N$ branch timelines for complex intents.
 - The Branch execution is physically performed in the `lychd-tomb` container.
@@ -92,7 +94,12 @@ Shadow is now a first-class extension and execution boundary.
 
 ### III. The Doctrine: Brain in the Vessel, Hands in the Tomb
 
-The Shadow is a **brainless handle** when referring to the container, but a **deliberative mind** when referring to the extension. To clarify: **The Tomb is a brainless executor.** It does not run agent logic, graph state machines, or LLM provider calls. It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them in the `nono` sandbox, and returns untrusted `stdout`/`stderr` plus declared artifacts. Safe planning, graph control, policy checks, and review packaging remain in the **[Vessel](../vessel/index.md)**; only unsafe hand-work enters Tomb.
+The **Shadow Realm** is speculative state and workspace topology, never a container. The **Tomb is
+a brainless executor.** It does not run agent logic, graph state machines, or LLM provider calls.
+It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them
+in the `nono` sandbox, and returns untrusted `stdout`/`stderr` plus declared artifacts. Safe
+planning, graph control, policy checks, and review packaging remain in the
+**[Vessel](../vessel/index.md)**; only unsafe hand-work enters Tomb.
 
 If code executing in the Tomb needs LLM reasoning, it routes back through the Vessel via the "Ask the Brain" protocol defined in **[Security (09)](../../adr/09-security.md)**. The Tomb never holds LLM credentials or communicates directly with providers.
 
@@ -128,5 +135,7 @@ This treats policy as selection/planning logic (high-level handles/specification
     Shadow is not for sub-second reflexes. It is deliberative construction labor and may run for minutes or hours.
 
 !!! tip "Feeding the Soulforge"
-    Do not discard failed timelines as waste. The act of selecting a White Truth is training signal for **[Soulforge](./soulforge.md)** and long-term alignment.
-    Explicitly marking a timeline as true is how the Magus teaches the machine what "correct" means in this domain.
+    Do not discard failed timelines as waste. Selecting a supported candidate—and preserving why
+    the others failed—is training signal for **[Soulforge](./soulforge.md)** and long-term
+    alignment. The Magus teaches preference and domain judgment through selection; factual claims
+    retain their own evidence burden.

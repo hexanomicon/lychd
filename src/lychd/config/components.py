@@ -14,21 +14,15 @@ from typing import TYPE_CHECKING, Any
 from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
-from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.contrib.sqlalchemy.plugins import AsyncSessionConfig, SQLAlchemyAsyncConfig
 from litestar.plugins.problem_details import ProblemDetailsConfig
 from litestar.plugins.sqlalchemy import AlembicAsyncConfig
-from litestar.template import TemplateConfig
 from litestar_saq import QueueConfig, SAQConfig
-from litestar_vite import ViteConfig
 
 from lychd.config.constants import (
     DB_MIGRATION_VERSION_TABLE,
-    PATH_HTML_TEMPLATE_DIR,
     PATH_MIGRATION_CONFIG,
     PATH_MIGRATION_DIR,
-    PATH_VITE_BUNDLE_DIR,
-    PATH_VITE_RESOURCE_DIR,
 )
 from lychd.config.logging import build_log_config, should_render_as_json
 from lychd.config.utils import read_secret_from_env_or_file
@@ -114,30 +108,12 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
     )
 
 
-def build_vite_config(settings: Settings) -> ViteConfig:
-    """Build the Vite asset-bundler config."""
-    return ViteConfig(
-        bundle_dir=PATH_VITE_BUNDLE_DIR,
-        resource_dir=PATH_VITE_RESOURCE_DIR,
-        use_server_lifespan=settings.server.web.vite.use_server_lifespan,
-        dev_mode=settings.server.web.vite.dev_mode,
-        hot_reload=settings.server.web.vite.hot_reload,
-        port=settings.server.web.vite.port,
-        host=settings.server.web.vite.host,
-    )
-
-
 def build_structlog_config(settings: Settings) -> StructlogConfig:
     """Build the Scrying (structlog) config."""
     return build_log_config(
         render_as_json=should_render_as_json(settings),
         settings=settings,
     )
-
-
-def build_template_config(settings: Settings) -> TemplateConfig[JinjaTemplateEngine]:  # noqa: ARG001
-    """Build the Jinja HTML template config for SSR + HTMX."""
-    return TemplateConfig(engine=JinjaTemplateEngine(directory=PATH_HTML_TEMPLATE_DIR))
 
 
 def build_cors_config(settings: Settings) -> CORSConfig:

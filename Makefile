@@ -16,10 +16,11 @@ MAKEFLAGS += --no-print-directory
 # Default output is compact for agent context. Use VERBOSE=1 when debugging:
 # it disables RTK filtering and makes pytest stream stdout plus long tracebacks
 # into the caller. Pytest log streaming is already owned by pyproject.toml.
-# RTK is optional; when it is missing, targets fall back to raw uv/npm/curl/grep.
+# RTK is optional; when it is missing, targets fall back to raw uv/curl/grep.
 N ?= auto
 VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
+PYTEST_BASETEMP ?= .cache/pytest
 RUFF_TARGETS ?= .
 FORMAT_TARGETS ?= .
 TYPECHECK_TARGETS ?=
@@ -40,8 +41,6 @@ ERR := $(UV) run $(RTK) err
 RUFF := $(UV) run $(RTK) ruff
 PYTEST := $(UV) run $(RTK) pytest
 TYPECHECK := $(UV) run --group typing $(RTK) err basedpyright
-NPM := $(RTK) npm
-NPM_ERR := $(RTK) err npm
 CURL := $(RTK) curl
 GREP := $(RTK) grep
 else
@@ -50,13 +49,13 @@ ERR :=
 RUFF := $(UV) run ruff
 PYTEST := $(UV) run pytest
 TYPECHECK := $(UV) run --group typing basedpyright
-NPM := npm
-NPM_ERR := npm
 CURL := curl
 GREP := grep
 endif
 
-PYTEST_ARGS := -n $(N)
+# Keep generated fixtures beneath the checkout so strict path-authority tests
+# do not inherit a foreign-owned `/tmp` from containers or coding sandboxes.
+PYTEST_ARGS := -n $(N) --basetemp $(PYTEST_BASETEMP)
 ifeq ($(VERBOSE),1)
 	PYTEST_ARGS += -s --tb=long
 endif
@@ -117,25 +116,36 @@ install: ## Install Python dependencies (Backend)
 	@echo "${OK} Ready to rock."
 
 # =============================================================================
-# 🕯️ Altar Frontend (TODO: expand as frontend pipeline matures)
+# 🕯️ Altar Frontend
 # =============================================================================
 
+NPM ?= npm
+
 .PHONY: frontend-install
-frontend-install: ## Install frontend dependencies for the Altar (TODO)
+frontend-install: ## Install the pinned Svelte Altar dependencies with npm
 	@echo "${INFO} Installing frontend dependencies..."
-	@$(NPM_ERR) ci
+	@$(NPM) ci --prefix frontend
 	@echo "${OK} Frontend dependencies installed."
 
 .PHONY: frontend-dev
-frontend-dev: ## Run the Altar frontend in watch mode (TODO)
+frontend-dev: ## Run the SvelteKit Altar in loopback-only development mode
 	@echo "${INFO} Starting frontend dev server..."
-	@$(NPM) run dev
+	@$(NPM) --prefix frontend run dev
 
 .PHONY: frontend-build
-frontend-build: ## Build frontend assets for the Altar (TODO)
+frontend-build: ## Generate contracts and compile the static Svelte Altar
 	@echo "${INFO} Building frontend assets..."
-	@$(NPM) run build
+	@$(UV) run python scripts/export_openapi.py
+	@$(NPM) --prefix frontend run generate:api
+	@$(NPM) --prefix frontend run build
 	@echo "${OK} Frontend build complete."
+
+.PHONY: frontend-check
+frontend-check: ## Type-check and test the Svelte Altar
+	@$(UV) run python scripts/export_openapi.py
+	@$(NPM) --prefix frontend run generate:api
+	@$(NPM) --prefix frontend run check
+	@$(NPM) --prefix frontend run test
 
 .PHONY: clean
 clean: ## Nuke all artifacts, caches, and build files
@@ -188,7 +198,7 @@ test-config: ## Run configurable/runes focused tests only
 .PHONY: coverage
 coverage: ## Run tests with coverage report
 	@echo "${INFO} Generating coverage..."
-	@$(PYTEST) --cov --cov-report=html:htmlcov --cov-report=term
+	@$(PYTEST) --basetemp $(PYTEST_BASETEMP) --cov --cov-report=html:htmlcov --cov-report=term
 	@echo "${OK} Report generated at htmlcov/index.html"
 
 .PHONY: check
@@ -236,7 +246,7 @@ build: ## Build the Python wheel
 # =============================================================================
 
 .PHONY: init
-init: ## Initialize LychD Codex
+init: ## Initialize the local LychD host layout
 	@$(ERR) $(UV) run lychd init
 
 .PHONY: bind

@@ -8,10 +8,10 @@ icon: material/transit-connection-variant
 **Purpose.** The **Nexus** is the Altar's local capability and transition board: the place where a
 Magus can witness how declared ability currently meets physical iron.
 
-**Current boundary.** The page projects cached capability state into Soulstone Coven cards and a
-Portal column, previews local transition plans, and can launch one managed transition through a
-process-local polling ticket. It is not yet a queue, lease, GPU, VRAM, topology, thermal, or
-hardware-pressure console. [State of the Work owns the exact delivery
+**Current boundary.** The Svelte page projects cached capability state into Soulstone Coven cards
+and a Portal column, previews local transition plans, and can launch one managed transition through
+a process-local event-stream ticket. It is not yet a queue, lease, GPU, VRAM, topology, thermal,
+or hardware-pressure console. [State of the Work owns the exact delivery
 boundary](../../state-of-the-work.md#nexus-transition-board).
 
 **Safety law.** Looking is not commanding. The board is a projection, not a readiness grant, and a
@@ -42,11 +42,10 @@ not a co-residency, eviction, or GPU-placement rule.
 
 A card currently shows:
 
-- its Coven label and runtime kind;
+- its Coven label;
 - each canonical capability key, shaped as `{animator}:{family}:{model_id}`;
-- a coarse visible state chip;
-- the first row's model id; and
-- whether the underlying service is dedicated or shared.
+- a stable visible state chip; and
+- a **scry** action for transition planning.
 
 Portals appear in one separate column. Their transition button is disabled because LychD can route
 to a Portal but cannot start, stop, or swap the remote provider. A Portal row is not proof of safe
@@ -58,15 +57,17 @@ it does not guarantee what a later run will receive.
 
 ## Read the state without guessing
 
-The current human chip is intentionally treated here as coarse evidence, because its text does not
-expose the full phase:
+The visible chip is a stable client vocabulary projected from the raw phase:
 
-- **active** may mean raw phase `warm` **or** `warming`;
-- **sleeping** may mean `activatable`, `cold`, `error`, or `unknown`.
+- `active` maps from `warm`;
+- `warming` maps from a transition in flight;
+- `awaited` maps from a dynamic capability that is activatable but not loaded;
+- `cold` covers unavailable non-dynamic or cold capability state; and
+- `fault` maps from a recorded error.
 
-Do not diagnose a transition or fault from that chip alone. The read-only
-`/orchestrator/status` JSON projection exposes each capability's raw `phase`, `warm`, `health`, and
-`reason`, plus the process-wide `mutation_containment` reason.
+It remains a projection. For diagnosis, the read-only `/orchestrator/status` JSON surface exposes
+each capability's raw `phase`, `warm`, `health`, and `reason`, plus the process-wide
+`mutation_containment` reason.
 
 The raw phase ladder is:
 
@@ -96,9 +97,8 @@ The displayed **metabolic cost** is currently only the number of selected evicti
 VRAM, load-time, energy, topology, or context-reconstruction estimate. The current resource-aware
 scheduling boundary is recorded in [State](../../state-of-the-work.md#resource-aware-scheduling).
 
-A dry run changes no runtime. In the current legacy surface, if the plan is not `NO_OP`,
-**Consecrate the Swap** submits a real HTMX transition at maximum operator priority. The canonical
-Svelte route will submit the equivalent typed API intent; neither transport changes its authority.
+A dry run changes no runtime. If the plan is not `NO_OP`, **Request transition** submits a typed
+JSON intent at maximum operator priority.
 The Orchestrator replans inside its serialized arbiter, closes admission for the affected
 Animators, waits for existing leases to release, applies the bounded transition, and converges on
 honest warmth or fail-closed containment. The preview is therefore an explanation of the observed
@@ -106,11 +106,11 @@ world, not a promise that its exact evict set is reserved.
 
 ## What a swap ticket proves
 
-The initiating page receives one self-polling ticket with one of three states:
+The initiating page receives one semantic event-stream ticket with one of three states:
 
 - `warming` — the ticket has not yet observed a terminal task result; the initial 202 response uses
-  this state even if the task settles before its first poll;
-- `settled` — the task returned and the board will refresh; or
+  this state;
+- `settled` — the task returned and the board refreshes; or
 - `failed` — the task raised or was cancelled.
 
 The ticket is process-local UI state. It has no durable owner, history, cancel action, timestamps,

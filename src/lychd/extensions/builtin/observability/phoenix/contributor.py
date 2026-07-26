@@ -27,7 +27,7 @@ class PhoenixQuadletContributor:
             return QuadletContribution()
         db_url = f"postgresql://{ctx.settings.server.database.user}@localhost:{CONTAINER_POSTGRES_PORT}/phoenix"
         return QuadletContribution(
-            containers=[
+            containers=(
                 QuadletContainer(
                     description="The Oculus (Arize Phoenix)",
                     image=phoenix.image,
@@ -39,10 +39,10 @@ class PhoenixQuadletContributor:
                     },
                     wants=["lychd-phylactery.service"],
                     after=["lychd-phylactery.service"],
-                )
-            ],
-            pod_ports=[
+                ),
+            ),
+            pod_ports=(
                 f"{phoenix.ui_port}:{CONTAINER_PHOENIX_UI_PORT}",
                 f"{phoenix.otlp_port}:{CONTAINER_PHOENIX_OTLP_PORT}",
-            ],
+            ),
         )

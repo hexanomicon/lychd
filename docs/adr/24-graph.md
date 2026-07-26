@@ -16,7 +16,9 @@ icon: material/graph-outline
 - **Commit-Ordered Cleanup:** A checkpoint remains recoverable until the authoritative run ledger has committed a terminal status; graph iteration or resume success may never delete it early.
 - **Functional Topology:** Adoption of functional "Steps" over class-based nodes to enable high-velocity development and reduce architectural boilerplate.
 - **Logical Parallelism:** Provision of primitives for **Broadcasting** (same data to multiple paths) and **Spreading** (fanning out elements of an iterable) to enable concurrent reasoning.
-- **Join and Reduce Synchronization:** Implementation of specialized synchronization points to aggregate and "collapse" parallel results back into a single, verified truth.
+- **Join and Reduce Synchronization:** Implementation of specialized synchronization points to
+  aggregate parallel results into one candidate or typed aggregate. A join determines graph shape;
+  it does not establish factual truth by consensus.
 - **Visual Scrying:** Automated generation of Mermaid diagrams to facilitate the visualization of internal logic and real-time state transitions for the Magus.
 
 ## Considered Options
@@ -137,13 +139,25 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 
-The architecture treats the mind as a multi-threaded organism, where graph traversals represent active fluctuations (**Vṛttis**):
+The architecture treats the mind as a multi-threaded organism, where graph traversals represent
+movements within **the Flux** (Vṛtti correspondence):
 
 - **Broadcasting:** Identical data is sent to multiple steps simultaneously (e.g., requesting three different **[Personas (ADR 32)](./32-identity.md)** to critique a single plan).
-- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g., analyzing 50 files in parallel). These parallel paths represent competing Vṛttis traversing the state space.
+- **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g.,
+  analyzing 50 files in parallel). These parallel paths represent competing movements traversing
+  the state space.
 - **Lens-Spreading:** For open-ended strategy work, Graph may spread the same intent across different operational lenses rather than different input items. The branches remain isolated during expansion and join only at a reducer or review step, preserving divergent range before convergence.
-- **Joins and Reducers:** Parallel results are synchronized using `g.join` nodes and `ReducerFunctions` to synthesize a single "White Truth." Join points perform determinative synthesis over competing paths.
-- **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the cortex utilizes **`ReduceFirstValue`**. This mechanism acts as the trigger for **Buddhi** taking over from **Manas**. Upon the discovery of a "White Truth" by the first successful parallel branch, the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning ritual ensures that VRAM is reclaimed and cognitive energy is focused exclusively on the winning timeline, preventing the machine from lingering on redundant solutions. In practice, `ReduceFirstValue` is the decisive convergent cut expressed as graph topology.
+- **Joins and Reducers:** Parallel results are synchronized using `g.join` nodes and
+  `ReducerFunctions` to synthesize one downstream candidate or aggregate. A join establishes graph
+  shape and convergence, not factual truth; the selected value remains answerable to its owning
+  evidence, identity, and authorization boundaries.
+- **The First-Value Race:** In scenarios where speed and resource conservation are paramount, the
+  cortex utilizes **`ReduceFirstValue`**. This mechanism is the moment **the Blade** takes over
+  from **the Call**. Upon the first branch satisfying the reducer's declared success predicate,
+  the system executes an immediate **Logical Banishment** of all sibling tasks. This pruning
+  ritual ensures that VRAM is reclaimed and cognitive energy is focused on the selected timeline.
+  The predicate proves only what it declares; `ReduceFirstValue` is a convergent cut expressed as
+  graph topology, not a universal Pramāṇa gate.
 
 ### 4. Deterministic Routing & The Halting Problem
 

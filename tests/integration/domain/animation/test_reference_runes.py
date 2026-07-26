@@ -7,6 +7,9 @@ from typing import Any
 
 import pytest
 
+from lychd.config.runes import ConfigLoader, RuneConfig
+from lychd.config.runes.registry import RuneRegistry
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
@@ -15,6 +18,9 @@ from lychd.domain.animation.schemas import (
     OpenAIPortalConfig,
     PortalConfig,
     SoulstoneConfig,
+)
+from lychd.domain.animation.services.declarations import (
+    compile_animator_declarations,
 )
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.extensions.builtin.animator import (
@@ -32,7 +38,7 @@ from lychd.lib.http import HttpJsonError
 
 _REF_RUNES = Path(__file__).resolve().parents[3] / "fixtures" / "runes"
 
-_SCHEMAS = [
+_SCHEMAS: list[type[RuneConfig]] = [
     AnimatorConfig,
     SoulstoneConfig,
     PortalConfig,
@@ -66,11 +72,15 @@ def isolate_reference_runes_from_live_host(
 
 
 def _reference_registry() -> AnimatorRegistry:
+    settings = get_settings()
     return AnimatorRegistry(
-        rune_schemas=_SCHEMAS,
+        settings=settings,
+        declarations=compile_animator_declarations(
+            settings=settings,
+            runes=RuneRegistry(ConfigLoader(_REF_RUNES).load_all(_SCHEMAS)),
+            core_reserved_ports={},
+        ),
         runtime_adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
-        runes_dir=_REF_RUNES,
-        reserved_ports={},
         portal_factories=[build_openai_portal],
     )
 

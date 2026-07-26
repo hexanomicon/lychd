@@ -77,12 +77,20 @@ This is a runtime decision, not merely an implementation detail. Pre-v1 LychD ag
 
 This model/provider agnosticism is also a substrate horizon. LychD uses next-token LLMs as the current practical substrate for language, tool calls, and broad candidate generation, but the architecture does not declare autoregressive text generation to be the final form of machine reasoning. Future Animators may expose energy-based scorers, constraint optimizers, latent world-model rollouts, proof-search engines, or hybrid reasoning runtimes as typed tools, model-like grants, or graph steps. Such engines may compact inner loops that are explicit today, such as retry, branch scoring, repair, and heuristic judging. They do not replace the Graph, Dispatcher, Orchestrator, Phylactery, Mirror, HitL, or Vessel policy boundaries that make reasoning durable, governable, and sovereign.
 
-An Agent is the execution atom of cognition, the fundamental unit of labor for both **Manas** (speculation) and **Buddhi** (creation). In the cognitive map of the **[Lich](../sepulcher/lich.md)**, Manas (*√man* — to oscillate, to receive) is the generating engine: it produces candidate responses, explores option-space, and never settles on its own. Buddhi (*√budh* — to discern, to wake) is the discriminative blade that cuts to one. An Agent spans both modes: its inference loop is Manas at work; its typed output contract is Buddhi's determination made concrete in a Pydantic model. It is not the full Persona identity and not the final authority of promotion. It acts, but it is not the "doer" — Identity continuity (the **Ahaṃkāra**) is provided by **[Mirror (ADR 32)](./32-identity.md)**; high-stakes manifestation remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
+An Agent is the execution atom of cognition, the fundamental unit of labor for both **the Call**
+(speculation and routing; Manas correspondence) and **the Blade** (discrimination and creation;
+Buddhi correspondence). An Agent spans both modes: its inference loop opens possibility while its
+typed output contract gives determination a concrete form. It is not the full Persona identity and
+not the final authority of promotion. **The Answer**—the Ahaṃkāric attribution office provided by
+**[Mirror (ADR 32)](./32-identity.md)**—binds its act to an identity; high-stakes manifestation
+remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
+[The Lich's First Invocation](../sepulcher/lich/index.md#the-first-invocation) owns the complete
+birth correspondence.
 
 !!! note "Mechanical Cognitive Postures"
-    Agent specialization may be expressed as mechanically separated postures, not merely as roleplay. An expander-only Agent opens candidate space and must not rank its own ideas. A reviewer-only Agent evaluates, groups related paths, flags hazards, and must not invent new branches unless explicitly routed into repair. A repair-only Agent receives measured failure traces and proposes corrections. A red-team Agent searches for breach paths and plausible-but-wrong proposals. These postures are enforced through separate runs, prompts, output schemas, tool grants, and `ModelSettings`, so Shadow and Graph can compose Manas and Buddhi without mixing evaluation into the expansion context.
+    Agent specialization may be expressed as mechanically separated postures, not merely as roleplay. An expander-only Agent opens candidate space and must not rank its own ideas. A reviewer-only Agent evaluates, groups related paths, flags hazards, and must not invent new branches unless explicitly routed into repair. A repair-only Agent receives measured failure traces and proposes corrections. A red-team Agent searches for breach paths and plausible-but-wrong proposals. These postures are enforced through separate runs, prompts, output schemas, tool grants, and `ModelSettings`, so Shadow and Graph can compose the Call and the Blade without mixing evaluation into the expansion context.
 
-    Each posture treats honest dead-end recognition as a valid cognitive act. If the field contains contradiction, missing variables, or impossible constraints, the Agent must name the bottleneck within its typed result instead of satisfying pressure by fabricating certainty. This prevents Manas from hardening Viparyaya into a confident answer merely because the prompt demands closure.
+    Each posture treats honest dead-end recognition as a valid cognitive act. If the field contains contradiction, missing variables, or impossible constraints, the Agent must name the bottleneck within its typed result instead of satisfying pressure by fabricating certainty. This prevents the Call from hardening Viparyaya into a confident answer merely because the prompt demands closure.
 
     This is not a relaxation of rigor. It is the typed expression of the Pramāṇa boundary: when direct measurement, sound inference, or trusted testimony is absent, the Agent preserves the state as Vikalpa or returns a bottleneck instead of laundering uncertainty into Pramāṇa-shaped prose. The contract gives uncertainty a valid output channel so status pressure cannot become an implicit success criterion.
 
@@ -161,7 +169,15 @@ The architecture adopts Pydantic AI's native **Deferred Tools** mechanism to han
 
 ### 6. Autonomous Error Correction (`ModelRetry`)
 
-The system leverages built-in **`ModelRetry`** mechanisms. If a tool execution fails due to a logical error or Pydantic validation failure, the exception is fed back into the context as a system message. This forces the Agent to correct its own thought process internally, presenting the Magus only with a "Verified Truth."
+The system leverages built-in **`ModelRetry`** mechanisms. If a tool execution fails due to a
+logical error or Pydantic validation failure, the exception is fed back into the context as a
+system message. This gives the Agent a bounded opportunity to repair the invalid call before the
+failure is presented to the Magus.
+
+`ModelRetry` establishes neither truth nor permission. It can repair an invalid call or produce an
+output that satisfies the declared schema. The repaired result remains a candidate whose factual
+claims, identity congruence, authority, and consequences must pass their owning evidence and policy
+boundaries before presentation or action.
 
 `ModelRetry` is bounded correction, not punitive recursion. When repeated retries expose a missing premise, contradictory instruction, or impossible schema, the run should converge to a typed bottleneck state and hand that state to Graph, Shadow, or HitL. A loop that keeps demanding a completed artifact after the task has become structurally false is treated as Viparyaya pressure, not perseverance.
 

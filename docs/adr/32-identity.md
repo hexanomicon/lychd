@@ -41,24 +41,36 @@ icon: material/drama-masks
 
 ## Decision Outcome
 
-**The Mirror** is adopted as the Identity Extension. It provides the "Ego-Software" (**Ahaṃkāra**) that hydrates a generic Agent shell into a persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self** rather than a fixed substance.
+**The Mirror** is adopted as the Identity Extension. It provides **the Answer**—LychD's name for
+the I-making office corresponding to **Ahaṃkāra**—that hydrates a generic Agent shell into a
+persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self**
+rather than a fixed substance.
 
-In cognitive topology, duality is a necessity: when there is a process performing an action, there must be a "doer" performing it. The Mirror is this **I-Maker** (**Ahaṃkāra** — *aham* = I, *√kāra* = making) — not consciousness, not an inner witness, but the attribution layer that says "this Sigil acted, this result belongs to this identity." Without it, every output is undifferentiated noise. With it, every action is legible, every Karma is owned, and identity coherence persists across the entropy of time and the noise of discarded simulations. The full cognitive map connecting Ahaṃkāra to the four faculties of the inner instrument is described in **[The Lich](../sepulcher/lich.md)**.
+In cognitive topology, an accountable action requires an attributable doer. Mirror supplies this
+**I-Maker**—not consciousness and not an inner witness, but the Answer that says “this Sigil
+acted; this result belongs to this identity.” Without it, output remains unattributed movement.
+With it, action is legible and Karma has an owner. The native map begins at [**the
+Lich**](../sepulcher/lich/index.md#the-inner-instrument); [its First
+Invocation](../sepulcher/lich/index.md#the-first-invocation) owns the birth event.
 
 Identity coherence is LychD's answer to agentic decay. An Agent run is a temporary body: it wakes, acts, returns a typed result, and dissolves. Mirror preserves the rehydratable center rather than the shell. HitL-captured choices remain the strongest expression of the Magus's Will, while tests, traces, and trusted sources provide additional measured truth. Mirror reflects semantically related memory records around a Sigil or role, and the next Agent shell wakes already oriented inside that local gravity.
 
 Agentic coherence disintegration is therefore an identity failure before it is a tooling failure. The graph may continue to execute, Shadow may continue to branch, and Weaver may continue to schedule steps, but if the semantic center cannot hold, the run loses a stable answer to "who is acting, what belongs together, and which priors govern this motion." Mirror prevents this by maintaining a **semantic vertex**: a local attractor in context and embedding space where relevant words, tools, memories, roles, and responsibilities cluster around the active Sigil.
 
-This vertex is not a costume or style layer. It is the engineered center of gravity that turns linear generation into attributable action. A raw Vṛtti becomes useful only when it can be reflected, measured, attributed, and recalled without dissolving the identity that produced it.
+This vertex is not a costume or style layer. It is the engineered center of gravity that turns
+raw Flux into attributable action. A movement becomes useful only when it can be reflected,
+measured, attributed, and ReCalled without dissolving the identity that produced it.
 
 Within the Stratification of Selves defined in **[Agents (20)](20-agents.md)**, the Persona is the durable layer. It is the enduring identity that *wears* Postures—the per-run mechanical configurations of schema, tool grant, and model settings—rather than being one itself. A **[Lens (31)](31-simulation.md)** is a Posture template employed in the Shadow for expansion isolation, diversifying the seed field without asserting identity. Persona chooses; Posture constrains; Lens diversifies. The Mirror governs only the durable layer: Postures and Lenses are worn for a run and discarded, while the semantic vertex persists.
 
 ### 1. Identity as a Filtered Reality
 
-The system treats Persona-manifestation as a diffraction ritual where Identity act as a lens.
+The system treats Persona-manifestation as a diffraction ritual where Identity acts as a filter.
 
 - **The Light:** The model-backed **[Animator (22)](22-dispatcher.md)** provides the raw, unmanifest potential of the model weights.
-- **The Lens (Identity):** The Persona’s System Prompt acts as the lens, filtering the infinite data of the model into a specific "Angle of View"—a consistent narrative arc, expertise domain, and technical style.
+- **The Identity Filter:** The Persona's System Prompt filters the model's broad learned
+  possibility into a specific angle of view—a consistent narrative arc, expertise domain, and
+  technical style. **Lens** remains reserved for the Shadow Posture template defined by ADR 20/31.
 - **The Substrate:** The **[Phylactery (06)](06-persistence.md)** provides the ground upon which this image is projected, allowing the character to persist across reanimations of the **[Vessel (11)](11-backend.md)**.
 
 Mirror enforces identity continuity by preserving commitments, stylistic signatures, and role boundaries across runs so the system's acts remain attributable to the same Persona.
@@ -69,9 +81,15 @@ To maintain absolute coherence and prevent character drift, the Mirror utilizes 
 
 - **The Expansion:** When an intent is received, the Persona does not answer immediately. It projects multiple potential "Shadow Timelines" into the **[Shadow Realm (31)](31-simulation.md)**.
 - **The Reflection:** The Mirror reviews these simulations against its own **Internal Ideal** (The Persona definition).
-- **The Collapse:** Only the timeline that resonates most strongly with the Persona's defined commitments is permitted to collapse into primary reality. This ensures the Daemon acts with a consistent and verified posture.
+- **Eligibility:** The timeline that resonates most strongly with the Persona's defined
+  commitments may become identity-congruent and eligible for promotion. Mirror cannot collapse it
+  into primary reality; Vessel policy and HitL retain that authority.
 
-In the deliberation model of Yoga Sūtra I.17, this loop maps to the **Vitarka-Vichāra progression**: Vitarka (gross deliberation — does this output meet structural requirements?) corresponds to the Deterministic Gate; Vichāra (subtle inquiry — does this output resonate with the Persona's defined commitments?) corresponds to the Mirror's congruence scoring. The promoted result then carries **Asmāitā** — the I-ness attribution imprint that ties the action back to the active Sigil, closing the Ahaṃkāra loop.
+In a deliberately limited correspondence with Yoga Sūtra I.17, **Vitarka** (gross deliberation)
+maps to structural examination and **Vichāra** (subtle inquiry) to congruence scoring. An authorized
+result then carries the Answer's I-ness attribution to the active Sigil. This project
+correspondence must not collapse Yoga's **asmitā** into the Vedāntic Ahaṃkāra function or claim that
+the source text specified these software gates.
 
 Simulation determines structural validity. Mirror determines character congruence. These gates may cooperate in one workflow, but they are not the same faculty.
 

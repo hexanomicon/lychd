@@ -103,7 +103,7 @@ class BindingLifecycleService:
         if self._planned and (
             owned.receipt_present != self._planned_receipt_present or owned.generation != self._planned_generation
         ):
-            msg = "Scribe ownership changed after destruction was planned; rerun destroy."
+            msg = "Scribe ownership changed after deletion was planned; rerun `lychd del`."
             raise LifecycleError(msg)
         plan = self._plan_owned(owned)
         plan.require_executable()
@@ -111,7 +111,7 @@ class BindingLifecycleService:
             return
         self._scribe.clear_owned_bindings(expected_generation=owned.generation)
         if self._systemctl is None:
-            msg = "systemctl disappeared before binding destruction."
+            msg = "systemctl disappeared before binding deletion."
             raise LifecycleError(msg)
         try:
             reload_result = self._runner.run(
@@ -119,11 +119,11 @@ class BindingLifecycleService:
                 timeout_s=_SYSTEMCTL_RELOAD_TIMEOUT_SECONDS,
             )
         except ProcessInvocationError as exc:
-            msg = "Owned binding sources were removed, but systemd daemon-reload failed; rerun destroy."
+            msg = "Owned binding sources were removed, but systemd daemon-reload failed; rerun `lychd del`."
             raise LifecycleError(msg) from exc
         if reload_result.returncode != 0:
             detail = reload_result.stderr.strip() or f"exit {reload_result.returncode}"
-            msg = f"Owned binding sources were removed, but systemd daemon-reload failed ({detail}); rerun destroy."
+            msg = f"Owned binding sources were removed, but systemd daemon-reload failed ({detail}); rerun `lychd del`."
             raise LifecycleError(msg)
 
         post_reload = self._scribe.inspect_owned_bindings()
@@ -167,7 +167,7 @@ class BindingLifecycleService:
                         LifecycleDisposition.BLOCKED,
                         LifecycleResourceKind.UNIT,
                         unit,
-                        "unit is active; stop it before destroy",
+                        "unit is active; stop it before `lychd del`",
                     )
                 )
                 continue
@@ -199,7 +199,7 @@ class BindingLifecycleService:
                         LifecycleDisposition.BLOCKED,
                         LifecycleResourceKind.UNIT,
                         unit,
-                        "unit is enabled; disable it before destroy",
+                        "unit is enabled; disable it before `lychd del`",
                     )
                 )
                 continue

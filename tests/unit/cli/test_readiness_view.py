@@ -51,6 +51,7 @@ def _report(*, site_state: ReadinessState) -> HostReadinessReport:
                 state=site_state,
                 detail="will be prepared" if site_state is ReadinessState.PLANNED else "prepared",
                 required_for_bind=True,
+                repairable_by_init=site_state is ReadinessState.PLANNED,
                 target=Path.home() / ".config" / "containers" / "systemd",
             ),
         )

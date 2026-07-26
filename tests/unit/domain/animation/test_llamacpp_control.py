@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from pydantic import AnyHttpUrl
 
+from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityPhase
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo
@@ -36,7 +37,11 @@ def _router_animator() -> LlamacppStone:
         router_query_model_id="qwen-next-80b",
         metadata={},
     )
-    quadlet = transmute_single_soulstone_quadlet(rune, runtime_planner=LlamaCppRuntimeAdapter())
+    quadlet = transmute_single_soulstone_quadlet(
+        rune,
+        runtime_planner=LlamaCppRuntimeAdapter(),
+        settings=get_settings(),
+    )
     return LlamacppStone(rune=rune, connector=connector, quadlet=quadlet)
 
 

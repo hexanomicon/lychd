@@ -109,7 +109,9 @@ The Weaver utilizes the functional primitives of the graph to enforce the rhythm
 
 - **Broadcasting:** Synchronizing the same input across multiple specialist agents for parallel analysis.
 - **Spreading:** Distributing a list of tasks across the background worker force.
-- **Joins:** Aggregating parallel results into a single "White Truth" before proceeding to the next station of the pattern.
+- **Joins:** Aggregating parallel results into one typed candidate or shared state before
+  proceeding to the next station. The join synchronizes topology; workflow evaluators and owning
+  gates establish what is supported, permitted, and promotable.
 - **Outcome Rubrics:** Carrying explicit success criteria through a multi-stage run so Riddle, Oculus, HitL, and the Magus can evaluate the final artifact against the same declared target.
 
 The Weaver governs tempo and synchronization of these movements; validity and selection remain the responsibility of the workflow's evaluators and approval gates.
