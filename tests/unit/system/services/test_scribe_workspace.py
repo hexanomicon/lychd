@@ -325,7 +325,7 @@ def test_cleanup_rename_failure_classifies_both_workspace_names(
         raise rename_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         rename_then_raise,
     )
 
@@ -561,7 +561,7 @@ def test_child_quarantine_failure_retains_verified_workspace_truth(
         )
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         rename_then_raise,
     )
 
@@ -682,7 +682,7 @@ def test_foreign_workspace_restore_failure_requires_captured_target_identity(
         raise restore_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         restore_then_raise,
     )
     restore = getattr(  # noqa: B009 - adversarial private boundary
@@ -753,7 +753,7 @@ def test_foreign_child_restore_failure_requires_captured_target_identity(
         raise restore_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         restore_then_raise,
     )
     restore = getattr(  # noqa: B009 - adversarial private boundary
@@ -848,7 +848,7 @@ def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
         raise primary
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         lose_source_and_create_unrelated,
     )
     restore = getattr(  # noqa: B009 - adversarial private boundary
@@ -904,7 +904,7 @@ def test_child_restore_source_disappearance_does_not_prove_target_identity(
         raise primary
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.workspace.rename_noreplace_at",
+        "lychd.system.services.scribe.workspace_settlement.rename_noreplace_at",
         lose_source_and_create_unrelated,
     )
     restore = getattr(  # noqa: B009 - adversarial private boundary

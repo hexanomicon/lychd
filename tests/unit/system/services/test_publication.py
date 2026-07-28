@@ -14,7 +14,9 @@ from lychd.system.descriptor_settlement import (
     find_settlement_outcome,
 )
 from lychd.system.interruptions import iter_exception_graph
-from lychd.system.services import publication as publication_module
+from lychd.system.services import file_publication_settlement as settlement_module
+from lychd.system.services import file_publication_transaction as transaction_module
+from lychd.system.services import publication as publication_facade
 from lychd.system.services.publication import (
     JournaledCreation,
     PublicationRollbackError,
@@ -24,6 +26,23 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from lychd.system.services.lifecycle import CreatedResources
+
+
+def test_publication_facade_preserves_provenance_and_os_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Extraction keeps public introspection and the existing fault-injection seam."""
+
+    def injected_fsync(_descriptor: int) -> None:
+        return
+
+    monkeypatch.setattr(publication_facade.os, "fsync", injected_fsync)
+
+    assert JournaledCreation.__module__ == "lychd.system.services.publication"
+    assert PublicationRollbackError.__module__ == "lychd.system.services.publication"
+    assert repr(JournaledCreation) == "<class 'lychd.system.services.publication.JournaledCreation'>"
+    assert transaction_module.os.fsync is injected_fsync
+    assert settlement_module.os.fsync is injected_fsync
 
 
 def test_text_publication_is_durable_journaled_and_stable_on_rerun(
@@ -41,7 +60,7 @@ def test_text_publication_is_durable_journaled_and_stable_on_rerun(
         real_fsync(descriptor)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.fsync",
+        "lychd.system.services.file_publication_transaction.os.fsync",
         observe_sync,
     )
     creation = JournaledCreation(on_created=journal.append)
@@ -102,7 +121,7 @@ def test_parent_close_signal_after_commit_preserves_journal_truth(
         return (*real_settle(descriptors), terminal)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.DescriptorSet.settle",
+        "lychd.system.services.file_publication_transaction.DescriptorSet.settle",
         settle_then_interrupt,
     )
 
@@ -131,7 +150,7 @@ def test_parent_close_failure_reports_committed_outcome(
         return (*real_settle(descriptors), close_failure)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.DescriptorSet.settle",
+        "lychd.system.services.file_publication_transaction.DescriptorSet.settle",
         settle_then_fail,
     )
 
@@ -180,7 +199,7 @@ def test_staging_primary_and_close_failure_remove_exact_private_name(
             raise close_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.publication._require_regular_file",
+        "lychd.system.services.file_publication_settlement.require_regular_file",
         fail_validation,
     )
     monkeypatch.setattr(
@@ -287,7 +306,7 @@ def test_staging_open_after_effect_retains_named_unverified_recovery(
         return real_open(path, flags, mode, dir_fd=dir_fd)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.open",
+        "lychd.system.services.file_publication_transaction.os.open",
         create_then_raise,
     )
 
@@ -335,7 +354,7 @@ def test_staging_open_error_preserves_indistinguishable_peer_candidate(
         return real_open(path, flags, mode, dir_fd=dir_fd)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.open",
+        "lychd.system.services.file_publication_transaction.os.open",
         race_then_fail,
     )
 
@@ -371,7 +390,7 @@ def test_pre_identity_staging_failure_retains_exact_recovery_path(
         raise metadata_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.fchmod",
+        "lychd.system.services.file_publication_transaction.os.fchmod",
         fail_before_identity,
     )
 
@@ -428,11 +447,11 @@ def test_named_staging_recovery_survives_parent_close_peer(
         return (*real_settle(descriptors), close_failure)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.open",
+        "lychd.system.services.file_publication_transaction.os.open",
         create_then_raise,
     )
     monkeypatch.setattr(
-        "lychd.system.services.publication.DescriptorSet.settle",
+        "lychd.system.services.file_publication_transaction.DescriptorSet.settle",
         settle_then_fail,
     )
 
@@ -491,7 +510,7 @@ def test_text_publication_race_loser_is_never_journaled(
         )
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.link",
+        "lychd.system.services.file_publication_transaction.os.link",
         install_peer_then_link,
     )
 
@@ -540,7 +559,7 @@ def test_publication_return_signal_rolls_back_exact_file_and_stays_native(
             raise terminal
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.link",
+        "lychd.system.services.file_publication_transaction.os.link",
         publish_then_interrupt,
     )
 
@@ -569,10 +588,7 @@ def test_link_after_effect_observation_failure_rolls_back_possible_public_exposu
     target = tmp_path / "lychd.toml"
     link_failure = OSError("link completed before adapter failure")
     real_link = os.link
-    real_observe = getattr(  # noqa: B009 - adversarial private boundary
-        publication_module,
-        "_observe_name",
-    )
+    real_observe = settlement_module.observe_name
     linked = False
     observation_failed = False
 
@@ -607,12 +623,12 @@ def test_link_after_effect_observation_failure_rolls_back_possible_public_exposu
         return real_observe(parent_fd=parent_fd, name=name)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.link",
+        "lychd.system.services.file_publication_transaction.os.link",
         link_then_raise,
     )
     monkeypatch.setattr(
-        publication_module,
-        "_observe_name",
+        settlement_module,
+        "observe_name",
         fail_first_classification,
     )
 
@@ -713,7 +729,7 @@ def test_rollback_rename_signal_settles_peers_then_preserves_original_terminal(
         raise terminal
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.rename_noreplace_at",
+        "lychd.system.services.file_publication_recovery.rename_noreplace_at",
         quarantine_then_interrupt,
     )
 
@@ -742,10 +758,7 @@ def test_quarantine_after_effect_observation_failure_retains_exact_random_name(
     journal_primary = ValueError("journal rejected")
     rename_failure = OSError("quarantine rename returned failure")
     real_rename = rename_noreplace_at
-    real_observe = getattr(  # noqa: B009 - adversarial private boundary
-        publication_module,
-        "_observe_name",
-    )
+    real_observe = settlement_module.observe_name
     detached = False
     observation_failed = False
 
@@ -782,12 +795,12 @@ def test_quarantine_after_effect_observation_failure_retains_exact_random_name(
         raise journal_primary
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.rename_noreplace_at",
+        "lychd.system.services.file_publication_recovery.rename_noreplace_at",
         detach_then_raise,
     )
     monkeypatch.setattr(
-        publication_module,
-        "_observe_name",
+        settlement_module,
+        "observe_name",
         fail_detachment_observation,
     )
 
@@ -877,7 +890,7 @@ def test_foreign_quarantine_restore_failure_classifies_both_names(
         raise journal_primary
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.rename_noreplace_at",
+        "lychd.system.services.file_publication_recovery.rename_noreplace_at",
         replace_quarantine_then_fail_restore,
     )
 
@@ -986,7 +999,7 @@ def test_foreign_restore_source_disappearance_requires_target_identity(
         raise journal_primary
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.rename_noreplace_at",
+        "lychd.system.services.file_publication_recovery.rename_noreplace_at",
         replace_then_lose_foreign_identity,
     )
 
@@ -1039,11 +1052,11 @@ def test_staging_unlink_terminal_after_effect_keeps_cleanup_priority(
             raise terminal
 
     monkeypatch.setattr(
-        "lychd.system.services.publication._require_regular_file",
+        "lychd.system.services.file_publication_settlement.require_regular_file",
         fail_validation,
     )
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.unlink",
+        "lychd.system.services.file_publication_settlement.os.unlink",
         unlink_then_interrupt,
     )
 
@@ -1092,7 +1105,7 @@ def test_quarantine_unlink_terminal_after_effect_keeps_journal_primary(
         raise journal_primary
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.unlink",
+        "lychd.system.services.file_publication_settlement.os.unlink",
         unlink_then_interrupt,
     )
 
