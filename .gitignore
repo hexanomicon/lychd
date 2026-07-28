@@ -68,6 +68,8 @@ media/
 .coverage
 .coverage.*
 .cache/
+/runs/test-tmp/
+/runs/uv_cache/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

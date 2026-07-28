@@ -6,16 +6,28 @@ icon: material/headphones
 # :material-headphones: 37. The Audio Echo
 
 !!! abstract "Context and Problem Statement"
-    A text-only Daemon remains blind to the physical resonance of the world. To exist as a pervasive companion, the Lich requires sensory organs capable of perceiving vibration (Speech-to-Text) and projecting resonance (Text-to-Speech). Standard HTTP request-response patterns introduce unacceptable latency. Furthermore, these heavy acoustic models require significant VRAM, creating a conflict with reasoning engines. A specialized pipeline is required to treat voice as a real-time stream while managing the physical costs of the sensory apparatus.
+    A text-only Daemon cannot participate in spoken interaction. Speech-to-Text (STT),
+    Text-to-Speech (TTS), and audio-capable chat introduce artifact custody, privacy, latency,
+    interruption, and hardware concerns that plain text does not. A record-and-send exchange is a
+    valid baseline; streaming is an optional latency profile whose additional session semantics
+    must be explicit.
 
 ## Requirements
 
-- **Atomic Coven Manifestation:** Mandatory grouping of STT (Ear), TTS (Voice), and Logic models into a single **[Coven (08)](08-containers.md)** to ensure hardware synchronicity.
-- **The Reflex Priority:** Incoming user audio must be treated as a **Reflex**, signaling the **[Orchestrator (23)](23-orchestrator.md)** to immediately preempt or pause background rituals to free VRAM.
+- **Independent Manifestation:** STT, TTS, audio-capable chat, VAD, codec, and reasoning providers
+  remain independently selectable. A Coven may group compatible local services but is not the
+  unit of semantic dispatch.
+- **Policy-Owned Priority:** Incoming audio has no intrinsic preemption authority. The admitting
+  Pattern and operator policy declare priority; the **[Orchestrator (23)](23-orchestrator.md)**
+  applies physical readiness law.
 - **The Stasis Trigger:** Integration with the **[Dispatcher (22)](22-dispatcher.md)**. If an Agent proactively invokes an audio tool (e.g., `speak_text`) while the hardware is "Cold," it must raise the `HardwareTransitionRequired` signal to freeze the graph via the **[Stasis Protocol (22)](22-dispatcher.md)**.
-- **Resonance Buffering:** Capability to queue synthesized audio if the client socket is disconnected, ensuring the Magus hears the "missed whispers" upon reconnection.
-- **Biometric Streaming Transport:** Provision of a real-time, bidirectional streaming protocol (WebSockets) to minimize the latency between perception and response.
-- **Portal/Soulstone Duality:** Support for both local audio services (**Soulstones**) for sovereignty and remote providers (**Portals**) for high-fidelity synthesis, managed transparently by the Dispatcher.
+- **Artifact Custody:** Captured and synthesized audio bytes remain immutable Reliquary artifacts;
+  graph checkpoints and run rows carry references and timeline state, not media blobs.
+- **Profiled Transport:** Record-and-send is the minimum profile. Half-duplex response streaming
+  and later full-duplex conversation require a bounded Resonance Session, speech timeline,
+  interruption law, and delivery receipts; WebSocket is one transport option.
+- **Portal/Soulstone Duality:** Local and remote providers share semantic family contracts, while
+  Ward policy, classification, consent, economics, and readiness remain provider-specific.
 
 ## Considered Options
 
@@ -24,86 +36,108 @@ icon: material/headphones
 
     - **Cons:** **Privacy Ceiling.** Browser-based STT often routes data through corporate clouds, violating the **[Iron Pact (00)](00-license.md)**.
 
-!!! failure "Option 2: Asynchronous File Processing"
-    Treating audio as a standard file attachment.
+!!! success "Option 2: Record and Send"
+    Treating a bounded utterance as an immutable artifact, then returning text or synthesized audio.
 
-    - **Cons:** **The Walkie-Talkie Latency.** The multi-second delay destroys the "Flow of Consciousness."
+    - **Pros:** Small transport surface, explicit capture boundary, simple retries, and a viable
+      first Android/Web client.
+    - **Cons:** Turn-taking is less fluid than a mature streaming session.
 
-!!! success "Option 3: The Audio Coven (Stateful Resonance)"
-    Deploying specialized audio containers as a dynamically activated operational state, exposed via a real-time WebSocket pipeline and managed via the Stasis Protocol.
+!!! success "Option 3: Profiled Resonance"
+    Extending the baseline with independent speech providers and optional half/full-duplex
+    transports managed through the ordinary Dispatcher, Stasis, and Orchestrator laws.
 
     - **Pros:**
         - **Telepresence:** Collapses the perception-cognition-action loop to sub-second latencies.
-        - **Hardware Safety:** The Orchestrator ensures VRAM-heavy audio models are only resident when a vocal communion is active.
-        - **Delivery Assurance:** Uses the Resonance Buffer to prevent lost speech during connectivity drops.
+        - **Hardware Safety:** The Orchestrator readies only the selected managed providers and
+          declared dependencies.
+        - **Delivery Honesty:** Artifact receipts and timeline state distinguish generated,
+          delivered, played, interrupted, and expired audio.
 
 ## Decision Outcome
 
-**The Echo** is adopted as the target Audio Extension. Dedicated providers use `stt` and `tts`
-families; `audio` remains an input/output modality, not a capability family.
+**The Echo** is adopted as the temporal speech-lifecycle Extension Domain. Dedicated providers use
+`stt` and `tts` families; `audio` remains an input/output modality, not a capability family. Echo
+does not require an atomic Audio Coven or one mandatory transport.
 
 !!! warning "Current audio floor is schema and admission, not a stream"
     The implemented core can declare and filter `audio` modality metadata on capabilities and can
     carry an immutable audio `ArtifactRef` in an `Intent`. It does not yet materialize artifact
-    bytes into Pydantic AI input, propagate them through the Bridge graph, expose a bidirectional
-    audio WebSocket, persist a resonance buffer, register working STT/TTS adapters, or generate an
-    Audio Coven. The built-in audio package is a placeholder. Sections below specify the organ that
-    may consume the current schema seam; they are not an available voice interface.
+    bytes into Pydantic AI input, propagate them through the Bridge graph, expose an audio
+    transport, persist a speech timeline, or register working STT/TTS adapters. No concrete Echo
+    package exists. Sections below specify the Domain that may consume the current schema seam;
+    they are not an available voice interface.
 
 !!! note "The Two-Axis Law: No Audio Family"
-    A **family** names a routable service kind; **modalities** name what a capability admits. There is **no `audio` family**. A chat model that hears is not a distinct family member: it is a **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying `audio ∈ modalities_in`, satisfying spoken input in place. The dedicated audio families remain `stt` (the Ear) and `tts` (the Voice) — routable service kinds for transcription and synthesis, conscripting the Audio Coven only when a dedicated provider is required.
+    A **family** names a routable service kind; **modalities** name what a capability admits. There
+    is **no `audio` family**. A chat model that hears is not a distinct family member: it is a
+    **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying
+    `audio ∈ modalities_in`, satisfying spoken input in place. The dedicated audio families remain
+    `stt` (the Ear) and `tts` (the Voice)—routable service kinds for transcription and synthesis
+    that can be selected independently.
 
-### 1. The Planned Audio Coven (Body)
+### 1. Planned Resonance Manifestations
 
-The Echo will manifest as a collection of **[Quadlet services (08)](08-containers.md)**:
+Echo may manifest through independently registered capabilities. Local providers may be rendered
+as **[Quadlet services (08)](08-containers.md)**:
 
 - **The Ear (`stt.container`):** A high-performance Speech-to-Text service (e.g., Faster-Whisper).
 - **The Voice (`tts.container`):** A streaming Text-to-Speech service (e.g., Piper).
-- **The Mind:** A lower-tier Reasoning Soulstone (e.g., 1B-8B model) optimized for conversational reflexes.
+- **Audio-capable chat:** A `chat` provider declaring `audio` input or output.
+- **The Listener:** Client/server VAD, codec, and capture controls.
+- **The Mind:** The ordinary selected reasoning provider; Echo requires no special voice mind.
 
-### 2. The Planned Resonance Pipeline (Buffer & Stream)
+### 2. The Planned Resonance Pipeline
 
-The Echo will establish a persistent WebSocket loop:
+The minimum profile establishes a bounded, recoverable exchange:
 
-- **Streaming:** When connected, audio tokens are piped instantly from Agent to TTS to Client.
-- **The Resonance Buffer:** If the WebSocket is closed or unstable, the synthesized audio bytes are not discarded. They are serialized into the **[Phylactery Queue (06)](06-persistence.md)**.
-- **Playback:** Upon reconnection, the Echo flushes the buffer, delivering the "missed whispers" in sequence before resuming live streaming.
+- **Capture and admit:** A client records one bounded utterance and places it under immutable
+  artifact custody with digest, media type, duration, classification, and retention.
+- **Perceive and think:** One eligible Ear or audio-capable chat provider produces attributed input
+  for an ordinary Agent step.
+- **Respond:** Text may be returned directly or granted to one Voice provider.
+- **Deliver:** A Resonance Session records generated, delivered, played, interrupted, expired, and
+  retryable states. Media bytes remain artifact references.
+- **Stream later:** Half-duplex output streaming may reduce time-to-first-audio. Full duplex adds
+  VAD, barge-in, echo cancellation, and explicit turn/interruption semantics.
 
-### 3. The Dual-Mode Orchestration
+### 3. Orchestration Without Privilege Inflation
 
-The Echo interacts with the **[Orchestrator (23)](23-orchestrator.md)** in two distinct ways:
+User-initiated and Agent-initiated speech use the same law:
 
-#### Mode A: The Reflex (User Initiated)
-
-When the Magus speaks:
-
-1. The **Vessel** detects the handshake.
-2. It sends a **High-Priority Signal** to the Orchestrator.
-3. The Orchestrator **Preempts** background jobs and manifests the `audio.coven`.
-
-#### Mode B: The Tool (Agent Initiated)
-
-When a text-based Agent decides to speak:
-
-1. The Agent calls `generate_speech(text)`.
-2. The **[Dispatcher (22)](22-dispatcher.md)** checks the target service.
-3. If **COLD**: It triggers the **Stasis Protocol**. The Agent freezes. The Orchestrator performs the swap. The Agent wakes up and speaks. The swap holds the run in **Live Stasis**; any checkpoint taken is opportunistic crash insurance, not a Reanimation boundary — the graph loop stays resident and resumes itself.
+1. The Pattern admits a bounded speech operation with authority, priority, modality, and
+   classification.
+2. The **[Dispatcher (22)](22-dispatcher.md)** selects the exact `stt`, `tts`, or `chat`
+   capability.
+3. If a selected managed provider is non-`WARM`, the ordinary Stasis handshake asks the
+   Orchestrator to converge it. Echo cannot preempt work or revoke leases.
+4. A grant is scoped to one step or Resonance Session. It does not imply continued microphone
+   access.
 
 ### 4. Sensory Dispatching (Portals & Soulstones)
 
 The Echo utilizes the **[Dispatcher (22)](22-dispatcher.md)** to resolve capabilities:
 
-- **Soulstones:** Local, free, private (Whisper/Piper).
-- **Portals:** Remote, high-fidelity, paid (Deepgram/ElevenLabs).
-- **Abstraction:** To the Agent, the `stt` and `tts` capabilities are identical regardless of the provider.
+- **Soulstones:** Local services may reduce egress but still require explicit artifact and capture
+  policy.
+- **Portals:** Remote services require classification eligibility, Ward egress policy, consent
+  where required, and an economic budget.
+- **Abstraction:** Semantic request/response contracts are stable; privacy, latency, readiness,
+  cost, and support claims remain provider-specific.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Conversational Immersion:** The streaming pipeline collapses the sensory gap.
-    - **Delivery Guarantee:** The Resonance Buffer ensures no words are lost to network jitter.
-    - **Logical Safety:** The Stasis Protocol prevents the Agent from crashing if it tries to speak while the audio engine is cold.
+    - **Progressive Immersion:** The record-and-send floor can grow into streaming without
+      replacing the semantic contract.
+    - **Delivery Evidence:** Session receipts state what was generated and delivered without
+      promising that a human heard it.
+    - **Truthful Readiness:** The Stasis Protocol represents a non-ready managed provider without
+      pretending that the speech operation already completed.
 
 !!! failure "Negative"
-    - **VRAM Hunger:** Running STT, TTS, and reasoning models simultaneously can challenge mid-range GPUs.
-    - **Storage Pressure:** A large Resonance Buffer of unconsumed audio can bloat the database if the user remains offline for extended periods.
+    - **VRAM Hunger:** Some combinations of STT, TTS, and reasoning providers can challenge
+      mid-range GPUs.
+    - **Storage Pressure:** Retained audio artifacts require explicit expiry and quota policy.
+    - **Session Complexity:** Full-duplex speech adds interruption and timing races absent from
+      record-and-send.

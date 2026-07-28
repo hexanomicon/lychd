@@ -1,24 +1,21 @@
-"""Switch policies — the honest eviction solver, extracted from the manager (wave3 §5.1).
-
-O1 is a behavior-preserving extraction of the keel's manager-private honest solver
-(`_AnimatorRecord` + `_solve_transition`) into a reusable, lease-aware policy surface.
-The eviction law selects every other DEDICATED, non-persistent-resident,
-ACTIVE animator. Leased evictees remain in the plan so the manager can close their
-admission gate and drain them before eviction.
-"""
+"""Switch policies over registry truth and the compiled conflict topology."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+
+from lychd.domain.animation.conflicts import build_conflict_topology
 
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilitySpec, CapabilityState
+    from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
     from lychd.domain.cortex.leases import LeaseLedger
 
 __all__ = [
     "SWITCH_POLICIES",
     "AnimatorRecord",
+    "DeclaredConflictPolicy",
     "EvictIdlePolicy",
     "RegistryView",
     "SwitchDecision",
@@ -51,6 +48,15 @@ class AnimatorRecord:
     persistent_resident: bool  # rune.concurrency.persistent_resident
     active: bool  # any capability reports its owning runtime unit started
     leased: bool  # LeaseLedger.active(animator_name=name) != []
+
+
+@dataclass(frozen=True, slots=True)
+class _ConflictProjection:
+    """Registry declaration normalized to the topology compiler's exact slice."""
+
+    name: str
+    groups: list[str]
+    concurrency: ConcurrencyIntent
 
 
 def animator_records(view: RegistryView, leases: LeaseLedger) -> list[AnimatorRecord]:
@@ -108,30 +114,42 @@ class SwitchPolicy(Protocol):
     def solve(self, target: CapabilitySpec, view: RegistryView, leases: LeaseLedger) -> SwitchDecision: ...
 
 
-class EvictIdlePolicy:
-    """Keel ``_solve_transition`` semantics over :class:`AnimatorRecord`.
+class DeclaredConflictPolicy:
+    """Evict only active exact neighbors from the declared conflict graph.
 
-    Target's animator already active → no-op decision; else evict every dedicated,
-    non-persistent-resident, active animator and launch the target. Live leases do
-    not spare an evictee; they make execution wait for an honest lease drain.
+    Omitted conflict domains preserve the former conservative global switching
+    pool, while explicit empty domains allow coexistence. Live leases do not
+    spare a neighbor; the manager closes admission and drains the exact selected
+    set before systemd enforces the same graph.
     """
 
-    name = "evict-idle"
+    name = "declared-conflicts"
 
     def solve(self, target: CapabilitySpec, view: RegistryView, leases: LeaseLedger) -> SwitchDecision:
-        """Select the eviction set honestly over the lease-aware animator records."""
+        """Select the exact active neighbor closure for the requested Animator."""
         records = animator_records(view, leases)
         if any(record.name == target.animator_name and record.active for record in records):
             return SwitchDecision(evict_animator_names=[], launch_animator_names=[], metabolic_cost=0.0)
 
-        evictees = sorted(
-            record.name
-            for record in records
-            if record.dedicated
-            and not record.persistent_resident
-            and record.active
-            and record.name != target.animator_name
-        )
+        runes: list[_ConflictProjection] = []
+        seen: set[str] = set()
+        for spec in view.list_capabilities():
+            if spec.animator_name in seen:
+                continue
+            rune = view.get_soulstone_rune(spec.animator_name)
+            if rune is None:
+                continue
+            seen.add(spec.animator_name)
+            runes.append(
+                _ConflictProjection(
+                    name=spec.animator_name,
+                    groups=list(getattr(rune, "groups", ())),
+                    concurrency=cast("ConcurrencyIntent", rune.concurrency),
+                )
+            )
+        topology = build_conflict_topology(runes)
+        neighbors = set(topology.neighbors_for(target.animator_name))
+        evictees = sorted(record.name for record in records if record.active and record.name in neighbors)
         return SwitchDecision(
             evict_animator_names=evictees,
             launch_animator_names=[target.animator_name],
@@ -139,7 +157,20 @@ class EvictIdlePolicy:
         )
 
 
-SWITCH_POLICIES: dict[str, SwitchPolicy] = {"evict-idle": EvictIdlePolicy()}
+class EvictIdlePolicy(DeclaredConflictPolicy):
+    """Compatibility class for the former ``evict-idle`` configuration name.
+
+    It inherits the declared-conflict solver exactly; it must never revive the
+    former all-active implementation independently of the generated systemd
+    graph.
+    """
+
+
+_DECLARED_CONFLICT_POLICY = DeclaredConflictPolicy()
+SWITCH_POLICIES: dict[str, SwitchPolicy] = {
+    "declared-conflicts": _DECLARED_CONFLICT_POLICY,
+    "evict-idle": _DECLARED_CONFLICT_POLICY,
+}
 
 
 def resolve_switch_policy(name: str) -> SwitchPolicy:

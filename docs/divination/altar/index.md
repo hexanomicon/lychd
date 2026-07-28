@@ -8,8 +8,8 @@ icon: fontawesome/solid/dungeon
 The **Altar** is LychD's local web surface. Its accepted architecture is a static Svelte 5/SvelteKit
 client projecting generated Litestar API and semantic event truth. Litestar serves its compiled
 fallback and remains the sole production authority. Its conversational instrument is the
-**Bridge**. The navigation also names Nexus, Loom, Scrying, Reliquary, and Bindings, but a visible
-door is not proof that the instrument behind it is complete. [State of the
+**[Bridge](./bridge.md)**. The Altar names four focused instruments, but a visible door is not
+proof that the instrument behind it is complete. [State of the
 Work](../../state-of-the-work.md#altar-and-observability) owns what can answer now.
 
 !!! danger "Temporary local-browser boundary"
@@ -20,52 +20,67 @@ Work](../../state-of-the-work.md#altar-and-observability) owns what can answer n
     boundary](../../state-of-the-work.md#local-browser-bind-boundary) and the full warning in [The
     Awakening](../../summoning.md#the-awakening).
 
-> _“At the high place, Intent is offered, truth is witnessed, and judgment returns to the hands
-> that must bear it.”_
+> _“Intent enters through the Altar. Evidence returns. Authority stays with the hands that bear
+> the consequence.”_
 
 The glass is a projection, never a second mind or source of authority. Live execution remains in
 the [Vessel](../../sepulcher/vessel/index.md) and committed truth in the
 [Phylactery](../../sepulcher/phylactery/index.md); where a supported flow asks, the Altar carries
 one typed consent or refusal intent back into that body. Svelte owns presentation mechanics only.
 
+## One Altar, Four Instruments
+
+The intended operator loop is:
+
+- **Bridge** speaks: Intent, conversation, consent, and result return.
+- **[Orb](./orb.md)** witnesses execution: first one selected Run, then a bounded multi-run field
+  only after its evidence model earns that scale. **Scrying** is the act of using the Orb.
+- **[Nexus](./nexus.md)** explains the iron: Animators, capabilities, readiness, leases, queues,
+  and explicit physical transitions.
+- **[Loom](./loom.md)** maps possibility: exact Weaver Pattern revisions today, and later
+  Portfolio navigation and inert drafts.
+
+Artifact references remain contextual to the Bridge turn, Pattern, or evidence record that cites
+them until custody and retention become a real operator lifecycle. Nexus may show
+orchestration-relevant declarations beside observed hardware state, but Configuration remains the
+authority for those declarations. Neither contextual projection creates a hidden Reliquary or
+Bindings subsystem inside Nexus.
+
+Each instrument may use a graph where relationships are the clearest answer. They do not share one
+universal graph or domain model. A Pattern edge in Loom says what a score permits; an evidence edge
+in the Orb says what a record supports; a physical edge in Nexus says what the Orchestrator
+reported. The renderer never erases those differences.
+
 ## The doors that answer now
 
-Three instruments have useful but bounded implementations:
+All four instruments have useful but bounded implementations:
 
-- **Bridge — conversation and consent.** It supports local sessions, a New Séance action, message
+- **[Bridge](./bridge.md) — conversation and consent.** It supports local sessions, a New Séance action, message
   submission, pending consent cards and decisions, session inspection, and per-run process-local
   event streaming. It does not provide durable cross-process delivery, a general multi-approval
   round, or a continuous feed of the Lich's thoughts. [Current Bridge
   boundary](../../state-of-the-work.md#bridge-surface)
-- **[Nexus](./nexus.md) — orchestration projection.** It renders Coven state, transition plans,
-  process-local swap tickets, and settled outcomes. It is not yet a general resource, queue, VRAM,
-  or hardware-pressure dashboard. [Current Nexus
+- **[Orb](./orb.md) — selected-run evidence.** It renders one exact Run as ordered retained
+  evidence with explicit capture limits and gaps, and follows Pattern and transition references
+  into Loom and Nexus. It is not a live or durable native Oculus, run index, or multi-run field.
+  [Current Orb boundary](../../state-of-the-work.md#orb-instrument)
+- **[Nexus](./nexus.md) — orchestration projection.** It renders observed Coven state, non-binding
+  transition plans, process-local transition correlation, swap tickets, and settled outcomes. It
+  is not yet a general resource, queue, VRAM, or hardware-pressure dashboard. [Current Nexus
   boundary](../../state-of-the-work.md#nexus-transition-board)
-- **[Loom](./loom.md) — workflow projection.** It renders diagrams from the fixed workflow registry
-  and exposes their plain-text Mermaid source. It is a viewer, not a general Weaver editor or
-  workflow-mutation surface. [Current Loom
+- **[Loom](./loom.md) — workflow projection.** It renders an exact immutable Pattern revision as a
+  semantic score with checkpoint schema and digest; Mermaid remains an optional diagram lens. It
+  is a viewer, not a general Weaver editor or workflow-mutation surface. [Current Loom
   boundary](../../state-of-the-work.md#loom-workflow-views)
-
-## The doors still being shaped
-
-These routes preserve the intended instrument map, but each currently opens an honestly marked
-unbuilt shell:
-
-- **[Scrying](./scrying.md)** has no useful trace query, timeline, health read model, or native
-  observability backend yet. [Current Scrying
-  boundary](../../state-of-the-work.md#scrying-instrument)
-- **[Reliquary](./reliquary.md)** has no artifact upload, byte custody, authorized retrieval,
-  retention, or provenance backend yet. [Current Reliquary
-  boundary](../../state-of-the-work.md#reliquary-instrument)
-- **[Bindings](./bindings.md)** has no useful binding inventory, grant control, lease control, or
-  mutation backend yet. [Current Bindings
-  boundary](../../state-of-the-work.md#bindings-instrument)
+Artifact custody, retention, retrieval, and broad configuration editing remain outside the current
+Altar. Contextual references and declarations do not claim those futures are delivered.
 
 ## The observing boundary
 
-The native **Oculus** is LychD's intended evidence plane and future Altar-facing observability
-surface. It does not yet provide native ingestion, a durable query/read model, retention, or a
-working Svelte Scrying projection. [Current Oculus
+The native **Oculus** is LychD's intended durable evidence plane. It does not yet provide native
+ingestion, a durable query/read model, or retention. The working Svelte Orb projection is a
+bounded selected-Run view over the records available now; it is not an Oculus implementation.
+[Current Oculus
 boundary](../../state-of-the-work.md#native-oculus)
 
 **Phoenix** remains an optional Arize-owned external Eye. LychD does not require it for Oculus and
@@ -87,3 +102,18 @@ or first life is incomplete, close it and return to [The
 Awakening](../../summoning.md#the-awakening); do not weaken containment to make it work.
 
 > _Enter by the **Bridge**. Offer one bounded Intent. Witness what the body returns._
+
+## Review one Run across the Altar
+
+1. In Bridge, create a séance and offer one bounded Intent.
+2. On its result, confirm the Run identity, Pattern revision, and canonical status, then choose
+   **Look into the Orb**.
+3. In the Orb, confirm the Run id, capture class, loaded boundary, gaps, and omissions. Select an
+   event to give it a stable URL.
+4. Open **Exact Pattern** only when available. Loom proves the declared score, not execution.
+5. Open a Nexus transition only when the selected evidence supplies exact correlation. Compare a
+   capability's `checked` time with the Nexus snapshot time.
+6. Treat **Preview** as non-binding. **Request transition** is a real maximum-priority lifecycle
+   mutation.
+7. Record that automated checks are not yet a production-factory operator-browser acceptance
+   receipt.

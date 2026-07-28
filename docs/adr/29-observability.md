@@ -6,142 +6,227 @@ icon: material/telescope
 # :material-telescope: 29. Observability: The Oculus
 
 !!! abstract "Context and Problem Statement"
-    The operation of an autonomous cognitive engine bridges the deterministic world of infrastructure and the probabilistic world of AI agents. Maintaining operational coherence requires instrumented perception of both physical health (VRAM pressure, thermal limits) and cognitive drift (hallucinations, logical loops). Traditional monitoring tools capture network requests but remain blind to the "Thought Trace"—the causal link from prompt to tool to output. Observability is the instrumented perception layer of the agentic runtime: structured evidence for diagnosis, routing, evaluation, and repair without mandatory overhead on the core runtime.
+    An agentic runtime crosses deterministic infrastructure, probabilistic model behavior,
+    asynchronous workflow, human consent, and external effects. Diagnosis requires structured
+    evidence that can correlate those layers without turning telemetry into authority, raw content
+    into a default payload, or a visual trace into hidden thought. LychD needs a native evidence
+    office and Altar projection that remain useful without requiring a second application stack.
 
 ## Requirements
 
-- **Extension Assimilation:** Implementation as an optional coupled extension; the Core kernel must not possess hard dependencies on observability SDKs, ensuring zero overhead for users who do not summon the Oculus.
-- **Thought Traceability:** Mandatory visualization of the full execution tree for every **[Agent
-  (ADR 20)](./20-agents.md)** run. It must capture structured events: the observable portion of
-  **the Flux** through the agentic graph, including tool arguments, validation retries, and the raw
-  request/response exchanges with providers.
-- **Dual-Layer Scrying:** Separation of concerns into the "Mind" (Agent reasoning traces) and the "Body" (Host hardware and container status).
-- **Runtime Evidence:** Traces, metrics, and structured events must remain available to the runtime as evidence for diagnosis, routing, evaluation, and repair while remaining readable to the Magus.
-- **Physical Integration:** Mirroring of critical hardware metrics (GPU memory pressure) into the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to inform scheduling decisions.
-- **Privacy Enforcement:** Integration with the global `LYCHD_SECURE_MODE` to redact sensitive prompt and completion content from telemetry before it leaves the application memory.
-- **Protocol Adherence:** Compliance with OpenTelemetry (OTLP) standards to ensure interoperability with external collectors if the Magus chooses a cloud backend.
-- **A2A Tracing:** Need to support Distributed Tracing, propagating W3C Trace Context headers across A2A handshakes to visualize multi-node cognitive rituals - read the `traceparent` headers from incoming A2A requests.
+- **Owning-Office Truth:** The office that performs an act owns its authoritative record. Oculus
+  owns bounded observations, correlation, and rebuildable read models; it never owns the run,
+  consent, grant, transition, artifact, verdict, or hardware act it depicts.
+- **Bounded Traceability:** Stable identities connect Intent, Pattern revision, run, lane, step,
+  tool call, consent, capability grant, lease, transition, peer task, artifact, evaluation, and
+  outcome where those records exist. Missing relations remain explicit gaps.
+- **Privacy Before Capture:** Payloads are allowlisted, classified, bounded, and redacted before
+  serialization. Prompts, completions, arguments, results, media, headers, secrets, and identity
+  material are never mandatory trace content.
+- **Rebuildable Projection:** A snapshot plus backfill and live tail can reconstruct the supported
+  view after reconnect. Overload, retention loss, sampling, redaction, and stale observations
+  produce visible gaps rather than inferred continuity.
+- **Selected-Run First:** The first useful Orb view follows one authorized Run. A later
+  multi-run attention field must remain bounded by explicit time, status, Pattern, authorization,
+  and cardinality limits.
+- **Mind and Body Without Merger:** Agent activity and physical resource state may be correlated
+  while keeping their sources, clocks, freshness, authority, and uncertainty distinct.
+- **Fresh Physical Authority:** The Orchestrator consumes fresh node-local resource truth through
+  its owning contract. Oculus may retain the same observation for explanation; a telemetry store
+  or chart is not a scheduling oracle.
+- **Optional Interoperability:** OpenTelemetry and external viewers may consume bounded one-way
+  exports without becoming a required container or LychD control plane.
+- **A2A Correlation:** W3C Trace Context may correlate an admitted peer request. It never
+  authenticates the peer, authorizes an effect, or turns baggage into a trusted claim.
 
 ## Considered Options
 
 !!! failure "Option 1: The Cloud Native Suite (Prometheus / Grafana / Jaeger)"
-    Deploying the standard enterprise observability stack.
-    - **Pros:** Maximum power and industry standard.
-    - **Cons:** **Extreme Default Overhead.** Requires 3-4 heavy containers and meaningful RAM allocation just to monitor a single node. The complexity of PromQL, LogQL, dashboarding, and retention policy is disproportionate to the needs of a personal daemon before it has many active Animators or Legion nodes.
+    Deploying a mandatory monitoring stack adds several services, storage and retention policy,
+    query languages, and another control surface before a personal daemon has proved the need. Such
+    tools may remain optional external viewers or Watcher-class providers.
 
 !!! failure "Option 2: Undifferentiated Persistence-Layer Logging"
-    Storing every raw span and metric directly as unbounded JSONB rows in the **[Phylactery (ADR 06)](./06-persistence.md)**.
-    - **Pros:** Zero extra infrastructure; unified backups.
-    - **Cons:** Raw telemetry is not domain truth. Curated run, transition, cost, and hardware facts belong in Postgres, but unlimited vendor-shaped spans need explicit retention and must not define the domain schema.
+    Storing every span, body, metric, and event as unbounded JSONB would confuse vendor telemetry
+    with domain truth, make privacy and retention accidental, and couple the Phylactery schema to
+    changing upstream payloads.
 
 !!! success "Option 3: Native Oculus with Pluggable Eyes"
-    A native Litestar evidence service projected through the Svelte Altar, with standards-based
-    exports and optional external viewers.
-    - **Pros:**
-        - **Native view:** Domain vocabulary, grants, transitions, consent, Legion, and GPU pressure can be correlated without a second control plane or required container.
-        - **OpenTelemetry:** Existing Pydantic AI/HTTP instrumentation remains an interoperable signal source.
-        - **Pluggable Eyes:** Phoenix, Logfire, Cockpit, or fleet tooling may consume bounded exports without owning canonical state.
+    A native Litestar evidence service projects LychD vocabulary through the Svelte Altar and may
+    export bounded standards-based signals to optional external Eyes. It adds no second authority.
 
 ## Decision Outcome
 
-**The Oculus** is adopted as LychD's native observability extension and Altar surface. Its canonical input is structured LychD evidence connecting intent, graph movement, tool use, consent, runtime pressure, and outcome. It must not require another application container. Phoenix is retained only as a compatibility extension and possible external **Eye** during the transition; it is not the Oculus and never owns run, identity, scheduling, or retention truth.
+**Oculus** is adopted as LychD's native evidence Extension Domain. Its canonical input is
+structured LychD evidence connecting Intent, graph movement, tool use, consent, runtime pressure,
+and outcome. The **Orb** is its Altar projection; **scrying** is the disciplined act of using that
+instrument. Phoenix, Logfire, Cockpit, an OpenTelemetry
+collector, or another viewer may be an external **Eye**; none owns run, identity, scheduling,
+authorization, retention, or evidence semantics.
 
 !!! warning "Implementation state"
-    The native Oculus service and Svelte Scrying projection are accepted but not yet complete. The
-    repository still ships `observability/phoenix` and its historical `lychd-oculus` unit stem for
-    compatibility. The static Svelte Altar has an honest Scrying placeholder, not a native Oculus
-    implementation. The Phoenix extension is optional and deprecated as the default view; removing
-    or renaming its unit is a separate migration. Documentation must not present either the
-    compatibility container or that placeholder as native Oculus delivery.
+    Native Oculus and the Svelte Orb projection are accepted but not complete. The repository
+    ships `observability/phoenix` as an optional external Eye integration whose new default unit
+    stem is `lychd-phoenix`. Existing operator configuration may retain the explicit legacy
+    `name = "oculus"` until deliberately migrated; that compatibility value never turns Phoenix
+    into native Oculus. The static Svelte Altar now has a bounded selected-Run Orb projection
+    over the run/event records available to the current process. That projection is not native
+    Oculus ingestion, durable evidence custody, a live trace service, or cross-process
+    completeness. State of the Work owns the exact delivery boundary.
 
-!!! note "Trace Correlation Contract"
-    Runtime evidence must preserve correlation keys across layers: `run_id`, `step_id`, `tool_call_id`, `lane_id`, peer task IDs, and relevant hardware lease IDs. This lets an incident, Riddle failure, HitL decision, or A2A callback be followed from visible surface to graph movement to provider call without granting the trace authority over the underlying state.
+### 1. Evidence Ownership and Correlation
 
-    Failed tool calls must also preserve the validator-known rejection shape: `failure_class`, `required_state`, `observed_state`, and retryability when available. This keeps "the model ignored the state" distinct from "the state surface omitted a hidden precondition" during later Riddle, Reaper, or Magus review.
+Oculus uses four explicit classes:
 
-### 1. The Extension Registration (The Retina Hook)
+1. An **authoritative record** is written by the office responsible for one state transition or
+   attempted effect.
+2. A **bounded observation** names its producer, subject, method, time, freshness, quality, and
+   limits.
+3. A **derivation** names its parent evidence, method and version, uncertainty, and invalidation
+   boundary.
+4. An **interpretation or verdict** judges evidence under declared criteria and belongs to Riddle
+   or another explicitly named judging office.
 
-To satisfy the requirement of sovereignty, the Oculus is implemented through shaped extension seams:
+A span, event, or correlation identifier carries relation; it does not transfer authority. Every
+visible edge must distinguish its meaning, including containment, Pattern permission, correlation,
+explicit causal parentage, waiting, grant or lease use, artifact production, lineage, declaration,
+and evaluation. Temporal adjacency or a common trace id does not prove causality.
 
-- **The Native Surface:** Oculus contributes typed query/event routes and schemas through the
-  shaped Vessel boundary. The Svelte Scrying instrument consumes their generated SDK and semantic
-  event contract; components do not query tables or observability SDKs directly.
-- **Compatibility Eye:** `observability/phoenix` registers `PhoenixSettings` under
-  `runes/observability/phoenix/`. Its image, exporter endpoint, and ports remain extension-owned TOML.
-- **The Store:** Vessel telemetry registration is reserved for a future shaped
-  `context.vessel` bundle; it must not become another flat ExtensionContext
-  method.
-- **The Injection:** Once shaped, that Vessel bundle may install the
-  **[Backend's (ADR 11)](./11-backend.md)** `InitPluginProtocol`. During the
-  "Deep Awakening" (Server Mode), it configures the global OpenTelemetry
-  providers.
-- **The Scope:** Because the Vessel and the **[Ghouls (ADR 14)](./14-workers.md)** share the same boot logic, the Oculus automatically observes both the scrying at the Altar and the labor in the background.
+Evidence identity is producer-scoped. A conforming observation carries a producer principal and
+component, node, process or boot epoch, evidence id, and source-local monotonic sequence. Occurred,
+observed, and ingested times remain separate, with clock uncertainty where relevant. Cross-source
+order is a causal partial order, never a fabricated global timeline.
 
-### 2. The Thought Trace (Mind)
+Runtime correlation includes stable `run_id`, `lane_id`, `step_id`, `event_id`, `tool_call_id`,
+peer-task, consent, grant, lease, transition, artifact, trace, and span identities where their
+owning contracts provide them. A rejected or waiting operation should preserve
+`failure_class`, `required_state`, `observed_state`, retryability, and the owning blocker relation
+when known.
 
-The extension configures the process to emit signals following the Generative AI Semantic Conventions:
+### 2. Native Service and External Eyes
 
-- **Instrumentation:** It invokes `logfire.instrument_pydantic_ai()` for the reasoning loop and
-  `logfire.instrument_httpx()` for transport metadata. Generic HTTP instrumentation must never
-  blanket-capture headers or request/response bodies: those surfaces carry prompts and bearer
-  credentials, including runtime administration keys. Content capture belongs to an explicit
-  privacy policy at the cognitive instrumentation boundary.
-- **The Native Store/View:** Curated trace summaries and domain events use LychD-owned persistence,
-  structured logs, and live streams with explicit retention. Oculus renders those facts in-process.
-- **Optional Export:** An active `PhoenixSettings` compatibility rune currently manifests the legacy
-  `lychd-oculus` unit and accepts OTLP at `http://localhost:4318`. The unit name is migration debt,
-  not an ownership claim. Other OTLP consumers may replace it behind the same bounded export policy.
+Oculus contributes typed query/event routes and schemas through the shaped Vessel boundary.
+The Orb consumes the generated SDK and semantic event contract; components do not query tables or
+observability SDKs directly.
 
-### 3. Physical Body Monitoring (Body)
+Pydantic AI and OpenTelemetry may supply observations behind versioned adapters and golden
+contract tests. Generic HTTP instrumentation must not blanket-capture headers, bodies, prompts, or
+administration credentials. An external Eye receives only an allowlisted, redacted, purpose-bound
+one-way export and no LychD database role, Sigil, grant, queue, lease, lifecycle authority, or
+canonical read-back path.
 
-For hardware monitoring, the architecture rejects containerized metrics to avoid the "Prometheus Tax." Instead, LychD utilizes the host's native **Cockpit** service.
+The current Phoenix fixture is migration debt, not proof of this contract: it uses a legacy unit
+identity and LychD does not prove an application export, bounded credentials, retention policy, or
+native read path through it.
 
-- **VRAM Visualization:** Users are encouraged to install the `cockpit-pcp` and NVIDIA-SMI/AMD plugins. This provides the Magus with high-fidelity, real-time GPU utilization and VRAM tracking via a dedicated dashboard.
-- **Metric Mirroring:** Critical hardware metrics (OOM events, thermal throttling) are mirrored from the host into the **[Orchestrator (ADR 23)](./23-orchestrator.md)**.
-- **Grounded Logic:** These metrics inform the "Tipping Point" algorithms, ensuring that the Daemon's "Will" is always grounded in the "Body's" actual physical capacity.
+### 3. Interior Evidence Without Mind Reading
 
-### 4. Performance & SDLC Metrics (The Pulse)
+Through the Orb, scrying may distinguish three chambers:
 
-The third observability layer captures the **service body's own vital signs**: model runtime performance, local service health, and the data that Prometheus traditionally collects, harvested without the Prometheus Tax.
+- **first-person testimony** — an Agent's deliberately emitted objective, progress summary,
+  strategy summary, uncertainty, reservation, or bottleneck report;
+- **operated telemetry** — recorded events, tool requests, validations, waits, retries, usage,
+  failures, and outcomes; and
+- **declared interpretation** — a named evaluation or interpretability method with its model,
+  version, controls, limitations, and uncertainty.
 
-- **Per-Request Metrics:** Model-backed **[Animators](../sepulcher/animator/index.md)** piggyback performance data on every inference response: `tokens_generated`, `tokens_per_second`, `time_to_first_token`, `prompt_processing_time`. OpenAI-compatible APIs (vLLM, llama.cpp) already include `usage` fields and timing headers; the Animator adapter extracts and normalizes them.
-- **Engine System Metrics:** The **[Orchestrator (ADR 23)](./23-orchestrator.md)** periodically polls each active Soulstone's `/metrics` endpoint for system-level data: KV cache utilization, request queue depth, active batch size, GPU memory pressure, or service-family equivalents. These are standard Prometheus exposition format, trivially parseable without requiring a Prometheus server.
-- **Agentic SDLC Quality Telemetry:** The system logs its own software engineering performance to prove competence over time.
-    - **Attempts:** The number of self-correction loops (`ModelRetry`) needed before a task succeeds.
-    - **Presence:** Whether a task was merged autonomously (Zero-Touch Engineering) or required human intervention (HitL).
-    - **Streak:** The consecutive count of flawless, autonomous ZTE merges. This serves as the Confidence Threshold to unlock frictionless promotion.
-- **Trajectory and Cost Observability (The Grist):** To reason about its own metabolic efficiency, the system maintains an append-only Trajectory Log directly in the PostgreSQL Phylactery. For every agent invocation, it captures the raw economics of the thought: `[Phase, Command, Model, Tokens_In, Tokens_Out, Cost_USD, Success]`. This ensures the Lich retains durable historical data to auto-tier cheaper models for mechanical chores, independent of external visualizers like Phoenix.
-- **Phylactery Storage:** All metrics are written to a dedicated `metrics` schema in the **[Phylactery (ADR 06)](./06-persistence.md)**. PostgreSQL handles single-node time-series scale effortlessly. This eliminates the need for a dedicated time-series database.
-- **Scheduling Fuel:** The Orchestrator consumes these metrics directly from Postgres to inform the **Whim** algorithm — routing decisions, model tiering, Thrall delegation, and thermal throttling are all driven by real tok/s and cache pressure, not heuristics.
-- **Legion Scaling:** Each Thrall's Orchestrator scrapes its own local Soulstones and writes to the Master's Phylactery. The Master sees all nodes' performance in one query — no federation, no aggregation layer.
-- **Agent-Consumed Analysis:** Trends and anomalies are surfaced by agents reading the metrics table directly. The Magus asks "how's the GPU doing?" and gets a reasoned answer with the trace available for inspection.
+None is hidden chain-of-thought. A progress statement is testimony, not proof of the action it
+describes. A provider call is telemetry, not proof of what the call “felt like.” A model-written
+explanation may be useful evidence while remaining answerable to its source and capture policy.
 
-#### Optional Watcher Coven Boundary
+Context references, retrieved memories, prompt/completion content, tool arguments/results, and raw
+provider exchanges may appear only when an explicit current capture policy admits them. Structure
+must remain useful when content is unavailable, and **no evidence** must remain a first-class
+state.
 
-The rejection of the Cloud Native Suite is a default-runtime decision, not a permanent ban. Prometheus, Grafana, Loki, Alloy, or similar tools may become **Watcher-class Animators** when the Magus needs fleet-style operations:
+### 4. Orb Read Models
 
-- many Soulstone, Portal, browser, watcher, or tool Animators running at once;
-- Legion/Thrall nodes emitting service metrics from multiple machines;
-- historical dashboards, alert rules, and cross-service correlation beyond what Oculus, Postgres metrics, journal evidence, and agent queries comfortably provide;
-- log volume where `journalctl` and structured application logs stop being ergonomic.
+The first useful **[Orb](../divination/altar/orb.md)** target is:
 
-When summoned, these tools must be optional Soulstones or Portals under the Oculus/Watcher family. They must not become Core dependencies, must not replace the Phylactery metrics used as Orchestrator fuel, and must expose explicit capabilities such as `metrics_query`, `logs_query`, `trace_search`, `dashboard_render`, or `alert_state` rather than masquerading as cognitive Animators.
+1. an authorized run list;
+2. one selected Invocation;
+3. a correlated timeline with explicit gaps;
+4. a read-only graph joined to the exact Pattern revision by stable identities;
+5. live-versus-durable, freshness, redaction, retention, and unknown labels; and
+6. links to the owning instrument for a Pattern, consent, grant, transition, artifact, or verdict.
 
+Only after that model proves it reduces diagnosis time may Oculus expose a bounded multi-Invocation
+attention query. “All active” means only authorized, observed active/waiting/terminal-recent work
+inside explicit time, status, Pattern, pagination, and cardinality limits. Truncation, sampling,
+stale producers, and gaps remain visible. This is an attention index, not omniscience and not a
+claim that workflows form a literal neural network.
 
-### 5. Privacy Control
+The Orb client may select, filter, lay out, and acknowledge events visually. Motion is not
+evidence. A later annotation is a separate authorized record anchored to stable evidence identity;
+it never edits the event or triggers retry, approval, cancellation, publication, or transition as
+a side effect.
 
-The Oculus respects the global `LYCHD_SECURE_MODE` toggle:
+The current delivered subset starts at item 2: one direct selected-run URL, producer-local ordered
+status/node/dispatch/transition evidence, exact Pattern correlation when the pinned manifest
+validates, explicit retained bounds and gaps, and links to the owning Bridge, Loom, and Nexus
+surfaces. It deliberately omits the run list, live tail, graph, durable Oculus read model,
+artifacts, annotations, and multi-run attention field rather than simulating them in the client.
 
-- **Redaction:** When active, the telemetry provider is configured with `include_content=False`.
-- **Structure Over Substance:** This ensures that the *structure* of the trace (latency, success, token counts) is preserved for debugging, while the *substance* (sensitive prompts or secrets) is physically redacted before leaving the application memory.
+### 5. The Physical Body and Pulse
+
+This subsection is target law for a conforming future physical-observation boundary. The current
+Orchestrator and Nexus do not possess a general Resource Snapshot for VRAM, thermals, power,
+process ownership, or system-wide pressure; current delivery is limited to declared capability
+state and retained transition observations named in State of the Work.
+
+Physical truth begins with a fresh node-local Resource Snapshot owned by the physical runtime and
+Orchestrator boundary. It names the device, capacity, reservations, process ownership,
+temperature, power, topology, units, source, sample age, and errors only where observed. A stale or
+failed sample means **unknown**, never free capacity.
+
+The Orchestrator consumes the fresh snapshot directly for admission and planning. Oculus may retain
+the same versioned observation for history and explanation. Engine and request adapters may add
+measured usage, latency, token counts, queue depth, cache, memory pressure, and transition data with
+their source and units. Estimates and trends remain derivations; they do not become grants,
+reservations, Riddle verdicts, or automatic promotion thresholds.
+
+In a future Legion, each node remains authoritative for its own iron and sends bounded observations
+through an authenticated Intercom contract. A Thrall never writes directly to a Master's
+Phylactery or borrows a Master's telemetry authority.
+
+Prometheus, Grafana, Loki, Alloy, Cockpit, or similar tools may become optional Watcher-class
+Animators when fleet scale, historical queries, alerting, or log volume justify them. They remain
+replaceable consumers/providers and do not replace native owning records.
+
+### 6. Privacy, Retention, and Failure
+
+Structure-only capture is the minimum default, not a claim that structure is harmless. Every
+evidence class declares capture purpose, allowed fields, classification, retention, visibility,
+and export policy. Redaction occurs before serialization and records its policy version. External
+export passes through a second independent filter. Secret material is prohibited rather than
+merely hidden in the final page.
+
+A conforming native Oculus must bound producer and subscriber queues and make cardinality,
+batching, flush, and shutdown behavior explicit. Loss, overload, sampling, clock uncertainty, and
+expired retention emit a visible gap or health record. The current process-local event broker
+bounds replay retention but leaves live per-subscriber queues unbounded; slow-subscriber
+backpressure is therefore not delivered yet. Correctness-critical facts and effect receipts stay
+in the acting office's own transaction, so a blinded Oculus may impair diagnosis but cannot corrupt
+execution truth.
+
+Removing an observation must not silently remove an owning run fact, effect receipt, or admitted
+relic that it referenced. A viewer cache is disposable and rebuildable from the supported snapshot
+and event cursor.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Zero-Cost Purity:** Users who do not enable the Oculus extension incur zero instrumentation overhead or resource bloat.
-    - **Domain-Native Correlation:** Oculus can join LychD grants, transitions, consent, costs, and hardware evidence without translating them into a vendor's ownership model.
-    - **Pluggable Eyes:** External viewers can be added or replaced through bounded telemetry exports without replacing Oculus or canonical state.
+    - LychD can correlate its own grants, transitions, consent, artifacts, evaluations, costs, and
+      physical evidence without granting a vendor control-plane ownership.
+    - Privacy, gaps, freshness, and uncertainty become part of the evidence contract rather than
+      final-page decoration.
+    - The selected-run-first path yields a useful diagnostic surface before a multi-run canvas.
+    - External Eyes can be added, replaced, or absent without changing canonical truth.
 
 !!! failure "Negative"
-    - **Native UI Cost:** LychD owns the quality and maintenance of its domain-specific trace explorer.
-    - **Optional Export Cost:** Enabling an external Eye adds its own startup, storage, and resource overhead.
+    - LychD owns the quality, retention, migration, accessibility, and performance of a
+      domain-specific evidence service and trace explorer.
+    - Stable cross-office identities and partial-order semantics require more design than logging
+      arbitrary spans.
+    - Optional instrumentation and external Eyes add their own overhead, privacy review, and
+      compatibility work when enabled.

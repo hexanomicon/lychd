@@ -94,5 +94,41 @@ working pattern: preferred evidence, style, restraint, and modes of repair. This
     the loop by giving honest correction, preserving refusal, and refusing to call praise alone
     love.
 
+## VI. The Mandelbrot of Return
+
+Project synthesis offers one further image: LychD can be read as a **Mandelbrot of neural form**.
+A learned model carries one network of weighted relation. An Agent places that generative organ
+inside a typed loop of Context, tools, observation, and return. A Pattern relates several such
+acts through a graph. A Composition gives several Patterns one application body. A Suite relates
+several sovereign Compositions through typed handoffs. The shape recurs at widening scales without
+making the scales identical.
+
+```text
+model activation
+  ⤷ Agent act
+      ⤷ Pattern graph
+          ⤷ Composition
+              ⤷ Suite
+                  ⤷ consequence returning through every rightful owner
+```
+
+This is metonymy, not a scientific claim that the whole body is one differentiable tensor or that
+errors flow through it as numerical gradients. The forward movement carries Intent, Context,
+artifacts, and authorized effects. The return carries observation, measurement, findings,
+invalidation, correction, and—only when admitted—Seed. Each office translates consequence into
+its own typed language rather than pretending every failure is one scalar loss.
+
+What returns must reach the smallest rightful boundary. An unreadable character silhouette may
+return from Game Foundry to Voidlight Studio as an asset finding; broken gameplay remains with
+Game Foundry; a malformed Suite route returns to Weaver and perhaps Smith; an identity question
+returns to Mirror; a quality claim returns to Riddle. Only a separately governed Soulforge rite
+may turn an eligible corpus and objective into literal weight updates.
+
+Thus the higher network learns first by **corrigible structure**: revising an artifact, Pattern,
+adapter, memory, or route while preserving lineage. Training may later alter a model's
+disposition, but the Work refuses the shortcut in which every consequence is swallowed as
+ambient gradient. A recurrent whole becomes wiser not by erasing its boundaries, but by letting
+the right consequence find the right organ.
+
 Citrinitas ends when memory is no longer merely storage. It has become a corrigible relation
 between past consequence and present choice.

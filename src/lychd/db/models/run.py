@@ -20,6 +20,7 @@ class Run(UUIDAuditBase):
     __tablename__ = "run"
 
     workflow_name: Mapped[str] = mapped_column(String(100), index=True)
+    pattern_manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     source: Mapped[str] = mapped_column(String(20))  # bridge|cli|api|rite
     status: Mapped[str] = mapped_column(String(20), default="queued", server_default=text("'queued'"), index=True)
     #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|done|failed|cancelled

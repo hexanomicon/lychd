@@ -8,22 +8,25 @@ icon: material/swap-horizontal-bold
 > _"Two spirits cannot haunt the same iron. To wake one, another must sleep."_
 
 A **coven** is a named group of model services ([Soulstones](./soulstone.md)) materialized as a
-systemd target for operator aggregation. It is not an implicit coexistence or eviction policy.
-Finite VRAM is governed by the **[Orchestrator (23)](../../adr/23-orchestrator.md)**, whose current
-`evict-idle` policy treats active, dedicated, non-resident Animators as one conservative global
-switching pool.
+systemd target for compatible operator aggregation. It is not a conflict or eviction policy.
+Finite-domain incompatibility is declared separately in each Soulstone's
+`[concurrency].conflict_domains` and compiled onto per-Animator targets. The
+**[Orchestrator (23)](../../adr/23-orchestrator.md)** decides when a transition may occur; systemd
+executes the compiled physical transaction.
 
-Covens are declared by the `groups` field on a Soulstone Rune. Sharing a group creates target
-membership only; sharing or not sharing a group neither permits coexistence nor synthesizes a
-`Conflicts=` directive. The `alliances` shape is reserved for a future group-aware policy and is
-non-enforcing in v1. See [Soulstone](./soulstone.md#-coven-management-the-group-rule).
+Covens are declared by the `groups` field on a Soulstone Rune. Sharing a group requests aggregate
+membership only. Bind permits that aggregate only when its members' conflict-domain sets do not
+overlap; an internally conflicting Coven fails closed. Different groups do not create
+incompatibility. The `alliances` shape remains reserved for later policy and is not an enforcement
+boundary. See [Soulstone](./soulstone.md#-coven-management-the-group-rule).
 
 !!! warning "Operator break-glass surface"
-    Starting a generated Coven target explicitly starts its installed members, and stopping it
-    propagates to members through Systemd `PartOf=`. This bypasses Orchestrator priority admission,
-    lease drain, and WARM convergence. It is reserved for a host operator performing administration
-    or recovery; application code, agents, and extension policy must address the Orchestrator
-    instead.
+    Starting a generated Coven target explicitly starts its compatible Animator targets, and
+    stopping it propagates through the generated target/service relationships. Starting an
+    individual Animator target is equally direct. Both bypass Orchestrator priority admission,
+    lease drain, stale-world validation, WARM convergence, and compensation. They are reserved for
+    a host operator performing administration or recovery; application code, agents, and extension
+    policy must address the Orchestrator instead.
 
 ## The states you will see on the Nexus
 
@@ -42,15 +45,21 @@ When a run needs a managed capability below **WARM**, the Dispatcher raises a re
 and the Orchestrator:
 
 1. Pauses new job claims and closes admission for every affected Animator.
-2. Waits for **leases** to release—a hard swap drains the complete planned evictee set; a
+2. Waits for **leases** to release—a hard swap drains the exact active conflict-neighbor set; a
    runtime-started convergence path drains the target Animator (up to `drain_timeout_s`).
-3. Hard: stop the complete evictee set and start the target, with no hidden generated-unit effects.
-   Runtime already started: call the adapter's model-load seam only for a dynamic target that is
-   not already WARMING; fixed/static and already-WARMING targets perform convergence only.
-4. Await honest WARM, then let the parked run retry dispatch. A hard readiness failure attempts one
-   exact typed inverse. A raising hard actuator, runtime-started activation/convergence failure, or
-   failed hard inverse stays fail-closed for operator recovery rather than reopening into unknown
-   runtime state. A
+3. Revalidates the active world. The Host Reactor separately rejects a stale intent-generation
+   digest; the actuator then binds the current Rune graph to the exact Scribe-owned unit set and
+   proves the installed/loaded targets, managed relations, source paths, and unit-file state.
+4. Hard: ask systemd to start the selected Animator target once; systemd stops its compiled
+   conflicts and starts the target in one transaction. Runtime already started: call the adapter's
+   model-load seam only for a dynamic target that is not already WARMING; fixed/static and
+   already-WARMING targets perform convergence only.
+5. Await honest WARM, then let the parked run retry dispatch. A hard readiness failure asks systemd
+   to apply one exact inverse: start missing members of the captured prior compatible set or stop
+   extra launched targets, then wait for jobs and prove the exact prior target-and-service world.
+   A proved restoration—including restoration after cancellation—reopens admission. An uncertain
+   hard transaction, runtime-started activation/convergence failure, or failed inverse stays
+   fail-closed for operator recovery rather than reopening into unknown runtime state. A
    process-lifetime containment latch rejects every later transition/NO_OP until restart or repair.
 
 A run parked waiting for its own transition holds **no** lease, so it never blocks its own swap.
@@ -141,7 +150,7 @@ Governs hard runtime swaps and runtime-started readiness convergence.
 | :--- | :--- | :--- | :--- |
 | `actuator` | string | `"host-reactor"` | Caged mediated actuation; `"systemd"` is explicit uncaged mode. |
 | `host_reactor_dir` | absolute path | XDG `.../lychd/triggers/inbox` | Writable intent inbox; sibling journal is derived and mounted read-only. |
-| `policy` | string | `"evict-idle"` | The swap policy. `evict-idle` plans every active, dedicated, non-`persistent_resident` Animator, closes admission, and waits for any leases before eviction. Group/alliance labels do not alter v1 policy. An unknown name fails loudly at startup. |
+| `policy` | string | `"declared-conflicts"` | The swap policy. `declared-conflicts` computes the exact active conflict-neighbor set; `evict-idle` remains a compatibility alias, not the old all-active algorithm. Omitted dedicated non-residents receive the conservative `default-exclusive` wildcard; group/alliance labels do not alter the graph. An unknown name fails loudly at startup. |
 | `min_priority_for_hard_swap` | int (0–100) | `40` | A hard swap requested below this priority is **declined**, not performed. This gates thrashing. |
 | `drain_timeout_s` | float | `120.0` | How long a hard evictee set or runtime-started target Animator waits for outstanding leases before readying. |
 | `warmup_timeout_s` | float | `180.0` | One absolute WARM convergence budget, including any adapter-estimated first sleep; every poll sleep is capped to the remaining budget. |
@@ -150,7 +159,7 @@ Governs hard runtime swaps and runtime-started readiness convergence.
 ```toml
 [orchestration.switching]
 actuator = "host-reactor"
-policy = "evict-idle"
+policy = "declared-conflicts"
 min_priority_for_hard_swap = 40
 drain_timeout_s = 120.0
 warmup_timeout_s = 180.0
@@ -158,7 +167,7 @@ reactor_ack_timeout_s = 120.0
 ```
 
 !!! note "Declined is honest, not broken"
-    When a low-priority request would force a hard swap of a busy coven, the Orchestrator
+    When a low-priority request would force a hard swap of an active conflict set, the Orchestrator
     declines it rather than thrashing the GPU. The run settles with the decision in its message.
 
 !!! warning "A safe Host Reactor decline may repeat"
@@ -168,6 +177,14 @@ reactor_ack_timeout_s = 120.0
     user-Systemd activity are different observations: a hung unit may remain `active` to Systemd
     while appearing absent to readiness probing. Reconcile or stop that unit before retrying; a
     retry against the same mismatch may be declined again.
+
+!!! warning "Restored is safe; contained is not"
+    `.restored.json` means the actuator observed the exact prior target-and-service world, so the
+    manager may reopen its barrier. A fresh physical outcome that cannot be proved becomes
+    `.contained.json`; startup and later transitions remain fenced for operator reconciliation. If
+    the Reactor crashes after claiming work and recovery still cannot classify the world, the
+    nonterminal `.processing.json` remains in place. `.rejected.json` denotes an invalid delivery,
+    not a claim that an uncertain physical transaction was safely undone.
 
 ### `[orchestration.whim]`
 
@@ -189,11 +206,13 @@ them are not yet driven.
 - Raise `min_priority_for_hard_swap` to make the system more reluctant to swap busy hardware.
 - Adjust `drain_timeout_s` to change how long a swap waits for leases to release.
 - Mark a support runtime `persistent_resident = true` in its Soulstone Rune's `[concurrency]`
-  table to keep it out of every eviction set.
+  table to keep it out of conflict participation and every eviction set.
+- Give incompatible managed Soulstones at least one shared `conflict_domains` label. Use explicit
+  `[]` only when their combined substrate is known to fit.
 
 ## Verify
 
 - `curl .../orchestrator/queues` shows leases appearing and clearing around a run.
-- `POST /orchestrator/activate` at priority 70 returns 202; at priority 25 against a busy coven
-  returns 409.
+- `POST /orchestrator/activate` at priority 70 returns 202; at priority 25 against a busy conflict
+  set returns 409.
 - The Nexus reflects the capability moving to **active** after a successful swap.

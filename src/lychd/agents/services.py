@@ -50,6 +50,14 @@ class TurnLedgerPort(Protocol):
 
     async def add_turn(self, session_id: str, turn: Any) -> None: ...
 
+    async def settle_agent_turn(
+        self,
+        session_id: str,
+        turn: Any,
+        *,
+        new_messages: list[Any],
+    ) -> None: ...
+
     async def get_session(self, session_id: str) -> Any | None: ...
 
 

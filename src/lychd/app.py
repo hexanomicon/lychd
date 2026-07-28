@@ -130,6 +130,7 @@ class AppInit(InitPluginProtocol):
             BridgeController,
             LoomController,
             NexusController,
+            OrbController,
         )
 
         app_config.route_handlers.extend(
@@ -144,6 +145,7 @@ class AppInit(InitPluginProtocol):
                 BridgeController,
                 NexusController,
                 LoomController,
+                OrbController,
             ],
         )
 
@@ -189,10 +191,6 @@ def create_app() -> Litestar:
         Litestar: Fully configured web application.
 
     """
-    # Get Arize Phoenix Plugin for Tracing
-    # Better yet, create a function gathering plugins - in plugin - base.py
-    # Call it here and insert into Litestar app
-
     import os
 
     granian_workers = os.getenv("GRANIAN_WORKERS")

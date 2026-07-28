@@ -1,8 +1,12 @@
 """Single-snapshot contracts for pure bind request compilation."""
 
+import pytest
+
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings, get_settings
 from lychd.config.settings.server import ServerSettings
+from lychd.domain.animation.conflicts import ConflictTopologyError
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.extensions.host import assemble_extensions
 from lychd.system.constants import CONTAINER_LYCHD_PORT
 from lychd.system.schemas import QuadletPod
@@ -35,3 +39,26 @@ def test_compile_uses_only_its_injected_settings_snapshot() -> None:
             )
         )
     )
+
+
+def test_bind_rejects_a_soulstone_without_an_advertised_capability() -> None:
+    """An unadvertised local service cannot enter capability-derived runtime truth."""
+    settings = get_settings()
+    stone = GenericSoulstoneConfig(
+        name="crawler-sidecar",
+        image="example/crawler:latest",
+        runtime="crawler",
+    )
+
+    with pytest.raises(
+        ConflictTopologyError,
+        match=r"at least one capability.*crawler-sidecar",
+    ):
+        compile_bind_request(
+            settings=settings,
+            extensions=assemble_extensions(settings),
+            runes=RuneRegistry(()),
+            soulstones=(stone,),
+            portals=(),
+            uncaged=False,
+        )

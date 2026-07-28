@@ -9,7 +9,13 @@ from pathlib import Path
 from litestar import Litestar
 from litestar.openapi.config import OpenAPIConfig
 
-from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController
+from lychd.interface.web import (
+    AltarController,
+    BridgeController,
+    LoomController,
+    NexusController,
+    OrbController,
+)
 from lychd.interface.web.deps import web_dependencies
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +25,13 @@ OUTPUT = ROOT / "frontend" / "openapi.json"
 def main() -> None:
     """Write a stable OpenAPI document from the production controller classes."""
     app = Litestar(
-        route_handlers=[AltarController, BridgeController, NexusController, LoomController],
+        route_handlers=[
+            AltarController,
+            BridgeController,
+            NexusController,
+            LoomController,
+            OrbController,
+        ],
         dependencies=web_dependencies,
         openapi_config=OpenAPIConfig(title="LychD Altar API", version="1"),
     )

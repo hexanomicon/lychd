@@ -11,17 +11,24 @@ icon: material/creation
 ## Requirements
 
 - **Hermetic Isolation:** Physical prevention of live system file modification during the experimental phase.
-- **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the production substrate but lacks the authority to impact Primary Reality.
+- **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the relevant
+  production substrate without receiving promotion or host authority. Shared-resource and
+  external effects must still be declared, bounded, and reconciled.
 - **The Verification Ritual:** Mandatory success of a formal verification suite (e.g., Unit Testing, Linting, Type Checking) before logic transitions from experiment to reality.
-- **Atomic Promotion:** Transactional migration of code; broken or untested artifacts must be discarded rather than merged.
-- **History Preservation:** Mandatory Jujutsu-backed VCS tracking from the moment of inception to ensure a permanent audit trail of the system's evolution.
+- **Controlled Promotion:** Code and lock state move only through an attributable, verified
+  promotion coordinate. Database, package, and external effects retain their own transaction and
+  recovery boundaries; the composition does not pretend they are one atomic write.
+- **History Preservation:** Jujutsu-backed VCS tracks candidate source and reviewable change
+  history according to retention policy. VCS is artifact provenance, not a record of hidden model
+  reasoning.
 - **Promotion Authorization:** Integration with the **Human-in-the-Loop** protocol and Codex autonomy policy so structural promotion requires live Magus consent unless an explicitly bounded preauthorization class applies.
 
 ## Considered Options
 
 !!! failure "Option 1: Live Hot-Reloading"
     Allowing the Agent to modify the `.py` files currently being executed by the Vessel.
-    - **Cons:** **Systemic Lobotomy.** A single syntax error or indentation mistake by a probabilistic model results in an immediate, unrecoverable crash. The machine kills itself before it can finish the change.
+    - **Cons:** **Systemic Lobotomy Risk.** A syntax error or logical failure can crash the active
+      process before the candidate is reviewed and may leave recovery to an external operator.
 
 !!! failure "Option 2: Manual Pull-Request Workflow"
     Forcing the Agent to submit a VCS PR/Change that a human must manually merge on the host.
@@ -29,7 +36,9 @@ icon: material/creation
 
 !!! success "Option 3: The Shadow Realm (Lab -> Test -> Promote)"
     Modifying code in an isolated `lab/` directory, verifying it with Ghouls, and only promoting it to the Crypt upon success.
-    - **Pros:** **Crash Immunity.** The "Primary Reality" (The Crypt) is Read-Only. Evolution happens in the "Shadow Realm" (The Lab). The machine handles the "Nigredo" (Darkness/Errors) internally, only presenting the "Albedo" (Whitened Truth) for promotion.
+    - **Pros:** **Contained Candidate Failure.** The active Crypt stays outside the candidate-write
+      path. Lab failures remain attributable and reviewable before promotion, while shared
+      resources and later lifecycle effects still require explicit controls.
 
 ## Decision Outcome
 
@@ -47,7 +56,10 @@ into the system's body.
 
 When a Magus or an authorized process initiates a change, the system creates a new coordinate in the **Lab** region of the **[Crypt (13)](13-layout.md)**.
 
-- **Freedom:** This directory is the site of conception. The process can break things here, install experimental dependencies, and generate files without affecting the active Daemon.
+- **Freedom:** This directory is the site of conception. The process can generate and revise files
+  without directly mutating the active Crypt. Dependency installation, subprocesses, ports,
+  databases, and network effects remain separately sandboxed or declared; a directory boundary
+  alone does not contain them.
 - **Context:** The process is provided with the current state of the Core and the **[Crypt lockfile (13)](13-layout.md)** to ensure the new creation is compliant with the system's existing laws.
 
 ### 2. Speculation (The Shadow Realm / The Call)
@@ -73,7 +85,11 @@ Once a valid path is found in the Shadow Realm, the machine must transition from
 execution. This is the domain of **the Blade** (Buddhi correspondence), the convergent
 intelligence.
 
-When writing core logic with causal dependencies, the agent must operate in a **Single-Threaded, Deep Sequential** mode. Massive parallelism here is a "hallucination trap." Because of **Computational Irreducibility**, the agent cannot predict the end state of a complex logical loop; it must walk the path step-by-step. By enforcing **Stillness** (Metabolic Discipline) during the actual creation phase, the system maximizes logic-per-watt and prevents the introduction of recursive errors.
+For tightly coupled core edits, the workflow favors a bounded sequential critical path with focused
+checks after each causal change. Independent discovery, static analysis, and isolated candidate
+experiments may still run in parallel when their merge boundary is explicit. **Stillness**
+(Metabolic Discipline) means limiting concurrent mutation and context pressure; it reduces
+coordination risk but cannot prevent logical error.
 
 ### 4. Verification (The Rite of Speculation)
 
@@ -81,8 +97,13 @@ Before leaving the Lab, every creation must undergo the **Verification Ritual**.
 
 - **The Strike:** The system enqueues a job for the **[Ghouls (14)](14-workers.md)**.
 - **The Test:** The Ghouls execute the verification suite (e.g., `ruff`, `pytest`) against the new code in isolation.
-- **The Verdict:** If the tests fail, the process must iterate within the Lab. No human intervention is requested for technical errors; the machine must solve its own syntax.
-- **Migration Isolation:** Verification rituals must utilize a transient, ephemeral database instance. The creator of the new logic must prove that all new relational models and migrations are valid against this empty shell before the logic is ever promoted to the Primary **[Phylactery](../sepulcher/phylactery/index.md)**.
+- **The Verdict:** If checks fail, policy may grant a bounded correction budget in the Lab. When
+  that budget or a required premise is exhausted, the workflow returns truthful noncompletion and
+  evidence instead of demanding unlimited self-repair.
+- **Migration Isolation:** Verification uses disposable databases to exercise empty bootstrap and
+  every supported upgrade path relevant to the candidate, including declared forward/rollback or
+  recovery behavior. Those receipts prove the tested paths only; production promotion still
+  requires the owning **[Phylactery](../sepulcher/phylactery/index.md)** lifecycle gate.
 
 ### 5. Promotion (The Rite of Passage)
 
@@ -103,8 +124,11 @@ In the event of a "Temporal Collision"—where a file in Primary Reality has bee
 ### Consequences
 
 !!! success "Positive"
-    - **Crash Immunity:** Syntax errors are trapped in the Lab, making it physically impossible for an autonomous process to lobotomize the running Daemon.
-    - **Auditability:** Every evolution of the system is a VCS revision (commit/change), allowing the Magus to trace the "Chain of Thought" that led to a specific code change.
+    - **Reduced Active-Body Risk:** Syntax and focused verification failures can be caught before
+      promotion. Shared resources, migrations, packaging, and restart still carry residual risk.
+    - **Auditability:** Retained VCS changes, candidate artifacts, and verification receipts let the
+      Magus trace what changed and why it was proposed without claiming access to hidden
+      chain-of-thought.
     - **Disciplined Autonomy:** The system handles bounded debugging and testing labor, presenting
       the Magus with the surviving candidate, its evidence, and any unresolved limits.
 

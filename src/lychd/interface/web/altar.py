@@ -29,7 +29,7 @@ class AltarController(Controller):
         return Redirect("/bridge", status_code=HTTP_302_FOUND)
 
     @get(
-        ["/bridge", "/nexus", "/loom", "/scrying", "/reliquary", "/bindings"],
+        ["/bridge", "/nexus", "/loom", "/orb"],
         name="altar:instrument",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,
@@ -39,7 +39,7 @@ class AltarController(Controller):
         return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
     @get(
-        ["/bridge/{client_path:str}", "/loom/{client_path:str}"],
+        ["/bridge/{client_path:str}", "/orb/{client_path:str}"],
         name="altar:deep-link",
         guards=[requires_scopes("altar:read")],
         include_in_schema=False,
@@ -47,6 +47,21 @@ class AltarController(Controller):
     async def deep_link(self, client_path: FromPath[str]) -> Response[str]:
         """Return the same shell for a client-owned dynamic route."""
         _ = client_path
+        return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
+
+    @get(
+        "/loom/{pattern_id:str}/{revision:str}",
+        name="altar:loom-revision",
+        guards=[requires_scopes("altar:read")],
+        include_in_schema=False,
+    )
+    async def loom_revision(
+        self,
+        pattern_id: FromPath[str],
+        revision: FromPath[str],
+    ) -> Response[str]:
+        """Return the SPA shell for an exact client-owned Pattern deep link."""
+        _ = (pattern_id, revision)
         return Response(content=_ALTAR_INDEX, media_type=MediaType.HTML)
 
     @get(

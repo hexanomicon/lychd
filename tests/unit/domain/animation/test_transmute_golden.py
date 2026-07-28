@@ -5,9 +5,6 @@ This is the crown-jewel parity net for the self-generating container structure
 pod (brief §8) as a byte-stable golden serialization of ``transmute_all(...)``,
 for BOTH scenarios: Phoenix-active and Phoenix-absent.
 
-Written FIRST (before the QuadletContributor refactor) so the refactor is proven
-behaviour-preserving: after P3 lands, these goldens must pass UNCHANGED.
-
 Machine stability: every settings-/host-derived value the manifests embed is
 normalised through the SAME ``get_settings()`` / constant reads at load time
 (never frozen as a literal), so the committed golden is identical on any host.
@@ -34,6 +31,7 @@ from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegi
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system import constants
 from lychd.system.schemas import QuadletBase, QuadletContainer, QuadletPod, QuadletTarget
+from lychd.system.unit_names import animator_service_unit, animator_target_unit, coven_target_unit
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -65,17 +63,20 @@ def _soulstones() -> list[SoulstoneConfig]:
             name="alpha",
             image="registry.example/alpha:1",
             groups=["logic"],
+            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
             env_vars={"CTX": "4096"},
         ),
         GenericSoulstoneConfig(
             name="beta",
             image="registry.example/beta:1",
             groups=["logic"],
+            concurrency=ConcurrencyIntent(conflict_domains=[]),
         ),
         GenericSoulstoneConfig(
             name="gamma",
             image="registry.example/gamma:1",
             groups=[],
+            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
             secret_env_files={"HF_TOKEN_FILE": "gamma_hf_token"},
         ),
         GenericSoulstoneConfig(
@@ -141,7 +142,7 @@ def _unit_identity(manifest: QuadletBase) -> str:
     if isinstance(manifest, QuadletPod):
         return manifest.pod_name
     if isinstance(manifest, QuadletTarget):
-        return manifest.name
+        return manifest.unit_name
     msg = f"Unknown manifest kind: {type(manifest)!r}"
     raise TypeError(msg)
 
@@ -159,12 +160,7 @@ def _serialize(manifests: Sequence[QuadletBase]) -> list[dict[str, Any]]:
 
 
 def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
-    """Drive the Transmuter through the QuadletContributor seam for one scenario.
-
-    The committed goldens were captured PRE-refactor against the old
-    ``extension_runes=`` path; this contributor-based path must reproduce them
-    byte-identically -- that equality is the refactor's parity proof.
-    """
+    """Drive the Transmuter through the QuadletContributor seam for one scenario."""
     from lychd.config.runes.registry import RuneRegistry
     from lychd.extensions.builtin.observability.phoenix.config import PhoenixSettings
     from lychd.extensions.builtin.observability.phoenix.contributor import PhoenixQuadletContributor
@@ -252,8 +248,12 @@ def test_property2_manifest_sequence() -> None:
         ("QuadletContainer", "lychd-vessel"),
         ("QuadletContainer", "lychd-phylactery"),
         ("QuadletContainer", "lychd-migrate"),
-        ("QuadletContainer", "lychd-oculus"),
-        ("QuadletTarget", "logic"),
+        ("QuadletContainer", "lychd-phoenix"),
+        ("QuadletTarget", animator_target_unit("alpha")),
+        ("QuadletTarget", animator_target_unit("beta")),
+        ("QuadletTarget", animator_target_unit("gamma")),
+        ("QuadletTarget", animator_target_unit("resident")),
+        ("QuadletTarget", coven_target_unit("logic")),
         ("QuadletContainer", "lychd-alpha"),
         ("QuadletContainer", "lychd-beta"),
         ("QuadletContainer", "lychd-gamma"),
@@ -261,13 +261,17 @@ def test_property2_manifest_sequence() -> None:
     ]
 
     absent_seq = [(type(m).__name__, _unit_identity(m)) for m in absent]
-    assert "lychd-oculus" not in [ident for _, ident in absent_seq]
+    assert "lychd-phoenix" not in [ident for _, ident in absent_seq]
     assert absent_seq == [
         ("QuadletPod", "lychd"),
         ("QuadletContainer", "lychd-vessel"),
         ("QuadletContainer", "lychd-phylactery"),
         ("QuadletContainer", "lychd-migrate"),
-        ("QuadletTarget", "logic"),
+        ("QuadletTarget", animator_target_unit("alpha")),
+        ("QuadletTarget", animator_target_unit("beta")),
+        ("QuadletTarget", animator_target_unit("gamma")),
+        ("QuadletTarget", animator_target_unit("resident")),
+        ("QuadletTarget", coven_target_unit("logic")),
         ("QuadletContainer", "lychd-alpha"),
         ("QuadletContainer", "lychd-beta"),
         ("QuadletContainer", "lychd-gamma"),
@@ -275,21 +279,21 @@ def test_property2_manifest_sequence() -> None:
     ]
 
 
-def test_property3_oculus_and_core_lattice() -> None:
-    """§8.2/§8.3 — Oculus verbatim + the unit dependency lattice (Wants/After)."""
+def test_property3_phoenix_eye_and_core_lattice() -> None:
+    """§8.2/§8.3 — Phoenix Eye verbatim + the unit dependency lattice."""
     settings = get_settings()
     active = _by_id(_transmute(phoenix_active=True))
 
-    oculus = active["lychd-oculus"]
-    assert isinstance(oculus, QuadletContainer)
-    assert oculus.pod == "lychd.pod"
+    phoenix = active["lychd-phoenix"]
+    assert isinstance(phoenix, QuadletContainer)
+    assert phoenix.pod == "lychd.pod"
     db_url = f"postgresql://{settings.server.database.user}@localhost:{constants.CONTAINER_POSTGRES_PORT}/phoenix"
-    assert oculus.env_vars == {
+    assert phoenix.env_vars == {
         "PHOENIX_PORT": str(CONTAINER_PHOENIX_UI_PORT),
         "PHOENIX_SQL_DATABASE_URL": db_url,
     }
-    assert oculus.wants == ["lychd-phylactery.service"]
-    assert oculus.after == ["lychd-phylactery.service"]
+    assert phoenix.wants == ["lychd-phylactery.service"]
+    assert phoenix.after == ["lychd-phylactery.service"]
 
     vessel = active["lychd-vessel"]
     phylactery = active["lychd-phylactery"]
@@ -328,26 +332,44 @@ def test_property3_oculus_and_core_lattice() -> None:
 
 
 def test_property3_law_of_exclusivity_and_boot() -> None:
-    """§8.3 — no hidden stops, target membership, and deterministic boot."""
+    """§8.3 — target arbitration, compatible aggregation, and deterministic boot."""
     active = _by_id(_transmute(phoenix_active=True))
 
     alpha = active["lychd-alpha"]
     gamma = active["lychd-gamma"]
     resident = active["lychd-resident"]
+    alpha_target = active[animator_target_unit("alpha")]
+    gamma_target = active[animator_target_unit("gamma")]
+    coven = active[coven_target_unit("logic")]
     assert isinstance(alpha, QuadletContainer)
     assert isinstance(gamma, QuadletContainer)
     assert isinstance(resident, QuadletContainer)
+    assert isinstance(alpha_target, QuadletTarget)
+    assert isinstance(gamma_target, QuadletTarget)
+    assert isinstance(coven, QuadletTarget)
     assert alpha.user == "%U"
     assert gamma.user == "%U"
     assert resident.user == "%U"
     assert alpha.wants == ["lychd-pod.service"]
 
-    # Systemd has no hidden stop graph; the lease-aware Orchestrator owns swaps.
-    assert alpha.targets == ["logic"]
+    # Services cannot start without their lifecycle target. Only the
+    # lease-aware Orchestrator authorizes a target switch.
+    assert alpha.binds_to == [animator_target_unit("alpha")]
+    assert alpha.after == ["lychd-pod.service", animator_target_unit("alpha")]
     assert alpha.conflicts == []
+    assert alpha_target.requires == [animator_service_unit("alpha")]
+    assert alpha_target.before == [animator_service_unit("alpha")]
+    assert alpha_target.conflicts == []
+    assert coven_target_unit("logic") in alpha_target.part_of
 
     assert gamma.conflicts == []
-    assert gamma.targets == []
+    assert gamma.binds_to == [animator_target_unit("gamma")]
+    assert gamma_target.conflicts == [animator_target_unit("alpha")]
+    assert gamma_target.after == [animator_target_unit("alpha")]
+
+    assert coven.wants == [animator_target_unit("alpha"), animator_target_unit("beta")]
+    assert coven.after == coven.wants
+    assert coven.conflicts == []
 
     # Boot-survivor determinism (F4): only the persistent resident is auto-wanted.
     assert resident.wanted_by == ["default.target"]
@@ -358,7 +380,7 @@ def test_property3_law_of_exclusivity_and_boot() -> None:
 def test_property4_coven_targets_only_for_real_covens() -> None:
     """§8 — only groups with >= 2 members forge a target."""
     active = _transmute(phoenix_active=True)
-    targets = {m.name for m in active if isinstance(m, QuadletTarget)}
+    targets = {m.name for m in active if isinstance(m, QuadletTarget) and m.kind == "coven"}
     assert targets == {"logic"}
 
 

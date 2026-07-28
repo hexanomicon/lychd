@@ -6,6 +6,12 @@ from pathlib import Path
 import pytest
 
 from lychd.system.schemas import MountData, QuadletContainer, QuadletPod, QuadletTarget, podman_secret_source
+from lychd.system.unit_names import (
+    animator_service_stem,
+    animator_service_unit,
+    animator_target_unit,
+    coven_target_unit,
+)
 
 
 def test_mountdata_from_str_marks_non_symmetric_mount_as_not_mirrored() -> None:
@@ -154,9 +160,26 @@ def test_quadlet_pod_rejects_duplicate_host_ports() -> None:
     [
         {"name": "logic\nWantedBy=default.target", "description": "safe"},
         {"name": "logic", "description": "swallow\\"},
-        {"name": "logic", "description": "safe", "part_of": r"safe\x25h.service"},
+        {"name": "logic", "description": "safe", "part_of": [r"safe\x25h.service"]},
+        {"name": "logic", "description": "safe", "requires": ["safe.service injected.service"]},
     ],
 )
 def test_quadlet_target_rejects_directive_and_escape_injection(payload: dict[str, object]) -> None:
-    with pytest.raises(ValueError, match="single-line|backslash"):
+    with pytest.raises(ValueError, match="single-line|backslash|one safe unit name"):
         QuadletTarget.model_validate(payload)
+
+
+def test_quadlet_target_rejects_duplicate_dependency_units() -> None:
+    with pytest.raises(ValueError, match="must not contain duplicate units"):
+        QuadletTarget(
+            name="logic",
+            description="safe",
+            wants=["lychd-animator-alpha.target", "lychd-animator-alpha.target"],
+        )
+
+
+def test_animator_and_coven_unit_names_have_one_canonical_spelling() -> None:
+    assert animator_service_stem("qwen") == "lychd-qwen"
+    assert animator_service_unit("qwen") == "lychd-qwen.service"
+    assert animator_target_unit("qwen") == "lychd-animator-qwen.target"
+    assert coven_target_unit("logic") == "lychd-coven-logic.target"

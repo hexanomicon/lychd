@@ -73,4 +73,10 @@ dispatch, and Shadow expansion. These components do not become one literal Manas
 marks their shared office: **making a demand or possibility addressable without pretending to have
 settled it**.
 
+A future [Suite](../../compositions/index.md#suites-compositions-of-compositions) planner is one
+concrete expression: the Call may route “make me a game with rockets” into attributable charcoal
+graphs joining Voidlight Studio and Game Foundry. It does not publish the Suite, admit its
+Patterns, grant their effects, or decide that the candidate is good. Those determinations remain
+with the Blade, validation, Weaver, policy, and the Magus.
+
 > _Next: [the Blade](./blade.md) receives what the Call has opened._

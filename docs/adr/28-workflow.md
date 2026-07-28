@@ -15,10 +15,13 @@ icon: material/tournament
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
 - **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and the Graph persistence boundary to record committed state transitions, enabling recovery from the last valid boundary without assuming every checkpoint already lives in Postgres.
-- **Composition Assimilation:** One Weaver must accept shaped, explicitly selected Pattern and
-  [Reference Composition](../compositions/index.md) contributions through the broader
+- **Composition Assimilation:** One Weaver must accept shaped, explicitly selected Pattern,
+  [Reference Composition](../compositions/index.md), and Suite contributions through the broader
   **[Extension Protocol (ADR 5)](./05-extensions.md)** without spawning competing workflow
   engines or hardwiring every application into the Core.
+- **Typed Semantic Return:** Downstream evaluation may return versioned findings, attribution
+  candidates, invalidated support, and bounded correction requests to the rightful owner without
+  creating reverse execution edges, implicit mutation, ambient training, or a second scheduler.
 - **Strategic Alignment:** Coordination with the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to ensure tactical pacing respects the physical constraints of the local iron.
 
 ## Considered Options
@@ -39,8 +42,8 @@ icon: material/tournament
     - **Pros:**
         - **Total Synchronization:** Natively utilizes the **[Graph (ADR 24)](./24-graph.md)** engine to manage persistence and reanimation.
         - **Recursive Evolution:** The Smith may eventually generate, verify, and promote new
-          Pattern or Composition contributions, allowing the machine to learn new ways of working
-          without multiplying workflow authorities.
+          Pattern, Composition, or Suite contributions, allowing the machine to learn new ways of
+          working without multiplying workflow authorities.
         - **Deep Integration:** Allows for "Memory Weaving" to be performed as a first-class citizen of the execution loop, ensuring agents are never born into a void.
 
 ## Decision Outcome
@@ -48,7 +51,7 @@ icon: material/tournament
 **The Weaver** is adopted as the singular logical workflow-application control plane. The
 **Pattern** is its immutable executable primitive. Weaver manages application enablement and the
 sequence, context, pacing, and continuity of admitted labor. The living [Reference Composition
-Portfolio](../compositions/index.md) maps evolving application designs above Patterns.
+Portfolio](../compositions/index.md) maps evolving application and Suite designs above Patterns.
 
 The Weaver preserves temporal continuity of cognition across asynchronous steps. It prepares and synchronizes the field in which reasoning occurs, but it does not itself determine truth or identity.
 
@@ -62,7 +65,48 @@ Workflow is the backbone of the Ouroboros. It is the structure that lets a gener
     full cross-host recovery remain later Phylactery work. Weaver doctrine targets the persistence
     port rather than issuing direct database writes.
 
-This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver Pattern records where each step came from, which memory was woven into it, which identity owned it, which evidence measured it, and where it may safely resume. That temporal continuity is what lets self-reference become coherence rather than recursion for its own sake.
+!!! note "Implemented Pattern identity floor"
+    Each registered workflow now carries an immutable semantic manifest: URL-safe Pattern identity
+    and revision, checkpoint schema, station declarations, permitted edges, and
+    a deterministic digest. Run admission stores that exact validated snapshot, and execution
+    rejects a stored snapshot whose checksum or current registered identity no longer agrees.
+    Loom uses the same exact revision; the Orb links back only while the pinned snapshot validates.
+
+    The current registry accepts only one workflow for a given name, and the worker resolves the
+    current registered definition by that name. Historical revisions do not remain executable
+    merely because a Run pinned their snapshot. If the revision is unavailable or drifted, the
+    worker fails honestly. Multi-revision registration, publication, drain, and migration remain
+    future Weaver work.
+
+    This is a version/pinning and inspection floor, not the future round-trippable Pattern IR.
+    Station and edge declarations are authored beside the executable Python Graph and are not yet
+    mechanically derived from every return path. The digest therefore fingerprints the declared
+    score; executable/manifest parity remains a review and test responsibility until Weaver owns a
+    canonical declarative compiler.
+
+!!! important "Admission ordering"
+    Admit one Run by committing the Run and its pinned Pattern snapshot, retaining the
+    caller-owned initiating record under the canonical Run identity, and only then publishing work
+    to the broker. Failure before or during publication must compensate the queued Run. This
+    ordering closes the fast-worker race without pretending the current broker boundary is a
+    transactional outbox.
+
+!!! note "Implemented Bridge continuity floor"
+    A Bridge session now owns serialized completed Pydantic AI message history separately from
+    optimistic display turns. Settlement appends the visible agent reply and `new_messages()`
+    suffix under one session-store operation. Provider hops are normalized to the owning LychD run,
+    so the next run selects newest whole completed turns within turn and character bounds rather
+    than splitting consent calls from their returns. It validates them through Pydantic AI's
+    message adapter and reassembles Context after the actual Dispatcher grant so the environment
+    and context window are grant-bound. A paused current-turn chain is indivisible and charged
+    before older history on resume. This is completed-session continuity, not Archive retrieval or
+    arbitrary full-session replay.
+
+This is why workflows are not merely scripts. A script runs forward and forgets. A Weaver Pattern
+records immutable score identity, topology, checkpoint schema, and permitted continuation. A future
+Invocation record may correlate that Pattern with memory, identity, and evidence records owned by
+their respective offices; the Pattern does not absorb those authorities. That temporal continuity
+lets self-reference become coherence rather than recursion for its own sake.
 
 ### 1. The Maestro Pattern (Tactical arm of the Will)
 
@@ -72,8 +116,9 @@ Pattern steps, gates, budgets, dependencies, and semantic capability demand. The
 it receives capability demand and decides how physical services become ready. It never authors
 the workflow's purpose.
 
-New Pattern and Composition contributions follow the **[Smith (ADR 35)](./35-assimilation.md)** and
-the **[Lab→Test→Promote rite (ADR 16)](./16-creation.md)** without exception. A generated way of
+New Pattern, Composition, and Suite contributions follow the
+**[Smith (ADR 35)](./35-assimilation.md)** and the
+**[Lab→Test→Promote rite (ADR 16)](./16-creation.md)** without exception. A generated way of
 working enters through shaped contribution and immutable revision; it does not become a second
 Weaver or acquire the jurisdictions of Graph, Dispatcher, Orchestrator, Phylactery, or HitL.
 
@@ -105,7 +150,9 @@ To maintain the "Privacy Veil," the Weaver provides a Censor interceptor:
 
 ### 4. The Pattern (Pacing and Joins)
 
-The Weaver utilizes the functional primitives of the graph to enforce the rhythm of thought:
+The current Weaver executes serial `BaseNode` Patterns. A future GraphBuilder-backed runtime may
+use these functional primitives only after it preserves the same admission, persistence, and
+evidence law:
 
 - **Broadcasting:** Synchronizing the same input across multiple specialist agents for parallel analysis.
 - **Spreading:** Distributing a list of tasks across the background worker force.
@@ -118,13 +165,83 @@ The Weaver governs tempo and synchronization of these movements; validity and se
 
 At each join, the workflow can close a loop: generated branches return to a shared state, failed branches become evidence, and the surviving continuation carries both measurement and identity forward. This is the practical shape of the semantic vortex in execution time.
 
-A Reference Composition may collect several Patterns under one operator-visible purpose. Weaver
-governs the Portfolio, immutable Pattern selection, logical priority, dependencies, overlap, and
-schedule semantics. Workers own durable occurrence delivery and retry. Orchestrator owns model
-residency, lease drain, prewarming, eviction, and swaps. Several Invocations may therefore remain
-logically active while finite iron serializes their physical inference.
+A Reference Composition may collect several Patterns under one operator-visible purpose. A
+**Suite** may arrange several separately owned Compositions and their typed artifact or intent
+handoffs into one versioned operator-visible graph. Weaver governs the Portfolio, immutable
+Pattern selection, logical priority, dependencies, overlap, and schedule semantics. Workers own
+durable occurrence delivery and retry. Orchestrator owns model residency, lease drain, prewarming,
+eviction, and swaps. Several Invocations may therefore remain logically active while finite iron
+serializes their physical inference.
 
-### 5. Interaction with HitL
+Suite is coordination and projection law, not a new super-application authority. Each member
+retains its domain records, Patterns, effects, policy, and independent utility. A Suite descriptor
+may pin eligible Composition and Pattern revisions, handoff schemas, shared correlation,
+aggregate ceilings, and partial-completion policy. It cannot merge secrets or Sigils, grant a
+downstream effect, reinterpret an artifact, or treat one member's HitL as consent for another.
+
+Suite execution is Designed. Before an automated Suite edge may admit a child Invocation, Weaver
+must define parent/child identity, exact revision selection, input/output closure, fan-out/join
+semantics, budget reservation, cancellation, Stasis, retry, idempotent effect receipts,
+compensation, and truthful partial completion. Until then, cross-Composition handoffs are explicit
+artifact-backed admissions and Loom may project the graph without executing it.
+
+The Call/Manas may open and route an Intent into one or more attributable charcoal Suite drafts
+through bounded Agent, Graph, ReCall, or Shadow work. It is an office distributed across those
+mechanisms, not a planner service and not promotion authority. The Blade and declared evaluators
+discriminate among candidates; schema validation, policy, and the Magus govern publication; only
+Weaver admits the resulting exact Pattern Invocations.
+
+#### Semantic return across a Suite
+
+Riddle may evaluate an observed downstream consequence against the exact pinned graph and publish
+`SuiteFindingSet@1`, `AttributionCandidate@1`, `InvalidationSet@1`, and
+`CorrectionRequest@1` records under **[ADR 34](./34-evaluation.md)**. They may be drawn against the
+direction of production, but they are evidence and candidate intent—not executable Graph edges.
+
+Weaver may admit a correction only as a new forward Invocation after resolving the addressed
+Composition and Pattern revision, validating the typed input, reserving a bounded repair budget,
+and applying ordinary authority and HitL policy. It never resumes an old producer at an arbitrary
+node, mutates an accepted artifact in place, inherits downstream authority, or converts a finding
+into a trainer job.
+
+The repair plan starts from Riddle's smallest **supported** cut, not the nearest or cheapest node.
+It preserves unrelated branches only when their complete declared input and evaluation closure
+remain unchanged, pins regression sentinels, and stops on repeated findings or budget exhaustion.
+Unresolved rival attribution may justify a broader bounded trial; it never justifies system-wide
+blame or an infinite producer-consumer loop.
+
+Mirror preserves the distinct actors, Sigils, Persona/Posture revisions, providers, tools, human
+edits, evaluators, and correction authors across both faces of the Suite. That answers who and
+whose, not what caused failure. Soulforge remains a separate training office: semantic return is
+not a gradient, runtime traces are not an implicit corpus, and only an independently admitted
+training Pattern may alter candidate weights.
+
+### 5. Pattern Projection and Drafting
+
+The **[Loom](../divination/altar/loom.md)** may project the Portfolio and an exact Pattern revision,
+but a current Python `BaseNode` graph is executable source—not a round-trippable visual document.
+Renderer nodes, edges, groups, and coordinates never become Weaver truth.
+
+Loom distinguishes:
+
+- **charcoal** — an attributable inert candidate pinned to an exact base revision; and
+- **law** — a validated, reviewed, published immutable Pattern revision.
+
+No browser or model gesture crosses that boundary implicitly. Before Loom can author an executable
+draft, Weaver must own one canonical declarative Pattern intermediate representation that carries
+stable identity, reusable step-type references, typed inputs and outputs, state transfer,
+reachability, termination bounds, effects, gates, capability requirements, authority, provenance,
+and checkpoint/resume compatibility. The Vessel validates the complete draft; publication creates
+a new immutable revision; existing Invocations remain pinned.
+
+Nested or callable Patterns are not accepted merely because a renderer can draw a frame around
+nodes. A Suite does not bypass that boundary. Before a Sub-Pattern, automated Suite edge, or
+extraction operation becomes executable, Weaver must define invocation identity, cut-set inputs
+and outputs, state closure, effect ownership, cancellation, Stasis, resume, and checkpoint
+compatibility. An arbitrary selection of Python nodes or Composition cards cannot be extracted
+safely without that law.
+
+### 6. Interaction with HitL
 
 A Pattern declares a Decision Point only where authority, uncertainty, or effect policy requires
 the **[Sovereign Consent (ADR 25)](./25-hitl.md)** protocol. Read-only and fully preauthorized
@@ -132,7 +249,7 @@ Patterns need no ceremonial pause merely to satisfy topology. When a governed st
 decision—such as source promotion, public publication, deletion, or world restore—Weaver enters
 Durable Stasis and projects the bounded choice for the Magus.
 
-### 6. The Demarcation of Weaver and Shadow
+### 7. The Demarcation of Weaver and Shadow
 
 The Weaver and **[Shadow Simulation (ADR 31)](./31-simulation.md)** both fan out parallel agent labor—the Weaver through Broadcasting, Spreading, and Joins; Phantasma through the Expansion of $N$ timelines. A Pattern author therefore requires an absolute rule for which fan-out belongs where. That rule is the **Demarcation Law**:
 

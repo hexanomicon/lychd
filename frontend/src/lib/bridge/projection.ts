@@ -4,9 +4,22 @@ export type LiveTurn = {
   sessionId: string;
   runId: string;
   content: string;
-  status: string;
+  runStatus: string;
+  activity: string;
   state: "streaming" | "done" | "failed";
   fragments: Array<Record<string, unknown>>;
+  patternId: string;
+  patternRevision: string;
+  loomPath: string | null;
+  orbPath: string;
+  evidenceCapture: "process_local" | "durable_best_effort";
+  occurrenceId: string | null;
+  dispatchOccurrenceId: string | null;
+  grantId: string | null;
+  capabilityKey: string | null;
+  transitionOccurrenceId: string | null;
+  transitionRequestId: string | null;
+  transitionPhase: string | null;
 };
 
 export type LiveTurnMerge = {
@@ -19,13 +32,26 @@ export function liveTurnFromSnapshot(snapshot: RunProjectionSnapshot): LiveTurn 
     sessionId: snapshot.session_id,
     runId: snapshot.run_id,
     content: snapshot.content,
-    status: snapshot.status,
+    runStatus: snapshot.run_status,
+    activity: snapshot.activity,
     state: snapshot.terminal
-      ? snapshot.status.includes("fail")
+      ? snapshot.run_status.includes("fail")
         ? "failed"
         : "done"
       : "streaming",
-    fragments: snapshot.fragments.map((fragment) => ({ ...fragment }))
+    fragments: snapshot.fragments.map((fragment) => ({ ...fragment })),
+    patternId: snapshot.pattern_id,
+    patternRevision: snapshot.pattern_revision,
+    loomPath: snapshot.loom_path,
+    orbPath: snapshot.orb_path,
+    evidenceCapture: snapshot.evidence_capture,
+    occurrenceId: snapshot.occurrence_id ?? null,
+    dispatchOccurrenceId: snapshot.dispatch_occurrence_id ?? null,
+    grantId: snapshot.grant_id ?? null,
+    capabilityKey: snapshot.capability_key ?? null,
+    transitionOccurrenceId: snapshot.transition_occurrence_id ?? null,
+    transitionRequestId: snapshot.transition_request_id ?? null,
+    transitionPhase: snapshot.transition_phase ?? null
   };
 }
 

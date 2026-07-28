@@ -102,10 +102,17 @@ def _substrate(model: Any) -> tuple[RunSubstrate, InMemoryRunLedger, InProcessEv
 
 async def _seed(ledger: InMemoryRunLedger, sessions: BridgeSessionStore, run_id: str) -> None:
     from lychd.agents.router import Intent
+    from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 
     session = await sessions.create_session(title="t")
     intent = Intent(session_id=session.id, run_id=run_id, prompt="swap the coven", source="bridge")
-    await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
+    await ledger.create(
+        intent,
+        workflow_name="bridge_chat",
+        pattern_manifest=BRIDGE_CHAT.manifest.snapshot(),
+        queue_name="runs",
+        priority=70,
+    )
 
 
 def _kinds(bus: InProcessEventBus, run_id: str) -> list[str]:
@@ -210,6 +217,16 @@ async def test_scenario2_approve_resumes_and_runs_tool_body() -> None:
     assert kinds.count("done") == 1  # exactly one terminal
     # seq strictly continues on the same channel (no restart-at-0).
     assert channel.next_seq > seq_at_park
+    session = next(iter(sessions._sessions.values()))
+    assert len(session.message_history) >= 4
+    assert {message.get("run_id") for message in session.message_history} == {"run_2"}
+    bounded = ContextOrchestrator(registry=FakeRegistry(), turn_window=1).assemble(
+        run_id="run-next",
+        session_id=session.id,
+        query="what happened?",
+        history=session.message_history,
+    )
+    assert bounded.state_window == session.message_history
 
 
 # --- Scenario 3: refuse → no orchestrator call, prose, settles DONE -----------
@@ -297,21 +314,24 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
 
     # Boot 1: park.
     bus1 = InProcessEventBus(ledger=ledger)
-    sub1 = _mk_substrate(bus1, BridgeSessionStore())
-    await _seed(ledger, sub1.turns, "run_5")
+    sessions = BridgeSessionStore()
+    sub1 = _mk_substrate(bus1, sessions)
+    await _seed(ledger, sessions, "run_5")
     park_result = await perform_run({"run_substrate": sub1}, run_id="run_5")
     assert park_result["status"] == "awaiting_consent"
     run = await ledger.get("run_5")
     assert run is not None and run.consent_id is not None
     consent_id = run.consent_id
     assert await stasis_store.exists("run_5")  # the durable checkpoint really survives
+    session = next(iter(sessions._sessions.values()))
+    assert session.message_history == []  # parked work is not completed conversation history
     await asyncio.sleep(0.05)  # let the ledger tee drain the pre-park Step rows
     pre_seqs = [e.seq for e in ledger.events("run_5")]
     assert pre_seqs  # some Step rows persisted before the park
 
     # RESTART: a fresh bus + substrate; the ledger + consents + checkpoint store carry over.
     bus2 = InProcessEventBus(ledger=ledger)
-    sub2 = _mk_substrate(bus2, BridgeSessionStore())
+    sub2 = _mk_substrate(bus2, sessions)
 
     await consents.decide(consent_id, approved=True, decided_by="magus")
     await ledger.set_status("run_5", RunStatus.QUEUED)
@@ -322,6 +342,8 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     assert run is not None and run.status is RunStatus.DONE
     assert not await stasis_store.exists("run_5")  # cleared on settle
     assert any(call[0] == "request" for call in orch.calls)  # the approved tool body ran
+    assert len(session.message_history) >= 4
+    assert {message.get("run_id") for message in session.message_history} == {"run_5"}
     await asyncio.sleep(0.05)  # let the resume-hop tee drain
     all_seqs = [e.seq for e in ledger.events("run_5")]
     # R1: NO lost Step rows — the fresh channel continued the seq, never re-collided at 0.

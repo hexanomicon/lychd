@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from litestar import Controller, Request, get, post
@@ -19,8 +20,14 @@ from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.cortex.priority import PRIORITY_MAX
 from lychd.domain.orchestration.manager import OrchestratorManager
-from lychd.domain.orchestration.schema import TransitionPlan
-from lychd.domain.web.contracts import NexusSnapshot, SwapAccepted, SwapIntent, TransitionEventEnvelope
+from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
+from lychd.domain.web.contracts import (
+    NexusSnapshot,
+    SwapAccepted,
+    SwapIntent,
+    TransitionEventEnvelope,
+    TransitionRecordView,
+)
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import SwapTicket, build_nexus_board
 from lychd.domain.web.tickets import TicketCapacityError, TicketRecord, TicketStore
@@ -38,6 +45,15 @@ def _parse_last_event_id(raw: str | None) -> int | None:
         return None
 
 
+def _transition_view(record: Any) -> TransitionRecordView:
+    """Project one bounded journal row with exact cross-instrument links."""
+    return TransitionRecordView(
+        **asdict(record),
+        orb_path=f"/orb/{record.run_id}" if record.run_id else None,
+        bridge_path=None,
+    )
+
+
 class NexusController(Controller):
     """Serve capability state and typed transition intents."""
 
@@ -50,7 +66,12 @@ class NexusController(Controller):
         registry: NamedDependency[AnimatorRegistry],
     ) -> NexusSnapshot:
         """Return the current capability board."""
-        return NexusSnapshot(board=build_nexus_board(orchestrator, registry))
+        return NexusSnapshot(
+            snapshot_at=datetime.now(UTC),
+            board=build_nexus_board(orchestrator, registry),
+            containment_reason=orchestrator.containment_reason,
+            transitions=[_transition_view(record) for record in orchestrator.transitions.recent()],
+        )
 
     @get("/plan", name="nexus:plan", operation_id="getNexusPlan", guards=[requires_scopes("altar:read")])
     async def plan(
@@ -87,8 +108,9 @@ class NexusController(Controller):
             tickets.ensure_capacity()
         except TicketCapacityError as exc:
             raise ServiceUnavailableException(detail=str(exc)) from exc
+        trace = TransitionTrace(target_capability_key=data.target, priority=float(PRIORITY_MAX))
         task = asyncio.create_task(
-            orchestrator.request_transition(data.target, priority=PRIORITY_MAX),
+            orchestrator.request_transition(data.target, priority=PRIORITY_MAX, trace=trace),
             name=f"swap:{data.target}",
         )
         try:
@@ -96,6 +118,7 @@ class NexusController(Controller):
                 target=data.target,
                 action_type=plan.action_type,
                 total_metabolic_cost=plan.total_metabolic_cost,
+                trace=trace,
                 task=task,
             )
         except TicketCapacityError as exc:  # defensive if the store implementation changes
@@ -119,6 +142,23 @@ class NexusController(Controller):
         if record is None:
             raise NotFoundException(detail="Unknown ticket.")
         return SwapAccepted(ticket=self._ticket(record, projector))
+
+    @get(
+        "/transitions/{request_id:str}",
+        name="nexus:transition",
+        operation_id="getNexusTransition",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def transition_status(
+        self,
+        request_id: FromPath[str],
+        orchestrator: NamedDependency[OrchestratorManager],
+    ) -> TransitionRecordView:
+        """Resolve any retained run- or operator-origin transition by causal id."""
+        record = orchestrator.transitions.get(request_id)
+        if record is None:
+            raise NotFoundException(detail="Transition evidence is not retained in this process.")
+        return _transition_view(record)
 
     @get(
         "/swaps/{ticket_id:str}/events",

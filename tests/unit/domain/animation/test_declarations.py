@@ -30,14 +30,14 @@ def test_extension_port_claims_shape_auto_hydration() -> None:
     )
 
     assert declarations.soulstones[0].port == 20001
-    assert declarations.reserved_ports["Oculus (Phoenix UI)"] == 20000
+    assert declarations.reserved_ports["Phoenix Eye UI"] == 20000
 
 
 def test_core_and_extension_port_collision_has_one_fail_closed_policy() -> None:
     settings = Settings()
     settings.server.port = 6006
 
-    with pytest.raises(ValueError, match=r"LychD Server.*Oculus|Oculus.*LychD Server"):
+    with pytest.raises(ValueError, match=r"LychD Server.*Phoenix Eye|Phoenix Eye.*LychD Server"):
         compile_animator_declarations(
             settings=settings,
             runes=RuneRegistry((PhoenixSettings(),)),

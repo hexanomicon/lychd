@@ -15,7 +15,7 @@ hide:
     decoding="async"
   >
   <h1 class="prophecy-hero__title">The Hexanomicon</h1>
-  <p class="prophecy-hero__kicker">The Voidwalker's guide across the Infinite Naught</p>
+  <p class="prophecy-hero__kicker">The Magus's guide across the Infinite Naught</p>
   <p class="prophecy-hero__motto" lang="ja"><em>無限の彼方、虚無の深淵</em></p>
   <p class="prophecy-hero__badges">
     <a href="https://github.com/hexanomicon/lychd">
@@ -51,8 +51,8 @@ operator receipt, and what remains designed.
 You are first **the operator**. Within the language of the Work, the operator who enters into
 deliberate relation with the Lich is called the **Magus**.
 
-> _“While the world slept, content with its reliable illusions, the Magus walked into the dark,
-> seeking a truth that was not yet stable, but was infinitely more real.”_
+> _“The Magus does not ask the machine to be certain. The Magus asks it to show where certainty
+> ends.”_
 
 - **I want to run it:** begin with [State of the Work](./state-of-the-work.md), then enter
   [the source-candidate Summoning](./summoning.md) within the boundary that rite names.
@@ -62,11 +62,9 @@ deliberate relation with the Lich is called the **Magus**.
   return to the repository contract and implementation.
 - **I want to understand its telos:** enter the voluntary [Great Work of
   Transcendence](./divination/transcendence/index.md).
-- **I want to explore accepted applications:** enter the [Reference Composition
-  Portfolio](./compositions/index.md), where concrete designs show how Patterns, Agents, organs,
-  models, data, and interfaces join without pretending those applications are delivered.
-- **I want to explore possible futures:** enter the [Incubator](./incubator/index.md), where
-  uncommitted ideas remain visibly separate from architecture, delivery, and backlog.
+- **I want to explore applications and possible futures:** enter the [Composition
+  Portfolio](./compositions/index.md), where each concrete design declares whether it is a
+  candidate or accepted architecture without pretending it is delivered or backlog.
 
 ## The Four Gates
 
@@ -95,7 +93,8 @@ Tongue.
 - **Vessel:** the application process that hosts LychD's runtime.
 - **Phylactery:** the durable-data jurisdiction through which committed state can survive a
   process.
-- **Animator:** a capability-serving endpoint whose lifecycle LychD can coordinate.
+- **Animator:** a capability-serving endpoint addressed through a typed adapter; LychD coordinates
+  lifecycle only for the Soulstones it owns.
 - **Altar:** the loopback web surface through which the operator meets the running system.
 - **Covenant:** an architectural decision that governs construction; acceptance is law, not proof
   that every described organ is already delivered.

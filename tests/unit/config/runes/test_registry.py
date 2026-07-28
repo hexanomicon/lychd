@@ -35,10 +35,15 @@ def test_phoenix_is_a_port_reserver() -> None:
     assert not isinstance(_Bystander(), PortReserver)
 
 
+def test_phoenix_uses_honest_default_identity_and_accepts_explicit_legacy_name() -> None:
+    assert PhoenixSettings().service_name == "lychd-phoenix"
+    assert PhoenixSettings(name="oculus").service_name == "lychd-oculus"
+
+
 def test_reserved_ports_collects_phoenix_claims() -> None:
     registry = RuneRegistry([PhoenixSettings()])
     ports = registry.reserved_ports()
-    assert ports == {"Oculus (Phoenix UI)": 6006, "Oculus (Phoenix OTLP)": 4317}
+    assert ports == {"Phoenix Eye UI": 6006, "Phoenix Eye OTLP": 4317}
 
 
 def test_reserved_ports_ignores_non_reservers() -> None:
@@ -49,11 +54,11 @@ def test_reserved_ports_ignores_non_reservers() -> None:
 
 def test_reserved_ports_duplicate_claim_names_both() -> None:
     """A second rune claiming an already-claimed port fails, naming both claimants."""
-    registry = RuneRegistry([_Claimer("Oculus (Phoenix UI)", 6006), _Claimer("Intruder", 6006)])  # type: ignore[list-item]
+    registry = RuneRegistry([_Claimer("Phoenix Eye UI", 6006), _Claimer("Intruder", 6006)])  # type: ignore[list-item]
     with pytest.raises(ValueError, match="6006") as exc:
         registry.reserved_ports()
     message = str(exc.value)
-    assert "Oculus (Phoenix UI)" in message
+    assert "Phoenix Eye UI" in message
     assert "Intruder" in message
 
 

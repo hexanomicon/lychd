@@ -9,8 +9,9 @@ hashes). Volatile data may enter only layers 5-6.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilityGrant
@@ -20,6 +21,10 @@ _DEFAULT_TURN_WINDOW = 20
 _DEFAULT_CHAR_CAP = 96_000
 _FLOOR_LAYER_MIN = 2
 _FLOOR_LAYER_MAX = 4
+
+
+class ContextBudgetExceededError(RuntimeError):
+    """The non-negotiable floor and current query exceed the context budget."""
 
 
 def _sha256(text: str) -> str:
@@ -47,7 +52,8 @@ class AssembledContext:
 
     blocks: tuple[Block, ...]
     prefix_digest: str
-    state_window: list[dict[str, str]]
+    state_window: list[Any]
+    continuation: list[Any]
     query: str
     context_window: int | None = None
 
@@ -56,6 +62,10 @@ class AssembledContext:
         return "\n\n".join(
             block.text for block in self.blocks if _FLOOR_LAYER_MIN <= block.layer <= _FLOOR_LAYER_MAX and block.text
         )
+
+    def model_history(self) -> list[Any]:
+        """Return bounded settled history followed by the indivisible current chain."""
+        return [*self.state_window, *self.continuation]
 
 
 # The First One's persona text — identical to `Agent.instructions` (layer 1, same key).
@@ -90,13 +100,12 @@ class ContextOrchestrator:
         run_id: str,
         session_id: str,
         query: str,
-        history: list[dict[str, str]] | None = None,
+        history: list[Any] | None = None,
+        continuation: list[Any] | None = None,
         grant: CapabilityGrant | None = None,
-        grant_epoch: int = 0,
+        grant_epoch: str | int = 0,
     ) -> AssembledContext:
         """Assemble the six-layer floor, cache it under `run_id`, and return it."""
-        window = list(history or [])[-self.turn_window :]
-
         stable_blocks: list[Block] = [
             self._identity_block(),
             self._codex_block(),
@@ -107,7 +116,26 @@ class ContextOrchestrator:
 
         prefix_digest = _sha256("|".join(block.content_hash for block in stable_blocks))
 
-        state_block = self._state_block(window)
+        context_window = self._context_window(grant)
+        effective_char_cap = self.char_cap
+        if context_window is not None:
+            # A conservative conversion keeps the assembled textual context below
+            # the discovered token window without pretending to be a tokenizer.
+            effective_char_cap = min(effective_char_cap, context_window * 3)
+        current_chain = list(continuation or [])
+        continuation_chars = self._history_cost(current_chain)
+        fixed_chars = sum(len(block.text) for block in stable_blocks) + len(query) + continuation_chars
+        if fixed_chars > effective_char_cap:
+            msg = (
+                f"Stable floor, query, and required continuation require {fixed_chars} characters, "
+                f"exceeding the {effective_char_cap}-character context budget."
+            )
+            raise ContextBudgetExceededError(msg)
+        window = self._bounded_history(
+            list(history or []),
+            budget=effective_char_cap - fixed_chars,
+        )
+        state_block = self._state_block([*window, *current_chain])
         query_block = self._query_block(query)
         blocks = (*stable_blocks, state_block, query_block)
 
@@ -115,8 +143,9 @@ class ContextOrchestrator:
             blocks=blocks,
             prefix_digest=prefix_digest,
             state_window=window,
+            continuation=current_chain,
             query=query,
-            context_window=self._context_window(grant),
+            context_window=context_window,
         )
         self._cache[run_id] = assembled
         return assembled
@@ -151,13 +180,14 @@ class ContextOrchestrator:
         *,
         session_id: str,
         grant: CapabilityGrant | None,
-        grant_epoch: int,
+        grant_epoch: str | int,
     ) -> Block:
         # Snapshot per (session, grant_epoch): the env block is frozen at that
         # key and refreshed only at a grant-change boundary, so an identical key
         # set yields byte-identical bytes even if warm hardware churns between
         # assembles within the same epoch (§6 Environment ruling).
-        key = f"env:{session_id}:{grant_epoch}"
+        binding = grant.spec.key if grant is not None else "unbound"
+        key = f"env:{session_id}:{binding}:{grant_epoch}"
         cached = self._env_snapshots.get(key)
         if cached is not None:
             return cached
@@ -174,12 +204,56 @@ class ContextOrchestrator:
         self._env_snapshots[key] = block
         return block
 
+    def _bounded_history(self, history: list[Any], *, budget: int) -> list[Any]:
+        """Keep newest complete Pydantic message groups within both governors."""
+        groups = self._history_groups(history)[-self.turn_window :]
+        selected: list[list[Any]] = []
+        remaining = budget
+        for group in reversed(groups):
+            cost = self._history_cost(group)
+            if cost > remaining:
+                break
+            selected.append(group)
+            remaining -= cost
+        selected.reverse()
+        return [message for group in selected for message in group]
+
+    def _history_groups(self, history: list[Any]) -> list[list[Any]]:
+        """Group messages by Pydantic run id, with a safe legacy request boundary."""
+        groups: list[list[Any]] = []
+        current: list[Any] = []
+        current_run_id: str | None = None
+        for message in history:
+            payload = cast("dict[str, Any]", message) if isinstance(message, dict) else {}
+            run_id = payload.get("run_id")
+            typed_run_id = str(run_id) if run_id else None
+            is_request = payload.get("kind") == "request" or payload.get("role") == "user"
+            boundary = bool(
+                current
+                and (
+                    (typed_run_id is not None and typed_run_id != current_run_id)
+                    or (typed_run_id is None and is_request)
+                )
+            )
+            if boundary:
+                groups.append(current)
+                current = []
+            current.append(message)
+            current_run_id = typed_run_id
+        if current:
+            groups.append(current)
+        return groups
+
+    def _history_cost(self, history: list[Any]) -> int:
+        """Return the conservative serialized-character cost used by both governors."""
+        return len(json.dumps(history, sort_keys=True, separators=(",", ":"), default=str))
+
     def _karma_block(self, *, session_id: str) -> Block:
         # Stubbed: Archive/mem0 unbuilt; key session-pinned (Cache Meridian after layer 4).
         return Block(layer=4, key=f"karma:{session_id}:pinned", content_hash=_sha256(""), text="")
 
-    def _state_block(self, window: list[dict[str, str]]) -> Block:
-        text = "\n".join(f"{turn.get('role', 'user')}: {turn.get('content', '')}" for turn in window)
+    def _state_block(self, window: list[Any]) -> Block:
+        text = json.dumps(window, sort_keys=True, separators=(",", ":"), default=str)
         return Block(layer=5, key="state:window", content_hash=_sha256(text), text=text)
 
     def _query_block(self, query: str) -> Block:
@@ -199,4 +273,4 @@ class ContextOrchestrator:
         """
         if grant is None:
             return None
-        return grant.spec.max_context or grant.generation.max_context
+        return grant.generation.max_context or grant.spec.max_context

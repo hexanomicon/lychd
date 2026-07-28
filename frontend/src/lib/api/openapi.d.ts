@@ -174,6 +174,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loom/{pattern_id}/{revision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revision */
+        get: operations["getLoomPatternRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/loom/{pattern_id}/{revision}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RevisionSource */
+        get: operations["getLoomPatternRevisionSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/loom/{workflow}": {
         parameters: {
             query?: never;
@@ -293,6 +327,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nexus/transitions/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** TransitionStatus */
+        get: operations["getNexusTransition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orb/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run */
+        get: operations["getOrbRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -354,24 +422,79 @@ export interface components {
             cookie_name: string;
             header_name: string;
         };
+        /** EvidenceGap */
+        EvidenceGap: {
+            /**
+             * @default unknown_or_omitted
+             * @constant
+             */
+            classification: "unknown_or_omitted";
+            end_seq: number;
+            start_seq: number;
+        };
+        /** EvidenceItem */
+        EvidenceItem: {
+            /** @enum {string} */
+            capture: "process_local" | "durable_best_effort";
+            event_id: string;
+            kind: string;
+            nexus_path?: string | null;
+            /** Format: date-time */
+            occurred_at: string;
+            occurrence_id?: string | null;
+            phase?: string | null;
+            seq: number;
+            subject_key?: string | null;
+            summary: string;
+            transition_request_id?: string | null;
+        };
+        /** LoomEdgeView */
+        LoomEdgeView: {
+            key: string;
+            relation: string;
+            source: string;
+            target: string;
+        };
+        /** LoomNodeView */
+        LoomNodeView: {
+            key: string;
+            kind: string;
+            label: string;
+        };
         /** LoomSummary */
         LoomSummary: {
             description: string;
-            name: string;
+            detail_path: string;
+            digest: string;
+            pattern_id: string;
+            revision: string;
             title: string;
             trigger_hint: string;
         };
         /** LoomView */
         LoomView: {
+            checkpoint_schema: string;
             description: string;
+            digest: string;
+            edges: components["schemas"]["LoomEdgeView"][];
             mermaid_source: string;
-            name: string;
-            node_names: string[];
+            nodes: components["schemas"]["LoomNodeView"][];
+            pattern_id: string;
+            /** @constant */
+            publication: "published";
+            revision: string;
+            schema_version: number;
             title: string;
             trigger_hint: string;
         };
         /** MessageAccepted */
         MessageAccepted: {
+            /** @enum {string} */
+            evidence_capture: "process_local" | "durable_best_effort";
+            loom_path: string;
+            orb_path: string;
+            pattern_id: string;
+            pattern_revision: string;
             run_id: string;
             turn: components["schemas"]["BridgeTurnView"];
         };
@@ -391,6 +514,7 @@ export interface components {
         NexusCovenRow: {
             animator_name: string;
             capability_key: string;
+            checked_at: string | null;
             dedicated: boolean;
             family: string;
             health: string;
@@ -406,11 +530,63 @@ export interface components {
         /** NexusSnapshot */
         NexusSnapshot: {
             board: components["schemas"]["NexusBoard"];
+            containment_reason: string | null;
+            /** Format: date-time */
+            snapshot_at: string;
+            transitions: components["schemas"]["TransitionRecordView"][];
+        };
+        /** OrbRunSnapshot */
+        OrbRunSnapshot: {
+            /** @enum {string} */
+            capture: "process_local" | "durable_best_effort";
+            evidence: components["schemas"]["EvidenceItem"][];
+            gaps: components["schemas"]["EvidenceGap"][];
+            has_more: boolean;
+            known_omissions: string[];
+            ledger_head_seq: number;
+            /**
+             * @default not_available
+             * @constant
+             */
+            live_tail: "not_available";
+            next_after_seq: number | null;
+            page_end_seq: number | null;
+            pattern: components["schemas"]["PatternReference"];
+            run: components["schemas"]["OrbRunSummary"];
+            /**
+             * @default 1
+             * @constant
+             */
+            schema_version: 1;
+            /** Format: date-time */
+            snapshot_at: string;
+        };
+        /** OrbRunSummary */
+        OrbRunSummary: {
+            bridge_path: string;
+            /** Format: date-time */
+            created_at: string;
+            error_present: boolean;
+            finished_at: string | null;
+            run_id: string;
+            session_id: string;
+            started_at: string | null;
+            status: string;
+            workflow_name: string;
+        };
+        /** PatternReference */
+        PatternReference: {
+            digest: string | null;
+            exact: boolean;
+            loom_path: string | null;
+            pattern_id: string;
+            revision: string;
         };
         /** RunEventEnvelope */
         RunEventEnvelope: {
+            event_id: string;
             /** @enum {string} */
-            kind: "token" | "status" | "node" | "fragment" | "consent" | "log" | "done" | "resync";
+            kind: "token" | "status" | "node" | "dispatch" | "transition" | "fragment" | "consent" | "log" | "done" | "resync";
             /** Format: date-time */
             occurred_at: string;
             payload: {
@@ -426,20 +602,34 @@ export interface components {
         };
         /** RunProjectionSnapshot */
         RunProjectionSnapshot: {
+            activity: string;
+            capability_key: string | null;
             content: string;
             cursor: number;
+            dispatch_occurrence_id: string | null;
+            /** @enum {string} */
+            evidence_capture: "process_local" | "durable_best_effort";
             fragments: {
                 [key: string]: unknown;
             }[];
+            grant_id: string | null;
+            loom_path: string | null;
+            occurrence_id: string | null;
+            orb_path: string;
+            pattern_id: string;
+            pattern_revision: string;
             run_id: string;
+            run_status: string;
             /**
              * @default 1
              * @constant
              */
             schema_version: 1;
             session_id: string;
-            status: string;
             terminal: boolean;
+            transition_occurrence_id: string | null;
+            transition_phase: string | null;
+            transition_request_id: string | null;
         };
         /** SessionCreated */
         SessionCreated: {
@@ -478,7 +668,11 @@ export interface components {
         /** SwapTicket */
         SwapTicket: {
             action_type: string;
+            compensation_transition_id: string | null;
             id: string;
+            phase: string;
+            physical_transition_id: string | null;
+            request_id: string;
             /** @enum {string} */
             state: "warming" | "settled" | "failed";
             target: string;
@@ -514,6 +708,27 @@ export interface components {
             reason?: string | null;
             /** @description Number of animator evictions selected for the transition */
             total_metabolic_cost: number;
+        };
+        /** TransitionRecordView */
+        TransitionRecordView: {
+            action_type: string | null;
+            bridge_path: string | null;
+            compensation_transition_id: string | null;
+            detail: string | null;
+            /** Format: date-time */
+            observed_at: string;
+            occurrence_id: string | null;
+            orb_path: string | null;
+            phase: string;
+            physical_transition_id: string | null;
+            priority: number;
+            request_id: string;
+            /** Format: date-time */
+            requested_at: string;
+            run_id: string | null;
+            /** @enum {string} */
+            source: "run" | "operator";
+            target_capability_key: string;
         };
     };
     responses: never;
@@ -834,6 +1049,82 @@ export interface operations {
             };
         };
     };
+    getLoomPatternRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pattern_id: string;
+                revision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoomView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    getLoomPatternRevisionSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pattern_id: string;
+                revision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
     getLoomWorkflow: {
         parameters: {
             query?: never;
@@ -1059,6 +1350,83 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["TransitionEventEnvelope"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    getNexusTransition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransitionRecordView"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    getOrbRun: {
+        parameters: {
+            query?: {
+                after_seq?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrbRunSnapshot"];
                 };
             };
             /** @description Bad request syntax or unsupported method */

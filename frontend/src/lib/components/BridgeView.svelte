@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import {
     createBridgeSession,
@@ -27,9 +28,24 @@
   let thread: HTMLElement;
   let loadVersion = 0;
   let renderVersion = $state(0);
+  let stickToTail = true;
   let liveTurns = $state<LiveTurn[]>([]);
-  const streams = new Map<string, () => void>();
-  const refreshTimers = new Map<string, number>();
+  const streams = new SvelteMap<string, () => void>();
+  const refreshTimers = new SvelteMap<string, number>();
+  const runStatuses = new Set([
+    "queued",
+    "running",
+    "awaiting_hardware",
+    "awaiting_consent",
+    "done",
+    "failed",
+    "cancelled"
+  ]);
+
+  function operatorState(value: string): string {
+    if (value === "awaiting_hardware") return "awaiting animators";
+    return value.replaceAll("_", " ");
+  }
 
   let selected = $derived(snapshot?.session ?? null);
   let selectedLiveTurns = $derived(
@@ -83,10 +99,10 @@
     void load(sessionId);
   });
 
-  $effect(() => {
+  $effect.pre(() => {
     renderVersion;
-    if (thread) {
-      queueMicrotask(() => {
+    if (thread && stickToTail) {
+      void tick().then(() => {
         thread.scrollTop = thread.scrollHeight;
       });
     }
@@ -140,8 +156,33 @@
         if (!active) return;
         const payload = event.payload;
         if (event.kind === "token") active.content += String(payload.text ?? "");
-        else if (event.kind === "status" || event.kind === "node") {
-          active.status = String(payload.text ?? event.kind);
+        else if (event.kind === "status") {
+          active.activity = String(payload.text ?? "running");
+          if (runStatuses.has(active.activity)) active.runStatus = active.activity;
+        } else if (event.kind === "node") {
+          active.occurrenceId =
+            typeof payload.occurrence_id === "string" && payload.occurrence_id
+              ? payload.occurrence_id
+              : active.occurrenceId;
+        } else if (event.kind === "dispatch") {
+          active.capabilityKey = String(payload.text ?? "");
+          active.grantId = typeof payload.grant_id === "string" ? payload.grant_id : null;
+          active.dispatchOccurrenceId =
+            typeof payload.occurrence_id === "string" ? payload.occurrence_id : null;
+          active.occurrenceId =
+            typeof payload.occurrence_id === "string" && payload.occurrence_id
+              ? payload.occurrence_id
+              : active.occurrenceId;
+        } else if (event.kind === "transition") {
+          active.transitionRequestId = String(payload.text ?? "");
+          active.transitionOccurrenceId =
+            typeof payload.occurrence_id === "string" ? payload.occurrence_id : null;
+          active.transitionPhase =
+            typeof payload.phase === "string" ? payload.phase : active.transitionPhase;
+          active.capabilityKey =
+            typeof payload.capability_key === "string"
+              ? payload.capability_key
+              : active.capabilityKey;
         } else if (event.kind === "fragment") active.fragments.push(payload);
         else if (event.kind === "consent") {
           if (snapshot?.session?.id === active.sessionId) void load(active.sessionId);
@@ -152,6 +193,8 @@
             active.content = String(settled.content);
           }
           active.state = String(payload.status).includes("fail") ? "failed" : "done";
+          active.runStatus = String(payload.status ?? "done");
+          active.activity = active.runStatus;
           streams.delete(targetRunId);
           if (snapshot?.session?.id === active.sessionId) {
             scheduleSettledRefresh(targetRunId, active.sessionId);
@@ -222,9 +265,22 @@
           sessionId: targetSessionId,
           runId: accepted.run_id,
           content: "",
-          status: "queued",
+          runStatus: "queued",
+          activity: "queued",
           state: "streaming",
-          fragments: []
+          fragments: [],
+          patternId: accepted.pattern_id,
+          patternRevision: accepted.pattern_revision,
+          loomPath: accepted.loom_path,
+          orbPath: accepted.orb_path,
+          evidenceCapture: accepted.evidence_capture,
+          occurrenceId: null,
+          dispatchOccurrenceId: null,
+          grantId: null,
+          capabilityKey: null,
+          transitionOccurrenceId: null,
+          transitionRequestId: null,
+          transitionPhase: null
         };
         liveTurns.push(live);
       }
@@ -252,11 +308,17 @@
     snapshot.pending_count = pending;
     window.dispatchEvent(new CustomEvent("altar:attention", { detail: pending }));
   }
+
+  function trackScroll() {
+    if (!thread) return;
+    stickToTail = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 72;
+  }
 </script>
 
 <svelte:head><title>Bridge — LychD</title></svelte:head>
-<div class="instrument-deck" aria-label="Bridge">
+<div class="instrument-deck instrument-deck--bridge">
   <aside class="bridge-rail">
+    <h1 class="visually-hidden">Bridge — conversations</h1>
     <button class="rune-btn new-seance" type="button" onclick={createSession}>✦ &nbsp;New Séance</button>
     <div class="divider">◆</div>
     {#if snapshot?.sessions.length}
@@ -272,7 +334,7 @@
   </aside>
 
   <div class="bridge-thread">
-    <div class="thread-scroll" bind:this={thread} aria-live="polite">
+    <div class="thread-scroll" bind:this={thread} onscroll={trackScroll} aria-label="Conversation">
       {#if loading}
         <div class="mist"></div><div class="mist"></div>
       {:else if error && !selected}
@@ -293,15 +355,38 @@
           >
             {#if turn.role === "agent"}<div class="turn__meta"><span class="who">LychD</span></div>{/if}
             <div class="turn__body">{turn.content}</div>
+            {#if turn.role === "agent" && turn.run_id}
+              <a class="settled-evidence" href="/orb/{turn.run_id}">Look into the Orb →</a>
+            {/if}
           </article>
         {/each}
         {#each selectedLiveTurns as turn (turn.runId)}
           <article class="turn turn--agent" data-state={turn.state}>
             <div class="turn__meta">
               <span class="who">LychD</span>
-              <span class="status">{turn.status}</span>
+              <span class="chip" data-state={turn.runStatus}>{operatorState(turn.runStatus)}</span>
+              <span class="status" aria-live="polite">{operatorState(turn.activity)}</span>
             </div>
             <div class="turn__body">{turn.content}</div>
+            {#if turn.runStatus === "awaiting_hardware" || turn.transitionRequestId}
+              <div class="body-crossing">
+                <span class="body-crossing__title">Capability transition</span>
+                <span>
+                  {turn.capabilityKey ?? "capability"} ·
+                  {operatorState(turn.transitionPhase ?? turn.runStatus)}
+                </span>
+                {#if turn.transitionOccurrenceId}
+                  <span title={turn.transitionOccurrenceId}>
+                    transition occurrence {turn.transitionOccurrenceId.slice(0, 12)}
+                  </span>
+                {/if}
+              </div>
+            {/if}
+            <nav class="run-sigil" aria-label="Run links">
+              <span class="run-sigil__id">run {turn.runId.slice(0, 12)}</span>
+              <span>{turn.patternId}@{turn.patternRevision}</span>
+              <a href={turn.orbPath}>Look into the Orb →</a>
+            </nav>
             <div class="turn__extras">
               {#each turn.fragments as fragment (fragment)}<GenUI descriptor={fragment} />{/each}
             </div>
@@ -319,7 +404,7 @@
           bind:value={prompt}
           required
           rows="2"
-          placeholder="Speak into the Bridge…"
+          placeholder="Speak into the void…"
           onkeydown={keydown}
           aria-label="Message"
         ></textarea>
@@ -343,12 +428,11 @@
         </dl>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="rune-head">Context floor</span></div>
-        <div class="floor">
-          <div class="block volatile"><span class="layer">L0</span><span class="k">live projection</span></div>
-          <div class="block"><span class="layer">L1</span><span class="k">session turns</span></div>
-          <div class="block" data-state="stub"><span class="layer">L2</span><span class="k">memory</span></div>
-        </div>
+        <div class="panel-head"><span class="rune-head">Review this run</span></div>
+        <p class="inspector-copy">
+          Look into the Orb for retained evidence. From there, open the exact Pattern in Loom or a
+          correlated capability transition in Nexus when those links exist.
+        </p>
       </div>
     {/if}
   </aside>

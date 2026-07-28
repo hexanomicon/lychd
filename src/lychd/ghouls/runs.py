@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 import structlog
 
 from lychd.domain.cortex.engine import admit_consent_resume, run_job_key
-from lychd.domain.cortex.graph_runner import GraphRunner
+from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent, TransitionTraceEvent
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunParked, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
@@ -86,7 +86,7 @@ async def _await_claim_gate(substrate: RunSubstrate) -> None:
         await gate.wait()
 
 
-async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/park/fail path
+async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/resume/park/fail path
     ctx: dict[str, Any],
     *,
     run_id: str,
@@ -167,6 +167,17 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
             )
             return {"status": "failed", "run_id": run_id}
 
+        from lychd.agents.workflows.base import pattern_snapshot_is_valid
+
+        pinned_revision = str(run.pattern_manifest.get("revision", ""))
+        if not pattern_snapshot_is_valid(run.pattern_manifest) or run.pattern_manifest != workflow.manifest.snapshot():
+            await settle_terminal(
+                RunStatus.FAILED,
+                error=(f"pinned Pattern unavailable: {workflow.manifest.key}@{pinned_revision or 'unknown'}"),
+            )
+            await _cleanup_claim_resources(substrate, run, persistence=None)
+            return {"status": "failed", "run_id": run_id}
+
         if resume and not await substrate.stasis_store.exists(run.run_id):
             # Honest failure: never a silent re-run of a run whose checkpoint is gone.
             # F2: settle inside the try so the finally emits the terminal + closes the channel.
@@ -184,9 +195,33 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
             # The run parks while the orchestrator transitions hardware (C7). It holds no
             # lease while parked, so it never blocks its own drain (requester-not-counted).
             await ledger.set_status(run_id, RunStatus.AWAITING_HARDWARE)
+            emitter.status(RunStatus.AWAITING_HARDWARE.value)
 
         async def _on_stasis_exit() -> None:
             await ledger.set_status(run_id, RunStatus.RUNNING)
+            emitter.status(RunStatus.RUNNING.value)
+
+        def _on_node_event(event: NodeOccurrenceEvent) -> None:
+            emitter.node(
+                workflow.manifest.node_key(event.node_type),
+                phase=event.phase,
+                occurrence_id=event.occurrence_id,
+                pattern_id=workflow.manifest.key,
+                pattern_revision=workflow.manifest.revision,
+                wait_kind=event.wait_kind or "",
+                transition_request_id=event.transition_request_id or "",
+            )
+
+        def _on_transition_event(event: TransitionTraceEvent) -> None:
+            emitter.transition(
+                event.request_id,
+                phase=event.phase,
+                capability_key=event.target_capability_key,
+                occurrence_id=event.occurrence_id or "",
+                physical_transition_id=event.physical_transition_id or "",
+                compensation_transition_id=event.compensation_transition_id or "",
+                action_type=event.action_type or "",
+            )
 
         runner: GraphRunner[Any] = GraphRunner(
             orchestrator=substrate.orchestrator,
@@ -194,6 +229,9 @@ async def perform_run(  # noqa: C901, PLR0912, PLR0915 - honest fresh/resume/par
             signal_priority=run.priority,
             on_stasis_enter=_on_stasis_enter,
             on_stasis_exit=_on_stasis_exit,
+            on_node_event=_on_node_event,
+            on_transition_event=_on_transition_event,
+            run_id=run_id,
         )
         from lychd.domain.codex.sigil import Sigil
 

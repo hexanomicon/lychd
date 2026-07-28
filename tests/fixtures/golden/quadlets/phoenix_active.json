@@ -61,7 +61,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [],
       "user": "%U",
       "user_ns": null,
       "volumes": [
@@ -163,7 +162,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [],
       "user": null,
       "user_ns": null,
       "volumes": [
@@ -236,7 +234,6 @@
       "security_label_disable": false,
       "service_type": "oneshot",
       "start_with_pod": false,
-      "targets": [],
       "user": "%U",
       "user_ns": null,
       "volumes": [
@@ -283,8 +280,8 @@
       ],
       "binds_to": [],
       "conflicts": [],
-      "container_name": "lychd-oculus",
-      "description": "The Oculus (Arize Phoenix)",
+      "container_name": "lychd-phoenix",
+      "description": "External Eye (Arize Phoenix)",
       "devices": [],
       "env_vars": {
         "PHOENIX_PORT": "6006",
@@ -305,7 +302,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [],
       "user": null,
       "user_ns": null,
       "volumes": [],
@@ -316,27 +312,131 @@
         "lychd-phylactery.service"
       ]
     },
-    "id": "lychd-oculus",
+    "id": "lychd-phoenix",
     "type": "QuadletContainer"
   },
   {
     "dump": {
-      "description": "LychD Coven: logic",
-      "name": "logic",
-      "part_of": "lychd-pod.service",
-      "wanted_by": [
-        "default.target"
-      ]
+      "after": [],
+      "before": [
+        "lychd-alpha.service"
+      ],
+      "conflicts": [],
+      "description": "LychD Animator: alpha",
+      "kind": "animator",
+      "name": "alpha",
+      "part_of": [
+        "lychd-pod.service",
+        "lychd-coven-logic.target"
+      ],
+      "requires": [
+        "lychd-alpha.service"
+      ],
+      "wants": []
     },
-    "id": "logic",
+    "id": "lychd-animator-alpha.target",
+    "type": "QuadletTarget"
+  },
+  {
+    "dump": {
+      "after": [],
+      "before": [
+        "lychd-beta.service"
+      ],
+      "conflicts": [],
+      "description": "LychD Animator: beta",
+      "kind": "animator",
+      "name": "beta",
+      "part_of": [
+        "lychd-pod.service",
+        "lychd-coven-logic.target"
+      ],
+      "requires": [
+        "lychd-beta.service"
+      ],
+      "wants": []
+    },
+    "id": "lychd-animator-beta.target",
     "type": "QuadletTarget"
   },
   {
     "dump": {
       "after": [
+        "lychd-animator-alpha.target"
+      ],
+      "before": [
+        "lychd-gamma.service"
+      ],
+      "conflicts": [
+        "lychd-animator-alpha.target"
+      ],
+      "description": "LychD Animator: gamma",
+      "kind": "animator",
+      "name": "gamma",
+      "part_of": [
         "lychd-pod.service"
       ],
-      "binds_to": [],
+      "requires": [
+        "lychd-gamma.service"
+      ],
+      "wants": []
+    },
+    "id": "lychd-animator-gamma.target",
+    "type": "QuadletTarget"
+  },
+  {
+    "dump": {
+      "after": [],
+      "before": [
+        "lychd-resident.service"
+      ],
+      "conflicts": [],
+      "description": "LychD Animator: resident",
+      "kind": "animator",
+      "name": "resident",
+      "part_of": [
+        "lychd-pod.service"
+      ],
+      "requires": [
+        "lychd-resident.service"
+      ],
+      "wants": []
+    },
+    "id": "lychd-animator-resident.target",
+    "type": "QuadletTarget"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd-animator-alpha.target",
+        "lychd-animator-beta.target"
+      ],
+      "before": [],
+      "conflicts": [],
+      "description": "LychD Coven: logic",
+      "kind": "coven",
+      "name": "logic",
+      "part_of": [
+        "lychd-pod.service"
+      ],
+      "requires": [],
+      "wants": [
+        "lychd-animator-alpha.target",
+        "lychd-animator-beta.target"
+      ]
+    },
+    "id": "lychd-coven-logic.target",
+    "type": "QuadletTarget"
+  },
+  {
+    "dump": {
+      "after": [
+        "lychd-pod.service",
+        "lychd-animator-alpha.target"
+      ],
+      "binds_to": [
+        "lychd-animator-alpha.target"
+      ],
       "conflicts": [],
       "container_name": "lychd-alpha",
       "description": "LychD Soulstone: alpha",
@@ -363,9 +463,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [
-        "logic"
-      ],
       "user": "%U",
       "user_ns": null,
       "volumes": [],
@@ -380,9 +477,12 @@
   {
     "dump": {
       "after": [
-        "lychd-pod.service"
+        "lychd-pod.service",
+        "lychd-animator-beta.target"
       ],
-      "binds_to": [],
+      "binds_to": [
+        "lychd-animator-beta.target"
+      ],
       "conflicts": [],
       "container_name": "lychd-beta",
       "description": "LychD Soulstone: beta",
@@ -408,9 +508,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [
-        "logic"
-      ],
       "user": "%U",
       "user_ns": null,
       "volumes": [],
@@ -425,9 +522,12 @@
   {
     "dump": {
       "after": [
-        "lychd-pod.service"
+        "lychd-pod.service",
+        "lychd-animator-gamma.target"
       ],
-      "binds_to": [],
+      "binds_to": [
+        "lychd-animator-gamma.target"
+      ],
       "conflicts": [],
       "container_name": "lychd-gamma",
       "description": "LychD Soulstone: gamma",
@@ -456,7 +556,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [],
       "user": "%U",
       "user_ns": null,
       "volumes": [],
@@ -471,9 +570,12 @@
   {
     "dump": {
       "after": [
-        "lychd-pod.service"
+        "lychd-pod.service",
+        "lychd-animator-resident.target"
       ],
-      "binds_to": [],
+      "binds_to": [
+        "lychd-animator-resident.target"
+      ],
       "conflicts": [],
       "container_name": "lychd-resident",
       "description": "LychD Soulstone: resident",
@@ -499,7 +601,6 @@
       "security_label_disable": false,
       "service_type": null,
       "start_with_pod": false,
-      "targets": [],
       "user": "%U",
       "user_ns": null,
       "volumes": [],

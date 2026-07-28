@@ -136,7 +136,7 @@ def test_channel_snapshot_carries_projection_and_exact_cursor() -> None:
 
     assert snapshot.cursor == 2
     assert snapshot.content == "ashes"
-    assert snapshot.status == "thinking"
+    assert snapshot.activity == "thinking"
     assert snapshot.fragments == (fragment,)
     assert snapshot.terminal is False
 

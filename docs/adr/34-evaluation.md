@@ -15,10 +15,16 @@ icon: material/chart-bell-curve-cumulative
 - **Inertia Scoring:** Implementation of a metric to measure "People-Pleasing" behavior—quantifying how many rounds of user pressure (nudges) are required before a model abandons the truth for compliance.
 - **Pressure-Induced Viparyaya Probes:** Mandatory evaluation of whether status pressure, impossible constraints, or demand for definitive output causes a model to fabricate completion instead of reporting the blocked premise.
 - **Economic Sentry Logic:** Integration with the **[Toll (41)](41-x402.md)** to establish an "Intelligence Floor," preventing the expenditure of cloud tokens on tasks solvable by local silicon.
-- **Outcome-Based Verification:** Mandatory execution of reasoning results within the **[Shadow Realm (31)](31-simulation.md)** to verify exit codes and side effects rather than textual similarity.
+- **Outcome-Based Verification:** Candidate worlds may be isolated by
+  **[Shadow (31)](31-simulation.md)**, while unsafe deterministic execution runs in the Tomb.
+  Recorded exit codes and side effects outrank textual similarity.
 - **Standardized Golden Sets:** Utilization of a curated library of "Riddles" (Human-curated "Golden Truths") and "Tricks" (Adversarial traps) to provide a stable baseline for comparison.
 - **Dialect Perturbation Probes:** Inclusion of Magus-specific syntactic perturbations, grammar drift, and idiolectal mutations as a dedicated probe family to measure adoption, contagion, semantic stability, and recovery under stylistic pressure.
 - **Regression Detection:** Mandatory benchmarking of newly forged **[Soul-Adapters (33)](33-training.md)** to ensure behavioral alignment has not induced logical rot.
+- **Suite Feedback:** Evaluation of exact Suite and Composition revisions must return typed findings,
+  measurements, attribution candidates, invalidations, correction requests, and uncertainty to the
+  smallest supported upstream boundary without turning evaluation into workflow, identity,
+  mutation, or training authority.
 
 ## Considered Options
 
@@ -40,6 +46,17 @@ icon: material/chart-bell-curve-cumulative
 ## Decision Outcome
 
 **The Riddle** is adopted as the Evaluation protocol. It transforms the Lich from a passive host into a selective organism that only manifests models capable of passing the "Trials of the Crypt."
+
+!!! warning "Implementation state"
+    Riddle is designed. No Riddle dataset, capability matrix, DeepFabric dependency, evaluator
+    store, automatic Dispatcher ranking, or Altar evaluation route is installed. The current
+    Pydantic AI baseline is pinned for the Bridge runtime, and no LychD evaluation adapter has been
+    admitted.
+
+    A later Pydantic Evals version provides a useful typed baseline—`Dataset`, `Case`, custom
+    evaluators, experiments, and reports—behind a LychD-owned trial/evidence port. DeepFabric may
+    also be evaluated as a candidate. Neither framework becomes evidence owner, Tomb broker,
+    routing authority, or definitive metric source by adoption alone.
 
 Within the Ouroboros, Riddle is the measurement body. It prevents self-reference from becoming self-hypnosis. A branch, model, or adapter may feel coherent from inside its own context, but Riddle forces that motion against adversarial prompts, deterministic execution, and outcome metrics. Only measured motion may strengthen identity gravity or enter the Soulforge.
 
@@ -71,52 +88,151 @@ The results of the Riddle are serialized into a **Capability Matrix** stored thr
 
 1. **Test Execution:** Every model-backed Animator (local Soulstone or remote Portal) is run through the "Riddle of the Scout" (Extraction), "Riddle of the Smith" (Coding), and "Riddle of the Mirror" (Persona).
 2. **Metric Aggregation:** The system records `Accuracy`, `Tokens-per-Second`, `VRAM_Occupancy`, `truthful_non_answer_rate`, `over_refusal_rate`, `retry_count`, `precondition_miss_rate`, and `pressure_latency_drift`.
-3. **Primary Selection:** The **[Dispatcher (22)](22-dispatcher.md)** consults this matrix. If a 7B local model passes the "Scout Riddle" with 90% accuracy, it is promoted to the primary provider for that capability, bypassing expensive remote Portals.
-4. **The Headroom Gate:** If the Riddle detects that a model is scoring >90% on the capability matrix (e.g., saturated Tier 1 frontier models), the **[Soulforge (33)](33-training.md)** is explicitly locked for that domain. Self-training yields zero lift when a model is already saturated on standard benchmarks. Skipping the training ritual saves local VRAM and time, as no further headroom exists to mine.
+3. **Selection Evidence:** The **[Dispatcher (22)](22-dispatcher.md)** may consume a versioned,
+   sufficiently powered matrix through an explicit policy. One score never promotes a provider
+   automatically, and the current warm-first ordering remains when evidence is absent or stale.
+4. **The Headroom Gate:** Soulforge recipes require a declared expected-lift hypothesis and
+   holdout evidence. `>90%` on one suite does not prove zero headroom or justify a universal
+   training lock.
 5. **The Ranking Projection:** Capability Matrix cells project into CapabilitySpec metadata (or an adjoining Phylactery relation) consumed by the **[Dispatcher (22)](22-dispatcher.md)**'s ranking stage, which runs after the Ward, Privatization, and Sovereignty gates have admitted a candidate set. Absent matrix data, the warm-first ordering stands.
 
 ### III. The Shadow Realm Verdict (Physical Truth)
 
-For technical riddles, the system rejects textual evaluation in favor of **Execution-Based Scoring**, governed by the `deepfabric` Evaluator library.
+For technical riddles, the target system prefers **execution-based scoring** where an effect can be
+observed. The evaluator framework remains replaceable.
 
-- **The Simulation:** The model's response is intercepted by the DeepFabric execution harness.
-  Instead of using default lightweight sandboxes (for example, Spin), DeepFabric coordinates
-  speculative trials with **[Shadow Realm (31)](31-simulation.md)** state while dispatching unsafe
-  physical execution payloads into the Tomb. The Shadow Realm is not a container.
-- **The Outcome:** The model’s score is derived from actual execution metrics (`execution_success_rate`, `tool_selection_accuracy`) gathered from the Shadow Realm's unit tests and environment stability after the change.
+- **The Simulation:** Shadow may isolate candidate state while the Riddle submits an explicitly
+  shaped unsafe execution payload to the Tomb. The Shadow Realm is not a container.
+- **The Outcome:** The model's score may derive from recorded execution metrics
+  (`execution_success_rate`, `tool_selection_accuracy`) gathered from the owning Tomb/test harness
+  and explicit environment observations.
 - **Truth over Monologue:** A model that produces beautiful but broken code is penalized by the Evaluator; a model that produces concise, functional code is rewarded. This is the endgame of optimization: **Stillness**. An efficient system makes one clean, targeted cut instead of burning tokens on unbounded speculation.
 
-### IV. The Evaluator Harness (DeepFabric)
+### IV. The Evaluator Harness
 
-To standardize the measurement of physical truth, the Riddle integrates the `deepfabric` evaluation engine.
+To standardize measurement, Riddle owns a typed evaluator port and versioned trial record.
+Pydantic Evals is the preferred first baseline to spike because its dataset/case/evaluator/report
+vocabulary fits that boundary. DeepFabric remains another unadmitted candidate.
 
-Here DeepFabric is used as an **evaluation harness**: it brokers tool execution and records outcome metrics. This is distinct from the Soulforge's **dataset loom** use in **[ADR 33](33-training.md)**, where DeepFabric shapes verified Karma into training manifests.
-
-- **ReAct Interception:** The Evaluator intercepts the model's Chain-of-Thought (ReAct) loop. When the model requests a tool call, DeepFabric parses the request and acts as the broker.
-- **Tomb Routing:** Instead of using default WebAssembly sandboxes (Spin), DeepFabric is configured with a custom endpoint, routing the tool execution directly into LychD's native, heavy **Tomb** containers.
-- **Standardized Metrics:** DeepFabric automatically calculates the definitive scores: `tool_selection_accuracy`, `parameter_accuracy`, and `execution_success_rate`. These metrics are serialized directly into the Dispatcher's Capability Matrix.
+- **Typed Tool Evidence:** The evaluator observes emitted tool requests and their admitted outcomes;
+  it does not intercept or require hidden chain-of-thought.
+- **Tomb Routing:** The owning LychD Pattern routes unsafe execution into Tomb containers.
+  An evaluator library never becomes the execution broker.
+- **Versioned Metrics:** Metrics such as `tool_selection_accuracy`, `parameter_accuracy`, and
+  `execution_success_rate` carry evaluator version, sample size, controls, uncertainty, and raw
+  evidence links. None is definitive by name alone.
 
 ### V. Economic Arbitration (Tithe Tuning)
 
 The Riddle informs the **[Toll (41)](./41-x402.md)** regarding the "Intelligence Floor."
 
-- **The Threshold:** If the Riddle proves that local silicon can solve a specific class of task (e.g., "Summarize this .zip"), the Toll physically bars the use of external Portals for that task.
+- **The Threshold:** A Toll/Dispatcher policy may prefer or bar Portals for a declared task class
+  only after consuming current versioned evidence under its own authority.
 - **The Frontier:** Portals are reserved exclusively for "Frontier Riddles"—tasks that local Soulstones have historically failed during the evaluation ritual.
 
 ### VI. Calibration of the Mirror
 
-The Riddle utilizes **[The Mirror (32)](32-identity.md)** to simulate the Magus's authority.
+The Riddle may use versioned adversarial cases that imitate authority pressure. Mirror supplies
+Persona identity definitions where relevant; it does not own trial generation.
 
-- **Social Engineering Simulation:** The Mirror generates prompts that mimic the Magus's authority to measure whether the model attempts to bypass its own safety constraints.
-- **Persistence:** Models that survive this simulation are deemed "Sovereign" and are saved for later use.
+- **Social Engineering Simulation:** Riddle cases mimic authority pressure to measure whether a
+  model attempts to bypass its constraints.
+- **Persistence:** Passing results produce bounded evidence. They do not deem a model “Sovereign,”
+  grant tools, or promote it automatically.
+
+### VII. Semantic Feedback Across Suites
+
+A Suite may reveal a defect only after an upstream artifact is consumed downstream: a mesh passes
+Voidlight review, for example, yet fails silhouette or collision criteria inside Game Foundry.
+Riddle therefore supports a **semantic-feedback pass** over the exact pinned Suite graph.
+“Backpropagation” is a useful metonymy for this return of consequence to the smallest relevant
+owner; it is not a differentiable graph, a gradient, an automatic parameter update, or permission
+to replay an edge.
+
+Forward Suite edges remain governed by **[Workflow (28)](28-workflow.md)** and carry admitted
+intent, immutable artifact references, and effect receipts. Riddle observes those edges and may
+publish reverse-facing evaluation records:
+
+- `SuiteFindingSet@1` binds one rubric revision to exact Suite, Composition, Pattern, Invocation,
+  artifact, environment, and evidence references. Each finding records a verdict, measurements,
+  evaluator identity and revision, observation scope, uncertainty, and retained evidence.
+- `AttributionCandidate@1` proposes one credit, fault, mixed, or unresolved contribution against
+  an exact producing, transforming, handoff, consuming, harness, or environment boundary. It
+  carries supporting and conflicting evidence plus rival candidates. It is not a causal verdict.
+- `InvalidationSet@1` names evaluation claims or declared dependency-derived outputs whose support
+  no longer survives a changed input, rubric, evaluator, environment, or discovered contradiction.
+  It never deletes an artifact, cancels a Run, or revokes authority.
+- `CorrectionRequest@1` gives the owning Composition a bounded target delta, failing criteria,
+  evidence references, preserved constraints, and proposed repair scope. It is inert input to a
+  later admission, not an instruction to mutate live state.
+
+These records may travel against the visual direction of production, but no reverse edge becomes
+an executable edge. Weaver remains the only logical workflow control plane; an owning policy and,
+where required, HitL decide whether evidence admits a new forward Invocation. Mirror owns Persona
+and Sigil identity definitions; Oculus owns event correlation; Phylactery and the relevant domain
+own durable records; Soulforge owns training; Smith owns candidate Pattern or adapter
+assimilation. Riddle owns only the rubric, evaluation result, uncertainty, and bounded
+credit-or-fault attribution claim.
+
+#### Minimal-cut re-evaluation
+
+Riddle may derive a proposed **evaluation cut** from declared dependencies:
+
+1. pin the Suite graph, rubric, evaluator, environment, inputs, outputs, and retained evidence;
+2. locate the narrowest contract boundary whose observed output contradicts a criterion;
+3. publish ranked attribution candidates and rivals, leaving the result unresolved when evidence
+   cannot distinguish them;
+4. mark only dependent evaluation claims as unsupported and preserve unrelated branches whose
+   complete inputs and evaluation conditions are unchanged; and
+5. after Weaver admits a repair, evaluate the changed cut, its handoff seam, and declared
+   regression sentinels before a new Suite-level claim is formed.
+
+Reuse of an earlier verdict is legal only when its complete declared input closure, artifact
+revisions, rubric, evaluator, relevant environment, and evidence contract still match. “Nearest
+upstream node” is not sufficient attribution, and “smallest cut” means the smallest **supported**
+cut rather than the cheapest convenient rerun.
+
+#### Adversarial feedback cases
+
+Every future Suite feedback provider must prove at least these cases:
+
+- a downstream lighting defect must not be blamed on an otherwise conforming upstream mesh;
+- failure in one consumer must not invalidate a shared asset for independent consumers;
+- missing intermediate evidence yields `UNKNOWN` or unresolved attribution, not reconstructed
+  blame;
+- a hidden validator precondition is classified as a state-contract or harness candidate rather
+  than silently charged to the model or asset producer;
+- flaky measurements, evaluator drift, and rubric drift invalidate only the claims they actually
+  undermine;
+- a correction payload attempting to publish, delete, retrain, widen a Sigil, or spend is inert;
+  and
+- bounded repair budgets and repeated-finding detection stop circular blame and endless
+  producer-consumer ping-pong.
+
+#### Loom projection
+
+The future Loom may draw solid forward production edges and a visually distinct dotted feedback
+overlay. Selecting a finding may reveal the exact rubric, evidence, measurements, uncertainty,
+candidate owners and rivals, unsupported claim cone, proposed minimal cut, and unaffected cached
+claims. It must label attribution as measured, inferred, disputed, or unknown; never depict a
+candidate as proven causality. Repair, retraining, publication, or other effect controls remain
+separate Weaver, Soulforge, Smith, or HitL actions. No Suite feedback route or live projection is
+implemented today.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Physical Efficiency:** The system achieves maximum "Logic-per-Watt" by using the smallest capable model for every task.
-    - **Adversarial Resilience:** Models are hardened against "People-Pleasing" hallucinations before they interact with sensitive data.
-    - **Self-Optimizing Dispatcher:** The routing logic becomes an empirical science based on the Riddle's results.
+    - **Physical-Efficiency Evidence:** Trials can compare quality, latency, and cost without
+      promising one universal optimum.
+    - **Adversarial Diagnosis:** Pressure probes can expose compliance failures before a policy
+      grants sensitive tools.
+    - **Measured Routing Seam:** Dispatcher policy can later consume versioned evidence rather than
+      intuition.
+    - **Bounded Suite Repair Evidence:** Downstream consequences can return to the narrowest
+      supported owner while independent work and still-valid claims remain reusable.
 
 !!! failure "Negative"
     - **Evaluation Latency:** Running the full "Trials of the Crypt" for a new 70B model can take significant time (minutes to hours) and VRAM.
     - **Dataset Maintenance:** The "Golden Sets" and "Riddles" must be periodically updated by the Magus to reflect the evolving complexity of the system's tools.
+    - **Attribution Ambiguity:** Shared dependencies, partial observability, and interacting defects
+      often require rival hypotheses or broader re-evaluation instead of one convenient culprit.

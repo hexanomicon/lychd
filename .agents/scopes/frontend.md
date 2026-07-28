@@ -18,6 +18,8 @@ the compiled Altar assets, browser API/SSE projection, Svelte, SvelteKit, Vite, 
   [skills guidance](https://svelte.dev/docs/ai/skills), and
   [Svelte best practices](https://svelte.dev/docs/svelte/best-practices) are the upstream syntax
   and validation references. They do not override ADR 15.
+- [Svelte scope](svelte.md) owns the progressive official-documentation, AI-tooling, and Svelte
+  Flow routing used after this frontend entrypoint.
 
 ## Cheapest Probes
 
@@ -30,22 +32,29 @@ the compiled Altar assets, browser API/SSE projection, Svelte, SvelteKit, Vite, 
 - Tooling: `frontend/package.json`, `frontend/package-lock.json`, `Makefile`, and the exact Node
   version in `.nvmrc`.
 
+For agent, observability, graph, or streaming interaction research, the
+[agent and observability UX](references.md#agent-and-observability-ux) map offers optional local
+comparisons after ADR 15 and current Altar contracts are understood. For Svelte implementation,
+continue through the required [Svelte scope](svelte.md) instead.
+
 ## Required Svelte Workflow
 
-For every task that creates, edits, or reviews a `.svelte`, `.svelte.ts`, or `.svelte.js` file:
+For every task that creates, edits, reviews, or diagnoses a `.svelte`, `.svelte.ts`, or
+`.svelte.js` file:
 
-1. Use callable Svelte MCP tools when available: discover sections first, then retrieve every
+1. Load the tracked [Svelte scope](svelte.md).
+2. Use callable Svelte MCP tools when available: discover sections first, then retrieve every
    relevant documentation section.
-2. If those tools are unavailable, use the official CLI at the version recorded in this scope:
+3. If those tools are unavailable, use the official CLI at the version recorded in this scope:
 
     ```bash
     npx --yes @sveltejs/mcp@0.1.25 list-sections
     npx --yes @sveltejs/mcp@0.1.25 get-documentation '$state,$derived,$effect'
     ```
 
-3. Fetch only the sections relevant to the task. Prefer current official documentation over model
+4. Fetch only the sections relevant to the task. Prefer current official documentation over model
    memory, old examples, blogs, or Svelte 3/4 training data.
-4. Run the official autofixer on every changed Svelte component or module and resolve its issues
+5. Run the official autofixer on every changed Svelte component or module and resolve its issues
    and suggestions before finishing:
 
     ```bash
@@ -53,7 +62,7 @@ For every task that creates, edits, or reviews a `.svelte`, `.svelte.ts`, or `.s
       frontend/src/lib/components/Example.svelte --svelte-version 5
     ```
 
-5. Run `npm --prefix frontend run check` and the focused Vitest suite. Run
+6. Run `npm --prefix frontend run check` and the focused Vitest suite. Run
    `npm --prefix frontend run build` when routes, configuration, CSS, or packaged assets change.
 
 Do not generate a Playground link for code written into the repository. Do not make a user-level

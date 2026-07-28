@@ -8,7 +8,7 @@ concurrency story on a real Postgres:
   that won the race (0 rows updated → re-read → `IllegalRunTransitionError`), and an
   idempotent same-target concurrent write is benign.
 - Seq fidelity: `append_event` persists `RunEvent.seq` VERBATIM as `Step.seq`
-  (no insert-time allocation), so Step order equals emit order (Wave-6 Scrying).
+  (no insert-time allocation), so Step order equals emit order (Orb evidence).
 """
 # testcontainers is not installed on the Mac (Linux-only); SQLAlchemy Table vs
 # FromClause noise on create_all. The whole module is importorskip'd at runtime.

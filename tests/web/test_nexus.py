@@ -129,3 +129,20 @@ def test_terminal_ticket_stream_reconnect_preserves_endpoint_truth(
 def test_swap_status_unknown_404(altar_client: TestClient[Litestar]) -> None:
     response = altar_client.get("/api/v1/nexus/swaps/nope")
     assert response.status_code == 404
+
+
+def test_transition_request_id_resolves_retained_ticket(
+    altar_client: TestClient[Litestar],
+) -> None:
+    accepted = altar_client.post(
+        "/api/v1/nexus/swaps",
+        json={"target": "chat:local"},
+    )
+    assert accepted.status_code == 202
+    request_id = accepted.json()["ticket"]["request_id"]
+
+    resolved = altar_client.get(f"/api/v1/nexus/transitions/{request_id}")
+
+    assert resolved.status_code == 200
+    assert resolved.json()["request_id"] == request_id
+    assert resolved.json()["source"] == "operator"

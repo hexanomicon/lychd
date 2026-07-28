@@ -99,30 +99,53 @@ async def test_consent_parks_without_done() -> None:
 
 @pytest.mark.asyncio
 async def test_converse_forwards_grant_model_settings() -> None:
-    """O5: Converse passes `model_settings=grant.model_settings()` to run_stream_events."""
+    """Converse forwards grant settings and bounded completed Pydantic history."""
     from types import SimpleNamespace
 
+    from pydantic_ai.messages import (
+        ModelMessagesTypeAdapter,
+        ModelRequest,
+        ModelResponse,
+        TextPart,
+    )
     from pydantic_ai.run import AgentRunResultEvent
 
     from lychd.agents.services import WorkflowServices, default_sigil
     from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.web.fragments import build_fragment_registry
+    from lychd.domain.web.schemas import BridgeTurn
     from tests.agents.fakes import FakeRegistry
 
     captured: dict[str, Any] = {}
     sentinel = {"temperature": 0.42, "max_tokens": 128}
+    prior_messages = [
+        ModelRequest(parts=ModelRequest.user_text_prompt("prior").parts, run_id="run-prior"),
+        ModelResponse(parts=[TextPart("prior reply")], run_id="run-prior"),
+    ]
+    serialized_prior = list(ModelMessagesTypeAdapter.dump_python(prior_messages, mode="json"))
+    expected_prior = list(serialized_prior)
 
     class _CaptureAgent:
         async def run_stream_events(self, _prompt: str, **kwargs: Any) -> Any:
             captured.update(kwargs)
+            captured["prompt"] = _prompt
+            captured["floor"] = kwargs["deps"].context.get("run_1").floor_text()
+            new_messages = [
+                ModelRequest(parts=ModelRequest.user_text_prompt(_prompt).parts, run_id="run_1"),
+                ModelResponse(parts=[TextPart("ok")], run_id="run_1"),
+            ]
 
-            def _no_messages() -> list[Any]:
-                return []
+            def _all_messages() -> list[Any]:
+                return [*(kwargs["message_history"] or []), *new_messages]
 
             yield AgentRunResultEvent(
                 result=cast(
                     "AgentRunResult[BridgeReply]",
-                    SimpleNamespace(output=BridgeReply(answer="ok", fragments=[]), all_messages=_no_messages),
+                    SimpleNamespace(
+                        output=BridgeReply(answer="ok", fragments=[]),
+                        all_messages=_all_messages,
+                        new_messages=lambda: new_messages,
+                    ),
                 )
             )
 
@@ -131,6 +154,11 @@ async def test_converse_forwards_grant_model_settings() -> None:
             return _CaptureAgent()
 
     events, turns, consents, orch = FakeEvents(), FakeTurns(), FakeConsents(), FakeOrchestrator()
+    turns.seed_session(
+        "sess_1",
+        turns=[BridgeTurn(role="user", content="hello", run_id="run_1")],
+        message_history=serialized_prior,
+    )
     services = WorkflowServices(
         dispatcher=FakeDispatcher(model=None, settings=sentinel),
         orchestrator=orch,
@@ -150,3 +178,8 @@ async def test_converse_forwards_grant_model_settings() -> None:
             pass
 
     assert captured["model_settings"] == sentinel  # grant.model_settings() forwarded through
+    assert captured["prompt"] == "hello"
+    assert list(ModelMessagesTypeAdapter.dump_python(captured["message_history"], mode="json")) == expected_prior
+    assert "hello" not in str(expected_prior)
+    assert "active capability: chat:test" in captured["floor"]
+    assert len(turns.sessions["sess_1"].message_history) == 4

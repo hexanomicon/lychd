@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from uuid import uuid4
 
 import structlog
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
@@ -60,10 +61,12 @@ class RunEventKind(StrEnum):
 
     STATUS = "status"  # data = RunStatus value (or a progress keyword for the pill)
     NODE = "node"  # data = node key; drives the Loom highlight + progress rail
+    DISPATCH = "dispatch"  # data = granted capability key; meta carries bounded selection facts
+    TRANSITION = "transition"  # data = request id; meta carries bounded correlation
     TOKEN = "token"  # noqa: S105 - event-kind label, not a secret  # data = raw delta (NOT persisted)
     FRAGMENT = "fragment"  # data = JSON {"fragment": <registry name>, "params": {...}}
     CONSENT = "consent"  # data = JSON {"consent_id": ..., "tool_name": ...}
-    LOG = "log"  # data = message; meta["level"] — feeds Scrying only
+    LOG = "log"  # data = message; meta["level"] — feeds the Orb only
     DONE = "done"  # terminal; data = terminal RunStatus value
     RESYNC = "resync"  # synthetic replay-gap marker; clients must refetch a snapshot
 
@@ -74,6 +77,7 @@ class RunEvent(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     run_id: str
+    event_id: str = Field(default_factory=lambda: str(uuid4()))
     seq: int
     kind: RunEventKind
     data: str
@@ -88,8 +92,15 @@ class RunChannelSnapshot:
     run_id: str
     cursor: int
     content: str
-    status: str
+    activity: str
     fragments: tuple[RunEvent, ...]
+    occurrence_id: str | None
+    dispatch_occurrence_id: str | None
+    grant_id: str | None
+    capability_key: str | None
+    transition_occurrence_id: str | None
+    transition_request_id: str | None
+    transition_phase: str | None
     terminal: bool
 
 
@@ -142,8 +153,15 @@ class RunChannel:
     _subscribers: set[asyncio.Queue[RunEvent]] = field(default_factory=set)
     _closed: bool = False
     _content: list[str] = field(default_factory=list)
-    _status: str = "queued"
+    _activity: str = "queued"
     _fragments: list[RunEvent] = field(default_factory=list)
+    _occurrence_id: str | None = None
+    _dispatch_occurrence_id: str | None = None
+    _grant_id: str | None = None
+    _capability_key: str | None = None
+    _transition_occurrence_id: str | None = None
+    _transition_request_id: str | None = None
+    _transition_phase: str | None = None
     _drained: asyncio.Event = field(default_factory=asyncio.Event)
 
     def __post_init__(self) -> None:
@@ -164,12 +182,24 @@ class RunChannel:
         event = RunEvent(run_id=self.run_id, seq=self._seq, kind=kind, data=data, meta=dict(meta))
         self._seq += 1
         self._replay.append(event)
-        if kind in {RunEventKind.STATUS, RunEventKind.NODE, RunEventKind.DONE}:
-            self._status = data
+        if kind in {RunEventKind.STATUS, RunEventKind.DONE}:
+            self._activity = data
         elif kind is RunEventKind.TOKEN:
             self._content.append(data)
         elif kind is RunEventKind.FRAGMENT:
             self._fragments.append(event)
+        elif kind is RunEventKind.NODE:
+            self._occurrence_id = meta.get("occurrence_id") or self._occurrence_id
+        elif kind is RunEventKind.DISPATCH:
+            self._occurrence_id = meta.get("occurrence_id") or self._occurrence_id
+            self._dispatch_occurrence_id = meta.get("occurrence_id") or self._dispatch_occurrence_id
+            self._grant_id = meta.get("grant_id") or self._grant_id
+            self._capability_key = data
+        elif kind is RunEventKind.TRANSITION:
+            self._transition_occurrence_id = meta.get("occurrence_id") or self._transition_occurrence_id
+            self._capability_key = meta.get("capability_key") or self._capability_key
+            self._transition_request_id = data
+            self._transition_phase = meta.get("phase") or self._transition_phase
         for queue in self._subscribers:
             queue.put_nowait(event)
         if kind is RunEventKind.DONE:
@@ -205,8 +235,15 @@ class RunChannel:
             run_id=self.run_id,
             cursor=self._seq - 1,
             content="".join(self._content),
-            status=self._status,
+            activity=self._activity,
             fragments=tuple(self._fragments),
+            occurrence_id=self._occurrence_id,
+            dispatch_occurrence_id=self._dispatch_occurrence_id,
+            grant_id=self._grant_id,
+            capability_key=self._capability_key,
+            transition_occurrence_id=self._transition_occurrence_id,
+            transition_request_id=self._transition_request_id,
+            transition_phase=self._transition_phase,
             terminal=self._closed,
         )
 
@@ -315,9 +352,17 @@ class RunEmitter:
         """Emit a status keyword (RunStatus value or a progress pill keyword)."""
         return self.emit(RunEventKind.STATUS, status)
 
-    def node(self, key: str) -> RunEvent:
-        """Emit the active node key (drives the Loom highlight + progress rail)."""
-        return self.emit(RunEventKind.NODE, key)
+    def node(self, key: str, **meta: str) -> RunEvent:
+        """Emit one typed node-occurrence phase for a stable Pattern node key."""
+        return self.emit(RunEventKind.NODE, key, **meta)
+
+    def dispatch(self, capability_key: str, **meta: str) -> RunEvent:
+        """Emit the capability grant actually selected by the Dispatcher."""
+        return self.emit(RunEventKind.DISPATCH, capability_key, **meta)
+
+    def transition(self, request_id: str, **meta: str) -> RunEvent:
+        """Emit one orchestration request phase without embedding a host intent."""
+        return self.emit(RunEventKind.TRANSITION, request_id, **meta)
 
     def token(self, text: str) -> RunEvent | None:
         """Emit a raw token delta. Clients render it as text; empty deltas are dropped."""
@@ -337,7 +382,7 @@ class RunEmitter:
         return self.emit(RunEventKind.CONSENT, json.dumps({"consent_id": consent_id, "tool_name": tool_name}))
 
     def log(self, message: str, *, level: str = "info") -> RunEvent:
-        """Emit a log line (feeds Scrying only)."""
+        """Emit a log line (feeds the Orb only)."""
         return self.emit(RunEventKind.LOG, message, level=level)
 
     def done(self, status: str) -> RunEvent:

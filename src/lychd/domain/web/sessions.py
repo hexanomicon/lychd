@@ -38,6 +38,7 @@ class SessionRecord:
     title: str
     created_at: datetime
     turns: list[BridgeTurn] = field(default_factory=list)
+    message_history: list[Any] = field(default_factory=list)
 
 
 @runtime_checkable
@@ -51,6 +52,14 @@ class SessionStorePort(Protocol):
     async def list_sessions(self) -> list[SessionRecord]: ...
 
     async def add_turn(self, session_id: str, turn: BridgeTurn) -> None: ...
+
+    async def settle_agent_turn(
+        self,
+        session_id: str,
+        turn: BridgeTurn,
+        *,
+        new_messages: list[Any],
+    ) -> None: ...
 
     async def session_for_run(self, run_id: str) -> SessionRecord | None: ...
 
@@ -87,6 +96,22 @@ class BridgeSessionStore:
             session.turns.append(turn)
             if turn.run_id:
                 self._run_to_session[turn.run_id] = session_id
+
+    async def settle_agent_turn(
+        self,
+        session_id: str,
+        turn: BridgeTurn,
+        *,
+        new_messages: list[Any],
+    ) -> None:
+        """Atomically append the visible reply and its Pydantic AI history suffix."""
+        session = self._sessions.get(session_id)
+        if session is None:
+            return
+        session.turns.append(turn)
+        session.message_history.extend(new_messages)
+        if turn.run_id:
+            self._run_to_session[turn.run_id] = session_id
 
     async def session_for_run(self, run_id: str) -> SessionRecord | None:
         """Return the session that owns a run (O(1) index), or `None`."""
@@ -140,7 +165,11 @@ class DbBridgeSessionStore:
         raw_turns: list[Any] = meta.get("turns", []) if isinstance(meta.get("turns"), list) else []
         turns = [_turn_from_json(cast("dict[str, Any]", t)) for t in raw_turns if isinstance(t, dict)]
         return SessionRecord(
-            id=str(row.id), title=str(row.title or "New Communion"), created_at=row.created_at, turns=turns
+            id=str(row.id),
+            title=str(row.title or "New Communion"),
+            created_at=row.created_at,
+            turns=turns,
+            message_history=list(row.message_history or []),
         )
 
     async def create_session(self, *, title: str | None = None) -> SessionRecord:
@@ -199,6 +228,30 @@ class DbBridgeSessionStore:
             turns: list[Any] = list(cast("list[Any]", raw)) if isinstance(raw, list) else []
             turns.append(_turn_to_json(turn))
             row.meta = {**meta, "turns": turns}
+
+    async def settle_agent_turn(
+        self,
+        session_id: str,
+        turn: BridgeTurn,
+        *,
+        new_messages: list[Any],
+    ) -> None:
+        """Commit the visible agent turn and completed model-history suffix together."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Session
+
+        sid = UUID(session_id)
+        async with self._session_factory() as session, session.begin():
+            row = await session.scalar(select(Session).where(Session.id == sid).with_for_update())
+            if row is None:
+                return
+            meta: dict[str, Any] = dict(row.meta or {})
+            raw = meta.get("turns", [])
+            turns: list[Any] = list(cast("list[Any]", raw)) if isinstance(raw, list) else []
+            turns.append(_turn_to_json(turn))
+            row.meta = {**meta, "turns": turns}
+            row.message_history = [*(row.message_history or []), *new_messages]
 
     async def session_for_run(self, run_id: str) -> SessionRecord | None:
         """Return the session that owns a run via the Run.session_id FK, or `None`."""

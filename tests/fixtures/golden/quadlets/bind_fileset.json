@@ -11,6 +11,10 @@
       "lychd.pod"
     ],
     "systemd": [
+      "lychd-animator-alpha.target",
+      "lychd-animator-beta.target",
+      "lychd-animator-gamma.target",
+      "lychd-animator-resident.target",
       "lychd-coven-logic.target"
     ]
   },
@@ -20,13 +24,17 @@
       "lychd-beta.container",
       "lychd-gamma.container",
       "lychd-migrate.container",
-      "lychd-oculus.container",
+      "lychd-phoenix.container",
       "lychd-phylactery.container",
       "lychd-resident.container",
       "lychd-vessel.container",
       "lychd.pod"
     ],
     "systemd": [
+      "lychd-animator-alpha.target",
+      "lychd-animator-beta.target",
+      "lychd-animator-gamma.target",
+      "lychd-animator-resident.target",
       "lychd-coven-logic.target"
     ]
   }

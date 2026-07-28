@@ -38,6 +38,28 @@ async def test_list_sessions_newest_first() -> None:
 
 
 @pytest.mark.asyncio
+async def test_settle_agent_turn_appends_visible_reply_and_model_suffix_together() -> None:
+    store = BridgeSessionStore()
+    session = await store.create_session()
+    first_suffix = [{"kind": "request"}, {"kind": "response"}]
+    second_suffix = [{"kind": "request", "run_id": "run-2"}]
+
+    await store.settle_agent_turn(
+        session.id,
+        BridgeTurn(role="agent", content="first", run_id="run-1"),
+        new_messages=first_suffix,
+    )
+    await store.settle_agent_turn(
+        session.id,
+        BridgeTurn(role="agent", content="second", run_id="run-2"),
+        new_messages=second_suffix,
+    )
+
+    assert [turn.content for turn in session.turns] == ["first", "second"]
+    assert session.message_history == [*first_suffix, *second_suffix]
+
+
+@pytest.mark.asyncio
 async def test_db_add_turn_locks_row_before_jsonb_append() -> None:
     """The JSONB append is enclosed by a transaction-scoped PostgreSQL row lock."""
 
@@ -76,3 +98,43 @@ async def test_db_add_turn_locks_row_before_jsonb_append() -> None:
     assert "FOR UPDATE" in sql
     assert session.row.meta["kept"] is True
     assert [turn["content"] for turn in session.row.meta["turns"]] == ["risen"]
+
+
+@pytest.mark.asyncio
+async def test_db_settlement_updates_turn_and_message_history_under_one_lock() -> None:
+    class _Transaction:
+        async def __aenter__(self) -> None:
+            return None
+
+        async def __aexit__(self, *_exc: object) -> None:
+            return None
+
+    class _Session:
+        def __init__(self) -> None:
+            self.row = SimpleNamespace(meta={"turns": []}, message_history=[{"kind": "request"}])
+
+        async def __aenter__(self) -> Self:
+            return self
+
+        async def __aexit__(self, *_exc: object) -> None:
+            return None
+
+        def begin(self) -> _Transaction:
+            return _Transaction()
+
+        async def scalar(self, statement: Any) -> Any:
+            _ = statement
+            return self.row
+
+    session = _Session()
+    factory = lambda: session  # noqa: E731 - structural async-sessionmaker fake
+    store = DbBridgeSessionStore(cast("Any", factory), sigil_name="magus")
+
+    await store.settle_agent_turn(
+        str(uuid4()),
+        BridgeTurn(role="agent", content="risen", run_id="run-1"),
+        new_messages=[{"kind": "response"}],
+    )
+
+    assert [turn["content"] for turn in session.row.meta["turns"]] == ["risen"]
+    assert session.row.message_history == [{"kind": "request"}, {"kind": "response"}]

@@ -16,7 +16,7 @@ This page explains the Codex as an operator-facing structure and ritual surface.
 - For the technical configuration contract (rune ownership, loader rules, validation order), see [Configuration (ADR 12)](../adr/12-configuration.md).
 - For filesystem geography and Host/Container mount symmetry, see [Layout (ADR 13)](../adr/13-layout.md).
 
-## 🏛️ The Anatomy of the Book
+## The Anatomy of the Book
 
 The Codex is strictly organized. The Librarian (Loader) reads by anchor and ignores scrolls placed in the wrong section.
 
@@ -151,7 +151,7 @@ For details on each family:
     Put instance-specific declarations in rune files under `runes/`.
     This keeps the Codex readable and keeps the binding ritual deterministic.
 
-## 🔮 The Rite of Binding
+## The Rite of Binding
 
 The Codex is merely a book of **Potential** until it is spoken. The `lychd bind` command is the bridge between the Configuration (Codex) and the Operating System (Reality).
 

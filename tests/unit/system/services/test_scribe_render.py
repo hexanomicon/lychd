@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -24,6 +25,7 @@ from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system.services.scribe import ScribeService
+from lychd.system.unit_names import animator_service_unit, animator_target_unit, coven_target_unit
 
 if TYPE_CHECKING:
     from lychd.system.schemas import QuadletBase
@@ -35,6 +37,8 @@ class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
     """Factory for generating valid concrete Soulstone config instances."""
 
     __model__ = GenericSoulstoneConfig
+    groups: list[str] = []  # noqa: RUF012 - deterministic valid declaration
+    concurrency: ConcurrencyIntent = ConcurrencyIntent()
     volumes: list[str] = []  # noqa: RUF012 - override the instance attribute
 
 
@@ -191,22 +195,46 @@ def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
         concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
     )
 
-    output_dir, _ = _inscribe(transmuter.transmute_all([dedicated, resident]), tmp_path)
+    output_dir, systemd_dir = _inscribe(transmuter.transmute_all([dedicated, resident]), tmp_path)
     dedicated_unit = (output_dir / "lychd-loner.container").read_text(encoding="utf-8")
     resident_unit = (output_dir / "lychd-resident.container").read_text(encoding="utf-8")
+    resident_target = (systemd_dir / animator_target_unit("resident")).read_text(encoding="utf-8")
 
     assert "WantedBy=default.target" not in dedicated_unit
     assert "WantedBy=default.target" in resident_unit
+    assert f"BindsTo={animator_target_unit('resident')}" in resident_unit
+    assert "[Install]" not in resident_target
 
 
 def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
-    """F1: `.target` units go to the systemd user dir; containers reference them there."""
+    """F1: Coven aggregates compose explicit compatible Animator gates."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
-    alpha = SoulstoneFactory.build(name="alpha", image="ollama/ollama", groups=["logic"])
-    beta = SoulstoneFactory.build(name="beta", image="ollama/ollama", groups=["logic"])
-    gamma = SoulstoneFactory.build(name="gamma", image="ollama/ollama", groups=["creative"])
-    delta = SoulstoneFactory.build(name="delta", image="ollama/ollama", groups=["creative"])
+    compatible = ConcurrencyIntent(conflict_domains=[])
+    alpha = SoulstoneFactory.build(
+        name="alpha",
+        image="ollama/ollama",
+        groups=["logic"],
+        concurrency=compatible,
+    )
+    beta = SoulstoneFactory.build(
+        name="beta",
+        image="ollama/ollama",
+        groups=["logic"],
+        concurrency=compatible,
+    )
+    gamma = SoulstoneFactory.build(
+        name="gamma",
+        image="ollama/ollama",
+        groups=["creative"],
+        concurrency=compatible,
+    )
+    delta = SoulstoneFactory.build(
+        name="delta",
+        image="ollama/ollama",
+        groups=["creative"],
+        concurrency=compatible,
+    )
 
     output_dir, systemd_dir = _inscribe(transmuter.transmute_all([alpha, beta, gamma, delta]), tmp_path)
 
@@ -214,22 +242,89 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     assert (systemd_dir / "lychd-coven-logic.target").exists()
     assert (systemd_dir / "lychd-coven-creative.target").exists()
     assert not (output_dir / "lychd-coven-logic.target").exists()
+    for name in ("alpha", "beta", "gamma", "delta"):
+        assert (systemd_dir / animator_target_unit(name)).exists()
 
-    # The target references the *generated pod service*, not the Quadlet source name.
+    # Covens aggregate lifecycle targets and never enable themselves globally.
     target_text = (systemd_dir / "lychd-coven-logic.target").read_text(encoding="utf-8")
     assert "PartOf=lychd-pod.service" in target_text
+    assert f"Wants={animator_target_unit('alpha')} {animator_target_unit('beta')}" in target_text
+    assert f"After={animator_target_unit('alpha')} {animator_target_unit('beta')}" in target_text
+    assert "[Install]" not in target_text
 
-    # The member container's install/unit edges reference the coven target name
-    # that now lives in a loadable location. Assert whole LINES (not substrings):
-    # trim_blocks used to concatenate directives (e.g. `BindsTo=lychd.podPartOf=...`),
-    # which merged the PartOf edge into BindsTo and defeated the coven wiring.
+    # Services bind their own gate; membership belongs to the gate, not the
+    # restartable service.
     alpha_lines = (output_dir / "lychd-alpha.container").read_text(encoding="utf-8").splitlines()
-    assert "PartOf=lychd-coven-logic.target" in alpha_lines
+    alpha_target_lines = (systemd_dir / animator_target_unit("alpha")).read_text(encoding="utf-8").splitlines()
+    assert f"BindsTo={animator_target_unit('alpha')}" in alpha_lines
+    assert f"After=lychd-pod.service {animator_target_unit('alpha')}" in alpha_lines
+    assert f"PartOf=lychd-pod.service {coven_target_unit('logic')}" in alpha_target_lines
+    assert f"Requires={animator_service_unit('alpha')}" in alpha_target_lines
+    assert f"Before={animator_service_unit('alpha')}" in alpha_target_lines
     assert not any(line.startswith("Conflicts=") for line in alpha_lines)
-    assert "WantedBy=lychd-coven-logic.target" in alpha_lines
+    assert not any(line.startswith("WantedBy=") for line in alpha_lines)
     assert "BindsTo=lychd-pod.service" in alpha_lines
     # No directive line may carry a second `=` directive fused onto it.
     for line in alpha_lines:
         if "=" in line and not line.startswith("#"):
             key = line.split("=", 1)[0]
             assert key.replace("-", "").replace("_", "").isalnum(), f"fused directive line: {line!r}"
+
+
+def test_conflict_domain_renders_one_reciprocal_ordered_edge(tmp_path: Path) -> None:
+    """Each physical conflict pair renders once, on the lexical higher endpoint."""
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
+    gpu = ConcurrencyIntent(conflict_domains=["gpu"])
+    alpha = SoulstoneFactory.build(name="alpha", image="example/runtime", concurrency=gpu)
+    gamma = SoulstoneFactory.build(name="gamma", image="example/runtime", concurrency=gpu)
+
+    output_dir, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
+    alpha_target = (systemd_dir / animator_target_unit("alpha")).read_text(encoding="utf-8").splitlines()
+    gamma_target = (systemd_dir / animator_target_unit("gamma")).read_text(encoding="utf-8").splitlines()
+    gamma_container = (output_dir / "lychd-gamma.container").read_text(encoding="utf-8").splitlines()
+
+    assert not any(line.startswith(("After=lychd-animator-", "Conflicts=")) for line in alpha_target)
+    assert f"After={animator_target_unit('alpha')}" in gamma_target
+    assert f"Conflicts={animator_target_unit('alpha')}" in gamma_target
+    assert f"BindsTo={animator_target_unit('gamma')}" in gamma_container
+    assert f"After=lychd-pod.service {animator_target_unit('gamma')}" in gamma_container
+
+
+@pytest.mark.skipif(shutil.which("systemd-analyze") is None, reason="systemd-analyze is unavailable")
+def test_systemd_analyze_accepts_compiled_conflict_graph(tmp_path: Path) -> None:
+    """Ask systemd itself to reject requirement or ordering cycles."""
+    transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
+    gpu = ConcurrencyIntent(conflict_domains=["gpu"])
+    alpha = SoulstoneFactory.build(name="alpha", image="example/runtime", concurrency=gpu)
+    gamma = SoulstoneFactory.build(name="gamma", image="example/runtime", concurrency=gpu)
+    _, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
+
+    (systemd_dir / "lychd-pod.service").write_text(
+        "[Unit]\nDescription=LychD pod test double\n[Service]\nType=oneshot\nExecStart=/bin/true\n",
+        encoding="utf-8",
+    )
+    for name in ("alpha", "gamma"):
+        (systemd_dir / animator_service_unit(name)).write_text(
+            (
+                "[Unit]\n"
+                f"Description=LychD {name} test double\n"
+                f"BindsTo={animator_target_unit(name)}\n"
+                f"After={animator_target_unit(name)}\n"
+                "[Service]\n"
+                "Type=oneshot\n"
+                "ExecStart=/bin/true\n"
+            ),
+            encoding="utf-8",
+        )
+
+    analyzer = shutil.which("systemd-analyze")
+    assert analyzer is not None
+    unit_paths = sorted(str(path) for path in systemd_dir.iterdir())
+    result = subprocess.run(  # noqa: S603 - resolved host systemd analyzer, no shell
+        [analyzer, "--user", "verify", *unit_paths],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    diagnostics = f"{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, diagnostics

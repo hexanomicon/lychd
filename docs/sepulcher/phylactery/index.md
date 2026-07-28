@@ -5,13 +5,17 @@ icon: fontawesome/solid/flask
 
 # :fontawesome-solid-flask: Phylactery
 
-> _"The Vessel thinks, but the Phylactery remembers. One is the fleeting spark of lightning, the other is the eternal stone upon which the storm breaks."_
+> _“The Vessel passes. The Phylactery keeps only what was committed.”_
 
-At its core, the Phylactery is the durable memory of the Lich. In the grand architecture, it is the metaphysical anchor that binds Agentic Coherence to reality. It is the source of continuity, the library of ancient knowledge, and the fuel for the **[Soulforge](../extensions/soulforge.md)**.
+The Phylactery is LychD's durable-data jurisdiction. It owns committed run and continuity records
+that must survive a Vessel process boundary. It does not turn every trace into memory, and
+durability alone does not make a record true, formative, or part of an identity.
 
-Technically, it is a fortified **PostgreSQL** instance equipped with **`pgvector`**. It resides within the **[Crypt](../crypt.md)**, protected by the atomic laws of the filesystem.
+The first-light implementation uses **PostgreSQL** inside the [Crypt](../crypt.md). The repository
+includes `pgvector`, but semantic retrieval, curated Karma, and the full
+[Soulforge](../extensions/soulforge.md) formation path remain separate delivery boundaries.
 
-## 📜 The Anatomy of Memory
+## The Anatomy of Memory
 
 The first-light Phylactery uses the configured database's default schema/search path. Its mature
 anatomy reserves sacred chambers, but only the first item and SAQ's default `saq_*` tables exist
@@ -35,4 +39,8 @@ today:
     abandoned according to Graph, Worker, and policy law.
 
 !!! info "The Accumulator of Karma"
-    The Phylactery is not a static archive; it is a growing crystal. What the Magus **[consecrates](../../adr/25-hitl.md)** is inscribed here as **Karma** — what was chosen, and why — and becomes the dataset the **[Soulforge](../extensions/soulforge.md)** compresses into substrate instinct. The mechanism is law in [HitL (25)](../../adr/25-hitl.md) §4; the meaning lives in [Transcendence](../../divination/transcendence/index.md).
+    A narrow Karma row exists today. The larger path—consecrated consequence becoming curated,
+    attributable memory and later eligible formation data—is Designed. [HitL
+    (25)](../../adr/25-hitl.md) owns authorization, [Memory
+    (27)](../../adr/27-memory.md) owns retention and retrieval, and
+    [State](../../state-of-the-work.md#karma-semantic-memory) owns the delivery boundary.

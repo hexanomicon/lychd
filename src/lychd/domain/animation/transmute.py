@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
+from lychd.domain.animation.conflicts import build_conflict_topology
 from lychd.extensions.base import ExtensionStore
 from lychd.system.constants import (
     CONTAINER_LYCHD_PORT,
@@ -37,16 +38,22 @@ from lychd.system.schemas import (
     SystemdService,
     podman_secret_source,
 )
+from lychd.system.unit_names import (
+    animator_service_stem,
+    animator_service_unit,
+    animator_target_unit,
+    coven_target_unit,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
+    from lychd.domain.animation.conflicts import ConflictTopology
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneRuntimePlanner
 
-MIN_COVEN_MEMBERS: Final[int] = 2
 LYCHD_POD_QUADLET: Final[str] = "lychd.pod"
 LYCHD_POD_SERVICE: Final[str] = "lychd-pod.service"
 
@@ -152,12 +159,12 @@ class Transmuter:
 
     Responsible for:
     - Transmuting Soulstone Runes into Quadlet manifests.
-    - Grouping Soulstones into operator-facing Coven targets.
+    - Compiling per-Animator lifecycle gates and operator-facing Coven targets.
     - Defining the core Quadlet manifests (Pod, Phylactery, Oculus).
 
-    Physical exclusivity is deliberately NOT encoded as systemd ``Conflicts=``:
-    only the Orchestrator may stop a runtime, after closing lease admission and
-    draining it. Hidden systemd side effects would bypass that safety barrier.
+    Soulstone declarations define physical conflict topology. The Orchestrator
+    decides and drains the exact affected set; generated Animator targets let
+    systemd execute that already-authorized switch as one ordered transaction.
     """
 
     def __init__(
@@ -242,26 +249,18 @@ class Transmuter:
         for contribution in contributions:
             manifests.extend(contribution.containers)
 
-        # 4. Calculate Covens.
-        covens: dict[str, list[SoulstoneConfig]] = {}
-        for stone in resolved_soulstones:
-            for group in stone.groups:
-                covens.setdefault(group, []).append(stone)
+        # 4. Compile physical conflict topology and operator Covens.
+        topology = build_conflict_topology(resolved_soulstones)
 
-        # 5. Generate Coven Targets.
-        for group, members in covens.items():
-            if len(members) >= MIN_COVEN_MEMBERS:
-                manifests.append(
-                    QuadletTarget(
-                        name=group,
-                        description=f"LychD Coven: {group}",
-                    )
-                )
+        # 5. Generate one lifecycle gate per Animator, then compatible
+        # operator-facing Coven aggregates over those gates.
+        manifests.extend(self._create_animator_targets(resolved_soulstones, topology))
+        manifests.extend(self._create_coven_targets(topology))
 
-        # 6. Transmute Extension Soulstones. Covens group starts; they do not
-        # encode hidden stop side effects. The Orchestrator owns exclusivity.
+        # 6. Transmute Extension Soulstones. A service always pulls its
+        # conflict-bearing Animator target before it can start.
         manifests.extend(
-            self._transmute_soulstone(stone, covens, settings, runtime_plan)
+            self._transmute_soulstone(stone, settings, runtime_plan)
             for stone, runtime_plan in zip(
                 resolved_soulstones,
                 resolved_runtime_plans,
@@ -270,6 +269,51 @@ class Transmuter:
         )
 
         return manifests
+
+    @staticmethod
+    def _create_animator_targets(
+        soulstones: Sequence[SoulstoneConfig],
+        topology: ConflictTopology,
+    ) -> list[QuadletTarget]:
+        """Compile lifecycle gates from the canonical conflict topology."""
+        targets: list[QuadletTarget] = []
+        for stone in soulstones:
+            service_unit = animator_service_unit(stone.name)
+            predecessors = tuple(animator_target_unit(name) for name in topology.predecessors_for(stone.name))
+            coven_units = tuple(coven_target_unit(group) for group in stone.groups if group in topology.coven_members)
+            targets.append(
+                QuadletTarget(
+                    kind="animator",
+                    name=stone.name,
+                    description=f"LychD Animator: {stone.name}",
+                    requires=[service_unit],
+                    before=[service_unit],
+                    after=list(predecessors),
+                    conflicts=list(predecessors),
+                    part_of=[LYCHD_POD_SERVICE, *coven_units],
+                )
+            )
+        return targets
+
+    @staticmethod
+    def _create_coven_targets(
+        topology: ConflictTopology,
+    ) -> list[QuadletTarget]:
+        """Compile explicit compatible aggregates over Animator targets."""
+        targets: list[QuadletTarget] = []
+        for group, members in topology.coven_members.items():
+            member_units = [animator_target_unit(member_name) for member_name in members]
+            targets.append(
+                QuadletTarget(
+                    kind="coven",
+                    name=group,
+                    description=f"LychD Coven: {group}",
+                    wants=member_units,
+                    after=member_units,
+                    part_of=[LYCHD_POD_SERVICE],
+                )
+            )
+        return targets
 
     @staticmethod
     def _contributor_context(
@@ -500,14 +544,10 @@ class Transmuter:
     def _transmute_soulstone(
         self,
         stone: SoulstoneConfig,
-        covens: dict[str, list[SoulstoneConfig]],
         settings: Settings,
         runtime_plan: RuntimePlan,
     ) -> QuadletContainer:
         """Convert a single Soulstone Rune into a Quadlet container manifest."""
-        # Only list groups that actually Forge into Targets (The Law of the Coven)
-        coven_targets = [g for g in stone.groups if len(covens.get(g, [])) >= MIN_COVEN_MEMBERS]
-
         merged_env = {k: str(v) for k, v in stone.env_vars.items()}
         merged_env.update(runtime_plan.env_overrides)
         merged_env.update(
@@ -536,10 +576,9 @@ class Transmuter:
         return QuadletContainer(
             description=stone.description or f"LychD Soulstone: {stone.name}",
             image=stone.image,
-            container_name=f"lychd-{stone.name}",
+            container_name=animator_service_stem(stone.name),
             pod=LYCHD_POD_QUADLET,
             user="%U",
-            targets=coven_targets,
             env_vars=merged_env,
             devices=list(stone.devices),
             security_label_disable=stone.security_label_disable,
@@ -549,12 +588,11 @@ class Transmuter:
             exec=shlex.join(runtime_plan.exec_args) if runtime_plan.exec_args else None,
             podman_args=merged_podman_args,
             secrets=merged_secrets,
-            # Never emit Conflicts= for managed runtimes. A systemd-triggered
-            # implicit stop would bypass lease admission closure and drain.
+            # Physical conflict edges live only on the mandatory Animator target.
             conflicts=[],
-            binds_to=list(runtime_plan.unit_binds_to),
+            binds_to=[animator_target_unit(stone.name), *runtime_plan.unit_binds_to],
             wants=[LYCHD_POD_SERVICE],
-            after=[LYCHD_POD_SERVICE, *runtime_plan.unit_after],
+            after=[LYCHD_POD_SERVICE, animator_target_unit(stone.name), *runtime_plan.unit_after],
             wanted_by=wanted_by,
         )
 

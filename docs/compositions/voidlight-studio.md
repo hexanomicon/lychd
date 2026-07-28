@@ -7,149 +7,257 @@ icon: material/camera-timer
 
 !!! warning "Reference design — not a delivered studio"
     Voidlight Studio is an accepted Composition study. LychD does not currently ship its Pattern
-    pack, source ledger, media tools, model profiles, render environment, publication adapters, or
-    artifact migrations. [State of the Work](../state-of-the-work.md) remains the delivery
-    authority.
+    pack, creative schemas, asset library, media tools, model profiles, export adapters, Suite
+    projection, or artifact migrations. [State of the Work](../state-of-the-work.md) remains the
+    delivery authority.
 
-**Voidlight Studio** turns an operator commission into an auditable article-and-video bundle. It
-preserves the line from sources to claims, prose, narration, scenes, generated assets, timeline,
-review findings, and final render. The Magus supplies intent and remains editor and publisher;
-Agents perform bounded research, drafting, generation, assembly, and review.
+**Voidlight Studio** is the shared creative workshop and asset library of the Voidlight Suite
+family. It turns an operator commission into typed, immutable, rights-aware creative packages:
+style bibles, concept art, sprites, textures, 3D assets, dialogue, voices, music, effects,
+previsualization, and cutscene source media. The Magus supplies intent and remains creative
+director; Agents perform bounded research, drafting, generation, transformation, review, and
+packaging.
 
 The Studio is a Weaver Workflow Application, not a second workflow engine. A future private-coupled
 `voidlight` Extension may contribute its Patterns, schemas, tools, projections, and provider
-profiles. Weaver governs the logical production; it does not become the media store, model host,
-renderer, rights registry, or publication authority.
+profiles. Weaver governs logical production; it does not become the media store, model host,
+renderer, rights registry, game engine, or publication authority.
+
+The Studio deliberately does **not** own an entire game or article/video pipeline.
+[Game Foundry](game-foundry.md) owns gameplay source, engine-native import, scenes, builds,
+playtests, balancing, and game release. [Broadcast Studio](broadcast-studio.md) owns article
+claims, canonical prose, scripts, broadcast timelines, final renders, channel metadata, and
+publication. Both consume explicit Voidlight asset handoffs instead of sharing its tables or
+silently inheriting its authority.
 
 ## Composition descriptor
 
 | Field | Accepted design value |
 | --- | --- |
-| Stable id / revision | `voidlight.studio` / `1` |
+| Stable id / revision | `voidlight.studio` / `2` |
 | Specification owner | `project:lychd`; future executable contribution may be `extension:voidlight` |
 | Support tier | Architecture-only reference; unsupported |
-| Purpose | Produce a source-grounded, auditable local article-and-video bundle under Magus curation |
-| Default manual Pattern | `voidlight.build_local_bundle@1` |
-| Primary projection | Loom production board plus Reliquary artifact view—both future |
+| Purpose | Produce reusable, auditable creative assets and typed consumer-ready packages under Magus curation |
+| Default manual Pattern | `voidlight.build_asset_package@1` |
+| Suite membership | Intent-selected `voidlight.game-suite` or `voidlight.broadcast-suite` |
+| Primary projection | Loom creative board and asset library plus Reliquary artifact view—both future |
 | Provider binding | Operator-owned Runes profiles selected by capability |
-| Principal non-goal | Autonomous or automatic public publication |
+| Principal non-goal | Owning consumer gameplay, broadcast assembly, build, playtest, or publication truth |
 
 ## Visible outcome and non-goals
 
-One admitted commission should eventually yield a versioned local bundle containing:
+One admitted commission should eventually yield a versioned local creative package containing:
 
-- a frozen source dossier and claim ledger;
-- a canonical article, derived script, storyboard, and asset plan;
-- generated or licensed stills, narration, music or effects, captions, and timing evidence;
-- a reproducible timeline and rough/final renders;
+- a frozen reference dossier, creative brief, target contract, and style-bible revision;
+- typed asset specifications and accepted generated, licensed, captured, or human-authored media;
+- concept sheets, stills, sprite atlases, texture sets, 3D exchange assets, dialogue, narration,
+  music, effects, previsualization, or cutscene source media as commissioned;
 - model, prompt, seed, license, lineage, review, and human-edit receipts; and
-- explicit publication readiness without publication itself.
+- a validated `CreativeAssetBundle@1` handoff without claiming that a consumer imported, rendered,
+  played, built, or published it.
 
-The first slice is not an autonomous content farm, truth oracle, infinite self-repair loop,
-deepfake factory, rights-clearing service, or one-click public publisher. It may write in the
-Hexanomicon or Zenith Voidlighter voice, but presentation identity never dissolves source
-provenance or human responsibility.
+The Studio is not an autonomous content farm, game engine, level editor, build farm, playtester,
+truth oracle, infinite self-repair loop, deepfake factory, rights-clearing service, broadcast
+timeline, or one-click publisher. It may create in the Hexanomicon or Zenith Voidlighter voice,
+but presentation identity never dissolves source provenance, consent, consumer contracts, or
+human responsibility.
 
 ## Anatomical ownership
 
 | Concern | Owner |
 | --- | --- |
 | Commission, Pattern selection, revision, gates, budgets, and logical priority | Weaver |
-| Research, writing, directing, review, and correction roles | Agents |
+| Reference research, creative direction, asset drafting, review, and correction roles | Agents |
 | Capability and tool binding | Dispatcher and Runes |
 | Model readiness, leases, unload, and hardware arbitration | Orchestrator |
-| Source acquisition, request validation, media probing, deterministic render, and effect adapters | Typed Tool Animators |
+| Reference acquisition, request validation, media probing, deterministic transforms, and export adapters | Typed Tool Animators |
 | Model-backed text, image, video, speech, and music powers | Soulstones or opted-in Portals |
-| Run, claim, review, approval, and external-effect receipts | Phylactery |
+| Run, specification, review, approval, export, and handoff receipts | Phylactery |
 | Media bytes, manifests, and immutable derivation graph | Reliquary-backed artifact custody |
-| Editorial truth, likeness and voice consent, and public release | Magus through HitL |
-| Production board and review surfaces | Loom and future Studio projection |
+| Creative acceptance, likeness and voice consent, and consumer handoff | Magus through HitL |
+| Asset library, production board, Suite graph, and review surfaces | Loom and future Studio projection |
+| Gameplay, engine import, builds, playtests, and game release | [Game Foundry](game-foundry.md) |
+| Claims, article, script, broadcast timeline, final render, and publication | [Broadcast Studio](broadcast-studio.md) |
 
-The article is the canonical editorial object for the initial essay form. The script is derived
-from it and may diverge only through an attributable editorial revision. A video render is never
-the only surviving source of its own assertions.
+The creative package is canonical only for the assets and contracts the Studio owns. A consumer
+may derive an engine-native material, gameplay animation, article scene, or final edit, but that
+derived object belongs to the consumer's revision and lineage. Neither a game build nor a video
+render may become the only surviving source of a Studio asset.
 
 ## Principal production Pattern
 
-### `voidlight.build_local_bundle@1`
+### `voidlight.build_asset_package@1`
 
 ```text
-AdmitCommission
-→ FreezeSourceSet
-→ SnapshotAndNormalizeSources
-→ BuildClaimLedger
-→ DraftCanonicalArticle
-→ DeriveScript
-→ VerifyClaims
-→ AwaitEditorialApproval
-→ BuildStoryboard
-→ PlanAssets
-→ ForgeStillAssets
-→ SynthesizeNarration
-→ BackTranscribeAndAlign
-→ BuildTimeline
-→ RenderRoughCut
-→ ReviewBundle
+AdmitCreativeCommission
+→ ResolveConsumerTargetContract
+→ FreezeReferencesAndExistingAssets
+→ DraftCreativeBrief
+→ ResolveOrEstablishStyleBible
+→ PlanTypedAssetSet
+→ AwaitPlanAndBudgetApproval
+→ ForgeOrAdmitAssetsByKind
+→ ProbeAndNormalize
+→ ReviewPackage
 → RepairOnce?
-→ PackageBundle
+→ ValidateConsumerContract
+→ ApproveImmutablePackage
+→ EmitTypedHandoff
 → End
 ```
 
 The Pattern is intentionally finite. The optional repair edge has a fixed finding set, generation
 budget, and maximum pass count. Unresolved findings end in non-completion or an operator decision;
-they do not summon an unbounded Agent loop.
+they do not summon an unbounded Agent loop. Handoff completion proves only that the immutable
+package satisfied its declared export contract. It does not claim that Game Foundry imported it
+or that Broadcast Studio rendered it.
 
 The graph groups into six reusable subgraphs:
 
-1. **Source dossier:** acquire, snapshot, extract, classify, and freeze inputs.
-2. **Editorial:** map claims, draft the article and script, verify support, and obtain approval.
-3. **Storyboard and asset plan:** assign every spoken claim, visual beat, citation, transition,
-   and generation request before expensive inference begins.
-4. **Asset forge:** generate, inspect, accept, reject, or replace immutable media artifacts.
-5. **Assembly:** align narration, construct an explicit timeline, and render deterministically.
-6. **Review and bounded repair:** inspect factual, visual, audio, continuity, rights, and technical
-   findings, then repair only approved targets.
+1. **Reference dossier:** acquire, snapshot, extract, classify, and freeze references and existing
+   assets.
+2. **Creative contract:** declare purpose, audience, consumer, style, asset kinds, dimensions,
+   budgets, rights, target formats, and acceptance tests before expensive inference begins.
+3. **Asset forge:** generate, edit, capture, inspect, accept, reject, or replace immutable asset
+   candidates without mutating an accepted artifact.
+4. **Normalization:** deterministically probe, trim, transcode, pack, label, and validate assets
+   against the pinned target contract.
+5. **Review and bounded repair:** inspect visual, audio, continuity, identity, rights, and
+   technical findings, then repair only approved targets.
+6. **Package and handoff:** freeze an export manifest, transfer typed artifact references, and
+   record a consumer acknowledgement or honest pending state.
 
-### Future motion and sound subgraph
+### Asset-family Patterns
 
-The still-image essay is the proving slice, not the final audiovisual grammar. After artifact
-custody, cancellation, and generation budgets are proved, an approved storyboard may enter this
-explicit later subgraph:
+The application exposes smaller immutable Pattern revisions rather than teaching one Agent to
+improvise every medium. The principal Pattern may admit their already accepted outputs through
+typed ports; it does not implicitly launch nested Invocations before Weaver's callable-Pattern
+law exists:
+
+| Pattern | Owned outcome | Explicit boundary |
+| --- | --- | --- |
+| `voidlight.establish_style_bible@1` | Palette, typography, shape language, motifs, prohibited forms, reference sheets, voice and audio direction | A style revision guides consumers; it does not rewrite accepted assets |
+| `voidlight.forge_concept_set@1` | Character, environment, prop, mood, and key-art concepts with variant lineage | Concepts are not engine-ready meshes or final broadcast frames |
+| `voidlight.forge_sprite_set@1` | Frames, atlas, anchors, timing intent, palettes, and preview | Game Foundry owns runtime animation graphs, collision, and import |
+| `voidlight.forge_texture_set@1` | Typed channels, color-space intent, tiling metadata, scale, and previews | Game Foundry owns engine-native material graphs and shader behavior |
+| `voidlight.forge_model_asset@1` | Exchange mesh, UVs, named parts, optional rig/animations, units, axes, LOD intent, and turntable | Game Foundry owns engine scene objects, physics, optimization acceptance, and build fit |
+| `voidlight.forge_dialogue_pack@1` | Character voice guide, dialogue units, alternates, pronunciation and performance direction | Broadcast Studio or Game Foundry owns narrative placement and runtime branching |
+| `voidlight.forge_audio_pack@1` | Voice takes, music or effect stems, loops, loudness targets, timing and license receipts | The consumer owns final mix, ducking, spatialization, and playback logic |
+| `voidlight.forge_cutscene_sources@1` | Shot intent, boards, animatic, accepted clips, stems, captions or dialogue cues | The consumer owns engine sequence or broadcast timeline and final render |
+| `voidlight.export_asset_package@1` | Deterministic package transform, manifest, checksums, validation, and handoff receipt | Export grants neither consumer authority nor release authority |
+
+`voidlight.review_asset_package@1` can inspect an immutable package later.
+`voidlight.revise_from_correction@1` creates a derived revision and invalidation receipt.
+`voidlight.presenter_calibration@1` can create consent-bound likeness and voice fixtures. Review,
+correction, calibration, and export remain separate Invocations because they carry different
+authority, evidence, failure, retention, and idempotency law.
+
+### Motion, sound, and cutscene source forge
+
+After artifact custody, cancellation, and generation budgets are proved, an approved shot and
+sound specification may enter this Studio-owned subgraph:
 
 ```mermaid
 flowchart TD
-    S["Approved script, storyboard, and narration"] --> P["Write typed shot and sound specifications"]
-    P --> R["Resolve references, presenter consent, and provider profile"]
-    R --> B{"Scene form"}
-    B -->|B-roll| V["Bounded text/image-to-video generation"]
-    B -->|Presenter| A["Narration-first audio-driven video generation"]
-    B -->|Still motion| F["Deterministic pan, crop, and composite"]
+    S["Approved creative brief and target contract"] --> P["Write typed shot and sound specifications"]
+    P --> R["Resolve references, performer consent, and provider profile"]
+    R --> B{"Source asset form"}
+    B -->|Motion clip| V["Bounded text or image-to-video generation"]
+    B -->|Presenter source| A["Approved-audio-driven video generation"]
+    B -->|Animatic| F["Deterministic pan, crop, board, and composite"]
     V --> Q["Probe, quarantine, review, accept or reject"]
     A --> Q
     F --> Q
-    S --> M["Generate or admit music and effect stems"]
-    M --> L["Deterministic loudness, ducking, mix, and credits"]
-    S -->|Narration stem| L
-    Q --> T["Assemble explicit timeline"]
-    L --> T
-    T --> X["Render and multimodal review"]
+    S --> M["Generate or admit music, voice, and effect stems"]
+    M --> L["Normalize stems and attach timing, loop, and rights metadata"]
+    Q --> H["Package accepted source assets"]
+    L --> H
+    H --> C["Typed consumer handoff"]
 ```
 
-Every generated clip is short, bounded, immutable, and independently accepted. Presenter motion
-begins from approved narration so speech timing is not invented by the video model. Music and
-effects remain separable stems with source and license receipts; final mixing and timeline
-assembly are deterministic even when their input media is generative.
+Every generated clip is short, bounded, immutable, and independently accepted. Performer motion
+begins from approved audio so speech timing is not invented by the video model. Music, voice, and
+effects remain separable stems with source and license receipts. A preview composite may help
+creative review, but authoritative engine sequencing or broadcast assembly begins only after the
+consumer accepts the handoff.
 
-Later independent Patterns may include:
+## Intent-composed Voidlight Suites
 
-- `voidlight.review_bundle@1` for a new review against an immutable bundle;
-- `voidlight.revise_from_correction@1` for source-backed correction and derivation invalidation;
-- `voidlight.publish_draft@1` for an unlisted or draft external effect;
-- `voidlight.publish_public@1` for a separate fresh public-release approval; and
-- `voidlight.presenter_calibration@1` for operator-approved likeness and voice fixtures.
+A **Suite** is assembled for an admitted intent; it is not one permanent branch over every
+creative product. The initial named Suite shapes are:
 
-Review, correction, and publication are separate Invocations because they carry different
-authority, evidence, failure, and idempotency law.
+- `voidlight.game-suite`: Voidlight Studio → [Game Foundry](game-foundry.md); and
+- `voidlight.broadcast-suite`: Voidlight Studio → [Broadcast Studio](broadcast-studio.md).
+
+```mermaid
+flowchart LR
+    I["Commission intent"] --> D["Charcoal Suite draft"]
+    D --> V["Blade and declared evaluators"]
+    V --> P["Schema, policy, and Magus publish exact Suite revision"]
+    P --> W["Weaver admits exact Invocations"]
+    W --> S["Voidlight Studio"]
+    S --> B["CreativeAssetBundle@1"]
+    B --> C{"Admitted consumer"}
+    C -->|game-suite| G["Future Game Foundry"]
+    C -->|broadcast-suite| R["Future Broadcast Studio"]
+    G -->|typed correction request| S
+    R -->|typed correction request| S
+    S -. "shared status projection" .-> L["Loom Suite view"]
+    G -. "shared status projection" .-> L
+    R -. "shared status projection" .-> L
+```
+
+A **Suite** is a typed graph of Composition Invocations and artifact handoffs with one
+operator-facing Loom projection. It is not a super-Composition, ambient transaction, shared
+database, directory scanner, or union of permissions. Each node keeps its own Pattern revision,
+domain records, budgets, checkpoints, effect authority, and recovery. A downstream correction
+creates a new explicit Studio Invocation; Game Foundry or Broadcast Studio cannot reach into the
+Studio library and mutate an accepted asset.
+
+The Call/Manas may interpret “make me a game with rockets” as a request for the game Suite and
+prepare that charcoal graph draft. This is doctrine language for intent interpretation, not a
+literal all-powerful service and not final authority. The Blade and declared evaluators
+discriminate among candidates; schema validation, policy, and the Magus govern publication of an
+exact Suite revision; only Weaver admits its concrete Pattern Invocations.
+
+A Suite may correlate runs by a shared commission id and show one creative journey. Weaver still
+admits each Invocation independently, and an approval granted to export an asset never becomes
+permission to ship a game, render a canonical broadcast, upload a draft, or publish publicly.
+Suite execution remains Designed: until Weaver owns automated edge law, each handoff is an explicit
+artifact-backed admission rather than a child Invocation launched by the diagram.
+
+### Consumer ownership
+
+The former all-in-one article-and-video idea decomposes at the handoff:
+
+```text
+Voidlight Studio
+  reference and style research
+  creative brief and asset specifications
+  stills, voices, music, effects, clips, boards, and manifests
+  CreativeAssetBundle@1
+        ↓
+Broadcast Studio
+  source-to-claim ledger and canonical article
+  script, storyboard placement, captions, broadcast timeline
+  rough/final render, channel package, correction, and publication
+```
+
+Game production follows the same law:
+
+```text
+Voidlight Studio
+  style bible, concepts, sprites, textures, meshes, rigs, audio, and cutscene sources
+  CreativeAssetBundle@1
+        ↓
+Game Foundry
+  engine import, gameplay code, scenes, levels, runtime animation and materials
+  builds, automated and agentic playtests, balancing, platform release
+```
+
+Article claims, engine truth, and release receipts therefore stay with the Composition able to
+verify them. The shared Studio preserves creative provenance and reuse without becoming the owner
+of every product that consumes art.
 
 ## Capability and tool contract
 
@@ -159,13 +267,16 @@ existing `chat`, `vision`, `stt`, `tts`, `embedding`, and `rerank` capability fa
 
 | Family | Candidate typed tools |
 | --- | --- |
-| Sources | `source.acquire`, `source.extract`, `artifact.materialize` |
-| Inspection | `media.probe`, `image.inspect`, `audio.align` |
+| References | `source.acquire`, `source.extract`, `artifact.materialize` |
+| Creative contract | `creative.brief.validate`, `style_bible.compile`, `asset_spec.validate` |
+| Inspection | `media.probe`, `image.inspect`, `audio.align`, `model3d.probe` |
 | Images | `image.generate`, `image.edit.multi_ref` |
+| 2D game assets | `sprite.pack`, `sprite.preview`, `texture.channels.validate` |
+| 3D exchange | `model3d.convert`, `model3d.preview`, `model3d.package` |
 | Video | `video.generate.text`, `video.generate.image`, `video.generate.audio_driven` |
-| Audio | `audio.generate.music`, `audio.generate.effects` |
-| Assembly | `timeline.render`, `caption.mux` |
-| External effects | `platform.publish_draft`, `platform.publish_public` |
+| Audio and dialogue | `audio.generate.music`, `audio.generate.effects`, `dialogue.compile`, `audio.normalize` |
+| Preview | `animatic.render`, `contact_sheet.render`, `turntable.render` |
+| Package and handoff | `asset.export`, `asset.package.validate`, `composition.handoff` |
 
 For a model-backed tool id, the local endpoint is still a Soulstone and the remote endpoint a
 Portal. Its typed adapter deterministically validates and dispatches the request and commits an
@@ -177,22 +288,25 @@ A provider requirement may constrain modalities, structured output, image resolu
 duration, timestamp support, local-only or Portal eligibility, data classification, license,
 cancellation behavior, hardware envelope, cold-start time, monetary budget, and required artifact
 or provenance fields. A Pattern must not contain the string `Wan` or `FLUX` as workflow identity.
+Sprite packing, channel checks, 3D probing, deterministic conversion, loudness measurement, and
+manifest validation should remain deterministic even when the asset entering them was generated
+stochastically.
 
 ## Researched provider candidates
 
 Research snapshot: **2026-07-22**. These are replaceable Runes, not promised dependencies.
 
-### Mind, Ear, and Voice
+### Creative Mind, Ear, and Voice
 
 | Role | Candidate | Fit and caveat |
 | --- | --- | --- |
-| Local multimodal editorial Mind | [Gemma 4 12B](https://ai.google.dev/gemma/docs/get_started) | Accepts text, image, and audio with text output and targets desktops or small servers; it is a candidate role, not the Studio's identity. |
-| Compact reasoning and visual review | [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B) | Candidate for structured drafting and visual understanding; exact tool and runtime behavior needs local receipts. |
-| Local transcription and alignment | [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) | Provides ASR and forced-alignment paths useful for narration timestamps and caption evidence. |
-| Conservative transcription baseline | [OpenAI Whisper](https://github.com/openai/whisper) | Mature modular ASR baseline for back-transcribing the rendered narration. |
+| Local multimodal creative Mind | [Gemma 4 12B](https://ai.google.dev/gemma/docs/get_started) | Accepts text, image, and audio with text output and targets desktops or small servers; it is a candidate role, not the Studio's identity. |
+| Compact direction and visual review | [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B) | Candidate for structured briefs, dialogue, and visual understanding; exact tool and runtime behavior needs local receipts. |
+| Local transcription and alignment | [Qwen3-ASR](https://github.com/QwenLM/Qwen3-ASR) | Provides ASR and forced-alignment paths useful for voice takes, dialogue cues, and timing evidence. |
+| Conservative transcription baseline | [OpenAI Whisper](https://github.com/openai/whisper) | Mature modular ASR baseline for back-transcribing accepted voice assets. |
 | Local narration | [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) | Candidate expressive speech backend; voice design or cloning requires consent and provenance. |
 
-### Image and video
+### Image, motion, and visual assets
 
 | Role | Candidate | Fit and caveat |
 | --- | --- | --- |
@@ -208,19 +322,25 @@ Research snapshot: **2026-07-22**. These are replaceable Runes, not promised dep
 Slovak/EU deployment under its published geographic license restriction even though its hardware
 profile is attractive. Technical fit never overrides legal eligibility.
 
+This research snapshot does not yet accept a 3D-generation, retopology, rigging, or animation
+provider. A 3D Rune must earn its place with format, topology, scale, UV, skeleton, animation,
+license, hardware, and deterministic probe receipts; a fashionable demo is not an interchange
+contract. The same applies to specialized sprite and texture generators.
+
 For music, [ACE-Step](https://github.com/ace-step/ACE-Step) is a future Apache-2.0 local candidate.
 For synchronized video effects, [MMAudio](https://github.com/hkchengrex/MMAudio) is a research
 candidate whose model/dependency licenses and commercial suitability must be reviewed for the
 exact bundle. Generated music and effects remain optional; a lawful licensed library is often the
 safer first provider.
 
-## Deterministic assembly and artifact law
+## Deterministic transforms and artifact law
 
 [OpenTimelineIO](https://github.com/AcademySoftwareFoundation/OpenTimelineIO) is a useful
-interchange candidate. [FFmpeg](https://ffmpeg.org/ffmpeg.html) should perform the authoritative
-render and mux after generative steps. Reproducibility means pinning the build, codec
-implementation, filter graph, fonts, inputs, stream mapping, command, and metadata—not claiming
-that `-bitexact` makes different hardware and versions identical.
+cutscene and broadcast interchange candidate. [FFmpeg](https://ffmpeg.org/ffmpeg.html) can produce
+Studio previews, normalize audio/video source assets, and materialize deterministic derivatives.
+Game Foundry or Broadcast Studio owns any authoritative product render. Reproducibility means
+pinning the build, codec implementation, filter graph, fonts, inputs, stream mapping, command, and
+metadata—not claiming that `-bitexact` makes different hardware and versions identical.
 
 Every material artifact needs, as applicable:
 
@@ -229,50 +349,97 @@ Every material artifact needs, as applicable:
 - capability, provider, model id, immutable revision, runtime or image digest, and Runes profile;
 - normalized request, prompt, negative prompt, seed, sampler, inference settings, and cost;
 - accepted, rejected, superseded, or edited disposition with human edit attribution;
-- complete timeline/render command and output probe;
+- complete transform or preview-render command and output probe;
 - Portal request/response receipt and immediate custody transfer when remote; and
-- retention, export, deletion, publication, and takedown state.
+- retention, export, deletion, consent, and rights-restriction state.
 
-The claim ledger forms a traceable chain:
+The creative derivation graph forms a traceable chain:
 
 ```text
-frozen source → supported claim → article span → script beat
-              → narration/caption span → storyboard scene → frame or time range
+frozen reference + style revision + asset specification
+→ generated, licensed, captured, or human-authored candidate
+→ accepted immutable asset revision
+→ normalized derivative
+→ CreativeAssetBundle@1
+→ consumer-owned import or placement receipt
 ```
 
-Changing or withdrawing a source marks downstream claims and artifacts stale. It does not rewrite
-history or silently mutate a published bundle.
+Changing or withdrawing a reference, consent, or license marks affected derivatives and handoffs
+stale. It does not rewrite history or silently mutate a previously handed-off bundle. Broadcast
+Studio owns the stronger source → claim → article → script → frame chain for factual work; Game
+Foundry owns the asset → import → scene → build chain for a game.
+
+## Typed immutable handoff
+
+`CreativeAssetBundle@1` is a manifest over Reliquary artifact references, not a zip file whose
+filenames carry hidden meaning. Its minimum contract is:
+
+| Object | Required fields |
+| --- | --- |
+| Bundle identity | Bundle id, immutable revision, commission id, Studio Pattern revision, digest, creation time |
+| Consumer target | Intended Composition, target-profile id/revision, purpose, required versus optional assets |
+| Asset entry | Stable asset id, semantic kind and role, artifact digest, media/exchange type, parents, disposition |
+| Spatial and visual contract | Dimensions or units, axes, origin/anchor, color space, alpha, channels, frame or LOD intent |
+| Temporal and audio contract | Duration, frame/sample rate, loop points, cue ids, loudness target, language and pronunciation where applicable |
+| Rights and provenance | Origin, provider/runtime, prompts/settings where applicable, license evidence, consent, allowed uses, expiry or territory constraints |
+| Validation | Pinned validators, results, known findings, waivers, Magus approval, export receipt |
+
+The target-profile revision is supplied or accepted by the consumer Composition. For Game Foundry
+it may declare engine interchange formats, units, axes, sprite anchors, skeleton names, texture
+channels, polygon and memory budgets, platform constraints, and audio loop rules. For Broadcast
+Studio it may declare frame geometry, color space, alpha, frame rate, audio layout, loudness,
+caption or cue interchange, and edit-safe handles.
+
+Handoff follows a two-sided protocol:
+
+```text
+Studio validates export contract
+→ freezes CreativeAssetBundle@1
+→ emits artifact references plus idempotency key
+→ consumer validates import contract
+→ consumer records accepted, partially accepted, rejected, or unknown receipt
+→ any correction becomes a new typed request and new Studio Invocation
+```
+
+An accepted Studio export can still fail consumer import. Unknown acknowledgement is reconciled by
+bundle id and digest; it is never “fixed” by generating another package blindly. The consumer may
+cache or derive its own copies, but it records the Studio bundle revision as a parent and never
+writes into the Studio's asset records.
 
 ## Gates and external effects
 
-Required gates include source classification and acquisition rights, explicit Portal egress,
-editorial approval before expensive generation, storyboard and budget approval, presenter
-likeness and voice consent, asset-license acceptance, accepted-asset replacement, final bundle
-approval, and publication.
+Required gates include reference classification and acquisition rights, explicit Portal egress,
+creative-plan and budget approval before expensive generation, performer likeness and voice
+consent, asset-license acceptance, accepted-asset replacement, target-contract validation, final
+package approval, and consumer handoff.
 
-Draft/unlisted upload and public publication are distinct effect-bearing Patterns. Each receives
-an idempotency key and records the remote platform, account, object id, visibility, response, and
-human approval. Retry may reconcile an existing remote object; it may never create a duplicate
-because an acknowledgement was lost.
+Portal generation and cross-Composition handoff are effect-bearing steps. Each receives an
+idempotency key and records the provider or consumer, request, object or bundle id, response, and
+human approval. Retry reconciles by remote request id or immutable bundle digest; it may never
+duplicate a paid generation or consumer handoff because an acknowledgement was lost. Upload,
+game release, and broadcast publication are not Studio gates because they are not Studio effects.
 
 ## Lifecycle, retention, and compatibility
 
-- **Durable owner:** a future `voidlight` application owner owns project, source-snapshot, claim,
-  script, scene, finding, approval, and bundle schemas; Reliquary custody owns immutable media bytes
-  and manifests. Graph checkpoints are never the project database.
+- **Durable owner:** a future `voidlight` application owner owns commission, reference snapshot,
+  creative brief, style revision, asset specification, finding, approval, export, and handoff
+  schemas; Reliquary custody owns immutable media bytes and manifests. Graph checkpoints are never
+  the project database.
 - **Migration:** application schema, manifest schema, Pattern revision, provider receipt, and
-  render-environment version are versioned separately. Upgrades prove clean install, forward
-  migration, interrupted
-  recovery, and old-bundle readability before promotion.
-- **Retention:** the Magus selects source, intermediate, rejected-generation, raw narration,
-  provider-receipt, and final-bundle retention under license and takedown constraints. Expiring
-  Portal outputs are ingested immediately or the Invocation fails honestly.
-- **Export and deletion:** one export contains the bundle, lineage, sources permitted for export,
-  prompts/settings, approvals, and checksums. Deleting an unpublished project inventories derived
-  assets, caches, remote drafts, and credentials; published work additionally needs takedown and a
-  content-free receipt rather than pretending public copies vanished.
-- **Recovery:** immutable accepted artifacts and the manifest permit assembly to resume without
-  regenerating prior assets. Unknown provider effects reconcile by id before retry.
+  transform environment are versioned separately. Upgrades prove clean install, forward
+  migration, interrupted recovery, old-bundle readability, and target-profile compatibility
+  before promotion.
+- **Retention:** the Magus selects reference, intermediate, rejected-generation, raw performance,
+  provider-receipt, accepted-asset, and handoff retention under license, consent, and withdrawal
+  constraints. Expiring Portal outputs are ingested immediately or the Invocation fails honestly.
+- **Export and deletion:** one export contains permitted assets, lineage, references permitted for
+  export, prompts/settings, approvals, target contract, and checksums. Deleting a Studio project
+  inventories derived assets, caches, Portal objects, handoffs, and credentials. Consumer or
+  published copies require a withdrawal/takedown request and content-free receipt rather than
+  pretending downstream bytes vanished.
+- **Recovery:** immutable accepted artifacts and the manifest permit package work to resume
+  without regenerating prior assets. Unknown provider and handoff effects reconcile by id before
+  retry.
 - **Parked Invocation:** every run pins Pattern, checkpoint, manifest, and tool-schema revisions.
   An incompatible upgrade drains, explicitly migrates, or terminates non-complete; it never resumes
   an old checkpoint under a new production grammar.
@@ -286,67 +453,79 @@ because an acknowledgement was lost.
 | Commissioned production | `50` | Queue expensive generations; safe-boundary preemption |
 | Indexing, proxies, optional enhancement, or archive work | `20` | Must not force a disruptive cold swap |
 
-The MVP is commissioned manually. One bundle revision admits at most one build Invocation; a
+The MVP is commissioned manually. One bundle revision admits at most one package Invocation; a
 duplicate client request reconciles by commission and revision id. New commissions may queue or
-run logically beside one another, but two render or repair Invocations may not mutate the same
+run logically beside one another, but two export or repair Invocations may not mutate the same
 bundle revision. A correction creates a new derived revision instead of replacing an approved
 artifact in place.
 
-Future schedules may prepare proxies, indexes, source-refresh candidates, or an already approved
-batch during quiet hours. They coalesce rather than replay missed work and never schedule public
-publication. A schedule firing is a Weaver Occurrence entering normal admission—not a timer that
-loads Wan, starts FFmpeg, or calls a publisher directly.
+Future schedules may prepare previews, indexes, reference-refresh candidates, or an already
+approved batch during quiet hours. They coalesce rather than replay missed work and never schedule
+consumer release or publication. A schedule firing is a Weaver Occurrence entering normal
+admission—not a timer that loads Wan, starts FFmpeg, or sends a handoff directly.
 
 The current operator-configured hard-swap gate defaults to `40`, so background work at `20` cannot
 trigger a disruptive hard swap. The richer latency, overlap, and preemption vector remains future
 architecture. Current priority is run-wide; a node cannot silently escalate its own Invocation.
 
-On a 24 GB target, an illustrative serial residency profile is: editorial Mind unloads, image
+On a 24 GB target, an illustrative serial residency profile is: creative Mind unloads, image
 model loads and unloads, Wan2.2 5B loads only for approved clips and unloads, Voice or music loads
-and unloads, then the lightweight reviewer returns. Media probing and FFmpeg remain CPU-resident.
-Orchestrator—not the Pattern—decides the actual placements and transitions.
+and unloads, then the lightweight reviewer returns. Media and 3D probing plus FFmpeg remain
+CPU-resident where practical. Orchestrator—not the Pattern—decides actual placements and
+transitions.
 
 ## Smallest proving slice
 
-The first useful Voidlight production is a three-to-five-minute motion essay without generative
-video:
+The first useful Voidlight production is a small style-led 2D asset pack with no engine or channel
+integration:
 
-1. freeze a small operator-approved source set;
-2. produce an article, claim ledger, script, and approved storyboard;
-3. generate or admit still images with complete provenance;
-4. synthesize narration locally, back-transcribe it, and derive captions;
-5. construct an explicit timeline with restrained pans, zooms, cuts, citations, and credits;
-6. render with a pinned FFmpeg environment;
-7. perform one bounded factual, audio, visual, and technical review/repair pass; and
-8. package the local bundle, thumbnail, manifest, and receipts without uploading it.
+1. freeze a small operator-approved reference set and one synthetic consumer target profile;
+2. approve a creative brief and a versioned style bible;
+3. generate or admit one character concept, a short sprite sequence, one texture or background,
+   and one dialogue or effect stem with complete provenance;
+4. probe and normalize every accepted artifact with deterministic tools;
+5. perform one bounded visual, audio, continuity, rights, and technical review/repair pass;
+6. package `CreativeAssetBundle@1` with checksums, lineage, rights, and target metadata;
+7. validate it against both Studio export and synthetic consumer-import fixtures; and
+8. record the handoff receipt without running an engine, building a game, rendering a final
+   broadcast, or publishing anything.
 
-This slice proves the production grammar before expensive motion generation or a synthetic
-presenter obscures the harder questions of truth, lineage, and recovery.
+This slice proves reusable style, heterogeneous media custody, deterministic packaging, and the
+Composition boundary before 3D generation, expensive motion, real engine import, or public release
+obscures the harder questions of lineage and recovery.
 
 ## Staged roadmap
 
-1. **Schemas:** commission, source snapshot, claim, article, script, scene, asset, timeline,
-   finding, approval, and bundle manifests.
-2. **Deterministic essay:** operator assets, local TTS, captions, OpenTimelineIO or equivalent,
-   and pinned FFmpeg rendering.
-3. **Image forge:** replaceable local image providers, acceptance UI, budget, and lineage.
-4. **Studio board:** Loom projection for steps, artifacts, gates, findings, and invalidation.
-5. **Motion clips:** bounded local image/video generation with cancellation and resource receipts.
-6. **Presenter and sound:** consent-bound voice/likeness, audio-driven motion, lawful music/effects.
-7. **Publication:** draft then public adapters with idempotency, reconciliation, and takedown.
-8. **Teaching kit:** publish the Pattern grammar and manifests without publishing operator secrets,
-   private sources, voice fixtures, or model credentials.
+1. **Shared schemas:** commission, reference snapshot, creative brief, style revision, asset
+   specification, target profile, finding, approval, bundle, and handoff receipt.
+2. **Deterministic library:** operator assets, content-addressed custody, probes, thumbnails,
+   normalization, export manifests, and synthetic consumer conformance.
+3. **Image and 2D forge:** replaceable providers, concept/style continuity, sprite and texture
+   tools, acceptance UI, budgets, and lineage.
+4. **Studio and Suite projection:** Loom views for library assets, steps, gates, findings,
+   invalidation, explicit handoffs, and per-Composition authority.
+5. **Voice, dialogue, and sound:** consent-bound performances, dialogue packs, lawful music/effects,
+   alignment, loop and loudness metadata.
+6. **3D exchange:** provider research, mesh/UV/rig/animation contracts, deterministic probes,
+   previews, target profiles, and bounded conversion.
+7. **Motion and cutscene sources:** bounded image/video generation, animatics, separate stems,
+   cancellation, and resource receipts without claiming final assembly.
+8. **Consumer integrations:** conformance handoffs to Game Foundry and Broadcast Studio after each
+   Composition independently exists and owns its import truth.
+9. **Teaching kit:** publish Pattern grammar, target-profile examples, and manifests without
+   publishing operator secrets, private references, performer fixtures, or model credentials.
 
 ## Current delivery gaps
 
-The Core does not yet prove Composition contribution, media-tool ontology, playable artifact
-custody, claim lineage, production manifests, provider eligibility by license, GPU-aware generation
-budgets, Studio projection, or publication reconciliation. Current priority and capability
-structures are useful substrate, not a functioning studio.
+The Core does not yet prove Composition contribution, the Suite abstraction, creative asset
+schemas, media/3D tool ontology, artifact custody, style or derivation lineage, target profiles,
+typed cross-Composition handoff, provider eligibility by license, GPU-aware generation budgets, or
+Studio/Suite projection. Game Foundry and Broadcast Studio remain future application designs.
+Current priority and capability structures are useful substrate, not a functioning studio.
 
 ## Continue
 
-- Return to the [Reference Composition Portfolio](index.md) for the application map.
+- Return to the [Composition Portfolio](index.md) for the application and Suite map.
 - Read [Weaver](../sepulcher/extensions/weaver.md) for workflow jurisdiction.
 - Read [Dispatcher](../adr/22-dispatcher.md) and [Orchestrator](../adr/23-orchestrator.md) before
   binding a model family or residency profile.

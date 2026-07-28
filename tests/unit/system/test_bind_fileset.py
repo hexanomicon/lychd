@@ -2,9 +2,9 @@
 
 Proves the Scribe writes exactly the expected unit files into their two binding
 sites -- ``.container``/``.pod`` into the Quadlet dir, ``.target`` into the
-systemd user dir -- for BOTH transmutation scenarios. The expected file sets are
-committed fixtures captured PRE-refactor (P1), so the QuadletContributor refactor
-cannot silently add, drop, or misroute a unit file.
+systemd user dir -- for BOTH transmutation scenarios. The committed fixtures
+make every intentional lifecycle-unit addition, removal, or routing change
+reviewable.
 
 Regenerate with ``LYCHD_REGEN_GOLDEN=1`` after an INTENTIONAL change.
 """
@@ -38,9 +38,24 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
 
     # Mirror the golden fixture stone set so the two nets pin the same reality.
     soulstones = [
-        GenericSoulstoneConfig(name="alpha", image="registry.example/alpha:1", groups=["logic"]),
-        GenericSoulstoneConfig(name="beta", image="registry.example/beta:1", groups=["logic"]),
-        GenericSoulstoneConfig(name="gamma", image="registry.example/gamma:1", groups=[]),
+        GenericSoulstoneConfig(
+            name="alpha",
+            image="registry.example/alpha:1",
+            groups=["logic"],
+            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+        ),
+        GenericSoulstoneConfig(
+            name="beta",
+            image="registry.example/beta:1",
+            groups=["logic"],
+            concurrency=ConcurrencyIntent(conflict_domains=[]),
+        ),
+        GenericSoulstoneConfig(
+            name="gamma",
+            image="registry.example/gamma:1",
+            groups=[],
+            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+        ),
         GenericSoulstoneConfig(
             name="resident",
             image="registry.example/resident:1",
@@ -97,6 +112,12 @@ def test_target_split_routing(tmp_path: Path) -> None:
     manifests = _transmute(phoenix_active=True)
     result = _write_and_collect(manifests, tmp_path)
     assert "lychd.pod" in result["quadlet"]
-    assert "lychd-oculus.container" in result["quadlet"]
+    assert "lychd-phoenix.container" in result["quadlet"]
     assert all(name.endswith((".container", ".pod")) for name in result["quadlet"])
-    assert result["systemd"] == ["lychd-coven-logic.target"]
+    assert result["systemd"] == [
+        "lychd-animator-alpha.target",
+        "lychd-animator-beta.target",
+        "lychd-animator-gamma.target",
+        "lychd-animator-resident.target",
+        "lychd-coven-logic.target",
+    ]

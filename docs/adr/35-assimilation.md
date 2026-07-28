@@ -15,11 +15,17 @@ icon: material/import
 - **Architecture-Aware Fabrication:** Capability to generate valid, isolated file structures including `pyproject.toml`, entry points, and **[Systemd Quadlets (ADR 08)](./08-containers.md)** that satisfy all infrastructure laws.
 - **Protocol Digest:** Intelligence to identify functional signatures from raw source code or external protocol manifests (e.g., MCP) and map them to the system's **[Covens (ADR 08)](./08-containers.md)**.
 - **Atomic Promotion Safety:** Mandatory execution of the **[Snapshot Protocol (ADR 07)](./07-snapshots.md)** prior to any modification of the Primary Reality (The Crypt).
-- **Migration Verification:** Implementation of a hardcoded verification step for relational schemas against a transient database; failure of the database bind must trigger an automatic reversion to the previous stable state.
-- **Privileged Signal Authority:** Authority to modify the federated lockfile and invoke the **[Host Reactor (ADR 10)](./10-privilege.md)** to trigger system-wide state transitions.
+- **Migration Verification:** Candidate relational migrations must be exercised against a
+  disposable database before promotion. A failed bind blocks the candidate; recovery or rollback
+  requires an explicit, tested lifecycle path rather than an assumed automatic reversal.
+- **Separated Lifecycle Authority:** Smith may submit typed lockfile, packaging, migration, and
+  restart requests. The **[Host Reactor (ADR 10)](./10-privilege.md)** and the offices that own
+  those artifacts retain authorization and execution authority.
 - **Shadow Realm Compliance:** Strict adherence to **[Sovereign Consent (ADR 25)](./25-hitl.md)** and Codex autonomy policy, ensuring no generated logic or infrastructure is promoted without explicit Magus verification or a bounded preauthorization class. High-stakes promotion remains live Magus authority.
 - **Engineering Rigor:** Mandatory adherence to the laws of **[xDDD (ADR 01)](./01-doctrine.md)**, ensuring documentation and unit tests are manifested alongside the implementation logic.
-- **Legacy Data Ingestion:** Mandatory capability to parse, clean, and transmute unstructured cloud exports (.zip) from major AI providers into structured Karma and Mirror Identities.
+- **Heritage Import Boundary:** A separate future composition may parse admitted cloud exports
+  into provenance-bearing Memory and Identity candidates. Smith may propose parsers; heritage
+  ingestion is not mandatory Smith core behavior.
 
 ## Considered Options
 
@@ -32,7 +38,8 @@ icon: material/import
     - **Cons:** **Context Blindness.** A host-side tool remains blind to the machine's current **[Memory Archive (ADR 27)](./27-memory.md)**, its active extensions, or the specific hardware constraints defined in the **[Codex (ADR 12)](./12-configuration.md)**. It creates a disjointed development experience that lacks the machine's internal reasoning history.
 
 !!! success "Option 3: The Primordial Extension (The Smith)"
-    Implementing the artificer as a standard LychD Extension that is bundled with the system by default.
+    Designing the artificer as the first reference LychD Extension. A future distribution may
+    bundle its package, but it remains inactive until explicitly selected and configured.
     - **Pros:**
         - **Sovereign Dogfooding:** The Smith serves as proof that coupled in-process extensions can be constructed, verified, and repaired as part of the composed LychD body.
         - **Recursive Evolution:** An Agent can reason about the implementation of complex interfaces, far exceeding the capability of static templates.
@@ -40,7 +47,9 @@ icon: material/import
 
 ## Decision Outcome
 
-**The Smith** is adopted as the machine's First Extension. It functions as the Primordial Artificer, serving as the bridge between "Thought" and "Implementation" through the ritual of **Assimilation**.
+**The Smith** is adopted as the design for the machine's first reference Extension. It would
+function as the Primordial Artificer, bridging "Thought" and "Implementation" through the ritual
+of **Assimilation**. This selection defines architecture; it does not install or activate Smith.
 
 Assimilation is the inward counterpart to **[A2A (ADR 26)](./26-a2a.md)**. Where A2A negotiates labor across sovereign boundaries, Assimilation studies an external pattern deeply enough that the capability may be re-expressed as part of the local LychD implementation without collapsing those boundaries into dependence.
 
@@ -52,13 +61,21 @@ The practical rule is narrow: until a surface is deliberately versioned and test
 
 Verified traces, failed trajectories, and retained memory may inform Smith fabrication only after they pass through Memory, Simulation, Evaluation, or HitL policy. Raw telemetry is evidence, not promotion.
 
+!!! warning "Implementation State"
+    Smith and the end-to-end Assimilation Composition are **Designed**. No Smith Agent, safe code
+    forge, autonomous repair loop, package promotion path, compatibility gate, rollback
+    controller, heritage importer, or self-extension runtime ships today. The sequence below is
+    law for a future implementation; it is not evidence that the machine can currently rewrite
+    or restart itself.
+
 ### 1. The Persona (The Disciplined Artificer)
 
 The Smith is defined as an **[Agent (ADR 20)](./20-agents.md)** with a specialized intelligence profile focused on strict LychD engineering. It prioritizes type safety, Pydantic validation, and the immutability of the system's **[Layout (ADR 13)](./13-layout.md)**. It operates under the philosophy that "The Machine is a Sacred Symmetry," ensuring that every new extension matches the aesthetics and logic of the kernel.
 
 ### 2. The Arsenal (The Tools of Fabrication)
 
-The Smith wields a specialized toolset granted by its unique position in the **[Lab (ADR 13)](./13-layout.md)**:
+The designed Smith requests a specialized toolset within a bounded **[Lab (ADR 13)](./13-layout.md)**
+workspace:
 
 - **`scaffold_extension()`**: Generates the mandatory directory structure and prepares the environment manifests (`pyproject.toml`, `__init__.py`). Pre-v1 scaffolds default to the private coupled Crypt path: direct internal imports are allowed, and Forge/verification owns breakage. A future independent-template mode may be added only after a versioned public API exists.
 - **`inspect_interface()`**: Analyzes third-party logic or protocol definitions (MCP) to determine functional signatures and dependency needs. Today it validates assimilability against the composed LychD runtime. Future public-API conformance checks should be added only for surfaces that are actually versioned and supported.
@@ -69,16 +86,27 @@ The Smith wields a specialized toolset granted by its unique position in the **[
 
 ### 3. The Genesis Cycle (The Rite of Autopoiesis)
 
-The Smith automates the creation ritual through a multi-stage process governed by the **[Snapshots (ADR 07)](./07-snapshots.md)** logic:
+The future Assimilation Composition governs a multi-stage creation ritual. Smith authors the
+candidate; it does not own the whole sequence:
 
 1. **Genesis:** The Magus submits an intent via the **[Altar (ADR 15)](./15-frontend.md)**.
 2. **Speculation:** The Smith enters the **Shadow Realm**. It creates a Jujutsu workspace or change in the Lab and fabricates the logic, tests, and Quadlet definitions.
-3. **The Rite of Speculation:** The Smith enqueues a job for the **[Ghouls (ADR 14)](./14-workers.md)** to execute `ruff`, `basedpyright`, and `pytest` against the new creation. It iterates autonomously on any failures.
+3. **The Rite of Speculation:** The Smith requests **[Ghouls (ADR 14)](./14-workers.md)** to
+   execute declared structural checks such as `ruff`, `basedpyright`, and `pytest`. Policy may
+   grant a bounded correction loop; exhaustion produces a truthful noncompletion.
 4. **The Preemptive Blink:** When the candidate passes its declared tests, the machine executes a
    system-wide Snapshot. Passing tests establishes those predicates, not universal truth or
    promotion authority.
-5. **Promotion:** Following **[Sovereign Consent (ADR 25)](./25-hitl.md)** or a Codex-governed preauthorization class, the code is moved to the Crypt and the federated lockfile is updated. The Rite of Passage concludes with a **Rite of Inscription** upon the **[Codex (ADR 12)](./12-configuration.md)** — adding the Organ to the `[extensions]` activation list. Until that name is written, a forged Organ is not part of the body; the write is itself hard-gated (ADR 12).
-6. **The Rebirth:** The Smith triggers the **[Packaging (ADR 17)](./17-packaging.md)** ritual. If the "Alembic Bind" (database migration) to the **[Phylactery (ADR 06)](./06-persistence.md)** fails or the container crashes during boot, the system executes an immediate Rehydration Ritual to revert the logic and database.
+5. **Promotion:** After the required **[Sovereign Consent (ADR 25)](./25-hitl.md)**, or only within
+   an explicitly defined low-risk preauthorization class, the owning services may move code to
+   the Crypt, update the federated lockfile, and inscribe the Organ in the
+   **[Codex (ADR 12)](./12-configuration.md)**. High-stakes code, dependency, migration, and
+   lifecycle mutation remains live Magus authority.
+6. **The Rebirth:** An authorized lifecycle office may request
+   **[Packaging (ADR 17)](./17-packaging.md)**, migration, and restart. Failed migration or boot
+   blocks completion and enters an explicit recovery state. Snapshot restore and database
+   reversal are available only when their own tested contracts say they are safe; Smith cannot
+   infer or perform an immediate rollback.
 
 The Smith workflow therefore spans all three collapse stages: structural validity in Shadow (tests/lint/type-check), identity/architectural congruence in review and persona-guided critique, and final ontological promotion only under Vessel policy and Magus consent.
 
@@ -88,26 +116,42 @@ The Smith acts as the archetype for a category of reference implementations know
 
 - **Substrate Replication:** Utilizing the **[Intercom (ADR 26)](./26-a2a.md)** protocols, the Smith can scry the Legion for patterns to replicate.
 - **Autonomous Expansion:** This establishes the Lich as a growing system rather than a finite tool. The Smith provides the initial spark of construction, allowing the machine to multiply its own capabilities and manifest a complete, sovereign runtime through self-directed fabrication.
-- **Reference Implementation Analysis:** The Smith utilizes the **Built-in Extensions** as its primary training set. By introspecting these core modules, the Artificer internalizes the current coupled extension style, the correct use of the **Extension Context**, and the schema/runtime split. To avoid attention dilution during massive codebase ingestion, The Smith utilizes **Iterative Radix Aggregation** (as defined in **[ADR 21](./21-context.md)**). Instead of loading an entire framework into a 100K context window, it establishes a core structural Base Prompt and iterates over the reference implementation module-by-module. Thanks to Radix Attention instantly prefilling the Base Prompt, this allows the Smith to perform highly exact, comparative structural analysis without degrading reasoning. This ensures that every private Crypt component it generates can be verified and repaired with the kernel it joins.
+- **Reference Implementation Analysis:** The Smith may use proven built-in organs as bounded
+  examples of the current coupled extension style, Extension Context, and schema/runtime split.
+  **[ADR 21](./21-context.md)** permits stable-prefix organization and measured provider cache
+  reuse where available. That may reduce repeated prefill cost; it does not promise instant
+  prefill, preserve reasoning quality by itself, or ensure generated code is correct. Focused
+  source selection plus receipts establish the useful result.
 
 ### 5. The Polyglot Artificer (Protocol Assimilation)
 
 The Smith possesses the capability to bridge external ecosystems into the machine's body, treating external protocols as raw materials for growth.
 
-- **MCP Consumption:** When presented with a Model Context Protocol (MCP) server, the Smith can either wrap it in a native Python client or analyze the source code to re-implement its logic as a bit-for-bit native extension, eliminating the "Middleware Tax."
-- **A2A Advertising:** The Smith ensures that every new extension created is automatically advertised to the Legion via the `agent-card.json` defined in the **[Intercom (ADR 26)](./26-a2a.md)**.
+- **MCP Consumption:** When presented with a Model Context Protocol (MCP) server, the Smith may
+  propose a pinned client adapter or an independently verified local re-expression when source,
+  license, provenance, and behavior tests permit it. Assimilation does not promise arbitrary
+  bit-for-bit reproduction or erase protocol, maintenance, and licensing costs.
+- **A2A Advertising:** A new organ is private by default. Only an explicitly selected,
+  authenticated, policy-approved capability contribution may appear in the `agent-card.json`
+  surface defined by **[Intercom (ADR 26)](./26-a2a.md)**.
 - **Rust/PyO3 Scaffolding:** When performance demands a binary component, the Smith may scaffold a **PyO3 binding skeleton** — a `Cargo.toml`, a `src/lib.rs` exposing a `#[pymodule]`, and a `pyproject.toml` with a `[tool.maturin]` build target. The resulting `.so` artifact is not loaded by a blind runtime scan. It must be built and pinned by the Forge, verified against the composed image, and treated as coupled unless a future public ABI exists.
 - **The Rust Transfiguration:** The old temptation to "rewrite it in Rust" is accepted as a future Smith capability only after Python has taught the machine what its stable contracts actually are. Smith may first crystallize hot organs into Rust/PyO3, but the doctrine is stronger than extension optimization: if Core surfaces become sufficiently specified, tested, and Forge-proven, Smith may progressively reimplement even LychD's own kernel modules in Rust. A whole Rust body is not forbidden; it is earned by verified equivalence one boundary at a time, never by a blind heroic rewrite.
 
 
 ### 6. Legacy Data Import (Inheritance)
 
-The Smith possesses the authority to perform the "Heritage Ritual"—the primary mechanism for systemic alignment during the system's infancy.
+The future Heritage Ritual is a separate, consent-bound import composition in which Smith may
+propose provider parsers. It does not give Smith ambient authority over Memory or Identity.
 
 1. **Extraction:** The Magus imports a cloud archive (.zip) to the **Lab**.
 2. **Sifting:** The Smith identifies the provider’s schema and initiates a specialized parsing Ghoul.
-3. **Transmutation:** Historical dialogues are decomposed. The Magus’s instructions and preferences are distilled into high-dimensional vectors, while successful reasoning patterns are promoted to the **Karma** chamber.
-4. **Reanimation:** The resulting data is utilized by **[The Mirror (32)](./32-identity.md)** to shift the system’s initial Bayesian Prior toward the Imprint of the Magus’s Will, bypassing the "Amnesia Phase" of standard model deployments.
+3. **Transmutation:** Historical dialogues are decomposed into provenance-bearing candidate
+   records. No preference, instruction, or apparent success is promoted merely because it appears
+   in an export.
+4. **Review and Admission:** Memory policy and the Magus decide which candidates, if any, may
+   enter Karma. A future **[Mirror (32)](./32-identity.md)** may consume explicitly admitted
+   identity material through its own contract; the import does not silently alter model weights
+   or an unspecified Bayesian prior.
 
 ### 7. The Assimilation Trust Boundary
 
@@ -116,15 +160,23 @@ Assimilated external material — source, protocol manifests, cloud archives —
 - **Vikalpa Until Verified:** Assimilated material is Vikalpa — an unverified construct — until it has passed deterministic verification. It carries no authority on the strength of its own claims.
 - **Data, Never Instruction:** Within the Smith's context, assimilated material enters only as fenced data blocks in the volatile layers of the Stable Floor (**[Context (ADR 21)](./21-context.md)**). It is never concatenated into the instruction layers.
 - **Typed Egress:** The Smith's outputs are typed (**[Agents (ADR 20)](./20-agents.md)**); free-form generation never crosses unshaped into the Crypt.
-- **Deterministic Gate First:** The Deterministic Gate — the mechanical Rite of Speculation (lint, type-check, tests) — precedes any agentic judgment of assimilated code (**[Simulation (ADR 31)](./31-simulation.md)**). Machine reasoning is spent only on material that has already survived mechanical proof.
+- **Mechanical Gate Before Promotion Judgment:** After a candidate exists, the Rite of
+  Speculation (lint, type-check, tests) runs before promotion-oriented evaluation or review
+  (**[Simulation (ADR 31)](./31-simulation.md)**). Mechanical checks prove only their declared
+  predicates; they do not sanitize source, establish semantics, or replace adversarial judgment.
 - **Hard-Gated Promotion:** Promotion of any Smith-forged Organ is hard-gated without exception (**[Codex (ADR 12)](./12-configuration.md)**, **[Sovereign Consent (ADR 25)](./25-hitl.md)**).
 
 ## Consequences
 
 !!! success "Positive"
-    - **Compound Capability:** The machine grows more capable with every request, as every solved problem or assimilated tool becomes a permanent, orchestrated capability.
-    - **Structural Integrity:** The Smith ensures all new logic follows the strict architectural standards of the kernel, preventing component rejection during boot.
-    - **Fail-Safe Evolution:** The integration with the Snapshot protocol and migration checks ensures that even a failed self-modification ritual cannot brick the Daemon.
+    - **Compound Capability:** Verified, deliberately promoted candidates can become reusable
+      orchestrated capabilities; ordinary requests remain ephemeral unless policy admits them.
+    - **Structural Discipline:** The Smith workflow gives candidate code a common architecture,
+      provenance, verification, and review path. Passing the path reduces risk but does not ensure
+      correctness or successful boot.
+    - **Recoverable Evolution Target:** Snapshot, migration, packaging, and lifecycle receipts can
+      make failures diagnosable and some changes recoverable. No composition can guarantee that
+      arbitrary privileged mutation cannot brick the Daemon.
 
 !!! failure "Negative"
     - **Operational Latency:** The "Rebirth" ritual requires a container restart, causing a temporary disconnection during the manifestation of new components.

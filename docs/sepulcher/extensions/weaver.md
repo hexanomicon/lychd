@@ -12,10 +12,10 @@ be inspected, invoked, and—at declared boundaries—resumed.
 **Current boundary:** LychD has one internal Pattern, `bridge_chat`, built directly under
 `src/lychd/agents/workflows/`. It has typed serializable state, deterministic route-once selection,
 a sequential Pydantic Graph, per-step capability leasing, bounded consent parking, and a
-run-keyed Postgres JSONB checkpoint adapter. The fixed registry is not populated by the empty
-built-in `workflow` extension namespace. There is no Portfolio or Composition registry, schedule
-catalogue, Occurrence admission, public contribution API, general workflow editor, Archive-backed
-Memory Weaving, Censor, planning engine, parallel Pattern, or live Loom traversal.
+run-keyed Postgres JSONB checkpoint adapter. It is Core workflow code, not a built-in extension
+package. There is no Portfolio, Composition, or Suite registry, schedule catalogue, Occurrence
+admission, public contribution API, general workflow editor, Archive-backed Memory Weaving,
+Censor, planning engine, parallel Pattern, or live Loom traversal.
 [State records the current cognitive adapter and migration
 boundary](../../state-of-the-work.md#pydantic-ai-v1-adapter), [graph Stasis
 boundary](../../state-of-the-work.md#graph-stasis-consent), and [Loom
@@ -27,6 +27,11 @@ Agents](../../adr/20-agents.md) owns the typed cognitive atom. The living [Compo
 Portfolio](../../compositions/index.md) maps application designs above Patterns without becoming
 another Covenant.
 
+**Extension form:** Weaver is a singular Core office and an Extension Domain because it is the
+direction by which the minimal body acquires repeatable ways of working. Operators and packages
+extend it with immutable Pattern revisions, Composition metadata, evaluators, and projections;
+they do not select an alternative Weaver or create a second application truth.
+
 > _“An Agent is a single note. The Weaver is the weaving: thread remembered across darkness,
 > pause held without deceit, and scattered motion returned to one score.”_
 
@@ -35,6 +40,8 @@ another Covenant.
 - The **Portfolio** is the set of registered Compositions governed by one Weaver.
 - A **Reference Composition** is an operator-visible application with one purpose, Pattern
   catalogue, policy, data, dependencies, and projections. It owns product/application identity.
+- A **Suite** is a versioned graph of separately owned Compositions and typed handoffs. It owns
+  shared coordination and projection metadata, never member data or ambient authority.
 - The **Pattern** is the validated score owned by the Weaver. It names what may happen and the
   contract by which that shape remains legible.
 - The **Loom** is the Altar instrument that projects a Pattern and may later hold inert drafts. It
@@ -115,8 +122,8 @@ replay an effect.
 
 ## The Pattern contribution law
 
-Weaver becomes a real extension organ only when a contribution is more than a Python graph object.
-Every contributed Pattern must declare and validate:
+The Weaver contribution surface becomes real only when a contribution is more than a Python graph
+object. Every contributed Pattern must declare and validate:
 
 1. **Identity:** stable Pattern id, immutable revision, owner, provenance, support tier, and
    description.
@@ -158,6 +165,24 @@ crossing. It may redact, tokenize, minimize, or reject what was already allowed 
 never authorize egress, widen a Sigil, invent reversible anonymization, or make a Portal or Legion
 safe merely because a workflow named the transform.
 
+## Semantic return without reverse execution
+
+A downstream Composition may reveal a problem that its producer could not observe locally.
+[Riddle](./riddle.md#viii-the-returning-riddle-suite-feedback) may project that consequence back
+over the pinned Suite as findings, attribution candidates, unsupported claims, and a bounded
+correction request. The visual direction is backward; execution remains forward.
+
+Weaver treats a correction request as inert candidate intent. If the addressed owner, policy, and
+Magus admit repair, Weaver creates a new Invocation pinned to an exact Pattern revision and a
+bounded smallest-supported cut. The previous Invocation, artifact, handoff, and evaluation remain
+immutable lineage. Repeated findings, oscillating producer-consumer requests, unknown attribution,
+or exhausted budgets end honestly instead of creating an automatic repair cycle.
+
+Mirror preserves who produced, observed, edited, delegated, or corrected each record. Riddle owns
+the rubric and calibrated credit-or-fault hypothesis. Soulforge alone owns any later admitted
+weight-training rite. Weaver coordinates the next act; it neither assigns identity and blame nor
+turns Suite traffic into ambient learning.
+
 ## The forked horizon
 
 LychD currently executes the installed `pydantic-graph==1.25.1` legacy `BaseNode` API and adapts its
@@ -187,9 +212,27 @@ It does not show an active node, branch progress, memory injection, or a waiting
 view must join a Pattern revision to durable run events by stable run, lane, step, and event ids;
 the diagram remains a projection even then.
 
-Likewise, a future editor may shape an inert draft but cannot mutate a live Pattern. Publication
-creates a reviewed immutable revision, and every Invocation remains pinned to the revision and
-checkpoint schema with which it began.
+The future Loom may navigate the Portfolio, a Suite's cross-Composition handoff graph, a
+Composition's Pattern families, an exact revision, and selected Agent-step or deterministic-step
+occurrences. Typed ports, required authority, capability demand, evaluators, budgets, and
+checkpoint boundaries appear only where the owning contract declares them. A Suite edge remains
+inert until Weaver's cross-Composition Invocation law exists; a canvas group is not a nested
+Pattern, and an Agent occurrence is not the singleton Agent specification it references.
+
+Riddle may add a visually distinct dotted semantic-return overlay with findings, attribution
+rivals, unsupported-claim cones, proposed cuts, and preserved branches. Loom must not redraw that
+probabilistic evidence as a causal arrow or expose repair/retrain/publish as one combined action.
+
+A future editor may shape an inert **charcoal** candidate but cannot mutate a live Pattern. Current
+Python `BaseNode` graphs are executable source projections, not round-trippable visual documents.
+Executable editing therefore waits for the canonical declarative Pattern intermediate
+representation required by ADR 28. Renderer coordinates and graph-library state never become that
+contract.
+
+Publication creates a reviewed immutable revision, and every live or parked Invocation remains
+pinned to the revision and checkpoint schema with which it began. A Bridge proposal remains an
+attributable candidate against an exact base revision; model prose never becomes publication or
+Invocation authority.
 
 > _The Weaver does not command the iron, pronounce truth, or counterfeit memory. It keeps the
 > thread by which each rightful organ may act—and by which the whole can find its way home._

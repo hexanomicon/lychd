@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from lychd.domain.animation.capabilities import CapabilityGrant
+    from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.leases import LeaseLedger
 
 __all__ = ["CapabilityRegistry", "Dispatcher", "HardwareTransitionRequired"]
@@ -26,10 +27,17 @@ _INTENT_ALIASES = {"reasoning": CapabilityFamily.CHAT}
 class Dispatcher:
     """Resolve abstract intent onto the canonical registry and lease scoped grants."""
 
-    def __init__(self, registry: CapabilityRegistry, *, leases: LeaseLedger) -> None:
+    def __init__(
+        self,
+        registry: CapabilityRegistry,
+        *,
+        leases: LeaseLedger,
+        events: RunEventBus | None = None,
+    ) -> None:
         """Initialize against the injected canonical registry and the lease ledger."""
         self._registry = registry
         self._leases = leases
+        self._events = events
 
     @asynccontextmanager
     async def lease_grant(
@@ -58,6 +66,18 @@ class Dispatcher:
         grant = await self._grant_for_spec(spec, holder=f"run:{run_id}")
         self._acquire_or_park(grant, priority=priority)
         try:
+            if self._events is not None:
+                from lychd.domain.cortex.execution_context import current_occurrence_id
+
+                self._events.emitter(run_id).dispatch(
+                    grant.key,
+                    animator=grant.spec.animator_name,
+                    family=grant.spec.family.value,
+                    model_id=grant.spec.model_id,
+                    phase=grant.state.phase.value,
+                    occurrence_id=current_occurrence_id() or "",
+                    grant_id=grant.lease.grant_id,
+                )
             yield grant
         finally:
             self._leases.release(grant.lease.grant_id)

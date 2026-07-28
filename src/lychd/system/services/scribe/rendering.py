@@ -100,7 +100,7 @@ class BindingRenderer:
             suffixes = QUADLET_SUFFIXES
         elif isinstance(manifest, QuadletTarget):
             content = self._target_tmpl.render(**manifest.model_dump())
-            filename = f"lychd-coven-{manifest.name}.target"
+            filename = manifest.filename
             site = "systemd"
             suffixes = GENERATED_SYSTEMD_SUFFIXES
         else:

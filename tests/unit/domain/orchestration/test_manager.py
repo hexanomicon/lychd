@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any
@@ -16,14 +17,21 @@ from lychd.domain.animation.capabilities import (
     SourceKind,
 )
 from lychd.domain.animation.links import Link
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.cortex.leases import AnimatorAdmission, LeaseLedger
-from lychd.domain.orchestration.actuator import RuntimePreconditionError, TransitionIntent
+from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
+    RuntimeCancellationRestoredError,
+    RuntimePreconditionError,
+    TransitionIntent,
+)
 from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.policies import EvictIdlePolicy
+from lychd.domain.orchestration.schema import TransitionTrace
 from lychd.system.services.runtime import SystemdRuntimeActuator
 
 
@@ -38,6 +46,24 @@ def _make_manager(broker: object, registry: object, *, leases: LeaseLedger | Non
         actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
+
+
+def test_transition_observer_failure_cannot_change_transition_control_flow() -> None:
+    manager = _make_manager(SimpleNamespace(), StubRegistry([], [], {}))
+
+    def _broken_observer(trace: TransitionTrace) -> None:
+        raise RuntimeError
+
+    trace = TransitionTrace(
+        target_capability_key="chat:local",
+        priority=50,
+        observer=_broken_observer,
+    )
+
+    manager._publish(trace, "verifying")  # pyright: ignore[reportPrivateUsage]
+
+    assert trace.phase == "verifying"
+    assert manager.transitions.get(trace.request_id) is not None
 
 
 @dataclass
@@ -57,6 +83,18 @@ class StubRegistry:
         self._specs = {spec.key: spec for spec in specs}
         self._states = {state.capability_key: state for state in states}
         self._runtimes = runtimes
+        first_specs_by_animator: dict[str, CapabilitySpec] = {}
+        for spec in specs:
+            first_specs_by_animator.setdefault(spec.animator_name, spec)
+        self._soulstones = {
+            name: GenericSoulstoneConfig(
+                name=name,
+                image=f"example/{name}:test",
+                runtime=spec.runtime,
+                concurrency=spec.concurrency,
+            )
+            for name, spec in first_specs_by_animator.items()
+        }
         self.await_warm_calls: list[str] = []
         self.activate_calls: list[str] = []
 
@@ -87,14 +125,11 @@ class StubRegistry:
     def get_runtime(self, name: str) -> StubRuntime | None:
         return self._runtimes.get(name)
 
-    def get_soulstone_rune(self, name: str) -> SimpleNamespace | None:
-        if name not in self._runtimes:
-            return None
-        concurrency = next(
-            (spec.concurrency for spec in self._specs.values() if spec.animator_name == name),
-            ConcurrencyIntent(),
-        )
-        return SimpleNamespace(service_name=f"lychd-{name}", concurrency=concurrency)
+    def get_soulstone_rune(self, name: str) -> GenericSoulstoneConfig | None:
+        return self._soulstones.get(name)
+
+    def list_soulstone_runes(self) -> list[GenericSoulstoneConfig]:
+        return [self._soulstones[name] for name in sorted(self._soulstones)]
 
     async def activate_capability(self, key: str) -> ActivationResult:
         self.activate_calls.append(key)
@@ -379,7 +414,13 @@ async def test_handle_transition_starts_runtime_then_loads_dynamic_capability() 
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
     broker.unpause_queues.assert_called_once()
-    mock_exec.assert_called_once_with("/usr/bin/systemctl", "--user", "start", "lychd-router.service")
+    mock_exec.assert_called_once_with(
+        "/usr/bin/systemctl",
+        "--user",
+        "start",
+        "--job-mode=fail",
+        "lychd-animator-router.target",
+    )
     assert state.is_active is True
     assert registry.await_warm_calls == [target.key]  # terminal convergence (DYNAMIC)
 
@@ -806,12 +847,19 @@ async def test_hard_swap_keeps_admission_closed_until_target_is_warm() -> None:
         patch("asyncio.create_subprocess_exec", return_value=process),
     ):
         task = asyncio.create_task(manager.request_transition(target.key, 100.0))
-        await warm_wait_entered.wait()
-        assert broker.paused is True
-        assert leases.admission("titan") is AnimatorAdmission.DRAINING
-        assert leases.admission("vision") is AnimatorAdmission.DRAINING
-        release_warm_wait.set()
-        await task
+        try:
+            await asyncio.wait_for(warm_wait_entered.wait(), timeout=1.0)
+            assert broker.paused is True
+            assert leases.admission("titan") is AnimatorAdmission.DRAINING
+            assert leases.admission("vision") is AnimatorAdmission.DRAINING
+            release_warm_wait.set()
+            await task
+        finally:
+            release_warm_wait.set()
+            if not task.done():
+                task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
     assert broker.paused is False
     assert leases.admission("titan") is AnimatorAdmission.OPEN
@@ -829,16 +877,25 @@ async def test_hard_swap_readiness_failure_runs_typed_compensation() -> None:
         switching=SwitchingSettings(drain_timeout_s=5.0),
     )
 
+    trace = TransitionTrace(
+        target_capability_key=target.key,
+        priority=100,
+        run_id="run-1",
+        occurrence_id="occurrence-1",
+    )
     with (
         patch.object(manager.registry, "await_warm", side_effect=RuntimeError("warm failed")),
         pytest.raises(RuntimeError, match="warm failed"),
     ):
-        await manager.request_transition(target.key, 100)
+        await manager.request_transition(target.key, 100, trace=trace)
 
     actuator = manager._actuator
     assert isinstance(actuator, _StateTrackingActuator)
     assert [intent.operation for intent in actuator.calls] == ["forward", "compensation"]
     assert actuator.calls[1].rollback_of == actuator.calls[0].transition_id
+    assert trace.physical_transition_id == actuator.calls[0].transition_id
+    assert trace.compensation_transition_id == actuator.calls[1].transition_id
+    assert trace.phase == "failed_restored"
     titan_runtime = manager.registry.get_runtime("titan")
     vision_runtime = manager.registry.get_runtime("vision")
     assert titan_runtime is not None
@@ -939,6 +996,60 @@ async def test_safe_precondition_decline_reopens_barrier_without_containment() -
 
     manager._actuator = _DecliningActuator()
     with pytest.raises(RuntimePreconditionError, match="active set changed"):
+        await manager.request_transition(target.key, 100)
+
+    assert manager.containment_reason is None
+    assert broker.paused is False
+    assert leases.admission("titan") is AnimatorAdmission.OPEN
+    assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_verified_actuator_restoration_reopens_barrier_without_containment() -> None:
+    """A failed systemd transaction may reopen only after exact-world proof."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker,
+        leases=leases,
+        switching=SwitchingSettings(drain_timeout_s=5.0),
+    )
+
+    class _RestoringActuator:
+        async def apply(self, intent: TransitionIntent) -> None:
+            _ = intent
+            message = "systemd transaction failed; prior runtime world restored"
+            raise RuntimeActuationRestoredError(message)
+
+    manager._actuator = _RestoringActuator()
+    with pytest.raises(RuntimeActuationRestoredError, match="prior runtime world restored"):
+        await manager.request_transition(target.key, 100)
+
+    assert manager.containment_reason is None
+    assert broker.paused is False
+    assert leases.admission("titan") is AnimatorAdmission.OPEN
+    assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_verified_cancellation_restoration_reopens_barrier_without_containment() -> None:
+    """Preserve cancellation semantics after the actuator proves exact restoration."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker,
+        leases=leases,
+        switching=SwitchingSettings(drain_timeout_s=5.0),
+    )
+
+    class _CancellationRestoringActuator:
+        async def apply(self, intent: TransitionIntent) -> None:
+            _ = intent
+            message = "cancelled systemd transaction restored its prior runtime world"
+            raise RuntimeCancellationRestoredError(message)
+
+    manager._actuator = _CancellationRestoringActuator()
+    with pytest.raises(RuntimeCancellationRestoredError, match="restored its prior runtime world"):
         await manager.request_transition(target.key, 100)
 
     assert manager.containment_reason is None
@@ -1066,3 +1177,21 @@ async def test_cancel_mid_drain_reopens_claim_gate() -> None:
 
     assert broker.paused is False  # gate reopened on the cancellation path
     assert leases.admission("titan") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_preflight_failure_records_terminal_no_effect_phase() -> None:
+    """A request rejected before arbitration never remains falsely `requested`."""
+    manager = _make_manager(
+        AsyncMock(),
+        StubRegistry([], [], {}),
+    )
+    trace = TransitionTrace(target_capability_key="missing:chat", priority=100.0)
+
+    with pytest.raises(ValueError, match="Unknown capability: missing:chat"):
+        await manager.request_transition("missing:chat", 100, trace=trace)
+
+    record = manager.transitions.get(trace.request_id)
+    assert record is not None
+    assert record.phase == "declined_no_effect"
+    assert record.physical_transition_id is None

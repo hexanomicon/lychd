@@ -704,14 +704,24 @@ Anchor creation and sample inscription (`ConfigWriter`) are implemented in `src/
 
 ### The Rite of Inscription (Writable Codex)
 
-`ConfigWriter` writes sample runes at `lychd init`; sanctioned runtime writes to live Codex intent follow a stricter path. When the system itself originates a rune write — the Smith promoting a forged Organ into an activation list (**[Assimilation (35)](35-assimilation.md)**), or the Altar's Bindings instrument editing a rune (**[Altar (15)](15-frontend.md)**) — the write proceeds as a **Rite of Inscription**:
+`ConfigWriter` writes sample runes at `lychd init`; a future sanctioned runtime write to live
+Codex intent follows a stricter path. Examples include an approved Smith promotion
+(**[Assimilation (35)](35-assimilation.md)**) or a separately specified configuration-edit
+workflow. Contextual declarations in Nexus are evidence, not an editing surface, and no Bindings
+instrument or generic Altar rune editor exists. Such a write proceeds as a **Rite of
+Inscription**:
 
 1. The change is composed into a staging file rather than mutating the live TOML in place.
 2. The full `ConfigLoader` validates the staged tree exactly as it would at bind time, so an invalid write can never become live intent.
 3. Only after validation succeeds is the staging file promoted by atomic rename.
 4. A reload signal reloads the Codex from the newly inscribed tree.
 
-Every such write is a hard-gated class. It already qualifies under "core logic promotion" in the Autonomy Policy (§10) and therefore requires live HitL or explicit Codex preauthorization; adaptive confidence never satisfies it. The Smith and the Bindings instrument are the only sanctioned writers of live Codex intent; no other component may mutate a rune after load. This is consistent with the frozen Instance Doctrine: the Rite does not mutate a rune in place, it re-inscribes and reloads.
+Every such write is a hard-gated class. Core logic promotion requires live HitL; a narrower
+configuration class may use explicit Codex preauthorization only where its own law allows it.
+Adaptive confidence never satisfies either boundary. The workflow submits a typed request to the
+configuration owner; neither Smith nor an Altar projection receives ambient write authority. No
+component may mutate a rune instance after load. This is consistent with the frozen Instance
+Doctrine: the Rite does not mutate a rune in place, it re-inscribes and reloads.
 
 ---
 

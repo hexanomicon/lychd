@@ -49,6 +49,10 @@ class WorkflowRegistry(Protocol):
         """Return the workflow persisted under ``name``, or ``None``."""
         ...
 
+    def get_revision(self, pattern_id: str, revision: str, /) -> Workflow | None:
+        """Return one exact registered Pattern revision, or ``None``."""
+        ...
+
     def all(self) -> tuple[Workflow, ...]:
         """Return every registered workflow in route-precedence order."""
         ...
@@ -61,9 +65,17 @@ class BuiltinWorkflowRegistry:
     workflows: tuple[Workflow, ...]
 
     def __post_init__(self) -> None:
-        """Validate the registry is non-empty (the default must exist)."""
+        """Validate the registry is non-empty and has unambiguous immutable identities."""
         if not self.workflows:
             msg = "WorkflowRegistry requires at least one workflow (the default)."
+            raise ValueError(msg)
+        names = [workflow.name for workflow in self.workflows]
+        if len(names) != len(set(names)):
+            msg = "WorkflowRegistry contains duplicate workflow names."
+            raise ValueError(msg)
+        identities = [(workflow.manifest.key, workflow.manifest.revision) for workflow in self.workflows]
+        if len(identities) != len(set(identities)):
+            msg = "WorkflowRegistry contains duplicate Pattern revisions."
             raise ValueError(msg)
 
     @property
@@ -82,6 +94,13 @@ class BuiltinWorkflowRegistry:
         """Return the workflow registered under ``name``, or ``None``."""
         for workflow in self.workflows:
             if workflow.name == name:
+                return workflow
+        return None
+
+    def get_revision(self, pattern_id: str, revision: str, /) -> Workflow | None:
+        """Return one exact registered Pattern revision, or ``None``."""
+        for workflow in self.workflows:
+            if workflow.manifest.key == pattern_id and workflow.manifest.revision == revision:
                 return workflow
         return None
 

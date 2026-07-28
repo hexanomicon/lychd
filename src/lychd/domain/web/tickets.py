@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     import asyncio
     from collections.abc import Callable
 
+    from lychd.domain.orchestration.schema import TransitionTrace
+
 _DEFAULT_CAPACITY = 256
 _DEFAULT_TERMINAL_RETENTION_S = 60.0
 
@@ -41,6 +43,7 @@ class TicketRecord:
     target: str
     action_type: str
     total_metabolic_cost: float
+    trace: TransitionTrace
     task: asyncio.Task[Any]
     created_at: float
     terminal_at: float | None = None
@@ -81,6 +84,7 @@ class TicketStore:
         target: str,
         action_type: str,
         total_metabolic_cost: float,
+        trace: TransitionTrace | None = None,
         task: asyncio.Task[Any],
     ) -> TicketRecord:
         """Register a launched transition task and return its ticket record."""
@@ -89,13 +93,17 @@ class TicketStore:
         except TicketCapacityError:
             task.cancel()
             raise
+        from lychd.domain.orchestration.schema import TransitionTrace
+
         now = self._clock()
+        trace = trace or TransitionTrace(target_capability_key=target, priority=100.0)
         ticket_id = _new_ticket_id()
         record = TicketRecord(
             id=ticket_id,
             target=target,
             action_type=action_type,
             total_metabolic_cost=total_metabolic_cost,
+            trace=trace,
             task=task,
             created_at=now,
             terminal_at=now if task.done() else None,
@@ -115,6 +123,17 @@ class TicketStore:
             record.terminal_at = self._clock()
             self._observe_terminal(record.task)
         return record
+
+    def get_by_request_id(self, request_id: str) -> TicketRecord | None:
+        """Return the retained process-local ticket for one orchestration request."""
+        self._retire_expired()
+        for record in self._tickets.values():
+            if record.trace.request_id == request_id:
+                if record.task.done() and record.terminal_at is None:
+                    record.terminal_at = self._clock()
+                    self._observe_terminal(record.task)
+                return record
+        return None
 
     @property
     def count(self) -> int:

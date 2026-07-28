@@ -176,7 +176,9 @@ def build_altar_services(
         portal_factories=portal_factories,
     )
     leases = LeaseLedger()
-    dispatcher = Dispatcher(registry=registry, leases=leases)
+    ledger = _build_run_ledger(profile)
+    bus = InProcessEventBus(ledger=ledger)
+    dispatcher = Dispatcher(registry=registry, leases=leases, events=bus)
     switching = settings.orchestration.switching
     worker_broker = GhoulBroker(queues=queues, leases=leases)
     orchestrator = OrchestratorManager(
@@ -198,8 +200,6 @@ def build_altar_services(
     consents = _build_consent_ledger(profile)
     tickets = TicketStore()
     projector = EventProjector(fragments=fragments, sessions=bridge_sessions, consents=consents)
-    ledger = _build_run_ledger(profile)
-    bus = InProcessEventBus(ledger=ledger)
     workflows = builtin_workflow_registry()
     cancellations = RunCancellationCoordinator()
     if profile == "postgres":

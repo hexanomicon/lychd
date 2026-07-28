@@ -166,7 +166,13 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
         "run_id": run_id,
         "cursor": 2,
         "content": "ashes",
-        "status": "weaving",
+        "run_status": "running",
+        "activity": "weaving",
+        "pattern_id": "bridge_chat",
+        "pattern_revision": "legacy-unversioned",
+        "loom_path": None,
+        "orb_path": f"/orb/{run_id}",
+        "evidence_capture": "process_local",
         "fragments": [
             {
                 "kind": "genui.plan_checklist",
@@ -175,6 +181,13 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
                 "actions": [],
             },
         ],
+        "occurrence_id": None,
+        "dispatch_occurrence_id": None,
+        "grant_id": None,
+        "capability_key": None,
+        "transition_occurrence_id": None,
+        "transition_request_id": None,
+        "transition_phase": None,
         "terminal": False,
     }
 
@@ -216,8 +229,8 @@ def test_stream_terminal_run_synthesizes_status_and_done(
 
     assert response.status_code == 200
     events = _sse_events(response.text)
-    assert [event["event"] for event in events] == ["status", "done"]
-    assert events[0]["data"]["payload"]["text"] == "done"
+    assert [event["event"] for event in events] == ["resync"]
+    assert events[0]["data"]["payload"]["reason"] == "snapshot_required"
 
 
 def test_terminal_reconnect_emits_explicit_resync_and_refetches_settled_snapshot(
@@ -248,7 +261,8 @@ def test_terminal_reconnect_emits_explicit_resync_and_refetches_settled_snapshot
     assert events[0]["data"]["payload"]["reason"] == "snapshot_required"
     assert snapshot.status_code == 200
     assert snapshot.json()["content"] == "It is done."
-    assert snapshot.json()["status"] == "done"
+    assert snapshot.json()["run_status"] == "done"
+    assert snapshot.json()["activity"] == "done"
     assert snapshot.json()["terminal"] is True
 
 

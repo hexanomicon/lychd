@@ -10,20 +10,33 @@ icon: material/scale-balance
 
 ## Requirements
 
-- **The Law of One Runtime Physical Will:** Every application- or agent-initiated lifecycle
-  mutation must be one explicit serialized plan. A host operator retains an explicit Coven-target
-  break-glass path outside these workload guarantees.
-  The v1 `evict-idle` policy conservatively treats active, dedicated, non-resident runtimes as one
-  switching pool; finer hardware-coordinate/group policy is later work.
+- **One Temporal Will, One Physical Executor:** Every application- or agent-initiated lifecycle
+  mutation must pass through one serialized Orchestrator decision and one systemd transaction.
+  The Orchestrator owns *when*: the requested transition-target capability, priority, affected-set
+  computation, admission closure, drain, stale-world validation, readiness, and compensation.
+  Systemd owns *how*: the physical stop/switch/start implied by the generated Animator-target graph.
+- **Declared Conflict Closure:** The Orchestrator must derive the exact active conflict
+  neighborhood from the same Soulstone `conflict_domains` intent binding compiled. An omitted
+  declaration on a dedicated non-resident becomes the conservative `default-exclusive` wildcard;
+  an explicit empty list alone declares coexistence. Coven membership never substitutes for this
+  graph. Until Animator runtime activity has a canonical state port independent of capabilities,
+  every Soulstone must synthesize at least one `CapabilitySpec`; bind and registry load reject an
+  unadvertised Soulstone rather than let host and planner truth diverge.
+- **Attested Effect:** Before asking systemd to act, the runtime actuator must prove that the loaded
+  runtime graph is the exact Scribe-owned projection of current registry truth: no stale
+  Animator/Coven target, substituted source, altered managed relation, unauthorized drop-in, or
+  pending reload may pass. The mediated Host Reactor must separately reject a stale intent
+  configuration digest. A host operator retains explicit Animator/Coven-target break-glass paths
+  outside these workload guarantees.
 - **Exclusive vs Shared Authority:** The Orchestrator must distinguish between **exclusive** Soulstones (fully owned — may kill, swap, restart) and **shared** Soulstones (read-only — may route to, but cannot manage lifecycle). A shared Soulstone is one the Magus also exposes to external services outside LychD.
 - **The Stasis Receiver:** Capability to interpret the `HardwareTransitionRequired` signal from the **[Dispatcher (22)](22-dispatcher.md)** and convert it into a scheduled priority event.
 - **Single Readiness Owner:** Soft activation, hard lifecycle transitions, and final convergence on `WARM` belong only to the Orchestrator. The Dispatcher may request readiness but may not mutate it.
 - **The Tipping Point Algorithm:** Implementation of a weight-based scheduling logic to determine if a requested state change is worth the momentum cost of the current state.
 - **The Graceful Drain:** Lease admission for every affected Animator must close before waiting:
-  the hard-swap evictee set or the whole target Animator for any runtime-started, non-`WARM`
-  convergence path. Existing lease holders may finish their current atomic step, but no new grant
-  may enter while readiness is being converged; only a dynamic target may require a model-load
-  mutation inside that barrier.
+  the exact active conflict-neighbor set or the whole target Animator for any runtime-started,
+  non-`WARM` convergence path. Existing lease holders may finish their current atomic step, but no
+  new grant may enter while readiness is being converged; only a dynamic target may require a
+  model-load mutation inside that barrier.
 - **Fluid Model Tiering:** Mandatory support for VRAM budgeting, allowing for the downgrading of model scales (e.g., 70B to 8B) to accommodate concurrent sensory and reasoning requirements.
 - **Lexical Reservation:** Permanent allocation of a specific VRAM margin for the system's core lexical parser to ensure basic cognitive stability during heavy hardware transitions.
 - **Embedding Coven Priority:** During memory ingestion windows, embedding covens must be schedulable with explicit priority so metabolic writes do not starve indefinitely.
@@ -51,7 +64,8 @@ icon: material/scale-balance
     A stateful logic engine utilizing a strategy pattern to bridge abstract cognitive intents with **[Systemd Quadlets (08)](08-containers.md)** and host-native resource management.
 
     - **Pros:**
-        - **Deterministic Safety:** Serializes one explicit stop/start plan so no generated unit can add a physical effect outside admission closure and lease drain.
+        - **Deterministic Safety:** Serializes one transition decision, closes and drains the exact
+          declared conflict set, and delegates one attested physical transaction to systemd.
         - **Hardware Resonance:** Directly monitors physical utilization metrics via **[The Oculus (29)](29-observability.md)** to inform model tiering and "Whim" calculations.
         - **Atomic Handoff:** Implements the "Drain" protocol, ensuring no reasoning task is lobotomized mid-thought during a swap.
 
@@ -59,18 +73,30 @@ icon: material/scale-balance
 
 **The Orchestrator** is adopted as the system's "Physical Will." It functions as the arbiter of reality, sitting between the cognitive cortex and the containerized body.
 
-The ownership invariant is strict: **Dispatcher selects; Orchestrator readies; Animator adapters
-perform runtime-specific mechanics; a narrow actuator performs host lifecycle mutation.** A
-non-WARM managed capability always crosses this boundary through a handle-free
-`HardwareTransitionRequired` for a readying phase; there is no second activation path hidden in dispatch, a workflow,
-or a provider binder.
+The ownership invariant is strict: **Dispatcher selects; Orchestrator decides and readies;
+Animator adapters perform runtime-specific mechanics; an attesting actuator asks systemd to
+execute host lifecycle mutation.** A non-WARM managed capability always crosses this boundary
+through a handle-free `HardwareTransitionRequired` for a readying phase; there is no second
+activation path hidden in dispatch, a workflow, or a provider binder.
+
+For a hard transition, the Orchestrator's decision owns the requested capability identity,
+priority, exact active conflict-neighbor set, admission and queue barriers, lease drain, stale-world
+validation, readiness, and compensation. It does not spell a sequential service stop/start
+program. Binding has already compiled the declared topology into per-Animator systemd targets;
+after the actuator attests that loaded graph, systemd executes the physical transaction.
 
 
 ### 1. The Tipping Point (Whim Algorithm)
 
 !!! note "The v1 Default Strategy and the Whim"
-    The foundation switch policy is deliberately small: `evict-idle` retains every other active,
-    dedicated, non-resident Animator in the plan, drains it, and launches the target. The
+    The default `declared-conflicts` solver retains `evict-idle` only as a compatibility alias; it
+    does not revive the old all-active algorithm. This deliberately small policy recomputes the
+    graph from validated Rune intent, retains the target's active neighbors in the affected set,
+    drains them, and requests the target transaction. Runes that
+    omit `conflict_domains` on dedicated non-residents receive the `default-exclusive` unknown
+    wildcard. It conflicts with every dedicated non-resident whose effective domain set is
+    non-empty, so older configurations retain their global switching pool and partial migration
+    cannot silently widen coexistence. Explicit `[]` alone opts a Soulstone into coexistence. The
     Dispatcher prefers warm candidates before an HTR exists, while a configured priority floor may
     decline a hard swap. There is no claim of measured VRAM or context-reprocessing economics yet.
 
@@ -85,44 +111,67 @@ active Soulstone.
 
 - **Momentum:** The total cost of the current state, calculated as $\text{VRAM Load Time} + \text{Context Re-processing Cost}$.
 - **Inertia Bias:** A configurable constant used to prevent thrashing.
-    - *Note:* **Radix (SGLang)** Covens have a naturally higher Inertia Bias because destroying their radix tree of cached prefixes is expensive.
+    - *Note:* **Radix (SGLang)** Animators have a naturally higher Inertia Bias because destroying
+      their radix tree of cached prefixes is expensive.
 - **Concurrency Check (The Parallel Gate):**
-    - Before calculating swap costs, the Orchestrator checks the active Coven's **Discipline**.
-    - **If Kinetic/Radix:** The system checks `Current_Slots_Used < Max_Concurrency`. If true, **NO SWAP IS REQUIRED**. The Orchestrator bypasses the Tipping Point and simply routes the new signal to the active Coven alongside the existing task (Continuous Batching).
+    - Before calculating swap costs, the Orchestrator checks the active Animator's **Discipline**.
+    - **If Kinetic/Radix:** The system checks `Current_Slots_Used < Max_Concurrency`. If true, **NO
+      SWAP IS REQUIRED**. The Orchestrator bypasses the Tipping Point and admits the new signal to
+      the active Animator alongside the existing task (Continuous Batching).
     - **If Titan:** The system enforces strict Serial Exclusivity. The Tipping Point calculation proceeds to decide if the new task is important enough to interrupt the current one.
-- **The Rule:** A coven swap is only initiated when:
-    1. The Coven cannot support the request natively (wrong model), OR
-    2. The Coven is at max concurrency, AND $\text{Signal Priority} > \text{Momentum} + \text{Inertia Bias}$.
+- **The Rule:** A physical transition is considered only when:
+    1. The active Animator cannot support the request natively (wrong model), OR
+    2. It is at max concurrency, AND $\text{Signal Priority} > \text{Momentum} + \text{Inertia Bias}$.
 
 When the Tipping Point is reached, the Orchestrator executes a coordinated ritual to ensure data integrity and physical stability. This solves the "Lobotomy Risk."
 
-1. **Close Admission:** The Orchestrator marks the complete affected set `DRAINING` in the
-   **LeaseLedger** before it waits. For a hard swap that is every planned evictee; for the
-   runtime-started path labelled `SOFT_SWAP` it is the target Animator itself. A concurrent
-   Dispatcher grant is rejected rather than racing readiness convergence or an optional dynamic
-   mutation.
+1. **Recompute and Close:** Inside the serialized arbiter, the Orchestrator refreshes the managed
+   world and recomputes the target's exact active conflict-neighbor set from validated Rune intent.
+   It marks that complete set `DRAINING` in the **LeaseLedger** before it waits. On the
+   runtime-started path labelled `SOFT_SWAP`, the affected set is the target Animator itself.
+   A concurrent Dispatcher grant is rejected rather than racing readiness convergence or an
+   optional dynamic mutation.
 2. **The Pause:** The Orchestrator pauses Ghoul queue intake and broadcasts a soft-stop signal so active work can reach the end of its current leased step.
 3. **The Drain:** It waits until the LeaseLedger reports no live lease on the complete affected set
    — never a queue or job count. If a Long Sleep boundary is crossed, the Graph owns its durable
    checkpoint; an ordinary VRAM swap does not itself require graph serialization.
-4. **The Transmutation:** For a hard swap, the Orchestrator submits one validated
-   `TransitionIntent` through its injected `RuntimeActuator`; generated Soulstone units contain no
-   `Conflicts=` side effects, so that stop/start set is the whole physical mutation. On the
-   runtime-started path, only a dynamic capability that is not already `WARMING` calls its
-   canonical adapter's runtime-native activation seam. A fixed/static capability, or any target
-   already `WARMING`, performs no adapter activation and only converges under the same barrier.
-5. **The Awakening or Containment:** The Orchestrator awaits honest `WARM` within the configured
-   deadline. Pre-mutation drain/pause failures reopen through `finally`. A raising hard actuator
-   leaves the gates closed because the current port cannot attest that its best-effort compensation
-   restored the original world. After a terminally completed hard mutation, readiness failure
-   submits one typed exact inverse and reopens only after compensation succeeds. A hard
-   compensation failure or runtime-started activation/readiness failure likewise leaves queue and
-   Animator admission deliberately closed for operator recovery. The path conservatively shares
-   one failure fence even when a fixed target performed convergence only; v1 has no trustworthy
-   model-level inverse or finer post-failure attestation. The first uncertain outcome also latches
-   a manager-wide containment reason: every later
-   transition request, including a would-be NO_OP or different target, is rejected until operator
-   recovery or process restart.
+4. **The Seal:** Immediately before mutation, the Orchestrator validates that the observed active
+   set has not gone stale. The mediated Host Reactor separately validates the intent's
+   configuration digest against current registry truth. The actuator recompiles the graph, binds
+   every managed runtime unit to the validated Scribe ownership receipt, enumerates the installed
+   and loaded LychD target namespace, and attests target/service/Coven relations, source, unit-file
+   state, reload state, and absence of drop-ins. Any mismatch is a typed no-effect decline.
+5. **The Transmutation:** For a hard swap, the Orchestrator submits one validated
+   `TransitionIntent` through its injected `RuntimeActuator`. The actuator starts the requested
+   Animator target once; systemd computes and executes the complete stop-before-start transaction
+   from the compiled graph. On the runtime-started path, only a dynamic capability that is not
+   already `WARMING` calls its canonical adapter's runtime-native activation seam. A fixed/static
+   capability, or any target already `WARMING`, performs no adapter activation and only converges
+   under the same barrier.
+6. **The Awakening or Containment:** The Orchestrator awaits honest `WARM` within the configured
+   deadline. Pre-mutation drain/pause failures and attestation declines reopen through `finally`.
+   After a completed hard transaction, readiness failure requests one compensation transaction
+   containing the exact typed inverse. From the settled world, the actuator either starts the
+   captured prior compatible target set or stops extra launched targets, waits for relevant jobs,
+   and trusts final target-and-service observation rather than a client return code. Gates reopen
+   only after the exact prior world is proved. Caller cancellation after physical submission is
+   likewise fenced through settlement and restoration; a typed restored-cancellation preserves
+   cancellation semantics while allowing the barrier to reopen. A transaction whose outcome cannot
+   be established, a failed compensation, or runtime-started activation/readiness failure leaves
+   queue and Animator admission closed for operator recovery. The first uncertain outcome also
+   latches a manager-wide containment reason: every later transition request, including a would-be
+   NO_OP or different target, is rejected. A direct process-local latch disappears on Vessel
+   restart without proving the physical world safe. In mediated mode, the durable `.contained`
+   marker survives application restart and still requires explicit operator recovery.
+
+Every admitted transition owns one request identity and an observed phase ladder across
+`requested`, arbitration/drain/actuation/readiness, compensation when required, and a truthful
+terminal phase. Run-origin transitions retain the Graph run and occurrence identity; physical and
+compensation requests receive separate correlation identities when those acts are submitted. The
+current manager publishes these observations to both the run event stream and a bounded
+process-local latest-value journal used by Nexus. That journal is diagnostic projection only: it
+is not the Host Reactor journal, a durable transition history, or proof that an intermediate phase
+survives process death.
 
 Snapshot note: this drain/swap ritual protects live work during transitions. "Drain" means Ghouls finish their current atomic inference step and stop claiming new jobs — the Agent's cognitive state remains alive in Vessel process memory throughout. Phylactery serialization is reserved for **Long Sleep** scenarios (human approval pending, multi-day waits, or full system reboots). Durable state capture and Btrfs/COW snapshot strategy are governed separately by **[Snapshots (07)](07-snapshots.md)**.
 
@@ -130,7 +179,14 @@ Snapshot note: this drain/swap ritual protects live work during transitions. "Dr
     Hardware transitions default to **Live Stasis**: the run stays a resident in-process loop with at most an opportunistic checkpoint — the implemented GraphRunner behaviour. The definitions and the normative default table are law in **[Graph (24)](24-graph.md)**; HitL waits, Long Sleep, Vessel-lifecycle intents, and deferred peer (A2A) waits are **Durable** and resume only through Reanimation.
 
 !!! note "Orchestration Boundary"
-    The Orchestrator owns physical readiness decisions: transition plans, admission closure, drains, runtime-native activation, hard lifecycle requests, and convergence on WARM. It consumes Dispatcher signals and worker/lease state, but it does not own semantic selection, privacy routing, cognitive binding, graph schema, queue retry semantics, or whole-system snapshot rollback. Those boundaries may receive better class names later, but the authority split is durable.
+    The Orchestrator owns physical readiness decisions: transition target and priority,
+    affected-set computation, admission closure, drains, stale-world validation, runtime-native
+    activation, hard lifecycle requests, readiness, and compensation. It consumes Dispatcher
+    signals and worker/lease state, but it does not own semantic provider selection, privacy
+    routing, cognitive binding, graph schema, queue retry semantics, physical transaction
+    expansion, or whole-system snapshot rollback. Systemd expands the attested hard target request
+    into stop/switch/start effects. Those boundaries may receive better class names later, but the
+    authority split is durable.
 
     A cold capability whose Animator is not dedicated (`dedicated=False`) lies outside the Orchestrator's authority entirely: the Orchestrator cannot move a runtime it does not own. The **[Dispatcher (22)](22-dispatcher.md)** must exclude such candidates or reject them with `dependency_unavailable`; the transition planner never crashes on a capability it has no power to manifest.
 
@@ -140,17 +196,24 @@ Snapshot note: this drain/swap ritual protects live work during transitions. "Dr
     persistent resident or operator-started unit cannot remain absent from the expected-active and
     eviction view merely because an older in-memory snapshot was stale.
 
-    The v1 switch policy retains every dedicated, non-resident, active Animator in the evict set
-    **even when it is leased**. Group/alliance labels do not relax that conservative global pool.
+    The switch policy retains every active neighbor in the target's declared conflict neighborhood
+    **even when it is leased**. Group/alliance labels neither widen nor relax that set. Omitted
+    conflict domains on dedicated non-residents map to the `default-exclusive` wildcard, so an
+    omitted Rune conflicts with every non-empty managed declaration; explicit `[]` is the
+    operator's deliberate coexistence assertion. Persistent residents and shared runtimes are
+    rejected from non-empty conflict participation at bind.
+
     The manager first closes admission for the full planned set, then waits for
     `LeaseLedger.drained(evict_animators, timeout=drain_timeout_s)`. A run parked awaiting its own
     transition holds no lease, so it never blocks its own swap. Timeout fails loudly and names the
-    Animators. Pre-mutation timeout/cancellation reopens admission; after mutation, gates reopen only
-    after readiness or successful hard compensation. Because generated units have no hidden conflicts,
-    Systemd cannot stop an omitted runtime behind this protocol's back through a generated
-    conflict edge. A host operator can still explicitly start or stop a Coven target as a
-    break-glass action; that bypass is outside the application runtime protocol and assumes
-    operator responsibility.
+    Animators. Pre-mutation timeout/cancellation reopens admission; after mutation, gates reopen
+    only after readiness or successful hard compensation.
+
+    Generated conflicts are safe only because they are not hidden from policy: bind and the
+    Orchestrator derive the same graph, and the actuator binds the loaded graph to the exact
+    Scribe-owned unit set and sources immediately before the one target transaction. A host operator
+    can still explicitly start or stop an Animator or Coven target as a break-glass action; that
+    bypass is outside the application runtime protocol and assumes operator responsibility.
 
 ### Runtime-Started Convergence (`SOFT_SWAP` Plan Label)
 
@@ -200,20 +263,25 @@ use convergence only and must become `WARM` within the same absolute deadline.
 
 ### Host Mutation Port and Privilege Boundary
 
-The domain depends only on `RuntimeActuator.apply(TransitionIntent)`. The frozen intent permits a
-transition id, forward/compensation operation, optional completed-forward `rollback_of` reference,
-configuration-generation digest, canonical target Animator, exact target capability, evict/launch
-Animator ids, and the expected active set. It forbids extra fields and has no command, unit name,
-filesystem path, environment, or generic payload surface. Fresh intents always name the exact
-capability used by policy. A pre-field journal record is admissible only when its target Animator
-has one unambiguous configured capability. Host compensation must exactly invert its referenced
-completed forward record; the operation label cannot authorize an arbitrary second plan.
+The domain depends only on `RuntimeActuator.apply(TransitionIntent)`. A hard-transition intent
+carries a transition id, forward/compensation operation, optional completed-forward `rollback_of`
+reference, configuration-generation digest, canonical target Animator, exact target capability,
+exact evict and launch sets, and the exact expected-active pre-world. It forbids extra fields and
+has no command, unit name, filesystem path, environment, or generic payload surface. The system
+boundary resolves those logical identities only through the bound registry.
+
+Fresh intents always name the exact capability used by policy. Compensation must be the exact
+inverse declared by its referenced completed forward record. Its one bounded physical request may
+start the captured prior compatible target set or stop extra launched targets according to the
+settled world; job quiescence and exact final observation, not the client return code, prove
+restoration. An operation label cannot authorize an arbitrary second plan.
 
 `[orchestration.switching].actuator` selects `systemd` or `host-reactor` at composition:
 
 ```toml
 [orchestration.switching]
 actuator = "host-reactor"
+systemctl_timeout_s = 120.0
 ```
 
 `host_reactor_dir` defaults to the XDG-derived LychD Reactor inbox and may be overridden with an
@@ -227,32 +295,50 @@ absolute operator-owned path whose final segment remains `inbox`. Its sibling jo
   process entrypoint. That process is generated-service machinery, not a public Pulse root. The
   consumer claims before parsing through a no-follow bounded descriptor read, then validates the typed
   schema/set invariants, filename/transition identity, configuration digest, configured switch
-  plan, expected user-unit active set, and host registry mappings before acting. It retains
-  processing, completed, declined, or rejected records in a host-owned journal; an existing journal
-  ID suppresses duplicate execution. The consumer holds the same interprocess lifecycle lock used
-  by `init`, `bind`, `start`, `stop`, and `del` across validation and effects, and its direct
-  actuator receives a freshly resolved root-controlled absolute `systemctl` path rather than
-  searching `PATH`. Lock identity is independent of process-local `TMPDIR`, so the generated
-  service and an operator shell cannot select separate exclusion domains. The Vessel mounts that
-  journal read-only and holds the manager
-  barrier until its transition receives a terminal completed/declined/rejected record. A stale
-  configuration, policy, or expected-active precondition is journaled as `.declined.json` before
-  any effect and surfaces as typed `RuntimePreconditionError`; the manager can safely reopen the
-  forward barrier without global containment. An uncertain effect failure is `.rejected.json` and
-  remains fail-closed.
+  plan, expected user-unit active set, host registry mappings, Scribe ownership and sources, the
+  installed/loaded LychD target namespace, and every managed target/service/Coven relation before
+  acting. Its host-owned journal distinguishes six outcomes: `.processing` is claimed but
+  unresolved work; `.completed` proves the requested world; `.declined` proves a pre-effect
+  precondition failure; `.restored` proves the exact prior world after failure or cancellation;
+  `.contained` records a fresh physically uncertain effect; and `.rejected` records an invalid
+  delivery rather than a physical result. An existing journal ID suppresses duplicate publication.
+  The consumer holds the same interprocess lifecycle lock used by `init`, `bind`, `start`, `stop`,
+  and `del` across validation and effects, and its direct actuator receives a freshly resolved
+  root-controlled absolute `systemctl` path rather than searching `PATH`. Lock identity is
+  independent of process-local `TMPDIR`, so the generated service and an operator shell cannot
+  select separate exclusion domains. The Vessel mounts that journal read-only and holds the manager
+  barrier until its transition reaches `.completed`, `.declined`, `.restored`, `.contained`, or
+  `.rejected`; safe decline/restoration reopens the barrier, while contained/rejected outcomes fail
+  closed. A fresh uncertain physical outcome becomes `.contained.json`. A crash-reclaimed
+  `.processing.json` remains unchanged whenever recovery still cannot classify the world, so
+  startup stays fenced rather than converting uncertainty into a false terminal result. Recovery
+  waits for relevant systemd jobs, observes every managed Animator target and service, accepts an
+  exact requested world, retries from an exact prior world, and otherwise attempts one bounded
+  inverse before requiring exact restoration. It never invents progress from an action-prefix
+  cursor. Containment is host-global, not merely a Vessel-side status: a pre-existing
+  `.contained` record refuses every new Reactor effect, and a newly contained or unresolved
+  processing record aborts the current batch before the next inbox item is claimed.
 - **`systemd` (explicit uncaged mode):** resolves canonical local Soulstones through registry truth
-  and applies the complete stop/start set to their generated user units in process. The composition
-  injects the shared lifecycle lock around observation, effects, and compensation; contention is a
-  typed no-effect precondition rather than an uncertain partial transition.
+  and attests the loaded graph in process, then makes one blocking Animator-target request. A
+  forward hard swap starts the selected target; an inverse may start the prior compatible set or
+  stop extra targets. The composition injects the shared lifecycle lock around attestation,
+  observation, the compound effect, settlement, and compensation; contention is a typed no-effect
+  precondition rather than an uncertain partial transition.
 
 The intent channel remains unidirectional and the journal is not a generic reply protocol. The
 Vessel has no journal write authority and observes only transition-correlated terminal filenames.
+`systemctl_timeout_s` bounds each trusted `systemctl` client. A timed-out client is terminated,
+escalated to kill if necessary, and reaped. Before physical submission, timeout is a typed
+no-effect decline. After submission, client death does not prove cancellation of the systemd job:
+the actuator still waits for relevant jobs, classifies the settled target-and-service world, and
+either accepts the desired world, proves exact restoration, compensates, or contains uncertainty.
 `reactor_ack_timeout_s` bounds claim: an unclaimed intent is retracted and `fsync`ed before failure
 reopens admission. Once claimed, the manager (and a cancellation path) waits through a terminal
-record even beyond that deadline. Startup likewise stays closed while pending/processing work
-exists. After a completed physical receipt, ordinary capability probes and bounded `await_warm`
-remain the separate readiness truth. The filesystem handoff is local-UID authority, not a signature
-or network authentication protocol.
+record even beyond that deadline; this claimed-work terminal fence is intentionally not shortened
+by the client timeout. Startup likewise stays closed while pending or `.processing` work exists and
+while any durable `.contained` marker remains. After a completed physical receipt, ordinary
+capability probes and bounded `await_warm` remain the separate readiness truth. The filesystem
+handoff is local-UID authority, not a signature or network authentication protocol.
 
 !!! warning "Safe decline can still require operator reconciliation"
     The caged manager derives `expected_active_animators` from its capability-readiness projection,
@@ -262,14 +348,14 @@ or network authentication protocol.
     mismatch is not self-healing: repeated retries may decline again until the operator reconciles
     the runtime or stops the hung unit before retrying.
 
-The structured actuator seam, both implementations, and the Host Reactor consumer/outcome journal
-are part of the foundation. The generated path watches both pending and processing work, and the
-consumer resumes a crash-surviving intent only when observed user-unit state equals an exact ordered
-action prefix; it then applies the suffix or compensates completed prefix/suffix work on failure.
-Non-prefix external mutation and failed compensation are rejected rather than guessed. A per-effect
-transaction log, general repair of arbitrary physical states, and signature/remote-authentication
-policy remain later work. They extend this narrow port; they do not move subprocess or privilege
-policy back into the Orchestrator domain.
+The implemented hard-switch foundation now joins the structured actuator seam and both transport
+shapes to the conflict-target compiler, Scribe-owned loaded-graph attestation, one compound systemd
+transaction, target-and-service world classification, exact-prior-world compensation, typed safe
+cancellation, and durable Host Reactor containment/recovery fences. [State of the
+Work](../state-of-the-work.md#declared-conflict-topology) owns the bounded repository proof and the
+separate real-host receipt. General repair of arbitrary physical states and
+signature/remote-authentication policy remain later work. They extend this narrow port; they do not
+move subprocess or privilege policy back into the Orchestrator domain.
 
 ### 2. Model Tiering and Reservation
 
@@ -283,7 +369,8 @@ Future resource-aware strategies will manage a fluid manifest:
 
 To protect the local Magus from resource exhaustion by the **[Legion (42)](42-legion.md)**, the Orchestrator reserves **Workload Tiering** as a policy target:
 
-- **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator marks the active Coven as "Leased" while the swarm task runs.
+- **The Lease:** Incoming peer requests are granted a temporary hardware lease. The Orchestrator
+  marks the granted Animator set as leased while the swarm task runs.
 - **Preemption:** Local user activity — any interactive reflex (voice, text, UI) — is the absolute priority trigger. When detected, the Orchestrator immediately revokes the lease.
     1. The swarm Ghoul receives `SIG_SOFT_STOP`.
     2. It completes its current atomic inference step, persists its recovery boundary (graph or job state as applicable) to the **[Phylactery (06)](06-persistence.md)**, and hibernates.
@@ -303,30 +390,46 @@ autonomous recovery loop.
     The implemented foundation includes one transition arbiter, fresh in-arbiter replanning,
     configurable hard-swap priority, admission-closed lease drain, leased-evictee retention, the
     structured actuator with configurable Systemd/Host Reactor implementations, the generated Host
-    Reactor consumer, read-only terminal-receipt/cancellation/startup fence, exact-action-prefix
-    crash recovery, typed exact hard-readiness compensation, same-Animator lease-safe llama.cpp soft
-    activation, one-deadline bounded warm convergence, and fail-closed uncertain outcomes. Metabolic
-    Whim accounting, model-tier substitution, lexical VRAM reservation, swarm preemption, the
-    watchdog, a trustworthy model-level soft inverse, a general physical transaction log/repair
-    engine, and remote-authentication policy remain later strategies and recovery work.
+    Reactor consumer, exact Scribe-owned loaded-graph attestation, one compound target request,
+    settled target-and-service world classification, typed hard-readiness compensation, safe
+    cancellation restoration, durable `.processing`/`.contained` startup fences, same-Animator
+    lease-safe llama.cpp soft activation, one-deadline bounded warm convergence, and fail-closed
+    uncertain outcomes.
+
+    The declared conflict-domain schema, per-Animator target compiler, exact-neighborhood policy,
+    graph attestor, compound transaction, failure classifier, and exact restoration path have
+    focused repository tests. [State of the
+    Work](../state-of-the-work.md#declared-conflict-topology) owns that bounded software claim and
+    the separate real-host receipt. Metabolic Whim accounting, model-tier substitution, lexical
+    VRAM reservation, swarm preemption, the watchdog, a trustworthy model-level soft inverse, a
+    general physical repair engine, and remote-authentication policy remain later strategies and
+    recovery work.
 
     Fail-closed containment is process-lifetime state exposed as
     `OrchestratorManager.containment_reason`. It is not cleared by a later request or by the arbiter
     releasing its serialization slot; this prevents a manual/API transition from unpausing the
-    global broker after an uncertain physical outcome.
+    global broker after an uncertain physical outcome. In mediated mode, a fresh uncertain host
+    effect also becomes a durable `.contained` marker so application restart cannot erase that
+    uncertainty; unresolved crash recovery remains `.processing`.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Physical Reliability:** One application-runtime readiness/effect owner and conflict-free
-      generated units remove hidden automatic stop paths outside the plan.
+    - **Physical Reliability:** The Orchestrator decides from the complete declared graph and
+      systemd executes one transaction from its attested compiled form.
     - **Lease Honesty:** Admission closure and drain prevent known active grants from being evicted mid-step; durable graph guarantees remain the Graph/Phylactery's responsibility.
     - **Containment Honesty:** An uncertain mutation cannot be papered over by a later NO_OP or
-      different API transition; the process rejects every request until recovery/restart.
+      different API transition. Direct mode has only a process-local latch; mediated mode preserves
+      a durable `.contained` marker across restart until operator recovery.
     - **Configurable Authority:** The same structured transition can use direct user-systemd
       actuation or mediated Host Reactor delivery without changing domain policy.
-    - **Policy Growth:** Resource-aware strategies can extend a stable plan/drain/actuate/converge sequence without acquiring a second physical will.
+    - **Policy Growth:** Resource-aware strategies can extend a stable
+      plan/drain/attest/actuate/converge sequence without acquiring a second temporal will or
+      replacing the host's transaction engine.
 
 !!! failure "Negative"
     - **State Swap Latency:** Swapping remains a heavy physical operation (20–60 seconds), necessitating the batching of rituals to maintain efficiency.
     - **Policy Complexity:** Implementing a custom Orchestration Strategy requires deep technical knowledge of both the application cortex and the host hardware characteristics.
+    - **Configuration Consequence:** An explicit empty conflict set is a real coexistence assertion;
+      an incorrect declaration can admit an OOM that no scheduler without resource measurement can
+      predict.

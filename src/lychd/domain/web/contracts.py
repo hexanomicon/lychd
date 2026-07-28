@@ -49,8 +49,21 @@ class RunProjectionSnapshot(ClientContract):
     run_id: str
     cursor: int
     content: str
-    status: str
+    run_status: str
+    activity: str
+    pattern_id: str
+    pattern_revision: str
+    loom_path: str | None
+    orb_path: str
+    evidence_capture: Literal["process_local", "durable_best_effort"]
     fragments: list[dict[str, Any]]
+    occurrence_id: str | None
+    dispatch_occurrence_id: str | None
+    grant_id: str | None
+    capability_key: str | None
+    transition_occurrence_id: str | None
+    transition_request_id: str | None
+    transition_phase: str | None
     terminal: bool
 
 
@@ -77,9 +90,14 @@ class MessageIntent(ClientContract):
 
 
 class MessageAccepted(ClientContract):
-    """Run identity and optimistic user turn returned after admission."""
+    """Authoritative run and Pattern identity returned after admission."""
 
     run_id: str
+    pattern_id: str
+    pattern_revision: str
+    loom_path: str
+    orb_path: str
+    evidence_capture: Literal["process_local", "durable_best_effort"]
     turn: BridgeTurnView
 
 
@@ -110,16 +128,51 @@ class RunEventEnvelope(ClientContract):
 
     schema_version: Literal[1] = 1
     run_id: str
+    event_id: str
     seq: int
-    kind: Literal["token", "status", "node", "fragment", "consent", "log", "done", "resync"]
+    kind: Literal[
+        "token",
+        "status",
+        "node",
+        "dispatch",
+        "transition",
+        "fragment",
+        "consent",
+        "log",
+        "done",
+        "resync",
+    ]
     occurred_at: datetime
     payload: dict[str, Any]
 
 
-class NexusSnapshot(ClientContract):
-    """The current capability board."""
+class TransitionRecordView(ClientContract):
+    """One retained cross-source orchestration request."""
 
+    request_id: str
+    source: Literal["run", "operator"]
+    target_capability_key: str
+    priority: float
+    phase: str
+    requested_at: datetime
+    observed_at: datetime
+    run_id: str | None
+    occurrence_id: str | None
+    action_type: str | None
+    physical_transition_id: str | None
+    compensation_transition_id: str | None
+    detail: str | None
+    orb_path: str | None
+    bridge_path: str | None
+
+
+class NexusSnapshot(ClientContract):
+    """A projection assembled from explicitly timestamped capability observations."""
+
+    snapshot_at: datetime
     board: NexusBoard
+    containment_reason: str | None
+    transitions: list[TransitionRecordView]
 
 
 class SwapIntent(ClientContract):
@@ -143,12 +196,81 @@ class TransitionEventEnvelope(ClientContract):
 
 
 class LoomSummary(ClientContract):
-    """Compact workflow catalogue entry."""
+    """Compact current Pattern catalogue entry."""
 
-    name: str
+    pattern_id: str
+    revision: str
+    digest: str
     title: str
     description: str
     trigger_hint: str
+    detail_path: str
+
+
+class PatternReference(ClientContract):
+    """Exact or explicitly unavailable Weaver identity attached to a Run."""
+
+    pattern_id: str
+    revision: str
+    digest: str | None
+    exact: bool
+    loom_path: str | None
+
+
+class OrbRunSummary(ClientContract):
+    """Safe selected-Run truth seen by looking into the Orb."""
+
+    run_id: str
+    session_id: str
+    status: str
+    workflow_name: str
+    created_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+    error_present: bool
+    bridge_path: str
+
+
+class EvidenceGap(ClientContract):
+    """A sequence interval whose cause cannot be inferred from retained rows."""
+
+    start_seq: int
+    end_seq: int
+    classification: Literal["unknown_or_omitted"] = "unknown_or_omitted"
+
+
+class EvidenceItem(ClientContract):
+    """One safe structural event in the selected Run's retained ledger."""
+
+    event_id: str
+    seq: int
+    kind: str
+    occurred_at: datetime
+    summary: str
+    subject_key: str | None = None
+    phase: str | None = None
+    occurrence_id: str | None = None
+    transition_request_id: str | None = None
+    nexus_path: str | None = None
+    capture: Literal["process_local", "durable_best_effort"]
+
+
+class OrbRunSnapshot(ClientContract):
+    """Selected-run Orb evidence page with explicit capture and gap limits."""
+
+    schema_version: Literal[1] = 1
+    snapshot_at: datetime
+    run: OrbRunSummary
+    pattern: PatternReference
+    capture: Literal["process_local", "durable_best_effort"]
+    ledger_head_seq: int
+    page_end_seq: int | None
+    has_more: bool
+    live_tail: Literal["not_available"] = "not_available"
+    known_omissions: list[str]
+    gaps: list[EvidenceGap]
+    evidence: list[EvidenceItem]
+    next_after_seq: int | None
 
 
 class CsrfClientContract(ClientContract):

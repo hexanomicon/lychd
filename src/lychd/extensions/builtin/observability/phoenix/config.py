@@ -23,18 +23,24 @@ class ObservabilityConfig(RuneConfig):
 
 
 class PhoenixSettings(ObservabilityConfig):
-    """Optional external Phoenix tracing service."""
+    """Optional external Arize Phoenix Eye."""
 
     path_fragment: ClassVar[Path] = Path("phoenix")
     sample_template: ClassVar[str | None] = """
-name = "oculus"
+name = "phoenix"
 image = "docker.io/arize-ai/phoenix:latest"
 host = "localhost"
 ui_port = 6006
 otlp_port = 4317
 """
 
-    name: str = Field(default="oculus", description="Stable local service identity for the Phoenix container.")
+    name: str = Field(
+        default="phoenix",
+        description=(
+            "Stable local service identity for the external Phoenix Eye. Existing configurations "
+            "may retain the legacy value 'oculus' until deliberately migrated."
+        ),
+    )
     image: str = Field(default="docker.io/arize-ai/phoenix:latest", description="OCI image for Arize Phoenix.")
     host: str = Field(default="localhost", description="Host used when presenting Phoenix URLs.")
     ui_port: int = Field(default=PORT_PHOENIX_UI, ge=1, le=65535, description="Host port for the Phoenix UI.")
@@ -42,7 +48,7 @@ otlp_port = 4317
 
     def reserved_ports(self) -> dict[str, int]:
         """Host port claims (satisfies ``config.runes.protocols.PortReserver``)."""
-        return {"Oculus (Phoenix UI)": self.ui_port, "Oculus (Phoenix OTLP)": self.otlp_port}
+        return {"Phoenix Eye UI": self.ui_port, "Phoenix Eye OTLP": self.otlp_port}
 
     @property
     def service_name(self) -> str:

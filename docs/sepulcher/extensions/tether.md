@@ -19,6 +19,13 @@ and the [Tether boundary](../../state-of-the-work.md#vpn-tether).
 **Law:** [ADR 39 — VPN](../../adr/39-vpn.md), constrained by
 [ADR 09 — Security](../../adr/09-security.md) and the future [Ward](./ward.md).
 
+**Extension form:** Tether is an infrastructure Extension Domain, not a synonym for one VPN
+package. The sole planned LychD-managed pre-v1 manifestation is Linux WireGuard operated through
+the official `wireguard-tools` on the host. An existing Tailscale, Headscale, or other private
+network may remain an externally managed attachment, while a private coupled Crypt package may
+attempt its own lifecycle integration without a compatibility promise. Exactly one manager owns
+each concrete listener, interface, route, and firewall rule.
+
 > _"Across distance, the Silver Tether may carry the Magus's voice toward the Lich. It is a road
 > through the Forest, not proof that every hand upon that road belongs to the Magus."_
 

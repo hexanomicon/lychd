@@ -7,6 +7,7 @@ function event(seq: number, kind: RunEventEnvelope["kind"] = "token"): RunEventE
   return {
     schema_version: 1,
     run_id: "run-a",
+    event_id: `00000000-0000-4000-8000-${seq.toString().padStart(12, "0")}`,
     seq,
     kind,
     occurred_at: "2026-07-28T00:00:00Z",

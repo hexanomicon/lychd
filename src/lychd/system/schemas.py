@@ -7,6 +7,7 @@ from typing import Any, Final, Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from lychd.system.secret_names import validate_podman_secret_name
+from lychd.system.unit_names import animator_target_unit, coven_target_unit
 
 # Minimum number of parts in a volume string (host:container)
 MIN_VOLUME_PARTS = 2
@@ -216,12 +217,6 @@ class QuadletContainer(QuadletBase):
     start_with_pod: bool = False
     user: str | None = None
 
-    # Coven Membership (Systemd Targets)
-    targets: list[str] = Field(
-        default_factory=list,
-        description="The Covens (Systemd Targets) this Rune belongs to.",
-    )
-
     run_init: bool = True
     # A container joined to a Pod inherits the Pod's user namespace; Podman
     # ignores per-container --userns in that topology.
@@ -288,7 +283,6 @@ class QuadletContainer(QuadletBase):
         "after",
         "binds_to",
         "conflicts",
-        "targets",
         "podman_args",
         "devices",
         "secrets",
@@ -374,22 +368,21 @@ class QuadletPod(QuadletBase):
 
 
 class QuadletTarget(QuadletBase):
-    """Data model for 'target.jinja'.
+    """A generated Animator lifecycle gate or operator-facing Coven aggregate."""
 
-    A Coven—a collection of Runes that define an Operational State.
-    """
-
-    name: str  # e.g. 'vision' -> lychd-coven-vision.target
+    kind: Literal["animator", "coven"] = "coven"
+    name: str
     description: str
-    # The generated pod service unit name. Quadlet turns `lychd.pod` (PodName=lychd)
-    # into `lychd-pod.service`; `PartOf=` in a real systemd unit must reference that
-    # service, NOT the Quadlet source name `lychd.pod`.
-    part_of: str = "lychd-pod.service"
+    wants: list[str] = Field(default_factory=list)
+    requires: list[str] = Field(default_factory=list)
+    before: list[str] = Field(default_factory=list)
+    after: list[str] = Field(default_factory=list)
+    conflicts: list[str] = Field(default_factory=list)
+    # Quadlet turns `lychd.pod` (PodName=lychd) into this service. Plain
+    # generated targets are static: bind daemon-reloads but never enables them.
+    part_of: list[str] = Field(default_factory=lambda: ["lychd-pod.service"])
 
-    # [Install] section
-    wanted_by: list[str] = Field(default_factory=lambda: ["default.target"])
-
-    @field_validator("name", "description", "part_of")
+    @field_validator("name", "description")
     @classmethod
     def validate_scalar_directives(cls, value: str, info: ValidationInfo) -> str:
         """Keep target scalar values confined to one generated directive."""
@@ -399,12 +392,31 @@ class QuadletTarget(QuadletBase):
             raise ValueError(msg)
         return value
 
-    @field_validator("wanted_by")
+    @field_validator("wants", "requires", "before", "after", "conflicts", "part_of")
     @classmethod
-    def validate_wanted_by(cls, values: list[str]) -> list[str]:
+    def validate_unit_lists(cls, values: list[str], info: ValidationInfo) -> list[str]:
+        """Keep every dependency inside one validated systemd directive."""
         for value in values:
-            _validate_unit_text(value, field_name="QuadletTarget.wanted_by")
+            _validate_unit_text(value, field_name=f"QuadletTarget.{info.field_name}")
+            if _UNIT_COMPONENT.fullmatch(value) is None:
+                msg = f"QuadletTarget.{info.field_name} entries must each be one safe unit name"
+                raise ValueError(msg)
+        if len(values) != len(set(values)):
+            msg = f"QuadletTarget.{info.field_name} must not contain duplicate units"
+            raise ValueError(msg)
         return values
+
+    @property
+    def unit_name(self) -> str:
+        """Return the exact generated systemd unit identity."""
+        if self.kind == "animator":
+            return animator_target_unit(self.name)
+        return coven_target_unit(self.name)
+
+    @property
+    def filename(self) -> str:
+        """Return the generated plain-unit filename."""
+        return self.unit_name
 
 
 class SystemdService(BaseModel):

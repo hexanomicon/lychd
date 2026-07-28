@@ -98,7 +98,7 @@ birth correspondence.
     Three identity-adjacent notions layer rather than compete. A **Posture** is a per-run mechanical configuration—output schema, tool grant, `ModelSettings`, and prompt frame. A **Lens** (**[Simulation (ADR 31)](./31-simulation.md)**) is a Posture template employed for expansion isolation in the Shadow. A **Persona** (**[Mirror (ADR 32)](./32-identity.md)**) is a durable identity that *wears* Postures across runs. Persona chooses; Posture constrains; Lens diversifies.
 
 !!! note "What names an acting agent"
-    An agent is its **tools** (its toolset — *what it can do*, hardcoded in the spec or made configurable in the Codex), its **model/provider**, and its **prompt + history**. Two identity-adjacent notions sit alongside it: the **Sigil** — *who* it acts as (permission scope + memory identity, **[Security (09)](./09-security.md)**; its scopes gate the usable tools), carried as run deps — and the **Persona** — the durable *voice* the Lich shows the Magus at the user-facing boundary, maintained by **[Mirror (ADR 32)](./32-identity.md)**, not carried inside the agentic loop. There is no separate "Kit" or "Shed" abstraction: an agent's competence is its toolset, in code.
+    An agent is its **tools** (its toolset — *what it can do*, hardcoded in the spec or made configurable in the Codex), its **model/provider**, and its **prompt + history**. Two identity-adjacent notions sit alongside it: the **Sigil** — *who* it acts as (permission scope + memory identity, **[Security (09)](./09-security.md)**; its scopes gate the usable tools), carried as run deps — and the **Persona** — a durable revisioned identity/voice definition maintained by **[Mirror (ADR 32)](./32-identity.md)**. A Persona may contribute a bounded instruction envelope to a fresh Agent shell and manifests as user-facing voice, but it never carries tools, authority, model choice, or runtime handles. There is no separate "Kit" or "Shed" abstraction: an agent's competence is its toolset, in code.
 
 ### 1. Late-Binding Intelligence
 
@@ -193,10 +193,19 @@ Complex behaviors are achieved by composing Agents in a hierarchy:
 
 ### 8. Semantic Senses (Embedders as Infrastructure)
 
-The Agentic Arsenal includes the Pydantic AI **`Embedder`** class. Unlike text generation, embedding is treated as a specialized hardware-intensive provider route.
+Embedding is a LychD-owned capability port, not a currently delivered Pydantic AI Agent feature.
+The installed Pydantic AI `1.25.1` baseline does not expose an `Embedder` module. A future
+dependency version may supply one adapter only after its contract is verified; a native adapter
+remains equally valid. Unlike text generation, local embedding may be treated as a specialized
+hardware-consuming provider route.
 
-- **Container Dependency:** An embedder typically requires its own container body defined as a Quadlet within a specific operational state and surfaced as a provider.
-- **Orchestrated Swapping:** When an Agent invokes a tool requiring `embed_query()` or `embed_documents()`, the dispatcher must ensure the required hardware is active. If a resource conflict occurs, the intent is queued until the GPU is liberated.
+- **Provider Dependency:** A local embedder may require its own container body defined as a
+  Quadlet within a specific operational state; remote and CPU providers need different declared
+  resources and egress policy.
+- **Orchestrated Admission:** When a workflow requests embedding, the Dispatcher and Orchestrator
+  admit a compatible provider under ordinary capability, privacy, and resource law. A conflicting
+  local request may wait, select a feasible alternative, or fail honestly; no universal GPU swap
+  is implied.
 
 ## Consequences
 

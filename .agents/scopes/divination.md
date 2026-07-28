@@ -24,6 +24,11 @@ navigation touching `docs/divination/**`.
   `docs/sepulcher/phylactery/index.md`, `docs/sepulcher/extensions/`
 - Navigation and presentation: `zensical.toml`, `docs/overrides/`, `docs/assets/`
 
+For Altar experience design only, load the [frontend scope](frontend.md) and then, if an external
+comparison would materially help, the bounded
+[agent and observability UX](references.md#agent-and-observability-ux) map. Those references may
+suggest interaction patterns but cannot establish vocabulary, doctrine, architecture, or delivery.
+
 ## Typical Change Surface
 
 This is routing guidance, not authorization. Work commonly touches `docs/divination/**`, its

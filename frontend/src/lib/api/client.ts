@@ -8,9 +8,11 @@ import type {
   LoomView,
   NexusSnapshot,
   RunProjectionSnapshot,
+  OrbRunSnapshot,
   SessionCreated,
   SwapAccepted,
-  TransitionPlan
+  TransitionPlan,
+  TransitionRecordView
 } from "./models";
 import { csrfHeadersFromCookie, type CsrfContract } from "./csrf";
 import { runEventEnvelopeSchema, transitionEventSchema } from "./runtime";
@@ -109,6 +111,14 @@ export async function getNexusPlan(target: string): Promise<TransitionPlan> {
   ) as TransitionPlan;
 }
 
+export async function getNexusTransition(requestId: string): Promise<TransitionRecordView> {
+  return unwrap(
+    await client.GET("/api/v1/nexus/transitions/{request_id}", {
+      params: { path: { request_id: requestId } }
+    })
+  ) as TransitionRecordView;
+}
+
 export async function createNexusSwap(target: string): Promise<SwapAccepted> {
   return unwrap(
     await client.POST("/api/v1/nexus/swaps", {
@@ -122,12 +132,32 @@ export async function getLoomCatalogue(): Promise<LoomSummary[]> {
   return unwrap(await client.GET("/api/v1/loom")) as LoomSummary[];
 }
 
-export async function getLoomWorkflow(workflow: string): Promise<LoomView> {
+export async function getLoomPatternRevision(
+  patternId: string,
+  revision: string
+): Promise<LoomView> {
   return unwrap(
-    await client.GET("/api/v1/loom/{workflow}", {
-      params: { path: { workflow } }
+    await client.GET("/api/v1/loom/{pattern_id}/{revision}", {
+      params: { path: { pattern_id: patternId, revision } }
     })
   ) as LoomView;
+}
+
+export async function getOrbRun(
+  runId: string,
+  options: { afterSeq?: number; limit?: number } = {}
+): Promise<OrbRunSnapshot> {
+  return unwrap(
+    await client.GET("/api/v1/orb/runs/{run_id}", {
+      params: {
+        path: { run_id: runId },
+        query: {
+          after_seq: options.afterSeq,
+          limit: options.limit
+        }
+      }
+    })
+  ) as OrbRunSnapshot;
 }
 
 export type RunStreamOptions = {
@@ -143,7 +173,18 @@ export function listenToRun(
   options: RunStreamOptions = {}
 ): () => void {
   const source = new EventSource(`/api/v1/bridge/runs/${encodeURIComponent(runId)}/events`);
-  const kinds = ["token", "status", "node", "fragment", "consent", "log", "done", "resync"] as const;
+  const kinds = [
+    "token",
+    "status",
+    "node",
+    "dispatch",
+    "transition",
+    "fragment",
+    "consent",
+    "log",
+    "done",
+    "resync"
+  ] as const;
   let cursor = initialRunEventCursor(options.initialCursor);
   let serial = Promise.resolve();
   let refetching = false;

@@ -7,7 +7,11 @@ directly under ``schemas``.
 """
 
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
-from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
+from lychd.domain.animation.schemas.concurrency import (
+    CONFLICT_DOMAIN_PATTERN,
+    DEFAULT_CONFLICT_DOMAIN,
+    ConcurrencyIntent,
+)
 from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.model_info import ModelInfo, ModelSurface
 from lychd.domain.animation.schemas.runes.animators import (
@@ -27,6 +31,8 @@ from lychd.domain.animation.schemas.runes.models import (
 from lychd.domain.animation.schemas.shared import ModelFormat, is_placeholder
 
 __all__ = [
+    "CONFLICT_DOMAIN_PATTERN",
+    "DEFAULT_CONFLICT_DOMAIN",
     "AnimatorConfig",
     "CapabilityFamily",
     "ConcurrencyIntent",

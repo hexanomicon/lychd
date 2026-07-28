@@ -15,8 +15,8 @@ from lychd.domain.animation.capabilities import (
     SourceKind,
 )
 from lychd.domain.animation.links import Link
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
-from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import HardwareTransitionRequired
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.arbiter import TransitionArbiter
@@ -49,6 +49,12 @@ class StubRegistry:
         self._spec = spec
         self._state = state
         self._runtime = runtime
+        self._soulstone = GenericSoulstoneConfig(
+            name=spec.animator_name,
+            image=f"example/{spec.animator_name}:test",
+            runtime=spec.runtime,
+            concurrency=spec.concurrency,
+        )
 
     def list_capabilities(self) -> list[CapabilitySpec]:
         return [self._spec]
@@ -72,8 +78,11 @@ class StubRegistry:
     def get_runtime(self, _name: str) -> StubRuntime:
         return self._runtime
 
-    def get_soulstone_rune(self, _name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name="lychd-router", concurrency=ConcurrencyIntent())
+    def get_soulstone_rune(self, name: str) -> GenericSoulstoneConfig | None:
+        return self._soulstone if name == self._soulstone.name else None
+
+    def list_soulstone_runes(self) -> list[GenericSoulstoneConfig]:
+        return [self._soulstone]
 
     async def activate_capability(self, key: str) -> ActivationResult:
         if key != self._spec.key:
@@ -131,7 +140,13 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
     broker.unpause_queues.assert_called_once()
-    mock_exec.assert_called_once_with("/usr/bin/systemctl", "--user", "start", "lychd-router.service")
+    mock_exec.assert_called_once_with(
+        "/usr/bin/systemctl",
+        "--user",
+        "start",
+        "--job-mode=fail",
+        "lychd-animator-router.target",
+    )
     assert state.is_active is True
 
 

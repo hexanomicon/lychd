@@ -25,7 +25,7 @@ class RoutingRule(SettingsSection):
 class SwitchingSettings(SettingsSection):
     """Hard-swap and Host Reactor policy."""
 
-    policy: str = "evict-idle"
+    policy: str = "declared-conflicts"
     """Default conflict policy used when a requested runtime needs a hardware transition."""
     actuator: Literal["systemd", "host-reactor"] = "host-reactor"
     """Transition executor: caged Host Reactor by default, direct systemd only for development."""
@@ -37,6 +37,8 @@ class SwitchingSettings(SettingsSection):
     """Maximum seconds to wait for active work to reach a safe transition boundary."""
     warmup_timeout_s: float = Field(default=180.0, gt=0)
     """Maximum seconds to wait for a newly activated runtime to become usable."""
+    systemctl_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
+    """Maximum seconds for each trusted systemctl client process to respond."""
     reactor_ack_timeout_s: float = Field(default=120.0, gt=0)
     """Maximum seconds for the Host Reactor to claim an inbox transition intent."""
 

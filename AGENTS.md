@@ -20,18 +20,35 @@ This file is the stable entry node. Load only the next probe needed by the task;
 - Frontend/Altar: route through [.agents/scopes/frontend.md](.agents/scopes/frontend.md) before
   analyzing, editing, or reviewing `frontend/**`, Svelte/SvelteKit code, browser projection, or
   native CSS. The scope routes agents to the official Svelte AI tools and ADR 15 constraints.
-- Accepted application designs: [docs/compositions/index.md](docs/compositions/index.md), loaded
-  when a task concerns the Portfolio, an application Pattern catalogue, cross-organ ownership, or
-  promotion from idea into accepted architecture. Composition pages do not prove delivery.
-- Candidate futures: [docs/incubator/index.md](docs/incubator/index.md), loaded only for
-  uncommitted ideation or promotion work; an incubated proposal is neither delivery truth nor
-  accepted architecture.
+- Application designs and candidate futures: [docs/compositions/index.md](docs/compositions/index.md),
+  loaded when a task concerns the Portfolio, an application Pattern catalogue, cross-organ
+  ownership, or promotion from idea into accepted architecture. Each page declares its own
+  maturity; directory membership proves neither acceptance nor delivery.
+- Optional external probes: route through
+  [.agents/scopes/references.md](.agents/scopes/references.md) when a task benefits from comparison
+  with the operator's checkout-local reference shelf. The shelf is never authority or a build
+  dependency, and its absence is non-blocking.
 - [.agents/scopes/](.agents/scopes/): official tracked agent extension for bounded context routing. LychD allows this shared extension and ignores the rest of `.agents/*`.
 - Local overlays: do not load `.agents/AGENTS.md`, `~/.agents/AGENTS.md`, or tool-specific local profiles for this repo unless the operator explicitly assigns one for the current task.
 
 ## Context Discovery
 
-Follow the cheapest useful edge:
+Progressive context loading is mandatory. Treat this entrypoint like a Django root URLconf:
+`AGENTS.md` selects a domain scope, that scope selects the smallest relevant authority or probe,
+and the leaf documentation/source owns the actual behavior.
+
+- When a tracked scope's Trigger matches, read that scope completely before task action and respect
+  its Authorities, Probes, Verification, and Escalate sections.
+- Do not skip a matching scope, load every scope speculatively, or jump from this root directly
+  into a large documentation tree or local reference shelf.
+- Load one cheapest useful edge at a time. Add another scope only when the task genuinely crosses
+  domains.
+- A scope routes context; it never overrides an ADR, State of the Work, tracked source, tests,
+  lockfiles, or maintained receipts.
+- If a routed path is missing or stale, do not guess. Use the next authoritative probe and repair
+  the routing only when that maintenance is within the task.
+
+Then follow the cheapest useful edge:
 
 1. Use innate knowledge for stable basics.
 2. Load a matching tracked scope from `.agents/scopes/` when one exists. For architecture, ADR, doctrine, tracked agent routing, or docs that define system truth, load [.agents/scopes/architecture.md](.agents/scopes/architecture.md).
@@ -42,11 +59,14 @@ Follow the cheapest useful edge:
    canonical path. Do not infer delivery from the Logos.
 5. For documentation work, use [docs/index.md](docs/index.md) as the published parent map,
    [docs/lexicon.md](docs/lexicon.md) for terms, and directory `index.md` files before child pages.
-   Route accepted application architecture through [docs/compositions/index.md](docs/compositions/index.md)
-   and unselected possibilities through the Incubator.
+   Route application architecture and unselected possibilities through
+   [docs/compositions/index.md](docs/compositions/index.md); use the page's declared maturity
+   rather than its directory as the acceptance boundary.
 6. Inspect LychD source and `src/lychd/system/constants.py` for project truth.
 7. Inspect installed packages under `.venv/lib/` when dependency runtime behavior matters.
-8. Use ignored local reference shelves only when the operator explicitly assigns them.
+8. When an external implementation or research comparison would help, load
+   [.agents/scopes/references.md](.agents/scopes/references.md) and follow one matching edge into the
+   operator-assigned local shelf. Do not inventory or load the whole shelf.
 9. Probe with shell commands.
 10. Ask the operator when context is still insufficient. If they are AFK, exhaust internal archaeology and shell probing first.
 

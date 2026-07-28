@@ -93,33 +93,46 @@ def _animator_declarations(
     )
 
 
+def _advertised_generic_soulstone(
+    *,
+    secret_env_files: dict[str, str] | None = None,
+) -> GenericSoulstoneConfig:
+    """Build a real local declaration that synthesizes one fallback capability."""
+    return GenericSoulstoneConfig(
+        name="test",
+        image="example/runtime",
+        runtime="openai_compatible",
+        secret_env_files=secret_env_files or {},
+    )
+
+
 def test_merge_reserved_ports_disjoint() -> None:
     core = {"LychD Server": 8000, "Phylactery (Postgres)": 5432}
-    extension = {"Oculus (Phoenix UI)": 6006}
+    extension = {"Phoenix Eye UI": 6006}
     assert merge_reserved_ports(core, extension) == {
         "LychD Server": 8000,
         "Phylactery (Postgres)": 5432,
-        "Oculus (Phoenix UI)": 6006,
+        "Phoenix Eye UI": 6006,
     }
 
 
 def test_merge_reserved_ports_core_extension_collision_names_both() -> None:
     """An extension rune claiming a core service port fails at bind, naming both."""
     core = {"LychD Server": 8000}
-    extension = {"Oculus (Phoenix UI)": 8000}
+    extension = {"Phoenix Eye UI": 8000}
     with pytest.raises(ValueError, match="8000") as exc:
         merge_reserved_ports(core, extension)
     message = str(exc.value)
     assert "LychD Server" in message
-    assert "Oculus (Phoenix UI)" in message
+    assert "Phoenix Eye UI" in message
 
 
 def test_merge_reserved_ports_repeated_label_raises() -> None:
     """An extension reusing a core service's label (different port) must not silently
     overwrite the core reservation — it fails at bind, naming both ports."""
-    core = {"Oculus (Phoenix UI)": 6006}
-    extension = {"Oculus (Phoenix UI)": 7007}
-    with pytest.raises(ValueError, match="Oculus") as exc:
+    core = {"Phoenix Eye UI": 6006}
+    extension = {"Phoenix Eye UI": 7007}
+    with pytest.raises(ValueError, match="Phoenix") as exc:
         merge_reserved_ports(core, extension)
     message = str(exc.value)
     assert "6006" in message
@@ -144,6 +157,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         host_reactor_dir=inbox,
         host_reactor_journal_dir=journal,
         policy="evict-idle",
+        systemctl_timeout_s=73.0,
     )
     settings = SimpleNamespace(
         orchestration=SimpleNamespace(switching=switching),
@@ -209,6 +223,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         inbox_dir=inbox,
         journal_dir=journal,
         systemctl_bin="/usr/bin/systemctl",
+        systemctl_timeout_s=73.0,
         policy=policy,
     )
     reactor_type.return_value.consume_all.assert_awaited_once_with()
@@ -831,7 +846,7 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
         "lychd.config.runes.registry.load_rune_registry",
         return_value=registry,
     )
-    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    stone = _advertised_generic_soulstone()
     portal = SimpleNamespace(api_key_secret_name=None)
     compiler = mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
@@ -908,14 +923,19 @@ def test_bind_dry_run_uses_real_planner_without_effects(
     from lychd.system.services.scribe import BindingChange, BindingReconcilePlan
 
     lock = mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
-    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    stone = _advertised_generic_soulstone()
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(soulstones=(stone,)),
     )
-    mocker.patch(
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+
+    capability_specs = RuntimeAdapterRegistry().build_capability_specs(stone)
+    runtime_planner = mocker.patch(
         "lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry",
-    ).return_value.plan.return_value = RuntimePlan()
+    ).return_value
+    runtime_planner.plan.return_value = RuntimePlan()
+    runtime_planner.build_capability_specs.return_value = capability_specs
     transmuter = mocker.patch("lychd.domain.animation.transmute.Transmuter").return_value
     transmuter.transmute_all.return_value = ["rune1"]
     scribe = mocker.patch(
@@ -1080,12 +1100,7 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(
-            soulstones=(
-                GenericSoulstoneConfig(
-                    name="test",
-                    image="example/runtime",
-                ),
-            ),
+            soulstones=(_advertised_generic_soulstone(),),
         ),
     )
     mock_transmuter_cls = mocker.patch("lychd.domain.animation.transmute.Transmuter")
@@ -1115,9 +1130,7 @@ def test_bind_quadlets_systemd_failure(runner: CliRunner, mocker: MockerFixture)
 
 def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mocker: MockerFixture) -> None:
     """Bind must fail closed when a soulstone references a missing Podman secret."""
-    stone = GenericSoulstoneConfig(
-        name="test",
-        image="example/runtime",
+    stone = _advertised_generic_soulstone(
         secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
     )
     mocker.patch(
@@ -1140,7 +1153,7 @@ def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mo
 
 
 def test_runtime_plan_secrets_are_included_in_generic_preflight() -> None:
-    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    stone = _advertised_generic_soulstone()
     plan = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
 
     assert required_secret_names_from_soulstones([stone], [plan]) == ["adapter_token"]
@@ -1150,13 +1163,17 @@ def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(
     runner: CliRunner,
     mocker: MockerFixture,
 ) -> None:
-    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    stone = _advertised_generic_soulstone()
     mocker.patch(
         "lychd.cli.binding.compile_animator_declarations",
         return_value=_animator_declarations(soulstones=(stone,)),
     )
+    from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+
+    capability_specs = RuntimeAdapterRegistry().build_capability_specs(stone)
     planner = mocker.patch("lychd.domain.animation.services.adapters.registry.RuntimeAdapterRegistry").return_value
     planner.plan.return_value = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
+    planner.build_capability_specs.return_value = capability_specs
     mocker.patch("lychd.domain.animation.transmute.Transmuter")
     mocker.patch("lychd.system.services.scribe.facade.ScribeService")
     secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value

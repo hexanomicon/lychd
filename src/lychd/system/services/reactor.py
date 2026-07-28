@@ -14,6 +14,8 @@ import structlog
 from lychd.domain.animation.capabilities import CapabilityPhase, CapabilityState
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
+    RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
     build_compensation_intent,
@@ -138,6 +140,7 @@ class HostReactor:
         actuator: _RecoverableRuntimeActuator | None = None,
         policy: SwitchPolicy | None = None,
         systemctl_bin: str | None = None,
+        systemctl_timeout_s: float = 120.0,
         lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
     ) -> None:
         """Bind the consumer to host-owned registry truth and directories."""
@@ -148,6 +151,7 @@ class HostReactor:
             actuator = SystemdRuntimeActuator(
                 registry,
                 systemctl_bin=systemctl_bin,
+                systemctl_timeout_s=systemctl_timeout_s,
                 observe_systemd=True,
             )
         if lock_factory is None:
@@ -158,7 +162,7 @@ class HostReactor:
         self._inbox_dir = inbox_dir
         self._journal_dir = journal_dir
         self._actuator = actuator
-        self._policy = policy or resolve_switch_policy("evict-idle")
+        self._policy = policy or resolve_switch_policy("declared-conflicts")
         self._lock_factory = lock_factory
 
     async def consume_all(self) -> int:
@@ -170,25 +174,13 @@ class HostReactor:
         """Consume all work while excluding every peer lifecycle mutation."""
         self._validate_directory(self._inbox_dir, label="inbox")
         self._validate_directory(self._journal_dir, label="journal")
+        self._require_no_containment()
 
-        processed = 0
-        errors: list[str] = []
-
-        # A process death after the claim leaves a durable processing record. It is
-        # retried first; stale expected-state validation prevents blind reapplication.
-        for claimed in sorted(self._journal_dir.glob("*.processing.json")):
-            error = await self._consume_existing_claim(claimed)
-            if error is None:
-                processed += 1
-            else:
-                errors.append(error)
-
-        for pending in sorted(self._inbox_dir.glob("*.json")):
-            did_process, error = await self._consume_pending(pending)
-            if did_process:
-                processed += 1
-            if error is not None:
-                errors.append(error)
+        processed, errors, mutation_fenced = await self._recover_claimed_batch()
+        if not mutation_fenced:
+            pending_processed, pending_errors = await self._consume_pending_batch()
+            processed += pending_processed
+            errors.extend(pending_errors)
 
         if errors:
             detail = "; ".join(errors)
@@ -196,12 +188,54 @@ class HostReactor:
             raise RuntimeError(msg)
         return processed
 
+    def _require_no_containment(self) -> None:
+        """Refuse every host effect while a durable containment latch exists."""
+        contained = sorted(self._journal_dir.glob("*.contained.json"))
+        if contained:
+            names = ", ".join(path.name for path in contained)
+            msg = f"Host Reactor containment is active; refusing new physical work: {names}"
+            raise RuntimeError(msg)
+
+    async def _recover_claimed_batch(self) -> tuple[int, list[str], bool]:
+        """Recover old claims first and stop at the first unresolved world."""
+        processed = 0
+        errors: list[str] = []
+        for claimed in sorted(self._journal_dir.glob("*.processing.json")):
+            error = await self._consume_existing_claim(claimed)
+            if error is None:
+                processed += 1
+                continue
+            errors.append(error)
+            if os.path.lexists(claimed):
+                return processed, errors, True
+        return processed, errors, False
+
+    async def _consume_pending_batch(self) -> tuple[int, list[str]]:
+        """Consume fresh work until the first host-global mutation fence."""
+        processed = 0
+        errors: list[str] = []
+        for pending in sorted(self._inbox_dir.glob("*.json")):
+            did_process, error = await self._consume_pending(pending)
+            if did_process:
+                processed += 1
+            if error is not None:
+                errors.append(error)
+            if self._mutation_fence_exists():
+                break
+        return processed, errors
+
+    def _mutation_fence_exists(self) -> bool:
+        """Return whether this batch has reached unresolved physical state."""
+        return any(self._journal_dir.glob("*.processing.json")) or any(self._journal_dir.glob("*.contained.json"))
+
     async def _consume_existing_claim(self, claimed: Path) -> str | None:
         try:
             await self._apply_claimed(claimed, recover=True)
         except Exception as exc:  # noqa: BLE001 - journal then report all failures
-            if os.path.lexists(claimed):
-                self._reject_claimed(claimed, reason=str(exc))
+            # A reclaimed record may represent a transaction already accepted
+            # by systemd before the Reactor crashed. No generic exception proves
+            # the old or desired world, so keep ``.processing`` as a durable
+            # startup fence until recovery reaches a classified terminal world.
             return f"{claimed.name}: {exc}"
         return None
 
@@ -225,36 +259,91 @@ class HostReactor:
             self._fsync_directory(self._journal_dir)
             await self._apply_claimed(claimed)
         except Exception as exc:  # noqa: BLE001 - malformed input must leave the live inbox
-            if claimed is not None and os.path.lexists(claimed):
-                self._reject_claimed(claimed, reason=str(exc))
-            else:
+            if claimed is None:
                 self._reject_pending(pending, reason=str(exc))
+            # Once claimed, _apply_claimed owns every safe terminal
+            # classification. If it leaves .processing behind, the effect
+            # boundary is uncertain and must remain a durable batch fence.
             return False, f"{pending.name}: {exc}"
         return True, None
 
     async def _apply_claimed(self, claimed: Path, *, recover: bool = False) -> None:
-        resolved = self._read_intent(claimed, claimed=True)
+        resolved = self._read_claimed_intent(claimed, recover=recover)
         observed_generation = capability_config_generation(self._registry)
+        self._validate_claimed_preconditions(
+            claimed,
+            resolved,
+            observed_generation=observed_generation,
+            recover=recover,
+        )
+        await self._actuate_claimed(claimed, resolved, recover=recover)
+        self._finish(claimed, status="completed")
+        logger.info("host_transition_completed", transition_id=resolved.transition_id)
+
+    def _read_claimed_intent(self, claimed: Path, *, recover: bool) -> TransitionIntent:
+        """Read a claim, rejecting malformed fresh work before any effect."""
         try:
-            self._validate_preconditions(resolved, observed_generation=observed_generation)
+            return self._read_intent(claimed, claimed=True)
         except Exception as exc:
+            if not recover:
+                self._reject_claimed(claimed, reason=str(exc))
+            raise
+
+    def _validate_claimed_preconditions(
+        self,
+        claimed: Path,
+        intent: TransitionIntent,
+        *,
+        observed_generation: str,
+        recover: bool,
+    ) -> None:
+        """Classify declaration and policy failures before host actuation."""
+        try:
+            self._validate_preconditions(intent, observed_generation=observed_generation)
+        except Exception as exc:
+            if recover:
+                msg = (
+                    f"Cannot revalidate crash-reclaimed transition '{intent.transition_id}' "
+                    f"without physical recovery: {exc}"
+                )
+                raise RuntimeError(msg) from exc
             self._finish(claimed, status="declined")
             if isinstance(exc, RuntimePreconditionError):
                 raise
             raise RuntimePreconditionError(str(exc)) from exc
+
+    async def _actuate_claimed(
+        self,
+        claimed: Path,
+        intent: TransitionIntent,
+        *,
+        recover: bool,
+    ) -> None:
+        """Apply or recover one validated claim and journal its outcome."""
         try:
-            if recover or resolved.operation == "compensation":
-                await self._actuator.recover(resolved)
+            # Only a crash-reclaimed processing record needs physical recovery.
+            # A newly published compensation is a fresh inverse transaction and
+            # must pass the actuator's normal exact-preworld admission path.
+            if recover:
+                await self._actuator.recover(intent)
             else:
-                await self._actuator.apply(resolved)
+                await self._actuator.apply(intent)
         except RuntimePreconditionError:
+            if recover:
+                raise
             self._finish(claimed, status="declined")
             raise
-        except Exception:
-            self._finish(claimed, status="rejected")
+        except (RuntimeActuationRestoredError, RuntimeCancellationRestoredError):
+            self._finish(claimed, status="restored")
             raise
-        self._finish(claimed, status="completed")
-        logger.info("host_transition_completed", transition_id=resolved.transition_id)
+        except Exception:
+            if recover:
+                raise
+            # Validation failures are declined/rejected before effects. An
+            # actuator failure is different: unless it proves restoration, the
+            # host must leave a durable containment marker across app restarts.
+            self._finish(claimed, status="contained")
+            raise
 
     def _validate_preconditions(self, intent: TransitionIntent, *, observed_generation: str) -> None:
         """Validate generation and host authorization before any physical effect."""
@@ -271,7 +360,7 @@ class HostReactor:
         path: Path,
         *,
         claimed: bool = False,
-        terminal_status: Literal["completed", "declined", "rejected"] | None = None,
+        terminal_status: Literal["completed", "contained", "declined", "rejected", "restored"] | None = None,
     ) -> TransitionIntent:
         flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
         try:
@@ -317,7 +406,7 @@ class HostReactor:
         transition_id: str,
         *,
         claimed: bool,
-        terminal_status: Literal["completed", "declined", "rejected"] | None,
+        terminal_status: Literal["completed", "contained", "declined", "rejected", "restored"] | None,
     ) -> str:
         """Return the only legal filename for one intent lifecycle position."""
         if claimed and terminal_status is not None:
@@ -435,7 +524,7 @@ class HostReactor:
     def _already_journaled(self, transition_id: str) -> bool:
         return any(
             (self._journal_dir / f"{transition_id}.{status}.json").exists()
-            for status in ("processing", "completed", "declined", "rejected")
+            for status in ("processing", "completed", "contained", "declined", "rejected", "restored")
         )
 
     def _finish(self, claimed: Path, *, status: str) -> None:

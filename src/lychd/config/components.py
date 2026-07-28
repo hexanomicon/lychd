@@ -109,7 +109,7 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
 
 
 def build_structlog_config(settings: Settings) -> StructlogConfig:
-    """Build the Scrying (structlog) config."""
+    """Build the structured-logging configuration."""
     return build_log_config(
         render_as_json=should_render_as_json(settings),
         settings=settings,

@@ -5,19 +5,19 @@ icon: material/archive-star-outline
 
 # :material-archive-star-outline: Reliquary
 
-**Purpose.** Reliquary is the intended Altar instrument for returning to an output after its active
-Invocation has passed: inspecting what it is, where it came from, who may retrieve it, and how long
-it may remain.
+**Purpose.** Reliquary names a **designed artifact-custody lifecycle**, not one of the current four
+Altar instruments. It would let the Magus return to an output after its active Invocation has
+passed: inspecting what it is, where it came from, who may retrieve it, and how long it may remain.
 
-**Current boundary.** The `/reliquary` route now returns the full Altar shell, marks this instrument
-as active, shows the shared pending-consent sigil, and renders an explicit unbuilt placeholder. It
-does not upload or hold bytes, list artifacts, authorize retrieval, prove provenance, export an
-output, or enforce retention. An Intent can carry immutable artifact metadata, but that reference
-is not custody. [State owns the exact Reliquary
-boundary](../../state-of-the-work.md#reliquary-instrument) and the separate
-[artifact-reference boundary](../../state-of-the-work.md#artifact-reference-contract).
+**Current boundary.** No `/reliquary` route exists. LychD can carry immutable `ArtifactRef`
+metadata through the supported run boundary, but it does not upload or hold bytes, list artifacts,
+authorize retrieval, prove provenance, export an output, or enforce retention. Artifact references
+remain contextual until custody, retrieval, authorization, and retention earn a dedicated
+lifecycle. [State owns the current Orb
+boundary](../../state-of-the-work.md#orb-instrument) and the separate [artifact-reference
+contract](../../state-of-the-work.md#artifact-reference-contract).
 
-**Law.** Reliquary is a presentation and lifecycle instrument, not another store. The
+**Law.** Reliquary would be a presentation and lifecycle instrument, not another store. The
 [Phylactery](../../sepulcher/phylactery/index.md) owns committed application records at supported
 boundaries, and any future byte-custody adapter must earn an explicit authorization, provenance,
 and retention contract. The [Oculus](../../sepulcher/extensions/oculus.md) owns evidence, the
@@ -67,6 +67,27 @@ record should stack rather than force a wide asset table.
 No browser cache, generated preview, model-written URL, or client-side object may become the
 canonical relic. The Vessel validates every request; the custody service returns bytes only under
 current authority; the durable record preserves provenance without exposing secret material.
+
+## Open the Relic Where It Appears
+
+Artifact metadata may eventually open contextually from a Bridge result or the exact Orb evidence
+record that cites it. That convenience would transfer neither custody to Bridge nor evidence
+ownership to the artifact lifecycle. No full-record route exists today.
+
+Where immutable artifact revisions and parent relations exist, the full instrument may offer:
+
+- a lineage graph whose edges name their provenance record;
+- comparison between exact source, branch, and result revisions;
+- evaluation links owned by Riddle; and
+- retention state and authorized retrieval or deletion actions.
+
+Lineage gaps remain visible breaks. The client may not connect two revisions because their text
+looks similar, treat a digest as complete provenance, or reconstruct an intermediate artifact that
+was never retained.
+
+A future **Return to Bridge** or **Pin and Ask** action creates a new Intent with a previewed,
+currently authorized artifact reference. It does not copy a browser blob into canonical custody or
+silently inject bytes, rendered text, or derived content into Context.
 
 Until such custody exists, perform the one check that prevents a false offering:
 

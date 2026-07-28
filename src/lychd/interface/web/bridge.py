@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
+from uuid import NAMESPACE_URL, uuid5
 
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
@@ -16,6 +17,8 @@ from litestar.response import ServerSentEvent, ServerSentEventMessage
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 
 from lychd.agents.router import Intent
+from lychd.agents.workflows import WORKFLOW_REGISTRY
+from lychd.agents.workflows.base import pattern_snapshot_is_valid
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.engine import RunEngine
@@ -43,6 +46,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
     from lychd.domain.codex.sigil import Sigil
+    from lychd.domain.cortex.ledger import RunLedger
 
 _SSE_KEEPALIVE_S = 15.0
 
@@ -83,35 +87,23 @@ def _session_view(session: SessionRecord) -> SessionView:
 async def _terminal_stream(
     projector: EventProjector,
     run_id: str,
-    status: str,
     *,
-    from_seq: int | None,
     cursor: int,
 ) -> AsyncIterator[ServerSentEventMessage]:
-    if from_seq is not None:
-        reset_event = RunEvent(
-            run_id=run_id,
-            seq=max(cursor, 0),
-            kind=RunEventKind.RESYNC,
-            data="snapshot_required",
-        )
-        envelope = await projector.project(reset_event)
-        yield ServerSentEventMessage(
-            event=envelope.kind,
-            data=envelope.model_dump_json(),
-            id=str(envelope.seq),
-        )
-        return
-
-    status_event = RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data=status)
-    done_event = RunEvent(run_id=run_id, seq=1, kind=RunEventKind.DONE, data=status)
-    for event in (status_event, done_event):
-        envelope = await projector.project(event)
-        yield ServerSentEventMessage(
-            event=envelope.kind,
-            data=envelope.model_dump_json(),
-            id=str(envelope.seq),
-        )
+    boundary = max(cursor, 0)
+    reset_event = RunEvent(
+        run_id=run_id,
+        event_id=str(uuid5(NAMESPACE_URL, f"lychd:resync:{run_id}:{boundary}")),
+        seq=boundary,
+        kind=RunEventKind.RESYNC,
+        data="snapshot_required",
+    )
+    envelope = await projector.project(reset_event)
+    yield ServerSentEventMessage(
+        event=envelope.kind,
+        data=envelope.model_dump_json(),
+        id=str(envelope.seq),
+    )
 
 
 class BridgeController(Controller):
@@ -207,9 +199,14 @@ class BridgeController(Controller):
         if not prompt:
             raise ValidationException(detail="An empty offering cannot be spoken.")
 
-        turn = BridgeTurn(role="user", content=prompt)
-        await bridge_sessions.add_turn(session_id, turn)
         sigil = cast("Sigil", request.user)
+        turn: BridgeTurn | None = None
+
+        async def retain_user_turn(run_id: str) -> None:
+            nonlocal turn
+            turn = BridgeTurn(role="user", content=prompt, run_id=run_id)
+            await bridge_sessions.add_turn(session_id, turn)
+
         handle = await run_engine.submit(
             Intent(
                 session_id=session_id,
@@ -217,9 +214,21 @@ class BridgeController(Controller):
                 source="bridge",
                 sigil_name=sigil.name,
                 sigil_scopes=frozenset(sigil.scopes),
-            )
+            ),
+            retain_before_publish=retain_user_turn,
         )
-        return MessageAccepted(run_id=handle.run_id, turn=_turn_view(turn))
+        if turn is None:  # pragma: no cover - RunEngine guarantees callback-before-return
+            msg = "Bridge admission returned before retaining its user turn."
+            raise RuntimeError(msg)
+        return MessageAccepted(
+            run_id=handle.run_id,
+            pattern_id=handle.pattern_id,
+            pattern_revision=handle.pattern_revision,
+            loom_path=f"/loom/{handle.pattern_id}/{handle.pattern_revision}",
+            orb_path=f"/orb/{handle.run_id}",
+            evidence_capture=handle.evidence_capture,
+            turn=_turn_view(turn),
+        )
 
     @get(
         "/runs/{run_id:str}",
@@ -256,6 +265,43 @@ class BridgeController(Controller):
         projector: EventProjector,
         state: State,
     ) -> RunProjectionSnapshot:
+        manifest = run.pattern_manifest
+        pattern_id = str(manifest.get("key") or run.workflow_name)
+        revision = str(manifest.get("revision") or "legacy-unversioned")
+        digest = manifest.get("digest")
+        registered = WORKFLOW_REGISTRY.get_revision(pattern_id, revision)
+        loom_available = (
+            pattern_snapshot_is_valid(manifest) and registered is not None and registered.manifest.digest == digest
+        )
+        loom_path = f"/loom/{pattern_id}/{revision}" if loom_available else None
+        orb_path = f"/orb/{run.run_id}"
+        ledger = cast("RunLedger", state.services.ledger)
+        evidence_capture = cast(
+            "Literal['process_local', 'durable_best_effort']",
+            ledger.evidence_capture,
+        )
+        latest_node, latest_dispatch, latest_transition = await asyncio.gather(
+            ledger.latest_event(run.run_id, RunEventKind.NODE),
+            ledger.latest_event(run.run_id, RunEventKind.DISPATCH),
+            ledger.latest_event(run.run_id, RunEventKind.TRANSITION),
+        )
+        retained_dispatch_occurrence_id = (
+            latest_dispatch.meta.get("occurrence_id") if latest_dispatch is not None else None
+        )
+        retained_transition_occurrence_id = (
+            latest_transition.meta.get("occurrence_id") if latest_transition is not None else None
+        )
+        retained_occurrence_id = (
+            (latest_node.meta.get("occurrence_id") if latest_node is not None else None)
+            or retained_dispatch_occurrence_id
+            or retained_transition_occurrence_id
+        )
+        retained_grant_id = latest_dispatch.meta.get("grant_id") if latest_dispatch is not None else None
+        retained_capability_key = (latest_dispatch.data if latest_dispatch is not None else None) or (
+            latest_transition.meta.get("capability_key") if latest_transition is not None else None
+        )
+        retained_transition_request_id = latest_transition.data if latest_transition is not None else None
+        retained_transition_phase = latest_transition.meta.get("phase") if latest_transition is not None else None
         live = run_bus.snapshot(run.run_id)
         if live is not None:
             fragments = [(await projector.project(fragment)).payload for fragment in live.fragments]
@@ -264,8 +310,21 @@ class BridgeController(Controller):
                 run_id=run.run_id,
                 cursor=live.cursor,
                 content=live.content,
-                status=live.status,
+                run_status=run.status.value,
+                activity=live.activity,
+                pattern_id=pattern_id,
+                pattern_revision=revision,
+                loom_path=loom_path,
+                orb_path=orb_path,
+                evidence_capture=evidence_capture,
                 fragments=fragments,
+                occurrence_id=live.occurrence_id or retained_occurrence_id,
+                dispatch_occurrence_id=live.dispatch_occurrence_id or retained_dispatch_occurrence_id,
+                grant_id=live.grant_id or retained_grant_id,
+                capability_key=live.capability_key or retained_capability_key,
+                transition_occurrence_id=live.transition_occurrence_id or retained_transition_occurrence_id,
+                transition_request_id=live.transition_request_id or retained_transition_request_id,
+                transition_phase=live.transition_phase or retained_transition_phase,
                 terminal=live.terminal,
             )
 
@@ -275,8 +334,21 @@ class BridgeController(Controller):
             run_id=run.run_id,
             cursor=(await state.services.ledger.next_seq(run.run_id)) - 1,
             content=turn.content if turn is not None else "",
-            status=run.status.value,
+            run_status=run.status.value,
+            activity=run.status.value,
+            pattern_id=pattern_id,
+            pattern_revision=revision,
+            loom_path=loom_path,
+            orb_path=orb_path,
+            evidence_capture=evidence_capture,
             fragments=[],
+            occurrence_id=retained_occurrence_id,
+            dispatch_occurrence_id=retained_dispatch_occurrence_id,
+            grant_id=retained_grant_id,
+            capability_key=retained_capability_key,
+            transition_occurrence_id=retained_transition_occurrence_id,
+            transition_request_id=retained_transition_request_id,
+            transition_phase=retained_transition_phase,
             terminal=run.status in TERMINAL_STATUSES,
         )
 
@@ -312,8 +384,6 @@ class BridgeController(Controller):
                 _terminal_stream(
                     projector,
                     run_id,
-                    run.status.value,
-                    from_seq=from_seq,
                     cursor=(await state.services.ledger.next_seq(run_id)) - 1,
                 ),
             )

@@ -92,7 +92,14 @@ class _GatingOrchestrator(OrchestratorManager):
     def __init__(self) -> None:
         self.worker_broker = None
 
-    async def request_transition(self, target_capability_key: str, priority: float) -> TransitionPlan:
+    async def request_transition(
+        self,
+        target_capability_key: str,
+        priority: float,
+        *,
+        trace: object | None = None,
+    ) -> TransitionPlan:
+        _ = trace
         plan = TransitionPlan(
             total_metabolic_cost=1.0,
             evict_coven_ids=["old-relic"],

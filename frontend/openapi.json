@@ -196,12 +196,173 @@
         "title": "CsrfClientContract",
         "type": "object"
       },
+      "EvidenceGap": {
+        "properties": {
+          "classification": {
+            "const": "unknown_or_omitted",
+            "default": "unknown_or_omitted",
+            "type": "string"
+          },
+          "end_seq": {
+            "type": "integer"
+          },
+          "start_seq": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "end_seq",
+          "start_seq"
+        ],
+        "title": "EvidenceGap",
+        "type": "object"
+      },
+      "EvidenceItem": {
+        "properties": {
+          "capture": {
+            "enum": [
+              "process_local",
+              "durable_best_effort"
+            ],
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "nexus_path": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "occurrence_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "subject_key": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "transition_request_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "capture",
+          "event_id",
+          "kind",
+          "occurred_at",
+          "seq",
+          "summary"
+        ],
+        "title": "EvidenceItem",
+        "type": "object"
+      },
+      "LoomEdgeView": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "relation": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "relation",
+          "source",
+          "target"
+        ],
+        "title": "LoomEdgeView",
+        "type": "object"
+      },
+      "LoomNodeView": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "label"
+        ],
+        "title": "LoomNodeView",
+        "type": "object"
+      },
       "LoomSummary": {
         "properties": {
           "description": {
             "type": "string"
           },
-          "name": {
+          "detail_path": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "pattern_id": {
+            "type": "string"
+          },
+          "revision": {
             "type": "string"
           },
           "title": {
@@ -213,7 +374,10 @@
         },
         "required": [
           "description",
-          "name",
+          "detail_path",
+          "digest",
+          "pattern_id",
+          "revision",
           "title",
           "trigger_hint"
         ],
@@ -222,20 +386,42 @@
       },
       "LoomView": {
         "properties": {
+          "checkpoint_schema": {
+            "type": "string"
+          },
           "description": {
             "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/LoomEdgeView"
+            },
+            "type": "array"
           },
           "mermaid_source": {
             "type": "string"
           },
-          "name": {
-            "type": "string"
-          },
-          "node_names": {
+          "nodes": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/LoomNodeView"
             },
             "type": "array"
+          },
+          "pattern_id": {
+            "type": "string"
+          },
+          "publication": {
+            "const": "published",
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "schema_version": {
+            "type": "integer"
           },
           "title": {
             "type": "string"
@@ -245,10 +431,16 @@
           }
         },
         "required": [
+          "checkpoint_schema",
           "description",
+          "digest",
+          "edges",
           "mermaid_source",
-          "name",
-          "node_names",
+          "nodes",
+          "pattern_id",
+          "publication",
+          "revision",
+          "schema_version",
           "title",
           "trigger_hint"
         ],
@@ -257,6 +449,25 @@
       },
       "MessageAccepted": {
         "properties": {
+          "evidence_capture": {
+            "enum": [
+              "process_local",
+              "durable_best_effort"
+            ],
+            "type": "string"
+          },
+          "loom_path": {
+            "type": "string"
+          },
+          "orb_path": {
+            "type": "string"
+          },
+          "pattern_id": {
+            "type": "string"
+          },
+          "pattern_revision": {
+            "type": "string"
+          },
           "run_id": {
             "type": "string"
           },
@@ -265,6 +476,11 @@
           }
         },
         "required": [
+          "evidence_capture",
+          "loom_path",
+          "orb_path",
+          "pattern_id",
+          "pattern_revision",
           "run_id",
           "turn"
         ],
@@ -326,6 +542,17 @@
           "capability_key": {
             "type": "string"
           },
+          "checked_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dedicated": {
             "type": "boolean"
           },
@@ -375,6 +602,7 @@
         "required": [
           "animator_name",
           "capability_key",
+          "checked_at",
           "dedicated",
           "family",
           "health",
@@ -393,21 +621,242 @@
         "properties": {
           "board": {
             "$ref": "#/components/schemas/NexusBoard"
+          },
+          "containment_reason": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snapshot_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "transitions": {
+            "items": {
+              "$ref": "#/components/schemas/TransitionRecordView"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "board"
+          "board",
+          "containment_reason",
+          "snapshot_at",
+          "transitions"
         ],
         "title": "NexusSnapshot",
         "type": "object"
       },
+      "OrbRunSnapshot": {
+        "properties": {
+          "capture": {
+            "enum": [
+              "process_local",
+              "durable_best_effort"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceItem"
+            },
+            "type": "array"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceGap"
+            },
+            "type": "array"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "known_omissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ledger_head_seq": {
+            "type": "integer"
+          },
+          "live_tail": {
+            "const": "not_available",
+            "default": "not_available",
+            "type": "string"
+          },
+          "next_after_seq": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "page_end_seq": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pattern": {
+            "$ref": "#/components/schemas/PatternReference"
+          },
+          "run": {
+            "$ref": "#/components/schemas/OrbRunSummary"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "type": "integer"
+          },
+          "snapshot_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture",
+          "evidence",
+          "gaps",
+          "has_more",
+          "known_omissions",
+          "ledger_head_seq",
+          "next_after_seq",
+          "page_end_seq",
+          "pattern",
+          "run",
+          "snapshot_at"
+        ],
+        "title": "OrbRunSnapshot",
+        "type": "object"
+      },
+      "OrbRunSummary": {
+        "properties": {
+          "bridge_path": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error_present": {
+            "type": "boolean"
+          },
+          "finished_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "started_at": {
+            "oneOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "workflow_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bridge_path",
+          "created_at",
+          "error_present",
+          "finished_at",
+          "run_id",
+          "session_id",
+          "started_at",
+          "status",
+          "workflow_name"
+        ],
+        "title": "OrbRunSummary",
+        "type": "object"
+      },
+      "PatternReference": {
+        "properties": {
+          "digest": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "exact": {
+            "type": "boolean"
+          },
+          "loom_path": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pattern_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "digest",
+          "exact",
+          "loom_path",
+          "pattern_id",
+          "revision"
+        ],
+        "title": "PatternReference",
+        "type": "object"
+      },
       "RunEventEnvelope": {
         "properties": {
+          "event_id": {
+            "type": "string"
+          },
           "kind": {
             "enum": [
               "token",
               "status",
               "node",
+              "dispatch",
+              "transition",
               "fragment",
               "consent",
               "log",
@@ -437,6 +886,7 @@
           }
         },
         "required": [
+          "event_id",
           "kind",
           "occurred_at",
           "payload",
@@ -448,11 +898,41 @@
       },
       "RunProjectionSnapshot": {
         "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "capability_key": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "content": {
             "type": "string"
           },
           "cursor": {
             "type": "integer"
+          },
+          "dispatch_occurrence_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_capture": {
+            "enum": [
+              "process_local",
+              "durable_best_effort"
+            ],
+            "type": "string"
           },
           "fragments": {
             "items": {
@@ -461,7 +941,49 @@
             },
             "type": "array"
           },
+          "grant_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "loom_path": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occurrence_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "orb_path": {
+            "type": "string"
+          },
+          "pattern_id": {
+            "type": "string"
+          },
+          "pattern_revision": {
+            "type": "string"
+          },
           "run_id": {
+            "type": "string"
+          },
+          "run_status": {
             "type": "string"
           },
           "schema_version": {
@@ -472,21 +994,61 @@
           "session_id": {
             "type": "string"
           },
-          "status": {
-            "type": "string"
-          },
           "terminal": {
             "type": "boolean"
+          },
+          "transition_occurrence_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transition_phase": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transition_request_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
+          "activity",
+          "capability_key",
           "content",
           "cursor",
+          "dispatch_occurrence_id",
+          "evidence_capture",
           "fragments",
+          "grant_id",
+          "loom_path",
+          "occurrence_id",
+          "orb_path",
+          "pattern_id",
+          "pattern_revision",
           "run_id",
+          "run_status",
           "session_id",
-          "status",
-          "terminal"
+          "terminal",
+          "transition_occurrence_id",
+          "transition_phase",
+          "transition_request_id"
         ],
         "title": "RunProjectionSnapshot",
         "type": "object"
@@ -612,7 +1174,33 @@
           "action_type": {
             "type": "string"
           },
+          "compensation_transition_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "physical_transition_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
             "type": "string"
           },
           "state": {
@@ -632,7 +1220,11 @@
         },
         "required": [
           "action_type",
+          "compensation_transition_id",
           "id",
+          "phase",
+          "physical_transition_id",
+          "request_id",
           "state",
           "target",
           "total_metabolic_cost"
@@ -714,6 +1306,136 @@
           "total_metabolic_cost"
         ],
         "title": "TransitionPlan",
+        "type": "object"
+      },
+      "TransitionRecordView": {
+        "properties": {
+          "action_type": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bridge_path": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "compensation_transition_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "occurrence_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "orb_path": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phase": {
+            "type": "string"
+          },
+          "physical_transition_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "type": "number"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "run_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "enum": [
+              "run",
+              "operator"
+            ],
+            "type": "string"
+          },
+          "target_capability_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_type",
+          "bridge_path",
+          "compensation_transition_id",
+          "detail",
+          "observed_at",
+          "occurrence_id",
+          "orb_path",
+          "phase",
+          "physical_transition_id",
+          "priority",
+          "request_id",
+          "requested_at",
+          "run_id",
+          "source",
+          "target_capability_key"
+        ],
+        "title": "TransitionRecordView",
         "type": "object"
       }
     }
@@ -1240,6 +1962,162 @@
         "summary": "Catalogue"
       }
     },
+    "/api/v1/loom/{pattern_id}/{revision}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getLoomPatternRevision",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "pattern_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoomView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Revision"
+      }
+    },
+    "/api/v1/loom/{pattern_id}/{revision}/source": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getLoomPatternRevisionSource",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "pattern_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "RevisionSource"
+      }
+    },
     "/api/v1/loom/{workflow}": {
       "get": {
         "deprecated": false,
@@ -1672,6 +2550,171 @@
           }
         },
         "summary": "SwapEvents"
+      }
+    },
+    "/api/v1/nexus/transitions/{request_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getNexusTransition",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransitionRecordView"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "TransitionStatus"
+      }
+    },
+    "/api/v1/orb/runs/{run_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getOrbRun",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "after_seq",
+            "required": false,
+            "schema": {
+              "default": -1,
+              "minimum": -1.0,
+              "type": "integer"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500.0,
+              "minimum": 1.0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrbRunSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Run"
       }
     }
   },

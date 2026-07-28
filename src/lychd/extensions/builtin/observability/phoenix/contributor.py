@@ -1,4 +1,4 @@
-"""Quadlet contributor for the built-in Arize Phoenix (Oculus) service."""
+"""Quadlet contributor for the external Arize Phoenix Eye."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 
 
 class PhoenixQuadletContributor:
-    """Contributes the Oculus container + its pod ports when Phoenix is active."""
+    """Contribute the Phoenix Eye container and pod ports when selected."""
 
     def contribute(self, ctx: TransmutationContext) -> QuadletContribution:
-        """Emit the Oculus container/ports, or an empty contribution if absent."""
+        """Emit the Phoenix Eye container/ports, or an empty contribution if absent."""
         phoenix = ctx.runes.one_or_none(PhoenixSettings)  # >1 raises loudly (kept semantics)
         if phoenix is None:
             return QuadletContribution()
@@ -29,7 +29,7 @@ class PhoenixQuadletContributor:
         return QuadletContribution(
             containers=(
                 QuadletContainer(
-                    description="The Oculus (Arize Phoenix)",
+                    description="External Eye (Arize Phoenix)",
                     image=phoenix.image,
                     container_name=f"lychd-{phoenix.name}",
                     pod="lychd.pod",

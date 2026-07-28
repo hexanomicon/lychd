@@ -22,7 +22,7 @@ from pydantic_graph import BaseNode, End, Graph
 
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
-from lychd.agents.workflows.base import Gate, Trigger, Workflow
+from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.bridge_chat import BridgeChatState
 from lychd.domain.cortex.runs import RunRecord, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
@@ -76,11 +76,25 @@ class _PlainNode(BaseNode[BridgeChatState, None, None]):
         return End(None)
 
 
+class _SecondPlainNode(BaseNode[BridgeChatState, None, None]):
+    async def run(self, ctx: Any) -> End[None]:  # noqa: ARG002
+        return End(None)
+
+
 def _run() -> RunRecord:
     return RunRecord(
         run_id="r1",
         session_id="s1",
         workflow_name="w",
+        pattern_manifest={
+            "schema_version": 0,
+            "key": "w",
+            "revision": "legacy-unversioned",
+            "checkpoint_schema": "unknown",
+            "nodes": [],
+            "edges": [],
+            "digest": None,
+        },
         source="bridge",
         queue_name="runs",
         priority=50,
@@ -99,6 +113,21 @@ def _workflow_for(node: type[BaseNode[Any, Any, Any]]) -> Workflow:
         graph=Graph(nodes=(node,), name="t"),
         start_node=node,
         make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+        manifest=PatternManifest(
+            key="t",
+            revision="1",
+            checkpoint_schema="test-v1",
+            nodes=(
+                PatternNode(
+                    key="node",
+                    label="Node",
+                    kind="gate" if issubclass(node, Gate) else "step",
+                    implementation=node,
+                ),
+                PatternNode(key="end", label="End", kind="terminal"),
+            ),
+            edges=(PatternEdge(key="node-to-end", source="node", target="end"),),
+        ),
     )
 
 
@@ -116,6 +145,32 @@ def test_linear_workflow_selects_live() -> None:
     substrate = SimpleNamespace(stasis_store=InMemoryStasisStore())
     phy = _phylactery_for(_run(), workflow, substrate)  # type: ignore[arg-type]
     assert isinstance(phy, LiveStasisPhylactery)
+
+
+def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
+    manifest = PatternManifest(
+        key="duplicate",
+        revision="1",
+        checkpoint_schema="test-v1",
+        nodes=(
+            PatternNode(key="start", label="Start", kind="step", implementation=_PlainNode),
+            PatternNode(key="second-a", label="Second A", kind="step", implementation=_SecondPlainNode),
+            PatternNode(key="second-b", label="Second B", kind="step", implementation=_SecondPlainNode),
+        ),
+        edges=(),
+    )
+
+    with pytest.raises(ValueError, match="bind every graph node exactly once"):
+        Workflow(
+            name="duplicate",
+            title="duplicate",
+            description="",
+            trigger=Trigger(hint="", match=lambda _intent: True),
+            graph=Graph(nodes=(_PlainNode, _SecondPlainNode), name="duplicate"),
+            start_node=_PlainNode,
+            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+            manifest=manifest,
+        )
 
 
 @pytest.mark.asyncio
