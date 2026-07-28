@@ -31,7 +31,7 @@ def _make_manager(broker: object, registry: object) -> OrchestratorManager:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 

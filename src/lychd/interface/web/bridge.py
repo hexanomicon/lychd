@@ -20,7 +20,7 @@ from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
-from lychd.domain.cortex.runs import TERMINAL_STATUSES
+from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunRecord, RunStatus
 from lychd.domain.web.contracts import (
     BridgeSnapshot,
     BridgeTurnView,
@@ -29,6 +29,7 @@ from lychd.domain.web.contracts import (
     MessageAccepted,
     MessageIntent,
     RunEventEnvelope,
+    RunProjectionSnapshot,
     SessionCreated,
     SessionInspector,
     SessionSummary,
@@ -83,7 +84,25 @@ async def _terminal_stream(
     projector: EventProjector,
     run_id: str,
     status: str,
+    *,
+    from_seq: int | None,
+    cursor: int,
 ) -> AsyncIterator[ServerSentEventMessage]:
+    if from_seq is not None:
+        reset_event = RunEvent(
+            run_id=run_id,
+            seq=max(cursor, 0),
+            kind=RunEventKind.RESYNC,
+            data="snapshot_required",
+        )
+        envelope = await projector.project(reset_event)
+        yield ServerSentEventMessage(
+            event=envelope.kind,
+            data=envelope.model_dump_json(),
+            id=str(envelope.seq),
+        )
+        return
+
     status_event = RunEvent(run_id=run_id, seq=0, kind=RunEventKind.STATUS, data=status)
     done_event = RunEvent(run_id=run_id, seq=1, kind=RunEventKind.DONE, data=status)
     for event in (status_event, done_event):
@@ -105,13 +124,22 @@ class BridgeController(Controller):
         self,
         bridge_sessions: NamedDependency[SessionStorePort],
         consents: NamedDependency[ConsentLedger],
+        run_bus: NamedDependency[InProcessEventBus],
         projector: NamedDependency[EventProjector],
         state: State,
     ) -> BridgeSnapshot:
         """Return the newest session or an empty reconstructable Bridge."""
         sessions = await bridge_sessions.list_sessions()
         session = sessions[0] if sessions else None
-        return await self._snapshot(sessions, session, consents, projector, state)
+        return await self._snapshot(
+            sessions,
+            session,
+            bridge_sessions,
+            consents,
+            run_bus,
+            projector,
+            state,
+        )
 
     @get(
         "/sessions/{session_id:str}",
@@ -124,6 +152,7 @@ class BridgeController(Controller):
         session_id: FromPath[str],
         bridge_sessions: NamedDependency[SessionStorePort],
         consents: NamedDependency[ConsentLedger],
+        run_bus: NamedDependency[InProcessEventBus],
         projector: NamedDependency[EventProjector],
         state: State,
     ) -> BridgeSnapshot:
@@ -134,7 +163,9 @@ class BridgeController(Controller):
         return await self._snapshot(
             await bridge_sessions.list_sessions(),
             session,
+            bridge_sessions,
             consents,
+            run_bus,
             projector,
             state,
         )
@@ -191,6 +222,65 @@ class BridgeController(Controller):
         return MessageAccepted(run_id=handle.run_id, turn=_turn_view(turn))
 
     @get(
+        "/runs/{run_id:str}",
+        name="bridge:run-snapshot",
+        operation_id="getBridgeRunSnapshot",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def run_snapshot(
+        self,
+        run_id: FromPath[str],
+        bridge_sessions: NamedDependency[SessionStorePort],
+        run_bus: NamedDependency[InProcessEventBus],
+        projector: NamedDependency[EventProjector],
+        state: State,
+    ) -> RunProjectionSnapshot:
+        """Return one replaceable run projection at an exact stream cursor."""
+        run = await state.services.ledger.get(run_id)
+        if run is None:
+            raise NotFoundException(detail="Unknown run.")
+
+        return await self._run_projection(
+            run,
+            bridge_sessions,
+            run_bus,
+            projector,
+            state,
+        )
+
+    async def _run_projection(
+        self,
+        run: RunRecord,
+        bridge_sessions: SessionStorePort,
+        run_bus: InProcessEventBus,
+        projector: EventProjector,
+        state: State,
+    ) -> RunProjectionSnapshot:
+        live = run_bus.snapshot(run.run_id)
+        if live is not None:
+            fragments = [(await projector.project(fragment)).payload for fragment in live.fragments]
+            return RunProjectionSnapshot(
+                session_id=run.session_id,
+                run_id=run.run_id,
+                cursor=live.cursor,
+                content=live.content,
+                status=live.status,
+                fragments=fragments,
+                terminal=live.terminal,
+            )
+
+        turn = await bridge_sessions.settled_turn_for_run(run.run_id)
+        return RunProjectionSnapshot(
+            session_id=run.session_id,
+            run_id=run.run_id,
+            cursor=(await state.services.ledger.next_seq(run.run_id)) - 1,
+            content=turn.content if turn is not None else "",
+            status=run.status.value,
+            fragments=[],
+            terminal=run.status in TERMINAL_STATUSES,
+        )
+
+    @get(
         "/runs/{run_id:str}/events",
         name="bridge:events",
         operation_id="streamBridgeRunEvents",
@@ -218,7 +308,15 @@ class BridgeController(Controller):
         if run is None:
             raise NotFoundException(detail="Unknown run.")
         if run.status in TERMINAL_STATUSES:
-            return ServerSentEvent(_terminal_stream(projector, run_id, run.status.value))
+            return ServerSentEvent(
+                _terminal_stream(
+                    projector,
+                    run_id,
+                    run.status.value,
+                    from_seq=from_seq,
+                    cursor=(await state.services.ledger.next_seq(run_id)) - 1,
+                ),
+            )
 
         async def stream() -> AsyncIterator[ServerSentEventMessage]:
             source = run_bus.subscribe(run_id, from_seq=from_seq)
@@ -313,16 +411,58 @@ class BridgeController(Controller):
         self,
         sessions: list[SessionRecord],
         session: SessionRecord | None,
+        bridge_sessions: SessionStorePort,
         consents: ConsentLedger,
+        run_bus: InProcessEventBus,
         projector: EventProjector,
         state: State,
     ) -> BridgeSnapshot:
         return BridgeSnapshot(
             sessions=[_session_summary(item) for item in sessions],
             session=_session_view(session) if session is not None else None,
+            active_runs=await self._active_run_projections(
+                session,
+                bridge_sessions,
+                run_bus,
+                projector,
+                state,
+            ),
             pending_consents=await self._pending_cards(consents, projector, state, session),
             pending_count=await consents.pending_count(),
         )
+
+    async def _active_run_projections(
+        self,
+        session: SessionRecord | None,
+        bridge_sessions: SessionStorePort,
+        run_bus: InProcessEventBus,
+        projector: EventProjector,
+        state: State,
+    ) -> list[RunProjectionSnapshot]:
+        """Project the selected session's runs whose event channels live here."""
+        if session is None:
+            return []
+
+        active: dict[str, RunRecord] = {}
+        for status in RunStatus:
+            if status not in TERMINAL_STATUSES:
+                for run in await state.services.ledger.list_by_status(status):
+                    active[run.run_id] = run
+
+        projections: list[RunProjectionSnapshot] = []
+        for run in sorted(active.values(), key=lambda item: item.created_at):
+            if run.session_id != session.id or run_bus.snapshot(run.run_id) is None:
+                continue
+            projections.append(
+                await self._run_projection(
+                    run,
+                    bridge_sessions,
+                    run_bus,
+                    projector,
+                    state,
+                ),
+            )
+        return projections
 
     async def _pending_cards(
         self,

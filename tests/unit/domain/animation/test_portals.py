@@ -71,7 +71,11 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
             "models": [
                 {
                     "id": "gpt-5.2",
-                    "capabilities": {"supports_tools": True, "modalities_in": ["text", "image"]},
+                    "capabilities": {
+                        "supports_tools": True,
+                        "supports_streaming": False,
+                        "modalities_in": ["text", "image"],
+                    },
                     "generation": {"max_tokens": 4096},
                 }
             ],
@@ -86,6 +90,7 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
     assert spec.family == CapabilityFamily.CHAT
     assert spec.is_dynamic is False
     assert spec.supports_tools is True
+    assert spec.supports_streaming is False
     assert "image" in spec.modalities_in
     assert spec.generation_profile.max_tokens == 4096
     assert spec.generation_profile.temperature == 0.5

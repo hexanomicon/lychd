@@ -15,6 +15,12 @@ from lychd.system.atomic_retirement import (
     is_retirement_quarantine_name,
 )
 from lychd.system.btrfs_identity import BTRFS_SUBVOLUME_BOUNDARY_INODES
+from lychd.system.descriptor_settlement import (
+    DescriptorSet,
+    FailureLedger,
+    SettlementOutcome,
+    find_settlement_outcome,
+)
 from lychd.system.interruptions import find_terminal_interruption
 from lychd.system.protected_retirement import (
     ProtectedRetirementEntry,
@@ -36,6 +42,113 @@ _DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | 
 _PATH_FLAGS = getattr(os, "O_PATH", 0) | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
 
 _mount_id_for_fd = mount_id_for_fd
+
+
+class ManagedTreeSettlementError(LifecycleError):
+    """Recursive retirement settled with explicit descriptor-close evidence."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failures: tuple[BaseException, ...],
+        outcome: str,
+        verified: bool,
+    ) -> None:
+        """Retain every peer failure and the verified local retirement outcome."""
+        super().__init__(message)
+        self.failures = failures
+        self.outcome = outcome
+        self.outcome_verified = verified
+
+
+def _tree_failure_ledger() -> FailureLedger:
+    """Bind generic descriptor settlement to recursive-retirement evidence."""
+    return FailureLedger(
+        error_factory=ManagedTreeSettlementError,
+        subject="Managed tree settlement",
+    )
+
+
+def _scoped_tree_outcome(
+    settlement: SettlementOutcome | None,
+    *,
+    phase: str,
+) -> tuple[str, bool]:
+    """Translate a nested proof without claiming that its parent also retired."""
+    if settlement is None:
+        return "recovery", False
+    if phase == "retirement":
+        return settlement.name, settlement.verified
+    if phase == "contents":
+        return "partial", settlement.verified
+    return ("unchanged", True) if settlement.verified else ("recovery", False)
+
+
+def _settle_tree_descriptors(
+    descriptors: DescriptorSet,
+    *,
+    primary: BaseException | None,
+    outcome: str,
+    verified: bool,
+    display_path: Path,
+    activity: str,
+) -> None:
+    """Settle every descriptor without overstating an indeterminate outcome."""
+    close_failures = descriptors.settle()
+    cleanup = _tree_failure_ledger()
+    if primary is not None:
+        if verified:
+            if isinstance(primary, ManagedTreeSettlementError) and (
+                primary.outcome != outcome or primary.outcome_verified != verified
+            ):
+                if not close_failures and find_terminal_interruption(primary) is None:
+                    primary.outcome = outcome
+                    primary.outcome_verified = verified
+                    raise primary
+                cleanup.record(primary)
+                cleanup.record_all(close_failures)
+                cleanup.raise_if_any(
+                    message=(
+                        f"{activity.capitalize()} retained the verified {outcome} outcome for {display_path}: {primary}"
+                    ),
+                    outcome=outcome,
+                    terminal_note=(
+                        f"LychD del retained the verified {outcome} outcome for "
+                        f"{display_path} after settling {activity}."
+                    ),
+                    verified=True,
+                )
+            cleanup.record_all(close_failures)
+            cleanup.raise_primary_after_verified_settlement(
+                primary,
+                outcome=outcome,
+                terminal_note=(
+                    f"LychD del retained the verified {outcome} outcome for {display_path} after settling {activity}."
+                ),
+            )
+        if isinstance(primary, ManagedTreeSettlementError) and not close_failures:
+            raise primary
+        if close_failures or find_terminal_interruption(primary) is not None:
+            cleanup.record(primary)
+            cleanup.record_all(close_failures)
+            cleanup.raise_if_any(
+                message=(f"{activity.capitalize()} retained recovery evidence for {display_path}."),
+                outcome="recovery",
+                terminal_note="",
+                verified=False,
+            )
+        raise primary
+    cleanup.record_all(close_failures)
+    cleanup.raise_if_any(
+        message=f"Could not cleanly release {activity} for {display_path}.",
+        outcome=outcome,
+        terminal_note=(
+            f"LychD del verified the {outcome} outcome for {display_path} "
+            f"before preserving this descriptor interruption."
+        ),
+        verified=verified,
+    )
 
 
 def _same_identity(expected: os.stat_result, observed: os.stat_result) -> bool:
@@ -77,6 +190,40 @@ def _validated_final_names(
     return tuple(names)
 
 
+def _require_mount_identity(
+    descriptor: int,
+    *,
+    expected_mount_id: int,
+    message: str,
+) -> None:
+    """Reject a descriptor that crossed or became a mount boundary."""
+    if _mount_id_for_fd(descriptor) != expected_mount_id:
+        raise LifecycleError(message)
+
+
+def _attest_open_root_descriptor(
+    descriptor: int,
+    *,
+    before_open: os.stat_result,
+    parent_mount_id: int,
+    expected_identity: DedicatedRootIdentity,
+    root: Path,
+) -> tuple[os.stat_result, int]:
+    """Revalidate an opened dedicated root against both prior attestations."""
+    metadata = os.fstat(descriptor)
+    if not _same_identity(before_open, metadata):
+        msg = f"Dedicated root identity changed before deletion: {root}"
+        raise LifecycleError(msg)
+    if metadata.st_dev != expected_identity.device or metadata.st_ino != expected_identity.inode:
+        msg = f"Dedicated root no longer matches attested identity: {root}"
+        raise LifecycleError(msg)
+    mount_id = _mount_id_for_fd(descriptor)
+    if mount_id != parent_mount_id:
+        msg = f"Dedicated root became a mount boundary before deletion: {root}"
+        raise LifecycleError(msg)
+    return metadata, mount_id
+
+
 def _open_root_descriptor(
     root: Path,
     *,
@@ -98,29 +245,28 @@ def _open_root_descriptor(
         _DIRECTORY_FLAGS,
         dir_fd=parent_descriptor,
     )
+    descriptors = DescriptorSet()
+    descriptors.add(descriptor)
     try:
-        metadata = os.fstat(descriptor)
-    except BaseException:
-        os.close(descriptor)
-        raise
-    if not _same_identity(before_open, metadata):
-        os.close(descriptor)
-        msg = f"Dedicated root identity changed before deletion: {root}"
-        raise LifecycleError(msg)
-    if metadata.st_dev != expected_identity.device or metadata.st_ino != expected_identity.inode:
-        os.close(descriptor)
-        msg = f"Dedicated root no longer matches attested identity: {root}"
-        raise LifecycleError(msg)
-    try:
-        mount_id = _mount_id_for_fd(descriptor)
-    except BaseException:
-        os.close(descriptor)
-        raise
-    if mount_id != parent_mount_id:
-        os.close(descriptor)
-        msg = f"Dedicated root became a mount boundary before deletion: {root}"
-        raise LifecycleError(msg)
-    return descriptor, metadata, mount_id
+        metadata, mount_id = _attest_open_root_descriptor(
+            descriptor,
+            before_open=before_open,
+            parent_mount_id=parent_mount_id,
+            expected_identity=expected_identity,
+            root=root,
+        )
+    except BaseException as exc:
+        failures = descriptors.settle()
+        if not failures:
+            raise
+        cleanup = _tree_failure_ledger()
+        cleanup.record_all(failures)
+        cleanup.raise_primary_after_verified_settlement(
+            exc,
+            outcome="unchanged",
+            terminal_note=(f"LychD del left {root} unchanged after settling its root-attestation descriptor."),
+        )
+    return descriptors.transfer(descriptor), metadata, mount_id
 
 
 @dataclass(frozen=True)
@@ -268,21 +414,21 @@ class ManagedTreeService:
         final_entries: tuple[Path, ...] = (),
     ) -> None:
         """Remove one revalidated root through directory-relative descriptors."""
-        if expected_identity.path != root:
-            msg = f"Attested dedicated-root identity targets a different path: {expected_identity.path}"
-            raise LifecycleError(msg)
-        final_names = _validated_final_names(root, final_entries)
-        inspection = self.inspect(root)
-        if not inspection.removable:
-            msg = f"Refusing to remove unsafe dedicated root {root}: {inspection.detail}"
-            raise LifecycleError(msg)
-        if not inspection.exists:
+        final_names, exists = self._validate_removal_request(
+            root,
+            expected_identity=expected_identity,
+            final_entries=final_entries,
+        )
+        if not exists:
             return
 
-        descriptor = -1
-        parent_descriptor = -1
+        descriptors = DescriptorSet()
+        primary: BaseException | None = None
+        outcome = "unchanged"
+        outcome_verified = True
+        phase = "attestation"
         try:
-            parent_descriptor = os.open(root.parent, _DIRECTORY_FLAGS)
+            parent_descriptor = descriptors.add(os.open(root.parent, _DIRECTORY_FLAGS))
             parent_mount_id = _mount_id_for_fd(parent_descriptor)
             descriptor, metadata, mount_id = _open_root_descriptor(
                 root,
@@ -290,6 +436,10 @@ class ManagedTreeService:
                 parent_mount_id=parent_mount_id,
                 expected_identity=expected_identity,
             )
+            descriptors.add(descriptor)
+            outcome = "recovery"
+            outcome_verified = False
+            phase = "contents"
             self._remove_contents(
                 descriptor,
                 display_path=root,
@@ -297,9 +447,11 @@ class ManagedTreeService:
                 expected_mount_id=mount_id,
                 protected_names=final_names,
             )
-            if _mount_id_for_fd(descriptor) != mount_id:
-                msg = f"Dedicated root mount identity changed before final retirement: {root}"
-                raise LifecycleError(msg)
+            _require_mount_identity(
+                descriptor,
+                expected_mount_id=mount_id,
+                message=f"Dedicated root mount identity changed before final retirement: {root}",
+            )
             if final_names:
                 protected = self._protected_entries(
                     descriptor,
@@ -308,6 +460,7 @@ class ManagedTreeService:
                     expected_mount_id=mount_id,
                     names=final_names,
                 )
+                phase = "retirement"
                 self._protected_retirement.retire(
                     parent_fd=parent_descriptor,
                     directory_fd=descriptor,
@@ -317,22 +470,64 @@ class ManagedTreeService:
                     protected=protected,
                 )
             else:
+                phase = "retirement"
                 self._retirement.retire_directory(
                     parent_fd=parent_descriptor,
                     leaf=root.name,
                     expected=RetirementIdentity.from_stat(metadata),
                     display_path=root,
                 )
+            outcome = "retired"
+            outcome_verified = True
         except AtomicRetirementError as exc:
-            self._raise_retirement_error(exc)
+            settlement = find_settlement_outcome(exc)
+            outcome, outcome_verified = _scoped_tree_outcome(
+                settlement,
+                phase=phase,
+            )
+            try:
+                self._raise_retirement_error(exc)
+            except BaseException as surfaced:  # noqa: BLE001 - descriptors remain peers
+                primary = surfaced
         except OSError as exc:
             msg = f"Could not remove dedicated root safely: {root}: {exc}"
-            raise LifecycleError(msg) from exc
-        finally:
-            if descriptor >= 0:
-                os.close(descriptor)
-            if parent_descriptor >= 0:
-                os.close(parent_descriptor)
+            primary = LifecycleError(msg)
+            primary.__cause__ = exc
+        except BaseException as exc:  # noqa: BLE001 - settle descriptors before surfacing
+            primary = exc
+            settlement = find_settlement_outcome(exc)
+            if settlement is not None:
+                outcome, outcome_verified = _scoped_tree_outcome(
+                    settlement,
+                    phase=phase,
+                )
+
+        _settle_tree_descriptors(
+            descriptors,
+            primary=primary,
+            outcome=outcome,
+            verified=outcome_verified,
+            display_path=root,
+            activity="every recursive-retirement descriptor",
+        )
+
+    def _validate_removal_request(
+        self,
+        root: Path,
+        *,
+        expected_identity: DedicatedRootIdentity,
+        final_entries: tuple[Path, ...],
+    ) -> tuple[tuple[str, ...], bool]:
+        """Validate the public request before acquiring recursive authority."""
+        if expected_identity.path != root:
+            msg = f"Attested dedicated-root identity targets a different path: {expected_identity.path}"
+            raise LifecycleError(msg)
+        final_names = _validated_final_names(root, final_entries)
+        inspection = self.inspect(root)
+        if not inspection.removable:
+            msg = f"Refusing to remove unsafe dedicated root {root}: {inspection.detail}"
+            raise LifecycleError(msg)
+        return final_names, inspection.exists
 
     def _unsafe_root(self, root: Path) -> str | None:
         if root not in self._allowed_roots:
@@ -388,10 +583,21 @@ class ManagedTreeService:
         recovery = cls._recovery_detail(error)
         suffix = f"; recovery: {recovery}" if recovery is not None else ""
         message = f"Could not retire dedicated tree entry safely: {error}{suffix}"
-        if terminal := find_terminal_interruption(error):
+        terminal = find_terminal_interruption(error)
+        settlement = find_settlement_outcome(error)
+        if settlement is not None:
+            evidence: LifecycleError = ManagedTreeSettlementError(
+                message,
+                failures=(error,),
+                outcome=settlement.name,
+                verified=settlement.verified,
+            )
+        else:
+            evidence = LifecycleError(message)
+        if terminal is not None and settlement is not None and settlement.verified:
             terminal.add_note(message)
-            raise terminal from None
-        raise LifecycleError(message) from error
+            raise terminal from evidence
+        raise evidence from error
 
     def _scan(
         self,
@@ -494,28 +700,24 @@ class ManagedTreeService:
         protected: list[ProtectedRetirementEntry] = []
         for name in names:
             child = display_path / name
-            entry_descriptor = os.open(
-                name,
-                _PATH_FLAGS,
-                dir_fd=descriptor,
-            )
-            try:
-                metadata = os.fstat(entry_descriptor)
-                if (
-                    stat.S_ISDIR(metadata.st_mode)
-                    or metadata.st_dev != expected_device
-                    or _mount_id_for_fd(entry_descriptor) != expected_mount_id
-                ):
-                    msg = f"Protected final entry became unsafe before root retirement: {child}"
-                    raise LifecycleError(msg)
-                current = os.stat(
+            descriptors = DescriptorSet()
+            entry_descriptor = descriptors.add(
+                os.open(
                     name,
+                    _PATH_FLAGS,
                     dir_fd=descriptor,
-                    follow_symlinks=False,
                 )
-                if not _same_identity(metadata, current):
-                    msg = f"Protected final entry changed before root retirement: {child}"
-                    raise LifecycleError(msg)
+            )
+            primary: BaseException | None = None
+            try:
+                metadata = ManagedTreeService._attest_protected_entry(
+                    descriptor,
+                    entry_descriptor=entry_descriptor,
+                    name=name,
+                    child=child,
+                    expected_device=expected_device,
+                    expected_mount_id=expected_mount_id,
+                )
                 protected.append(
                     ProtectedRetirementEntry(
                         leaf=name,
@@ -523,9 +725,47 @@ class ManagedTreeService:
                         expected=RetirementIdentity.from_stat(metadata),
                     )
                 )
-            finally:
-                os.close(entry_descriptor)
+            except BaseException as exc:  # noqa: BLE001 - descriptor close is a peer
+                primary = exc
+            _settle_tree_descriptors(
+                descriptors,
+                primary=primary,
+                outcome="unchanged",
+                verified=True,
+                display_path=child,
+                activity="its protected-entry descriptor",
+            )
         return tuple(protected)
+
+    @staticmethod
+    def _attest_protected_entry(
+        descriptor: int,
+        *,
+        entry_descriptor: int,
+        name: str,
+        child: Path,
+        expected_device: int,
+        expected_mount_id: int,
+    ) -> os.stat_result:
+        """Attest one protected final child through both pinned names."""
+        metadata = os.fstat(entry_descriptor)
+        if stat.S_ISDIR(metadata.st_mode) or metadata.st_dev != expected_device:
+            msg = f"Protected final entry became unsafe before root retirement: {child}"
+            raise LifecycleError(msg)
+        _require_mount_identity(
+            entry_descriptor,
+            expected_mount_id=expected_mount_id,
+            message=f"Protected final entry became unsafe before root retirement: {child}",
+        )
+        current = os.stat(
+            name,
+            dir_fd=descriptor,
+            follow_symlinks=False,
+        )
+        if not _same_identity(metadata, current):
+            msg = f"Protected final entry changed before root retirement: {child}"
+            raise LifecycleError(msg)
+        return metadata
 
     def _remove_directory(
         self,
@@ -544,36 +784,86 @@ class ManagedTreeService:
         if metadata.st_dev != expected_device:
             msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
             raise LifecycleError(msg)
-        child_descriptor = os.open(
-            name,
-            _DIRECTORY_FLAGS,
-            dir_fd=descriptor,
+        descriptors = DescriptorSet()
+        child_descriptor = descriptors.add(
+            os.open(
+                name,
+                _DIRECTORY_FLAGS,
+                dir_fd=descriptor,
+            )
         )
+        primary: BaseException | None = None
+        outcome = "unchanged"
+        outcome_verified = True
+        phase = "attestation"
         try:
-            child_metadata = os.fstat(child_descriptor)
-            if not _same_identity(metadata, child_metadata) or child_metadata.st_dev != expected_device:
-                msg = f"Filesystem identity changed during deletion: {child}"
-                raise LifecycleError(msg)
-            if _mount_id_for_fd(child_descriptor) != expected_mount_id:
-                msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
-                raise LifecycleError(msg)
+            child_metadata = self._attest_child_directory(
+                metadata,
+                child_descriptor=child_descriptor,
+                child=child,
+                expected_device=expected_device,
+                expected_mount_id=expected_mount_id,
+            )
+            outcome = "recovery"
+            outcome_verified = False
+            phase = "contents"
             self._remove_contents(
                 child_descriptor,
                 display_path=child,
                 expected_device=expected_device,
                 expected_mount_id=expected_mount_id,
             )
-            if _mount_id_for_fd(child_descriptor) != expected_mount_id:
-                msg = f"Mount boundary appeared before directory retirement: {child}"
-                raise LifecycleError(msg)
+            _require_mount_identity(
+                child_descriptor,
+                expected_mount_id=expected_mount_id,
+                message=f"Mount boundary appeared before directory retirement: {child}",
+            )
+            phase = "retirement"
             self._retirement.retire_directory(
                 parent_fd=descriptor,
                 leaf=name,
                 expected=RetirementIdentity.from_stat(child_metadata),
                 display_path=child,
             )
-        finally:
-            os.close(child_descriptor)
+            outcome = "retired"
+            outcome_verified = True
+        except BaseException as exc:  # noqa: BLE001 - descriptor close is a peer
+            primary = exc
+            settlement = find_settlement_outcome(exc)
+            if settlement is not None:
+                outcome, outcome_verified = _scoped_tree_outcome(
+                    settlement,
+                    phase=phase,
+                )
+        _settle_tree_descriptors(
+            descriptors,
+            primary=primary,
+            outcome=outcome,
+            verified=outcome_verified,
+            display_path=child,
+            activity="its recursive directory descriptor",
+        )
+
+    @staticmethod
+    def _attest_child_directory(
+        expected: os.stat_result,
+        *,
+        child_descriptor: int,
+        child: Path,
+        expected_device: int,
+        expected_mount_id: int,
+    ) -> os.stat_result:
+        """Revalidate one opened child directory before recursive mutation."""
+        observed = os.fstat(child_descriptor)
+        if not _same_identity(expected, observed) or observed.st_dev != expected_device:
+            msg = f"Filesystem identity changed during deletion: {child}"
+            raise LifecycleError(msg)
+        _require_mount_identity(
+            child_descriptor,
+            expected_mount_id=expected_mount_id,
+            message=f"Mount boundary appeared during dedicated-root deletion: {child}",
+        )
+        return observed
 
     def _remove_file(
         self,
@@ -586,27 +876,70 @@ class ManagedTreeService:
         expected_mount_id: int,
     ) -> None:
         """Revalidate and unlink one non-directory entry without following it."""
-        entry_descriptor = os.open(
-            name,
-            _PATH_FLAGS,
-            dir_fd=descriptor,
+        descriptors = DescriptorSet()
+        entry_descriptor = descriptors.add(
+            os.open(
+                name,
+                _PATH_FLAGS,
+                dir_fd=descriptor,
+            )
         )
+        primary: BaseException | None = None
+        outcome = "unchanged"
+        outcome_verified = True
         try:
-            opened = os.fstat(entry_descriptor)
-            if not _same_identity(metadata, opened) or opened.st_dev != expected_device:
-                msg = f"Entry identity changed during deletion: {child}"
-                raise LifecycleError(msg)
-            if _mount_id_for_fd(entry_descriptor) != expected_mount_id:
-                msg = f"Mount boundary appeared during dedicated-root deletion: {child}"
-                raise LifecycleError(msg)
+            opened = self._attest_file_entry(
+                metadata,
+                entry_descriptor=entry_descriptor,
+                child=child,
+                expected_device=expected_device,
+                expected_mount_id=expected_mount_id,
+            )
+            outcome = "recovery"
+            outcome_verified = False
             self._retirement.retire_file(
                 parent_fd=descriptor,
                 leaf=name,
                 expected=RetirementIdentity.from_stat(opened),
                 display_path=child,
             )
-        finally:
-            os.close(entry_descriptor)
+            outcome = "retired"
+            outcome_verified = True
+        except BaseException as exc:  # noqa: BLE001 - descriptor close is a peer
+            primary = exc
+            settlement = find_settlement_outcome(exc)
+            if settlement is not None:
+                outcome = settlement.name
+                outcome_verified = settlement.verified
+        _settle_tree_descriptors(
+            descriptors,
+            primary=primary,
+            outcome=outcome,
+            verified=outcome_verified,
+            display_path=child,
+            activity="its entry-attestation descriptor",
+        )
+
+    @staticmethod
+    def _attest_file_entry(
+        expected: os.stat_result,
+        *,
+        entry_descriptor: int,
+        child: Path,
+        expected_device: int,
+        expected_mount_id: int,
+    ) -> os.stat_result:
+        """Revalidate one opened non-directory entry before retirement."""
+        observed = os.fstat(entry_descriptor)
+        if not _same_identity(expected, observed) or observed.st_dev != expected_device:
+            msg = f"Entry identity changed during deletion: {child}"
+            raise LifecycleError(msg)
+        _require_mount_identity(
+            entry_descriptor,
+            expected_mount_id=expected_mount_id,
+            message=f"Mount boundary appeared during dedicated-root deletion: {child}",
+        )
+        return observed
 
     @staticmethod
     def _is_possible_subvolume_boundary(metadata: os.stat_result) -> bool:

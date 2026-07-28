@@ -32,6 +32,18 @@ def test_root_redirects_to_bridge(altar_client: TestClient[Litestar]) -> None:
     assert response.headers["location"] == "/bridge"
 
 
+def test_altar_status_publishes_the_vessel_csrf_names(
+    altar_client: TestClient[Litestar],
+) -> None:
+    response = altar_client.get("/api/v1/altar/status")
+
+    assert response.status_code == 200
+    assert response.json()["csrf"] == {
+        "cookie_name": "csrftoken",
+        "header_name": "x-csrftoken",
+    }
+
+
 @pytest.mark.parametrize("path", ["/bridge/session-x", "/loom/workflow-x"])
 def test_deep_links_return_same_static_shell(
     altar_client: TestClient[Litestar],

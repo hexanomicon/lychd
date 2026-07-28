@@ -9,6 +9,7 @@ export type LoomView = components["schemas"]["LoomView"];
 export type NexusCovenRow = components["schemas"]["NexusCovenRow"];
 export type NexusSnapshot = components["schemas"]["NexusSnapshot"];
 export type RunEventEnvelope = components["schemas"]["RunEventEnvelope"];
+export type RunProjectionSnapshot = components["schemas"]["RunProjectionSnapshot"];
 export type SessionCreated = components["schemas"]["SessionCreated"];
 export type SwapAccepted = components["schemas"]["SwapAccepted"];
 export type SwapTicket = components["schemas"]["SwapTicket"];

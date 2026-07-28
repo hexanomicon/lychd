@@ -20,6 +20,7 @@ from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan
+from lychd.domain.web.contracts import CsrfClientContract
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
@@ -238,7 +239,15 @@ def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
         route_handlers=[AltarController, BridgeController, NexusController, LoomController],
         dependencies=web_dependencies,
         middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
-        state=State({"services": fake_services}),
+        state=State(
+            {
+                "services": fake_services,
+                "csrf_contract": CsrfClientContract(
+                    cookie_name="csrftoken",
+                    header_name="x-csrftoken",
+                ),
+            },
+        ),
     )
     return AsgiClient(app)
 

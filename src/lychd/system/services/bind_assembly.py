@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from lychd.system.services.bind import BindUseCase
-from lychd.system.services.bind_compilation import (
-    uncaged_control_plane_secret_names,
-)
 
 if TYPE_CHECKING:
-    from lychd.config.settings.root import Settings
-    from lychd.domain.animation.schemas import SoulstoneConfig
+    from collections.abc import Sequence
+
+    from lychd.config.settings import SettingsSnapshot
     from lychd.system.readiness import BindingFoundation
     from lychd.system.services.binding_preflight import BindingPreflightService
 
@@ -21,8 +18,8 @@ def assemble_bind_use_case(
     *,
     foundation: BindingFoundation,
     preflight_service: BindingPreflightService,
-    settings: Settings,
-    soulstones: Sequence[SoulstoneConfig],
+    settings_snapshot: SettingsSnapshot,
+    uncaged_control_plane_secrets: Sequence[str],
     uncaged: bool,
 ) -> BindUseCase:
     """Wire concrete host adapters behind the reusable bind use case."""
@@ -37,10 +34,11 @@ def assemble_bind_use_case(
     )
 
     def revalidate_foundation() -> BindingFoundation:
+        settings = settings_snapshot.materialize()
         current = preflight_service.inspect(
             settings,
             uncaged=uncaged,
-            uncaged_control_plane_secrets=(uncaged_control_plane_secret_names(soulstones) if uncaged else ()),
+            uncaged_control_plane_secrets=(tuple(uncaged_control_plane_secrets) if uncaged else ()),
         )
         return current.require_ready()
 

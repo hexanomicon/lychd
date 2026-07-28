@@ -6,7 +6,6 @@ import fcntl
 import hashlib
 import os
 import stat
-import tempfile
 from contextlib import AbstractContextManager
 from pathlib import Path
 from types import TracebackType
@@ -16,6 +15,7 @@ from lychd.system.services.lifecycle._authority import current_authority
 from lychd.system.services.lifecycle.models import LifecycleError
 
 _LOCK_MODE = 0o600
+_LOCK_ROOT = Path("/tmp")  # noqa: S108 - fixed host namespace; file creation is no-follow and attested
 
 
 class LifecycleLock(AbstractContextManager["LifecycleLock"]):
@@ -27,10 +27,15 @@ class LifecycleLock(AbstractContextManager["LifecycleLock"]):
     """
 
     def __init__(self, path: Path | None = None) -> None:
-        """Select a stable per-user, per-Codex lock outside managed host roots."""
+        """Select a stable per-user, per-Codex lock outside managed host roots.
+
+        The fixed Linux lock root is deliberate: ``TMPDIR`` is process-local
+        input and the generated Host Reactor must contend with an operator CLI
+        even when their environments differ.
+        """
         if path is None:
             identity = hashlib.sha256(os.fsencode(current_authority().codex_root)).hexdigest()[:16]
-            path = Path(tempfile.gettempdir()) / f"lychd-lifecycle-{os.getuid()}-{identity}.lock"
+            path = _LOCK_ROOT / f"lychd-lifecycle-{os.getuid()}-{identity}.lock"
         self.path = path
         self._descriptor = -1
 
@@ -47,7 +52,7 @@ class LifecycleLock(AbstractContextManager["LifecycleLock"]):
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
-                msg = "Another LychD init, bind, start, stop, or del operation is already in progress."
+                msg = "Another LychD lifecycle or Host Reactor operation is already in progress."
                 raise LifecycleError(msg) from exc
         except BaseException:
             os.close(descriptor)

@@ -50,11 +50,17 @@ class ProtectedRootRetirementError(AtomicRetirementError):
         *,
         root_recovery: ProtectedRootRecovery | None = None,
         failures: tuple[BaseException, ...] = (),
+        outcome: str | None = None,
+        verified: bool | None = None,
     ) -> None:
         """Retain recovery locations and every failure settled across peers."""
-        super().__init__(message)
+        super().__init__(
+            message,
+            failures=failures,
+            outcome=outcome,
+            verified=verified,
+        )
         self.root_recovery = root_recovery
-        self.failures = failures
 
 
 @dataclass(frozen=True, slots=True)

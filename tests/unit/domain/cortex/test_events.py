@@ -46,24 +46,54 @@ async def test_channel_from_seq_replays_only_after_cursor() -> None:
 
 
 @pytest.mark.asyncio
-async def test_channel_gap_ruling_emits_resync_status() -> None:
-    """An evicted from_seq yields a fresh STATUS resync, then continues — never errors."""
+async def test_channel_gap_ruling_emits_explicit_resync() -> None:
+    """An evicted cursor yields one marker; the snapshot replaces retained history."""
     channel = RunChannel(run_id="r")
-    channel.emit(RunEventKind.STATUS, "running")  # seq 0 — becomes the resync source
+    channel.emit(RunEventKind.STATUS, "running")
     for i in range(400):  # overflow the 256 replay buffer; seq 0 is evicted
         channel.emit(RunEventKind.TOKEN, f"t{i}")
     channel.emit(RunEventKind.DONE, "done")
 
     seen = [event async for event in channel.subscribe(from_seq=0)]
-    assert seen[0].kind is RunEventKind.STATUS  # synthetic resync first
-    assert seen[0].data == "running"
-    assert seen[-1].kind is RunEventKind.DONE  # stream still completes
+    assert [event.kind for event in seen] == [RunEventKind.RESYNC]
+    assert seen[0].data == "snapshot_required"
+    assert seen[0].seq == channel.snapshot().cursor
+
+
+@pytest.mark.asyncio
+async def test_late_first_subscriber_resyncs_when_initial_prefix_was_evicted() -> None:
+    channel = RunChannel(run_id="r")
+    for i in range(400):
+        channel.emit(RunEventKind.TOKEN, f"old-{i}")
+    channel.emit(RunEventKind.DONE, "done")
+
+    seen = [event async for event in channel.subscribe()]
+
+    assert [event.kind for event in seen] == [RunEventKind.RESYNC]
+    assert seen[0].seq == channel.snapshot().cursor
+
+
+@pytest.mark.asyncio
+async def test_channel_resync_live_tails_only_events_after_snapshot_boundary() -> None:
+    channel = RunChannel(run_id="r")
+    for i in range(400):
+        channel.emit(RunEventKind.TOKEN, f"old-{i}")
+    source = channel.subscribe(from_seq=0)
+
+    reset = await anext(source)
+    current = channel.emit(RunEventKind.TOKEN, "current")
+    done = channel.emit(RunEventKind.DONE, "done")
+    tail = [event async for event in source]
+
+    assert reset.kind is RunEventKind.RESYNC
+    assert reset.seq == 399
+    assert tail == [current, done]
 
 
 @pytest.mark.asyncio
 async def test_reconnect_onto_fresh_channel_resyncs_never_hangs() -> None:
     """The infinite-silent-hang regression (F5/H4): a reconnect cursor onto a fresh/empty
-    channel ALWAYS fires the resync STATUS first, then live-tails to the terminal.
+    channel ALWAYS fires an explicit RESYNC first, then live-tails to the terminal.
 
     Before the fix, a `Last-Event-ID` onto a channel with an empty replay buffer (post
     restart / post close) yielded no resync, no error, and no DONE — a silent hang.
@@ -81,7 +111,7 @@ async def test_reconnect_onto_fresh_channel_resyncs_never_hangs() -> None:
     seen = [event async for event in channel.subscribe(from_seq=5)]  # cursor set, buffer empty
     await task
 
-    assert seen[0].kind is RunEventKind.STATUS  # resync fired first — never silence
+    assert seen[0].kind is RunEventKind.RESYNC  # resync fired first — never silence
     assert seen[-1].kind is RunEventKind.DONE  # stream still completes
 
 
@@ -93,7 +123,22 @@ async def test_cursor_above_head_resyncs_then_completes() -> None:
     channel.emit(RunEventKind.DONE, "done")  # seq 1, closed
 
     seen = [event async for event in channel.subscribe(from_seq=99)]
-    assert seen[0].kind is RunEventKind.STATUS  # synthetic resync, not silence
+    assert seen[0].kind is RunEventKind.RESYNC  # explicit resync, not silence
+
+
+def test_channel_snapshot_carries_projection_and_exact_cursor() -> None:
+    channel = RunChannel(run_id="r")
+    channel.emit(RunEventKind.STATUS, "thinking")
+    channel.emit(RunEventKind.TOKEN, "ashes")
+    fragment = channel.emit(RunEventKind.FRAGMENT, '{"fragment":"known","params":{}}')
+
+    snapshot = channel.snapshot()
+
+    assert snapshot.cursor == 2
+    assert snapshot.content == "ashes"
+    assert snapshot.status == "thinking"
+    assert snapshot.fragments == (fragment,)
+    assert snapshot.terminal is False
 
 
 @pytest.mark.asyncio

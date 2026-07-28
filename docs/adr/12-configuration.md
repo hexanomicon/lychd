@@ -80,7 +80,7 @@ It contains two distinct domains:
 Contains **global configuration only**.
 
 Python consumers enter through `lychd.config.settings`. It exports `Settings`,
-`get_settings`, and every named configuration section type (for example,
+`SettingsSnapshot`, `get_settings`, and every named configuration section type (for example,
 `ServerSettings` and `SwitchingSettings`). The section model modules are an
 internal file layout; callers do not import from them. A loaded root is still
 navigated as `settings.server`, `settings.orchestration`, and
@@ -89,7 +89,7 @@ navigated as `settings.server`, `settings.orchestration`, and
 Its only top-level sections are:
 
 - `[server]`: the one LychD process and services it operates — HTTP, database,
-  Vite, logging, and in-process queue workers.
+  logging, and in-process queue workers. Vite remains frontend-only development/build tooling.
 - `[orchestration]`: semantic run routing and runtime-switching policy.
 - `[extensions]`: explicitly selected optional extensions.
 
@@ -180,6 +180,9 @@ Constructing `Settings` is a read-only parse and validation operation. It never 
 Codex and never invents missing secrets. Explicit secret properties resolve from a named
 environment value or a mounted file only when needed and fail closed when neither source is
 present. Secret creation belongs to an explicit operator/bind ritual, not configuration loading.
+When a command spans preview and apply phases, it retains this validated tree as an immutable
+serialized generation and materializes a fresh validated copy for each phase; a mutable nested
+model is never the long-lived generation token.
 
 If `.env` files are enabled:
 
@@ -524,7 +527,8 @@ At runtime, initialization first compiles one deterministic lifecycle plan. Both
 `lychd init --dry-run` and `lychd init` consume that planner: the dry run renders the complete
 classified XDG tree, shared-host checks, plan totals, and blockers, then exits before every LychD
 mutation service. Execution refuses the same lifecycle blockers before entering the inscription
-path. Host capability probes are parallel evidence for the later `bind`; missing Podman,
+path. A real invocation rejects effective UID 0 before Settings load or host inspection, while
+dry-run diagnosis remains read-only and available. Host capability probes are parallel evidence for the later `bind`; missing Podman,
 Quadlet, cgroup v2, or a reachable user manager does not prevent safe layout initialization:
 
 1. `lychd init` calls `CodexService.inscribe()`.
@@ -665,7 +669,10 @@ The current provenance boundary can remove exact bindings and verified dedicated
 reports unreceipted Podman containers, pods, and secrets plus package/source ownership as preserved
 rather than treating conventional names as deletion evidence.
 
-`init`, `bind`, and real `del` share one interprocess lifecycle lock; dry runs remain
+`init`, `bind`, `start`, `stop`, real `del`, and the Host Reactor consumer share one interprocess
+lifecycle lock. Its per-UID/per-Codex identity lives under the fixed host `/tmp` namespace rather
+than process-selected `TMPDIR`, so differently launched operator and generated-service processes
+still contend on one file. Dry runs remain
 lock-file-free and perform no LychD-managed mutation. Bounded readiness and secret-presence probes
 invoke external tools; Podman may maintain its own rootless runtime metadata even for a read
 operation. Before the first bind effect, the locked apply path reruns the

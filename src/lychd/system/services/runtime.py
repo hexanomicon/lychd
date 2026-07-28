@@ -6,13 +6,16 @@ import asyncio
 import json
 import os
 import stat
+from contextlib import contextmanager
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from lychd.domain.orchestration.actuator import RuntimePreconditionError, TransitionIntent
+from lychd.system.services.lifecycle.models import LifecycleError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
-    from pathlib import Path
+    from collections.abc import Callable, Coroutine, Iterator
+    from contextlib import AbstractContextManager
     from typing import Any
 
     from lychd.config.settings.orchestration import SwitchingSettings
@@ -58,18 +61,35 @@ def _validate_reactor_boundaries(intents_dir: Path, journal_dir: Path) -> None:
 class SystemdRuntimeActuator:
     """Translate animator identities to allowlisted registry-owned systemd units."""
 
-    def __init__(self, registry: CapabilityRegistry, *, observe_systemd: bool = False) -> None:
-        """Initialize against registry truth and an optional host-state observer.
+    def __init__(
+        self,
+        registry: CapabilityRegistry,
+        *,
+        systemctl_bin: str,
+        observe_systemd: bool = False,
+        lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
+    ) -> None:
+        """Initialize against registry truth and an injected attested executable.
 
         The in-process orchestrator normally compares against probed capability
         state.  The host Reactor cannot reach pod-internal model endpoints, so it
         must compare the intent's expected world against systemd's unit state.
         """
+        if not Path(systemctl_bin).is_absolute():
+            msg = "Systemd runtime actuation requires an absolute attested systemctl path."
+            raise ValueError(msg)
         self._registry = registry
+        self._systemctl = systemctl_bin
         self._observe_systemd = observe_systemd
+        self._lock_factory = lock_factory
 
     async def apply(self, intent: TransitionIntent) -> None:
         """Apply the complete set, rejecting stale worlds and rolling back failures."""
+        with self._effect_authority(intent, operation="transition"):
+            await self._apply_locked(intent)
+
+    async def _apply_locked(self, intent: TransitionIntent) -> None:
+        """Observe and mutate only after the configured lifecycle authority is held."""
         observed = await self._active_animators()
         expected = tuple(sorted(intent.expected_active_animators))
         if observed != expected:
@@ -79,6 +99,33 @@ class SystemdRuntimeActuator:
 
     async def recover(self, intent: TransitionIntent) -> None:
         """Resume a crashed transition only from an exact physical action prefix."""
+        with self._effect_authority(intent, operation="recovery"):
+            await self._recover_locked(intent)
+
+    @contextmanager
+    def _effect_authority(
+        self,
+        intent: TransitionIntent,
+        *,
+        operation: str,
+    ) -> Iterator[None]:
+        """Map only pre-entry lock refusal to verified no-effect rejection."""
+        if self._lock_factory is None:
+            yield
+            return
+        entered = False
+        try:
+            with self._lock_factory():
+                entered = True
+                yield
+        except LifecycleError as exc:
+            if entered:
+                raise
+            message = f"Direct systemd {operation} '{intent.transition_id}' could not acquire lifecycle authority."
+            raise RuntimePreconditionError(message) from exc
+
+    async def _recover_locked(self, intent: TransitionIntent) -> None:
+        """Recover one transition while its effect authority remains exclusive."""
         if not self._observe_systemd:
             msg = "Host transition recovery requires direct systemd state observation."
             raise RuntimeError(msg)
@@ -185,7 +232,12 @@ class SystemdRuntimeActuator:
         return unit_name
 
     async def _run_systemctl(self, action: str, unit_name: str, *, failure_prefix: str) -> None:
-        process = await asyncio.create_subprocess_exec("systemctl", "--user", action, unit_name)
+        process = await asyncio.create_subprocess_exec(
+            self._systemctl,
+            "--user",
+            action,
+            unit_name,
+        )
         await process.wait()
         if process.returncode != 0:
             msg = f"{failure_prefix}: systemctl returned {process.returncode} for {unit_name}"
@@ -220,7 +272,7 @@ class SystemdRuntimeActuator:
 
     async def _unit_is_active(self, unit_name: str) -> bool:
         process = await asyncio.create_subprocess_exec(
-            "systemctl",
+            self._systemctl,
             "--user",
             "is-active",
             "--quiet",
@@ -404,10 +456,25 @@ async def wait_for_host_reactor_idle(settings: SwitchingSettings) -> None:
 def build_runtime_actuator(
     settings: SwitchingSettings,
     registry: CapabilityRegistry,
+    *,
+    systemctl_bin: str | None = None,
+    lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
 ) -> SystemdRuntimeActuator | HostReactorRuntimeActuator:
     """Select the configured trusted effect owner at the composition boundary."""
     if settings.actuator == "systemd":
-        return SystemdRuntimeActuator(registry, observe_systemd=True)
+        if systemctl_bin is None:
+            message = "Direct systemd actuation requires an injected attested systemctl executable."
+            raise RuntimeError(message)
+        if lock_factory is None:
+            from lychd.system.services.lifecycle.lock import LifecycleLock
+
+            lock_factory = LifecycleLock
+        return SystemdRuntimeActuator(
+            registry,
+            systemctl_bin=systemctl_bin,
+            observe_systemd=True,
+            lock_factory=lock_factory,
+        )
     if settings.actuator == "host-reactor":
         return HostReactorRuntimeActuator(
             settings.host_reactor_dir,

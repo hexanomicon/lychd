@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import asdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from litestar import Controller, get, post
+from litestar import Controller, Request, get, post
 from litestar.di import NamedDependency
-from litestar.exceptions import NotFoundException
+from litestar.exceptions import NotFoundException, ServiceUnavailableException
 from litestar.openapi.datastructures import ResponseSpec
 from litestar.params import FromPath, FromQuery
 from litestar.response import ServerSentEvent, ServerSentEventMessage
@@ -23,10 +23,19 @@ from lychd.domain.orchestration.schema import TransitionPlan
 from lychd.domain.web.contracts import NexusSnapshot, SwapAccepted, SwapIntent, TransitionEventEnvelope
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import SwapTicket, build_nexus_board
-from lychd.domain.web.tickets import TicketRecord, TicketStore
+from lychd.domain.web.tickets import TicketCapacityError, TicketRecord, TicketStore
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+
+def _parse_last_event_id(raw: str | None) -> int | None:
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
 
 
 class NexusController(Controller):
@@ -74,16 +83,23 @@ class NexusController(Controller):
             plan = await orchestrator.calculate_transition_plan(data.target)
         except ValueError as exc:
             raise NotFoundException(detail=f"Unknown capability target: {data.target}") from exc
+        try:
+            tickets.ensure_capacity()
+        except TicketCapacityError as exc:
+            raise ServiceUnavailableException(detail=str(exc)) from exc
         task = asyncio.create_task(
             orchestrator.request_transition(data.target, priority=PRIORITY_MAX),
             name=f"swap:{data.target}",
         )
-        record = tickets.open(
-            target=data.target,
-            action_type=plan.action_type,
-            total_metabolic_cost=plan.total_metabolic_cost,
-            task=task,
-        )
+        try:
+            record = tickets.open(
+                target=data.target,
+                action_type=plan.action_type,
+                total_metabolic_cost=plan.total_metabolic_cost,
+                task=task,
+            )
+        except TicketCapacityError as exc:  # defensive if the store implementation changes
+            raise ServiceUnavailableException(detail=str(exc)) from exc
         return SwapAccepted(ticket=projector.ticket_view(record))
 
     @get(
@@ -120,20 +136,30 @@ class NexusController(Controller):
     )
     async def swap_events(
         self,
+        request: Request[Any, Any, Any],
         ticket_id: FromPath[str],
         tickets: NamedDependency[TicketStore],
         projector: NamedDependency[EventProjector],
     ) -> ServerSentEvent:
         """Stream warming and terminal ticket state without HTML polling."""
+        from_seq = _parse_last_event_id(request.headers.get("Last-Event-ID"))
         record = tickets.get(ticket_id)
         if record is None:
             raise NotFoundException(detail="Unknown ticket.")
 
         async def stream() -> AsyncIterator[ServerSentEventMessage]:
-            warming = projector.ticket_view(record)
-            yield self._ticket_event(warming, seq=0)
-            if not record.task.done():
-                await asyncio.wait({record.task})
+            if record.task.done():
+                # A finite process-local stream must always restate its terminal
+                # truth. Returning an empty 200 makes EventSource reconnect
+                # forever when the browser is already at—or above—our head.
+                yield self._ticket_event(self._ticket(record, projector), seq=1)
+                return
+            if from_seq != 0:
+                # Only cursor 0 can continue an active ticket. A future, stale,
+                # or malformed numeric cursor resets to the current warming view.
+                warming = projector.ticket_view(record)
+                yield self._ticket_event(warming, seq=0)
+            await asyncio.wait({record.task})
             yield self._ticket_event(self._ticket(record, projector), seq=1)
 
         return ServerSentEvent(stream())

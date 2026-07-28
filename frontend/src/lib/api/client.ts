@@ -7,13 +7,17 @@ import type {
   LoomSummary,
   LoomView,
   NexusSnapshot,
+  RunProjectionSnapshot,
   SessionCreated,
   SwapAccepted,
   TransitionPlan
 } from "./models";
+import { csrfHeadersFromCookie, type CsrfContract } from "./csrf";
 import { runEventEnvelopeSchema, transitionEventSchema } from "./runtime";
+import { initialRunEventCursor, reduceRunEventCursor } from "./run-stream";
 
 const client = createClient<paths>();
+let csrfContract: CsrfContract | null = null;
 
 export class ApiError extends Error {
   constructor(
@@ -24,14 +28,9 @@ export class ApiError extends Error {
   }
 }
 
-function csrfHeaders(): Record<string, string> {
-  const token = document.cookie
-    .split("; ")
-    .find((part) => part.startsWith("csrftoken="))
-    ?.split("=")
-    .slice(1)
-    .join("=");
-  return token ? { "x-csrftoken": decodeURIComponent(token) } : {};
+async function csrfHeaders(): Promise<Record<string, string>> {
+  const contract = csrfContract ?? (await getAltarStatus()).csrf;
+  return csrfHeadersFromCookie(contract, document.cookie);
 }
 
 function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
@@ -46,7 +45,9 @@ function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T
 }
 
 export async function getAltarStatus(): Promise<AltarStatus> {
-  return unwrap(await client.GET("/api/v1/altar/status")) as AltarStatus;
+  const status = unwrap(await client.GET("/api/v1/altar/status")) as AltarStatus;
+  csrfContract = status.csrf;
+  return status;
 }
 
 export async function getBridgeSnapshot(sessionId?: string): Promise<BridgeSnapshot> {
@@ -60,10 +61,18 @@ export async function getBridgeSnapshot(sessionId?: string): Promise<BridgeSnaps
   return unwrap(await client.GET("/api/v1/bridge")) as BridgeSnapshot;
 }
 
+export async function getRunSnapshot(runId: string): Promise<RunProjectionSnapshot> {
+  return unwrap(
+    await client.GET("/api/v1/bridge/runs/{run_id}", {
+      params: { path: { run_id: runId } }
+    })
+  ) as RunProjectionSnapshot;
+}
+
 export async function createBridgeSession(): Promise<SessionCreated> {
   return unwrap(
     await client.POST("/api/v1/bridge/sessions", {
-      headers: csrfHeaders()
+      headers: await csrfHeaders()
     })
   );
 }
@@ -73,7 +82,7 @@ export async function sendBridgeMessage(sessionId: string, prompt: string) {
     await client.POST("/api/v1/bridge/sessions/{session_id}/messages", {
       params: { path: { session_id: sessionId } },
       body: { prompt },
-      headers: csrfHeaders()
+      headers: await csrfHeaders()
     })
   );
 }
@@ -83,7 +92,7 @@ export async function decideConsent(consentId: string, verdict: "approve" | "den
     await client.POST("/api/v1/bridge/consents/{consent_id}/decision", {
       params: { path: { consent_id: consentId } },
       body: { verdict },
-      headers: csrfHeaders()
+      headers: await csrfHeaders()
     })
   );
 }
@@ -104,7 +113,7 @@ export async function createNexusSwap(target: string): Promise<SwapAccepted> {
   return unwrap(
     await client.POST("/api/v1/nexus/swaps", {
       body: { target },
-      headers: csrfHeaders()
+      headers: await csrfHeaders()
     })
   ) as SwapAccepted;
 }
@@ -121,27 +130,78 @@ export async function getLoomWorkflow(workflow: string): Promise<LoomView> {
   ) as LoomView;
 }
 
+export type RunStreamOptions = {
+  initialCursor?: number;
+  onHardClose?: () => void;
+};
+
 export function listenToRun(
   runId: string,
   onEvent: (event: ReturnType<typeof runEventEnvelopeSchema.parse>) => void,
-  onFault: (message: string) => void
+  onFault: (message: string) => void,
+  onRefetch: () => Promise<{ cursor: number; terminal: boolean }>,
+  options: RunStreamOptions = {}
 ): () => void {
   const source = new EventSource(`/api/v1/bridge/runs/${encodeURIComponent(runId)}/events`);
   const kinds = ["token", "status", "node", "fragment", "consent", "log", "done", "resync"] as const;
+  let cursor = initialRunEventCursor(options.initialCursor);
+  let serial = Promise.resolve();
+  let refetching = false;
+  let stopped = false;
+
+  function fault(message: string) {
+    if (stopped) return;
+    stopped = true;
+    source.close();
+    try {
+      options.onHardClose?.();
+    } finally {
+      onFault(message);
+    }
+  }
+
   for (const kind of kinds) {
     source.addEventListener(kind, (raw) => {
+      let event: ReturnType<typeof runEventEnvelopeSchema.parse>;
       try {
-        const event = runEventEnvelopeSchema.parse(JSON.parse((raw as MessageEvent<string>).data));
-        onEvent(event);
-        if (event.kind === "done") source.close();
+        event = runEventEnvelopeSchema.parse(JSON.parse((raw as MessageEvent<string>).data));
       } catch {
-        source.close();
-        onFault("The Vessel emitted an invalid run event.");
+        fault("The Vessel emitted an invalid run event.");
+        return;
       }
+
+      serial = serial
+        .then(async () => {
+          if (stopped) return;
+          const disposition = reduceRunEventCursor(cursor, event);
+          cursor = disposition.cursor;
+          if (disposition.refetch) {
+            refetching = true;
+            const snapshot = await onRefetch();
+            cursor = initialRunEventCursor(snapshot.cursor);
+            refetching = false;
+            if (snapshot.terminal) {
+              stopped = true;
+              source.close();
+            }
+          } else if (disposition.deliver) {
+            onEvent(event);
+          }
+          if (event.kind === "done") {
+            stopped = true;
+            source.close();
+          }
+        })
+        .catch(() => fault("The authoritative run snapshot could not be refreshed."));
     });
   }
-  source.onerror = () => onFault("The run stream went quiet; reconnecting.");
-  return () => source.close();
+  source.onerror = () => {
+    if (!refetching && !stopped) onFault("The run stream went quiet; reconnecting.");
+  };
+  return () => {
+    stopped = true;
+    source.close();
+  };
 }
 
 export function listenToSwap(

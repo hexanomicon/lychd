@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import cast
 
 _LINKED_ERROR_ATTRIBUTES = (
@@ -16,10 +16,8 @@ _LINKED_ERROR_COLLECTIONS = (
 )
 
 
-def find_terminal_interruption(
-    error: BaseException,
-) -> BaseException | None:
-    """Find a wrapped ``KeyboardInterrupt`` or ``SystemExit`` without cycles."""
+def iter_exception_graph(error: BaseException) -> Iterator[BaseException]:
+    """Yield linked transaction failures once, including explicit peer ledgers."""
     pending = [error]
     seen: set[int] = set()
     while pending:
@@ -27,23 +25,39 @@ def find_terminal_interruption(
         if id(candidate) in seen:
             continue
         seen.add(id(candidate))
-        if not isinstance(candidate, Exception):
-            return candidate
-        linked_errors = (
-            candidate.__cause__,
-            candidate.__context__,
-            *(getattr(candidate, attribute, None) for attribute in _LINKED_ERROR_ATTRIBUTES),
-        )
-        pending.extend(linked for linked in linked_errors if isinstance(linked, BaseException))
-        for attribute in _LINKED_ERROR_COLLECTIONS:
-            linked_collection: object = getattr(candidate, attribute, ())
-            if isinstance(linked_collection, (tuple, list)):
-                pending.extend(
+        yield candidate
+        linked_errors = [
+            linked for linked in (candidate.__cause__, candidate.__context__) if isinstance(linked, BaseException)
+        ]
+        if isinstance(candidate, Exception):
+            linked_errors.extend(
+                linked
+                for attribute in _LINKED_ERROR_ATTRIBUTES
+                if isinstance(
+                    linked := getattr(candidate, attribute, None),
+                    BaseException,
+                )
+            )
+            for attribute in _LINKED_ERROR_COLLECTIONS:
+                linked_collection: object = getattr(candidate, attribute, ())
+                if not isinstance(linked_collection, (tuple, list)):
+                    continue
+                linked_errors.extend(
                     linked
                     for linked in cast("Iterable[object]", linked_collection)
                     if isinstance(linked, BaseException)
                 )
+        pending.extend(reversed(linked_errors))
+
+
+def find_terminal_interruption(
+    error: BaseException,
+) -> BaseException | None:
+    """Find a wrapped ``KeyboardInterrupt`` or ``SystemExit`` without cycles."""
+    for candidate in iter_exception_graph(error):
+        if not isinstance(candidate, Exception):
+            return candidate
     return None
 
 
-__all__ = ("find_terminal_interruption",)
+__all__ = ("find_terminal_interruption", "iter_exception_graph")

@@ -14,11 +14,13 @@ class DirectoryRollbackError(RuntimeError):
         *,
         failures: tuple[BaseException, ...] = (),
         outcome: str | None = None,
+        verified: bool | None = None,
     ) -> None:
         """Retain every peer failure and the last verified namespace outcome."""
         super().__init__(message)
         self.failures = failures
         self.outcome = outcome
+        self.outcome_verified = outcome is not None and outcome != "recovery" if verified is None else verified
 
 
 def directory_failure_ledger() -> FailureLedger:

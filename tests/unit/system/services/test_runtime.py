@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import stat
+from collections.abc import Iterator
+from contextlib import contextmanager
 from threading import Event
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
@@ -15,6 +17,8 @@ from pydantic import ValidationError
 
 from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.domain.orchestration.actuator import RuntimePreconditionError, TransitionIntent
+from lychd.system.services.lifecycle.lock import LifecycleLock
+from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.runtime import (
     HostReactorRuntimeActuator,
     SystemdRuntimeActuator,
@@ -75,6 +79,14 @@ def _secure_reactor_dirs(tmp_path: Path) -> tuple[Path, Path]:
     inbox.chmod(0o700)
     journal.chmod(0o700)
     return inbox, journal
+
+
+@contextmanager
+def _exit_failure_lock() -> Iterator[None]:
+    """Acquire successfully, then fail while relinquishing effect authority."""
+    yield
+    message = "synthetic post-effect lifecycle release failure"
+    raise LifecycleError(message)
 
 
 async def _wait_until_exists(path: Path) -> None:
@@ -375,7 +387,11 @@ def test_transition_intent_rejects_ambiguous_transition_sets(
 def test_runtime_actuator_factory_is_configuration_owned(tmp_path: Path) -> None:
     registry = SimpleNamespace()
 
-    direct = build_runtime_actuator(SwitchingSettings(actuator="systemd"), registry)  # type: ignore[arg-type]
+    direct = build_runtime_actuator(
+        SwitchingSettings(actuator="systemd"),
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+    )
     reactor = build_runtime_actuator(
         SwitchingSettings(actuator="host-reactor", host_reactor_dir=tmp_path / "inbox"),
         registry,  # type: ignore[arg-type]
@@ -383,6 +399,64 @@ def test_runtime_actuator_factory_is_configuration_owned(tmp_path: Path) -> None
 
     assert isinstance(direct, SystemdRuntimeActuator)
     assert isinstance(reactor, HostReactorRuntimeActuator)
+
+
+def test_direct_systemd_actuation_requires_an_absolute_attested_executable() -> None:
+    registry = SimpleNamespace()
+
+    with pytest.raises(ValueError, match="absolute attested systemctl"):
+        SystemdRuntimeActuator(registry, systemctl_bin="systemctl")  # type: ignore[arg-type]
+    with pytest.raises(RuntimeError, match="injected attested systemctl"):
+        build_runtime_actuator(
+            SwitchingSettings(actuator="systemd"),
+            registry,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.asyncio
+async def test_direct_systemd_factory_refuses_effect_without_lifecycle_authority(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    lock_path = tmp_path / "lifecycle.lock"
+    registry = SimpleNamespace()
+    subprocess = mocker.patch(
+        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
+    )
+    actuator = build_runtime_actuator(
+        SwitchingSettings(actuator="systemd"),
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        lock_factory=lambda: LifecycleLock(lock_path),
+    )
+
+    with (
+        LifecycleLock(lock_path),
+        pytest.raises(RuntimePreconditionError, match="could not acquire lifecycle authority"),
+    ):
+        await actuator.apply(_intent())
+
+    subprocess.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_direct_systemd_does_not_misclassify_post_entry_lock_failure() -> None:
+    actuator = SystemdRuntimeActuator(
+        SimpleNamespace(),  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+        lock_factory=_exit_failure_lock,
+    )
+    actuator._apply_locked = AsyncMock()
+    actuator._recover_locked = AsyncMock()
+
+    with pytest.raises(LifecycleError, match="post-effect"):
+        await actuator.apply(_intent())
+    with pytest.raises(LifecycleError, match="post-effect"):
+        await actuator.recover(_intent())
+
+    actuator._apply_locked.assert_awaited_once_with(_intent())
+    actuator._recover_locked.assert_awaited_once_with(_intent())
 
 
 @pytest.mark.asyncio
@@ -412,7 +486,7 @@ async def test_systemd_actuator_rolls_back_eviction_when_launch_fails(mocker: Mo
         "lychd.system.services.runtime.asyncio.create_subprocess_exec",
         side_effect=[successful_stop, failed_launch, successful_rollback],
     )
-    actuator = SystemdRuntimeActuator(registry)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
     intent = TransitionIntent(
         transition_id="c" * 32,
         config_generation="sha256:" + "d" * 64,
@@ -426,9 +500,9 @@ async def test_systemd_actuator_rolls_back_eviction_when_launch_fails(mocker: Mo
         await actuator.apply(intent)
 
     assert subprocess.call_args_list == [
-        call("systemctl", "--user", "stop", "lychd-old.service"),
-        call("systemctl", "--user", "start", "lychd-new.service"),
-        call("systemctl", "--user", "start", "lychd-old.service"),
+        call("/usr/bin/systemctl", "--user", "stop", "lychd-old.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-old.service"),
     ]
 
 
@@ -448,7 +522,7 @@ async def test_systemd_actuator_rolls_back_before_propagating_cancellation() -> 
         get_soulstone_rune=soulstone,
         refresh_capability_states_for_animator=AsyncMock(),
     )
-    actuator = SystemdRuntimeActuator(registry)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
     actuator._stop = AsyncMock()
     actuator._start = AsyncMock(side_effect=[asyncio.CancelledError(), None])
     intent = TransitionIntent(
@@ -497,7 +571,7 @@ async def test_systemd_wait_cancellation_records_completed_effect_before_rollbac
         "lychd.system.services.runtime.asyncio.create_subprocess_exec",
         side_effect=[stopped, restarted],
     )
-    actuator = SystemdRuntimeActuator(registry)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
 
     apply_task = asyncio.create_task(actuator.apply(_intent()))
     await wait_started.wait()
@@ -508,8 +582,8 @@ async def test_systemd_wait_cancellation_records_completed_effect_before_rollbac
         await apply_task
 
     assert subprocess.call_args_list == [
-        call("systemctl", "--user", "stop", "lychd-chat.service"),
-        call("systemctl", "--user", "start", "lychd-chat.service"),
+        call("/usr/bin/systemctl", "--user", "stop", "lychd-chat.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-chat.service"),
     ]
 
 
@@ -542,15 +616,19 @@ async def test_host_systemd_actuator_observes_units_not_unreachable_model_probes
         "lychd.system.services.runtime.asyncio.create_subprocess_exec",
         side_effect=[active, inactive, stopped, started],
     )
-    actuator = SystemdRuntimeActuator(registry, observe_systemd=True)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+    )
 
     await actuator.apply(_intent())
 
     assert subprocess.call_args_list == [
-        call("systemctl", "--user", "is-active", "--quiet", "lychd-chat.service"),
-        call("systemctl", "--user", "is-active", "--quiet", "lychd-vision.service"),
-        call("systemctl", "--user", "stop", "lychd-chat.service"),
-        call("systemctl", "--user", "start", "lychd-vision.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-chat.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-vision.service"),
+        call("/usr/bin/systemctl", "--user", "stop", "lychd-chat.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-vision.service"),
     ]
     registry.refresh_capability_states_for_animator.assert_not_awaited()
 
@@ -570,16 +648,20 @@ async def test_systemd_recovery_resumes_only_unfinished_legal_prefix(
             _systemctl_result(0),  # start new
         ],
     )
-    actuator = SystemdRuntimeActuator(registry, observe_systemd=True)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+    )
 
     await actuator.recover(_recovery_intent())
 
     assert subprocess.call_args_list == [
-        call("systemctl", "--user", "is-active", "--quiet", "lychd-new.service"),
-        call("systemctl", "--user", "is-active", "--quiet", "lychd-old-a.service"),
-        call("systemctl", "--user", "is-active", "--quiet", "lychd-old-b.service"),
-        call("systemctl", "--user", "stop", "lychd-old-b.service"),
-        call("systemctl", "--user", "start", "lychd-new.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-new.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-old-a.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-old-b.service"),
+        call("/usr/bin/systemctl", "--user", "stop", "lychd-old-b.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
     ]
 
 
@@ -596,7 +678,11 @@ async def test_systemd_recovery_accepts_already_completed_prefix(
             _systemctl_result(3),
         ],
     )
-    actuator = SystemdRuntimeActuator(registry, observe_systemd=True)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+    )
 
     await actuator.recover(_recovery_intent())
 
@@ -616,7 +702,11 @@ async def test_systemd_recovery_rejects_non_prefix_without_mutation(
             _systemctl_result(0),  # old-b still active: not a legal prefix
         ],
     )
-    actuator = SystemdRuntimeActuator(registry, observe_systemd=True)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+    )
 
     with pytest.raises(RuntimeError, match="not a legal action prefix"):
         await actuator.recover(_recovery_intent())
@@ -641,14 +731,18 @@ async def test_systemd_recovery_failure_compensates_the_entire_crash_prefix(
             _systemctl_result(0),  # restore the pre-crash old-a eviction too
         ],
     )
-    actuator = SystemdRuntimeActuator(registry, observe_systemd=True)  # type: ignore[arg-type]
+    actuator = SystemdRuntimeActuator(
+        registry,  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        observe_systemd=True,
+    )
 
     with pytest.raises(RuntimeError, match="was rolled back"):
         await actuator.recover(_recovery_intent())
 
     assert subprocess.call_args_list[-4:] == [
-        call("systemctl", "--user", "stop", "lychd-old-b.service"),
-        call("systemctl", "--user", "start", "lychd-new.service"),
-        call("systemctl", "--user", "start", "lychd-old-b.service"),
-        call("systemctl", "--user", "start", "lychd-old-a.service"),
+        call("/usr/bin/systemctl", "--user", "stop", "lychd-old-b.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-old-b.service"),
+        call("/usr/bin/systemctl", "--user", "start", "lychd-old-a.service"),
     ]

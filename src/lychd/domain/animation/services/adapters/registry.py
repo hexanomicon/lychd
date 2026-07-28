@@ -253,7 +253,9 @@ class RuntimeAdapterRegistry:
             modalities_in=list((hints.modalities_in if hints is not None else None) or ["text"]),
             modalities_out=list((hints.modalities_out if hints is not None else None) or ["text"]),
             supports_tools=hints.supports_tools if hints is not None else None,
-            supports_streaming=(hints.supports_streaming if hints is not None else None) or True,
+            supports_streaming=(
+                True if hints is None or hints.supports_streaming is None else hints.supports_streaming
+            ),
         )
 
     async def _probe_portal_capability_states(

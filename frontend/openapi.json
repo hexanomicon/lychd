@@ -3,11 +3,15 @@
     "schemas": {
       "AltarStatus": {
         "properties": {
+          "csrf": {
+            "$ref": "#/components/schemas/CsrfClientContract"
+          },
           "pending_consents": {
             "type": "integer"
           }
         },
         "required": [
+          "csrf",
           "pending_consents"
         ],
         "title": "AltarStatus",
@@ -15,6 +19,12 @@
       },
       "BridgeSnapshot": {
         "properties": {
+          "active_runs": {
+            "items": {
+              "$ref": "#/components/schemas/RunProjectionSnapshot"
+            },
+            "type": "array"
+          },
           "pending_consents": {
             "items": {
               "$ref": "#/components/schemas/ConsentCard"
@@ -42,6 +52,7 @@
           }
         },
         "required": [
+          "active_runs",
           "pending_consents",
           "pending_count",
           "session",
@@ -167,6 +178,22 @@
           "pending_count"
         ],
         "title": "ConsentDecisionResult",
+        "type": "object"
+      },
+      "CsrfClientContract": {
+        "properties": {
+          "cookie_name": {
+            "type": "string"
+          },
+          "header_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cookie_name",
+          "header_name"
+        ],
+        "title": "CsrfClientContract",
         "type": "object"
       },
       "LoomSummary": {
@@ -417,6 +444,51 @@
           "seq"
         ],
         "title": "RunEventEnvelope",
+        "type": "object"
+      },
+      "RunProjectionSnapshot": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "cursor": {
+            "type": "integer"
+          },
+          "fragments": {
+            "items": {
+              "additionalProperties": {},
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "run_id": {
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "terminal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "cursor",
+          "fragments",
+          "run_id",
+          "session_id",
+          "status",
+          "terminal"
+        ],
+        "title": "RunProjectionSnapshot",
         "type": "object"
       },
       "SessionCreated": {
@@ -769,6 +841,75 @@
           }
         },
         "summary": "Consent"
+      }
+    },
+    "/api/v1/bridge/runs/{run_id}": {
+      "get": {
+        "deprecated": false,
+        "operationId": "getBridgeRunSnapshot",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunProjectionSnapshot"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "RunSnapshot"
       }
     },
     "/api/v1/bridge/runs/{run_id}/events": {

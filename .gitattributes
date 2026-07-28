@@ -1,0 +1,2 @@
+# SvelteKit build artifacts preserve upstream template whitespace; never rewrite hashed output.
+src/lychd/public/_app/** -whitespace

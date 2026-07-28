@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import TYPE_CHECKING, Any
+
+from lychd.agents.router import Intent
+from lychd.domain.cortex.events import RunEventKind
+from lychd.domain.cortex.runs import RunStatus
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -33,6 +38,71 @@ def test_snapshot_lists_created_session(altar_client: TestClient[Litestar]) -> N
     assert snapshot.status_code == 200
     assert snapshot.json()["session"]["id"] == created["id"]
     assert snapshot.json()["sessions"][0]["id"] == created["id"]
+
+
+def test_snapshot_reconstructs_selected_process_local_active_runs(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    selected = _session(fake_services)
+    other = _session(fake_services)
+
+    async def _seed() -> None:
+        for session_id, run_id in (
+            (selected.id, "run_selected"),
+            (selected.id, "run_without_process_channel"),
+            (other.id, "run_other"),
+        ):
+            await fake_services.ledger.create(
+                Intent(
+                    session_id=session_id,
+                    run_id=run_id,
+                    prompt="raise the dead",
+                    source="bridge",
+                ),
+                workflow_name="bridge_chat",
+                queue_name="runs",
+                priority=70,
+            )
+            await fake_services.ledger.set_status(run_id, RunStatus.RUNNING)
+
+    asyncio.run(_seed())
+    selected_emitter = fake_services.bus.emitter("run_selected")
+    selected_emitter.emit(RunEventKind.STATUS, "weaving")
+    selected_emitter.emit(RunEventKind.TOKEN, "still speaking")
+    selected_emitter.emit(
+        RunEventKind.FRAGMENT,
+        json.dumps(
+            {
+                "fragment": "genui.plan_checklist",
+                "params": {"title": "Rite", "steps": ["listen"]},
+            },
+        ),
+    )
+    fake_services.bus.emitter("run_other").emit(RunEventKind.TOKEN, "not selected")
+
+    response = altar_client.get(f"/api/v1/bridge/sessions/{selected.id}")
+
+    assert response.status_code == 200
+    assert response.json()["active_runs"] == [
+        {
+            "schema_version": 1,
+            "session_id": selected.id,
+            "run_id": "run_selected",
+            "cursor": 2,
+            "content": "still speaking",
+            "status": "weaving",
+            "fragments": [
+                {
+                    "kind": "genui.plan_checklist",
+                    "schema_version": 1,
+                    "props": {"title": "Rite", "steps": ["listen"]},
+                    "actions": [],
+                },
+            ],
+            "terminal": False,
+        },
+    ]
 
 
 def test_send_unknown_session_404(altar_client: TestClient[Litestar]) -> None:

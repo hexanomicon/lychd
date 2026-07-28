@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import os
 import stat
 from contextlib import nullcontext
@@ -24,6 +25,8 @@ from lychd.system.atomic_retirement import (
     RetirementIdentity,
     is_retirement_quarantine_name,
 )
+from lychd.system.descriptor_settlement import find_settlement_outcome
+from lychd.system.interruptions import iter_exception_graph
 from lychd.system.operator.retirement import UnitRetirementPlan
 from lychd.system.operator.storage import MountObservation, MountTreeObservation
 from lychd.system.protected_retirement import ProtectedRootRetirementService
@@ -63,6 +66,7 @@ from lychd.system.services.lifecycle.deletion import (
     StorageInventoryPort,
     UnitRetirementPort,
 )
+from lychd.system.services.lifecycle.trees import ManagedTreeSettlementError
 from lychd.system.services.scribe import (
     OwnedBindings,
     ScribeTransactionError,
@@ -89,6 +93,25 @@ def _root_identity(root: Path) -> DedicatedRootIdentity:
 
 def _retirement_identity(path: Path) -> RetirementIdentity:
     return RetirementIdentity.from_stat(path.lstat())
+
+
+class _ProtectedDetachProbe(ProtectedRootRetirementService):
+    """Expose only root detachment for focused state-machine tests."""
+
+    def detach(
+        self,
+        *,
+        parent_fd: int,
+        leaf: str,
+        expected: RetirementIdentity,
+        display_path: Path,
+    ) -> str:
+        return self._detach_root(
+            parent_fd=parent_fd,
+            leaf=leaf,
+            expected=expected,
+            display_path=display_path,
+        )
 
 
 def test_protected_authority_producer_matches_recovery_recognizer() -> None:
@@ -1412,6 +1435,107 @@ def test_file_swap_at_retirement_is_restored_without_clobbering(
     assert target.read_text(encoding="utf-8") == "replacement"
 
 
+@pytest.mark.parametrize(
+    "close_failure",
+    [OSError("tree entry close failed"), KeyboardInterrupt(), SystemExit(99)],
+)
+def test_tree_close_failure_preserves_partial_outcome_and_retry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    close_failure: BaseException,
+) -> None:
+    """A retired child and retained root remain explicit after a close failure."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    target = root / "owned.txt"
+    target.write_text("owned", encoding="utf-8")
+    expected_identity = _root_identity(root)
+    service = ManagedTreeService((root,))
+    real_close = os.close
+    real_fstat = os.fstat
+    injected = False
+
+    def close_then_fail(descriptor: int) -> None:
+        nonlocal injected
+        is_regular = stat.S_ISREG(real_fstat(descriptor).st_mode)
+        real_close(descriptor)
+        if is_regular and not injected:
+            injected = True
+            raise close_failure
+
+    monkeypatch.setattr(
+        "lychd.system.descriptor_settlement.os.close",
+        close_then_fail,
+    )
+
+    expected = ManagedTreeSettlementError if isinstance(close_failure, Exception) else type(close_failure)
+    with pytest.raises(expected) as raised:
+        service.remove(root, expected_identity=expected_identity)
+
+    graph = tuple(iter_exception_graph(raised.value))
+    assert close_failure in graph
+    if not isinstance(close_failure, Exception):
+        assert raised.value is close_failure
+    settlement = find_settlement_outcome(raised.value)
+    assert settlement is not None
+    assert settlement.name == "partial"
+    assert settlement.verified
+    assert injected
+    assert root.is_dir()
+    assert not target.exists()
+    assert tuple(root.glob(".lychd-retire-*")) == ()
+
+    service.remove(root, expected_identity=expected_identity)
+    assert not root.exists()
+
+
+@pytest.mark.parametrize(
+    "close_failure",
+    [OSError("root descriptor close failed"), KeyboardInterrupt(), SystemExit(101)],
+)
+def test_retired_tree_settles_remaining_descriptor_after_close_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    close_failure: BaseException,
+) -> None:
+    """A root-descriptor failure cannot skip settlement of its parent peer."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    expected_identity = _root_identity(root)
+    service = ManagedTreeService((root,))
+    real_close = os.close
+    close_calls = 0
+
+    def close_then_fail(descriptor: int) -> None:
+        nonlocal close_calls
+        close_calls += 1
+        real_close(descriptor)
+        if close_calls == 2:
+            raise close_failure
+
+    monkeypatch.setattr(
+        "lychd.system.descriptor_settlement.os.close",
+        close_then_fail,
+    )
+
+    expected = ManagedTreeSettlementError if isinstance(close_failure, Exception) else type(close_failure)
+    with pytest.raises(expected) as raised:
+        service.remove(root, expected_identity=expected_identity)
+
+    assert close_failure in tuple(iter_exception_graph(raised.value))
+    if not isinstance(close_failure, Exception):
+        assert raised.value is close_failure
+    settlement = find_settlement_outcome(raised.value)
+    assert settlement is not None
+    assert settlement.name == "retired"
+    assert settlement.verified
+    assert close_calls == 3
+    assert not root.exists()
+    assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
+
+    service.remove(root, expected_identity=expected_identity)
+
+
 def test_retained_file_quarantine_surfaces_through_lifecycle_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1550,6 +1674,398 @@ def test_late_root_writer_restores_root_and_authorities_for_retry(
     assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
 
 
+@pytest.mark.parametrize("effect", ["before", "after"])
+@pytest.mark.parametrize(
+    "failure_kind",
+    ["generic", "eexist", "enoent", "keyboard", "systemexit"],
+)
+def test_protected_detach_rename_failure_matrix_has_exact_settlement(  # noqa: PLR0915 - explicit fault matrix
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_kind: str,
+    effect: str,
+) -> None:
+    """Every protected-root rename failure proves collision or exact state."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    expected_identity = _retirement_identity(root)
+    failures: dict[str, BaseException] = {
+        "generic": OSError(errno.EIO, "generic detach failure"),
+        "eexist": OSError(errno.EEXIST, "root candidate collision"),
+        "enoent": OSError(errno.ENOENT, "root source absent"),
+        "keyboard": KeyboardInterrupt(),
+        "systemexit": SystemExit(139),
+    }
+    primary = failures[failure_kind]
+    real_rename = rename_noreplace_at
+    injected = False
+    collisions: list[Path] = []
+    detached: Path | None = None
+
+    def fail_detach(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal injected
+        if injected:
+            real_rename(
+                source_name,
+                destination_name,
+                source_dir_fd=source_dir_fd,
+                destination_dir_fd=destination_dir_fd,
+            )
+            return
+        injected = True
+        if failure_kind == "eexist" and effect == "before":
+            collision = tmp_path / destination_name
+            collision.mkdir()
+            collisions.append(collision)
+        elif effect == "after":
+            real_rename(
+                source_name,
+                destination_name,
+                source_dir_fd=source_dir_fd,
+                destination_dir_fd=destination_dir_fd,
+            )
+        raise primary
+
+    monkeypatch.setattr(
+        protected_retirement_module,
+        "rename_noreplace_at",
+        fail_detach,
+    )
+    service = _ProtectedDetachProbe()
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        if failure_kind == "eexist" and effect == "before":
+            detached_name = service.detach(
+                parent_fd=parent_fd,
+                leaf=root.name,
+                expected=expected_identity,
+                display_path=root,
+            )
+            detached = tmp_path / detached_name
+        else:
+            expected_error = ProtectedRootRetirementError if isinstance(primary, Exception) else type(primary)
+            with pytest.raises(expected_error) as raised:
+                service.detach(
+                    parent_fd=parent_fd,
+                    leaf=root.name,
+                    expected=expected_identity,
+                    display_path=root,
+                )
+
+            assert primary in tuple(iter_exception_graph(raised.value))
+            if isinstance(primary, Exception):
+                assert isinstance(raised.value, ProtectedRootRetirementError)
+                assert raised.value.outcome == "restored"
+                assert raised.value.outcome_verified
+                assert raised.value.root_recovery is None
+            else:
+                assert raised.value is primary
+    finally:
+        os.close(parent_fd)
+
+    assert injected
+    if collisions:
+        assert detached is not None
+        assert not root.exists()
+        assert _retirement_identity(detached) == expected_identity
+        assert collisions[0].is_dir()
+        assert tuple(tmp_path.glob(".lychd-retire-*")) == (
+            collisions[0],
+            detached,
+        ) or tuple(tmp_path.glob(".lychd-retire-*")) == (
+            detached,
+            collisions[0],
+        )
+    else:
+        assert root.is_dir()
+        assert _retirement_identity(root) == expected_identity
+        assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
+
+
+def test_protected_enoent_dual_absence_emits_both_exact_root_names(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A vanished protected root is recovery, not idempotent success."""
+    root = tmp_path / "codex"
+    lost = tmp_path / "codex-lost"
+    root.mkdir()
+    expected_identity = _retirement_identity(root)
+    primary = OSError(errno.ENOENT, "protected root disappeared")
+    candidate: Path | None = None
+
+    def displace_root_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal candidate
+        del source_name, source_dir_fd, destination_dir_fd
+        root.rename(lost)
+        candidate = tmp_path / destination_name
+        raise primary
+
+    monkeypatch.setattr(
+        protected_retirement_module,
+        "rename_noreplace_at",
+        displace_root_then_fail,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            _ProtectedDetachProbe().detach(
+                parent_fd=parent_fd,
+                leaf=root.name,
+                expected=expected_identity,
+                display_path=root,
+            )
+    finally:
+        os.close(parent_fd)
+
+    assert candidate is not None
+    recovery = raised.value.root_recovery
+    assert recovery is not None
+    assert recovery.root == root
+    assert recovery.root_quarantine == candidate
+    assert not root.exists()
+    assert not candidate.exists()
+    assert _retirement_identity(lost) == expected_identity
+    assert raised.value.outcome == "recovery"
+    assert raised.value.outcome_verified
+    assert primary in raised.value.failures
+
+
+@pytest.mark.parametrize(
+    "observation_failure",
+    [OSError("detach observation failed"), KeyboardInterrupt(), SystemExit(149)],
+)
+def test_protected_detach_observation_failure_retains_full_root_candidate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    observation_failure: BaseException,
+) -> None:
+    """Unobservable detachment names the root containing every authority."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
+    for authority in authorities:
+        authority.write_text(authority.name, encoding="utf-8")
+    expected_identity = _retirement_identity(root)
+    primary = OSError(errno.EIO, "detach completed without a receipt")
+    candidate_name: str | None = None
+    real_observe = protected_retirement_module.observe_retirement_name
+
+    def detach_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal candidate_name
+        rename_noreplace_at(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        candidate_name = destination_name
+        raise primary
+
+    def fail_candidate_observation(
+        *,
+        parent_fd: int,
+        name: str,
+    ) -> RetirementIdentity | None:
+        if name == candidate_name:
+            raise observation_failure
+        return real_observe(parent_fd=parent_fd, name=name)
+
+    monkeypatch.setattr(
+        protected_retirement_module,
+        "rename_noreplace_at",
+        detach_then_fail,
+    )
+    monkeypatch.setattr(
+        protected_retirement_module,
+        "observe_retirement_name",
+        fail_candidate_observation,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            _ProtectedDetachProbe().detach(
+                parent_fd=parent_fd,
+                leaf=root.name,
+                expected=expected_identity,
+                display_path=root,
+            )
+    finally:
+        os.close(parent_fd)
+
+    assert candidate_name is not None
+    candidate = tmp_path / candidate_name
+    recovery = raised.value.root_recovery
+    assert recovery is not None
+    assert recovery.root == root
+    assert recovery.root_quarantine == candidate
+    assert not root.exists()
+    assert _retirement_identity(candidate) == expected_identity
+    assert all((candidate / authority.name).read_text(encoding="utf-8") == authority.name for authority in authorities)
+    assert primary in raised.value.failures
+    assert observation_failure in raised.value.failures
+    assert raised.value.outcome == "recovery"
+    assert not raised.value.outcome_verified
+
+
+def test_protected_root_rmdir_after_effect_emits_verified_retired_receipt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An ordinary rmdir return failure cannot obscure full-root retirement."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
+    for authority in authorities:
+        authority.write_text(authority.name, encoding="utf-8")
+    entries = tuple(
+        ProtectedRetirementEntry(
+            leaf=authority.name,
+            resource=authority,
+            expected=_retirement_identity(authority),
+        )
+        for authority in authorities
+    )
+    primary = OSError(errno.EIO, "root rmdir lost its receipt")
+    real_rmdir = os.rmdir
+
+    def remove_then_fail(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *,
+        dir_fd: int | None = None,
+    ) -> None:
+        real_rmdir(path, dir_fd=dir_fd)
+        raise primary
+
+    monkeypatch.setattr(
+        protected_retirement_module.os,
+        "rmdir",
+        remove_then_fail,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        with pytest.raises(ProtectedRootRetirementError) as raised:
+            ProtectedRootRetirementService().retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=_retirement_identity(root),
+                display_path=root,
+                protected=entries,
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    assert raised.value.outcome == "retired"
+    assert raised.value.outcome_verified
+    assert primary in tuple(iter_exception_graph(raised.value))
+    assert not root.exists()
+    assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
+
+
+@pytest.mark.parametrize(
+    "transfer_failure",
+    [OSError("authority transfer lost its receipt"), KeyboardInterrupt(), SystemExit(151)],
+)
+def test_authority_transfer_after_effect_settles_every_peer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    transfer_failure: BaseException,
+) -> None:
+    """A first-authority return failure cannot skip a second authority."""
+    root = tmp_path / "codex"
+    root.mkdir()
+    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
+    for authority in authorities:
+        authority.write_text(authority.name, encoding="utf-8")
+    entries = tuple(
+        ProtectedRetirementEntry(
+            leaf=authority.name,
+            resource=authority,
+            expected=_retirement_identity(authority),
+        )
+        for authority in authorities
+    )
+    real_rename = rename_noreplace_at
+    injected = False
+
+    def transfer_then_fail(
+        source_name: str,
+        destination_name: str,
+        *,
+        source_dir_fd: int,
+        destination_dir_fd: int,
+    ) -> None:
+        nonlocal injected
+        real_rename(
+            source_name,
+            destination_name,
+            source_dir_fd=source_dir_fd,
+            destination_dir_fd=destination_dir_fd,
+        )
+        if source_name == authorities[0].name and not injected:
+            injected = True
+            raise transfer_failure
+
+    monkeypatch.setattr(
+        protected_retirement_module,
+        "rename_noreplace_at",
+        transfer_then_fail,
+    )
+    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        expected_error = (
+            ProtectedRootRetirementError if isinstance(transfer_failure, Exception) else type(transfer_failure)
+        )
+        with pytest.raises(expected_error) as raised:
+            ProtectedRootRetirementService().retire(
+                parent_fd=parent_fd,
+                directory_fd=directory_fd,
+                leaf=root.name,
+                expected=_retirement_identity(root),
+                display_path=root,
+                protected=entries,
+            )
+    finally:
+        os.close(directory_fd)
+        os.close(parent_fd)
+
+    assert injected
+    assert transfer_failure in tuple(iter_exception_graph(raised.value))
+    if isinstance(transfer_failure, Exception):
+        assert isinstance(raised.value, ProtectedRootRetirementError)
+    else:
+        assert raised.value is transfer_failure
+    settlement = find_settlement_outcome(raised.value)
+    assert settlement is not None
+    assert settlement.name == "restored"
+    assert settlement.verified
+    assert root.is_dir()
+    assert all(authority.read_text(encoding="utf-8") == authority.name for authority in authorities)
+    assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
+
+
 @pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(43)])
 def test_root_retirement_interruption_before_effect_restores_authorities(
     tmp_path: Path,
@@ -1685,11 +2201,14 @@ def test_post_detach_observation_failure_names_exact_root_candidate(
     assert raised.value.__cause__ is observation_failure
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(67)])
-def test_authority_restore_terminal_settles_all_peers_before_native_signal(
+@pytest.mark.parametrize(
+    "restore_failure",
+    [OSError("authority restore lost its receipt"), KeyboardInterrupt(), SystemExit(67)],
+)
+def test_authority_restore_after_effect_settles_all_peers(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
+    restore_failure: BaseException,
 ) -> None:
     root = tmp_path / "codex"
     root.mkdir()
@@ -1723,7 +2242,7 @@ def test_authority_restore_terminal_settles_all_peers_before_native_signal(
         )
         if source_name.startswith(".lychd-retire-authority-") and not interrupted:
             interrupted = True
-            raise terminal
+            raise restore_failure
 
     def reject_root_removal(
         _path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
@@ -1745,7 +2264,10 @@ def test_authority_restore_terminal_settles_all_peers_before_native_signal(
     parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
     directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
     try:
-        with pytest.raises(type(terminal)) as raised:
+        expected_error = (
+            ProtectedRootRetirementError if isinstance(restore_failure, Exception) else type(restore_failure)
+        )
+        with pytest.raises(expected_error) as raised:
             ProtectedRootRetirementService().retire(
                 parent_fd=parent_fd,
                 directory_fd=directory_fd,
@@ -1758,7 +2280,15 @@ def test_authority_restore_terminal_settles_all_peers_before_native_signal(
         os.close(directory_fd)
         os.close(parent_fd)
 
-    assert raised.value is terminal
+    assert restore_failure in tuple(iter_exception_graph(raised.value))
+    if isinstance(restore_failure, Exception):
+        assert isinstance(raised.value, ProtectedRootRetirementError)
+    else:
+        assert raised.value is restore_failure
+    settlement = find_settlement_outcome(raised.value)
+    assert settlement is not None
+    assert settlement.name == "restored"
+    assert settlement.verified
     assert all(authority.exists() for authority in authorities)
     assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
     assert not tuple(tmp_path.glob(".lychd-retire-*"))

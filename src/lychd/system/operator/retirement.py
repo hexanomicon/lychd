@@ -97,7 +97,10 @@ class OwnedUnitRetirementService:
             raise OperatorError(message)
 
     def _run(self, action: str, units: tuple[str, ...]) -> None:
-        argv = (self._systemctl or "systemctl", "--user", action, *units)
+        if self._systemctl is None:
+            message = "systemctl is unavailable; owned units were not retired."
+            raise OperatorError(message)
+        argv = (self._systemctl, "--user", action, *units)
         try:
             result = self._runner.run(argv, timeout_s=_SYSTEMCTL_TIMEOUT_SECONDS)
         except ProcessInvocationError as exc:

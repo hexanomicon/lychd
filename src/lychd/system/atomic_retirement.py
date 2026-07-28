@@ -8,10 +8,11 @@ import stat
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import NoReturn
+from typing import Literal, NoReturn
 from uuid import uuid4
 
 from lychd.system.atomic_paths import rename_noreplace_at
+from lychd.system.descriptor_settlement import DescriptorSet, FailureLedger
 from lychd.system.interruptions import find_terminal_interruption
 
 _PATH_OPEN_FLAGS = getattr(os, "O_PATH", 0) | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
@@ -68,11 +69,56 @@ class AtomicRetirementError(RuntimeError):
         *,
         recovery: RetainedQuarantine | None = None,
         failures: tuple[BaseException, ...] = (),
+        outcome: str | None = None,
+        verified: bool | None = None,
     ) -> None:
         """Retain recovery evidence and every settled adapter failure."""
         super().__init__(message)
         self.recovery = recovery
         self.failures = failures
+        self.outcome = outcome
+        self.outcome_verified = outcome is not None and outcome != "recovery" if verified is None else verified
+
+
+@dataclass(frozen=True, slots=True)
+class _RetirementAttempt:
+    """One namespace attempt plus complete descriptor-settlement evidence."""
+
+    primary: BaseException | None
+    close_failures: tuple[BaseException, ...]
+
+
+def _retirement_settlement_error(
+    message: str,
+    *,
+    failures: tuple[BaseException, ...],
+    outcome: str,
+    verified: bool,
+) -> BaseException:
+    """Preserve retained-quarantine evidence when settlement adds failures."""
+    recovery = next(
+        (
+            failure.recovery
+            for failure in failures
+            if isinstance(failure, AtomicRetirementError) and failure.recovery is not None
+        ),
+        None,
+    )
+    return AtomicRetirementError(
+        message,
+        recovery=recovery,
+        failures=failures,
+        outcome=outcome,
+        verified=verified,
+    )
+
+
+def _retirement_failure_ledger() -> FailureLedger:
+    """Bind generic peer settlement to atomic-retirement evidence."""
+    return FailureLedger(
+        error_factory=_retirement_settlement_error,
+        subject="Atomic retirement settlement",
+    )
 
 
 class AtomicRetirementService:
@@ -139,29 +185,65 @@ class AtomicRetirementService:
             return
         quarantine_path = display_path.with_name(quarantine_name)
 
-        try:
-            self._retire_quarantined(
-                parent_fd=parent_fd,
-                leaf=leaf,
-                quarantine_name=quarantine_name,
-                display_path=display_path,
-                quarantine_path=quarantine_path,
-                kind=kind,
-                expected=expected,
+        attempt = self._retire_quarantined(
+            parent_fd=parent_fd,
+            leaf=leaf,
+            quarantine_name=quarantine_name,
+            display_path=display_path,
+            quarantine_path=quarantine_path,
+            kind=kind,
+            expected=expected,
+        )
+        if attempt.primary is None:
+            cleanup = _retirement_failure_ledger()
+            cleanup.record_all(attempt.close_failures)
+            cleanup.raise_if_any(
+                message=f"Retired {kind.value} but could not cleanly release its attestation descriptor: {display_path}",
+                outcome="retired",
+                terminal_note=(
+                    f"LychD del verified retirement of {display_path} before preserving this descriptor interruption."
+                ),
+                verified=True,
             )
-        except AtomicRetirementError:
-            raise
-        except BaseException as exc:  # noqa: BLE001 - classify cancellation after namespace mutation
-            self._raise_after_interruption(
-                parent_fd=parent_fd,
-                leaf=leaf,
-                quarantine_name=quarantine_name,
-                display_path=display_path,
-                quarantine_path=quarantine_path,
-                kind=kind,
-                expected=expected,
-                primary=exc,
-            )
+            return
+        if isinstance(attempt.primary, AtomicRetirementError):
+            if not attempt.close_failures:
+                raise attempt.primary
+            outcome = attempt.primary.outcome or "recovery"
+            cleanup = _retirement_failure_ledger()
+            if not attempt.primary.outcome_verified:
+                cleanup.record(attempt.primary)
+                cleanup.record_all(attempt.close_failures)
+                cleanup.raise_if_any(
+                    message=(
+                        f"Atomic retirement retained recovery evidence while "
+                        f"settling its attestation descriptor: {display_path}"
+                    ),
+                    outcome=outcome,
+                    terminal_note="",
+                    verified=False,
+                )
+            else:
+                cleanup.record_all(attempt.close_failures)
+                cleanup.raise_primary_after_verified_settlement(
+                    attempt.primary,
+                    outcome=outcome,
+                    terminal_note=(
+                        f"LychD del retained the verified {outcome} truth for "
+                        f"{display_path} after settling its attestation descriptor."
+                    ),
+                )
+        self._raise_after_interruption(
+            parent_fd=parent_fd,
+            leaf=leaf,
+            quarantine_name=quarantine_name,
+            display_path=display_path,
+            quarantine_path=quarantine_path,
+            kind=kind,
+            expected=expected,
+            primary=attempt.primary,
+            settlement_failures=attempt.close_failures,
+        )
 
     def _retire_quarantined(
         self,
@@ -173,16 +255,19 @@ class AtomicRetirementService:
         quarantine_path: Path,
         kind: RetirementKind,
         expected: RetirementIdentity,
-    ) -> None:
+    ) -> _RetirementAttempt:
         """Re-attest and remove one already detached public entry."""
-        descriptor = -1
+        descriptors = DescriptorSet()
         observed: RetirementIdentity | None = None
+        primary: BaseException | None = None
         try:
             try:
-                descriptor = os.open(
-                    quarantine_name,
-                    _PATH_OPEN_FLAGS,
-                    dir_fd=parent_fd,
+                descriptor = descriptors.add(
+                    os.open(
+                        quarantine_name,
+                        _PATH_OPEN_FLAGS,
+                        dir_fd=parent_fd,
+                    )
                 )
                 observed = RetirementIdentity.from_stat(os.fstat(descriptor))
             except OSError as exc:
@@ -194,7 +279,6 @@ class AtomicRetirementService:
                     quarantine_path=quarantine_path,
                     kind=kind,
                     expected=expected,
-                    observed=None,
                     reason=f"Could not attest quarantined {kind.value} {display_path}",
                     primary=exc,
                 )
@@ -208,7 +292,6 @@ class AtomicRetirementService:
                     quarantine_path=quarantine_path,
                     kind=kind,
                     expected=expected,
-                    observed=observed,
                     reason=f"{kind.value.capitalize()} identity changed before retirement: {display_path}",
                 )
 
@@ -229,7 +312,6 @@ class AtomicRetirementService:
                     quarantine_path=quarantine_path,
                     kind=kind,
                     expected=expected,
-                    observed=observed,
                     reason=f"Could not re-attest quarantined {kind.value} {display_path}",
                     primary=exc,
                 )
@@ -242,7 +324,6 @@ class AtomicRetirementService:
                     quarantine_path=quarantine_path,
                     kind=kind,
                     expected=expected,
-                    observed=current,
                     reason=f"Quarantined {kind.value} identity changed before retirement: {display_path}",
                 )
 
@@ -260,13 +341,15 @@ class AtomicRetirementService:
                     quarantine_path=quarantine_path,
                     kind=kind,
                     expected=expected,
-                    observed=observed,
                     reason=f"Could not retire quarantined {kind.value} {display_path}",
                     primary=exc,
                 )
-        finally:
-            if descriptor >= 0:
-                os.close(descriptor)
+        except BaseException as exc:  # noqa: BLE001 - caller classifies namespace truth
+            primary = exc
+        return _RetirementAttempt(
+            primary=primary,
+            close_failures=descriptors.settle(),
+        )
 
     @staticmethod
     def _validate_request(
@@ -304,27 +387,78 @@ class AtomicRetirementService:
                     source_dir_fd=parent_fd,
                     destination_dir_fd=parent_fd,
                 )
-            except OSError as exc:
-                if exc.errno == errno.EEXIST:
-                    continue
-                if exc.errno == errno.ENOENT:
-                    return None
-                message = f"Could not atomically quarantine retirement target: {display_path}"
-                raise AtomicRetirementError(message) from exc
-            except BaseException as exc:  # noqa: BLE001 - classify signal around rename return
-                AtomicRetirementService._raise_after_interruption(
+            except BaseException as exc:  # noqa: BLE001 - every rename failure needs postcondition proof
+                disposition = AtomicRetirementService._classify_quarantine_failure(
                     parent_fd=parent_fd,
                     leaf=leaf,
                     quarantine_name=quarantine_name,
                     display_path=display_path,
-                    quarantine_path=display_path.with_name(quarantine_name),
                     kind=kind,
                     expected=expected,
                     primary=exc,
                 )
+                if disposition == "retry":
+                    continue
+                return None
             return quarantine_name
         message = f"Could not allocate a private retirement quarantine: {display_path}"
         raise AtomicRetirementError(message)
+
+    @staticmethod
+    def _classify_quarantine_failure(
+        *,
+        parent_fd: int,
+        leaf: str,
+        quarantine_name: str,
+        display_path: Path,
+        kind: RetirementKind,
+        expected: RetirementIdentity,
+        primary: BaseException,
+    ) -> Literal["retry", "absent"]:
+        """Classify both exact names before interpreting one rename failure."""
+        quarantine_path = display_path.with_name(quarantine_name)
+        try:
+            public = AtomicRetirementService._observe_name(
+                parent_fd=parent_fd,
+                name=leaf,
+            )
+            quarantined = AtomicRetirementService._observe_name(
+                parent_fd=parent_fd,
+                name=quarantine_name,
+            )
+        except BaseException as observation_error:  # noqa: BLE001 - candidate path remains recovery evidence
+            AtomicRetirementService._raise_observation_recovery(
+                display_path=display_path,
+                quarantine_path=quarantine_path,
+                kind=kind,
+                expected=expected,
+                primary=primary,
+                observation_error=observation_error,
+            )
+
+        if isinstance(primary, OSError):
+            if (
+                primary.errno == errno.EEXIST
+                and public == expected
+                and quarantined is not None
+                and quarantined != expected
+            ):
+                return "retry"
+            if primary.errno == errno.ENOENT and public is None and quarantined is None:
+                return "absent"
+
+        AtomicRetirementService._raise_after_interruption(
+            parent_fd=parent_fd,
+            leaf=leaf,
+            quarantine_name=quarantine_name,
+            display_path=display_path,
+            quarantine_path=quarantine_path,
+            kind=kind,
+            expected=expected,
+            primary=primary,
+            observations=(public, quarantined),
+        )
+        raise AssertionError  # pragma: no cover - settlement is NoReturn
 
     @staticmethod
     def _raise_after_restore(
@@ -336,7 +470,6 @@ class AtomicRetirementService:
         quarantine_path: Path,
         kind: RetirementKind,
         expected: RetirementIdentity,
-        observed: RetirementIdentity | None,
         reason: str,
         primary: BaseException | None = None,
     ) -> NoReturn:
@@ -349,28 +482,17 @@ class AtomicRetirementService:
                 destination_dir_fd=parent_fd,
             )
         except OSError as restore_error:
-            if restore_error.errno == errno.ENOENT:
-                message = (
-                    f"{reason}; the quarantine disappeared before it could be "
-                    "restored, so no retained-path claim was issued"
-                )
-                raise AtomicRetirementError(message) from (primary or restore_error)
-            recovery = RetainedQuarantine(
-                resource=display_path,
-                quarantine=quarantine_path,
+            AtomicRetirementService._raise_after_interruption(
+                parent_fd=parent_fd,
+                leaf=leaf,
+                quarantine_name=quarantine_name,
+                display_path=display_path,
+                quarantine_path=quarantine_path,
                 kind=kind,
                 expected=expected,
-                observed=observed,
-                reason=f"{reason}; public-name restoration failed: {restore_error}",
+                primary=primary or restore_error,
+                settlement_failures=((restore_error,) if primary is not None else ()),
             )
-            message = (
-                f"{reason}; preserved the quarantined entry at "
-                f"{quarantine_path} because its public name could not be restored"
-            )
-            raise AtomicRetirementError(
-                message,
-                recovery=recovery,
-            ) from (primary or restore_error)
         except BaseException as restore_error:  # noqa: BLE001 - classify signal around restore return
             AtomicRetirementService._raise_after_interruption(
                 parent_fd=parent_fd,
@@ -381,9 +503,14 @@ class AtomicRetirementService:
                 kind=kind,
                 expected=expected,
                 primary=restore_error,
+                settlement_failures=((primary,) if primary is not None else ()),
             )
         message = f"{reason}; the quarantined entry was restored without clobbering"
-        raise AtomicRetirementError(message) from primary
+        raise AtomicRetirementError(
+            message,
+            failures=((primary,) if primary is not None else ()),
+            outcome="restored",
+        ) from primary
 
     @staticmethod
     def _raise_after_interruption(
@@ -396,39 +523,59 @@ class AtomicRetirementService:
         kind: RetirementKind,
         expected: RetirementIdentity,
         primary: BaseException,
+        settlement_failures: tuple[BaseException, ...] = (),
+        observations: tuple[RetirementIdentity | None, RetirementIdentity | None] | None = None,
     ) -> NoReturn:
         """Classify both names after cancellation and expose exact effect truth."""
-        try:
-            public = AtomicRetirementService._observe_name(
-                parent_fd=parent_fd,
-                name=leaf,
-            )
-            quarantined = AtomicRetirementService._observe_name(
-                parent_fd=parent_fd,
-                name=quarantine_name,
-            )
-        except BaseException as observation_error:  # noqa: BLE001 - observation is post-effect
-            failures = (primary, observation_error)
-            recovery = RetainedQuarantine(
-                resource=display_path,
-                quarantine=quarantine_path,
-                kind=kind,
-                expected=expected,
-                observed=None,
-                reason="post-interruption namespace observation failed",
-            )
-            terminal = AtomicRetirementService._first_terminal(*failures)
-            message = f"Retirement interruption left indeterminate namespace state: {display_path}"
-            raise AtomicRetirementError(
-                message,
-                recovery=recovery,
-                failures=failures,
-            ) from (terminal or primary)
+        if observations is None:
+            try:
+                public = AtomicRetirementService._observe_name(
+                    parent_fd=parent_fd,
+                    name=leaf,
+                )
+                quarantined = AtomicRetirementService._observe_name(
+                    parent_fd=parent_fd,
+                    name=quarantine_name,
+                )
+            except BaseException as observation_error:  # noqa: BLE001 - observation is post-effect
+                AtomicRetirementService._raise_observation_recovery(
+                    display_path=display_path,
+                    quarantine_path=quarantine_path,
+                    kind=kind,
+                    expected=expected,
+                    primary=primary,
+                    observation_error=observation_error,
+                    settlement_failures=settlement_failures,
+                )
+        else:
+            public, quarantined = observations
 
-        if public == expected and quarantined is None:
-            raise primary
+        if public == expected and quarantined != expected:
+            cleanup = _retirement_failure_ledger()
+            cleanup.record_all(settlement_failures)
+            cleanup.raise_primary_after_verified_settlement(
+                AtomicRetirementService._classified_primary(
+                    primary,
+                    message=f"Atomic retirement did not move its public target: {display_path}",
+                    outcome="restored",
+                ),
+                outcome="restored",
+                terminal_note=(
+                    f"LychD del verified restoration of {display_path} before preserving this interruption."
+                ),
+            )
         if public is None and quarantined is None:
-            raise primary
+            cleanup = _retirement_failure_ledger()
+            cleanup.record_all(settlement_failures)
+            cleanup.raise_primary_after_verified_settlement(
+                AtomicRetirementService._classified_primary(
+                    primary,
+                    message=f"Atomic retirement target was already absent: {display_path}",
+                    outcome="retired",
+                ),
+                outcome="retired",
+                terminal_note=(f"LychD del verified retirement of {display_path} before preserving this interruption."),
+            )
         if public is None and quarantined == expected:
             try:
                 rename_noreplace_at(
@@ -437,7 +584,7 @@ class AtomicRetirementService:
                     source_dir_fd=parent_fd,
                     destination_dir_fd=parent_fd,
                 )
-            except BaseException as restore_error:
+            except BaseException as restore_error:  # noqa: BLE001 - observation must follow every restore attempt
                 try:
                     restored_public = AtomicRetirementService._observe_name(
                         parent_fd=parent_fd,
@@ -448,7 +595,12 @@ class AtomicRetirementService:
                         name=quarantine_name,
                     )
                 except BaseException as observation_error:  # noqa: BLE001 - typed residue
-                    failures = (primary, restore_error, observation_error)
+                    failures = (
+                        primary,
+                        restore_error,
+                        observation_error,
+                        *settlement_failures,
+                    )
                     recovery = RetainedQuarantine(
                         resource=display_path,
                         quarantine=quarantine_path,
@@ -463,44 +615,76 @@ class AtomicRetirementService:
                         message,
                         recovery=recovery,
                         failures=failures,
+                        outcome="recovery",
                     ) from (terminal or primary)
                 if restored_public == expected and restored_quarantine is None:
-                    terminal = AtomicRetirementService._first_terminal(
+                    cleanup = _retirement_failure_ledger()
+                    cleanup.record(
                         restore_error,
-                        primary,
+                        *settlement_failures,
                     )
-                    surfaced = terminal or primary
-                    surfaced.add_note(f"LychD del recovery: {display_path} was restored after interruption.")
-                    if surfaced is restore_error:
-                        raise surfaced from primary
-                    raise surfaced from restore_error
-                recovery = RetainedQuarantine(
-                    resource=display_path,
-                    quarantine=quarantine_path,
-                    kind=kind,
-                    expected=expected,
-                    observed=quarantined,
-                    reason=(
-                        "terminal interruption left the exact entry quarantined; "
-                        f"public-name restoration failed: {restore_error}"
-                    ),
+                    cleanup.raise_primary_after_verified_settlement(
+                        primary,
+                        outcome="restored",
+                        terminal_note=(
+                            f"LychD del recovery: {display_path} was restored "
+                            "after interruption and every descriptor peer settled."
+                        ),
+                    )
+                recovery = (
+                    RetainedQuarantine(
+                        resource=display_path,
+                        quarantine=quarantine_path,
+                        kind=kind,
+                        expected=expected,
+                        observed=restored_quarantine,
+                        reason=(
+                            "terminal interruption left the classified entry quarantined; "
+                            f"public-name restoration failed: {restore_error}"
+                        ),
+                    )
+                    if restored_quarantine is not None
+                    else None
                 )
                 message = (
-                    f"Retirement interruption preserved the exact entry at "
-                    f"{quarantine_path}; public restoration did not complete"
+                    f"Retirement interruption retained classified recovery at {quarantine_path}"
+                    if recovery is not None
+                    else (
+                        "Retirement interruption changed the public identity "
+                        f"without retained quarantine: {display_path}"
+                    )
                 )
                 raise AtomicRetirementError(
                     message,
                     recovery=recovery,
-                    failures=(primary, restore_error),
+                    failures=(
+                        primary,
+                        restore_error,
+                        *settlement_failures,
+                    ),
+                    outcome="recovery",
+                    verified=True,
                 ) from (
                     AtomicRetirementService._first_terminal(
                         restore_error,
                         primary,
+                        *settlement_failures,
                     )
                     or primary
                 )
-            raise primary
+            cleanup = _retirement_failure_ledger()
+            cleanup.record_all(settlement_failures)
+            cleanup.raise_primary_after_verified_settlement(
+                AtomicRetirementService._classified_primary(
+                    primary,
+                    message=f"Atomic retirement restored its public target: {display_path}",
+                    outcome="restored",
+                ),
+                outcome="restored",
+                terminal_note=(
+                    f"LychD del verified restoration of {display_path} before preserving this interruption."
+                ),
+            )
         if quarantined is not None:
             recovery = RetainedQuarantine(
                 resource=display_path,
@@ -510,13 +694,85 @@ class AtomicRetirementService:
                 observed=quarantined,
                 reason="terminal interruption left a classified quarantine",
             )
-            message = f"Retirement interruption retained recovery evidence at {quarantine_path}"
+            message = (
+                f"Retirement interruption preserved the quarantined entry at "
+                f"{quarantine_path} because its public name could not be restored"
+            )
             raise AtomicRetirementError(
                 message,
                 recovery=recovery,
-            ) from primary
+                failures=(primary, *settlement_failures),
+                outcome="recovery",
+                verified=True,
+            ) from (
+                AtomicRetirementService._first_terminal(
+                    primary,
+                    *settlement_failures,
+                )
+                or primary
+            )
         message = f"Retirement interruption changed the public identity without a retained quarantine: {display_path}"
-        raise AtomicRetirementError(message) from primary
+        raise AtomicRetirementError(
+            message,
+            failures=(primary, *settlement_failures),
+            outcome="recovery",
+            verified=True,
+        ) from (
+            AtomicRetirementService._first_terminal(
+                primary,
+                *settlement_failures,
+            )
+            or primary
+        )
+
+    @staticmethod
+    def _raise_observation_recovery(
+        *,
+        display_path: Path,
+        quarantine_path: Path,
+        kind: RetirementKind,
+        expected: RetirementIdentity,
+        primary: BaseException,
+        observation_error: BaseException,
+        settlement_failures: tuple[BaseException, ...] = (),
+    ) -> NoReturn:
+        """Retain both exact names when rename postcondition cannot be observed."""
+        failures = (primary, observation_error, *settlement_failures)
+        recovery = RetainedQuarantine(
+            resource=display_path,
+            quarantine=quarantine_path,
+            kind=kind,
+            expected=expected,
+            observed=None,
+            reason="post-interruption namespace observation failed",
+        )
+        terminal = AtomicRetirementService._first_terminal(*failures)
+        message = f"Retirement interruption left indeterminate namespace state: {display_path}"
+        raise AtomicRetirementError(
+            message,
+            recovery=recovery,
+            failures=failures,
+            outcome="recovery",
+        ) from (terminal or primary)
+
+    @staticmethod
+    def _classified_primary(
+        primary: BaseException,
+        *,
+        message: str,
+        outcome: str,
+    ) -> BaseException:
+        """Translate ordinary adapter failure while preserving native interruption."""
+        if find_terminal_interruption(primary) is not None:
+            return primary
+        evidence = AtomicRetirementError(
+            message,
+            failures=(primary,),
+            outcome=outcome,
+            verified=True,
+        )
+        evidence.__cause__ = primary
+        return evidence
 
     @staticmethod
     def _first_terminal(

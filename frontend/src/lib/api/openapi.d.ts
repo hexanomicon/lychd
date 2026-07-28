@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bridge/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RunSnapshot */
+        get: operations["getBridgeRunSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bridge/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -282,10 +299,12 @@ export interface components {
     schemas: {
         /** AltarStatus */
         AltarStatus: {
+            csrf: components["schemas"]["CsrfClientContract"];
             pending_consents: number;
         };
         /** BridgeSnapshot */
         BridgeSnapshot: {
+            active_runs: components["schemas"]["RunProjectionSnapshot"][];
             pending_consents: components["schemas"]["ConsentCard"][];
             pending_count: number;
             session: components["schemas"]["SessionView"] | null;
@@ -329,6 +348,11 @@ export interface components {
         ConsentDecisionResult: {
             consent: components["schemas"]["ConsentCard"];
             pending_count: number;
+        };
+        /** CsrfClientContract */
+        CsrfClientContract: {
+            cookie_name: string;
+            header_name: string;
         };
         /** LoomSummary */
         LoomSummary: {
@@ -399,6 +423,23 @@ export interface components {
              */
             schema_version: 1;
             seq: number;
+        };
+        /** RunProjectionSnapshot */
+        RunProjectionSnapshot: {
+            content: string;
+            cursor: number;
+            fragments: {
+                [key: string]: unknown;
+            }[];
+            run_id: string;
+            /**
+             * @default 1
+             * @constant
+             */
+            schema_version: 1;
+            session_id: string;
+            status: string;
+            terminal: boolean;
         };
         /** SessionCreated */
         SessionCreated: {
@@ -545,6 +586,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsentDecisionResult"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+        };
+    };
+    getBridgeRunSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunProjectionSnapshot"];
                 };
             };
             /** @description Bad request syntax or unsupported method */

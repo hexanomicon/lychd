@@ -123,7 +123,10 @@ reserved for the aggregate Binding foundation; ordinary layout existence remains
 LychD-managed host mutation. Missing or incompatible systemd, Podman, Quadlet, or cgroup
 capabilities are visible as later `bind` blockers; they do not prevent a safe layout preview or
 inscription. Only lifecycle-plan blockers, including an unsafe or uncreatable Binding site, govern
-`init`. Its bounded external probes may let an inspected tool maintain its own runtime metadata;
+`init`. Real initialization rejects effective UID 0 before Settings load, host inspection,
+planning, locking, or filesystem effects; dry-run inspection remains available under effective
+root so a broken host can still be diagnosed without granting mutation authority. Its bounded
+external probes may let an inspected tool maintain its own runtime metadata;
 therefore the terminal claim is deliberately “No LychD-managed changes made,” not a claim about
 undocumented internals of every host executable. Its normal projection is
 a concise Rich tree rooted in the three canonical XDG tiers:
@@ -182,7 +185,9 @@ is plan drift, while a site that is no longer prepared fails the repeated prefli
 Settings, extensions, and Runes use command-snapshot isolation: the composition root loads one
 `RuneRegistry`, and the pure Animator hydrator consumes that same snapshot rather than opening the
 Codex again. The resulting declarations and registry live in one immutable
-`BindingCommandSession`; compilation produces one immutable `BindRequest`, and preview plus locked
+`BindingCommandSession`; its Settings generation is retained as immutable serialized data and
+materialized through validation separately for preview and locked revalidation. Compilation
+produces one immutable `BindRequest`, and preview plus locked
 apply consume that same request. A concurrent declarative-source edit does not silently rewrite
 the already rendered plan; the next `lychd bind` invocation observes it. Live host tools, Binding
 sources, and secret presence are separate authority domains and are explicitly revalidated under
@@ -390,9 +395,10 @@ Observation and actuation have different authority:
 - `start`, `stop`, and lifecycle-bearing `run` operations first use the living Vessel's control
   plane when it is authoritative. Direct host actuation is permitted only through the documented
   dead-Vessel or bootstrap path.
-- `init`, `bind`, and `del` remain host lifecycle operations. Their planners and locks prevent
-  concurrent effect paths; their execution still obeys ownership, mount, and service-state
-  evidence.
+- `init`, `bind`, `start`, `stop`, `del`, Host Reactor consumption, and explicit uncaged runtime
+  transitions share one interprocess lifecycle authority. Their planners or typed no-effect lock
+  rejection prevent concurrent effect paths; execution still obeys ownership, mount, and
+  service-state evidence.
 - A future Mundane Anchor may be a separate internal recovery executable, but its public entrance
   must fit this root grammar. Recovery necessity is not permission to add emergency roots.
 

@@ -226,6 +226,12 @@ numbers, detects gaps, and refetches on an explicit reset/resync event. The serv
 or trace deltas may be batched once per animation frame before visual publication; batching never
 changes ledger order.
 
+The Bridge snapshot includes the selected session's active run identities and exact process-local
+projections. A route remount or browser reload rebuilds each missing live turn, seeds its reducer
+from the supplied cursor, and reattaches its stream. This reconstructs only the content and
+descriptors still owned by the current process's event channels; it does not make token deltas
+durable or promise cross-process token recovery.
+
 Audio output may arrive as a completed authenticated artifact or a later proved streaming
 transport. The browser's transport convenience does not dictate the Animator contract.
 

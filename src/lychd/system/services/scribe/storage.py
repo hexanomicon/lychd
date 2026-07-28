@@ -86,11 +86,17 @@ class PathStateIndeterminateError(RuntimeError):
         *,
         paths: frozenset[Path],
         cause: BaseException | None = None,
+        failures: tuple[BaseException, ...] = (),
+        outcome: str = "indeterminate",
+        verified: bool = False,
     ) -> None:
         """Retain every path whose generation can no longer be proved."""
         super().__init__(message)
         self.paths = paths
         self.cause = cause
+        self.failures = failures
+        self.outcome = outcome
+        self.outcome_verified = verified
 
 
 class AtomicPathStorage:

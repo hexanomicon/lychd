@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import TypedDict
 
@@ -574,6 +576,50 @@ def test_lifecycle_lock_rejects_a_concurrent_real_operation(tmp_path: Path) -> N
         pytest.fail("the second lifecycle operation acquired the same lock")
 
     assert lock_path.stat().st_mode & 0o777 == 0o600
+
+
+def test_default_lifecycle_lock_contends_across_different_tmpdir_environments(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The generated Reactor and an operator CLI cannot select different locks."""
+    codex_root = tmp_path / "codex"
+    other_tmp = tmp_path / "other-tmp"
+    other_tmp.mkdir()
+    monkeypatch.setattr(lifecycle, "PATH_CODEX_ROOT", codex_root)
+    lock = LifecycleLock()
+    script = """
+import os
+from pathlib import Path
+from lychd.system.services import lifecycle
+from lychd.system.services.lifecycle import LifecycleError, LifecycleLock
+
+lifecycle.PATH_CODEX_ROOT = Path(os.environ["LYCHD_TEST_CODEX_ROOT"])
+try:
+    with LifecycleLock():
+        pass
+except LifecycleError:
+    raise SystemExit(0)
+raise SystemExit(1)
+"""
+    environment = {
+        **os.environ,
+        "TMPDIR": str(other_tmp),
+        "LYCHD_TEST_CODEX_ROOT": str(codex_root),
+    }
+    try:
+        with lock:
+            result = subprocess.run(  # noqa: S603 - fixed interpreter and repository-controlled script
+                [sys.executable, "-c", script],
+                check=False,
+                capture_output=True,
+                env=environment,
+                text=True,
+            )
+        assert result.returncode == 0, result.stderr
+        assert lock.path.parent == Path("/tmp")  # noqa: S108 - verifies the fixed host lock namespace
+    finally:
+        lock.path.unlink(missing_ok=True)
 
 
 def test_identical_file_replacement_does_not_inherit_deletion_authority(

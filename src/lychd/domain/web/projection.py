@@ -61,8 +61,8 @@ class EventProjector:
             payload = await self._project_consent(event.data)
         elif kind == "done":
             payload = await self._project_done(event.run_id, event.data)
-        else:
-            payload = {"text": event.data}
+        else:  # explicit `resync`: replace through this stream boundary
+            payload = {"reason": event.data, "cursor": event.seq}
         return RunEventEnvelope(
             run_id=event.run_id,
             seq=event.seq,

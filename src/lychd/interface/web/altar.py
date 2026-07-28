@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from litestar import Controller, get
+from litestar.datastructures import State
 from litestar.di import NamedDependency
 from litestar.enums import MediaType
 from litestar.params import FromPath
@@ -54,6 +55,13 @@ class AltarController(Controller):
         operation_id="getAltarStatus",
         guards=[requires_scopes("altar:read")],
     )
-    async def status(self, consents: NamedDependency[ConsentLedger]) -> AltarStatus:
+    async def status(
+        self,
+        consents: NamedDependency[ConsentLedger],
+        state: State,
+    ) -> AltarStatus:
         """Return shell-wide attention state."""
-        return AltarStatus(pending_consents=await consents.pending_count())
+        return AltarStatus(
+            pending_consents=await consents.pending_count(),
+            csrf=state.csrf_contract,
+        )

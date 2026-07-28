@@ -211,6 +211,7 @@ class OrchestratorManager:
                 intent = TransitionIntent(
                     config_generation=self._config_generation(),
                     target_animator=self._target_animator(target_capability_key),
+                    target_capability_key=target_capability_key,
                     evict_animators=tuple(plan.evict_coven_ids),
                     launch_animators=tuple(plan.launch_coven_ids),
                     expected_active_animators=self._active_animators(),

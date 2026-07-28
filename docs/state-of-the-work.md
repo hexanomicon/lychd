@@ -96,8 +96,10 @@ or running service.
 **Proved now:** Public help exposes the closed `init`, `bind`, `start`, `stop`, `status`, `logs`,
 `run`, and `del` grammar; `st` resolves to `status` without becoming a ninth root. `init` and
 `bind` have planners that perform no LychD-managed mutation. Their bounded external observations
-may still let Podman or another inspected tool maintain its own runtime metadata. `init` revalidates
-and consumes its exact plan, rejects
+may still let Podman or another inspected tool maintain its own runtime metadata. A real `init`
+rejects effective UID 0 before loading Settings, probing the host, or acquiring effect authority;
+its dry run remains available for read-only diagnosis. `init` revalidates and consumes its exact
+plan, rejects
 unplanned creations, journals partial progress, proves convergence before its terminal seal, and
 records device/inode plus parent-mount authority for the dedicated roots. Its default projection
 collapses the exact plan beneath Codex/config, Crypt/share, and Forge/cache XDG tiers, with Binding
@@ -132,7 +134,9 @@ runtime all consume that policy, and the live `AnimatorRegistry` receives compil
 rather than reparsing TOML. Web preauthorization synchronization also consumes the existing process
 Rune snapshot, so one startup cannot split Animator and consent truth across two filesystem reads.
 Transmutation receives the session `Settings` explicitly instead of
-reading the process cache, while each extension contributor sees an isolated deep copy of settings
+reading the process cache. The retained bind session stores Settings as an immutable serialized
+generation and materializes a freshly validated tree for preview and locked revalidation, so
+between-phase mutation cannot bypass section validators. Each extension contributor sees an isolated deep copy of settings
 and declarations behind tuple collections. Contributor-returned containers are copied
 before admission, so the typed additive seam cannot mutate core output or later contributors.
 The Scribe requires initialization-prepared Quadlet and plain-user-unit sites during planning and
@@ -297,22 +301,34 @@ a real host.
   [ADR 10 — Privilege](./adr/10-privilege.md), and
   [ADR 12 — Configuration](./adr/12-configuration.md)
 
-### Mediated Host Reactor protocol {#host-reactor-protocol}
+### Runtime actuation and mediated Host Reactor protocol {#host-reactor-protocol}
 
 **State:** Available
 
 **Proved now:** The software protocol covers inbox claim, validation, exact-prefix recovery,
-cancellation/startup fences, terminal journaling, and readiness inversion.
+cancellation/startup fences, terminal journaling, and readiness inversion. Fresh intents carry the
+exact target capability as well as its Animator; legacy records without that field are accepted
+only when the Animator has one unambiguous configured capability. Host consumption shares the
+interprocess lifecycle lock with the other mutating rites and invokes only an injected,
+root-controlled absolute `systemctl` discovery. The explicit uncaged Systemd composition also
+holds that lock across observation, effects, and compensation; contention surfaces as a typed,
+verified no-effect precondition.
 
 **Boundary:** This is protocol evidence, not a real-host receipt. Arbitrary non-prefix physical
 repair remains outside the contract.
 
 **Evidence**
 
-- **Source:** [Host Reactor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/reactor.py)
-  and [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py)
-- **Verification:** [Reactor recovery tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_reactor.py)
-  and [runtime action tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py)
+- **Source:** [Host Reactor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/reactor.py),
+  [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py),
+  [lifecycle lock](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/lifecycle/lock.py),
+  [private Reactor composition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py),
+  and [trusted host-tool discovery](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/host_tools.py)
+- **Verification:** [Reactor recovery tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_reactor.py),
+  [runtime action tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [cross-environment lock tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_lifecycle.py),
+  [entrypoint composition tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py),
+  and [host-tool attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_host_tools.py)
 - **Law:** [ADR 10 — Privilege](./adr/10-privilege.md) and
   [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
 
@@ -680,13 +696,20 @@ not capacity admission.
 
 **Proved now:** The Svelte Bridge consumes generated `/api/v1` contracts for local sessions,
 message submission, pending consent cards and decisions, and inspection. Per-run events arrive as
-versioned semantic JSON SSE and closed GenUI descriptors; focused Python and component tests cover
-admission, consent ordering, terminal replay, descriptor safety, and client projection.
+versioned semantic JSON SSE and closed GenUI descriptors. A cursor-bound run snapshot replaces
+live text, status, and descriptors after an explicit resync or detected numeric gap; duplicate and
+gapped events are not projected speculatively. The selected-session snapshot also exposes active
+run identities and current process-local projections, so a Bridge route remount or hard browser
+reload reconstructs missing live turns and reattaches their streams from the supplied cursors.
+Focused Python and component tests cover admission, consent ordering, terminal replay, descriptor
+safety, snapshot replacement, reload reconstruction, delayed-admission navigation ownership, and
+terminal-refresh navigation races.
 
 **Boundary — Not yet:** There is no complete production-factory receipt, durable cross-process
-event delivery, general multi-approval round, Attention contract, or external notification
-channel. Text is the implemented command modality; the designed record-then-send voice path and
-continuous voice mode are not delivered.
+event or token delivery, general multi-approval round, Attention contract, or external
+notification channel. Active-run reconstruction is process-local and does not recover token bytes
+lost with a process. Text is the implemented command modality; the designed record-then-send voice
+path and continuous voice mode are not delivered.
 
 **Evidence**
 
@@ -695,7 +718,8 @@ continuous voice mode are not delivered.
   and [event contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/contracts.py)
 - **Verification:** [Bridge behavior tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py),
   [consent endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_consent_endpoint.py),
-  and [event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py)
+  [event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py),
+  and [Bridge component tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/BridgeView.test.ts)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 25 — Human in the Loop](./adr/25-hitl.md)
 
@@ -705,19 +729,22 @@ continuous voice mode are not delivered.
 
 **Proved now:** The Svelte Nexus consumes typed Coven state and transition plans from `/api/v1`,
 submits explicit swap intents, and follows process-local tickets to settled or failed outcomes over
-semantic JSON SSE.
+semantic JSON SSE. The bounded store retains terminal endpoint and SSE reconnect truth for a
+60-second process-local window, retires it only after expiry, and refuses capacity rather than
+evicting active or fresh-terminal tickets.
 
 **Boundary — Not yet:** It has no general resource truth. Tickets wrap process-local tasks without
-a durable owner, created/settled times, retention deadline, or abandoned-completion cleanup law;
-the production lifespan also lacks an operator-browser receipt. It is not a general resource,
-queue, GPU, VRAM, topology, thermal, or hardware-pressure dashboard.
+a durable owner, cross-process retention or restart recovery, or operator-visible created,
+settled, and retention timestamps; the production lifespan also lacks an operator-browser receipt.
+It is not a general resource, queue, GPU, VRAM, topology, thermal, or hardware-pressure dashboard.
 
 **Evidence**
 
 - **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py),
   [client Nexus](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.svelte),
   and [process-local ticket store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/tickets.py)
-- **Verification:** [Nexus board and ticket tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py)
+- **Verification:** [Nexus board and endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py)
+  and [ticket-retention tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_tickets.py)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
 
@@ -886,7 +913,8 @@ rechecked immediately before a protected effect after waiting.
 
 **Proved now:** Generated Pod ports and the generated uncaged systemd unit pin the Vessel to IPv4
 loopback. The Quadlet schema and extension-contribution boundary reject non-loopback publication,
-and the production application composes Litestar CSRF protection.
+and the production application composes Litestar CSRF protection and publishes its configured
+double-submit cookie/header names to the generated browser contract.
 
 **Boundary — Not yet:** The hostile-browser contract fails. Production configuration permits
 wildcard CORS, does not constrain the Host authority, and stamps ordinary requests with the fixed

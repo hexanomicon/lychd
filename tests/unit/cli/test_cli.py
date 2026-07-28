@@ -10,7 +10,7 @@ from unittest.mock import ANY, MagicMock
 import pytest
 from click.testing import CliRunner
 
-from lychd.__main__ import _run_litestar, cli, run_cli
+from lychd.__main__ import _effectful_init_requested, _run_litestar, cli, run_cli
 from lychd.cli.commands import (
     _consume_reactor_intents,
     bind_quadlets,
@@ -190,6 +190,10 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
     )
     reactor_type = mocker.patch("lychd.system.services.reactor.HostReactor")
     reactor_type.return_value.consume_all = mocker.AsyncMock(return_value=0)
+    mocker.patch(
+        "lychd.system.host_tools.trusted_host_tool",
+        return_value="/usr/bin/systemctl",
+    )
 
     await _consume_reactor_intents()
 
@@ -204,6 +208,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         registry,
         inbox_dir=inbox,
         journal_dir=journal,
+        systemctl_bin="/usr/bin/systemctl",
         policy=policy,
     )
     reactor_type.return_value.consume_all.assert_awaited_once_with()
@@ -369,6 +374,61 @@ def test_installed_entrypoint_configures_shared_logging_before_click(mocker: Moc
     root.assert_called_once_with()
 
 
+@pytest.mark.parametrize(
+    ("arguments", "expected_mode"),
+    [
+        (("init",), "effectful"),
+        (("--", "init"), "effectful"),
+        (("init", "--verbose"), "effectful"),
+        (("init", "--dry-run"), "safe"),
+        (("init", "--help"), "safe"),
+        (("init", "-vh"), "safe"),
+        (("init", "-hv"), "safe"),
+        (("init", "-v"), "effectful"),
+        (("--help",), "safe"),
+        (("bind",), "safe"),
+    ],
+)
+def test_entrypoint_recognizes_only_effectful_init(
+    arguments: tuple[str, ...],
+    expected_mode: str,
+) -> None:
+    assert _effectful_init_requested(arguments) is (expected_mode == "effectful")
+
+
+def test_installed_entrypoint_rejects_effective_root_init_before_logging_or_click(
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The installed path must not load Settings before the rootless authority gate."""
+    monkeypatch.setattr("sys.argv", ["lychd", "init"])
+    mocker.patch("lychd.__main__.os.geteuid", return_value=0)
+    apply_logging = mocker.patch("lychd.config.logging.apply_logging")
+    root = mocker.patch("lychd.__main__.cli")
+
+    with pytest.raises(SystemExit) as raised:
+        run_cli()
+
+    assert raised.value.code == 1
+    apply_logging.assert_not_called()
+    root.assert_not_called()
+
+
+def test_installed_entrypoint_keeps_effective_root_dry_run_observable(
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("sys.argv", ["lychd", "init", "--dry-run"])
+    mocker.patch("lychd.__main__.os.geteuid", return_value=0)
+    apply_logging = mocker.patch("lychd.config.logging.apply_logging")
+    root = mocker.patch("lychd.__main__.cli")
+
+    run_cli()
+
+    apply_logging.assert_called_once_with()
+    root.assert_called_once_with()
+
+
 def test_serve_delegates_to_litestar_lazily(runner: CliRunner, mocker: MockerFixture) -> None:
     delegated = mocker.patch("lychd.__main__._run_litestar")
 
@@ -517,7 +577,7 @@ def test_init_codex_success(
     tmp_path: Path,
     host_readiness: MagicMock,
 ) -> None:
-    """Verify init command orchestrates Codex properly."""
+    """A real-root/effective-user process may perform the rootless init rite."""
     from lychd.system.services.lifecycle import (
         CreatedResources,
         LifecycleAction,
@@ -526,8 +586,11 @@ def test_init_codex_success(
         LifecycleResourceKind,
     )
 
+    mocker.patch("lychd.cli.commands.os.getuid", return_value=0)
+    mocker.patch("lychd.cli.commands.os.geteuid", return_value=1000)
+
     # Patch the classes inside the command
-    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
     layout = mocker.patch("lychd.system.services.layout.LayoutService")
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     inbox = tmp_path / "reactor" / "inbox"
@@ -578,13 +641,38 @@ def test_init_codex_success(
     assert host_readiness.inspect.call_count == 2
 
 
+def test_init_apply_rejects_effective_root_before_host_effects(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    host_readiness: MagicMock,
+) -> None:
+    """Effective UID owns effect authority even when the real UID is ordinary."""
+    mocker.patch("lychd.cli.commands.os.getuid", return_value=1000)
+    mocker.patch("lychd.cli.commands.os.geteuid", return_value=0)
+    settings = mocker.patch("lychd.config.settings.root.get_settings")
+    extensions = mocker.patch("lychd.extensions.host.get_extensions")
+    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner")
+    lock = mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+
+    result = runner.invoke(init_codex)
+
+    assert result.exit_code != 0
+    assert "rootless" in result.output
+    assert "ordinary user" in result.output
+    settings.assert_not_called()
+    extensions.assert_not_called()
+    planner.assert_not_called()
+    lock.assert_not_called()
+    host_readiness.inspect.assert_not_called()
+
+
 def test_init_dry_run_never_invokes_effect_services(
     runner: CliRunner,
     mocker: MockerFixture,
     tmp_path: Path,
     host_readiness: MagicMock,
 ) -> None:
-    """The preview uses the real planner boundary and performs no effects."""
+    """Even effective root may observe the exact plan without effect authority."""
     from lychd.system.services.lifecycle import (
         LifecycleAction,
         LifecycleDisposition,
@@ -600,6 +688,7 @@ def test_init_dry_run_never_invokes_effect_services(
             )
         )
     )
+    mocker.patch("lychd.cli.commands.os.geteuid", return_value=0)
     mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mocker.patch("lychd.extensions.host.get_extensions", return_value=SimpleNamespace(rune_schemas=()))
     planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value

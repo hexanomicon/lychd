@@ -6,6 +6,8 @@ import asyncio
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
+import pytest
+
 if TYPE_CHECKING:
     from types import SimpleNamespace
 
@@ -33,11 +35,7 @@ def test_board_lists_covens(altar_client: TestClient[Litestar]) -> None:
 
     assert response.status_code == 200
     board = response.json()["board"]
-    assert any(
-        row["capability_key"] == "chat:local"
-        for _, rows in board["covens"]
-        for row in rows
-    )
+    assert any(row["capability_key"] == "chat:local" for _, rows in board["covens"] for row in rows)
     assert "portals" in board
 
 
@@ -100,6 +98,32 @@ def test_swap_status_exposes_failure(
 
     assert response.status_code == 200
     assert response.json()["ticket"]["state"] == "failed"
+
+
+@pytest.mark.parametrize("last_event_id", ["0", "1", "99"])
+def test_terminal_ticket_stream_reconnect_preserves_endpoint_truth(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+    last_event_id: str,
+) -> None:
+    record = fake_services.tickets.open(
+        target="chat:local",
+        action_type="SOFT_SWAP",
+        total_metabolic_cost=1.0,
+        task=_completed_task(),
+    )
+
+    stream = altar_client.get(
+        f"/api/v1/nexus/swaps/{record.id}/events",
+        headers={"Last-Event-ID": last_event_id},
+    )
+    status = altar_client.get(f"/api/v1/nexus/swaps/{record.id}")
+
+    assert stream.status_code == 200
+    assert "id: 1" in stream.text
+    assert '"state": "settled"' in stream.text
+    assert status.status_code == 200
+    assert status.json()["ticket"]["state"] == "settled"
 
 
 def test_swap_status_unknown_404(altar_client: TestClient[Litestar]) -> None:

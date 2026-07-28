@@ -138,6 +138,47 @@ def test_stream_projects_every_event_kind(
     assert all(event["data"]["schema_version"] == 1 for event in events)
 
 
+def test_run_snapshot_replaces_live_projection_at_exact_cursor(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    run_id = "run_snapshot"
+    _seed_live_run(fake_services, run_id)
+    emitter = fake_services.bus.emitter(run_id)
+    emitter.emit(RunEventKind.STATUS, "weaving")
+    emitter.emit(RunEventKind.TOKEN, "ashes")
+    emitter.emit(
+        RunEventKind.FRAGMENT,
+        json.dumps(
+            {
+                "fragment": "genui.plan_checklist",
+                "params": {"title": "Rite", "steps": ["a"]},
+            },
+        ),
+    )
+
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "schema_version": 1,
+        "session_id": "s",
+        "run_id": run_id,
+        "cursor": 2,
+        "content": "ashes",
+        "status": "weaving",
+        "fragments": [
+            {
+                "kind": "genui.plan_checklist",
+                "schema_version": 1,
+                "props": {"title": "Rite", "steps": ["a"]},
+                "actions": [],
+            },
+        ],
+        "terminal": False,
+    }
+
+
 def test_stream_closes_after_done(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
@@ -177,6 +218,38 @@ def test_stream_terminal_run_synthesizes_status_and_done(
     events = _sse_events(response.text)
     assert [event["event"] for event in events] == ["status", "done"]
     assert events[0]["data"]["payload"]["text"] == "done"
+
+
+def test_terminal_reconnect_emits_explicit_resync_and_refetches_settled_snapshot(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    run_id = "run_terminal_reconnect"
+    _seed_terminal_run(fake_services, run_id, RunStatus.DONE)
+
+    async def _settle_turn() -> None:
+        session = await fake_services.bridge_sessions.create_session()
+        await fake_services.bridge_sessions.add_turn(
+            session.id,
+            _agent_turn(run_id=run_id),
+        )
+
+    asyncio.run(_settle_turn())
+
+    stream = altar_client.get(
+        f"/api/v1/bridge/runs/{run_id}/events",
+        headers={"Last-Event-ID": "99"},
+    )
+    snapshot = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+
+    assert stream.status_code == 200
+    events = _sse_events(stream.text)
+    assert [event["event"] for event in events] == ["resync"]
+    assert events[0]["data"]["payload"]["reason"] == "snapshot_required"
+    assert snapshot.status_code == 200
+    assert snapshot.json()["content"] == "It is done."
+    assert snapshot.json()["status"] == "done"
+    assert snapshot.json()["terminal"] is True
 
 
 def _agent_turn(*, run_id: str) -> object:

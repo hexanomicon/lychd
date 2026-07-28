@@ -7,7 +7,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import NoReturn, Protocol
 
-from lychd.system.interruptions import find_terminal_interruption
+from lychd.system.interruptions import (
+    find_terminal_interruption,
+    iter_exception_graph,
+)
 
 DIRECTORY_OPEN_FLAGS = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_CLOEXEC", 0) | os.O_NOFOLLOW
 
@@ -21,9 +24,18 @@ class SettlementErrorFactory(Protocol):
         *,
         failures: tuple[BaseException, ...],
         outcome: str,
+        verified: bool,
     ) -> BaseException:
         """Return one domain-specific settlement error."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class SettlementOutcome:
+    """One transaction outcome and whether its postcondition was proved."""
+
+    name: str
+    verified: bool
 
 
 class DirectoryComponentErrorFactory(Protocol):
@@ -115,13 +127,11 @@ class FailureLedger:
             message,
             failures=failures,
             outcome=outcome,
+            verified=verified,
         )
         if verified and terminal is not None:
             terminal.add_note(terminal_note)
-            companions = tuple(failure for failure in failures if failure is not terminal)
-            if companions:
-                raise terminal from evidence
-            raise terminal
+            _raise_terminal_from_evidence(terminal, evidence)
         raise evidence from (terminal or failures[0])
 
     def raise_primary_after_verified_settlement(
@@ -135,14 +145,14 @@ class FailureLedger:
         terminal = find_terminal_interruption(primary)
         if terminal is not None:
             terminal.add_note(terminal_note)
-            if self.failures:
-                evidence = self.error_factory(
-                    f"{self.subject} completed with additional cleanup failures.",
-                    failures=(primary, *self.failures),
-                    outcome=outcome,
-                )
-                raise terminal from evidence
-            raise terminal
+            qualifier = " with additional cleanup failures" if self.failures else ""
+            evidence = self.error_factory(
+                f"{self.subject} completed{qualifier}.",
+                failures=(primary, *self.failures),
+                outcome=outcome,
+                verified=True,
+            )
+            _raise_terminal_from_evidence(terminal, evidence)
         if self.failures:
             cleanup_terminal = next(
                 (
@@ -156,13 +166,42 @@ class FailureLedger:
                 f"{self.subject} completed with cleanup failures.",
                 failures=(primary, *self.failures),
                 outcome=outcome,
+                verified=True,
             )
             if cleanup_terminal is not None:
                 cleanup_terminal.add_note(terminal_note)
-                evidence.__cause__ = primary
-                raise cleanup_terminal from evidence
+                _raise_terminal_from_evidence(
+                    cleanup_terminal,
+                    evidence,
+                    fallback=primary,
+                )
             raise evidence from primary
         raise primary
+
+
+def _raise_terminal_from_evidence(
+    terminal: BaseException,
+    evidence: BaseException,
+    *,
+    fallback: BaseException | None = None,
+) -> NoReturn:
+    """Attach new evidence without severing the terminal's prior typed cause."""
+    prior_cause = terminal.__cause__
+    if prior_cause is not None and prior_cause is not evidence:
+        evidence.__cause__ = prior_cause
+    elif fallback is not None and fallback is not terminal:
+        evidence.__cause__ = fallback
+    raise terminal from evidence
+
+
+def find_settlement_outcome(error: BaseException) -> SettlementOutcome | None:
+    """Find the nearest structured settlement outcome across the failure graph."""
+    for candidate in iter_exception_graph(error):
+        outcome: object = getattr(candidate, "outcome", None)
+        verified: object = getattr(candidate, "outcome_verified", False)
+        if isinstance(outcome, str) and isinstance(verified, bool):
+            return SettlementOutcome(name=outcome, verified=verified)
+    return None
 
 
 def directory_chain_start(
@@ -231,7 +270,9 @@ __all__ = (
     "DirectoryComponentErrorFactory",
     "FailureLedger",
     "SettlementErrorFactory",
+    "SettlementOutcome",
     "UnsafeDirectoryPathErrorFactory",
     "directory_chain_start",
+    "find_settlement_outcome",
     "open_directory_path",
 )
