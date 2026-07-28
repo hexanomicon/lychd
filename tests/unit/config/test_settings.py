@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 
 from lychd.config.components import resolve_web_secret_key
+from lychd.config.settings import Settings, SettingsSnapshot
 from lychd.config.settings.extensions import ExtensionSettings
 from lychd.config.settings.orchestration import SwitchingSettings
-from lychd.config.settings.root import Settings
 from lychd.config.settings.server import DatabaseSettings, ServerSettings, WebSettings
 from lychd.config.utils import codex_permission_issues
 from lychd.db.factory import database_saq_dsn, database_url, resolve_database_password
@@ -93,6 +93,18 @@ def test_only_the_three_declared_top_level_sections_are_accepted() -> None:
         Settings.model_validate({"server": {"not_a_server_setting": True}})
 
 
+def test_settings_snapshot_detaches_and_revalidates_the_mutable_settings_tree() -> None:
+    settings = Settings()
+    original_port = settings.server.port
+    snapshot = SettingsSnapshot.capture(settings)
+
+    settings.server.port = original_port + 1
+    first_materialization = snapshot.materialize()
+    first_materialization.server.port = original_port + 2
+
+    assert snapshot.materialize().server.port == original_port
+
+
 def test_optional_extensions_are_inert_until_explicitly_selected() -> None:
     settings = ExtensionSettings()
 
@@ -124,6 +136,17 @@ def test_bootstrap_server_rejects_public_bind_addresses() -> None:
 def test_server_rejects_port_claim_conflicts() -> None:
     with pytest.raises(ValueError, match="Port 5432 is claimed by multiple services"):
         ServerSettings(port=5432)
+
+
+def test_vite_development_port_is_not_backend_configuration() -> None:
+    settings = ServerSettings(port=5173)
+
+    assert settings.reserved_ports_map == {
+        "LychD Server": 5173,
+        "Phylactery (Postgres)": 5432,
+    }
+    with pytest.raises(ValueError, match="vite"):
+        WebSettings.model_validate({"vite": {"port": 5173}})
 
 
 @pytest.mark.parametrize(

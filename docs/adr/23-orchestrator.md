@@ -202,10 +202,12 @@ use convergence only and must become `WARM` within the same absolute deadline.
 
 The domain depends only on `RuntimeActuator.apply(TransitionIntent)`. The frozen intent permits a
 transition id, forward/compensation operation, optional completed-forward `rollback_of` reference,
-configuration-generation digest, canonical target, evict/launch Animator ids, and the expected
-active set. It forbids extra fields and has no command, unit name, filesystem path, environment, or
-generic payload surface. Host compensation must exactly invert its referenced completed forward
-record; the operation label cannot authorize an arbitrary second plan.
+configuration-generation digest, canonical target Animator, exact target capability, evict/launch
+Animator ids, and the expected active set. It forbids extra fields and has no command, unit name,
+filesystem path, environment, or generic payload surface. Fresh intents always name the exact
+capability used by policy. A pre-field journal record is admissible only when its target Animator
+has one unambiguous configured capability. Host compensation must exactly invert its referenced
+completed forward record; the operation label cannot authorize an arbitrary second plan.
 
 `[orchestration.switching].actuator` selects `systemd` or `host-reactor` at composition:
 
@@ -227,14 +229,21 @@ absolute operator-owned path whose final segment remains `inbox`. Its sibling jo
   schema/set invariants, filename/transition identity, configuration digest, configured switch
   plan, expected user-unit active set, and host registry mappings before acting. It retains
   processing, completed, declined, or rejected records in a host-owned journal; an existing journal
-  ID suppresses duplicate execution. The Vessel mounts that journal read-only and holds the manager
+  ID suppresses duplicate execution. The consumer holds the same interprocess lifecycle lock used
+  by `init`, `bind`, `start`, `stop`, and `del` across validation and effects, and its direct
+  actuator receives a freshly resolved root-controlled absolute `systemctl` path rather than
+  searching `PATH`. Lock identity is independent of process-local `TMPDIR`, so the generated
+  service and an operator shell cannot select separate exclusion domains. The Vessel mounts that
+  journal read-only and holds the manager
   barrier until its transition receives a terminal completed/declined/rejected record. A stale
   configuration, policy, or expected-active precondition is journaled as `.declined.json` before
   any effect and surfaces as typed `RuntimePreconditionError`; the manager can safely reopen the
   forward barrier without global containment. An uncertain effect failure is `.rejected.json` and
   remains fail-closed.
 - **`systemd` (explicit uncaged mode):** resolves canonical local Soulstones through registry truth
-  and applies the complete stop/start set to their generated user units in process.
+  and applies the complete stop/start set to their generated user units in process. The composition
+  injects the shared lifecycle lock around observation, effects, and compensation; contention is a
+  typed no-effect precondition rather than an uncertain partial transition.
 
 The intent channel remains unidirectional and the journal is not a generic reply protocol. The
 Vessel has no journal write authority and observes only transition-correlated terminal filenames.

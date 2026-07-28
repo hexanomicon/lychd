@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from lychd.config.settings import SettingsSnapshot
 from lychd.domain.animation.services.declarations import (
     compile_animator_declarations,
 )
@@ -16,7 +17,6 @@ from lychd.system.services.bind_compilation import (
 
 if TYPE_CHECKING:
     from lychd.config.runes.registry import RuneRegistry
-    from lychd.config.settings.root import Settings
     from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
     from lychd.extensions.host import AssembledExtensions
     from lychd.system.services.bind import BindPlan, BindRequest, BindUseCase
@@ -39,7 +39,7 @@ class PreparedBinding:
 class BindingCommandSession:
     """One loaded command session before host authority is refined."""
 
-    settings: Settings
+    settings_snapshot: SettingsSnapshot
     extensions: AssembledExtensions
     runes: RuneRegistry
     soulstones: tuple[SoulstoneConfig, ...]
@@ -74,7 +74,7 @@ class BindingCommandSession:
             ),
         )
         return cls(
-            settings=settings,
+            settings_snapshot=SettingsSnapshot.capture(settings),
             extensions=extensions,
             runes=runes,
             soulstones=declarations.soulstones,
@@ -86,9 +86,10 @@ class BindingCommandSession:
 
     def prepare(self) -> PreparedBinding:
         """Refine host authority and compile the complete immutable bind request."""
+        settings = self.settings_snapshot.materialize()
         foundation = self.preflight.require_ready()
         request = compile_bind_request(
-            settings=self.settings,
+            settings=settings,
             extensions=self.extensions,
             runes=self.runes,
             soulstones=self.soulstones,
@@ -98,8 +99,8 @@ class BindingCommandSession:
         use_case = assemble_bind_use_case(
             foundation=foundation,
             preflight_service=self.preflight_service,
-            settings=self.settings,
-            soulstones=self.soulstones,
+            settings_snapshot=self.settings_snapshot,
+            uncaged_control_plane_secrets=(uncaged_control_plane_secret_names(self.soulstones) if self.uncaged else ()),
             uncaged=self.uncaged,
         )
         return PreparedBinding(

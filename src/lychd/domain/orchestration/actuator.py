@@ -42,6 +42,9 @@ class TransitionIntent(BaseModel):
     rollback_of: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
     config_generation: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     target_animator: AnimatorId
+    # Optional only so a host can parse and settle journals written before the
+    # exact capability field existed. Fresh manager intents always populate it.
+    target_capability_key: str | None = Field(default=None, min_length=1)
     evict_animators: tuple[AnimatorId, ...] = ()
     launch_animators: tuple[AnimatorId, ...] = ()
     expected_active_animators: tuple[AnimatorId, ...] = ()
@@ -110,6 +113,7 @@ def build_compensation_intent(intent: TransitionIntent) -> TransitionIntent:
         rollback_of=intent.transition_id,
         config_generation=intent.config_generation,
         target_animator=intent.target_animator,
+        target_capability_key=intent.target_capability_key,
         evict_animators=intent.launch_animators,
         launch_animators=intent.evict_animators,
         expected_active_animators=expected_after,

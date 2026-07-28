@@ -53,6 +53,7 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
     """Assemble, warm, publish, reconcile, and later drain the Altar services."""
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions  # composition root only
+    from lychd.system.host_tools import trusted_host_tool
     from lychd.system.services.runtime import wait_for_host_reactor_idle
 
     # F3: stamp the boot cutoff BEFORE the substrate is published (before any worker can
@@ -73,12 +74,19 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
         # app whose workers hot-loop on an unopened Postgres pool.
         queues = _collect_run_queues(app)
         connected_queues = await connect_run_queues(queues)
+        systemctl_bin = None
+        if settings.orchestration.switching.actuator == "systemd":
+            systemctl_bin = trusted_host_tool("systemctl")
+            if systemctl_bin is None:
+                msg = "Direct systemd actuation cannot resolve a trusted systemctl executable."
+                raise RuntimeError(msg)
         services = build_altar_services(
             queues=queues,
             runes=runes,
             runtime_adapters=exts.runtime_adapters,
             portal_factories=exts.portal_factories,
             settings=settings,
+            systemctl_bin=systemctl_bin,
         )
 
         # Warm the registry off the event loop: runtime synthesis, Quadlet

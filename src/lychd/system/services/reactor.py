@@ -6,7 +6,7 @@ import json
 import os
 import re
 import stat
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Protocol
 from uuid import uuid4
 
 import structlog
@@ -25,6 +25,8 @@ from lychd.system.schemas import systemd_environment_assignment
 from lychd.system.services.runtime import SystemdRuntimeActuator
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from contextlib import AbstractContextManager
     from pathlib import Path
 
     from lychd.domain.animation.capabilities import CapabilitySpec
@@ -39,6 +41,18 @@ _MAX_REJECTION_DETAIL = 2048
 _PENDING_NAME = re.compile(r"^(?P<transition_id>[0-9a-f]{32})\.json$")
 
 __all__ = ["HostReactor", "render_reactor_path_unit", "render_reactor_service_unit"]
+
+
+class _RecoverableRuntimeActuator(Protocol):
+    """Narrow host effect port required by the crash-recovering Reactor."""
+
+    async def apply(self, intent: TransitionIntent) -> None:
+        """Apply one fresh transition."""
+        ...
+
+    async def recover(self, intent: TransitionIntent) -> None:
+        """Resume one claimed transition from observed host state."""
+        ...
 
 
 class _ExpectedStateView:
@@ -121,18 +135,39 @@ class HostReactor:
         *,
         inbox_dir: Path = PATH_REACTOR_INBOX_DIR,
         journal_dir: Path = PATH_REACTOR_JOURNAL_DIR,
-        actuator: SystemdRuntimeActuator | None = None,
+        actuator: _RecoverableRuntimeActuator | None = None,
         policy: SwitchPolicy | None = None,
+        systemctl_bin: str | None = None,
+        lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
     ) -> None:
         """Bind the consumer to host-owned registry truth and directories."""
+        if actuator is None:
+            if systemctl_bin is None:
+                msg = "Host Reactor requires an injected actuator or attested systemctl executable."
+                raise ValueError(msg)
+            actuator = SystemdRuntimeActuator(
+                registry,
+                systemctl_bin=systemctl_bin,
+                observe_systemd=True,
+            )
+        if lock_factory is None:
+            from lychd.system.services.lifecycle.lock import LifecycleLock
+
+            lock_factory = LifecycleLock
         self._registry = registry
         self._inbox_dir = inbox_dir
         self._journal_dir = journal_dir
-        self._actuator = actuator or SystemdRuntimeActuator(registry, observe_systemd=True)
+        self._actuator = actuator
         self._policy = policy or resolve_switch_policy("evict-idle")
+        self._lock_factory = lock_factory
 
     async def consume_all(self) -> int:
         """Consume every claimed/pending intent once; raise after journaling failures."""
+        with self._lock_factory():
+            return await self._consume_all_locked()
+
+    async def _consume_all_locked(self) -> int:
+        """Consume all work while excluding every peer lifecycle mutation."""
         self._validate_directory(self._inbox_dir, label="inbox")
         self._validate_directory(self._journal_dir, label="journal")
 
@@ -297,15 +332,9 @@ class HostReactor:
     def _validate_policy(self, intent: TransitionIntent) -> None:
         """Recompute the allowlisted plan; syntax alone never grants host effects."""
         self._validate_known_animators(intent)
-        targets = sorted(
-            (spec for spec in self._registry.list_capabilities() if spec.animator_name == intent.target_animator),
-            key=lambda spec: spec.key,
-        )
-        if not targets:
-            msg = f"target animator has no configured capability: {intent.target_animator}"
-            raise RuntimeError(msg)
+        target = self._resolve_policy_target(intent)
         view = _ExpectedStateView(self._registry, set(intent.expected_active_animators))
-        decision = self._policy.solve(targets[0], view, LeaseLedger())
+        decision = self._policy.solve(target, view, LeaseLedger())
         expected_evict = tuple(sorted(decision.evict_animator_names))
         expected_launch = tuple(sorted(decision.launch_animator_names))
         if (
@@ -317,6 +346,40 @@ class HostReactor:
                 f"launch={expected_launch}"
             )
             raise RuntimeError(msg)
+
+    def _resolve_policy_target(self, intent: TransitionIntent) -> CapabilitySpec:
+        """Resolve the exact target, with an unambiguous legacy-journal fallback."""
+        specs = self._registry.list_capabilities()
+        if intent.target_capability_key is None:
+            legacy = sorted(
+                (spec for spec in specs if spec.animator_name == intent.target_animator),
+                key=lambda spec: spec.key,
+            )
+            if len(legacy) == 1:
+                return legacy[0]
+            if len(legacy) > 1:
+                msg = (
+                    "legacy transition omits target_capability_key, but target animator "
+                    f"'{intent.target_animator}' has multiple configured capabilities"
+                )
+                raise RuntimeError(msg)
+            msg = f"target animator has no configured capability: {intent.target_animator}"
+            raise RuntimeError(msg)
+
+        target = next(
+            (spec for spec in specs if spec.key == intent.target_capability_key),
+            None,
+        )
+        if target is None:
+            msg = f"target capability is not configured: {intent.target_capability_key}"
+            raise RuntimeError(msg)
+        if target.animator_name != intent.target_animator:
+            msg = (
+                f"target capability '{target.key}' belongs to animator "
+                f"'{target.animator_name}', not '{intent.target_animator}'"
+            )
+            raise RuntimeError(msg)
+        return target
 
     def _validate_compensation(self, intent: TransitionIntent, *, observed_generation: str) -> None:
         """Authorize only the exact inverse of a current completed forward intent."""

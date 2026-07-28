@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import TYPE_CHECKING, ClassVar, cast
 
 import click
@@ -227,10 +228,33 @@ _register_local_commands()
 
 def run_cli() -> None:
     """Configure shared logging, then run the native CLI without eager ASGI assembly."""
+    if _effectful_init_requested(sys.argv[1:]) and os.geteuid() == 0:
+        error = click.ClickException(
+            "LychD initialization is rootless; rerun `lychd init` as your ordinary user.",
+        )
+        error.show()
+        raise SystemExit(error.exit_code)
+
     from lychd.config.logging import apply_logging
 
     apply_logging()
     cli()
+
+
+def _effectful_init_requested(arguments: Sequence[str]) -> bool:
+    """Recognize the one bootstrap rite that must refuse root before Settings load."""
+    tokens = tuple(arguments)
+    if tokens[:1] == ("--",):
+        tokens = tokens[1:]
+    return bool(tokens and tokens[0] == "init" and "--dry-run" not in tokens and not _help_requested(tokens))
+
+
+def _help_requested(tokens: Sequence[str]) -> bool:
+    """Recognize Click's eager long help and clustered short ``-h`` option."""
+    return any(
+        argument == "--help" or (argument.startswith("-") and not argument.startswith("--") and "h" in argument[1:])
+        for argument in tokens
+    )
 
 
 if __name__ == "__main__":

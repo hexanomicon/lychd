@@ -7,12 +7,16 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Never
+from typing import Never, cast
 
 import structlog
 
 from lychd.system.binding_sites import AttestedBindingSites
-from lychd.system.interruptions import find_terminal_interruption
+from lychd.system.descriptor_settlement import DescriptorSet, FailureLedger
+from lychd.system.interruptions import (
+    find_terminal_interruption,
+    iter_exception_graph,
+)
 from lychd.system.services.scribe.authority import AUTHORITY_MODE, BindingAuthority
 from lychd.system.services.scribe.errors import (
     ScribeGenerationError,
@@ -41,6 +45,58 @@ from lychd.system.services.scribe.workspace import (
 logger = structlog.get_logger()
 
 
+def _collect_recovery_paths(
+    *errors: BaseException | None,
+) -> tuple[Path, ...]:
+    """Collect exact operator-visible paths across nested settlement evidence."""
+    paths: list[Path] = []
+    for error in errors:
+        if error is None:
+            continue
+        for candidate in iter_exception_graph(error):
+            recovery_paths: object = getattr(candidate, "recovery_paths", ())
+            if not isinstance(recovery_paths, tuple):
+                continue
+            paths.extend(path for path in cast("tuple[object, ...]", recovery_paths) if isinstance(path, Path))
+    return tuple(dict.fromkeys(paths))
+
+
+def _site_attestation_ledger(
+    path: Path,
+    *,
+    indeterminate: bool,
+) -> FailureLedger:
+    """Bind descriptor settlement to the correct Scribe site-state type."""
+
+    def error_factory(
+        message: str,
+        *,
+        failures: tuple[BaseException, ...],
+        outcome: str,
+        verified: bool,
+    ) -> BaseException:
+        if indeterminate:
+            return PathStateIndeterminateError(
+                message,
+                paths=frozenset({path}),
+                cause=failures[0] if failures else None,
+                failures=failures,
+                outcome=outcome,
+                verified=verified,
+            )
+        return ScribeGenerationError(
+            message,
+            failures=failures,
+            outcome=outcome,
+            verified=verified,
+        )
+
+    return FailureLedger(
+        error_factory=error_factory,
+        subject="Scribe binding-site attestation",
+    )
+
+
 @dataclass(frozen=True)
 class _PreparedPath:
     """One pinned target, its pre-state, staging object, and rollback name."""
@@ -58,6 +114,23 @@ class _PreparedCommit:
     workspaces: dict[Path, TransactionWorkspace]
     sites: dict[tuple[Path, str], _PreparedPath]
     authority: _PreparedPath | None
+
+
+def _collect_workspace_recovery(
+    prepared: _PreparedCommit,
+) -> tuple[tuple[Path, ...], tuple[BaseException, ...]]:
+    """Resolve retained workspaces once without letting observation replace truth."""
+    paths: list[Path] = []
+    failures: list[BaseException] = []
+    for workspace in prepared.workspaces.values():
+        try:
+            recovery_path = workspace.recovery_path()
+        except BaseException as exc:  # noqa: BLE001 - lexical path remains safe evidence
+            failures.append(exc)
+            paths.append(workspace.path)
+        else:
+            paths.append(recovery_path)
+    return tuple(dict.fromkeys(paths)), tuple(failures)
 
 
 @dataclass
@@ -160,23 +233,12 @@ class BindingTransaction:
         except BaseException as exc:  # noqa: BLE001 - rollback covers interrupts after mutation
             self._raise_transaction_failure(exc, progress=progress, prepared=prepared)
         finally:
-            active_error = sys.exception()
-            cleanup_errors = self._dispose_workspaces(
+            self._settle_commit_workspaces(
                 prepared,
-                retain=progress.retain_recovery_evidence,
+                progress=progress,
+                committed_generation=committed_generation,
+                active_error=sys.exception(),
             )
-            terminal = self._first_cleanup_terminal(cleanup_errors)
-            if terminal is not None:
-                outcome = self._cleanup_outcome(
-                    active_error=active_error,
-                    committed_generation=committed_generation,
-                    cleanup_errors=cleanup_errors,
-                )
-                terminal.add_note(
-                    "Scribe settled every transaction workspace after cleanup interruption; "
-                    f"public binding state is {outcome.state.value}."
-                )
-                raise terminal from outcome
         return committed_generation
 
     def _apply_sites(
@@ -432,13 +494,28 @@ class BindingTransaction:
             )
         except BaseException as primary:
             cleanup_errors = self._dispose_workspaces(prepared, retain=False)
-            terminal = self._first_cleanup_terminal(cleanup_errors)
+            outcome = ScribeTransactionError(
+                "Scribe preparation failed after every private workspace was settled.",
+                state=ScribeTransactionState.ROLLED_BACK,
+                forward_error=primary,
+                cleanup_errors=cleanup_errors,
+                recovery_paths=_collect_recovery_paths(
+                    primary,
+                    *cleanup_errors,
+                ),
+            )
+            terminal = find_terminal_interruption(outcome)
             if terminal is not None:
-                terminal.add_note(
-                    "Scribe settled every prepared workspace after cleanup interruption; "
-                    "no live binding mutation had begun."
+                self._raise_terminal_with_cleanup_outcome(
+                    terminal,
+                    outcome=outcome,
+                    note=(
+                        "Scribe settled every prepared workspace after cleanup "
+                        "interruption; no live binding mutation had begun."
+                    ),
                 )
-                raise terminal from primary
+            if cleanup_errors:
+                raise outcome from primary
             raise
         else:
             return prepared
@@ -504,9 +581,15 @@ class BindingTransaction:
         progress.retain_recovery_evidence = indeterminate
         state = ScribeTransactionState.INDETERMINATE if indeterminate else ScribeTransactionState.ROLLED_BACK
         recovery = ""
+        workspace_recovery_paths: tuple[Path, ...] = ()
+        recovery_observation_errors: tuple[BaseException, ...] = ()
         if indeterminate:
-            recovery_paths = ", ".join(str(workspace.recovery_path()) for workspace in prepared.workspaces.values())
-            recovery = f" Recovery evidence was retained at: {recovery_paths}."
+            (
+                workspace_recovery_paths,
+                recovery_observation_errors,
+            ) = _collect_workspace_recovery(prepared)
+            rendered_paths = ", ".join(str(path) for path in workspace_recovery_paths)
+            recovery = f" Recovery evidence was retained at: {rendered_paths}."
         if indeterminate and rollback_error is None:
             message = (
                 f"Scribe binding failed ({error!r}); proven mutations were rolled back, "
@@ -532,6 +615,15 @@ class BindingTransaction:
             state=state,
             forward_error=error,
             rollback_error=rollback_error,
+            cleanup_errors=recovery_observation_errors,
+            recovery_paths=tuple(
+                dict.fromkeys(
+                    (
+                        *workspace_recovery_paths,
+                        *_collect_recovery_paths(error, rollback_error),
+                    )
+                )
+            ),
         ) from (terminal_cause or error)
 
     def _rollback(
@@ -652,47 +744,66 @@ class BindingTransaction:
     ) -> None:
         """Re-attest approved site identities before every successful return."""
         for expected in self._expected_sites.values():
-            descriptor = -1
+            descriptors = DescriptorSet()
+            primary: BaseException | None = None
             try:
-                descriptor = os.open(
-                    expected.path,
-                    os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+                descriptor = descriptors.add(
+                    os.open(
+                        expected.path,
+                        os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+                    )
                 )
                 metadata = os.fstat(descriptor)
-            except OSError as exc:
+                if metadata.st_dev != expected.device or metadata.st_ino != expected.inode:
+                    message = (
+                        f"Binding-site identity changed after foundation approval; "
+                        f"refusing Scribe commit: {expected.path}."
+                    )
+                    primary = self._site_attestation_error(
+                        message,
+                        path=expected.path,
+                        indeterminate=indeterminate,
+                    )
+            except BaseException as exc:  # noqa: BLE001 - descriptor close remains a peer
                 message = (
                     "Binding site became unavailable after foundation approval; "
                     f"refusing Scribe commit: {expected.path}."
                 )
-                self._raise_site_attestation_failure(
+                primary = self._site_attestation_error(
                     message,
                     path=expected.path,
                     indeterminate=indeterminate,
                     cause=exc,
                 )
-            finally:
-                if descriptor >= 0:
-                    os.close(descriptor)
-            if metadata.st_dev == expected.device and metadata.st_ino == expected.inode:
-                continue
-            message = (
-                f"Binding-site identity changed after foundation approval; refusing Scribe commit: {expected.path}."
-            )
-            self._raise_site_attestation_failure(
-                message,
-                path=expected.path,
+            settlement = _site_attestation_ledger(
+                expected.path,
                 indeterminate=indeterminate,
+            )
+            if primary is not None:
+                settlement.record(primary)
+            settlement.record_all(descriptors.settle())
+            settlement.raise_if_any(
+                message=(
+                    str(primary)
+                    if primary is not None
+                    else f"Scribe binding-site attestation settled with failures for {expected.path}."
+                ),
+                outcome=("indeterminate" if indeterminate else "unchanged"),
+                terminal_note=(
+                    f"Scribe settled the approved-site descriptor for {expected.path} without mutating the filesystem."
+                ),
+                verified=not indeterminate,
             )
 
     @staticmethod
-    def _raise_site_attestation_failure(
+    def _site_attestation_error(
         message: str,
         *,
         path: Path,
         indeterminate: bool,
         cause: BaseException | None = None,
-    ) -> Never:
-        """Classify approved-site drift by whether a live mutation already occurred."""
+    ) -> BaseException:
+        """Construct approved-site drift for the current mutation boundary."""
         if indeterminate:
             error: BaseException = PathStateIndeterminateError(
                 message,
@@ -702,8 +813,8 @@ class BindingTransaction:
         else:
             error = ScribeGenerationError(message)
         if cause is not None:
-            raise error from cause
-        raise error
+            error.__cause__ = cause
+        return error
 
     @staticmethod
     def _require_state(state: PathState | None, target: PinnedPath) -> PathState:
@@ -730,7 +841,7 @@ class BindingTransaction:
                 if retain:
                     workspace.close()
                     continue
-                removed = workspace.cleanup()
+                workspace.cleanup()
             except BaseException as exc:  # noqa: BLE001 - settle every peer before surfacing
                 failures.append(exc)
                 logger.warning(
@@ -738,21 +849,115 @@ class BindingTransaction:
                     path=str(workspace.path),
                     error=str(exc),
                 )
-                continue
-            if not removed:
-                logger.warning(
-                    "scribe_transaction_cleanup_identity_changed",
-                    path=str(workspace.path),
-                )
         return tuple(failures)
+
+    def _settle_commit_workspaces(
+        self,
+        prepared: _PreparedCommit,
+        *,
+        progress: _CommitProgress,
+        committed_generation: str,
+        active_error: BaseException | None,
+    ) -> None:
+        """Surface every workspace-cleanup failure with exact public state."""
+        cleanup_errors = self._dispose_workspaces(
+            prepared,
+            retain=progress.retain_recovery_evidence,
+        )
+        if not cleanup_errors:
+            if active_error is not None:
+                outcome = next(
+                    (
+                        candidate
+                        for candidate in iter_exception_graph(active_error)
+                        if isinstance(candidate, ScribeTransactionError)
+                    ),
+                    None,
+                )
+                causal_errors = (
+                    tuple(
+                        error
+                        for error in (
+                            outcome.forward_error,
+                            outcome.rollback_error,
+                        )
+                        if error is not None
+                    )
+                    if outcome is not None
+                    else ()
+                )
+                terminal = (
+                    self._first_cleanup_terminal(
+                        outcome.cleanup_errors,
+                        excluding=causal_errors,
+                    )
+                    if outcome is not None
+                    else None
+                )
+                if terminal is None and outcome is not None and outcome.rollback_error is None:
+                    terminal = find_terminal_interruption(active_error)
+                if outcome is not None and terminal is not None:
+                    self._raise_terminal_with_cleanup_outcome(
+                        terminal,
+                        outcome=outcome,
+                        note=(
+                            "Scribe settled every transaction workspace before "
+                            f"preserving this interruption; public binding state "
+                            f"is {outcome.state.value}."
+                        ),
+                    )
+            return
+        outcome = self._cleanup_outcome(
+            active_error=active_error,
+            committed_generation=committed_generation,
+            cleanup_errors=cleanup_errors,
+        )
+        causal_errors = tuple(
+            error
+            for error in (
+                outcome.forward_error,
+                outcome.rollback_error,
+            )
+            if error is not None
+        )
+        terminal = self._first_cleanup_terminal(
+            outcome.cleanup_errors,
+            excluding=causal_errors,
+        )
+        if terminal is None and active_error is not None and outcome.rollback_error is None:
+            terminal = find_terminal_interruption(active_error)
+        if terminal is not None:
+            self._raise_terminal_with_cleanup_outcome(
+                terminal,
+                outcome=outcome,
+                note=(
+                    "Scribe settled every transaction workspace after cleanup "
+                    f"interruption; public binding state is {outcome.state.value}."
+                ),
+            )
+        if outcome is not active_error:
+            raise outcome from (active_error or cleanup_errors[0])
 
     @staticmethod
     def _first_cleanup_terminal(
         failures: tuple[BaseException, ...],
+        *,
+        excluding: tuple[BaseException, ...] = (),
     ) -> BaseException | None:
         """Find a native terminal only after every workspace was settled."""
+        excluded: set[int] = {
+            id(candidate)
+            for error in excluding
+            for candidate in iter_exception_graph(error)
+            if not isinstance(candidate, Exception)
+        }
         return next(
-            (terminal for failure in failures if (terminal := find_terminal_interruption(failure)) is not None),
+            (
+                candidate
+                for failure in failures
+                for candidate in iter_exception_graph(failure)
+                if not isinstance(candidate, Exception) and id(candidate) not in excluded
+            ),
             None,
         )
 
@@ -764,19 +969,59 @@ class BindingTransaction:
         cleanup_errors: tuple[BaseException, ...],
     ) -> ScribeTransactionError:
         """Attach exact public truth to a native cleanup interruption."""
-        if isinstance(active_error, ScribeTransactionError):
-            active_error.cleanup_errors = (*active_error.cleanup_errors, *cleanup_errors)
-            return active_error
+        if active_error is not None:
+            settled = next(
+                (
+                    candidate
+                    for candidate in iter_exception_graph(active_error)
+                    if isinstance(candidate, ScribeTransactionError)
+                ),
+                None,
+            )
+            if settled is not None:
+                settled.cleanup_errors = (*settled.cleanup_errors, *cleanup_errors)
+                settled.recovery_paths = tuple(
+                    dict.fromkeys(
+                        (
+                            *settled.recovery_paths,
+                            *_collect_recovery_paths(*cleanup_errors),
+                        )
+                    )
+                )
+                return settled
         if active_error is not None:
             return ScribeTransactionError(
                 "Scribe cleanup was interrupted after an unclassified transaction failure.",
                 state=ScribeTransactionState.INDETERMINATE,
                 forward_error=active_error,
                 cleanup_errors=cleanup_errors,
+                recovery_paths=_collect_recovery_paths(
+                    active_error,
+                    *cleanup_errors,
+                ),
             )
         return ScribeTransactionError(
             "Scribe commit succeeded, but transaction workspace cleanup was interrupted.",
             state=ScribeTransactionState.COMMITTED,
             generation=committed_generation,
             cleanup_errors=cleanup_errors,
+            recovery_paths=_collect_recovery_paths(*cleanup_errors),
         )
+
+    @staticmethod
+    def _raise_terminal_with_cleanup_outcome(
+        terminal: BaseException,
+        *,
+        outcome: ScribeTransactionError,
+        note: str,
+    ) -> Never:
+        """Preserve prior close evidence before attaching transaction progress."""
+        prior_cause = terminal.__cause__
+        if (
+            prior_cause is not None
+            and prior_cause is not outcome
+            and all(prior_cause is not error for error in outcome.cleanup_errors)
+        ):
+            outcome.cleanup_errors = (*outcome.cleanup_errors, prior_cause)
+        terminal.add_note(note)
+        raise terminal from outcome

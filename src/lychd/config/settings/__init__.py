@@ -11,13 +11,12 @@ from lychd.config.settings.orchestration import (
     SwitchingSettings,
     WhimSettings,
 )
-from lychd.config.settings.root import Settings, get_settings
+from lychd.config.settings.root import Settings, SettingsSnapshot, get_settings
 from lychd.config.settings.server import (
     DatabaseSettings,
     LoggingSettings,
     ServerJobsSettings,
     ServerSettings,
-    ViteSettings,
     WebSettings,
 )
 
@@ -30,8 +29,8 @@ __all__ = (
     "ServerJobsSettings",
     "ServerSettings",
     "Settings",
+    "SettingsSnapshot",
     "SwitchingSettings",
-    "ViteSettings",
     "WebSettings",
     "WhimSettings",
     "get_settings",

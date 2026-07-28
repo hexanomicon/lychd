@@ -73,6 +73,7 @@ class AppInit(InitPluginProtocol):
         from lychd.config.runes.registry import load_rune_registry
         from lychd.domain.animation.services.store import SoulstoneRecordService
         from lychd.domain.cortex.services import KarmaService, RunService, StepService
+        from lychd.domain.web.contracts import CsrfClientContract
         from lychd.domain.web.services import SessionService
         from lychd.extensions.host import get_extensions
         from lychd.lib.exceptions import ApplicationError
@@ -102,7 +103,8 @@ class AppInit(InitPluginProtocol):
 
         # CORS / CSRF
         app_config.cors_config = build_cors_config(settings)
-        app_config.csrf_config = build_csrf_config(settings)
+        csrf_config = build_csrf_config(settings)
+        app_config.csrf_config = csrf_config
 
         # The Ward (4C-1): stamp every request's connection.user with the settings Sigil
         # so the scope guards can rule. Excludes /_app + /schema (unauthenticated assets).
@@ -146,7 +148,16 @@ class AppInit(InitPluginProtocol):
         )
 
         # State: the one assembly + validated runes
-        app_config.state.update({"extensions": extensions, "runes": runes})
+        app_config.state.update(
+            {
+                "extensions": extensions,
+                "runes": runes,
+                "csrf_contract": CsrfClientContract(
+                    cookie_name=csrf_config.cookie_name,
+                    header_name=csrf_config.header_name,
+                ),
+            },
+        )
 
         # Dependencies
         from lychd.interface.web.deps import web_dependencies

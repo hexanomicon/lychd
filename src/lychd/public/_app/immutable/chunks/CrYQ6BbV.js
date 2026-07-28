@@ -1,0 +1,1 @@
+import{Y as e}from"./DiKmhS7I.js";e();

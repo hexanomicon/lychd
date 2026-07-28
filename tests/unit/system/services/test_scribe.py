@@ -11,6 +11,10 @@ import pytest
 
 from lychd.system.atomic_paths import rename_exchange_at, rename_noreplace_at
 from lychd.system.binding_sites import AttestedBindingSite, AttestedBindingSites
+from lychd.system.interruptions import (
+    find_terminal_interruption,
+    iter_exception_graph,
+)
 from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget, SystemdService
 from lychd.system.services.scribe import (
     ScribeConflictError,
@@ -31,10 +35,14 @@ from lychd.system.services.scribe.storage import (
     AtomicOutcome,
     AttestedPath,
     PathState,
+    PathStateIndeterminateError,
     PinnedPath,
 )
 from lychd.system.services.scribe.transaction import BindingTransaction
-from lychd.system.services.scribe.workspace import TransactionWorkspace
+from lychd.system.services.scribe.workspace import (
+    TransactionWorkspace,
+    WorkspaceSettlementError,
+)
 
 
 class _MutableProgress(Protocol):
@@ -1104,24 +1112,30 @@ def test_transaction_cleanup_preserves_replacement_at_workspace_path(
     """Cleanup follows its pinned inode and never recursively deletes a replacement."""
     real_cleanup = TransactionWorkspace.cleanup
     replacement_paths: list[Path] = []
+    retained_paths: list[Path] = []
     intercepted = False
 
-    def replace_workspace_before_cleanup(workspace: TransactionWorkspace) -> bool:
+    def replace_workspace_before_cleanup(workspace: TransactionWorkspace) -> None:
         nonlocal intercepted
         if not intercepted:
             intercepted = True
             relocated = workspace.path.with_name(f"{workspace.path.name}-relocated")
             workspace.path.rename(relocated)
+            retained_paths.append(relocated)
             workspace.path.mkdir()
             (workspace.path / "operator-marker").write_text("preserve me", encoding="utf-8")
             replacement_paths.append(workspace.path)
-        return real_cleanup(workspace)
+        real_cleanup(workspace)
 
     monkeypatch.setattr(TransactionWorkspace, "cleanup", replace_workspace_before_cleanup)
 
-    scribe.reconcile_all([_container()], plain_units={})
+    with pytest.raises(ScribeTransactionError) as raised:
+        scribe.reconcile_all([_container()], plain_units={})
 
     assert replacement_paths
+    assert retained_paths
+    assert raised.value.state is ScribeTransactionState.COMMITTED
+    assert retained_paths[0] in raised.value.recovery_paths
     assert (replacement_paths[0] / "operator-marker").read_text(encoding="utf-8") == "preserve me"
 
 
@@ -1158,10 +1172,13 @@ def test_workspace_creation_failure_never_deletes_unattested_replacement(
         replace_before_child_open,
     )
 
-    with pytest.raises(OSError, match="child descriptor failure"):
+    with pytest.raises(WorkspaceSettlementError, match="retained exact recovery") as raised:
         TransactionWorkspace.create(parent)
 
     assert replacement is not None
+    assert raised.value.outcome == "workspace_retained"
+    assert raised.value.outcome_verified
+    assert parent / replacement.name.removesuffix("-unattested") in raised.value.recovery_paths
     assert (replacement / "operator-marker").read_text(encoding="utf-8") == "preserve me"
 
 
@@ -1777,7 +1794,7 @@ def _cleanup_transaction(
     first = MagicMock(path=tmp_path / "first-workspace")
     first.cleanup.side_effect = first_cleanup
     second = MagicMock(path=tmp_path / "second-workspace")
-    second.cleanup.return_value = True
+    second.cleanup.return_value = None
     prepared = SimpleNamespace(
         workspaces={tmp_path / "first": first, tmp_path / "second": second},
         sites={},
@@ -1859,6 +1876,30 @@ def test_cleanup_terminal_after_commit_keeps_native_signal_and_committed_generat
     second.cleanup.assert_called_once()
 
 
+def test_ordinary_cleanup_failure_after_commit_surfaces_committed_generation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-terminal cleanup failure cannot be logged and dropped."""
+    cleanup_failure = OSError("workspace cleanup failed")
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=cleanup_failure,
+        fail_forward=False,
+    )
+
+    with pytest.raises(ScribeTransactionError) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value.state is ScribeTransactionState.COMMITTED
+    assert raised.value.generation == "committed-generation"
+    assert cleanup_failure in raised.value.cleanup_errors
+    assert raised.value.__cause__ is cleanup_failure
+    first.cleanup.assert_called_once()
+    second.cleanup.assert_called_once()
+
+
 def test_cleanup_terminal_after_exact_rollback_settles_peers_and_attaches_state(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1882,3 +1923,259 @@ def test_cleanup_terminal_after_exact_rollback_settles_peers_and_attaches_state(
     assert terminal in outcome.cleanup_errors
     first.cleanup.assert_called_once()
     second.cleanup.assert_called_once()
+
+
+@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(147)])
+def test_nested_terminal_resurfaces_after_exact_rollback_and_workspace_close(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    terminal: BaseException,
+) -> None:
+    """A nested terminal remains native after proven rollback and clean close."""
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=OSError("unused cleanup failure"),
+        fail_forward=False,
+    )
+    indeterminate_path = tmp_path / "indeterminate-target"
+
+    def fail_after_proven_mutation(
+        _plans: object,
+        *,
+        prepared: object,
+        progress: _MutableProgress,
+    ) -> None:
+        del prepared
+        progress.mutations.append(cast("AtomicMutation", object()))
+        message = "post-mutation observation interrupted"
+        raise PathStateIndeterminateError(
+            message,
+            paths=frozenset({indeterminate_path}),
+            cause=terminal,
+        ) from terminal
+
+    monkeypatch.setattr(
+        transaction,
+        "_apply_sites",
+        fail_after_proven_mutation,
+    )
+
+    with pytest.raises(type(terminal)) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value is terminal
+    outcome = raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.state is ScribeTransactionState.INDETERMINATE
+    assert isinstance(outcome.forward_error, PathStateIndeterminateError)
+    assert outcome.forward_error.cause is terminal
+    assert outcome.rollback_error is None
+    first.close.assert_called_once()
+    second.close.assert_called_once()
+    first.cleanup.assert_not_called()
+    second.cleanup.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "recovery_failure",
+    [OSError("recovery path failed"), KeyboardInterrupt(), SystemExit(153)],
+)
+def test_recovery_path_observation_is_total_transaction_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    recovery_failure: BaseException,
+) -> None:
+    """Recovery rendering cannot replace the classified forward failure."""
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=OSError("unused cleanup failure"),
+        fail_forward=False,
+    )
+    first.recovery_path.side_effect = recovery_failure
+    second.recovery_path.return_value = second.path
+    indeterminate_path = tmp_path / "indeterminate-target"
+
+    def fail_after_proven_mutation(
+        _plans: object,
+        *,
+        prepared: object,
+        progress: _MutableProgress,
+    ) -> None:
+        del prepared
+        progress.mutations.append(cast("AtomicMutation", object()))
+        message = "post-mutation state is indeterminate"
+        raise PathStateIndeterminateError(
+            message,
+            paths=frozenset({indeterminate_path}),
+        )
+
+    monkeypatch.setattr(
+        transaction,
+        "_apply_sites",
+        fail_after_proven_mutation,
+    )
+
+    expected = ScribeTransactionError if isinstance(recovery_failure, Exception) else type(recovery_failure)
+    with pytest.raises(expected) as raised:
+        transaction.commit(_empty_write_set())
+
+    outcome = raised.value if isinstance(raised.value, ScribeTransactionError) else raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.state is ScribeTransactionState.INDETERMINATE
+    assert isinstance(outcome.forward_error, PathStateIndeterminateError)
+    assert recovery_failure in tuple(iter_exception_graph(outcome))
+    assert first.path in outcome.recovery_paths
+    assert second.path in outcome.recovery_paths
+    first.recovery_path.assert_called_once()
+    second.recovery_path.assert_called_once()
+    first.close.assert_called_once()
+    second.close.assert_called_once()
+
+
+@pytest.mark.parametrize("rollback_terminal", [KeyboardInterrupt(), SystemExit(155)])
+def test_ordinary_close_error_does_not_promote_rollback_terminal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rollback_terminal: BaseException,
+) -> None:
+    """An earlier rollback terminal stays typed when final close is ordinary."""
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=OSError("unused cleanup failure"),
+        fail_forward=True,
+    )
+    close_error = OSError("workspace close failed")
+    rollback = MagicMock(side_effect=rollback_terminal)
+    monkeypatch.setattr(transaction, "_rollback", rollback)
+    first.close.side_effect = close_error
+
+    with pytest.raises(ScribeTransactionError) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value.state is ScribeTransactionState.INDETERMINATE
+    assert raised.value.rollback_error is rollback_terminal
+    assert close_error in raised.value.cleanup_errors
+    assert find_terminal_interruption(raised.value) is rollback_terminal
+    rollback.assert_called_once()
+    first.close.assert_called_once()
+    second.close.assert_called_once()
+
+
+def test_new_cleanup_terminal_wins_after_interrupted_rollback_settlement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A genuinely new close terminal surfaces after every retained workspace."""
+    rollback_terminal = KeyboardInterrupt()
+    cleanup_terminal = SystemExit(157)
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=OSError("unused cleanup failure"),
+        fail_forward=True,
+    )
+    monkeypatch.setattr(
+        transaction,
+        "_rollback",
+        MagicMock(side_effect=rollback_terminal),
+    )
+    first.close.side_effect = cleanup_terminal
+
+    with pytest.raises(SystemExit) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value is cleanup_terminal
+    outcome = raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.rollback_error is rollback_terminal
+    assert cleanup_terminal in outcome.cleanup_errors
+    first.close.assert_called_once()
+    second.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("rollback_terminal", "recovery_terminal"),
+    [
+        (KeyboardInterrupt(), SystemExit(159)),
+        (SystemExit(161), KeyboardInterrupt()),
+    ],
+)
+def test_recovery_observation_terminal_wins_over_rollback_and_ordinary_close(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rollback_terminal: BaseException,
+    recovery_terminal: BaseException,
+) -> None:
+    """A new recovery-observation terminal survives later ordinary close failure."""
+    transaction, first, second = _cleanup_transaction(
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+        first_cleanup=OSError("unused cleanup failure"),
+        fail_forward=True,
+    )
+    monkeypatch.setattr(
+        transaction,
+        "_rollback",
+        MagicMock(side_effect=rollback_terminal),
+    )
+    first.recovery_path.side_effect = recovery_terminal
+    second.recovery_path.return_value = second.path
+    close_error = OSError("ordinary close failure")
+    first.close.side_effect = close_error
+
+    with pytest.raises(type(recovery_terminal)) as raised:
+        transaction.commit(_empty_write_set())
+
+    assert raised.value is recovery_terminal
+    outcome = raised.value.__cause__
+    assert isinstance(outcome, ScribeTransactionError)
+    assert outcome.state is ScribeTransactionState.INDETERMINATE
+    assert outcome.rollback_error is rollback_terminal
+    assert recovery_terminal in outcome.cleanup_errors
+    assert close_error in outcome.cleanup_errors
+    assert first.path in outcome.recovery_paths
+    assert second.path in outcome.recovery_paths
+    first.recovery_path.assert_called_once()
+    second.recovery_path.assert_called_once()
+    first.close.assert_called_once()
+    second.close.assert_called_once()
+
+
+def test_preparation_primary_and_ordinary_cleanup_failure_are_both_typed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Private preparation cleanup retains both peers before live mutation."""
+    site = tmp_path / "binding-site"
+    authority = MagicMock(path=site / ".lychd-owned.json")
+    transaction = BindingTransaction(authority)
+    workspace = MagicMock(path=site / ".lychd-transaction-test")
+    cleanup_failure = OSError("preparation cleanup failed")
+    workspace.cleanup.side_effect = cleanup_failure
+    primary = ValueError("preparation failed")
+    monkeypatch.setattr(
+        transaction,
+        "_create_workspace",
+        MagicMock(return_value=workspace),
+    )
+    monkeypatch.setattr(
+        transaction,
+        "_prepare_site_files",
+        MagicMock(side_effect=primary),
+    )
+    prepare = getattr(transaction, "_prepare_commit")  # noqa: B009 - adversarial private boundary
+
+    with pytest.raises(ScribeTransactionError) as raised:
+        prepare(
+            _empty_write_set(),
+            release_empty_authority=False,
+        )
+
+    assert raised.value.state is ScribeTransactionState.ROLLED_BACK
+    assert raised.value.forward_error is primary
+    assert cleanup_failure in raised.value.cleanup_errors
+    assert raised.value.__cause__ is primary
+    workspace.cleanup.assert_called_once()

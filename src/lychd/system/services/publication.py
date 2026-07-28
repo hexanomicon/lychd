@@ -6,14 +6,22 @@ import errno
 import os
 import stat
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final, NoReturn
 from uuid import uuid4
 
 from lychd.system import descriptor_settlement
 from lychd.system.atomic_paths import rename_noreplace_at
-from lychd.system.descriptor_settlement import DescriptorSet, FailureLedger
+from lychd.system.descriptor_settlement import (
+    DescriptorSet,
+    FailureLedger,
+    find_settlement_outcome,
+)
+from lychd.system.interruptions import (
+    find_terminal_interruption,
+    iter_exception_graph,
+)
 from lychd.system.services.layout_directories import (
     DirectoryProvisioning,
     DirectoryRollbackError,
@@ -42,11 +50,15 @@ class PublicationRollbackError(RuntimeError):
         *,
         failures: tuple[BaseException, ...] = (),
         outcome: str | None = None,
+        verified: bool | None = None,
+        recovery_paths: tuple[Path, ...] = (),
     ) -> None:
         """Retain peer failures and the last verified publication outcome."""
         super().__init__(message)
         self.failures = failures
         self.outcome = outcome
+        self.outcome_verified = outcome is not None and outcome != "recovery" if verified is None else verified
+        self.recovery_paths = recovery_paths
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +80,8 @@ class _FilePublication:
     public_name: str
     published: bool = False
     staging_present: bool = True
+    recovery_names: set[str] = field(default_factory=set)
+    indeterminate_paths: set[Path] = field(default_factory=set)
 
 
 class JournaledCreation:
@@ -133,6 +147,7 @@ class JournaledCreation:
         publication: _FilePublication | None = None
         committed = False
         outcome = "unchanged"
+        outcome_verified = True
         result = CreatedResources()
         primary: BaseException | None = None
         try:
@@ -150,22 +165,29 @@ class JournaledCreation:
                 self._journal(result)
                 committed = True
                 outcome = "committed"
+                outcome_verified = True
                 self._resources = CreatedResources.combine(
                     self._resources,
                     result,
                 )
         except BaseException as exc:  # noqa: BLE001 - mutation truth crosses native interruption
             primary = exc
+            settlement = find_settlement_outcome(exc)
+            if publication is None and settlement is not None:
+                outcome = settlement.name
+                outcome_verified = settlement.verified
             if publication is not None and not committed:
                 try:
                     _rollback_file(publication)
-                except PublicationRollbackError as rollback:
-                    if rollback.__cause__ is None:
-                        rollback.__cause__ = exc
+                except BaseException as rollback:  # noqa: BLE001 - rollback may preserve a native signal
+                    _retain_publication_primary(rollback, primary=exc)
                     primary = rollback
-                    outcome = rollback.outcome or "recovery"
+                    settlement = find_settlement_outcome(rollback)
+                    outcome = settlement.name if settlement is not None else "recovery"
+                    outcome_verified = settlement.verified if settlement is not None else False
                 else:
                     outcome = "rolled_back"
+                    outcome_verified = True
 
         close_failures = parent_descriptors.settle()
         if primary is not None:
@@ -174,6 +196,7 @@ class JournaledCreation:
                 close_failures=close_failures,
                 path=path,
                 outcome=outcome,
+                verified=outcome_verified,
             )
         cleanup = _publication_failure_ledger()
         cleanup.record_all(close_failures)
@@ -184,7 +207,7 @@ class JournaledCreation:
                 f"LychD init preserved the verified {outcome} file-publication "
                 f"outcome for {path} after settling its parent descriptor."
             ),
-            verified=True,
+            verified=outcome_verified,
         )
         return result
 
@@ -192,6 +215,24 @@ class JournaledCreation:
         """Commit one non-empty exact batch to the external lifecycle journal."""
         if self._on_created is not None and (resources.directories or resources.files or resources.subvolumes):
             self._on_created(resources)
+
+
+def _retain_publication_primary(
+    rollback: BaseException,
+    *,
+    primary: BaseException,
+) -> None:
+    """Keep the initiating failure reachable after rollback adds a stronger peer."""
+    if rollback is primary:
+        return
+    evidence = next(
+        (candidate for candidate in iter_exception_graph(rollback) if isinstance(candidate, PublicationRollbackError)),
+        None,
+    )
+    if evidence is not None and all(failure is not primary for failure in evidence.failures):
+        evidence.failures = (primary, *evidence.failures)
+    if rollback.__cause__ is None:
+        rollback.__cause__ = primary
 
 
 def _open_existing_directory(path: Path) -> int:
@@ -221,10 +262,29 @@ def _open_existing_directory(path: Path) -> int:
     return descriptors.transfer(descriptor)
 
 
-def _publication_failure_ledger() -> FailureLedger:
+def _publication_failure_ledger(
+    *,
+    recovery_paths: tuple[Path, ...] = (),
+) -> FailureLedger:
     """Bind generic descriptor settlement to publication-specific evidence."""
+
+    def error_factory(
+        message: str,
+        *,
+        failures: tuple[BaseException, ...],
+        outcome: str,
+        verified: bool,
+    ) -> BaseException:
+        return PublicationRollbackError(
+            message,
+            failures=failures,
+            outcome=outcome,
+            verified=verified,
+            recovery_paths=recovery_paths,
+        )
+
     return FailureLedger(
-        error_factory=PublicationRollbackError,
+        error_factory=error_factory,
         subject="File publication settlement",
     )
 
@@ -261,21 +321,25 @@ def _raise_after_parent_settlement(
     close_failures: tuple[BaseException, ...],
     path: Path,
     outcome: str,
+    verified: bool,
 ) -> NoReturn:
     """Settle the parent descriptor before surfacing exact publication truth."""
-    cleanup = _publication_failure_ledger()
     if isinstance(primary, PublicationRollbackError):
+        cleanup = _publication_failure_ledger(
+            recovery_paths=(primary.recovery_paths if not verified or outcome == "recovery" else ()),
+        )
         cleanup.record(primary)
         cleanup.record_all(close_failures)
         cleanup.raise_if_any(
             message=str(primary),
-            outcome=primary.outcome or outcome,
+            outcome=outcome,
             terminal_note=(
-                f"LychD init retained explicit file-publication recovery truth "
+                f"LychD init retained explicit file-publication {outcome} truth "
                 f"for {path} after settling its parent descriptor."
             ),
-            verified=True,
+            verified=verified,
         )
+    cleanup = _publication_failure_ledger()
     cleanup.record_all(close_failures)
     cleanup.raise_primary_after_verified_settlement(
         primary,
@@ -295,22 +359,29 @@ def _stage_text_file(
     mode: int,
 ) -> _FilePublication:
     """Write and attest one private same-directory candidate."""
+    descriptors = DescriptorSet()
     descriptor = -1
     staging_name = ""
     for _ in range(_AUXILIARY_NAME_ATTEMPTS):
         staging_name = f".lychd-create-{uuid4().hex}"
         try:
-            descriptor = os.open(
-                staging_name,
-                _FILE_OPEN_FLAGS,
-                mode,
-                dir_fd=parent_fd,
+            descriptor = descriptors.add(
+                os.open(
+                    staging_name,
+                    _FILE_OPEN_FLAGS,
+                    mode,
+                    dir_fd=parent_fd,
+                )
             )
         except FileExistsError:
             continue
-        except OSError as exc:
-            message = f"Could not stage initialization file {path}: {exc}"
-            raise RuntimeError(message) from exc
+        except BaseException as exc:  # noqa: BLE001 - create may complete before adapter return
+            _raise_after_staging_open_failure(
+                parent_fd=parent_fd,
+                staging_name=staging_name,
+                path=path,
+                primary=exc,
+            )
         break
     if descriptor < 0:
         message = f"Could not allocate a private staging name for {path}"
@@ -322,22 +393,21 @@ def _stage_text_file(
         metadata = os.fstat(descriptor)
         identity = _identity(path=path, metadata=metadata)
         _require_regular_file(metadata, path=path)
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
-            descriptor = -1
+        stream = os.fdopen(descriptor, "w", encoding="utf-8")
+        descriptors.transfer(descriptor)
+        with stream:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-    except BaseException as exc:
-        if descriptor >= 0:
-            os.close(descriptor)
-        _remove_private_name(
+    except BaseException as primary:  # noqa: BLE001 - exact staging cleanup precedes native propagation
+        _raise_after_staging_failure(
             parent_fd=parent_fd,
-            name=staging_name,
-            expected=identity,
+            staging_name=staging_name,
+            identity=identity,
             path=path,
-            primary=exc,
+            primary=primary,
+            close_failures=descriptors.settle(),
         )
-        raise
 
     return _FilePublication(
         identity=identity,
@@ -345,6 +415,110 @@ def _stage_text_file(
         staging_name=staging_name,
         public_name=path.name,
     )
+
+
+def _raise_after_staging_open_failure(
+    *,
+    parent_fd: int,
+    staging_name: str,
+    path: Path,
+    primary: BaseException,
+) -> NoReturn:
+    """Classify an exclusive create whose adapter raised around its return."""
+    recovery_path = path.parent / staging_name
+    cleanup = _publication_failure_ledger(
+        recovery_paths=(recovery_path,),
+    )
+    try:
+        observed = _observe_name(
+            parent_fd=parent_fd,
+            name=staging_name,
+        )
+    except BaseException as observation_error:
+        cleanup.record(primary, observation_error)
+        cleanup.raise_if_any(
+            message=(
+                f"Could not classify private staging creation for {path}; possible recovery remains at {recovery_path}."
+            ),
+            outcome="recovery",
+            terminal_note="",
+            verified=False,
+        )
+        raise primary from observation_error
+    if observed is None:
+        settled = _publication_failure_ledger()
+        settled.record(primary)
+        settled.raise_if_any(
+            message=f"Staging creation failed before publishing a private candidate for {path}.",
+            outcome="unchanged",
+            terminal_note=(f"LychD init verified that failed staging creation left no private candidate for {path}."),
+            verified=True,
+        )
+        raise primary
+    cleanup.record(primary)
+    cleanup.raise_if_any(
+        message=(
+            f"Exclusive staging creation for {path} did not return an identity "
+            f"token; preserving possible recovery at {recovery_path}."
+        ),
+        outcome="recovery",
+        terminal_note="",
+        verified=False,
+    )
+    raise primary
+
+
+def _raise_after_staging_failure(
+    *,
+    parent_fd: int,
+    staging_name: str,
+    identity: _FileIdentity | None,
+    path: Path,
+    primary: BaseException,
+    close_failures: tuple[BaseException, ...],
+) -> NoReturn:
+    """Settle the staging name and descriptor without masking either peer."""
+    cleanup = _publication_failure_ledger()
+    cleanup.record_all(close_failures)
+    removed = False
+    try:
+        _remove_private_name(
+            parent_fd=parent_fd,
+            name=staging_name,
+            expected=identity,
+            path=path,
+            primary=primary,
+        )
+    except BaseException as exc:  # noqa: BLE001 - retain exact private recovery
+        cleanup.record(exc)
+        removed = _private_name_is_absent(
+            parent_fd=parent_fd,
+            name=staging_name,
+            cleanup=cleanup,
+        )
+    else:
+        removed = True
+    if removed:
+        cleanup.raise_primary_after_verified_settlement(
+            primary,
+            outcome="rolled_back",
+            terminal_note=(
+                f"LychD init removed exact staging for {path} and settled its "
+                "descriptor before preserving this interruption."
+            ),
+        )
+    settled = _publication_failure_ledger(
+        recovery_paths=(path.parent / staging_name,),
+    )
+    settled.record_all(tuple(cleanup.failures))
+    settled.record(primary)
+    settled.raise_if_any(
+        message=f"Initialization file staging retained recovery evidence for {path}.",
+        outcome="recovery",
+        terminal_note="",
+        verified=False,
+    )
+    raise primary
 
 
 def _publish_file(publication: _FilePublication) -> bool:
@@ -362,6 +536,7 @@ def _publish_file(publication: _FilePublication) -> bool:
         _fsync_directory(publication.parent_fd, path=publication.identity.path.parent)
         return False
     except BaseException as exc:
+        publication.published = True
         _classify_publication_after_error(publication, primary=exc)
         raise
     publication.published = True
@@ -375,41 +550,103 @@ def _classify_publication_after_error(
     primary: BaseException,
 ) -> None:
     """Recover exact publication state when a mutator raises after its effect."""
-    staging = _observe_name(
-        parent_fd=publication.parent_fd,
-        name=publication.staging_name,
-    )
-    public = _observe_name(
-        parent_fd=publication.parent_fd,
-        name=publication.public_name,
-    )
+    try:
+        staging = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.staging_name,
+        )
+        public = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.public_name,
+        )
+    except BaseException as observation_error:  # noqa: BLE001 - rollback must retain possible exposure
+        message = (
+            f"Initialization file publication could not classify possible public "
+            f"exposure for {publication.identity.path}."
+        )
+        raise PublicationRollbackError(
+            message,
+            failures=(primary, observation_error),
+            outcome="recovery",
+            verified=False,
+            recovery_paths=(
+                publication.identity.path,
+                publication.identity.path.parent / publication.staging_name,
+            ),
+        ) from (find_terminal_interruption(observation_error) or primary)
     staging_matches = _matches(staging, expected=publication.identity)
     public_matches = _matches(public, expected=publication.identity)
     if staging_matches and public_matches:
         publication.published = True
         return
     if staging_matches and not public_matches:
+        publication.published = False
         return
     message = f"Initialization file publication became indeterminate for {publication.identity.path}"
-    raise PublicationRollbackError(message) from primary
+    raise PublicationRollbackError(
+        message,
+        failures=(primary,),
+        outcome="recovery",
+        verified=False,
+        recovery_paths=(
+            publication.identity.path,
+            publication.identity.path.parent / publication.staging_name,
+        ),
+    ) from primary
 
 
 def _attest_public_file(publication: _FilePublication) -> None:
     """Require the installed public name to retain the staged identity."""
+    descriptors = DescriptorSet()
     descriptor = -1
+    primary: BaseException | None = None
+    metadata: os.stat_result | None = None
     try:
-        descriptor = os.open(
-            publication.public_name,
-            _READ_FILE_FLAGS,
-            dir_fd=publication.parent_fd,
+        descriptor = descriptors.add(
+            os.open(
+                publication.public_name,
+                _READ_FILE_FLAGS,
+                dir_fd=publication.parent_fd,
+            )
         )
         metadata = os.fstat(descriptor)
     except OSError as exc:
         message = f"Published initialization file became unreachable: {publication.identity.path}"
-        raise PublicationRollbackError(message) from exc
-    finally:
-        if descriptor >= 0:
-            os.close(descriptor)
+        primary = PublicationRollbackError(message)
+        primary.__cause__ = exc
+    except BaseException as exc:  # noqa: BLE001 - descriptor settlement remains a peer
+        primary = exc
+    close_failures: tuple[BaseException, ...] = ()
+    if descriptor >= 0:
+        try:
+            descriptors.close(descriptor)
+        except BaseException as exc:  # noqa: BLE001 - retain the sole close peer
+            close_failures = (exc,)
+    if primary is not None:
+        cleanup = _publication_failure_ledger()
+        cleanup.record_all(close_failures)
+        cleanup.raise_primary_after_verified_settlement(
+            primary,
+            outcome="published",
+            terminal_note=(
+                f"LychD init preserved the published candidate for "
+                f"{publication.identity.path} while settling its attestation descriptor."
+            ),
+        )
+    cleanup = _publication_failure_ledger()
+    cleanup.record_all(close_failures)
+    cleanup.raise_if_any(
+        message=f"Could not release published-file attestation for {publication.identity.path}.",
+        outcome="published",
+        terminal_note=(
+            f"LychD init preserved the published candidate for "
+            f"{publication.identity.path} while settling its attestation descriptor."
+        ),
+        verified=True,
+    )
+    if metadata is None:  # pragma: no cover - every failed capture returns above
+        message = f"Published initialization file attestation produced no metadata: {publication.identity.path}"
+        raise PublicationRollbackError(message)
     if not stat.S_ISREG(metadata.st_mode) or not _matches(
         metadata,
         expected=publication.identity,
@@ -420,25 +657,98 @@ def _attest_public_file(publication: _FilePublication) -> None:
 
 def _rollback_file(publication: _FilePublication) -> None:
     """Remove only the exact candidate/public winner and preserve replacements."""
-    failures: list[BaseException] = []
+    cleanup = _publication_failure_ledger()
     if publication.published:
         try:
             _quarantine_public_file(publication)
         except BaseException as exc:  # noqa: BLE001 - settle the private peer before reporting
-            failures.append(exc)
+            cleanup.record(exc)
     if publication.staging_present:
         try:
             _remove_staging(publication)
         except BaseException as exc:  # noqa: BLE001 - retain all recovery evidence
-            failures.append(exc)
+            cleanup.record(exc)
+    durable = True
     try:
         _fsync_directory(publication.parent_fd, path=publication.identity.path.parent)
     except BaseException as exc:  # noqa: BLE001 - durability failure is part of rollback truth
-        failures.append(exc)
-    if failures:
-        detail = "; ".join(str(failure) for failure in failures)
-        message = f"Exact file rollback did not complete for {publication.identity.path}: {detail}"
-        raise PublicationRollbackError(message) from failures[0]
+        cleanup.record(exc)
+        durable = False
+    if not cleanup.failures and not publication.recovery_names:
+        return
+
+    namespace_settled, recovery_paths = _observe_rollback_recovery(
+        publication,
+        cleanup=cleanup,
+    )
+    if not namespace_settled and not cleanup.failures:
+        cleanup.record(
+            PublicationRollbackError(
+                f"File rollback retained named recovery for {publication.identity.path}.",
+                outcome="recovery",
+                verified=False,
+                recovery_paths=recovery_paths,
+            )
+        )
+    verified = namespace_settled and durable
+    outcome = "rolled_back" if verified else "recovery"
+    detail = "; ".join(str(failure) for failure in cleanup.failures)
+    settled = _publication_failure_ledger(
+        recovery_paths=recovery_paths,
+    )
+    settled.record_all(tuple(cleanup.failures))
+    settled.raise_if_any(
+        message=f"Exact file rollback settled with failures for {publication.identity.path}: {detail}",
+        outcome=outcome,
+        terminal_note=(
+            f"LychD init verified exact file rollback for {publication.identity.path} "
+            "after attempting every rollback peer."
+        ),
+        verified=verified,
+    )
+
+
+def _observe_rollback_recovery(
+    publication: _FilePublication,
+    *,
+    cleanup: FailureLedger,
+) -> tuple[bool, tuple[Path, ...]]:
+    """Prove every public, staging, and random rollback name is settled."""
+    recovery_paths = sorted(publication.indeterminate_paths)
+    try:
+        public = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.public_name,
+        )
+        staging = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.staging_name,
+        )
+        if _matches(public, expected=publication.identity):
+            recovery_paths.append(publication.identity.path)
+        if _matches(staging, expected=publication.identity):
+            recovery_paths.append(publication.identity.path.parent / publication.staging_name)
+        for recovery_name in tuple(sorted(publication.recovery_names)):
+            recovery = _observe_name(
+                parent_fd=publication.parent_fd,
+                name=recovery_name,
+            )
+            if recovery is None:
+                publication.recovery_names.discard(recovery_name)
+                continue
+            recovery_paths.append(publication.identity.path.parent / recovery_name)
+        namespace_settled = not recovery_paths
+    except BaseException as exc:  # noqa: BLE001 - postcondition evidence is a peer
+        cleanup.record(exc)
+        recovery_paths.extend(
+            (
+                publication.identity.path,
+                publication.identity.path.parent / publication.staging_name,
+                *(publication.identity.path.parent / name for name in sorted(publication.recovery_names)),
+            )
+        )
+        namespace_settled = False
+    return namespace_settled, tuple(dict.fromkeys(recovery_paths))
 
 
 def _quarantine_public_file(publication: _FilePublication) -> None:
@@ -450,6 +760,7 @@ def _quarantine_public_file(publication: _FilePublication) -> None:
     if public is None or not _matches(public, expected=publication.identity):
         return
     quarantine_name = f".lychd-rollback-{uuid4().hex}"
+    publication.recovery_names.add(quarantine_name)
     try:
         rename_noreplace_at(
             publication.public_name,
@@ -457,16 +768,12 @@ def _quarantine_public_file(publication: _FilePublication) -> None:
             source_dir_fd=publication.parent_fd,
             destination_dir_fd=publication.parent_fd,
         )
-    except FileNotFoundError:
-        return
-    except BaseException as exc:
-        if _settle_quarantine_after_error(
+    except BaseException as exc:  # noqa: BLE001 - classify both names after ambiguous return
+        _settle_quarantine_after_error(
             publication,
             quarantine_name=quarantine_name,
             primary=exc,
-        ):
-            return
-        raise
+        )
     _remove_or_restore_quarantine(
         publication,
         quarantine_name=quarantine_name,
@@ -478,26 +785,60 @@ def _settle_quarantine_after_error(
     *,
     quarantine_name: str,
     primary: BaseException,
-) -> bool:
+) -> NoReturn:
     """Classify a quarantine rename that may have completed before interruption."""
-    public = _observe_name(
-        parent_fd=publication.parent_fd,
-        name=publication.public_name,
-    )
-    quarantine = _observe_name(
-        parent_fd=publication.parent_fd,
-        name=quarantine_name,
-    )
-    if public is None and quarantine is not None:
+    try:
+        public = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.public_name,
+        )
+        quarantine = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=quarantine_name,
+        )
+    except BaseException as observation_error:  # noqa: BLE001 - keep exact random recovery name
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=quarantine_name,
+            message=(f"Could not classify file rollback quarantine mutation for {publication.identity.path}."),
+            failures=(primary, observation_error),
+        )
+    public_matches = _matches(public, expected=publication.identity)
+    quarantine_matches = _matches(quarantine, expected=publication.identity)
+    if public is None and quarantine_matches:
         _remove_or_restore_quarantine(
             publication,
             quarantine_name=quarantine_name,
         )
-        return True
-    if public is not None and quarantine is None:
-        return False
-    message = f"File rollback quarantine became indeterminate for {publication.identity.path}"
-    raise PublicationRollbackError(message) from primary
+        raise primary
+    if public is None and quarantine is None:
+        publication.recovery_names.discard(quarantine_name)
+        raise primary
+    if public_matches and quarantine is None:
+        publication.recovery_names.discard(quarantine_name)
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=None,
+            message=(f"File rollback quarantine did not detach the public candidate for {publication.identity.path}."),
+            failures=(primary,),
+            additional_paths=(publication.identity.path,),
+        )
+    if isinstance(primary, FileExistsError) and public_matches:
+        publication.recovery_names.discard(quarantine_name)
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=None,
+            message=(f"File rollback quarantine collided before detaching {publication.identity.path}."),
+            failures=(primary,),
+            additional_paths=(publication.identity.path,),
+        )
+    _raise_publication_recovery(
+        publication,
+        quarantine_name=quarantine_name,
+        message=f"File rollback quarantine became indeterminate for {publication.identity.path}.",
+        failures=(primary,),
+        additional_paths=((publication.identity.path,) if public_matches else ()),
+    )
 
 
 def _remove_or_restore_quarantine(
@@ -506,18 +847,52 @@ def _remove_or_restore_quarantine(
     quarantine_name: str,
 ) -> None:
     """Delete an exact quarantine or restore a foreign entry without clobbering."""
-    quarantine = _observe_name(
-        parent_fd=publication.parent_fd,
-        name=quarantine_name,
-    )
-    if _matches(quarantine, expected=publication.identity):
-        _remove_private_name(
+    try:
+        quarantine = _observe_name(
             parent_fd=publication.parent_fd,
             name=quarantine_name,
-            expected=publication.identity,
-            path=publication.identity.path,
-            suppress_completed_interruption=True,
         )
+    except BaseException as observation_error:  # noqa: BLE001 - retain exact private recovery
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=quarantine_name,
+            message=(f"Could not inspect rollback quarantine {quarantine_name} for {publication.identity.path}."),
+            failures=(observation_error,),
+        )
+    if quarantine is None:
+        publication.recovery_names.discard(quarantine_name)
+        return
+    if _matches(quarantine, expected=publication.identity):
+        try:
+            _remove_private_name(
+                parent_fd=publication.parent_fd,
+                name=quarantine_name,
+                expected=publication.identity,
+                path=publication.identity.path,
+            )
+        except BaseException as removal_error:
+            try:
+                after = _observe_name(
+                    parent_fd=publication.parent_fd,
+                    name=quarantine_name,
+                )
+            except BaseException as observation_error:  # noqa: BLE001 - retain exact recovery
+                _raise_publication_recovery(
+                    publication,
+                    quarantine_name=quarantine_name,
+                    message=(f"Could not classify rollback quarantine cleanup for {publication.identity.path}."),
+                    failures=(removal_error, observation_error),
+                )
+            if after is None:
+                publication.recovery_names.discard(quarantine_name)
+                raise
+            _raise_publication_recovery(
+                publication,
+                quarantine_name=quarantine_name,
+                message=(f"Rollback quarantine cleanup retained {quarantine_name} for {publication.identity.path}."),
+                failures=(removal_error,),
+            )
+        publication.recovery_names.discard(quarantine_name)
         return
     try:
         rename_noreplace_at(
@@ -526,13 +901,97 @@ def _remove_or_restore_quarantine(
             source_dir_fd=publication.parent_fd,
             destination_dir_fd=publication.parent_fd,
         )
-    except FileNotFoundError:
-        return
-    except FileExistsError as exc:
-        message = (
-            f"Foreign replacement retained at private recovery name {quarantine_name} for {publication.identity.path}"
+    except BaseException as restore_error:  # noqa: BLE001 - classify both names after ambiguous return
+        _settle_foreign_restore_error(
+            publication,
+            quarantine_name=quarantine_name,
+            quarantine=quarantine,
+            primary=restore_error,
         )
-        raise PublicationRollbackError(message) from exc
+    publication.recovery_names.discard(quarantine_name)
+
+
+def _settle_foreign_restore_error(
+    publication: _FilePublication,
+    *,
+    quarantine_name: str,
+    quarantine: os.stat_result,
+    primary: BaseException,
+) -> NoReturn:
+    """Classify both names against the captured foreign identity after restore."""
+    try:
+        public = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=publication.public_name,
+        )
+        after = _observe_name(
+            parent_fd=publication.parent_fd,
+            name=quarantine_name,
+        )
+    except BaseException as observation_error:  # noqa: BLE001 - retain exact private name
+        publication.indeterminate_paths.update(
+            (
+                publication.identity.path,
+                publication.identity.path.parent / quarantine_name,
+            )
+        )
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=quarantine_name,
+            message=(f"Could not classify foreign rollback recovery for {publication.identity.path}."),
+            failures=(primary, observation_error),
+        )
+    if after is None and _same_regular_identity(public, quarantine):
+        publication.recovery_names.discard(quarantine_name)
+        raise primary
+    if after is None:
+        publication.recovery_names.discard(quarantine_name)
+        publication.indeterminate_paths.add(publication.identity.path)
+        _raise_publication_recovery(
+            publication,
+            quarantine_name=None,
+            message=(
+                f"Foreign rollback recovery lost its captured identity "
+                f"between {quarantine_name} and {publication.identity.path}."
+            ),
+            failures=(primary,),
+            additional_paths=(publication.identity.path,),
+        )
+    _raise_publication_recovery(
+        publication,
+        quarantine_name=quarantine_name,
+        message=(
+            f"Foreign replacement retained at private recovery name {quarantine_name} for {publication.identity.path}."
+        ),
+        failures=(primary,),
+        additional_paths=((publication.identity.path,) if _matches(public, expected=publication.identity) else ()),
+    )
+
+
+def _raise_publication_recovery(
+    publication: _FilePublication,
+    *,
+    quarantine_name: str | None,
+    message: str,
+    failures: tuple[BaseException, ...],
+    additional_paths: tuple[Path, ...] = (),
+) -> NoReturn:
+    """Surface exact named publication recovery without native flattening."""
+    recovery_paths = (
+        *additional_paths,
+        *((publication.identity.path.parent / quarantine_name,) if quarantine_name is not None else ()),
+    )
+    terminal = next(
+        (nested for failure in failures if (nested := find_terminal_interruption(failure)) is not None),
+        None,
+    )
+    raise PublicationRollbackError(
+        message,
+        failures=failures,
+        outcome="recovery",
+        verified=False,
+        recovery_paths=tuple(dict.fromkeys(recovery_paths)),
+    ) from (terminal or failures[0])
 
 
 def _remove_staging(publication: _FilePublication) -> None:
@@ -555,7 +1014,6 @@ def _remove_private_name(
     expected: _FileIdentity | None,
     path: Path,
     primary: BaseException | None = None,
-    suppress_completed_interruption: bool = False,
 ) -> None:
     """Unlink one private name only when its observed identity is expected."""
     try:
@@ -580,7 +1038,7 @@ def _remove_private_name(
             message = f"Could not classify private file removal {name} for {path}"
             raise PublicationRollbackError(message) from (primary or observation_error)
         if after is None:
-            if isinstance(exc, Exception) or suppress_completed_interruption:
+            if isinstance(exc, Exception):
                 return
             raise
         if not _matches(after, expected=expected):
@@ -588,6 +1046,20 @@ def _remove_private_name(
             raise PublicationRollbackError(message) from (primary or exc)
         message = f"Could not remove private file recovery name {name} for {path}"
         raise PublicationRollbackError(message) from (primary or exc)
+
+
+def _private_name_is_absent(
+    *,
+    parent_fd: int,
+    name: str,
+    cleanup: FailureLedger,
+) -> bool:
+    """Observe cleanup after an exceptional unlink and retain observation peers."""
+    try:
+        return _observe_name(parent_fd=parent_fd, name=name) is None
+    except BaseException as observation_error:  # noqa: BLE001 - caller owns final classification
+        cleanup.record(observation_error)
+        return False
 
 
 def _observe_name(
@@ -617,6 +1089,20 @@ def _matches(
         and stat.S_ISREG(observed.st_mode)
         and observed.st_dev == expected.device
         and observed.st_ino == expected.inode
+    )
+
+
+def _same_regular_identity(
+    observed: os.stat_result | None,
+    expected: os.stat_result,
+) -> bool:
+    """Compare a post-error public name with one captured foreign file."""
+    return bool(
+        observed is not None
+        and stat.S_ISREG(expected.st_mode)
+        and stat.S_ISREG(observed.st_mode)
+        and observed.st_dev == expected.st_dev
+        and observed.st_ino == expected.st_ino
     )
 
 

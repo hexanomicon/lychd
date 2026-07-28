@@ -49,25 +49,6 @@ class DatabaseSettings(SettingsSection):
         return validate_podman_secret_name(value, field_name="server.database.password_secret")
 
 
-class ViteSettings(SettingsSection):
-    """The Vite development surface served beside the web application."""
-
-    dev_mode: bool = False
-    """Serve Vite development assets instead of the built frontend bundle."""
-    use_server_lifespan: bool = True
-    """Let the Vessel lifecycle start and stop the Vite integration."""
-    host: str = "0.0.0.0"  # noqa: S104
-    port: int = 5173
-    hot_reload: bool = True
-    """Enable browser asset hot reload while Vite development mode is active."""
-    asset_url: str = "/static/"
-    """HTTP prefix from which built frontend assets are served."""
-
-    @property
-    def set_static_files(self) -> bool:
-        return self.asset_url.startswith("/")
-
-
 class WebSettings(SettingsSection):
     """The web application the server exposes and packages into the Vessel."""
 
@@ -82,7 +63,6 @@ class WebSettings(SettingsSection):
     csrf_cookie_name: str = "csrftoken"
     csrf_cookie_secure: bool = False
     """Require HTTPS when browsers send the CSRF cookie; enable behind an HTTPS Ward/Proxy."""
-    vite: ViteSettings = Field(default_factory=ViteSettings)
 
     @field_validator("secret_key_secret")
     @classmethod
@@ -148,7 +128,6 @@ class ServerSettings(SettingsSection):
         return {
             "LychD Server": self.port,
             "Phylactery (Postgres)": self.database.port,
-            "Vite (Frontend)": self.web.vite.port,
         }
 
     @model_validator(mode="after")

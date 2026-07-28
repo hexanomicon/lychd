@@ -67,6 +67,8 @@ the mediated publish/receipt handshake.
 - `rollback_of`: absent for forward work; the completed forward transition id for compensation.
 - `config_generation`: a `sha256:` digest of the capability projection used to make the plan.
 - `target_animator`: the canonical requested Animator identity.
+- `target_capability_key`: the exact configured capability used to recompute the host-side policy.
+  Fresh intents always carry it; omission exists only for settling a legacy journal record.
 - `evict_animators`: the complete ordered stop set.
 - `launch_animators`: the complete ordered start set.
 - `expected_active_animators`: the observed physically started local-runtime set against which
@@ -88,6 +90,7 @@ claimed active. These are schema invariants before either actuator sees the inte
   "rollback_of": null,
   "config_generation": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   "target_animator": "vision",
+  "target_capability_key": "vision:local:model",
   "evict_animators": ["chat"],
   "launch_animators": ["vision"],
   "expected_active_animators": ["chat"]
@@ -119,17 +122,20 @@ actuator = "host-reactor" # caged default; use "systemd" explicitly when uncaged
 
 `SystemdRuntimeActuator` is the uncaged/local effect owner:
 
-1. At the host composition boundary it derives the observed active Animator set from
+1. The uncaged composition wraps observation, effects, and compensation in the same
+   interprocess lifecycle lock used by operator mutation. Failure to acquire that lock is a typed
+   no-effect precondition, so the manager may reopen admission safely.
+2. At the host composition boundary it derives the observed active Animator set from
    `systemctl --user is-active` over registry-owned local units and rejects a stale
    `expected_active_animators` set before the first effect. It does not try to probe Pod-internal
    model endpoints from the host. This no-effect outcome is a typed `RuntimePreconditionError`, so
    the manager reopens its forward barrier without latching mutation containment.
-2. It resolves canonical Soulstone identities to registry-owned generated service names. Callers
+3. It resolves canonical Soulstone identities to registry-owned generated service names. Callers
    cannot supply a unit name.
-3. It stops the complete evict set and starts the complete launch set. Host-state mode does not try
+4. It stops the complete evict set and starts the complete launch set. Host-state mode does not try
    to refresh Pod-internal model endpoints; final capability probing and `WARM` convergence remain
    the Orchestrator/registry path after physical actuation.
-4. If an operation fails, it best-effort reverses completed work: newly started Animators are
+5. If an operation fails, it best-effort reverses completed work: newly started Animators are
    stopped in reverse order and stopped Animators are restarted in reverse order. Every
    compensation error is retained in the raised failure.
 
@@ -211,14 +217,18 @@ out of the Vessel-writable inbox before parsing and opens the claimed path with 
 extra or malformed fields.
 
 Before any effect, the consumer verifies the capability-configuration digest and requires every
-referenced identity to be a local Soulstone. For a forward operation it recomputes the configured
-switch policy from the target and expected-state projection; the exact evict/launch sets must match
-that host-side plan. For compensation it opens the referenced `.completed.json` through the same
-bounded no-follow reader, requires a current-generation forward operation, computes its typed
-inverse, and compares every effect field except the newly minted transition id. A forged inverse is
-declined before effects while the original record remains. Finally, the Systemd actuator compares expected state
-to host user-unit truth (or an exact legal prefix during recovery/compensation) and resolves unit
-names only from host-loaded registry truth.
+referenced identity to be a local Soulstone. For a forward operation it resolves
+`target_capability_key` against host-loaded registry truth, verifies that the capability belongs to
+`target_animator`, and recomputes the configured switch policy from that exact capability and the
+expected-state projection; the exact evict/launch sets must match that host-side plan. A legacy
+journal record that predates `target_capability_key` is accepted only when its target Animator owns
+exactly one configured capability; zero or multiple candidates fail closed. For compensation it
+opens the referenced `.completed.json` through the same bounded no-follow reader, requires a
+current-generation forward operation, computes its typed inverse while preserving the exact target
+capability key, and compares every effect field except the newly minted transition id. A forged
+inverse is declined before effects while the original record remains. Finally, the Systemd
+actuator compares expected state to host user-unit truth (or an exact legal prefix during
+recovery/compensation) and resolves unit names only from host-loaded registry truth.
 
 For a fresh intent, the consumer atomically moves the file out of the Vessel-visible inbox to
 `<transition_id>.processing.json` in the host-owned journal and `fsync`s both directories before

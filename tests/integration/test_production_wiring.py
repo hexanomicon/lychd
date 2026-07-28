@@ -42,6 +42,7 @@ from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
+
 class _InProcessQueue:
     """A SAQ-queue stand-in that runs `perform_run` on the loop with an EMPTY ctx.
 

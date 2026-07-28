@@ -10,13 +10,11 @@ import structlog
 from pydantic_core import PydanticUndefined
 
 from lychd.config.runes.base import RuneConfig
+from lychd.config.runes.markers import SAMPLE_MARKER
 from lychd.system.constants import PATH_RUNES_DIR
 from lychd.system.services.publication import JournaledCreation
 
 logger = structlog.get_logger()
-
-SAMPLE_MARKER = "# lychd: sample-rune"
-"""Comment marker used to identify generated non-authoritative sample TOMLs."""
 
 
 class ConfigWriter:

@@ -16,7 +16,7 @@ from pydantic_ai import RunContext
 from lychd.agents.deps import LychDDeps
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.schemas import ConsentDecision
-from lychd.domain.cortex.events import RunChannel, RunEmitter, RunEvent
+from lychd.domain.cortex.events import RunChannel, RunChannelSnapshot, RunEmitter, RunEvent
 from lychd.domain.orchestration.schema import TransitionPlan
 
 if TYPE_CHECKING:
@@ -119,6 +119,10 @@ class FakeEvents:
 
     def subscribe(self, run_id: str, *, from_seq: int | None = None) -> AsyncIterator[RunEvent]:
         return self.open(run_id).subscribe(from_seq)
+
+    def snapshot(self, run_id: str) -> RunChannelSnapshot | None:
+        channel = self._channels.get(run_id)
+        return channel.snapshot() if channel is not None else None
 
     def close(self, run_id: str) -> None:
         channel = self._channels.pop(run_id, None)

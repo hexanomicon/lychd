@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Awaitable, Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock
@@ -28,6 +30,49 @@ class _Spec:
     def model_dump(self, *, mode: str) -> dict[str, str]:
         assert mode == "json"
         return {"key": self.key, "animator_name": self.animator_name}
+
+
+class _Actuator:
+    """Typed apply/recover fake for the Host Reactor's narrow effect port."""
+
+    def __init__(
+        self,
+        *,
+        apply: Callable[[TransitionIntent], Awaitable[None]] | None = None,
+        recover: Callable[[TransitionIntent], Awaitable[None]] | None = None,
+    ) -> None:
+        self.apply_mock = AsyncMock(side_effect=apply)
+        self.recover_mock = AsyncMock(side_effect=recover)
+
+    async def apply(self, intent: TransitionIntent) -> None:
+        await self.apply_mock(intent)
+
+    async def recover(self, intent: TransitionIntent) -> None:
+        await self.recover_mock(intent)
+
+
+@contextmanager
+def _uncontended_lock() -> Iterator[None]:
+    """Keep parallel unit tests isolated from the process-global host lock."""
+    yield
+
+
+def _host_reactor(
+    registry: Any,
+    *,
+    inbox_dir: Path,
+    journal_dir: Path,
+    actuator: _Actuator,
+    lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
+) -> HostReactor:
+    """Construct a Reactor with explicit test-owned lifecycle authority."""
+    return HostReactor(
+        registry,
+        inbox_dir=inbox_dir,
+        journal_dir=journal_dir,
+        actuator=actuator,
+        lock_factory=lock_factory or _uncontended_lock,
+    )
 
 
 def _registry() -> Any:
@@ -63,6 +108,7 @@ def _intent(registry: Any) -> TransitionIntent:
         transition_id="a" * 32,
         config_generation=capability_config_generation(registry),
         target_animator="local",
+        target_capability_key="chat:local:model",
         launch_animators=("local",),
     )
 
@@ -89,19 +135,50 @@ async def test_reactor_claims_applies_and_journals_once(tmp_path: Path) -> None:
     intent = _intent(registry)
     pending = inbox / f"{intent.transition_id}.json"
     _write_intent(pending, intent)
-    actuator = SimpleNamespace(apply=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     assert await reactor.consume_all() == 1
-    actuator.apply.assert_awaited_once_with(intent)
+    actuator.apply_mock.assert_awaited_once_with(intent)
     assert not pending.exists()
     assert (journal / f"{intent.transition_id}.completed.json").is_file()
 
     # A replay with the same delivery identity is retired without a second effect.
     _write_intent(pending, intent)
     assert await reactor.consume_all() == 0
-    actuator.apply.assert_awaited_once()
+    actuator.apply_mock.assert_awaited_once()
     assert not pending.exists()
+
+
+@pytest.mark.asyncio
+async def test_reactor_holds_the_shared_lifecycle_lock_across_host_effects(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    _write_intent(inbox / f"{intent.transition_id}.json", intent)
+    events: list[str] = []
+
+    @contextmanager
+    def lock() -> Iterator[None]:
+        events.append("lock-enter")
+        try:
+            yield
+        finally:
+            events.append("lock-exit")
+
+    async def apply(_intent: TransitionIntent) -> None:
+        events.append("apply")
+
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=_Actuator(apply=apply),
+        lock_factory=lock,
+    )
+
+    assert await reactor.consume_all() == 1
+    assert events == ["lock-enter", "apply", "lock-exit"]
 
 
 @pytest.mark.asyncio
@@ -111,13 +188,13 @@ async def test_reactor_recovers_preexisting_processing_record(tmp_path: Path) ->
     intent = _intent(registry)
     processing = journal / f"{intent.transition_id}.processing.json"
     _write_intent(processing, intent)
-    actuator = SimpleNamespace(apply=AsyncMock(), recover=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     assert await reactor.consume_all() == 1
 
-    actuator.recover.assert_awaited_once_with(intent)
-    actuator.apply.assert_not_awaited()
+    actuator.recover_mock.assert_awaited_once_with(intent)
+    actuator.apply_mock.assert_not_awaited()
     assert not processing.exists()
     assert (journal / f"{intent.transition_id}.completed.json").is_file()
 
@@ -130,6 +207,7 @@ async def test_reactor_accepts_exact_inverse_of_completed_forward(tmp_path: Path
         transition_id="f" * 32,
         config_generation=capability_config_generation(registry),
         target_animator="local",
+        target_capability_key="chat:local:model",
         evict_animators=("old",),
         launch_animators=("local",),
         expected_active_animators=("old",),
@@ -139,13 +217,13 @@ async def test_reactor_accepts_exact_inverse_of_completed_forward(tmp_path: Path
     compensation = build_compensation_intent(forward).model_copy(update={"transition_id": "d" * 32})
     pending = inbox / f"{compensation.transition_id}.json"
     _write_intent(pending, compensation)
-    actuator = SimpleNamespace(apply=AsyncMock(), recover=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     assert await reactor.consume_all() == 1
 
-    actuator.recover.assert_awaited_once_with(compensation)
-    actuator.apply.assert_not_awaited()
+    actuator.recover_mock.assert_awaited_once_with(compensation)
+    actuator.apply_mock.assert_not_awaited()
     assert original_record.is_file()
     assert (journal / f"{compensation.transition_id}.completed.json").is_file()
 
@@ -158,6 +236,7 @@ async def test_reactor_rejects_forged_compensation_and_preserves_original(tmp_pa
         transition_id="e" * 32,
         config_generation=capability_config_generation(registry),
         target_animator="local",
+        target_capability_key="chat:local:model",
         evict_animators=("old",),
         launch_animators=("local",),
         expected_active_animators=("old",),
@@ -174,14 +253,14 @@ async def test_reactor_rejects_forged_compensation_and_preserves_original(tmp_pa
     )
     pending = inbox / f"{forged.transition_id}.json"
     _write_intent(pending, forged)
-    actuator = SimpleNamespace(apply=AsyncMock(), recover=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     with pytest.raises(RuntimeError, match="does not exactly invert"):
         await reactor.consume_all()
 
-    actuator.recover.assert_not_awaited()
-    actuator.apply.assert_not_awaited()
+    actuator.recover_mock.assert_not_awaited()
+    actuator.apply_mock.assert_not_awaited()
     assert original_record.is_file()
     assert (journal / f"{forged.transition_id}.declined.json").is_file()
 
@@ -193,13 +272,13 @@ async def test_reactor_rejects_stale_config_and_retires_live_file(tmp_path: Path
     intent = _intent(registry).model_copy(update={"config_generation": "sha256:" + "f" * 64})
     pending = inbox / f"{intent.transition_id}.json"
     _write_intent(pending, intent)
-    actuator = SimpleNamespace(apply=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     with pytest.raises(RuntimeError, match="stale config generation"):
         await reactor.consume_all()
 
-    actuator.apply.assert_not_awaited()
+    actuator.apply_mock.assert_not_awaited()
     assert not pending.exists()
     assert (journal / f"{intent.transition_id}.declined.json").is_file()
 
@@ -209,7 +288,12 @@ async def test_reactor_rejects_unsafe_directory_mode(tmp_path: Path) -> None:
     registry = _registry()
     inbox, journal = _secure_dirs(tmp_path)
     inbox.chmod(0o755)
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal)
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=_Actuator(),
+    )
 
     with pytest.raises(RuntimeError, match="mode 0o700"):
         await reactor.consume_all()
@@ -225,27 +309,72 @@ async def test_reactor_recomputes_policy_before_host_effect(tmp_path: Path) -> N
         )
         for name in ("old", "local")
     }
-    registry = SimpleNamespace(list_capabilities=lambda: specs, get_soulstone_rune=runes.get)
+    registry: Any = SimpleNamespace(list_capabilities=lambda: specs, get_soulstone_rune=runes.get)
     inbox, journal = _secure_dirs(tmp_path)
     intent = TransitionIntent(
         transition_id="b" * 32,
-        config_generation=capability_config_generation(registry),  # type: ignore[arg-type]
+        config_generation=capability_config_generation(registry),
         target_animator="local",
+        target_capability_key="chat:local:model",
         launch_animators=("local",),
         expected_active_animators=("old",),
     )
     pending = inbox / f"{intent.transition_id}.json"
     _write_intent(pending, intent)
-    actuator = SimpleNamespace(apply=AsyncMock())
-    reactor = HostReactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)  # type: ignore[arg-type]
+    actuator = _Actuator()
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
 
     with pytest.raises(RuntimeError, match="violates policy"):
         await reactor.consume_all()
 
-    actuator.apply.assert_not_awaited()
+    actuator.apply_mock.assert_not_awaited()
     assert not pending.exists()
     marker = journal / f"{intent.transition_id}.declined.json"
     assert json.loads(marker.read_text(encoding="utf-8"))["transition_id"] == intent.transition_id
+
+
+@pytest.mark.asyncio
+async def test_reactor_rejects_exact_capability_owned_by_another_animator(tmp_path: Path) -> None:
+    registry = _swap_registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = TransitionIntent(
+        transition_id="9" * 32,
+        config_generation=capability_config_generation(registry),
+        target_animator="local",
+        target_capability_key="chat:other:model",
+        launch_animators=("local",),
+    )
+    _write_intent(inbox / f"{intent.transition_id}.json", intent)
+    actuator = _Actuator()
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=actuator,
+    )
+
+    with pytest.raises(RuntimeError, match="belongs to animator 'other'"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_reactor_accepts_unambiguous_legacy_intent_without_capability_key(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    legacy = _intent(registry).model_copy(update={"target_capability_key": None})
+    _write_intent(inbox / f"{legacy.transition_id}.json", legacy)
+    actuator = _Actuator()
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=actuator,
+    )
+
+    assert await reactor.consume_all() == 1
+    actuator.apply_mock.assert_awaited_once_with(legacy)
 
 
 @pytest.mark.asyncio
@@ -255,11 +384,11 @@ async def test_reactor_discards_oversized_untrusted_payload(tmp_path: Path) -> N
     pending = inbox / f"{'c' * 32}.json"
     pending.write_bytes(b"x" * (64 * 1024 + 1))
     pending.chmod(0o600)
-    reactor = HostReactor(
+    reactor = _host_reactor(
         registry,
         inbox_dir=inbox,
         journal_dir=journal,
-        actuator=SimpleNamespace(apply=AsyncMock()),  # type: ignore[arg-type]
+        actuator=_Actuator(),
     )
 
     with pytest.raises(RuntimeError, match="exceeds"):

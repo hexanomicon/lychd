@@ -1,13 +1,20 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { onDestroy } from "svelte";
 
   import {
     createBridgeSession,
     getBridgeSnapshot,
+    getRunSnapshot,
     listenToRun,
     sendBridgeMessage
   } from "$lib/api/client";
   import type { BridgeSnapshot, ConsentCard as ConsentCardModel } from "$lib/api/models";
+  import {
+    mergeSnapshotLiveTurns,
+    replaceLiveTurnFromSnapshot,
+    type LiveTurn
+  } from "$lib/bridge/projection";
   import ConsentCard from "./ConsentCard.svelte";
   import GenUI from "./GenUI.svelte";
 
@@ -20,17 +27,14 @@
   let thread: HTMLElement;
   let loadVersion = 0;
   let renderVersion = $state(0);
-  type LiveTurn = {
-    runId: string;
-    content: string;
-    status: string;
-    state: "streaming" | "done" | "failed";
-    fragments: Array<Record<string, unknown>>;
-  };
   let liveTurns = $state<LiveTurn[]>([]);
   const streams = new Map<string, () => void>();
+  const refreshTimers = new Map<string, number>();
 
   let selected = $derived(snapshot?.session ?? null);
+  let selectedLiveTurns = $derived(
+    liveTurns.filter((turn) => turn.sessionId === selected?.id)
+  );
 
   function omen(text: string, fault = true) {
     window.dispatchEvent(new CustomEvent("altar:omen", { detail: { text, fault } }));
@@ -43,8 +47,30 @@
     try {
       const next = await getBridgeSnapshot(id);
       if (version !== loadVersion) return;
+      const merged = mergeSnapshotLiveTurns(next, $state.snapshot(liveTurns));
+      for (const active of next.active_runs) {
+        const index = merged.liveTurns.findIndex((turn) => turn.runId === active.run_id);
+        const current = merged.liveTurns[index];
+        if (current && !streams.has(active.run_id)) {
+          merged.liveTurns[index] = replaceLiveTurnFromSnapshot(
+            current,
+            active
+          );
+        }
+      }
+      for (const runId of merged.retiredRunIds) {
+        streams.get(runId)?.();
+        streams.delete(runId);
+        clearRefreshTimer(runId);
+      }
       snapshot = next;
-      liveTurns = [];
+      liveTurns = merged.liveTurns;
+      for (const active of next.active_runs) {
+        const turn = liveTurns.find((item) => item.runId === active.run_id);
+        if (!turn) continue;
+        if (active.terminal) scheduleSettledRefresh(active.run_id, active.session_id);
+        else attachStream(turn, active.cursor);
+      }
       window.dispatchEvent(new CustomEvent("altar:attention", { detail: next.pending_count }));
     } catch (cause) {
       if (version === loadVersion) error = cause instanceof Error ? cause.message : "The Bridge stayed dark.";
@@ -66,11 +92,12 @@
     }
   });
 
-  $effect(() => {
-    return () => {
-      for (const close of streams.values()) close();
-      streams.clear();
-    };
+  onDestroy(() => {
+    loadVersion++;
+    for (const close of streams.values()) close();
+    streams.clear();
+    for (const timer of refreshTimers.values()) window.clearTimeout(timer);
+    refreshTimers.clear();
   });
 
   async function createSession() {
@@ -82,52 +109,129 @@
     }
   }
 
+  function clearRefreshTimer(runId: string) {
+    const timer = refreshTimers.get(runId);
+    if (timer !== undefined) window.clearTimeout(timer);
+    refreshTimers.delete(runId);
+  }
+
+  function scheduleSettledRefresh(runId: string, targetSessionId: string) {
+    clearRefreshTimer(runId);
+    const expectedRouteSessionId = sessionId;
+    const timer = window.setTimeout(() => {
+      refreshTimers.delete(runId);
+      if (sessionId !== expectedRouteSessionId) return;
+      if (snapshot?.session?.id !== targetSessionId) return;
+      void load(sessionId);
+    }, 50);
+    refreshTimers.set(runId, timer);
+  }
+
+  function attachStream(turn: LiveTurn, initialCursor = -1) {
+    if (turn.state !== "streaming" || streams.has(turn.runId)) return;
+    const targetRunId = turn.runId;
+    const targetSessionId = turn.sessionId;
+    let hardClosed = false;
+    let close: (() => void) | undefined;
+    close = listenToRun(
+      targetRunId,
+      (event) => {
+        const active = liveTurns.find((item) => item.runId === targetRunId);
+        if (!active) return;
+        const payload = event.payload;
+        if (event.kind === "token") active.content += String(payload.text ?? "");
+        else if (event.kind === "status" || event.kind === "node") {
+          active.status = String(payload.text ?? event.kind);
+        } else if (event.kind === "fragment") active.fragments.push(payload);
+        else if (event.kind === "consent") {
+          if (snapshot?.session?.id === active.sessionId) void load(active.sessionId);
+          else window.dispatchEvent(new CustomEvent("altar:attention"));
+        } else if (event.kind === "done") {
+          const settled = payload.turn;
+          if (typeof settled === "object" && settled !== null && "content" in settled) {
+            active.content = String(settled.content);
+          }
+          active.state = String(payload.status).includes("fail") ? "failed" : "done";
+          streams.delete(targetRunId);
+          if (snapshot?.session?.id === active.sessionId) {
+            scheduleSettledRefresh(targetRunId, active.sessionId);
+          }
+        }
+        renderVersion++;
+      },
+      (message) => omen(message, false),
+      async () => {
+        omen("The run stream lost history; refreshing its authoritative snapshot.", false);
+        const projection = await getRunSnapshot(targetRunId);
+        const index = liveTurns.findIndex((item) => item.runId === targetRunId);
+        const active = liveTurns[index];
+        if (active) {
+          liveTurns[index] = replaceLiveTurnFromSnapshot(
+            $state.snapshot(active),
+            projection
+          );
+          if (snapshot?.session?.id === targetSessionId) {
+            void load(targetSessionId);
+          }
+        }
+        if (projection.terminal) {
+          streams.get(targetRunId)?.();
+          streams.delete(targetRunId);
+          if (snapshot?.session?.id === targetSessionId) {
+            scheduleSettledRefresh(targetRunId, targetSessionId);
+          }
+        }
+        renderVersion++;
+        return { cursor: projection.cursor, terminal: projection.terminal };
+      },
+      {
+        initialCursor,
+        onHardClose: () => {
+          hardClosed = true;
+          if (close === undefined || streams.get(targetRunId) === close) {
+            streams.delete(targetRunId);
+          }
+        }
+      }
+    );
+    if (!hardClosed) streams.set(targetRunId, close);
+  }
+
   async function submit() {
     const text = prompt.trim();
     if (!text || !selected || sending) return;
+    const targetSessionId = selected.id;
     sending = true;
     error = "";
+    prompt = "";
     try {
-      const accepted = await sendBridgeMessage(selected.id, text);
-      if (snapshot?.session) {
+      const accepted = await sendBridgeMessage(targetSessionId, text);
+      if (snapshot?.session?.id === targetSessionId) {
         snapshot.session.turns ??= [];
-        snapshot.session.turns.push(accepted.turn);
+        const alreadyProjected = snapshot.session.turns.some(
+          (turn) =>
+            turn.role === accepted.turn.role &&
+            turn.content === accepted.turn.content &&
+            turn.created_at === accepted.turn.created_at
+        );
+        if (!alreadyProjected) snapshot.session.turns.push(accepted.turn);
       }
-      prompt = "";
-      const live: LiveTurn = {
-        runId: accepted.run_id,
-        content: "",
-        status: "queued",
-        state: "streaming",
-        fragments: []
-      };
-      liveTurns.push(live);
+      let live = liveTurns.find((turn) => turn.runId === accepted.run_id);
+      if (!live) {
+        live = {
+          sessionId: targetSessionId,
+          runId: accepted.run_id,
+          content: "",
+          status: "queued",
+          state: "streaming",
+          fragments: []
+        };
+        liveTurns.push(live);
+      }
       renderVersion++;
-      const close = listenToRun(
-        accepted.run_id,
-        (event) => {
-          const active = liveTurns.find((turn) => turn.runId === accepted.run_id);
-          if (!active) return;
-          const payload = event.payload;
-          if (event.kind === "token") active.content += String(payload.text ?? "");
-          else if (event.kind === "status" || event.kind === "node") active.status = String(payload.text ?? event.kind);
-          else if (event.kind === "fragment") active.fragments.push(payload);
-          else if (event.kind === "consent") void load(sessionId);
-          else if (event.kind === "done") {
-            const turn = payload.turn;
-            if (typeof turn === "object" && turn !== null && "content" in turn) {
-              active.content = String(turn.content);
-            }
-            active.state = String(payload.status).includes("fail") ? "failed" : "done";
-            streams.delete(accepted.run_id);
-            window.setTimeout(() => void load(sessionId), 50);
-          }
-          renderVersion++;
-        },
-        (message) => omen(message, false)
-      );
-      streams.set(accepted.run_id, close);
+      attachStream(live);
     } catch (cause) {
+      if (snapshot?.session?.id === targetSessionId && !prompt) prompt = text;
       error = cause instanceof Error ? cause.message : "The offering was refused.";
     } finally {
       sending = false;
@@ -156,7 +260,7 @@
     <button class="rune-btn new-seance" type="button" onclick={createSession}>✦ &nbsp;New Séance</button>
     <div class="divider">◆</div>
     {#if snapshot?.sessions.length}
-      {#each snapshot.sessions as session}
+      {#each snapshot.sessions as session (session.id)}
         <a class:current={selected?.id === session.id} class="seance" href="/bridge/{session.id}">
           <span class="t">{session.title}</span>
           <span class="m glyph">{new Date(session.created_at).toLocaleString()}</span>
@@ -180,7 +284,7 @@
           <p>Open a séance to begin a local communion.</p>
         </div>
       {:else}
-        {#each selected.turns ?? [] as turn}
+        {#each selected.turns ?? [] as turn (turn)}
           <article
             class:turn--user={turn.role === "user"}
             class:turn--agent={turn.role === "agent"}
@@ -191,7 +295,7 @@
             <div class="turn__body">{turn.content}</div>
           </article>
         {/each}
-        {#each liveTurns as turn (turn.runId)}
+        {#each selectedLiveTurns as turn (turn.runId)}
           <article class="turn turn--agent" data-state={turn.state}>
             <div class="turn__meta">
               <span class="who">LychD</span>
@@ -199,7 +303,7 @@
             </div>
             <div class="turn__body">{turn.content}</div>
             <div class="turn__extras">
-              {#each turn.fragments as fragment}<GenUI descriptor={fragment} />{/each}
+              {#each turn.fragments as fragment (fragment)}<GenUI descriptor={fragment} />{/each}
             </div>
           </article>
         {/each}
@@ -234,7 +338,7 @@
         <dl class="kv">
           <dt>identity</dt><dd class="glyph">{selected.id}</dd>
           <dt>title</dt><dd>{selected.title}</dd>
-          <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + liveTurns.length}</dd>
+          <dt>turns</dt><dd>{(selected.turns?.length ?? 0) + selectedLiveTurns.length}</dd>
           <dt>attention</dt><dd>{snapshot?.pending_count ?? 0}</dd>
         </dl>
       </div>

@@ -12,6 +12,7 @@ from lychd.system.atomic_retirement import (
     AtomicRetirementService,
     RetirementIdentity,
 )
+from lychd.system.descriptor_settlement import FailureLedger
 from lychd.system.interruptions import find_terminal_interruption
 from lychd.system.protected_retirement_models import (
     AuthorityTransfer,
@@ -40,6 +41,14 @@ class ProtectedRootSettlement:
     ) -> None:
         """Bind the single-entry primitive used for final authority deletion."""
         self._entries = entries
+
+    @staticmethod
+    def _failure_ledger() -> FailureLedger:
+        """Bind complete peer settlement to protected-root evidence."""
+        return FailureLedger(
+            error_factory=ProtectedRootRetirementError,
+            subject="Protected root settlement",
+        )
 
     def recover_root(
         self,
@@ -108,7 +117,8 @@ class ProtectedRootSettlement:
             if restore_error is not None:
                 report.errors.append(restore_error)
 
-        if self._root_recovery_is_exact(
+        errors_before_final_observation = len(report.errors)
+        recovery_is_exact = self._root_recovery_is_exact(
             parent_fd=parent_fd,
             directory_fd=directory_fd,
             leaf=leaf,
@@ -116,10 +126,24 @@ class ProtectedRootSettlement:
             quarantine_name=quarantine_name,
             transfers=transfers,
             report=report,
-        ):
-            self._raise_after_exact_recovery(
-                root=display_path,
-                primary=self._first_terminal(*report.errors, primary) or primary,
+        )
+        final_observation_verified = len(report.errors) == errors_before_final_observation
+        if recovery_is_exact:
+            cleanup = self._failure_ledger()
+            cleanup.record_all(tuple(report.errors))
+            settled_primary = self._classified_primary(
+                primary,
+                message=(
+                    f"Protected root retirement failed; exact public state was restored for retry: {display_path}"
+                ),
+                outcome="restored",
+            )
+            cleanup.raise_primary_after_verified_settlement(
+                settled_primary,
+                outcome="restored",
+                terminal_note=(
+                    f"LychD del recovery: protected root {display_path} and its authorities were restored exactly."
+                ),
             )
         if restore_error is not None:
             report.failures.append(f"{display_path}: {restore_error}")
@@ -133,6 +157,7 @@ class ProtectedRootSettlement:
         )
         quarantine_observation_failed = len(report.errors) != errors_before_quarantine_observation
 
+        errors_before_collection = len(report.errors)
         recovery = self._collect_recovery(
             parent_fd=parent_fd,
             root=display_path,
@@ -144,6 +169,7 @@ class ProtectedRootSettlement:
             reason="; ".join(report.failures) or "root recovery could not be proven exact",
             failures=report.errors,
         )
+        final_observation_verified = final_observation_verified and len(report.errors) == errors_before_collection
         settled_failures = (*report.errors, primary)
         terminal = self._first_terminal(*settled_failures)
         message = f"Protected root retirement retained recovery evidence for {display_path}"
@@ -151,6 +177,8 @@ class ProtectedRootSettlement:
             message,
             root_recovery=recovery,
             failures=settled_failures,
+            outcome="recovery",
+            verified=final_observation_verified,
         ) from (terminal or primary)
 
     @staticmethod
@@ -335,7 +363,8 @@ class ProtectedRootSettlement:
                         observed=recovery.observed,
                     )
 
-        for authority in self._collect_recovery(
+        failures_before_collection = len(failures)
+        collected_recovery = self._collect_recovery(
             parent_fd=parent_fd,
             root=root,
             root_quarantine=None,
@@ -343,7 +372,9 @@ class ProtectedRootSettlement:
             transfers=transfers,
             reason="authority finalization did not complete",
             failures=failures,
-        ).authorities:
+        )
+        recovery_verified = len(failures) == failures_before_collection
+        for authority in collected_recovery.authorities:
             retained.setdefault(authority.resource.name, authority)
 
         self._raise_after_finalization(
@@ -351,6 +382,7 @@ class ProtectedRootSettlement:
             retained=retained,
             failures=failures,
             post_retirement_error=post_retirement_error,
+            recovery_verified=recovery_verified,
         )
 
     @staticmethod
@@ -360,6 +392,7 @@ class ProtectedRootSettlement:
         retained: dict[str, RetainedAuthority],
         failures: list[BaseException],
         post_retirement_error: BaseException | None,
+        recovery_verified: bool,
     ) -> None:
         """Surface retained recovery, terminal intent, or classified failure."""
         all_failures = tuple(failure for failure in (*failures, post_retirement_error) if failure is not None)
@@ -378,18 +411,50 @@ class ProtectedRootSettlement:
                 message,
                 root_recovery=recovery,
                 failures=all_failures,
+                outcome="recovery",
+                verified=recovery_verified,
             ) from (terminal or primary)
 
-        if terminal is not None:
-            terminal.add_note(f"LychD del recovery: {root} was retired and its protected authorities were finalized.")
-            raise terminal
-        if failures or post_retirement_error is not None:
-            primary = failures[0] if failures else post_retirement_error
-            message = f"Root retirement completed with a classified postcondition error: {root}"
-            raise ProtectedRootRetirementError(
-                message,
-                failures=all_failures,
-            ) from primary
+        if all_failures:
+            primary = post_retirement_error if post_retirement_error is not None else all_failures[0]
+            cleanup = ProtectedRootSettlement._failure_ledger()
+            removed_primary = False
+            peers: list[BaseException] = []
+            for failure in all_failures:
+                if failure is primary and not removed_primary:
+                    removed_primary = True
+                    continue
+                peers.append(failure)
+            cleanup.record_all(tuple(peers))
+            settled_primary = ProtectedRootSettlement._classified_primary(
+                primary,
+                message=(f"Root retirement completed with a classified postcondition error: {root}"),
+                outcome="retired",
+            )
+            cleanup.raise_primary_after_verified_settlement(
+                settled_primary,
+                outcome="retired",
+                terminal_note=(f"LychD del recovery: {root} was retired and its protected authorities were finalized."),
+            )
+
+    @staticmethod
+    def _classified_primary(
+        primary: BaseException,
+        *,
+        message: str,
+        outcome: str,
+    ) -> BaseException:
+        """Keep native intent or translate an ordinary classified failure."""
+        if find_terminal_interruption(primary) is not None:
+            return primary
+        evidence = ProtectedRootRetirementError(
+            message,
+            failures=(primary,),
+            outcome=outcome,
+            verified=True,
+        )
+        evidence.__cause__ = primary
+        return evidence
 
     @staticmethod
     def _collect_recovery(
@@ -472,19 +537,6 @@ class ProtectedRootSettlement:
             ),
             None,
         )
-
-    @staticmethod
-    def _raise_after_exact_recovery(
-        *,
-        root: Path,
-        primary: BaseException,
-    ) -> NoReturn:
-        """Preserve terminal cancellation after exact public-state recovery."""
-        if not isinstance(primary, Exception):
-            primary.add_note(f"LychD del recovery: protected root {root} and its authorities were restored exactly.")
-            raise primary
-        message = f"Protected root retirement failed; exact public state was restored for retry: {root}"
-        raise ProtectedRootRetirementError(message) from primary
 
 
 __all__ = ("ProtectedRootSettlement",)

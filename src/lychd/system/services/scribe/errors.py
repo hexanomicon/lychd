@@ -1,6 +1,7 @@
 """Failure vocabulary for Scribe binding authority and transactions."""
 
 from enum import StrEnum
+from pathlib import Path
 
 
 class ScribeOwnershipError(RuntimeError):
@@ -13,6 +14,20 @@ class ScribeConflictError(RuntimeError):
 
 class ScribeGenerationError(ScribeOwnershipError):
     """The live binding generation no longer matches the approved observation."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failures: tuple[BaseException, ...] = (),
+        outcome: str = "unchanged",
+        verified: bool = True,
+    ) -> None:
+        """Retain peer attestation failures and verified namespace truth."""
+        super().__init__(message)
+        self.failures = failures
+        self.outcome = outcome
+        self.outcome_verified = verified
 
 
 class ScribeTransactionState(StrEnum):
@@ -35,6 +50,7 @@ class ScribeTransactionError(RuntimeError):
         rollback_error: BaseException | None = None,
         generation: str | None = None,
         cleanup_errors: tuple[BaseException, ...] = (),
+        recovery_paths: tuple[Path, ...] = (),
     ) -> None:
         """Retain public state and every settled transaction-side failure."""
         super().__init__(message)
@@ -43,3 +59,4 @@ class ScribeTransactionError(RuntimeError):
         self.rollback_error = rollback_error
         self.generation = generation
         self.cleanup_errors = cleanup_errors
+        self.recovery_paths = recovery_paths

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -50,6 +51,10 @@ def init_codex(
     Apply journals every created resource, revalidates the exact plan, seals
     dedicated-root authority, then reinspects Binding and storage readiness.
     """
+    if not dry_run and os.geteuid() == 0:
+        msg = "LychD initialization is rootless; rerun `lychd init` as your ordinary user."
+        raise RuntimeError(msg)
+
     from contextlib import nullcontext
 
     from lychd.cli.lifecycle_view import render_lifecycle_plan
@@ -57,7 +62,7 @@ def init_codex(
         render_host_readiness,
         render_readiness_changes,
     )
-    from lychd.config.runes import ConfigWriter
+    from lychd.config.runes.writer import ConfigWriter
     from lychd.config.settings.root import get_settings
     from lychd.extensions.host import get_extensions
     from lychd.system.constants import PATH_CODEX_ROOT, PATH_RUNES_DIR
@@ -293,6 +298,7 @@ async def _consume_reactor_intents() -> None:
     from lychd.domain.animation.services.registry import AnimatorRegistry
     from lychd.domain.orchestration.policies import resolve_switch_policy
     from lychd.extensions.host import get_extensions
+    from lychd.system.host_tools import trusted_host_tool
     from lychd.system.services.reactor import HostReactor
 
     settings = get_settings()
@@ -309,10 +315,15 @@ async def _consume_reactor_intents() -> None:
     )
     await asyncio.to_thread(registry.ensure_loaded)
     switching = settings.orchestration.switching
+    systemctl_bin = trusted_host_tool("systemctl")
+    if systemctl_bin is None:
+        msg = "Host Reactor cannot resolve a trusted systemctl executable."
+        raise RuntimeError(msg)
     processed = await HostReactor(
         registry,
         inbox_dir=switching.host_reactor_dir,
         journal_dir=switching.host_reactor_journal_dir,
+        systemctl_bin=systemctl_bin,
         policy=resolve_switch_policy(switching.policy),
     ).consume_all()
     get_console().print(f"[green]✓[/] Host Reactor consumed {processed} transition(s).")

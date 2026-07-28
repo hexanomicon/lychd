@@ -150,6 +150,7 @@ def build_altar_services(
     portal_factories: Sequence[PortalRuntimeFactory] = (),
     profile: str | None = None,
     settings: Settings | None = None,
+    systemctl_bin: str | None = None,
 ) -> AltarServices:
     """Assemble the `AltarServices` container (the sole construction site).
 
@@ -184,7 +185,11 @@ def build_altar_services(
         leases=leases,
         policy=policy,
         arbiter=TransitionArbiter(),
-        actuator=build_runtime_actuator(switching, registry),
+        actuator=build_runtime_actuator(
+            switching,
+            registry,
+            systemctl_bin=systemctl_bin,
+        ),
         switching=switching,
     )
     context_orchestrator = ContextOrchestrator(registry=registry)

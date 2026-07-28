@@ -32,7 +32,7 @@ def _make_manager(broker: object, registry: object) -> OrchestratorManager:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 
@@ -131,7 +131,7 @@ async def test_orchestrator_hard_swap_then_dynamic_activation() -> None:
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
     broker.unpause_queues.assert_called_once()
-    mock_exec.assert_called_once_with("systemctl", "--user", "start", "lychd-router.service")
+    mock_exec.assert_called_once_with("/usr/bin/systemctl", "--user", "start", "lychd-router.service")
     assert state.is_active is True
 
 

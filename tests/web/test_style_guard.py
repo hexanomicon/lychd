@@ -57,7 +57,6 @@ def test_runes_do_not_enter_framework_neutral_typescript() -> None:
     offenders = [
         str(path.relative_to(REPO))
         for path in FRONTEND.rglob("*.ts")
-        if not path.name.endswith(".svelte.ts")
-        and any(rune in path.read_text(encoding="utf-8") for rune in runes)
+        if not path.name.endswith(".svelte.ts") and any(rune in path.read_text(encoding="utf-8") for rune in runes)
     ]
     assert offenders == []

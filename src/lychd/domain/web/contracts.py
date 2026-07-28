@@ -41,11 +41,25 @@ class SessionView(SessionSummary):
     turns: list[BridgeTurnView] = Field(default_factory=list)
 
 
+class RunProjectionSnapshot(ClientContract):
+    """Replaceable projection for one run at an exact event cursor."""
+
+    schema_version: Literal[1] = 1
+    session_id: str
+    run_id: str
+    cursor: int
+    content: str
+    status: str
+    fragments: list[dict[str, Any]]
+    terminal: bool
+
+
 class BridgeSnapshot(ClientContract):
     """Refresh-reconstructable Bridge projection."""
 
     sessions: list[SessionSummary]
     session: SessionView | None
+    active_runs: list[RunProjectionSnapshot]
     pending_consents: list[ConsentCard]
     pending_count: int
 
@@ -137,7 +151,15 @@ class LoomSummary(ClientContract):
     trigger_hint: str
 
 
+class CsrfClientContract(ClientContract):
+    """Public double-submit names configured by the trusted Vessel."""
+
+    cookie_name: str
+    header_name: str
+
+
 class AltarStatus(ClientContract):
     """Shared shell status independent of any one instrument."""
 
     pending_consents: int
+    csrf: CsrfClientContract

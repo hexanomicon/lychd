@@ -7,7 +7,7 @@ from typing import Any
 import structlog
 
 from lychd.config.runes.base import RuneConfig
-from lychd.config.runes.writer import SAMPLE_MARKER
+from lychd.config.runes.markers import SAMPLE_MARKER
 from lychd.system.constants import PATH_RUNES_DIR
 
 logger = structlog.get_logger()

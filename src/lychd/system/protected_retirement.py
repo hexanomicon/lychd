@@ -6,7 +6,7 @@ import errno
 import os
 import stat
 from pathlib import Path
-from typing import NoReturn
+from typing import Literal, NoReturn
 
 from lychd.system.atomic_paths import rename_noreplace_at
 from lychd.system.atomic_retirement import (
@@ -14,6 +14,7 @@ from lychd.system.atomic_retirement import (
     RetirementIdentity,
     new_retirement_quarantine_name,
 )
+from lychd.system.descriptor_settlement import FailureLedger
 from lychd.system.interruptions import find_terminal_interruption
 from lychd.system.protected_retirement_models import (
     AuthorityTransfer,
@@ -34,6 +35,14 @@ from lychd.system.protected_retirement_recovery import (
 )
 
 _QUARANTINE_ATTEMPTS = 8
+
+
+def _protected_failure_ledger() -> FailureLedger:
+    """Bind peer settlement to protected-root outcome evidence."""
+    return FailureLedger(
+        error_factory=ProtectedRootRetirementError,
+        subject="Protected root settlement",
+    )
 
 
 class ProtectedRootRetirementService:
@@ -315,13 +324,8 @@ class ProtectedRootRetirementService:
                     source_dir_fd=parent_fd,
                     destination_dir_fd=parent_fd,
                 )
-            except OSError as exc:
-                if exc.errno == errno.EEXIST:
-                    continue
-                message = f"Could not atomically detach protected root: {display_path}"
-                raise ProtectedRootRetirementError(message) from exc
-            except BaseException as exc:  # noqa: BLE001 - settle rename signal
-                self._settle_detach_interruption(
+            except BaseException as exc:  # noqa: BLE001 - every rename failure needs postcondition proof
+                disposition = self._classify_detach_failure(
                     parent_fd=parent_fd,
                     leaf=leaf,
                     expected=expected,
@@ -329,9 +333,58 @@ class ProtectedRootRetirementService:
                     quarantine_name=quarantine_name,
                     primary=exc,
                 )
+                if disposition == "retry":
+                    continue
             return quarantine_name
         message = f"Could not allocate a private protected-root quarantine: {display_path}"
         raise ProtectedRootRetirementError(message)
+
+    def _classify_detach_failure(
+        self,
+        *,
+        parent_fd: int,
+        leaf: str,
+        expected: RetirementIdentity,
+        display_path: Path,
+        quarantine_name: str,
+        primary: BaseException,
+    ) -> Literal["retry"]:
+        """Observe both exact names before interpreting one detach failure."""
+        quarantine_path = display_path.with_name(quarantine_name)
+        try:
+            public = observe_retirement_name(parent_fd=parent_fd, name=leaf)
+            quarantined = observe_retirement_name(
+                parent_fd=parent_fd,
+                name=quarantine_name,
+            )
+        except BaseException as observation_error:  # noqa: BLE001 - candidate path remains recovery evidence
+            self._raise_observation_recovery(
+                display_path=display_path,
+                quarantine_path=quarantine_path,
+                primary=primary,
+                additional_failures=(observation_error,),
+                reason="protected-root detachment postcondition could not be observed",
+            )
+
+        if (
+            isinstance(primary, OSError)
+            and primary.errno == errno.EEXIST
+            and public == expected
+            and quarantined is not None
+            and quarantined != expected
+        ):
+            return "retry"
+
+        self._settle_detach_interruption(
+            parent_fd=parent_fd,
+            leaf=leaf,
+            expected=expected,
+            display_path=display_path,
+            quarantine_name=quarantine_name,
+            primary=primary,
+            observations=(public, quarantined),
+        )
+        raise AssertionError  # pragma: no cover - settlement is NoReturn
 
     @staticmethod
     def _settle_detach_interruption(
@@ -342,26 +395,41 @@ class ProtectedRootRetirementService:
         display_path: Path,
         quarantine_name: str,
         primary: BaseException,
+        observations: tuple[RetirementIdentity | None, RetirementIdentity | None] | None = None,
     ) -> NoReturn:
         """Restore a detached root or expose exact recovery evidence."""
         quarantine_path = display_path.with_name(quarantine_name)
-        try:
-            public = observe_retirement_name(parent_fd=parent_fd, name=leaf)
-            quarantined = observe_retirement_name(
-                parent_fd=parent_fd,
-                name=quarantine_name,
+        if observations is None:
+            try:
+                public = observe_retirement_name(parent_fd=parent_fd, name=leaf)
+                quarantined = observe_retirement_name(
+                    parent_fd=parent_fd,
+                    name=quarantine_name,
+                )
+            except BaseException as exc:  # noqa: BLE001 - classify terminal observation
+                ProtectedRootRetirementService._raise_observation_recovery(
+                    display_path=display_path,
+                    quarantine_path=quarantine_path,
+                    primary=primary,
+                    additional_failures=(exc,),
+                    reason="protected-root detachment postcondition could not be observed",
+                )
+        else:
+            public, quarantined = observations
+        if public == expected and quarantined != expected:
+            cleanup = _protected_failure_ledger()
+            cleanup.raise_primary_after_verified_settlement(
+                ProtectedRootRetirementService._classified_detach_primary(
+                    primary,
+                    display_path=display_path,
+                    outcome="restored",
+                ),
+                outcome="restored",
+                terminal_note=(
+                    f"LychD del verified that protected root {display_path} "
+                    "remained at its public name after interruption."
+                ),
             )
-        except BaseException as exc:  # noqa: BLE001 - classify terminal observation
-            ProtectedRootRetirementService._raise_observation_recovery(
-                display_path=display_path,
-                quarantine_path=quarantine_path,
-                primary=primary,
-                additional_failures=(exc,),
-                reason="protected-root detachment postcondition could not be observed",
-            )
-        if public == expected and quarantined is None:
-            raise primary
-        recovery_quarantine = quarantined
         settled_failures: list[BaseException] = [primary]
         if public is None and quarantined == expected:
             restore_error: BaseException | None = None
@@ -395,23 +463,24 @@ class ProtectedRootRetirementService:
                     ),
                     reason="protected-root restoration postcondition could not be observed",
                 )
-            recovery_quarantine = restored_quarantine
             if restored_public == expected and restored_quarantine is None:
-                terminal = next(
-                    (
-                        nested
-                        for failure in settled_failures
-                        if (nested := find_terminal_interruption(failure)) is not None
+                cleanup = _protected_failure_ledger()
+                cleanup.record_all(tuple(settled_failures[1:]))
+                cleanup.raise_primary_after_verified_settlement(
+                    ProtectedRootRetirementService._classified_detach_primary(
+                        primary,
+                        display_path=display_path,
+                        outcome="restored",
                     ),
-                    None,
+                    outcome="restored",
+                    terminal_note=(
+                        f"LychD del recovery: protected root {display_path} was restored after interruption."
+                    ),
                 )
-                surfaced = terminal or primary
-                surfaced.add_note(f"LychD del recovery: protected root {display_path} was restored after interruption.")
-                raise surfaced
 
         recovery = ProtectedRootRecovery(
             root=display_path,
-            root_quarantine=(quarantine_path if recovery_quarantine is not None else None),
+            root_quarantine=quarantine_path,
             root_retired=False,
             authorities=(),
             reason=("protected-root detachment interruption could not be restored exactly"),
@@ -421,6 +490,8 @@ class ProtectedRootRetirementService:
             message,
             root_recovery=recovery,
             failures=tuple(settled_failures),
+            outcome="recovery",
+            verified=True,
         ) from (
             next(
                 (
@@ -431,6 +502,25 @@ class ProtectedRootRetirementService:
                 primary,
             )
         )
+
+    @staticmethod
+    def _classified_detach_primary(
+        primary: BaseException,
+        *,
+        display_path: Path,
+        outcome: str,
+    ) -> BaseException:
+        """Translate ordinary detach failure while preserving native interruption."""
+        if find_terminal_interruption(primary) is not None:
+            return primary
+        evidence = ProtectedRootRetirementError(
+            f"Protected-root detachment failed with verified public state: {display_path}",
+            failures=(primary,),
+            outcome=outcome,
+            verified=True,
+        )
+        evidence.__cause__ = primary
+        return evidence
 
     @staticmethod
     def _raise_observation_recovery(
@@ -459,6 +549,8 @@ class ProtectedRootRetirementService:
             message,
             root_recovery=recovery,
             failures=failures,
+            outcome="recovery",
+            verified=False,
         ) from (terminal or primary)
 
 

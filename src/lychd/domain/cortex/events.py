@@ -44,6 +44,7 @@ _CLOSE_GRACE_S = 60.0
 __all__ = [
     "InProcessEventBus",
     "RunChannel",
+    "RunChannelSnapshot",
     "RunEmitter",
     "RunEvent",
     "RunEventBus",
@@ -64,6 +65,7 @@ class RunEventKind(StrEnum):
     CONSENT = "consent"  # data = JSON {"consent_id": ..., "tool_name": ...}
     LOG = "log"  # data = message; meta["level"] — feeds Scrying only
     DONE = "done"  # terminal; data = terminal RunStatus value
+    RESYNC = "resync"  # synthetic replay-gap marker; clients must refetch a snapshot
 
 
 class RunEvent(BaseModel):
@@ -77,6 +79,18 @@ class RunEvent(BaseModel):
     data: str
     meta: dict[str, str] = Field(default_factory=dict)
     ts: AwareDatetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass(frozen=True, slots=True)
+class RunChannelSnapshot:
+    """One authoritative, replaceable projection at an exact event cursor."""
+
+    run_id: str
+    cursor: int
+    content: str
+    status: str
+    fragments: tuple[RunEvent, ...]
+    terminal: bool
 
 
 @runtime_checkable
@@ -100,6 +114,10 @@ class RunEventBus(Protocol):
         """Subscribe to a run's events, optionally replaying from ``from_seq``."""
         ...
 
+    def snapshot(self, run_id: str) -> RunChannelSnapshot | None:
+        """Return the current replaceable projection, or ``None`` if no channel remains."""
+        ...
+
     def close(self, run_id: str) -> None:
         """Drop a run's channel after it is done and its subscribers have drained."""
         ...
@@ -113,9 +131,9 @@ class RunChannel:
     then live-tails until a terminal `DONE` closes the stream. `subscribe(from_seq)`
     is the reconnect seam: only events strictly after `from_seq` are replayed.
 
-    Gap ruling (spec-00-FINAL C2): if `from_seq` names an event already evicted from
-    the bounded buffer, a fresh synthetic `STATUS` is emitted first and the stream
-    then continues live — an evicted cursor never errors the stream.
+    Gap ruling (ADR 15 §3): if `from_seq` names an event already evicted from
+    the bounded buffer, an explicit synthetic `RESYNC` is emitted first and the
+    stream then continues live — an evicted cursor never errors the stream.
     """
 
     run_id: str
@@ -123,7 +141,9 @@ class RunChannel:
     _replay: deque[RunEvent] = field(default_factory=lambda: deque(maxlen=_REPLAY_LIMIT))
     _subscribers: set[asyncio.Queue[RunEvent]] = field(default_factory=set)
     _closed: bool = False
-    _last_status: RunEvent | None = None
+    _content: list[str] = field(default_factory=list)
+    _status: str = "queued"
+    _fragments: list[RunEvent] = field(default_factory=list)
     _drained: asyncio.Event = field(default_factory=asyncio.Event)
 
     def __post_init__(self) -> None:
@@ -144,8 +164,12 @@ class RunChannel:
         event = RunEvent(run_id=self.run_id, seq=self._seq, kind=kind, data=data, meta=dict(meta))
         self._seq += 1
         self._replay.append(event)
-        if kind is RunEventKind.STATUS:
-            self._last_status = event
+        if kind in {RunEventKind.STATUS, RunEventKind.NODE, RunEventKind.DONE}:
+            self._status = data
+        elif kind is RunEventKind.TOKEN:
+            self._content.append(data)
+        elif kind is RunEventKind.FRAGMENT:
+            self._fragments.append(event)
         for queue in self._subscribers:
             queue.put_nowait(event)
         if kind is RunEventKind.DONE:
@@ -175,11 +199,25 @@ class RunChannel:
         """The seq the next emitted event will carry."""
         return self._seq
 
+    def snapshot(self) -> RunChannelSnapshot:
+        """Capture the live projection and the exact cursor it includes."""
+        return RunChannelSnapshot(
+            run_id=self.run_id,
+            cursor=self._seq - 1,
+            content="".join(self._content),
+            status=self._status,
+            fragments=tuple(self._fragments),
+            terminal=self._closed,
+        )
+
     def _resync_event(self) -> RunEvent:
-        """Synthetic `STATUS` emitted when a reconnect cursor does not align."""
-        if self._last_status is not None:
-            return self._last_status
-        return RunEvent(run_id=self.run_id, seq=max(self._seq - 1, 0), kind=RunEventKind.STATUS, data="running")
+        """Return an explicit marker requiring clients to refetch the run snapshot."""
+        return RunEvent(
+            run_id=self.run_id,
+            seq=max(self._seq - 1, 0),
+            kind=RunEventKind.RESYNC,
+            data="snapshot_required",
+        )
 
     def _cursor_aligned(self, from_seq: int, replay: list[RunEvent]) -> bool:
         """Whether a reconnect `from_seq` continues the stream without a gap.
@@ -204,25 +242,35 @@ class RunChannel:
         self._drained.clear()
         try:
             replay = list(self._replay)
+            client_cursor = from_seq if from_seq is not None else -1
+            resync_required = not self._cursor_aligned(client_cursor, replay)
             # Gap ruling (F5/H4): a reconnect cursor that does not line up with the
-            # live head ALWAYS fires the resync STATUS first, then continues live.
-            # "Lines up" means the next event the client expects (from_seq + 1) is
+            # live head ALWAYS fires the explicit RESYNC first, then continues live.
+            # "Lines up" means the next event the client expects (client cursor + 1) is
             # either the head (fully caught up) or still inside the retained buffer.
-            # This covers every hang case the old `replay-only` check missed: an
-            # empty/fresh channel after restart, and a cursor above the head.
-            if from_seq is not None and not self._cursor_aligned(from_seq, replay):
-                yield self._resync_event()
-
+            # A first subscriber starts before seq 0, so an already-evicted prefix
+            # also receives the marker. This covers every hang/loss case the old
+            # `replay-only` check missed: an empty/fresh channel after restart, a
+            # cursor above the head, and a late first subscriber.
+            #
+            # The marker establishes a replacement boundary at the current head.
+            # Events at or before that boundary are supplied by the run snapshot,
+            # never replayed after the marker; only events emitted later live-tail.
             backfilled_seq = -1
-            for event in replay:
-                if from_seq is not None and event.seq <= from_seq:
-                    continue
-                backfilled_seq = event.seq
-                yield event
-                if event.kind is RunEventKind.DONE:
-                    return
+            if resync_required:
+                snapshot_cursor = self._seq - 1
+                yield self._resync_event()
+                backfilled_seq = snapshot_cursor
+            else:
+                for event in replay:
+                    if from_seq is not None and event.seq <= from_seq:
+                        continue
+                    backfilled_seq = event.seq
+                    yield event
+                    if event.kind is RunEventKind.DONE:
+                        return
 
-            if self._closed:
+            if self._closed and queue.empty():
                 return
 
             while True:
@@ -348,6 +396,11 @@ class InProcessEventBus:
         if channel is None:
             return _empty_stream()
         return channel.subscribe(from_seq)
+
+    def snapshot(self, run_id: str) -> RunChannelSnapshot | None:
+        """Return the channel's replaceable projection without minting a channel."""
+        channel = self._channels.get(run_id)
+        return channel.snapshot() if channel is not None else None
 
     def close(self, run_id: str) -> None:
         """Mark a run's channel closed and drop it once its subscribers drain (H4).

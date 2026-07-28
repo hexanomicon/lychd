@@ -1,0 +1,1 @@
+import{G as e,K as t,o as n}from"../chunks/DiKmhS7I.js";import"../chunks/xihTtKlq.js";import{t as r}from"../chunks/-ujpBMvA.js";import"../chunks/CrYQ6BbV.js";import{t as i}from"../chunks/DDMHHHPU.js";function a(a,o){t(o,!1),n(),i(a,{get workflowName(){return r.params.workflow}}),e()}export{a as component};

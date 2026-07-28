@@ -35,7 +35,7 @@ def _make_manager(broker: object, registry: object, *, leases: LeaseLedger | Non
         leases=leases or LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 
@@ -379,7 +379,7 @@ async def test_handle_transition_starts_runtime_then_loads_dynamic_capability() 
     broker.pause_queues.assert_called_once()
     broker.broadcast_soft_stop.assert_called_once()
     broker.unpause_queues.assert_called_once()
-    mock_exec.assert_called_once_with("systemctl", "--user", "start", "lychd-router.service")
+    mock_exec.assert_called_once_with("/usr/bin/systemctl", "--user", "start", "lychd-router.service")
     assert state.is_active is True
     assert registry.await_warm_calls == [target.key]  # terminal convergence (DYNAMIC)
 
@@ -570,7 +570,7 @@ async def test_soft_swap_and_no_op_are_never_gated() -> None:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(warm_reg),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(warm_reg, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(min_priority_for_hard_swap=90),
     )
     no_op = await warm_mgr.request_transition(warm.key, 1)
@@ -595,7 +595,7 @@ async def test_soft_swap_and_no_op_are_never_gated() -> None:
         leases=LeaseLedger(),
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(soft_reg),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(soft_reg, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(min_priority_for_hard_swap=90),
     )
     soft = await soft_mgr.request_transition(target.key, 1)
@@ -665,7 +665,7 @@ async def test_static_warming_runtime_uses_convergence_only_path() -> None:
         leases=leases,
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
     wait_entered = asyncio.Event()
@@ -731,7 +731,7 @@ async def test_soft_swap_drains_same_animator_leases_before_activation() -> None
         leases=leases,
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(drain_timeout_s=5.0),
     )
 
@@ -994,7 +994,7 @@ async def test_noop_recheck_rejects_orphaned_closed_admission() -> None:
         leases=leases,
         policy=EvictIdlePolicy(),
         arbiter=TransitionArbiter(),
-        actuator=SystemdRuntimeActuator(registry),  # type: ignore[arg-type]
+        actuator=SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl"),  # type: ignore[arg-type]
         switching=SwitchingSettings(),
     )
 

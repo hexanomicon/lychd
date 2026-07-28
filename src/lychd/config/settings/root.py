@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
 
 from pydantic import Field
@@ -49,6 +50,22 @@ class Settings(BaseSettings):
             TomlConfigSettingsSource(settings_cls, toml_file=PATH_LYCHD_TOML),
             file_secret_settings,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class SettingsSnapshot:
+    """Immutable serialized settings generation safe to retain across phases."""
+
+    payload: str
+
+    @classmethod
+    def capture(cls, settings: Settings) -> SettingsSnapshot:
+        """Detach one validated Settings tree from its mutable Pydantic models."""
+        return cls(payload=settings.model_dump_json(round_trip=True))
+
+    def materialize(self) -> Settings:
+        """Revalidate a fresh Settings tree from the captured generation."""
+        return Settings.model_validate_json(self.payload)
 
 
 @lru_cache(maxsize=1, typed=True)

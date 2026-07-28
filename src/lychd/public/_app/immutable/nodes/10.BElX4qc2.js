@@ -1,0 +1,1 @@
+import"../chunks/DiKmhS7I.js";import"../chunks/xihTtKlq.js";import"../chunks/CrYQ6BbV.js";import{t as e}from"../chunks/CZHkopaJ.js";function t(t){e(t,{name:`Scrying`,description:`Native causal evidence is designed; the projection remains honestly unbuilt.`})}export{t as component};
