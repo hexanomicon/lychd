@@ -12,8 +12,12 @@ Sepulcher.
 **Delivery boundary:** LychD has no Toll package, quote or budget ledger, signer, settlement path,
 or safe response to a payment challenge. There is nothing to enable or invoke on this page.
 [State of the Work owns the exact x402 boundary](../../state-of-the-work.md#x402-payments), while
-[ADR 41](../../adr/41-x402.md) owns the architectural jurisdiction and still requires a safety
-amendment before implementation.
+[ADR 41](../../adr/41-x402.md) owns the accepted commitment, signer, and reconciliation law.
+
+**Extension form:** Toll is an optional economic Domain manifested as governed middleware and
+isolated effect handlers, not as a mandatory wallet service. Quote parsers, settlement rails,
+signers, and paid Portal connectors are adapters around one commitment and reconciliation law.
+Currency-neutral Tithe accounting remains useful when every payment adapter is disabled.
 
 > _A price may enter the gate as a whisper. Only bounded Will may let it leave as consequence._
 
@@ -122,5 +126,5 @@ and hard caps; prove one allowlisted test connector through crash and replay tes
 routes, metering, and optional settlement adapters. A peer marketplace comes later still—it needs
 its own product, reservation, delivery, refund, abuse, and dispute law beyond x402.
 
-> _Next act: read the [x402 delivery boundary](../../state-of-the-work.md#x402-payments). Before
-> source work begins, amend ADR 41 so no bare challenge can command the purse._
+> _Next act: read the [x402 delivery boundary](../../state-of-the-work.md#x402-payments), then
+> prove quote and receipt accounting without money movement before opening the signer gate._

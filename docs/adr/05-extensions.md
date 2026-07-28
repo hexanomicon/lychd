@@ -10,11 +10,18 @@ icon: material/toy-brick-outline
 
 ## Requirements
 
-- **Native Execution Speed:** Mandatory execution of capabilities within the kernel’s memory space to eliminate the serialization overhead and latency of network-based plugin systems.
-- **Deep Substrate Authority:** Provision of a mechanism for extensions to define persistent relational schemas, register background ghouls, and integrate with the system startup lifecycle.
-- **Infrastructure Declaration:** Mandatory capability for extensions to declare their own physical requirements, specifically container blueprints and functional capability tags.
-- **Federated Sovereignty:** Treatment of the Core and its Extensions as a "Federation" of independent components, each maintaining its own version history and repository.
-- **Deterministic Provenance:** Mandatory implementation of a federated lockfile to ensure the system’s exact composition is trackable and bit-for-bit reproducible.
+- **Placement Choice:** In-process packages are valid for tightly coupled contributions; external
+  service protocols remain the correct boundary for independent engines, isolation, or separate
+  lifecycle.
+- **Shaped Substrate Access:** Every contribution enters through a store owned by the receiving
+  Domain. No package receives ambient schema, worker, route, migration, or startup authority.
+- **Infrastructure Declaration:** The wider Extension Protocol must eventually declare binaries,
+  images, services, resources, and licenses before Forge synthesis; the boot-time
+  `ExtensionContext` is not that manifest.
+- **Federated Sovereignty:** The Core, private coupled packages, and external providers may retain
+  distinct source ownership while joining one explicitly assembled body.
+- **Deterministic Provenance:** A future Forge lock lifecycle must pin external source and physical
+  requirements. Current selected shims do not yet make the whole body bit-for-bit reproducible.
 - **Interface Simplicity:** Utilization of standard Python patterns and registration stores to facilitate extension creation, avoiding proprietary Domain Specific Languages (DSLs).
 - **Capability-Driven Design:** Mandatory support for registering abstract functional identifiers that allow the system to orchestrate extension logic through semantic intent.
 - **Extension Protocol:** Establishment of a composed-runtime law for assimilating local organs before public compatibility surfaces are harvested.
@@ -31,11 +38,14 @@ icon: material/toy-brick-outline
 
     - **Cons:** **Functional Castration.** A sandboxed environment prevents deep integration. A script cannot easily define new relational models or register system-level background ghouls, violating the principle of deep modularity.
 
-!!! success "Option 3: Native Recursive Extensions"
-    Extensions are Python packages loaded directly into the Daemon's memory space, managed as Forge-composed Git repositories within a unified Federation.
+!!! success "Option 3: Native Contributions, Protocol-Bound Providers"
+    Explicitly selected Python packages may join the Daemon's memory space through shaped stores.
+    Engines needing isolation or independent lifecycle remain external services. Forge-composed
+    repository and lock management is the target reproducibility lifecycle.
 
     - **Pros:**
-        - **Zero-Latency:** Direct execution within the kernel's event loop enables high-velocity reasoning.
+        - **Low Boundary Overhead:** Direct contributions avoid a network hop where in-process
+          coupling is actually warranted.
         - **Shaped Integration:** Extensions contribute only through domain-owned stores. Current
           active stores cover Runes, Soulstone definitions, Portals, transmutation, and typed
           `run` operations; Vessel is empty/reserved, while tools, routes, status sections,
@@ -45,9 +55,38 @@ icon: material/toy-brick-outline
 
 ## Decision Outcome
 
-**Native Recursive Extensions** are adopted as the standard for system evolution. The Daemon functions as a **Runtime Package Manager**, coordinating a collection of repositories into a single, cohesive organism.
+**Native Recursive Extensions** are adopted for explicitly selected in-process code contributions.
+The Daemon performs deterministic boot-time assembly through shaped registration stores; it is not
+a general-purpose runtime package manager. Independent engines and services cross versioned
+protocol boundaries instead.
 
 LychD's first extension boundary is not compatibility; it is assimilation. Public compatibility is a product of maturity, not the foundation of infancy.
+
+### Vocabulary Boundary: Domain Is Not Package
+
+LychD uses **extension** at two related but non-identical levels:
+
+- An **Extension Domain** is one of the user-facing Fifteen: a direction in which the minimal Lich
+  may grow. A Domain may be embodied as a singular Core office, a selectable built-in, a governed
+  Composition, a managed provider, an external attachment, or a still-dormant design. Membership
+  among the Fifteen does not prove that a Python package exists, that the Domain is optional in
+  every profile, or that its authority is replaceable.
+- An **extension package** is concrete built-in or Crypt code selected for import and admitted
+  through the Extension Protocol. A package may contribute to one or several Domains; several
+  packages or external providers may also manifest different parts of one Domain.
+
+The remaining terms keep those layers distinct:
+
+- A **manifestation** is the form a Domain takes in one assembled body or profile.
+- A **provider** is a concrete engine or service behind a typed contract. It supplies mechanism,
+  never the Domain's policy or authority merely by being selected.
+- A **contribution** is a typed addition admitted through a domain-owned shaped store.
+- **Activation** selects an extension package or one of its declared instances. It does not
+  activate an abstract Domain name.
+
+The [Federation of Fifteen](../sepulcher/extensions/index.md) is therefore operated doctrine and a
+jurisdiction map, not a claim that fifteen uniform plugins ship. This ADR owns how concrete code
+enters the body.
 
 The decision line is:
 
@@ -69,9 +108,14 @@ The system's logic resides in a structured directory hierarchy designed for modu
 - **Built-in Extensions:** Residing in `src/lychd/extensions/builtin/`. These are Core-coupled organs
   and reference implementations shipped within the kernel source. Installed does not mean active:
   only ids explicitly selected in Core configuration enter the boot registration pass.
-- **Crypt Extensions:** Residing in the **Crypt (13)** (`~/.local/share/lychd/extensions/`). Near-term Crypt organs are private coupled repositories unless they explicitly target a future versioned public API. They require the **Synthetic Forge (17)** to resolve dependency conflicts and manifest a new physical substrate.
+- **Crypt Extensions:** Residing in the **Crypt (13)** (`~/.local/share/lychd/extensions/`).
+  Current assembly may import an explicitly selected private `register.py` shim. Reproducible
+  repository pinning, dependency resolution, and substrate synthesis through
+  **Synthetic Forge (17)** remain future lifecycle work.
 - **Future Independent Extensions:** Shareable third-party organs become meaningful at or after v1, when proven patterns can be frozen behind a versioned public API, conformance tests, and manifest-gated packaging.
-- **The Manifest:** The Daemon maintains a global lockfile that records the specific commit hash of every active repository. This ensures the Federation is a deterministic body that can be captured, snapshotted, and restored as a single, bit-for-bit reproducible unit.
+- **The Manifest:** The target Forge lifecycle maintains a global lock that records exact source
+  and physical inputs. No such delivered federated lock currently proves a bit-for-bit
+  reproducible body.
 
 ### 2. The Registration Surface (The Extension Context)
 
@@ -86,8 +130,9 @@ The architecture relies on an **Inversion of Control** pattern to facilitate ass
   admission/authority/traceability path, and never becomes a public root command. Its declaration
   is inert metadata rather than an arbitrary host-side Click callback.
 - **Schema Exposure:** Selected in-process organs register `RuneConfig` subclasses through the extension context after import. Runtime package/source scanning is not the extension ledger.
-- **Application Contributions:** Future shaped `patterns` and `compositions` stores may accept
-  immutable Pattern revisions and metadata for the living [Reference Composition
+- **Application Contributions:** Future shaped `patterns`, `compositions`, and `suites` stores may
+  accept immutable Pattern revisions plus application and cross-Composition handoff metadata for
+  the living [Composition
   Portfolio](../compositions/index.md). They do not exist in the current `ExtensionContext`;
   application pages are design rather than runnable registration.
 - **Substrate Declarations:** Synthesis-time requirements (system libraries, binaries, container needs) belong to the wider Extension Protocol and feed the Forge manifest. They must not be confused with the boot-time context itself.
@@ -131,14 +176,15 @@ store, lifecycle, tests, and State boundary exist:
   without bypassing Ward, Vessel, or execution-plane authority.
 - **Persistence:** Domain schemas and migrations only through an accepted owner, ordering,
   recovery, export, deletion, and uninstall contract.
-- **Workflow Applications:** Future immutable Pattern revisions and Reference Composition metadata
-  through the Weaver's shaped contribution stores.
+- **Workflow Applications:** Future immutable Pattern revisions, Reference Composition metadata,
+  and Suite handoff graphs through the Weaver's shaped contribution stores.
 - **Infrastructure:** Explicit binaries, images, services, resource needs, and licenses for Forge
   synthesis.
 
 Capabilities remain abstract identifiers of what a provider can perform. A Composition assembles
 these contributions into one application; an Extension describes how contributed code and
-contracts enter the body. Neither term is a synonym for the other.
+contracts enter the body; a Suite relates several Compositions without merging them. None of
+these terms is a synonym for another.
 
 ### 4. Substrate Injections
 
@@ -259,7 +305,8 @@ Blind `.so` scans are forbidden. Binary loading must be mediated by the Syntheti
 !!! success "Positive"
     - **High-Velocity Performance:** Capabilities execute without network overhead, enabling real-time feedback loops.
 
-    - **Standardization:** Extensions are standard Python projects, requiring no proprietary packaging formats.
+    - **Standardization:** In-process extension packages use ordinary Python plus explicit LychD
+      registration stores; Extension Domains remain free to manifest through other forms.
 
     - **Coherent Evolution:** Extensions can participate in one assembled body. Synchronized
       migrations, Pattern/Composition stores, and physical-substrate rebuilds remain explicit

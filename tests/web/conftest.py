@@ -18,14 +18,15 @@ from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.orchestration.journal import TransitionJournal
 from lychd.domain.orchestration.manager import OrchestratorManager
-from lychd.domain.orchestration.schema import TransitionPlan
+from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 from lychd.domain.web.contracts import CsrfClientContract
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
 from lychd.domain.web.tickets import TicketStore
-from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController
+from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController, OrbController
 from lychd.interface.web.deps import web_dependencies
 
 if TYPE_CHECKING:
@@ -86,7 +87,7 @@ class FakeRunEngine(RunEngine):
         seen = await self.consents.verdict(consent_id) if self.consents is not None else None
         self.approvals.append((consent_id, approved, seen))
 
-    async def submit(self, intent: Any) -> RunHandle:
+    async def submit(self, intent: Any, *, retain_before_publish: Any = None) -> RunHandle:
         """Record the intent and open a run channel on the bus for the stream to tail.
 
         S3: mirror the real engine — the run id is minted here (the ledger's job),
@@ -96,9 +97,14 @@ class FakeRunEngine(RunEngine):
 
         self.submitted.append(intent)
         run_id = intent.run_id or f"run_{uuid.uuid4().hex[:12]}"
+        if retain_before_publish is not None:
+            await retain_before_publish(run_id)
         return RunHandle(
             run_id=run_id,
             workflow_name="bridge_chat",
+            pattern_id="bridge_chat",
+            pattern_revision="1",
+            evidence_capture="process_local",
             channel=self.bus.open(run_id),
         )
 
@@ -111,7 +117,9 @@ class FakeOrchestrator(OrchestratorManager):
 
     def __init__(self, statuses: list[dict[str, Any]] | None = None) -> None:
         self._statuses = statuses if statuses is not None else SAMPLE_STATUSES
-        self.transitions: list[str] = []
+        self.requests: list[str] = []
+        self.transitions = TransitionJournal()
+        self._contained_reason: str | None = None
 
     def list_capability_statuses(self) -> list[dict[str, Any]]:
         """Return the fixed capability statuses feeding the board."""
@@ -133,16 +141,23 @@ class FakeOrchestrator(OrchestratorManager):
         self,
         target_capability_key: str,
         priority: Priority = 0,
+        **kwargs: Any,
     ) -> TransitionPlan:
         """Record the requested transition (completes immediately)."""
         _ = priority
-        self.transitions.append(target_capability_key)
-        return TransitionPlan(
+        self.requests.append(target_capability_key)
+        plan = TransitionPlan(
             total_metabolic_cost=1.0,
             evict_coven_ids=[],
             launch_coven_ids=[target_capability_key],
             action_type="SOFT_SWAP",
         )
+        trace = kwargs.get("trace")
+        if isinstance(trace, TransitionTrace):
+            trace.plan = plan
+            trace.phase = "completed"
+            self.transitions.record(trace)
+        return plan
 
 
 class FakeRegistry(AnimatorRegistry):
@@ -236,7 +251,7 @@ def fake_services() -> SimpleNamespace:
 def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
     """A test client wired to the real API and SPA controllers."""
     app = Litestar(
-        route_handlers=[AltarController, BridgeController, NexusController, LoomController],
+        route_handlers=[AltarController, BridgeController, NexusController, LoomController, OrbController],
         dependencies=web_dependencies,
         middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
         state=State(

@@ -61,8 +61,21 @@ function projection(
     run_id: runId,
     cursor: 17,
     content: "authoritative partial",
-    status: "weaving",
+    run_status: "running",
+    activity: "weaving",
+    pattern_id: "bridge_chat",
+    pattern_revision: "1",
+    loom_path: "/loom/bridge_chat/1",
+    orb_path: `/orb/${runId}`,
+    evidence_capture: "process_local",
     fragments: [],
+    occurrence_id: null,
+    dispatch_occurrence_id: null,
+    grant_id: null,
+    capability_key: null,
+    transition_occurrence_id: null,
+    transition_request_id: null,
+    transition_phase: null,
     terminal: false
   };
 }
@@ -76,6 +89,7 @@ function event(
   return {
     schema_version: 1,
     run_id: runId,
+    event_id: `00000000-0000-4000-8000-${seq.toString().padStart(12, "0")}`,
     seq,
     kind,
     occurred_at: createdAt,
@@ -89,10 +103,15 @@ function accepted(
 ): Awaited<ReturnType<typeof sendBridgeMessage>> {
   return {
     run_id: runId,
+    pattern_id: "bridge_chat",
+    pattern_revision: "1",
+    loom_path: "/loom/bridge_chat/1",
+    orb_path: `/orb/${runId}`,
+    evidence_capture: "process_local",
     turn: {
       role: "user",
       content,
-      run_id: null,
+      run_id: runId,
       state: "settled",
       fragments: [],
       created_at: createdAt

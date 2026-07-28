@@ -80,6 +80,7 @@ class NexusCovenRow:
     warm: bool
     health: str
     reason: str | None
+    checked_at: datetime | None
     dedicated: bool
     persistent_resident: bool
 
@@ -97,21 +98,50 @@ class SwapTicket:
     """An in-flight coven transition strip (polled by the Nexus)."""
 
     id: str
+    request_id: str
     target: str
     state: TicketState
+    phase: str
     action_type: str
     total_metabolic_cost: float
+    physical_transition_id: str | None
+    compensation_transition_id: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class LoomNodeView:
+    """One stable declared station in a Loom Pattern score."""
+
+    key: str
+    label: str
+    kind: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class LoomEdgeView:
+    """One declared permission relation in a Loom Pattern score."""
+
+    key: str
+    source: str
+    target: str
+    relation: str
 
 
 @dataclass(frozen=True, kw_only=True)
 class LoomView:
-    """A single Loom workflow projection: mermaid source plus metadata."""
+    """One exact immutable Pattern revision projected by Loom."""
 
-    name: str
+    schema_version: int
+    pattern_id: str
+    revision: str
+    digest: str
+    checkpoint_schema: str
+    publication: Literal["published"]
     title: str
     description: str
     trigger_hint: str
-    node_names: tuple[str, ...]
+    nodes: tuple[LoomNodeView, ...]
+    edges: tuple[LoomEdgeView, ...]
     mermaid_source: str
 
 
@@ -151,6 +181,7 @@ def build_nexus_board(orchestrator: OrchestratorManager, registry: AnimatorRegis
             warm=bool(status["warm"]),
             health=str(status["health"]),
             reason=status["reason"],
+            checked_at=status.get("checked_at"),
             dedicated=bool(status["dedicated"]),
             persistent_resident=bool(status["persistent_resident"]),
         )
@@ -172,13 +203,19 @@ def _coven_name(registry: AnimatorRegistry, animator_name: str) -> str:
 
 
 def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> LoomView:
-    """Project a `Workflow` into its Loom view-model (mermaid source + metadata)."""
-    node_names = tuple(node.__name__ for node in workflow.graph.get_nodes())
+    """Project one exact immutable Pattern revision into a Loom view-model."""
+    manifest = workflow.manifest
     return LoomView(
-        name=workflow.name,
+        schema_version=manifest.schema_version,
+        pattern_id=manifest.key,
+        revision=manifest.revision,
+        digest=manifest.digest,
+        checkpoint_schema=manifest.checkpoint_schema,
+        publication="published",
         title=workflow.title,
         description=workflow.description,
         trigger_hint=workflow.trigger.hint,
-        node_names=node_names,
+        nodes=tuple(LoomNodeView(**node.snapshot()) for node in manifest.nodes),
+        edges=tuple(LoomEdgeView(**edge.snapshot()) for edge in manifest.edges),
         mermaid_source=workflow.mermaid(highlight=highlight),
     )

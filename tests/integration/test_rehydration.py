@@ -139,7 +139,12 @@ class ReopenAdmissionOrchestrator:
         self.leases = leases
         self.calls: list[str] = []
 
-    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
+    async def handle_transition(
+        self,
+        exception: HardwareTransitionRequired,
+        signal_priority: float,
+        **_kwargs: Any,
+    ) -> None:
         _ = signal_priority
         self.calls.append(exception.capability_key)
         self.leases.end_drain([exception.animator_name])
@@ -167,11 +172,28 @@ class LychDTestPersistence(FullStatePersistence[MockState, str]):
         await self.mark_job_resumed_mock(job_id)
 
 
+class FailingStasisPersistence(LychDTestPersistence):
+    """Reject checkpoint writes so evidence cannot claim a completed park."""
+
+    async def rehydrate_stasis(self, state: MockState, node: BaseNode[MockState, Any, str]) -> None:
+        _ = (state, node)
+        raise _CheckpointUnavailableError
+
+
+class _CheckpointUnavailableError(RuntimeError):
+    """Sentinel for a rejected stasis write."""
+
+
 class SimpleMockOrchestrator:
     def __init__(self) -> None:
         self.handle_transition_mock = AsyncMock()
 
-    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: float) -> None:
+    async def handle_transition(
+        self,
+        exception: HardwareTransitionRequired,
+        signal_priority: float,
+        **_kwargs: Any,
+    ) -> None:
         await self.handle_transition_mock(exception, signal_priority=signal_priority)
 
 
@@ -200,11 +222,15 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     persistence = LychDTestPersistence()
     graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
     mock_orchestrator = SimpleMockOrchestrator()
+    occurrences: list[tuple[str, str, str, str | None]] = []
 
     runner = GraphRunner[MockState](
         orchestrator=mock_orchestrator,
         persistence=persistence,
         signal_priority=50,
+        on_node_event=lambda event: occurrences.append(
+            (event.occurrence_id, event.node_type.__name__, event.phase, event.wait_kind)
+        ),
     )
 
     result = await runner.run_graph(graph, StasisNode(), MockState())
@@ -212,6 +238,34 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     assert result == "victory"
     mock_orchestrator.handle_transition_mock.assert_called_once()
     assert len(persistence.history) > 0
+    assert [(node, phase, wait) for _, node, phase, wait in occurrences] == [
+        ("StasisNode", "entered", None),
+        ("StasisNode", "waiting", "hardware"),
+        ("StasisNode", "entered", None),
+        ("StasisNode", "settled", None),
+        ("SuccessNode", "entered", None),
+        ("SuccessNode", "settled", None),
+    ]
+    first_wait = occurrences[0][0]
+    assert occurrences[1][0] == first_wait
+    assert occurrences[2][0] != first_wait  # retry/resume is a new logical occurrence
+
+
+@pytest.mark.asyncio
+async def test_graph_runner_does_not_report_waiting_when_checkpoint_fails() -> None:
+    graph = Graph[MockState, None, str](nodes=[StasisNode, SuccessNode])
+    occurrences: list[str] = []
+    runner = GraphRunner[MockState](
+        orchestrator=SimpleMockOrchestrator(),
+        persistence=FailingStasisPersistence(),
+        signal_priority=50,
+        on_node_event=lambda event: occurrences.append(event.phase),
+    )
+
+    with pytest.raises(_CheckpointUnavailableError):
+        await runner.run_graph(graph, StasisNode(), MockState())
+
+    assert occurrences == ["entered", "failed"]
 
 
 @pytest.mark.asyncio

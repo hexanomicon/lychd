@@ -131,7 +131,9 @@ class SoulstoneConfig(AnimatorConfig, ABC):
     @property
     def service_name(self) -> str:
         """Systemd service stem used by conflict generation."""
-        return f"lychd-{self.name}"
+        from lychd.system.unit_names import animator_service_stem
+
+        return animator_service_stem(self.name)
 
     @property
     def runtime_name(self) -> str:

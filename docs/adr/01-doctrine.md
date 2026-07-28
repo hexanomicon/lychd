@@ -188,22 +188,18 @@ Within `docs/`, authority is divided by purpose:
   receipt, and what remains design. ADR acceptance never sets a delivery state.
 - **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
   term, but they should not redefine it.
-- **docs/compositions/** holds accepted application specifications governed by ADR law. A
-  Composition page owns one application's intent, Pattern catalogue, cross-organ boundaries,
-  data, providers, policy, proving slice, and delivery gaps. Acceptance establishes architecture,
-  never implementation evidence or a State label.
+- **docs/compositions/** is the one catalogue for application specifications and candidate
+  studies. A mature Composition page owns one application's intent, Pattern catalogue,
+  cross-organ boundaries, data, providers, policy, proving slice, and delivery gaps. Every page
+  declares whether it is a proposal or accepted architecture; directory membership establishes
+  neither acceptance, implementation evidence, nor a State label.
 - **docs/sepulcher/** is **topic-oriented**: each part of the body carries its own
   concept, how-to, and configuration reference on one page (Portal, Soulstone, Coven,
   Codex, …). *What a part is and how to operate it* live together.
 - **docs/divination/** is the school of interacting with the **running** Lich: **`altar/`**
-  the instruments you drive it through (Bridge, Loom, Nexus) and **`transcendence/`** the
+  the instruments you drive it through (Bridge, Orb, Nexus, Loom) and **`transcendence/`** the
   meaning (the alchemical ascent). The agent layer itself is code — agents are written in
   Python and wired in the graph (the Loom); there is no separate "practice" gate.
-- **docs/incubator/** holds public, uncommitted design seeds. It may explore candidate Patterns,
-  extensions, workloads, and tutorial arcs, but it owns no architectural law, delivery state,
-  priority, or implementation promise. An accepted application may leave the Incubator for an
-  owning ADR and Composition page; State changes only when maintained evidence supports a bounded
-  delivery record.
 - **docs/summoning.md** is the practical user *tutorial* for bringing the daemon up the
   first time (learn-by-doing) — a single continuous page, not a chunked wizard.
 
@@ -267,17 +263,16 @@ Authority resolves by the kind of truth being asked for:
 3. ADRs define architectural law, constraints, and intended boundaries; an
    accepted decision does not prove delivery.
 4. The Lexicon defines canonical terminology.
-5. Composition specifications define accepted application contracts under ADR law without
-   proving their implementation or delivery priority.
+5. Composition specifications whose pages explicitly declare acceptance define application
+   contracts under ADR law without proving implementation or delivery priority. Candidate
+   Composition studies preserve proposals but decide no architecture, priority, or backlog.
 6. Sepulcher and Divination documents define operated doctrine, user workflow,
    and the alchemical journey without becoming a second delivery ledger.
-7. Incubator pages preserve proposals for discussion; they do not decide architecture,
-   delivery, priority, or actionable backlog.
-8. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
+7. `docs/index.md`, directory indexes, `README.md`, and `CONTRIBUTING.md` route
    humans through the topology.
-9. `AGENTS.md` defines agent operating procedure, while `.agents/scopes/`
+8. `AGENTS.md` defines agent operating procedure, while `.agents/scopes/`
    provide cheap routing hints into canon.
-10. Generated indexes, search results, ignored campaign evidence, and local
+9. Generated indexes, search results, ignored campaign evidence, and local
    overlays assist discovery but do not decide.
 
 ### Consequences

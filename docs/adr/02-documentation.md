@@ -55,7 +55,8 @@ icon: material/book-cog-outline
 - **Theme:** `material` (Scheme: Slate/Dark Mode) to match the "Lich" aesthetic.
 - **Structure:** Documentation lives in `docs/` and is deployed to GitHub Pages.
 - **Extensions:** Enable `admonition`, `pymdownx.details`, and `pymdownx.superfences` to allow for "Grimoire-style" warnings and collapsed sections (e.g., "Forbidden Knowledge").
-- **CSS:** A custom stylesheet (`stylesheets/hexanomicon.css`) overrides the default Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
+- **CSS:** A custom stylesheet (`docs/overrides/stylesheets/hexanomicon.css`) overrides the default
+  Material colors to implement the specific purple/cyan/black palette of the Hexanomicon.
 
 ### The Five Registers
 
@@ -70,15 +71,12 @@ distinct office; none is a measure of how seriously the project takes the myth.
 | **Operated doctrine** | Sepulcher and Altar | Mythic meaning joined to actual operation and explicit limits. |
 | **Great Work** | Transcendence | Full mythic voltage, exact internal relations, and distinct sources. |
 
-The [Incubator](../incubator/index.md) is deliberately **outside these five registers**. It is a
-proposal quarantine: a public place to preserve candidate directions before they acquire an
-architectural owner. Its pages may point toward Law, Iron, operated doctrine, or the Great Work,
-but they cannot establish any of them. They carry no delivery label and create no backlog
-commitment merely by being published.
-
-[Reference Composition](../compositions/index.md) pages belong to Law beneath their governing
-ADRs. They make one accepted application's Patterns, ownership, policy, data, and proving burden
-concrete. They are neither operated manuals nor delivery evidence.
+The [Composition catalogue](../compositions/index.md) is a directory, not a maturity label.
+Accepted Reference Composition pages belong to Law beneath their governing ADRs and make one
+application's Patterns, ownership, policy, data, and proving burden concrete. Candidate studies
+in the same catalogue remain outside these five registers until explicitly accepted. Neither
+kind is an operated manual or delivery evidence, and publication alone creates no backlog
+commitment.
 
 The Great Work is optional for executing an ordinary command; it is not optional project purpose
 or disposable theming. Technical readers may take the Iron path without first learning the full

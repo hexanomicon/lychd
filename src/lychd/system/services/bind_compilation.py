@@ -54,6 +54,7 @@ def compile_bind_request(
     uncaged: bool,
 ) -> BindRequest:
     """Compile loaded declarations into one immutable application request."""
+    from lychd.domain.animation.conflicts import require_soulstone_capability_coverage
     from lychd.domain.animation.services.adapters.registry import (
         RuntimeAdapterRegistry,
     )
@@ -64,6 +65,11 @@ def compile_bind_request(
         settings=settings,
     )
     runtime_plans = tuple(runtime_planner.plan(stone) for stone in soulstones)
+    capability_specs = tuple(spec for stone in soulstones for spec in runtime_planner.build_capability_specs(stone))
+    require_soulstone_capability_coverage(
+        soulstones,
+        capability_animator_names=(spec.animator_name for spec in capability_specs),
+    )
     required_soulstone_secrets = required_secret_names_from_soulstones(
         soulstones,
         runtime_plans,

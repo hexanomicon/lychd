@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from lychd.agents.router import ContentPart, Intent
@@ -128,6 +128,7 @@ class RunRecord:
     run_id: str
     session_id: str
     workflow_name: str
+    pattern_manifest: dict[str, Any]
     source: str
     queue_name: str
     priority: int
@@ -162,8 +163,11 @@ class RunRecord:
 
 @dataclass(frozen=True, kw_only=True)
 class RunHandle:
-    """What `RunEngine.submit` returns: the run id, chosen workflow, live channel."""
+    """Authoritative admission receipt plus the run's live channel."""
 
     run_id: str
     workflow_name: str
+    pattern_id: str
+    pattern_revision: str
+    evidence_capture: Literal["process_local", "durable_best_effort"]
     channel: RunChannel

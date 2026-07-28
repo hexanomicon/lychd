@@ -10,16 +10,29 @@ icon: material/graph-outline
 
 ## Requirements
 
-- **Type Safety as the Cortex:** Mandatory passage of task memory as strongly-typed `StateT` objects between nodes to ensure the "Chain of Thought" is validated by Pydantic at every synapse.
-- **Orchestrated Handshakes:** Integration with the system’s physical arbiter to submit capability requirements at each graph step, suspending execution until the hardware state matches the logical intent.
+- **Type Safety as the Cortex:** Mandatory passage of workflow memory as strongly typed `StateT`
+  objects between nodes so declared state is validated by Pydantic at every synapse. This validates
+  data shape, not hidden chain-of-thought or factual truth.
+- **Orchestrated Handshakes:** Capability-consuming nodes submit requirements through the physical
+  arbiter and wait until the substrate can satisfy the logical intent.
 - **Durable Persistence:** Mandatory support for committing graph state at declared boundaries—including message history, typed state, deferred waits, and completed step outputs—to the persistent substrate.
 - **Commit-Ordered Cleanup:** A checkpoint remains recoverable until the authoritative run ledger has committed a terminal status; graph iteration or resume success may never delete it early.
-- **Functional Topology:** Adoption of functional "Steps" over class-based nodes to enable high-velocity development and reduce architectural boilerplate.
-- **Logical Parallelism:** Provision of primitives for **Broadcasting** (same data to multiple paths) and **Spreading** (fanning out elements of an iterable) to enable concurrent reasoning.
+- **Functional Topology:** The future GraphBuilder adapter should use functional Steps to reduce
+  boilerplate without invalidating the current typed `BaseNode` execution contract.
+- **Logical Parallelism:** Future provision of primitives for **Broadcasting** (same data to
+  multiple paths) and **Spreading** (fanning out elements of an iterable) to enable concurrent
+  reasoning.
 - **Join and Reduce Synchronization:** Implementation of specialized synchronization points to
   aggregate parallel results into one candidate or typed aggregate. A join determines graph shape;
   it does not establish factual truth by consensus.
-- **Visual Scrying:** Automated generation of Mermaid diagrams to facilitate the visualization of internal logic and real-time state transitions for the Magus.
+- **Visible Topology and Evidence:** Pattern topology must remain inspectable independently of the
+  correlated runtime events that say which stations an Invocation actually entered.
+
+!!! warning "Implementation state"
+    The deployed engine is the installed serial `BaseNode` API. It provides typed serial execution,
+    declared checkpoint boundaries, hardware Live Stasis, and the supported consent-resume path.
+    Functional GraphBuilder Steps, broadcasting, spreading, joins, and parallel execution remain
+    future adapter work. Requirements for that target do not prove those primitives are delivered.
 
 ## Considered Options
 
@@ -45,7 +58,10 @@ icon: material/graph-outline
 
 ## Decision Outcome
 
-**pydantic-graph** is adopted as the engine for the machine's cortex. Reasoning is modeled as a stateful, asynchronous graph where the movement of intent is governed by strict type hints and functional steps.
+**pydantic-graph** is adopted as the engine for the machine's cortex. The current runtime models
+reasoning as a stateful asynchronous graph of typed `BaseNode` transitions. A future
+`WorkflowRuntime` adapter may admit functional GraphBuilder Steps only after it preserves LychD's
+checkpoint and evidence law.
 
 The graph topology models cognitive process and fluctuation patterns, not identity. It captures how candidate paths branch, compete, and converge without assigning ownership of outcomes.
 
@@ -55,7 +71,10 @@ The graph topology models cognitive process and fluctuation patterns, not identi
 The cortex is built on the installed `pydantic_graph` **`BaseNode`** API — the mind is a set of typed nodes composed into a `Graph`:
 
 - **Nodes:** Subclasses of `BaseNode[StateT, DepsT, ...]` implementing an async `run(self, ctx)` that returns the next node (or `End`) to determine the next station of thought. A `Workflow` binds such a graph to its routing metadata.
-- **The State (`StateT`):** A mutable, JSON-serializable Pydantic model representing the "Working Memory." It is built up as it passes through each synapse, ensuring total recall across the entire ritual; per-run handles (grants, models, toolsets) live in `deps`, never in state, so durable snapshots stay clean.
+- **The State (`StateT`):** A mutable, JSON-serializable Pydantic model representing declared
+  working state. It carries only the committed fields represented by its schema; it does not ensure
+  total recall. Per-run handles (grants, models, toolsets) live in `deps`, never in state, so durable
+  snapshots stay clean.
 
 !!! warning "Doctrine ahead of code"
     LychD stays on the installed v1 `BaseNode` API. The dependency is explicitly constrained to
@@ -76,7 +95,9 @@ The cortex is built on the installed `pydantic_graph` **`BaseNode`** API — the
 
 ### 2. The Orchestrated Handshake (Deferred Logic)
 
-Every step in the graph respects the physical laws established in the **[Dispatcher (ADR 22)](./22-dispatcher.md)**. Before invoking an Agent, a node performs a handshake:
+Every capability-consuming node respects the physical laws established in the
+**[Dispatcher (ADR 22)](./22-dispatcher.md)**. Before invoking an Agent, that node performs a
+handshake:
 
 1. **Intent Submission:** The node defines the required family and request traits (for example, `chat` with `image` input and tool support).
 2. **Grant Request:** The node asks the Dispatcher for a runtime grant instead of binding directly to a model, tool, container, or provider.
@@ -119,9 +140,25 @@ Every step in the graph respects the physical laws established in the **[Dispatc
     silently restarting a run from its original intent.
 
 !!! note "Run Events Are Observation, Not Recovery"
-    A graph run may expose lanes and append-only events for the Altar and Oculus: node movement, child-agent branches, Tomb jobs, approval requests, hardware stasis, and completion. These streams are the Magus's observation surface. They do not replace graph checkpoints, queue records, or Phylactery recovery boundaries.
+    A graph run may expose lanes and append-only events for the Altar and Oculus: node movement,
+    child-agent branches, Tomb jobs, approval requests, hardware Stasis, and completion. These
+    streams are the Magus's observation surface. They do not replace graph checkpoints, queue
+    records, or Phylactery recovery boundaries.
 
-    The event surface must support backfill plus live tail: stable `run_id`, `lane_id`, `step_id`, and `event_id` values allow the Altar, Oculus, and agent reviewers to resume observation without inventing state. Approval should appear as correlated request/result events, while the durable reanimation boundary remains the Graph checkpoint and queue record.
+    The event surface must support backfill plus live tail: stable `run_id`, `lane_id`, `step_id`,
+    and `event_id` values allow the Altar, Oculus, and agent reviewers to resume observation
+    without inventing state. Every relation declares whether it is containment, Pattern
+    permission, correlation, explicit causal parentage, waiting, or another owned relation.
+    Temporal adjacency, one trace identifier, or client layout cannot invent a causal edge or total
+    order across independent producers. Approval appears as correlated request/result events,
+    while the durable reanimation boundary remains the Graph checkpoint and queue record.
+
+    The current single-process foundation gives every event a stable `event_id` and producer-local
+    sequence. Each executable node attempt receives one occurrence identity shared by its
+    entered/settled/waiting/failed phases. The Dispatcher emits a separate grant event only after
+    acquisition and binds that occurrence to the issued grant/lease; automatic Orchestrator
+    transitions retain the same run and occurrence. Lane, child-agent, tool-call, and multi-producer
+    partial-order records remain later work.
 
 !!! note "Implemented persistence floor vs Phylactery horizon"
     The current durable tier uses one Postgres `run_checkpoint` row per run. Its JSONB document is
@@ -139,8 +176,9 @@ Every step in the graph respects the physical laws established in the **[Dispatc
 
 ### 3. Parallel Reasoning: Broadcasting and Spreading
 
-The architecture treats the mind as a multi-threaded organism, where graph traversals represent
-movements within **the Flux** (Vṛtti correspondence):
+This section defines the future GraphBuilder target; none of these parallel primitives is delivered
+by the current serial `BaseNode` engine. The architecture may later treat concurrent graph
+traversals as movements within **the Flux** (Vṛtti correspondence):
 
 - **Broadcasting:** Identical data is sent to multiple steps simultaneously (e.g., requesting three different **[Personas (ADR 32)](./32-identity.md)** to critique a single plan).
 - **Spreading (Mapping):** Elements of an iterable are fanned out to parallel paths (e.g.,
@@ -161,7 +199,8 @@ movements within **the Flux** (Vṛtti correspondence):
 
 ### 4. Deterministic Routing & The Halting Problem
 
-Routing through the cortex is type-safe and non-probabilistic:
+The current `BaseNode` runtime routes through typed return values. A future GraphBuilder adapter may
+also use:
 
 - **`g.decision()`:** Specialized nodes evaluate data against a set of branches.
 - **Pattern Matching:** Branches utilize `g.match()` to route intent based on Type, Literal values, or custom predicates.
@@ -169,20 +208,43 @@ Routing through the cortex is type-safe and non-probabilistic:
 
 Topology is cognition without ownership: the graph determines process flow, while identity and promotion authority are handled elsewhere.
 
-### 5. Visual Scrying (Mermaid Integration)
+### 5. Pattern Topology and Runtime Observation
 
-To provide transparency, the system generates real-time visualizations:
+The two visual contracts must not be conflated:
 
-- **Mermaid Diagrams:** `graph.mermaid_code()` (surfaced as `Workflow.mermaid()`) produces `stateDiagram-v2` source (Mermaid text) for the **[Altar (ADR 15)](./15-frontend.md)**. The source is shipped as text and rendered client-side; there is no server-side image-rendering API.
-- **State Streaming:** Transitions are pushed via Server-Sent Events (SSE), allowing the Magus to monitor the Daemon navigating the complex topology of a task.
+- **Pattern score:** Weaver registers an immutable semantic manifest containing the Pattern
+  identity/revision, checkpoint schema, station declarations, permitted edges, and digest. An
+  admitted run pins that exact validated snapshot. `graph.mermaid_code()` (surfaced as
+  `Workflow.mermaid()`) is a secondary `stateDiagram-v2` lens for the
+  **[Loom](../divination/altar/loom.md)**. The manifest is presently author-declared beside the
+  executable graph; its digest proves the declared score snapshot, not mechanical parity with
+  every Python return path.
+- **Invocation evidence:** The **[Orb](../divination/altar/orb.md)** now joins one Run to
+  its valid pinned Pattern manifest and displays bounded producer-local status, node occurrence,
+  dispatch grant, wait, and transition evidence. It labels retained coverage and gaps. It does not
+  yet provide a live trace tail, graph-shaped evidence view, durable Oculus read model, child-agent
+  lanes, or a cross-producer total order.
+
+The semantic manifest and outline are the current score projection; Mermaid is an optional
+plain-text/diagram lens. Neither is a runtime event contract, a future round-trippable Pattern IR,
+or evidence that an Invocation entered or completed a node.
+
+A manifest terminal station such as `end` is a declarative outcome, not an executable occurrence.
+Pydantic Graph returns `End` directly; runtime evidence therefore records the final executable
+node settlement and authoritative run terminal status. The Orb must not fabricate a synthetic
+terminal-node occurrence.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Cognitive Resilience:** Committed graph progress survives system reboots and hardware failures through mandatory persistence.
-    - **Physical Discipline:** The graph acts as a "polite citizen," negotiating for hardware at every synapse to prevent VRAM thrashing.
-    - **Neural Scaling:** Logical parallelism allows the Daemon to scale its attention across multiple sub-tasks without manual intervention.
-    - **Type Sovereignty:** The entire cortex is statically verifiable, preventing systemic slop.
+    - **Bounded Resilience:** Declared durable boundaries can preserve committed graph state; current
+      hardware Live Stasis remains process-local and a complete reboot receipt is still absent.
+    - **Physical Discipline:** Capability-consuming nodes request grants through Dispatcher and
+      Orchestrator instead of binding physical runtimes directly.
+    - **Parallelism Seam:** GraphBuilder leaves a typed route to later fan-out and joins after the
+      persistence adapter proves them.
+    - **Type Sovereignty:** Typed state and return contracts catch shape errors; they do not prove
+      complete topology, factual truth, or total static correctness.
 
 !!! failure "Negative"
     - **Initialization Latency:** Constructing a graph-based workflow requires significant upfront architectural effort compared to procedural scripts.

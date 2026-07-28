@@ -10,13 +10,22 @@
   let nextOmen = 0;
 
   const instruments = [
-    { slug: "bridge", label: "Bridge", unbuilt: false },
-    { slug: "scrying", label: "Scrying", unbuilt: true },
-    { slug: "nexus", label: "Nexus", unbuilt: false },
-    { slug: "loom", label: "Loom", unbuilt: false },
-    { slug: "reliquary", label: "Reliquary", unbuilt: true },
-    { slug: "bindings", label: "Bindings", unbuilt: true }
+    { slug: "bridge", label: "Bridge", plain: "Talk" },
+    { slug: "orb", label: "Orb", plain: "Evidence" },
+    { slug: "nexus", label: "Nexus", plain: "Capabilities" },
+    { slug: "loom", label: "Loom", plain: "Patterns" }
   ] as const;
+
+  function attention(event: Event) {
+    const value = (event as CustomEvent<number>).detail;
+    if (Number.isInteger(value)) pending = value;
+    else void refreshAttention();
+  }
+
+  function receiveOmen(event: Event) {
+    const detail = (event as CustomEvent<{ text: string; fault?: boolean }>).detail;
+    raiseOmen(detail.text, detail.fault ?? true);
+  }
 
   function raiseOmen(text: string, fault = true) {
     const id = ++nextOmen;
@@ -38,39 +47,31 @@
 
   onMount(() => {
     void refreshAttention();
-    const attention = (event: Event) => {
-      const value = (event as CustomEvent<number>).detail;
-      if (Number.isInteger(value)) pending = value;
-      else void refreshAttention();
-    };
-    const omen = (event: Event) => {
-      const detail = (event as CustomEvent<{ text: string; fault?: boolean }>).detail;
-      raiseOmen(detail.text, detail.fault ?? true);
-    };
     window.addEventListener("altar:attention", attention);
-    window.addEventListener("altar:omen", omen);
+    window.addEventListener("altar:omen", receiveOmen);
     return () => {
       window.removeEventListener("altar:attention", attention);
-      window.removeEventListener("altar:omen", omen);
+      window.removeEventListener("altar:omen", receiveOmen);
     };
   });
 </script>
 
+<a class="skip-link" href="#altar-main">Skip to instrument</a>
 <header class="topbar">
   <div class="brand">
-    <span class="mark">◈</span>
+    <span class="mark" aria-hidden="true">⬡</span>
     <span class="name rune-head">LychD</span>
     <span class="sub">The Altar</span>
   </div>
 
   <nav class="instruments" aria-label="Instruments">
-    {#each instruments as instrument}
+    {#each instruments as instrument (instrument.slug)}
       <a
         href="/{instrument.slug}"
         aria-current={page.url.pathname.startsWith(`/${instrument.slug}`) ? "page" : undefined}
       >
-        {instrument.label}
-        {#if instrument.unbuilt}<span class="dot">◇</span>{/if}
+        <span>{instrument.label}</span>
+        <small>{instrument.plain}</small>
       </a>
     {/each}
   </nav>
@@ -79,7 +80,9 @@
   <a class="sigil" data-state={pending > 0 ? "lit" : "dormant"} href="/bridge">
     ◈ {pending > 0 ? `${pending} awaiting` : "Consent clear"}
   </a>
-  <span class="sigil-identity">Sigil <b>Magus</b></span>
+  <span class="sigil-identity" title="Fixed local authority context; not authentication">
+    Local Sigil · <b>Magus</b>
+  </span>
 </header>
 
 <main id="altar-main">

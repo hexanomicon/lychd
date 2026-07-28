@@ -38,9 +38,51 @@ function live(sessionId: string, runId: string): LiveTurn {
     sessionId,
     runId,
     content: "",
-    status: "running",
+    runStatus: "running",
+    activity: "thinking",
     state: "streaming",
-    fragments: []
+    fragments: [],
+    patternId: "bridge_chat",
+    patternRevision: "1",
+    loomPath: "/loom/bridge_chat/1",
+    orbPath: `/orb/${runId}`,
+    evidenceCapture: "process_local",
+    occurrenceId: null,
+    dispatchOccurrenceId: null,
+    grantId: null,
+    capabilityKey: null,
+    transitionOccurrenceId: null,
+    transitionRequestId: null,
+    transitionPhase: null
+  };
+}
+
+function runProjection(
+  overrides: Partial<RunProjectionSnapshot> = {}
+): RunProjectionSnapshot {
+  return {
+    schema_version: 1,
+    session_id: "session-a",
+    run_id: "run-a",
+    cursor: 17,
+    content: "authoritative",
+    run_status: "running",
+    activity: "weaving",
+    pattern_id: "bridge_chat",
+    pattern_revision: "1",
+    loom_path: "/loom/bridge_chat/1",
+    orb_path: "/orb/run-a",
+    evidence_capture: "process_local",
+    fragments: [],
+    occurrence_id: null,
+    dispatch_occurrence_id: null,
+    grant_id: null,
+    capability_key: null,
+    transition_occurrence_id: null,
+    transition_request_id: null,
+    transition_phase: null,
+    terminal: false,
+    ...overrides
   };
 }
 
@@ -76,21 +118,16 @@ describe("Bridge snapshot/live merge", () => {
   it("replaces an active run only with its cursor-bound projection", () => {
     const current = live("session-a", "run-a");
     current.content = "partial";
-    const projection: RunProjectionSnapshot = {
-      schema_version: 1,
-      session_id: "session-a",
-      run_id: "run-a",
-      cursor: 17,
+    const projection = runProjection({
       content: "authoritative",
-      status: "weaving",
-      fragments: [{ kind: "genui.plan_checklist" }],
-      terminal: false
-    };
+      fragments: [{ kind: "genui.plan_checklist" }]
+    });
 
-    expect(replaceLiveTurnFromSnapshot(current, projection)).toEqual({
+    expect(replaceLiveTurnFromSnapshot(current, projection)).toMatchObject({
       ...current,
       content: "authoritative",
-      status: "weaving",
+      runStatus: "running",
+      activity: "weaving",
       state: "streaming",
       fragments: [{ kind: "genui.plan_checklist" }]
     });
@@ -99,16 +136,13 @@ describe("Bridge snapshot/live merge", () => {
 
   it("keeps terminal projection visible until the session ledger contains it", () => {
     const current = live("session-a", "run-a");
-    const projection: RunProjectionSnapshot = {
-      schema_version: 1,
-      session_id: "session-a",
-      run_id: "run-a",
+    const projection = runProjection({
       cursor: 18,
       content: "settled answer",
-      status: "done",
-      fragments: [],
+      run_status: "done",
+      activity: "done",
       terminal: true
-    };
+    });
 
     const terminal = replaceLiveTurnFromSnapshot(current, projection);
     const merge = mergeSnapshotLiveTurns(snapshot("session-a", []), [terminal]);
@@ -119,16 +153,10 @@ describe("Bridge snapshot/live merge", () => {
   });
 
   it("reconstructs a process-local active run missing after a remount", () => {
-    const projection: RunProjectionSnapshot = {
-      schema_version: 1,
-      session_id: "session-a",
-      run_id: "run-a",
-      cursor: 17,
+    const projection = runProjection({
       content: "authoritative partial",
-      status: "weaving",
-      fragments: [{ kind: "genui.plan_checklist" }],
-      terminal: false
-    };
+      fragments: [{ kind: "genui.plan_checklist" }]
+    });
 
     const merge = mergeSnapshotLiveTurns(snapshot("session-a", [], [projection]), []);
 
@@ -137,9 +165,22 @@ describe("Bridge snapshot/live merge", () => {
         sessionId: "session-a",
         runId: "run-a",
         content: "authoritative partial",
-        status: "weaving",
+        runStatus: "running",
+        activity: "weaving",
         state: "streaming",
-        fragments: [{ kind: "genui.plan_checklist" }]
+        fragments: [{ kind: "genui.plan_checklist" }],
+        patternId: "bridge_chat",
+        patternRevision: "1",
+        loomPath: "/loom/bridge_chat/1",
+        orbPath: "/orb/run-a",
+        evidenceCapture: "process_local",
+        occurrenceId: null,
+        dispatchOccurrenceId: null,
+        grantId: null,
+        capabilityKey: null,
+        transitionOccurrenceId: null,
+        transitionRequestId: null,
+        transitionPhase: null
       }
     ]);
   });
@@ -147,16 +188,10 @@ describe("Bridge snapshot/live merge", () => {
   it("does not regress a projection whose stream remained attached", () => {
     const current = live("session-a", "run-a");
     current.content = "newer stream content";
-    const projection: RunProjectionSnapshot = {
-      schema_version: 1,
-      session_id: "session-a",
-      run_id: "run-a",
+    const projection = runProjection({
       cursor: 3,
       content: "older snapshot content",
-      status: "weaving",
-      fragments: [],
-      terminal: false
-    };
+    });
 
     const merge = mergeSnapshotLiveTurns(
       snapshot("session-a", [], [projection]),

@@ -1,6 +1,20 @@
 [Unit]
 Description={{ description }}
-PartOf={{ part_of }}
-
-[Install]
-{% if wanted_by %}WantedBy={{ wanted_by | join(' ') }}{% endif %}
+{% if part_of %}
+PartOf={{ part_of | join(' ') }}
+{% endif %}
+{% if wants %}
+Wants={{ wants | join(' ') }}
+{% endif %}
+{% if requires %}
+Requires={{ requires | join(' ') }}
+{% endif %}
+{% if before %}
+Before={{ before | join(' ') }}
+{% endif %}
+{% if after %}
+After={{ after | join(' ') }}
+{% endif %}
+{% if conflicts %}
+Conflicts={{ conflicts | join(' ') }}
+{% endif %}

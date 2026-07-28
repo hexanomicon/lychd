@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "path",
-    ["/bridge", "/nexus", "/loom", "/scrying", "/reliquary", "/bindings"],
+    ["/bridge", "/nexus", "/loom", "/orb"],
 )
 def test_pages_return_compiled_svelte_shell(
     altar_client: TestClient[Litestar],
@@ -44,7 +44,10 @@ def test_altar_status_publishes_the_vessel_csrf_names(
     }
 
 
-@pytest.mark.parametrize("path", ["/bridge/session-x", "/loom/workflow-x"])
+@pytest.mark.parametrize(
+    "path",
+    ["/bridge/session-x", "/loom/pattern-x/revision-1", "/orb/run-x"],
+)
 def test_deep_links_return_same_static_shell(
     altar_client: TestClient[Litestar],
     path: str,
@@ -60,3 +63,14 @@ def test_unknown_api_is_not_swallowed_by_spa_fallback(
     altar_client: TestClient[Litestar],
 ) -> None:
     assert altar_client.get("/api/v1/not-real").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/reliquary", "/bindings", "/scrying", "/scrying/run-x", "/loom/unversioned"],
+)
+def test_retired_or_ambiguous_pages_are_not_routes(
+    altar_client: TestClient[Litestar],
+    path: str,
+) -> None:
+    assert altar_client.get(path).status_code == 404

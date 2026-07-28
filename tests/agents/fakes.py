@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
 from pydantic_ai import RunContext
@@ -34,6 +35,19 @@ class FakeGrant:
     model: Any
     toolsets: tuple[Any, ...] = ()
     settings: Any = None
+    key: str = "chat:test"
+    spec: Any = field(
+        default_factory=lambda: SimpleNamespace(
+            key="chat:test",
+            animator_name="test-animator",
+            family=SimpleNamespace(value="chat"),
+            model_id="test-model",
+            max_context=4096,
+        )
+    )
+    state: Any = field(default_factory=lambda: SimpleNamespace(phase=SimpleNamespace(value="warm")))
+    generation: Any = field(default_factory=lambda: SimpleNamespace(max_context=8192, max_tokens=512))
+    lease: Any = field(default_factory=lambda: SimpleNamespace(grant_id="grant-test"))
 
     def model_settings(self) -> Any:
         """Return the recordable model_settings sentinel (None unless one was injected)."""
@@ -139,6 +153,7 @@ class FakeEvents:
 @dataclass
 class _FakeSession:
     turns: list[Any] = field(default_factory=list)
+    message_history: list[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -149,8 +164,33 @@ class FakeTurns:
     statuses: dict[str, str] = field(default_factory=dict)
     sessions: dict[str, _FakeSession] = field(default_factory=dict)
 
+    def seed_session(
+        self,
+        session_id: str,
+        *,
+        turns: list[Any],
+        message_history: list[Any],
+    ) -> None:
+        self.sessions[session_id] = _FakeSession(
+            turns=list(turns),
+            message_history=list(message_history),
+        )
+
     async def add_turn(self, session_id: str, turn: Any) -> None:
         self.added.append((session_id, turn))
+        self.sessions.setdefault(session_id, _FakeSession()).turns.append(turn)
+
+    async def settle_agent_turn(
+        self,
+        session_id: str,
+        turn: Any,
+        *,
+        new_messages: list[Any],
+    ) -> None:
+        self.added.append((session_id, turn))
+        session = self.sessions.setdefault(session_id, _FakeSession())
+        session.turns.append(turn)
+        session.message_history.extend(new_messages)
 
     def set_run_status(self, run_id: str, status: str) -> None:
         self.statuses[run_id] = status

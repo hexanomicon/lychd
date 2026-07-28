@@ -16,7 +16,11 @@ icon: material/directions-fork
 - **Semantic Selection Only:** The Dispatcher selects a declared capability and issues a scoped grant only when it is `WARM`; it never starts, stops, swaps, or activates a runtime.
 - **Explicit Requirements:** Family, model preference, required input modalities, and tool support must be named in the dispatch request and filtered before a provider can be selected.
 - **The Animator Protocol:** Mandatory implementation of the **Animator** interface to bind disparate local, remote, and swarm services to the **[Agents (20)](20-agents.md)** runtime, Graph, Orchestrator, and extension surfaces.
-- **The Stasis Handshake:** Mandatory coordination with the **[Orchestrator (23)](23-orchestrator.md)**. The Dispatcher must query the physical state of the required **[Coven (08)](08-containers.md)** before binding logic. If the required hardware is "Cold," it must raise a `HardwareTransitionRequired` signal to trigger the **Stasis Protocol**.
+- **The Stasis Handshake:** Mandatory coordination with the
+  **[Orchestrator (23)](23-orchestrator.md)**. The Dispatcher reads the selected capability's live
+  Animator state before binding. If managed substrate is not ready, it raises
+  `HardwareTransitionRequired` to trigger the **Stasis Protocol**; it never interprets Coven or
+  conflict-domain topology itself.
 - **Asynchronous Deferral:** HTR and grant requirements must be serializable/park-safe so the Graph can own Live or Durable Stasis. The Dispatcher never serializes an execution frame itself.
 - **Modality Zipping:** Capability to "weave" deferred sensory tools into a text-only reasoning agent if the selected provider lacks native multimodal support.
 - **Syntax Standardization (Pydantic Covenant):** Adoption of Python type hints and Pydantic schemas as the definitive internal grammar for tool definitions, eliminating the "Middleware Tax" of legacy proxy translation layers.
@@ -110,7 +114,10 @@ A Portal yields `CapabilitySpec`s from its declared model list in the Codex or, 
 
 At initialization, the Dispatcher constructs an in-memory index of the Sepulcher’s potential. It loads Animator Runes from the Codex anchors (`runes/animator/`, `runes/animator/soulstones/`, `runes/animator/portals/`) and tracks the runtime animators/connectors currently manifest in the system.
 
-Policy resolution still targets a provider-route contract for cognitive tasks (model/tool identity for the requested task), while the runtime binding path is connector-based (`base_url`, discovered/default model ids, toolsets, service clients, and other adapter-owned surfaces). This index updates as the **Orchestrator** manifests or banishes hardware covens.
+Policy resolution still targets a provider-route contract for cognitive tasks (model/tool identity
+for the requested task), while the runtime binding path is connector-based (`base_url`,
+discovered/default model ids, toolsets, service clients, and other adapter-owned surfaces). This
+index updates as the **Orchestrator** readies or retires managed Animators.
 
 ### 2. The Animator Handshake (The Stasis Protocol)
 
@@ -122,7 +129,8 @@ The runtime registry is the canonical handshake surface. It exposes:
 
 - **The Substrate Check:** When an Agent requests a capability, the Dispatcher reads `CapabilityState.phase`.
 - **The Physical Check:** Any managed phase below `WARM` (`COLD`, `ACTIVATABLE`, `WARMING`) means the substrate supports the capability but it is not presently ready. The Dispatcher emits HTR without choosing or executing the remedy.
-- **The Residency Boundary:** `persistent_resident=True` keeps a support runtime out of the default eviction set, but it does not create a second conflict law or a second activation path.
+- **The Residency Boundary:** `persistent_resident=True` excludes a support runtime from conflict
+  participation at bind and from managed eviction. It does not create a second activation path.
 - **The Lifecycle Boundary:** `dedicated=False` means the runtime is routable but not lifecycle-managed by LychD.
 - **The Stasis Signal:** In this scenario, the Dispatcher raises `HardwareTransitionRequired`. This freezes the Agent Graph and hands control to the Orchestrator.
     - **Soft Activation:** If the unit is already running and the adapter exposes a native
@@ -131,13 +139,14 @@ The runtime registry is the canonical handshake surface. It exposes:
       `llama.cpp` router `/models/load`) without a container restart. If activation/readiness fails,
       admission remains deliberately closed because v1 has no trustworthy model-level inverse.
     - **Hard Swap:** If the target runtime is cold and LychD owns its lifecycle, the Orchestrator
-      serializes one explicit evict/launch plan, drains its complete evictee set, and executes that
-      exact Systemd transition. Generated units add no hidden conflict stops. A failure after
-      physical completion but before WARM triggers one typed exact inverse; gates reopen only if
-      that compensation reaches a terminal success. A raising actuator call itself stays closed
-      because the current port does not return proof that best-effort rollback restored the world.
-      That containment rejects all later transition requests—including a warm-looking NO_OP—until
-      operator recovery or process restart.
+      derives the exact active conflict neighborhood from validated Rune intent, closes and drains
+      it, and stale-validates the world. After the actuator attests the loaded target graph, one
+      Animator-target start asks systemd to perform the complete stop/switch/start transaction.
+      Readiness and one exact compensation toward the captured prior compatible target set remain
+      Orchestrator responsibilities. An uncertain transaction or failed compensation keeps
+      admission closed and rejects later transitions—including a warm-looking NO_OP. Direct mode
+      holds this containment only for the Vessel process lifetime; mediated mode persists a
+      `.contained` marker across restart until operator recovery.
 - **The Reanimation:** Once the Orchestrator converges the requested capability on `WARM`, the Graph retries dispatch; only that fresh dispatch may issue the grant.
 
 !!! note "Agent State vs. VRAM Swap"
@@ -183,10 +192,19 @@ The Dispatcher does not return a raw model. It returns a **CapabilityGrant** con
 - **The Animator:** The selected runtime handle.
 - **The CapabilitySpec:** The canonical declaration that was selected.
 - **The CapabilityState:** The warm/live state observed immediately before grant.
+- **The Resolved Generation Profile:** The runtime → Animator → model overlay, including
+  `max_context` and `max_tokens` when declared. Context uses these grant-bound limits rather than a
+  static model guess; see **[Context (ADR 21)](./21-context.md)**.
 - **The Hydrated Runtime Surfaces:** The bound model, toolsets, service clients, or other adapter surfaces when the selected connector exposes them.
 - **Late-Bound Binding:** The grant is a temporary hydration against the active physical substrate at the moment of thought.
 
 Tool-only and service-only grants may have no model. Capability-bearing surfaces are carried by connectors, not by pretending every Portal has a default chat model. A Watcher, browser Animator, or remote service Portal follows the same law: it exposes its own capability families rather than masquerading as chat.
+
+When a Graph occurrence is bound in the current execution context, the Dispatcher emits the
+authoritative dispatch observation only after the lease ledger has admitted the grant. That event
+names the selected capability, Animator, family/model, observed warm phase, occurrence identity,
+and exact grant/lease identity. Workflows do not emit a look-alike selection event: only the office
+that actually acquired the grant may claim that relation.
 
 #### Durable Content and `ArtifactRef`
 
@@ -226,10 +244,20 @@ The Dispatcher rejects intermediate translation protocols (UTCP). It adopts **Py
 The Dispatcher is the intended semantic routing boundary for the **Agent Registry**—a system-wide directory of all manifest minds. The Emissary transport described here is not part of the current foundation.
 
 - **The Registry:** An in-memory index mapping agent intents to provider-route policy (`model_provider` and `tool_provider`). Extensions register their agents here during the boot sequence.
-- **The Emissary Pattern:** Remote agents are represented in the registry as **Emissaries**. To the local Agent, invoking a remote node is identical to calling a local tool—the domain boundary is invisible at the reasoning layer.
-- **Legion Routing:** If the target node shares the **Master Sigil** (a Thrall), the Dispatcher signs the intent with `INTENT_UPDATE_SYSTEM` authority and transmits it via direct Vessel HTTP. The receiving Thrall validates the Sigil and willingly executes infrastructure-level commands.
+- **The Emissary Pattern:** Remote capabilities are represented in the registry as
+  **Emissaries**. They may present a tool-shaped reasoning surface, but the Dispatcher preserves
+  the remote principal, authority, durability, cost, and failure boundary.
+- **Legion Routing:** An enrolled Node Agent has a unique node-scoped identity. The Dispatcher may
+  route only a typed semantic delegation admitted under **[Legion law (42)](42-legion.md)**; it
+  never grants `INTENT_UPDATE_SYSTEM`, shares the Master Sigil, or transmits infrastructure
+  commands.
 - **Necropolis Routing:** If the target node is a foreign Sovereign, the Dispatcher routes through the **[A2A Intercom (26)](26-a2a.md)** and the **Workload Pool** path, attaching a **[Toll (41)](41-x402.md)** bounty. No infrastructure authority is granted — only the declared task intent.
-- **The Handover:** When the Dispatcher resolves an intent to an Emissary, it does not execute code locally. It serializes the Pydantic intent and manages the transport — direct HTTP for **[Legion (42)](42-legion.md)** Thralls, A2A for Necropolis peers. This triggers the **Stasis Protocol**: the local Agent freezes, VRAM is freed, and the Agent rehydrates when the peer returns the result.
+- **The Handover:** When the Dispatcher resolves an intent to an Emissary, it records and parks
+  the local Graph at the durable handoff boundary. The Intercom profile carries the delegation:
+  owned-node authority and fencing for **[Legion (42)](42-legion.md)**, negotiated peer authority
+  for the Necropolis. Local resources are released only through their own lease and Orchestrator
+  law. The Graph resumes from an admitted, matching result—not from transport silence or an
+  arbitrary callback.
 
 ### 8. Health and Pulse
 

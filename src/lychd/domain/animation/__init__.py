@@ -14,6 +14,12 @@ from lychd.domain.animation.capabilities import (
     CapabilitySpec,
     CapabilityState,
 )
+from lychd.domain.animation.conflicts import (
+    ConflictDeclaration,
+    ConflictTopology,
+    ConflictTopologyError,
+    build_conflict_topology,
+)
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.errors import (
     ActivationFailed,
@@ -54,6 +60,9 @@ __all__ = [
     "CapabilityState",
     "CapabilityUnavailable",
     "ConcurrencyIntent",
+    "ConflictDeclaration",
+    "ConflictTopology",
+    "ConflictTopologyError",
     "Connector",
     "GenerationProfile",
     "GoogleGeminiPortalConfig",
@@ -73,5 +82,6 @@ __all__ = [
     "SoulstoneConfig",
     "SoulstoneStore",
     "ToolConnector",
+    "build_conflict_topology",
     "is_placeholder",
 ]

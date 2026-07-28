@@ -15,10 +15,10 @@ writes the terminal `CANCELLED` + `DONE`.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
 from lychd.domain.cortex.priority import (
@@ -203,18 +203,27 @@ class RunEngine:
             stasis_store = InMemoryStasisStore()
         self.stasis_store = stasis_store
 
-    async def submit(self, intent: Intent) -> RunHandle:
-        """Route once, persist QUEUED, open the channel, and enqueue `perform_run`.
+    async def submit(
+        self,
+        intent: Intent,
+        *,
+        retain_before_publish: Callable[[str], Awaitable[None]] | None = None,
+    ) -> RunHandle:
+        """Route once, persist QUEUED, retain admission context, then publish work.
 
         S3: the run id is the LEDGER's canonical id (`run.run_id`); `intent.run_id`
         is advisory client-correlation only (stashed in the intent JSONB). The
         handle and every downstream surface (SSE URL, Step rows, checkpoint row, lease
         holder) key on `run.run_id`.
 
-        Compensation (F3/H2): if `_enqueue` raises (broker down, or an unknown
-        physical queue) the QUEUED row is not left to rot — it is failed, a terminal
-        `DONE` is emitted so any open stream never hangs, the channel is closed, and
-        the original error re-raises for the caller.
+        `retain_before_publish` is the ordered admission seam for a caller-owned
+        durable record such as Bridge's user turn. It receives the canonical run id
+        after the ledger commit but before a worker can observe the run in the broker.
+
+        Compensation (F3/H2): if retention or `_enqueue` raises (broker down, or an
+        unknown physical queue) the QUEUED row is not left to rot — it is failed, a
+        terminal `DONE` is emitted so any open stream never hangs, the channel is
+        closed, and the original error re-raises for the caller.
         """
         workflow = self.workflows.route(intent)
         queue_name, priority = self.queue_router.resolve(intent)
@@ -222,6 +231,7 @@ class RunEngine:
             self.ledger.create(
                 intent,
                 workflow_name=workflow.name,
+                pattern_manifest=workflow.manifest.snapshot(),
                 queue_name=queue_name,
                 priority=priority,
             )
@@ -234,13 +244,34 @@ class RunEngine:
             run = await complete_under_cancellation(create_task)
             await complete_under_cancellation(self._compensate_enqueue_failure(run.run_id, exc))
             raise
+        if retain_before_publish is not None:
+            retain_task = asyncio.ensure_future(retain_before_publish(run.run_id))
+            try:
+                await asyncio.shield(retain_task)
+            except asyncio.CancelledError as exc:
+                await complete_under_cancellation(retain_task)
+                await complete_under_cancellation(self._compensate_enqueue_failure(run.run_id, exc))
+                raise
+            except BaseException as exc:
+                await complete_under_cancellation(self._compensate_enqueue_failure(run.run_id, exc))
+                raise
         channel = self.bus.open(run.run_id)
         try:
             await self._enqueue(run)
         except BaseException as exc:
             await complete_under_cancellation(self._compensate_enqueue_failure(run.run_id, exc))
             raise
-        return RunHandle(run_id=run.run_id, workflow_name=workflow.name, channel=channel)
+        return RunHandle(
+            run_id=run.run_id,
+            workflow_name=workflow.name,
+            pattern_id=workflow.manifest.key,
+            pattern_revision=workflow.manifest.revision,
+            evidence_capture=cast(
+                "Literal['process_local', 'durable_best_effort']",
+                self.ledger.evidence_capture,
+            ),
+            channel=channel,
+        )
 
     async def _compensate_enqueue_failure(self, run_id: str, exc: BaseException) -> None:
         """Fail only an unclaimed QUEUED run, then terminate its event channel."""

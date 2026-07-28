@@ -16,15 +16,21 @@ import pytest
 from pydantic import ValidationError
 
 from lychd.config.settings.orchestration import SwitchingSettings
-from lychd.domain.orchestration.actuator import RuntimePreconditionError, TransitionIntent
+from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
+    RuntimePreconditionError,
+    TransitionIntent,
+)
 from lychd.system.services.lifecycle.lock import LifecycleLock
 from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.runtime import (
     HostReactorRuntimeActuator,
     SystemdRuntimeActuator,
+    _ObservedRuntimeWorld,
     build_runtime_actuator,
     wait_for_host_reactor_idle,
 )
+from lychd.system.services.systemctl_process import SystemctlClientTimeoutError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,21 +60,31 @@ def _recovery_intent() -> TransitionIntent:
     )
 
 
-def _recovery_registry() -> SimpleNamespace:
-    specs = [SimpleNamespace(key=f"chat:{name}:model", animator_name=name) for name in ("new", "old-a", "old-b")]
-
-    def soulstone(name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name=f"lychd-{name}")
-
-    return SimpleNamespace(
-        list_capabilities=lambda: specs,
-        get_soulstone_rune=soulstone,
-        refresh_capability_states_for_animator=AsyncMock(),
-    )
-
-
 def _systemctl_result(returncode: int) -> SimpleNamespace:
     return SimpleNamespace(wait=AsyncMock(), returncode=returncode)
+
+
+class _HangingSystemctlProcess:
+    """Process fake that exits only after the timeout helper terminates it."""
+
+    def __init__(self) -> None:
+        self.returncode: int | None = None
+        self.terminate_calls = 0
+        self._exited = asyncio.Event()
+
+    async def wait(self) -> int:
+        await self._exited.wait()
+        assert self.returncode is not None
+        return self.returncode
+
+    def terminate(self) -> None:
+        self.terminate_calls += 1
+        self.returncode = -15
+        self._exited.set()
+
+    def kill(self) -> None:
+        self.returncode = -9
+        self._exited.set()
 
 
 def _secure_reactor_dirs(tmp_path: Path) -> tuple[Path, Path]:
@@ -163,6 +179,20 @@ async def test_host_reactor_surfaces_safe_precondition_decline(tmp_path: Path) -
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
 
     with pytest.raises(RuntimePreconditionError, match="declined transition"):
+        await actuator.apply(_intent())
+
+    assert list(inbox.iterdir()) == []
+
+
+@pytest.mark.asyncio
+async def test_host_reactor_surfaces_verified_prior_world_restoration(tmp_path: Path) -> None:
+    inbox, journal = _secure_reactor_dirs(tmp_path)
+    restored = journal / f"{_intent().transition_id}.restored.json"
+    restored.write_text("{}\n", encoding="utf-8")
+    restored.chmod(0o600)
+    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
+
+    with pytest.raises(RuntimeActuationRestoredError, match="restored its prior runtime world"):
         await actuator.apply(_intent())
 
     assert list(inbox.iterdir()) == []
@@ -388,7 +418,7 @@ def test_runtime_actuator_factory_is_configuration_owned(tmp_path: Path) -> None
     registry = SimpleNamespace()
 
     direct = build_runtime_actuator(
-        SwitchingSettings(actuator="systemd"),
+        SwitchingSettings(actuator="systemd", systemctl_timeout_s=7.5),
         registry,  # type: ignore[arg-type]
         systemctl_bin="/usr/bin/systemctl",
     )
@@ -398,6 +428,7 @@ def test_runtime_actuator_factory_is_configuration_owned(tmp_path: Path) -> None
     )
 
     assert isinstance(direct, SystemdRuntimeActuator)
+    assert direct._systemctl_timeout_s == 7.5
     assert isinstance(reactor, HostReactorRuntimeActuator)
 
 
@@ -459,162 +490,346 @@ async def test_direct_systemd_does_not_misclassify_post_entry_lock_failure() -> 
     actuator._recover_locked.assert_awaited_once_with(_intent())
 
 
-@pytest.mark.asyncio
-async def test_systemd_actuator_rolls_back_eviction_when_launch_fails(mocker: MockerFixture) -> None:
-    specs = [
-        SimpleNamespace(key="old:chat:model", animator_name="old"),
-        SimpleNamespace(key="new:chat:model", animator_name="new"),
-    ]
-    states = {
-        "old:chat:model": SimpleNamespace(is_active=True, runtime_started=True),
-        "new:chat:model": SimpleNamespace(is_active=False, runtime_started=False),
-    }
-
-    def soulstone(name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name=f"lychd-{name}")
-
-    registry = SimpleNamespace(
-        list_capabilities=lambda: specs,
-        get_capability_state=states.get,
-        get_soulstone_rune=soulstone,
+def _runtime_registry(*names: str) -> SimpleNamespace:
+    stones = {name: SimpleNamespace(name=name) for name in names}
+    return SimpleNamespace(
+        list_soulstone_runes=lambda: list(stones.values()),
+        list_capabilities=list,
+        get_soulstone_rune=stones.get,
         refresh_capability_states_for_animator=AsyncMock(),
     )
-    successful_stop = SimpleNamespace(wait=AsyncMock(), returncode=0)
-    failed_launch = SimpleNamespace(wait=AsyncMock(), returncode=1)
-    successful_rollback = SimpleNamespace(wait=AsyncMock(), returncode=0)
-    subprocess = mocker.patch(
-        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[successful_stop, failed_launch, successful_rollback],
-    )
-    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
-    intent = TransitionIntent(
-        transition_id="c" * 32,
-        config_generation="sha256:" + "d" * 64,
-        target_animator="new",
-        evict_animators=("old",),
-        launch_animators=("new",),
-        expected_active_animators=("old",),
-    )
 
-    with pytest.raises(RuntimeError, match="was rolled back"):
-        await actuator.apply(intent)
 
-    assert subprocess.call_args_list == [
-        call("/usr/bin/systemctl", "--user", "stop", "lychd-old.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-old.service"),
+def _observing_actuator(*names: str, systemctl_timeout_s: float = 120.0) -> SystemdRuntimeActuator:
+    actuator = SystemdRuntimeActuator(
+        _runtime_registry(*names),  # type: ignore[arg-type]
+        systemctl_bin="/usr/bin/systemctl",
+        systemctl_timeout_s=systemctl_timeout_s,
+        observe_systemd=True,
+    )
+    actuator._topology_attestor.attest = AsyncMock()
+    actuator._pending_relevant_jobs = AsyncMock(return_value=())
+    actuator._await_relevant_jobs_quiescent = AsyncMock()
+    return actuator
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_submits_one_target_transaction_without_explicit_stop() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("vision",), ("vision",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=0)
+
+    await actuator.apply(_intent())
+
+    actuator._run_systemctl.assert_awaited_once_with(
+        "start",
+        ("lychd-animator-vision.target",),
+    )
+    attest = actuator._topology_attestor.attest
+    assert isinstance(attest, AsyncMock)
+    attest.assert_awaited_once_with(_intent())
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_accepts_desired_world_even_after_nonzero_client_result() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("vision",), ("vision",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=1)
+
+    await actuator.apply(_intent())
+
+    actuator._run_systemctl.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_reports_verified_prior_world_restoration() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=1)
+
+    with pytest.raises(RuntimeActuationRestoredError, match="restored its prior runtime world"):
+        await actuator.apply(_intent())
+
+    actuator._run_systemctl.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_compensates_target_active_service_failed_world() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("vision",), ()),
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(side_effect=[1, 0])
+
+    with pytest.raises(RuntimeActuationRestoredError, match="prior runtime world was restored"):
+        await actuator.apply(_intent())
+
+    assert actuator._run_systemctl.await_args_list == [
+        call("start", ("lychd-animator-vision.target",)),
+        call("start", ("lychd-animator-chat.target",)),
     ]
 
 
 @pytest.mark.asyncio
-async def test_systemd_actuator_rolls_back_before_propagating_cancellation() -> None:
-    specs = [SimpleNamespace(key="old:chat:model", animator_name="old")]
-
-    def active_state(_key: str) -> SimpleNamespace:
-        return SimpleNamespace(is_active=True, runtime_started=True)
-
-    def soulstone(name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name=f"lychd-{name}")
-
-    registry = SimpleNamespace(
-        list_capabilities=lambda: specs,
-        get_capability_state=active_state,
-        get_soulstone_rune=soulstone,
-        refresh_capability_states_for_animator=AsyncMock(),
-    )
-    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
-    actuator._stop = AsyncMock()
-    actuator._start = AsyncMock(side_effect=[asyncio.CancelledError(), None])
+async def test_systemd_actuator_removes_failed_coexisting_launch_during_compensation() -> None:
+    actuator = _observing_actuator("old", "vision")
     intent = TransitionIntent(
-        transition_id="e" * 32,
-        config_generation="sha256:" + "f" * 64,
-        target_animator="new",
-        evict_animators=("old",),
-        launch_animators=("new",),
+        transition_id="2" * 32,
+        config_generation="sha256:" + "3" * 64,
+        target_animator="vision",
+        launch_animators=("vision",),
         expected_active_animators=("old",),
     )
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("old",), ("old",)),
+            _ObservedRuntimeWorld(("old", "vision"), ("old",)),
+            _ObservedRuntimeWorld(("old",), ("old",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(side_effect=[1, 0])
 
-    with pytest.raises(asyncio.CancelledError):
+    with pytest.raises(RuntimeActuationRestoredError, match="prior runtime world was restored"):
         await actuator.apply(intent)
 
-    assert actuator._start.await_args_list == [call("new"), call("old")]
+    assert actuator._run_systemctl.await_args_list == [
+        call("start", ("lychd-animator-vision.target",)),
+        call("stop", ("lychd-animator-vision.target",)),
+    ]
 
 
 @pytest.mark.asyncio
-async def test_systemd_wait_cancellation_records_completed_effect_before_rollback(
+async def test_systemd_actuator_declines_stale_target_reservation_before_effect() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(return_value=_ObservedRuntimeWorld(("chat",), ()))
+    actuator._run_systemctl = AsyncMock()
+
+    with pytest.raises(RuntimePreconditionError, match="target reservations"):
+        await actuator.apply(_intent())
+
+    actuator._run_systemctl.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_declines_pending_jobs_before_effect() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._pending_relevant_jobs = AsyncMock(return_value=("lychd-animator-chat.target",))
+    actuator._observe_runtime_world = AsyncMock()
+    actuator._run_systemctl = AsyncMock()
+
+    with pytest.raises(RuntimePreconditionError, match="in-flight systemd jobs"):
+        await actuator.apply(_intent())
+
+    actuator._observe_runtime_world.assert_not_awaited()
+    actuator._run_systemctl.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_maps_client_timeout_before_effect_to_safe_decline() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._pending_relevant_jobs = AsyncMock(
+        side_effect=SystemctlClientTimeoutError("systemctl list-jobs", 1),
+    )
+    actuator._observe_runtime_world = AsyncMock()
+    actuator._run_systemctl = AsyncMock()
+
+    with pytest.raises(RuntimePreconditionError, match="before any effect"):
+        await actuator.apply(_intent())
+
+    actuator._observe_runtime_world.assert_not_awaited()
+    actuator._run_systemctl.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_classifies_and_compensates_after_effect_client_timeout(
     mocker: MockerFixture,
 ) -> None:
-    specs = [SimpleNamespace(key="chat:local:model", animator_name="chat")]
-
-    def active_state(_key: str) -> SimpleNamespace:
-        return SimpleNamespace(is_active=True, runtime_started=True)
-
-    def soulstone(name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name=f"lychd-{name}")
-
-    registry = SimpleNamespace(
-        list_capabilities=lambda: specs,
-        get_capability_state=active_state,
-        get_soulstone_rune=soulstone,
-        refresh_capability_states_for_animator=AsyncMock(),
+    actuator = _observing_actuator("chat", "vision", systemctl_timeout_s=0.001)
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("vision",), ()),
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+        ]
     )
-    wait_started = asyncio.Event()
-    release_wait = asyncio.Event()
-
-    async def delayed_wait() -> None:
-        wait_started.set()
-        await release_wait.wait()
-
-    stopped = SimpleNamespace(wait=AsyncMock(side_effect=delayed_wait), returncode=0)
-    restarted = _systemctl_result(0)
+    timed_out = _HangingSystemctlProcess()
     subprocess = mocker.patch(
         "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[stopped, restarted],
+        side_effect=[timed_out, _systemctl_result(0)],
     )
-    actuator = SystemdRuntimeActuator(registry, systemctl_bin="/usr/bin/systemctl")  # type: ignore[arg-type]
 
+    with pytest.raises(RuntimeActuationRestoredError, match="prior runtime world was restored"):
+        await actuator.apply(_intent())
+
+    assert timed_out.terminate_calls == 1
+    assert subprocess.call_args_list == [
+        call(
+            "/usr/bin/systemctl",
+            "--user",
+            "start",
+            "--job-mode=fail",
+            "lychd-animator-vision.target",
+        ),
+        call(
+            "/usr/bin/systemctl",
+            "--user",
+            "start",
+            "--job-mode=fail",
+            "lychd-animator-chat.target",
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_systemd_actuator_shields_cancellation_then_restores_prior_world() -> None:
+    actuator = _observing_actuator("chat", "vision")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+            _ObservedRuntimeWorld(("vision",), ("vision",)),
+            _ObservedRuntimeWorld(("vision",), ("vision",)),
+            _ObservedRuntimeWorld(("chat",), ("chat",)),
+        ]
+    )
+    effect_started = asyncio.Event()
+    release_effect = asyncio.Event()
+    calls: list[tuple[str, tuple[str, ...]]] = []
+
+    async def run_systemctl(action: str, unit_names: tuple[str, ...]) -> int:
+        calls.append((action, unit_names))
+        if len(calls) == 1:
+            effect_started.set()
+            await release_effect.wait()
+        return 0
+
+    actuator._run_systemctl = run_systemctl
     apply_task = asyncio.create_task(actuator.apply(_intent()))
-    await wait_started.wait()
+    await effect_started.wait()
     apply_task.cancel()
-    release_wait.set()
+    release_effect.set()
 
     with pytest.raises(asyncio.CancelledError):
         await apply_task
 
-    assert subprocess.call_args_list == [
-        call("/usr/bin/systemctl", "--user", "stop", "lychd-chat.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-chat.service"),
+    assert calls == [
+        ("start", ("lychd-animator-vision.target",)),
+        ("start", ("lychd-animator-chat.target",)),
     ]
 
 
 @pytest.mark.asyncio
-async def test_host_systemd_actuator_observes_units_not_unreachable_model_probes(
+async def test_systemd_compensation_without_launch_stops_target_once() -> None:
+    actuator = _observing_actuator("vision")
+    intent = TransitionIntent(
+        transition_id="f" * 32,
+        operation="compensation",
+        rollback_of="e" * 32,
+        config_generation="sha256:" + "1" * 64,
+        target_animator="vision",
+        evict_animators=("vision",),
+        expected_active_animators=("vision",),
+    )
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("vision",), ("vision",)),
+            _ObservedRuntimeWorld((), ()),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=0)
+
+    await actuator.apply(intent)
+
+    actuator._run_systemctl.assert_awaited_once_with(
+        "stop",
+        ("lychd-animator-vision.target",),
+    )
+
+
+@pytest.mark.asyncio
+async def test_systemd_recovery_accepts_exact_desired_world_without_mutation() -> None:
+    actuator = _observing_actuator("new", "old-a", "old-b")
+    actuator._observe_runtime_world = AsyncMock(return_value=_ObservedRuntimeWorld(("new",), ("new",)))
+    actuator._run_systemctl = AsyncMock()
+
+    await actuator.recover(_recovery_intent())
+
+    actuator._run_systemctl.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_systemd_recovery_retries_one_full_transaction_from_exact_prior_world() -> None:
+    actuator = _observing_actuator("new", "old-a", "old-b")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("old-a", "old-b"), ("old-a", "old-b")),
+            _ObservedRuntimeWorld(("new",), ("new",)),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=0)
+
+    await actuator.recover(_recovery_intent())
+
+    actuator._run_systemctl.assert_awaited_once_with(
+        "start",
+        ("lychd-animator-new.target",),
+    )
+
+
+@pytest.mark.asyncio
+async def test_systemd_recovery_compensates_partial_world_in_one_multi_target_request() -> None:
+    actuator = _observing_actuator("new", "old-a", "old-b")
+    actuator._observe_runtime_world = AsyncMock(
+        side_effect=[
+            _ObservedRuntimeWorld(("new", "old-b"), ("old-b",)),
+            _ObservedRuntimeWorld(("old-a", "old-b"), ("old-a", "old-b")),
+        ]
+    )
+    actuator._run_systemctl = AsyncMock(return_value=0)
+
+    with pytest.raises(RuntimeActuationRestoredError, match="Recovered partial transition"):
+        await actuator.recover(_recovery_intent())
+
+    actuator._run_systemctl.assert_awaited_once_with(
+        "start",
+        (
+            "lychd-animator-old-a.target",
+            "lychd-animator-old-b.target",
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_host_systemd_world_observes_targets_and_services_for_every_soulstone(
     mocker: MockerFixture,
 ) -> None:
-    specs = [
-        SimpleNamespace(key="chat:local:model", animator_name="chat"),
-        SimpleNamespace(key="vision:local:model", animator_name="vision"),
-    ]
-
-    def soulstone(name: str) -> SimpleNamespace:
-        return SimpleNamespace(service_name=f"lychd-{name}")
-
-    def unreachable_state(_key: str) -> SimpleNamespace:
-        return SimpleNamespace(is_active=False, runtime_started=False)
-
-    registry = SimpleNamespace(
-        list_capabilities=lambda: specs,
-        get_capability_state=unreachable_state,
-        get_soulstone_rune=soulstone,
-        refresh_capability_states_for_animator=AsyncMock(),
-    )
-    active = SimpleNamespace(wait=AsyncMock(), returncode=0)
-    inactive = SimpleNamespace(wait=AsyncMock(), returncode=3)
-    stopped = SimpleNamespace(wait=AsyncMock(), returncode=0)
-    started = SimpleNamespace(wait=AsyncMock(), returncode=0)
+    registry = _runtime_registry("chat", "vision")
     subprocess = mocker.patch(
         "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[active, inactive, stopped, started],
+        side_effect=[
+            _systemctl_result(0),
+            _systemctl_result(0),
+            _systemctl_result(3),
+            _systemctl_result(3),
+        ],
     )
     actuator = SystemdRuntimeActuator(
         registry,  # type: ignore[arg-type]
@@ -622,127 +837,12 @@ async def test_host_systemd_actuator_observes_units_not_unreachable_model_probes
         observe_systemd=True,
     )
 
-    await actuator.apply(_intent())
+    world = await actuator._observe_runtime_world()
 
+    assert world == _ObservedRuntimeWorld(("chat",), ("chat",))
     assert subprocess.call_args_list == [
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-animator-chat.target"),
         call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-chat.service"),
+        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-animator-vision.target"),
         call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-vision.service"),
-        call("/usr/bin/systemctl", "--user", "stop", "lychd-chat.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-vision.service"),
-    ]
-    registry.refresh_capability_states_for_animator.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_systemd_recovery_resumes_only_unfinished_legal_prefix(
-    mocker: MockerFixture,
-) -> None:
-    registry = _recovery_registry()
-    subprocess = mocker.patch(
-        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[
-            _systemctl_result(3),  # new is not launched yet
-            _systemctl_result(3),  # old-a was already evicted
-            _systemctl_result(0),  # old-b remains active
-            _systemctl_result(0),  # stop old-b
-            _systemctl_result(0),  # start new
-        ],
-    )
-    actuator = SystemdRuntimeActuator(
-        registry,  # type: ignore[arg-type]
-        systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
-    )
-
-    await actuator.recover(_recovery_intent())
-
-    assert subprocess.call_args_list == [
-        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-new.service"),
-        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-old-a.service"),
-        call("/usr/bin/systemctl", "--user", "is-active", "--quiet", "lychd-old-b.service"),
-        call("/usr/bin/systemctl", "--user", "stop", "lychd-old-b.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
-    ]
-
-
-@pytest.mark.asyncio
-async def test_systemd_recovery_accepts_already_completed_prefix(
-    mocker: MockerFixture,
-) -> None:
-    registry = _recovery_registry()
-    subprocess = mocker.patch(
-        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[
-            _systemctl_result(0),  # new is active
-            _systemctl_result(3),
-            _systemctl_result(3),
-        ],
-    )
-    actuator = SystemdRuntimeActuator(
-        registry,  # type: ignore[arg-type]
-        systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
-    )
-
-    await actuator.recover(_recovery_intent())
-
-    assert len(subprocess.call_args_list) == 3
-
-
-@pytest.mark.asyncio
-async def test_systemd_recovery_rejects_non_prefix_without_mutation(
-    mocker: MockerFixture,
-) -> None:
-    registry = _recovery_registry()
-    subprocess = mocker.patch(
-        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[
-            _systemctl_result(0),  # new launched too early
-            _systemctl_result(3),  # old-a evicted
-            _systemctl_result(0),  # old-b still active: not a legal prefix
-        ],
-    )
-    actuator = SystemdRuntimeActuator(
-        registry,  # type: ignore[arg-type]
-        systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
-    )
-
-    with pytest.raises(RuntimeError, match="not a legal action prefix"):
-        await actuator.recover(_recovery_intent())
-
-    assert len(subprocess.call_args_list) == 3
-
-
-@pytest.mark.asyncio
-async def test_systemd_recovery_failure_compensates_the_entire_crash_prefix(
-    mocker: MockerFixture,
-) -> None:
-    registry = _recovery_registry()
-    subprocess = mocker.patch(
-        "lychd.system.services.runtime.asyncio.create_subprocess_exec",
-        side_effect=[
-            _systemctl_result(3),  # new is not launched yet
-            _systemctl_result(3),  # old-a was evicted before the crash
-            _systemctl_result(0),  # old-b remains active
-            _systemctl_result(0),  # finish evicting old-b
-            _systemctl_result(1),  # launching new fails
-            _systemctl_result(0),  # restore old-b
-            _systemctl_result(0),  # restore the pre-crash old-a eviction too
-        ],
-    )
-    actuator = SystemdRuntimeActuator(
-        registry,  # type: ignore[arg-type]
-        systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
-    )
-
-    with pytest.raises(RuntimeError, match="was rolled back"):
-        await actuator.recover(_recovery_intent())
-
-    assert subprocess.call_args_list[-4:] == [
-        call("/usr/bin/systemctl", "--user", "stop", "lychd-old-b.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-new.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-old-b.service"),
-        call("/usr/bin/systemctl", "--user", "start", "lychd-old-a.service"),
     ]

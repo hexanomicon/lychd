@@ -5,7 +5,7 @@ icon: material/blur-radial
 
 # :material-blur-radial: The Spirit — Citta
 
-> _The Spirit is the inner instrument's power to be moved, marked, and moved again._
+> _“The Spirit is the inner instrument's power to be moved, marked, and moved again.”_
 
 **Page office — conditioning, memory, and return.** This chamber owns LychD's correspondence for
 **Citta**. The Spirit is one of four coequal functions of the Antaḥkaraṇa beside [the

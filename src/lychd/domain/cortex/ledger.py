@@ -42,6 +42,23 @@ if TYPE_CHECKING:
 __all__ = ["DbRunLedger", "InMemoryRunLedger", "RunLedger"]
 
 
+def _legacy_pattern_manifest(workflow_name: str) -> dict[str, Any]:
+    """Identify a run created outside RunEngine or predating Pattern pinning.
+
+    This is an explicit non-resumable compatibility marker, not a fabricated current
+    revision. Production admission passes the exact Workflow manifest.
+    """
+    return {
+        "schema_version": 0,
+        "key": workflow_name,
+        "revision": "legacy-unversioned",
+        "checkpoint_schema": "unknown",
+        "nodes": [],
+        "edges": [],
+        "digest": None,
+    }
+
+
 class RunLedger(Protocol):
     """The run-truth surface consumed by the engine and the ghoul plane."""
 
@@ -50,6 +67,7 @@ class RunLedger(Protocol):
         intent: Intent,
         *,
         workflow_name: str,
+        pattern_manifest: dict[str, Any] | None = None,
         queue_name: str,
         priority: int,
     ) -> RunRecord:
@@ -86,6 +104,19 @@ class RunLedger(Protocol):
 
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's Step ledger."""
+        ...
+
+    @property
+    def evidence_capture(self) -> str:
+        """Describe this ledger's retained evidence boundary."""
+        ...
+
+    async def list_events(self, run_id: str, *, after_seq: int = -1, limit: int = 100) -> list[RunEvent]:
+        """Return retained non-token events in per-run sequence order."""
+        ...
+
+    async def latest_event(self, run_id: str, kind: RunEventKind) -> RunEvent | None:
+        """Return the newest retained event of one semantic kind."""
         ...
 
     async def next_seq(self, run_id: str) -> int:
@@ -157,6 +188,7 @@ class InMemoryRunLedger:
         intent: Intent,
         *,
         workflow_name: str,
+        pattern_manifest: dict[str, Any] | None = None,
         queue_name: str,
         priority: int,
     ) -> RunRecord:
@@ -172,6 +204,7 @@ class InMemoryRunLedger:
             run_id=run_id,
             session_id=intent.session_id,
             workflow_name=workflow_name,
+            pattern_manifest=pattern_manifest or _legacy_pattern_manifest(workflow_name),
             source=intent.source,
             queue_name=queue_name,
             priority=priority,
@@ -236,6 +269,19 @@ class InMemoryRunLedger:
         if event.kind is RunEventKind.TOKEN:
             return
         self._events.setdefault(event.run_id, []).append(event)
+
+    @property
+    def evidence_capture(self) -> str:
+        """Memory evidence disappears with the process."""
+        return "process_local"
+
+    async def list_events(self, run_id: str, *, after_seq: int = -1, limit: int = 100) -> list[RunEvent]:
+        """Return a bounded retained event page from process memory."""
+        return [event for event in self._events.get(run_id, ()) if event.seq > after_seq][:limit]
+
+    async def latest_event(self, run_id: str, kind: RunEventKind) -> RunEvent | None:
+        """Return the newest matching in-memory event."""
+        return next((event for event in reversed(self._events.get(run_id, ())) if event.kind is kind), None)
 
     async def next_seq(self, run_id: str) -> int:
         """Return the next unused Step seq for a run (max(seq)+1, or 0 if none)."""
@@ -311,6 +357,7 @@ class DbRunLedger:
         intent: Intent,
         *,
         workflow_name: str,
+        pattern_manifest: dict[str, Any] | None = None,
         queue_name: str,
         priority: int,
     ) -> RunRecord:
@@ -332,6 +379,7 @@ class DbRunLedger:
             row = await svc.create(
                 Run(
                     workflow_name=workflow_name,
+                    pattern_manifest=pattern_manifest or _legacy_pattern_manifest(workflow_name),
                     source=intent.source,
                     status=RunStatus.QUEUED.value,
                     priority=priority,
@@ -534,7 +582,7 @@ class DbRunLedger:
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event as a Step row, persisting `event.seq` VERBATIM.
 
-        Seq fidelity (F4/H5, Wave-6 Scrying): the Step's `seq` IS the channel event's
+        Seq fidelity (F4/H5, Orb evidence): the Step's `seq` IS the channel event's
         seq — no insert-time `max(seq)+1` allocation, no retry-on-collision. Ordering
         is guaranteed upstream by the bus's per-run writer chain, so Step.seq equals
         emit order. The `uq_step_run_seq` constraint is now a pure integrity check.
@@ -549,14 +597,89 @@ class DbRunLedger:
             svc = StepService(session=session)
             await svc.create(
                 Step(
+                    id=UUID(event.event_id),
                     run_id=UUID(event.run_id),
                     seq=event.seq,
                     kind=event.kind.value,
-                    payload={"data": event.data, "meta": event.meta},
+                    payload={
+                        "data": event.data,
+                        "meta": event.meta,
+                        "event_id": event.event_id,
+                        "occurred_at": event.ts.isoformat(),
+                    },
                     node_key=node_key,
                 ),
                 auto_commit=True,
             )
+
+    @property
+    def evidence_capture(self) -> str:
+        """Postgres retains structural events, but the live-first tee is best effort."""
+        return "durable_best_effort"
+
+    async def list_events(self, run_id: str, *, after_seq: int = -1, limit: int = 100) -> list[RunEvent]:
+        """Read a bounded Step page without inventing omitted or failed writes."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Step
+        from lychd.domain.cortex.events import RunEvent
+
+        bounded = min(max(limit, 1), 500)
+        async with self._session_factory() as session:
+            rows = (
+                await session.scalars(
+                    select(Step)
+                    .where(Step.run_id == UUID(run_id), Step.seq > after_seq)
+                    .order_by(Step.seq.asc())
+                    .limit(bounded)
+                )
+            ).all()
+        events: list[RunEvent] = []
+        for row in rows:
+            payload = row.payload or {}
+            events.append(
+                RunEvent.model_validate(
+                    {
+                        "event_id": str(row.id),
+                        "run_id": str(row.run_id),
+                        "seq": row.seq,
+                        "kind": row.kind,
+                        "data": str(payload.get("data", "")),
+                        "meta": payload.get("meta", {}),
+                        "ts": payload.get("occurred_at", row.created_at),
+                    }
+                )
+            )
+        return events
+
+    async def latest_event(self, run_id: str, kind: RunEventKind) -> RunEvent | None:
+        """Read the newest retained Step of one kind without scanning a long run."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Step
+        from lychd.domain.cortex.events import RunEvent
+
+        async with self._session_factory() as session:
+            row = await session.scalar(
+                select(Step)
+                .where(Step.run_id == UUID(run_id), Step.kind == kind.value)
+                .order_by(Step.seq.desc())
+                .limit(1)
+            )
+        if row is None:
+            return None
+        payload = row.payload or {}
+        return RunEvent.model_validate(
+            {
+                "event_id": str(row.id),
+                "run_id": str(row.run_id),
+                "seq": row.seq,
+                "kind": row.kind,
+                "data": str(payload.get("data", "")),
+                "meta": payload.get("meta", {}),
+                "ts": payload.get("occurred_at", row.created_at),
+            }
+        )
 
     async def next_seq(self, run_id: str) -> int:
         """Return the next unused Step seq for a run (max(seq)+1, or 0 if none).
@@ -675,6 +798,7 @@ class DbRunLedger:
             run_id=str(row.id),  # type: ignore[attr-defined]
             session_id=str(intent.get("session_id", "")),
             workflow_name=str(row.workflow_name),  # type: ignore[attr-defined]
+            pattern_manifest=dict(row.pattern_manifest),  # type: ignore[attr-defined]
             source=str(row.source),  # type: ignore[attr-defined]
             queue_name=str(row.queue_name),  # type: ignore[attr-defined]
             priority=int(row.priority),  # type: ignore[attr-defined]

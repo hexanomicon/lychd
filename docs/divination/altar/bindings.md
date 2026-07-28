@@ -5,18 +5,18 @@ icon: material/link-lock
 
 # :material-link-lock: Bindings
 
-**Purpose.** Bindings is the intended Altar instrument for making declared relationships legible:
-which Rune owns a setting, which named reference points to a provider or identity, which policy
-constrains it, and what rite would be required to change it.
+**Purpose.** Bindings was the proposed name for a dedicated configuration view: a place to compare
+declared relationships, observed manifestation, provenance, and prospective impact.
 
-**Current boundary.** The `/bindings` route now returns the full Altar shell, marks this instrument
-as active, shows the shared pending-consent sigil, and renders an explicit unbuilt placeholder. It
-does not list Runes or references, reveal configuration provenance, validate a proposal, edit the
-Codex, run `lychd bind`, mint a grant, or control a lease. [State owns the exact Bindings
-boundary](../../state-of-the-work.md#bindings-instrument).
+**Current boundary.** Bindings is **not** one of the current four Altar instruments, and no
+`/bindings` route exists. The focused Altar projects orchestration-relevant declarations
+contextually in Nexus. The Codex and Configuration remain authoritative. A dedicated view should
+return only if comparison and proposal work becomes too substantial for that context. [State owns
+the current Nexus
+boundary](../../state-of-the-work.md#nexus-transition-board).
 
-**Law.** The [Codex](../../sepulcher/codex.md) is the editable configuration authority. Bindings
-may eventually project that intent and submit typed proposals through the Vessel; it must never
+**Law.** The [Codex](../../sepulcher/codex.md) is the editable configuration authority. A future
+configuration view may project that intent and submit typed proposals through the Vessel; it must never
 become a second settings store or a generic key-value editor. The
 [Phylactery](../../sepulcher/phylactery/index.md) owns committed runtime records, the
 [Oculus](../../sepulcher/extensions/oculus.md) owns evidence, the
@@ -31,9 +31,9 @@ no authority over its owner.
 ## Binding and Bindings
 
 The singular **Binding** is the existing command rite: `lychd bind` reads validated Codex Runes and
-transmutes their intent into generated host manifests. The plural **Bindings** is this intended
-Altar instrument: a view of the declared relationships that the rite may later manifest. The page
-does not replace the command, and the command does not make this page an editor.
+transmutes their intent into generated host manifests. The retired plural **Bindings** named a
+candidate Altar view of the declared relationships that the rite may later manifest. Documentation
+of the candidate does not make it a route or editor.
 
 This distinction also separates declaration from live reality. A Portal reference in the Codex is
 not proof that the Portal is reachable. A Soulstone Rune is not a running Animator. An identity
@@ -56,6 +56,25 @@ Before Bindings earns any write control, its read model must be able to show:
 
 On narrow screens, these relations should render as stacked field/source/effect fragments, not a
 wide settings grid. Meaning must survive without color, hover, or a permanently open side panel.
+
+The designed read model has three columns of truth that must never overwrite one another:
+
+1. **Declared:** the owning Rune, exact source, policy, and named references.
+2. **Observed:** the current manifestation, source, time, freshness, error, or absence.
+3. **Prospective impact:** a server-computed typed diff and the predicted `reload`, `rebind`,
+   `restart`, `later run only`, or `no current effect` consequence, with method and uncertainty
+   where applicable.
+
+A relationship graph is optional. The primary job is to make those three classes comparable and
+actionable, not to turn configuration into a universal knot canvas. Any edge must say whether it
+means declaration, generated projection, reference, or observation.
+
+Relevant summaries may appear in Loom's selected-node inspector and Nexus's selected-Animator
+inspector. There is no separate proposal, review, or effect route today; contextual placement does
+not transfer ownership.
+
+Named secret references may be projected only through a deliberately safe contract. Secret values
+must never enter Bindings DTOs, browser state, diffs, telemetry, graph labels, or annotations.
 
 ## The Knot Does Not Own Its Ends
 

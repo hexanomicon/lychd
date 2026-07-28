@@ -24,10 +24,13 @@ class LoomController(Controller):
         """Return the registered workflow catalogue."""
         return [
             LoomSummary(
-                name=workflow.name,
+                pattern_id=workflow.manifest.key,
+                revision=workflow.manifest.revision,
+                digest=workflow.manifest.digest,
                 title=workflow.title,
                 description=workflow.description,
                 trigger_hint=workflow.trigger.hint,
+                detail_path=f"/loom/{workflow.manifest.key}/{workflow.manifest.revision}",
             )
             for workflow in WORKFLOW_REGISTRY.all()
         ]
@@ -39,10 +42,23 @@ class LoomController(Controller):
         guards=[requires_scopes("altar:read")],
     )
     async def view(self, workflow: FromPath[str]) -> LoomView:
-        """Return one workflow projection."""
+        """Return the current registered revision as a convenience projection."""
         found = WORKFLOW_REGISTRY.get(workflow)
         if found is None:
             raise NotFoundException(detail="No such pattern is woven.")
+        return build_loom_view(found)
+
+    @get(
+        "/{pattern_id:str}/{revision:str}",
+        name="loom:revision",
+        operation_id="getLoomPatternRevision",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def revision(self, pattern_id: FromPath[str], revision: FromPath[str]) -> LoomView:
+        """Return one exact registered immutable Pattern revision."""
+        found = WORKFLOW_REGISTRY.get_revision(pattern_id, revision)
+        if found is None:
+            raise NotFoundException(detail="No such Pattern revision is woven.")
         return build_loom_view(found)
 
     @get(
@@ -56,4 +72,17 @@ class LoomController(Controller):
         found = WORKFLOW_REGISTRY.get(workflow)
         if found is None:
             raise NotFoundException(detail="No such pattern is woven.")
+        return Response(content=found.mermaid(), media_type=MediaType.TEXT)
+
+    @get(
+        "/{pattern_id:str}/{revision:str}/source",
+        name="loom:revision-source",
+        operation_id="getLoomPatternRevisionSource",
+        guards=[requires_scopes("altar:read")],
+    )
+    async def revision_source(self, pattern_id: FromPath[str], revision: FromPath[str]) -> Response[str]:
+        """Return one exact revision's inert Mermaid projection as plain text."""
+        found = WORKFLOW_REGISTRY.get_revision(pattern_id, revision)
+        if found is None:
+            raise NotFoundException(detail="No such Pattern revision is woven.")
         return Response(content=found.mermaid(), media_type=MediaType.TEXT)

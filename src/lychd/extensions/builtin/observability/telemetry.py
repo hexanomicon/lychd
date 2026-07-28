@@ -1,11 +1,17 @@
+"""Dormant Phoenix export adapter; not native Oculus.
+
+The application does not compose this plugin today. Any future activation requires the bounded
+allowlist and privacy contract owned by ADR 29.
+"""
+
 from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING
 
 import logfire
-from litestar.contrib.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
 from litestar.plugins import InitPluginProtocol
+from litestar.plugins.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
 from logfire import ConsoleOptions
 from opentelemetry import trace
 
@@ -14,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class TelemetryPlugin(InitPluginProtocol):
-    """Configures Logfire to stream pydantic_ai traces to Arize Phoenix."""
+    """Configure the legacy Logfire/OTel export path to an external Phoenix Eye."""
 
     def __init__(self, otel_endpoint: str) -> None:
         """Initialize the telemetry plugin.

@@ -11,7 +11,7 @@ The **Crypt** is the persistent data volume of the LychD system. While the [Code
 
 It is physically located at **`~/.local/share/lychd`** (respecting `XDG_DATA_HOME`).
 
-## 🧱 The Physical Foundation (Persistence)
+## The Physical Foundation (Persistence)
 
 The Crypt employs a **Decoupled Strategy** for persistence. The architecture treats **Code** (Files) and **Data** (Database) as separate organs with different preservation needs.
 
@@ -35,7 +35,7 @@ The Database (Postgres) is binary and fragile. It requires atomic backups. Ideal
 !!! tip "Ascension"
     Mortal users can ascend to stronger rollback support without reformatting their drive by using the **Loopback Method** (mounting a Btrfs image file at `~/.local/share/lychd`).
 
-## 🗺️ The Cartography of the Crypt
+## The Cartography of the Crypt
 
 The Crypt is a flat, federated structure. It is not nested inside a single "active" folder.
 
@@ -73,11 +73,11 @@ graph TD
     style Ext fill:#1a1a1a,stroke:#00e5ff
 ```
 
-## 🔮 The Spheres of Creation
+## The Spheres of Creation
 
 To prevent the Lich from destroying itself or the Magus's data, it operates within a **Hermetic Seal**. The Agent interacts with the world via specific **Spheres**.
 
-### 🧪 Sphere I: The Lab (Internal / Read-Write)
+### Sphere I: The Lab (Internal / Read-Write)
 
 **Host Path:** `~/.local/share/lychd/lab` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/lab`
 
@@ -86,7 +86,7 @@ The **Genesis Sphere**. This is the Agent's private scratchpad.
 - **Usage:** Cloning new repos, drafting extensions, running tests.
 - **Safety:** Managed by Jujutsu/Git inside the project folders. Not system-backed.
 
-### 🌍 Sphere II: The Outlands (External / Read-Write)
+### Sphere II: The Outlands (External / Read-Write)
 
 **Host Path:** _(User Projects)_ $\leftrightarrow$ **Container Path:** `~/work/...`
 
@@ -96,7 +96,7 @@ The **Labor Sphere**.
 - **Safety:** **The VCS Ward.** The Agent refuses to touch this sphere unless a recognized repository is present and clean.
 - **Execution Boundary:** Outlands is a workspace geography, not an execution authority. Vessel controls policy and promotion; Tomb receives only task-scoped Outland access when unsafe execution must touch those files.
 
-### 🧩 Sphere III: The Extensions (Internal / Read-Only)
+### Sphere III: The Extensions (Internal / Read-Only)
 
 **Host Path:** `~/.local/share/lychd/extensions` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/extensions`
 
@@ -105,7 +105,7 @@ The **Living Tissue Sphere**.
 - **Federation:** A collection of Jujutsu/Git repositories tracked by `lychd.lock`.
 - **Promotion:** To install a new extension, the Agent builds it in the **Lab**, then triggers a **Promotion Ritual** to move it here and commit the change.
 
-### 📚 Sphere IV: The Library (External / Read-Only)
+### Sphere IV: The Library (External / Read-Only)
 
 **Host Path:** _(External)_ $\leftrightarrow$ **Container Path:** `~/work/library/...`
 

@@ -13,10 +13,14 @@ authority over its own hardware.
 resource advertisement, node-local reservation journal, fencing, artifact transport, or fleet
 evidence path. There is no Legion endpoint or mode to enable.
 [State of the Work owns the exact federation boundary](../../state-of-the-work.md#legion-federation).
-[ADR 42](../../adr/42-legion.md) names the jurisdiction, but its selected topology must be amended
-before any implementation follows it.
+[ADR 42](../../adr/42-legion.md) owns the accepted authority split and delivery order.
 
-!!! danger "The false binding is rejected"
+**Extension form:** Legion is a distributed-embodiment Domain manifested as an owned-node protocol
+and deployment profile, not as a second scheduler or universal remote shell. Node Agent, robot,
+accelerator, cluster, and transport implementations may vary only behind one delegation,
+fencing, refusal, and reconciliation law; each destination body remains sovereign over its iron.
+
+!!! danger "The false binding remains rejected"
     A Legion node must **not** run the Master application against the Master's Postgres, share a
     universal Master Sigil, consume the Master's queues, or write directly to the Master's Phoenix
     or observability store. Those ADR 42 mechanics would give every node Soul-level authority,
@@ -50,7 +54,7 @@ The boundary is intentionally asymmetric:
 - **Durable residue.** The Master owns the delegation ledger and transactional outbox. The Node
   Agent keeps a small crash-safe command, reservation, execution, result, and evidence journal—never
   a copy of the Master's soul.
-- **Observation.** The Master aggregates a fleet projection for Scrying. The Node Agent owns the
+- **Observation.** The Master aggregates a future fleet projection for the Orb. The Node Agent owns the
   freshest local evidence and a bounded signed spool.
 
 The Master never sends shell, Systemd, Podman, filesystem, database, GPU-ordinal, or arbitrary
@@ -148,8 +152,8 @@ The safe order is: correct ADR 42; build fresh resource evidence, deployment var
 admission on one host; create disjoint Master and Node Agent assemblies with negative composition
 tests; land credential-backed Ward identity; build the durable Intercom delegation and node journal;
 prove partition, replay, cancellation, restore, version-skew, artifact, and two-node GPU behavior;
-then add fleet Scrying. Alternative transports and automatic artifact distribution come only after
+then add fleet scrying through the Orb. Alternative transports and automatic artifact distribution come only after
 the authority protocol survives those trials.
 
 > _Next act: read the [Legion delivery boundary](../../state-of-the-work.md#legion-federation).
-> Architecture work begins by superseding ADR 42's false binding—not by opening a port._
+> Implementation begins by proving fenced resource admission on one host—not by opening a port._

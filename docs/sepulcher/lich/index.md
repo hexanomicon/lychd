@@ -6,8 +6,6 @@ icon: fontawesome/solid/skull
 # :fontawesome-solid-skull: Lich
 
 > _“You called?”_
->
-> _Never one without the other._
 
 **Page office — project correspondence and system anatomy.** This page names the recurrent whole
 and gives its inner faculties an engineering correspondence. Its opening myth is a formative image,

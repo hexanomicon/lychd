@@ -6,9 +6,6 @@ BindsTo={{ pod_service }}
 {% if binds_to %}
 BindsTo={{ binds_to | join(' ') }}
 {% endif %}
-{% for target in targets %}
-PartOf=lychd-coven-{{ target }}.target
-{% endfor %}
 {% if wants %}
 Wants={{ wants | join(' ') }}
 {% endif %}
@@ -44,8 +41,6 @@ SecurityLabelDisable=true
 {% if podman_args %}
 PodmanArgs={{ podman_args | join(' ') }}
 {% endif %}
-
-# Covens (Targets): {{ targets | join(', ') }}
 
 # Devices
 {% for dev in devices %}
@@ -89,6 +84,3 @@ Restart={{ restart_policy | default('always') }}
 {% if wanted_by %}
 WantedBy={{ wanted_by | join(' ') }}
 {% endif %}
-{% for target in targets %}
-WantedBy=lychd-coven-{{ target }}.target
-{% endfor %}

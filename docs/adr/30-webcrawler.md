@@ -1,93 +1,141 @@
 ---
-title: 30. Webcrawler
+title: 30. Web Acquisition
 icon: material/spider-thread
 ---
 
-# :material-spider-thread: 30. Webcrawler: The Scout
+# :material-spider-thread: 30. Web Acquisition: The Scout
 
 !!! abstract "Context and Problem Statement"
-    The LychD exists within a hermetic Sepulcher, yet the requirements of **[Assimilation (35)](35-assimilation.md)** and general cognition necessitate the ingestion of external data from the "Forest" (the Internet).
-
-    A strict tradeoff exists: standard HTTP requests are lightweight but blind to the JavaScript-heavy reality of the modern web (SPAs). Conversely, headless browsers offer perfect fidelity but impose a massive "Resource Tax" (RAM/CPU) that can destabilize the primary inference loop. A "One-Size-Fits-All" approach is either too weak to see the truth or too heavy to move swiftly.
+    LychD needs a path to material on the living web, but “web access” is not one capability.
+    Search, fetch, extraction, crawling, rendering hostile code, interaction, credential use,
+    session custody, screenshots, downloads, and durable admission carry different authority,
+    risk, cost, and evidence. Treating them as one magic browser would let a failed read silently
+    acquire greater power and would confuse contact with truth.
 
 ## Requirements
 
-- **Tactical Duality:** Implementation of a two-handed approach—a **Skirmisher** (Lightweight/Fast) for static content and a **Siege Engine** (Heavy/Complete) for dynamic applications.
-- **Structural Fidelity:** The capability to interpret JavaScript, solve CAPTCHAs, and navigate complex DOMs when necessary.
-- **Markdown Transmutation:** Automated conversion of chaotic HTML/CSS into clean, hierarchical Markdown to minimize the **[Context (21)](21-context.md)** token tax.
-- **Orchestrated Ingress:** The heavy Siege Engine must be treated as a **[Systemd Quadlet service (08)](08-containers.md)** subject to the **[Orchestrator (23)](23-orchestrator.md)**. It cannot be summoned if the system is under extreme VRAM/RAM pressure (e.g., during Training).
-- **Isolation:** Execution of the browser engine within a dedicated, unprivileged container to prevent host-level exploitation via malicious JavaScript.
-- **Recursive Utility:** Provision of raw documentation to **[The Smith (35)](35-assimilation.md)** to enable the autonomous construction of new extensions.
+- **Separated effects:** Search, Fetch, Extract, Crawl, Render, Interact, Session, credential use,
+  Screenshot, download, and durable artifact admission remain distinct contracts.
+- **Host-minted authority:** Agents may propose a locator or effect. Identity, origin grant,
+  policy, consent, and reserved budget come from trusted host state.
+- **No implicit escalation:** A redirect, JavaScript requirement, CAPTCHA, authentication
+  challenge, payment challenge, provider failure, or quota response cannot authorize another
+  effect, identity, credential, retry, or provider.
+- **Pinned destinations:** Network providers must defend against SSRF, DNS rebinding, ambient
+  proxy and credential use, unbounded redirects, decompression bombs, and private or metadata
+  destinations.
+- **Hostile-content fencing:** Returned material remains attributed external data. Extraction,
+  Markdown conversion, OCR, or screenshotting does not make it true or executable.
+- **Truthful custody:** An effect receipt records an attempted effect; a durable `ArtifactRef`
+  requires real Reliquary admission and retrieval.
+- **Bounded operation:** Every provider must enforce request, byte, time, concurrency, depth, and
+  spend budgets with explicit cancellation and crash ambiguity.
+- **Optionality:** A profile with no web acquisition is valid.
 
 ## Considered Options
 
-!!! failure "Option 1: Pure Procedural Scraping (HTTPX Only)"
-    Relying exclusively on standard Python libraries.
+!!! failure "Option 1: One automatic Scout"
+    A single provider tries lightweight HTTP first and silently escalates to a browser, session,
+    credential, paid service, or retry when the first attempt fails.
 
-    - **Pros:** Zero resource footprint; sub-second latency.
-    - **Cons:** **Functional Blindness.** Fails to render client-side JavaScript (React/Vue). The Agent remains blind to 40% of the modern web, including critical documentation sites that load content dynamically.
+    This collapses distinct grants, makes refusal an obstacle to overcome, hides disclosure and
+    cost, and gives provider behavior authority over policy.
 
-!!! failure "Option 2: External Ingestion APIs (Firecrawl / Tavily)"
-    Outsourcing the hunt to third-party cloud scrapers.
+!!! failure "Option 2: One privileged browser service"
+    A headless browser handles every web operation from one broadly trusted container.
 
-    - **Pros:** Perfect fidelity; external handling of proxy rotation.
-    - **Cons:** **The Breach of Sovereignty.** Violates the **[Iron Pact (00)](00-license.md)**. Sending navigation intents reveals the Magus's interests to a third party. It introduces a subscription capability tax on basic reading.
+    Browser isolation reduces reach but never makes blast radius zero. It also pays the resource
+    and hostile-code cost for observations that need only a bounded static read.
 
-!!! success "Option 3: The Scout (Dual-Mode)"
-    A sovereign extension that wields both a lightweight library and a containerized browser, dynamically selecting the tool based on the target's complexity.
+!!! failure "Option 3: Provider SDKs as policy"
+    Firecrawl, SearXNG, provider-native model tools, or another SDK decides fallback, credentials,
+    persistence, and routing.
 
-    - **Pros:**
-        - **Efficiency:** 90% of requests use the Skirmisher (Zero Cost).
-        - **Capability:** The Siege Engine is available for the 10% of hard targets.
-        - **Safety:** Heavy browsing is orchestrated, protecting the system from resource exhaustion.
+    Such systems may later implement a bounded adapter, but none may own LychD identity,
+    destinations, consent, provenance, budget, or artifact admission.
+
+!!! success "Option 4: Separated acquisition effects"
+    Scout is a Domain whose independently authorized providers are assembled by Weaver Patterns.
+    The first implementation proves one static public-page passage; rendering and interaction
+    arrive only after inheriting the common authority and evidence floor.
 
 ## Decision Outcome
 
-**The Scout** pattern is adopted. The capability is implemented as a specialized extension that manifests two distinct tools for the **[Dispatcher (22)](22-dispatcher.md)**.
+**The Scout Domain is adopted as a composition of separately authorized acquisition effects.**
+There is no sovereign `Scout` package and no provider may upgrade its own grant.
 
-### 1. The Skirmisher (The Left Hand)
+### 1. The First Passage
 
-This is the default mode of interaction. It runs directly within the **[Vessel (11)](11-backend.md)** or **[Ghoul (14)](14-workers.md)** process.
+The first supported path will be one bounded, unauthenticated HTTPS GET followed by network-free
+extraction:
 
-- **Mechanism:** `httpx` (Network) + `trafilatura` (Extraction).
-- **Cost:** Negligible RAM/CPU.
-- **Use Case:** Reading technical documentation, blogs, RSS feeds, and raw text files.
-- **Orchestration:** Ignored. The Agent can wield this tool freely without checking hardware state.
+1. An Agent proposes one exact public URL.
+2. The host mints Acquisition Authority from a verified principal, canonical Run, operator origin
+   grant, fixed policy, consent reference where required, and a worst-case budget reservation.
+3. A prepared attempt is committed before the network effect.
+4. A static adapter performs a destination-pinned GET without subresources, ambient proxy,
+   credentials, cookies, cache, custom headers, link following, or automatic retry.
+5. A network-free extractor accepts only bounded HTML, XHTML, or plain text and emits fenced
+   external material tied to raw and output digests.
+6. A terminal transaction settles budget and disposition. An ambiguous crash becomes
+   `unknown_after_crash` until independent evidence reconciles it.
 
-### 2. The Siege Engine (The Right Hand)
+Raw bytes are released after extraction unless a separate Reliquary contract admits them.
+Search, Crawl, Render, Interact, Session, credential use, Screenshot, download, paid providers,
+caching, and Smith ingestion remain closed until each has its own contract and adversarial
+receipt.
 
-This is the heavy artillery. It runs in a dedicated container service (`web.coven`).
+### 2. Authority and Provider Selection
 
-- **Mechanism:** Headless Chromium (Playwright) managed by the system.
-- **Cost:** High RAM usage (1GB+) and significant CPU spikes.
-- **Use Case:** Single Page Applications (SPAs), taking Screenshots for **[Vision (36)](36-vision.md)**, and navigating complex authentication flows.
-- **The Internet Airlock (Security):** Browsers executing arbitrary JavaScript are high-risk targets for 0-day exploits. By isolating the Siege Engine in `web.coven`, a malicious website breakout is trapped in an empty shell with **no database credentials** and no mounted user files. The blast radius is zero.
-- **Orchestration:** **Subject to the Law.**
-    - When an Agent requests `browser_navigate(use_siege=True)`, the **Dispatcher** queries the **Orchestrator**.
-    - If the system is performing a high-priority ritual (e.g., **[Soulforge (33)](33-training.md)**), the request is denied or queued to prevent OOM failure taking down other containers.
+The Agent-visible proposal and host-minted Acquisition Authority are different types. A future
+provider-selection seam may choose only among providers already eligible for the exact authorized
+effect. The Orchestrator participates only when an admitted provider is a managed runtime; it does
+not own destination policy, credentials, truth, or artifact admission.
 
-### 3. The Lens (Transmutation)
+Every redirect is a new destination decision. URL credentials and unapproved schemes fail closed.
+Resolution rejects forbidden or mixed address sets, pins the approved destination through
+connection, and verifies that the connected peer, TLS identity, `Host`, and SNI agree.
 
-Raw HTML is poison to an LLM. The Scout acts as a filter.
+### 3. Evidence Is Not Truth
 
-- **The Scribe:** Whether gathered by the Skirmisher or the Siege Engine, all content passes through a normalization pipeline.
-- **The Output:** Chaotic DOMs are transmuted into structured **Markdown**. Navigation bars, ads, and footers are surgically removed.
-- **The Result:** The Agent receives pure semantic meaning, reducing context usage by up to 80% compared to raw HTML.
+The authoritative record is the effect receipt: the acting office's account of one attempted
+effect and its disposition. The response is a bounded observation. Extraction is a derivation
+whose parents and method remain visible. Interpretation or verdict belongs to
+**[Riddle (34)](34-evaluation.md)** under declared criteria.
 
-### 4. Integration with The Laboratory
+```text
+search result != fetched response != extracted statement != trusted fact
+fetch != render != interact != credential use
+acquired != admitted != understood != trusted != promoted
+```
 
-Data acquired by the Scout is not just ephemeral context; it is material for construction.
+### 4. Active Browsing and Custody
 
-- **For The Smith:** When **[The Smith (35)](35-assimilation.md)** encounters an unknown library, it deploys the Scout to ingest the documentation. The resulting Markdown is stored in the **[Lab (13)](13-layout.md)** as a reference manual for code generation.
-- **For Memory:** General inquiries are partitioned and inscribed into the **[Archive (27)](27-memory.md)**, allowing the Lich to "remember" the internet without re-crawling it.
+A future renderer must be a dedicated, unprivileged, disposable runtime with an independent
+network boundary, Chromium's own sandbox, and no core Pod peers, host mounts, database access,
+container-control socket, wallet key, or ambient provider secret. A CAPTCHA or access-control
+challenge returns a typed human-required outcome rather than triggering evasion.
+
+Credentials remain opaque, origin-scoped references outside prompts and ordinary telemetry.
+Browser profiles belong to one principal, purpose, origin set, and finite lifetime. Downloads
+enter quarantine and require media sniffing, digest, provenance, classification, retention,
+retrieval authority, and explicit Reliquary admission.
+
+## Delivery Boundary
+
+This ADR accepts architecture, not implementation. LychD currently has no Scout provider,
+browser service, acquisition endpoint, Agent tool, custody path, or automatic Toll. The exact
+public boundary remains on the **[Scout page](../sepulcher/extensions/scout.md)** and its maintained
+**[State of the Work subject](../state-of-the-work.md#scout-web-acquisition)**.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Sovereign Intelligence:** The machine can update its own knowledge base without external dependencies.
-    - **Resource Logic:** By defaulting to the Skirmisher, the system remains fast and light. By gating the Siege Engine, it remains stable.
-    - **Physical Isolation:** Browser exploits are trapped within the ephemeral container service, unable to touch the host kernel.
+    - Lightweight reads do not inherit browser, credential, session, or payment authority.
+    - Provider implementations can evolve behind one explicit acquisition law.
+    - Provenance, crash ambiguity, hostile content, and custody remain visible.
 
 !!! failure "Negative"
-    - **Maintenance Burden:** The Siege Engine requires regular updates to keep pace with the "Arms Race" of anti-bot measures (Cloudflare Turnstile, etc).
-    - **Latency:** The Siege Engine introduces a "Cold Start" penalty if the Chromium container is not already warm.
+    - The design needs more contracts and tests than a single crawler wrapper.
+    - Dynamic sites, authenticated sessions, downloads, and paid providers arrive later.
+    - Destination pinning and browser isolation require maintained security work.

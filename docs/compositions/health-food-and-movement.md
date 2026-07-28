@@ -61,6 +61,12 @@ cross-contact, infer calories from photographs, infer expenditure from movement,
 gait, purchase food, contact clinicians, share records automatically, punish skipped activities,
 or treat silence as adherence, consent, health, or wellbeing.
 
+[Lifestyle Steward](lifestyle-steward.md) may later consume an approved HFM shopping list and one
+minimal, purpose-bound `ProvisionConstraintSet`. It owns receipts, household inventory, store
+topology, catalogues, carts, orders, and deliveries. It never receives HFM journals, measurements,
+symptoms, diagnoses, raw clinical records, or genetic variants merely because both appear in one
+Lifestyle projection.
+
 ## Composition and anatomical ownership
 
 | Field or concern | Owner / proposed value |
@@ -82,6 +88,7 @@ or treat silence as adherence, consent, health, or wellbeing.
 | Public source acquisition | Scout, after its delivery |
 | Voice and mobile ingress | Walking Communion, Echo, Ward, and Tether—later |
 | Image-label ingress | Prism—later |
+| Receipt, pantry, retail, restaurant, cart, and order workflow | Lifestyle Steward—later |
 
 Weaver must not absorb personal records, run application migrations, choose raw model names, or
 implement domain safety. Generic schedules and Occurrences remain Weaver/Core objects that HFM
@@ -440,3 +447,5 @@ than complete byte custody, and current Loopback/local Sigils do not authorize r
 - Read [Phylactery](../sepulcher/phylactery/index.md) before claiming durable personal data.
 - Read [Riddle](../sepulcher/extensions/riddle.md) for outcome-based evaluation.
 - Read [Walking Communion](walking-communion.md) before adding voice or mobile ingress.
+- Read [Lifestyle Steward](lifestyle-steward.md) before adding receipts, inventory, merchant
+  catalogues, restaurants, carts, or purchase effects.

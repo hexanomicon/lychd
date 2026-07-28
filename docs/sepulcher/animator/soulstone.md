@@ -11,7 +11,7 @@ A **Soulstone** is the local runtime Animator: a Quadlet/systemd-backed service 
 
 Unlike a remote API, a Soulstone requires the Magus to understand the physics of local hardware. For model-backed Soulstones, the **Discipline of Animation** must align with the model's mass and the silicon's capacity. For non-model Soulstones, the same principle applies to CPU, RAM, disk, sockets, credentials, and any other local substrate the service consumes.
 
-## 💎 The Infrastructure Mapping
+## The Infrastructure Mapping
 
 Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `SoulstoneConfig` branch, such as `LlamaCppSoulstoneConfig`, `ExLlamaV3SoulstoneConfig`, `VllmSoulstoneConfig`, or `SglangSoulstoneConfig`. The fields defined in the scroll shape the local runtime and the generated container manifest.
 
@@ -19,7 +19,8 @@ Every Soulstone Rune in the Codex is a concrete leaf config under the abstract `
 | :--- | :--- | :--- |
 | `image` | `QuadletContainer.image` | The OCI image (e.g., llama.cpp, TabbyAPI, vLLM, SGLang, or another service image). |
 | `runtime` | runtime adapter selection | Selects the local runtime family (`llamacpp`, `exllamav3`, `vllm`, `sglang`, etc.). |
-| `groups` | coven target membership | Operator/systemd grouping only; v1 eviction policy is independent of group labels. |
+| `groups` | Coven target membership | Compatible operator/systemd aggregation; never a conflict declaration. |
+| `[concurrency].conflict_domains` | Animator-target conflict graph | Finite hardware domains this managed Soulstone cannot share. Omission preserves conservative switching; explicit `[]` declares coexistence. |
 | `port` | runtime `--port` + pod publish mapping | Host-visible endpoint identity for the Soulstone. |
 | `base_url` | runtime connector endpoint | Optional override; defaults to `http://localhost:{port}/v1`. |
 | `exec` | `RuntimePlan.exec_args` override | Explicit command override that bypasses adapter synthesis. |
@@ -190,20 +191,35 @@ Models should not run in FP16 (Raw weight) unless H100-class hardware is availab
 
 ---
 
-## 🤝 Coven Management (The Group Rule)
+## Coven Management (The Group Rule)
 
-Soulstones declare operator/systemd **Coven target membership** with the `groups` field.
+Soulstones declare compatible operator/systemd **Coven target membership** with `groups` and
+physical incompatibility separately with `[concurrency].conflict_domains`.
 
-- **Shared Label:** If two Soulstones share a group (for example `groups = ["vision-state"]`), both
-  are addressable through that multi-member target.
-- **No Hidden Policy:** Group labels do not prove safe coexistence, and different labels do not make
-  services mutually exclusive. Generated units contain no `Conflicts=`. The v1 Orchestrator policy
-  independently plans active, dedicated, non-resident Animators and drains its exact set.
-- **Operator Break-Glass:** A host operator may explicitly start or stop a Coven target as an
-  aggregate action. That bypasses Orchestrator admission, lease drain, and readiness convergence;
-  runtime and agent code must never use the target as an orchestration API.
-- **Reserved Alliances:** Global `alliances` are accepted configuration shape for a future
-  group-aware policy. They have no enforcement effect in v1.
+- **Shared Coven Label:** If two Soulstones share `groups = ["vision-ritual"]`, both are addressed
+  through that generated aggregate only when their conflict-domain sets are compatible.
+- **Shared Conflict Domain:** If two lifecycle-managed Soulstones both declare
+  `conflict_domains = ["gpu-main"]`, binding compiles a conflict edge between their individual
+  Animator targets. They may not share a Coven.
+- **Conservative Omission:** Omitting `conflict_domains` on a dedicated non-resident assigns the
+  compiler-owned `default-exclusive` unknown wildcard. It conflicts with every managed
+  non-resident whose effective domain set is non-empty, so partial migration cannot silently make
+  a legacy Rune coexist.
+- **Explicit Coexistence:** `conflict_domains = []` declares that the Soulstone has no
+  systemd-enforced conflict. Make that assertion only when the combined hardware profile is known
+  to fit.
+- **Resident Law:** A `persistent_resident` Soulstone may not participate in a conflict domain.
+  Binding rejects a configuration that could let another target evict it.
+- **Advertised Life:** Every Soulstone must synthesize at least one capability through its
+  registered runtime adapter. Phase one derives Orchestrator activity truth from capabilities, so
+  bind/load rejects an unadvertised local service instead of allowing its systemd state to diverge
+  from the planner. A container that is intentionally only infrastructure belongs in a core or
+  extension unit until an Animator runtime-state port exists independently of capabilities.
+- **Operator Break-Glass:** A host operator may explicitly start or stop an Animator or Coven
+  target. That bypasses Orchestrator admission, lease drain, stale-world validation, readiness, and
+  compensation; runtime and agent code must never use those targets as an orchestration API.
+- **Reserved Alliances:** Global `alliances` remain accepted shape for later policy. They are not
+  an enforcement boundary.
 
 ### Example: A Vision Coven
 
@@ -223,19 +239,31 @@ exec = [
   "--tp", "2",
 ]
 
+[concurrency]
+dedicated = true
+conflict_domains = ["gpu-pair"]
+
 # ~/.config/lychd/runes/animator/soulstones/llamacpp/vision_scribe.toml
 name = "scribe"
-description = "Specialized OCR tool (Titan)."
+description = "Specialized CPU OCR tool (Titan)."
 image = "ghcr.io/ggml-org/llama.cpp:server-cuda"
 runtime = "llamacpp"
-groups = ["vision-ritual"] # Shares the operator target; not a coexistence guarantee.
+groups = ["vision-ritual"]
 port = 8781
 model_path = "/models/moondream.gguf"
 startup_mode = "single"
-n_gpu_layers = 99
+n_gpu_layers = 0
+
+[concurrency]
+dedicated = true
+conflict_domains = ["cpu-ocr"]
 ```
 
-The Dispatcher later binds capability surfaces from the runtime connector exposed by these Soulstones. In this example those surfaces are model and tool capabilities, but the same placement law applies to non-model local services.
+The domains do not overlap, so binding may place both Animator targets in `vision-ritual`. The
+domain names are declarations of incompatibility, not measured capacity: the Magus must still know
+that the GPU-backed engine and CPU-backed OCR service fit together. The Dispatcher later binds
+capability surfaces from their runtime connectors; the same placement law applies to non-model
+local services.
 
 ## :material-shield-key: Podman Secret Hydration
 
@@ -260,16 +288,20 @@ At bind time:
 
 This keeps rune files reference-only while allowing runtime code to read credential files.
 
-## ⚔️ The Law of Exclusivity
+## The Law of Exclusivity
 
-The **[Orchestrator](../../adr/23-orchestrator.md)**, not the group target, owns the machine's state.
+The **[Orchestrator](../../adr/23-orchestrator.md)** owns temporal authority; systemd owns the
+physical transaction. Coven grouping owns neither.
 
 1. **The Intent:** An Agent needs one declared capability on a target Animator.
-2. **The Plan:** `evict-idle` selects every other active, dedicated, non-resident Animator,
-   regardless of group label.
-3. **The Drain:** Admission closes and existing leases on that exact set finish.
-4. **The Manifestation:** The actuator performs only the planned stops and target start. Systemd
-   target membership adds no automatic stop or extra launch.
+2. **The Plan:** `declared-conflicts` recomputes the Rune-declared graph and selects the target's exact
+   active conflict neighborhood, independent of group labels.
+3. **The Drain:** Admission closes and existing leases on that exact affected set finish.
+4. **The Seal:** The current active world and loaded Animator-target graph must match the plan.
+5. **The Manifestation:** The actuator asks systemd to start the target Animator target once;
+   systemd stops its compiled conflicts before starting it as one transaction.
+6. **The Proof:** The Orchestrator awaits WARM and owns exact compensation toward the captured
+   prior compatible target set if readiness fails.
 
 For a dynamic router, an in-process model load is also a mutation even though no service restarts.
 The Orchestrator closes admission for that entire Animator and drains its leases before loading;
@@ -303,7 +335,7 @@ The precise schema of a Soulstone Rune (`~/.config/lychd/runes/animator/soulston
 | `model_path` | string | `null` | Single-model path (single-model servers). |
 | `base_url` | URL | `null` | Explicit endpoint, if not derived from the port. |
 | `port` | int (1–65535) | `null` | Host port to publish. |
-| `groups` | list[string] | `[]` | Coven groups this stone joins. |
+| `groups` | list[string] | `[]` | Compatible Coven aggregates this stone joins; not a conflict declaration. |
 | `devices` | list[string] | `[]` | Device passthrough (e.g. GPUs). |
 | `volumes` | list[string] | `[]` | Volume mounts. |
 | `env_vars` | dict | `{}` | Environment variables. |
@@ -317,7 +349,15 @@ The `[concurrency]` table governs lifecycle:
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `dedicated` | bool | LychD owns this runtime's lifecycle (may start/stop/swap it). Only `dedicated` animators can be evicted for a swap. |
-| `persistent_resident` | bool | Pin the runtime resident — keep it out of the default eviction set and survive swaps. |
+| `persistent_resident` | bool | Pin the runtime resident. A resident cannot participate in a conflict domain. |
+| `conflict_domains` | list[string], optional | Finite hardware domains the runtime cannot share. Omitted on a dedicated non-resident means the conservative `default-exclusive` wildcard; explicit `[]` alone declares coexistence. |
+
+Conflict domains apply only to lifecycle-managed Soulstones. A shared (`dedicated = false`) Rune
+or a persistent resident may omit the field or declare `[]`; a non-empty set fails bind because
+LychD may neither evict a shared runtime nor let a compiled edge evict a resident.
+Labels are unique lowercase identifiers of at most 50 characters, beginning and ending with an
+ASCII letter or digit and using only letters, digits, `_`, or `-` inside. Treat
+`default-exclusive` as compiler-owned: omit the field to request that conservative wildcard.
 
 ### The `[[models]]` blocks
 

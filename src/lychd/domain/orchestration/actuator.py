@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 from typing import TYPE_CHECKING, Annotated, Literal, Protocol
@@ -11,9 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
     from lychd.domain.animation.protocols import CapabilityRegistry
+    from lychd.domain.animation.schemas import SoulstoneConfig
 
 __all__ = [
+    "RuntimeActuationRestoredError",
     "RuntimeActuator",
+    "RuntimeCancellationRestoredError",
     "RuntimePreconditionError",
     "TransitionIntent",
     "build_compensation_intent",
@@ -25,6 +29,14 @@ AnimatorId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 class RuntimePreconditionError(RuntimeError):
     """A runtime transition was declined before any new physical effect."""
+
+
+class RuntimeActuationRestoredError(RuntimeError):
+    """A failed physical transition was observed back at its exact prior world."""
+
+
+class RuntimeCancellationRestoredError(asyncio.CancelledError):
+    """Caller cancellation whose submitted physical transition was safely undone."""
 
 
 class TransitionIntent(BaseModel):
@@ -129,7 +141,21 @@ class RuntimeActuator(Protocol):
 
 
 def capability_config_generation(registry: CapabilityRegistry) -> str:
-    """Digest the immutable capability projection shared by Vessel and Reactor."""
-    payload = [spec.model_dump(mode="json") for spec in sorted(registry.list_capabilities(), key=lambda item: item.key)]
+    """Digest capabilities plus the complete physical conflict declaration set."""
+    capabilities = sorted(registry.list_capabilities(), key=lambda item: item.key)
+    soulstones = sorted(registry.list_soulstone_runes(), key=lambda rune: rune.name)
+    payload = {
+        "capabilities": [spec.model_dump(mode="json") for spec in capabilities],
+        "runtime_topology": [_runtime_topology_projection(rune) for rune in soulstones],
+    }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _runtime_topology_projection(rune: SoulstoneConfig) -> dict[str, object]:
+    """Project the exact Rune truth used by conflict compilation."""
+    return {
+        "name": rune.name,
+        "groups": sorted(rune.groups),
+        "concurrency": rune.concurrency.model_dump(mode="json"),
+    }

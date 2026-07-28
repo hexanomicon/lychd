@@ -19,6 +19,11 @@ boundary](../../state-of-the-work.md#remote-iam).
 **Law:** [ADR 38 — IAM](../../adr/38-iam.md), under the defense-in-depth law of
 [ADR 09 — Security](../../adr/09-security.md).
 
+**Extension form:** Ward is a Core-coupled backend authority Domain. Its enforcement floor is not
+an optional or replaceable IAM plugin: Core must always fail closed at protected request, object,
+and effect boundaries. Credential verifiers, directory synchronizers, and bounded policy
+contributions may extend the Ward, but no provider may mint a Sigil or become a rival authority.
+
 > _"A sovereign mind must have boundaries. The Ward is the circle of salt that lets a voice reach
 > the Lich without mistaking that voice for the will of the Magus."_
 

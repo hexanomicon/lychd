@@ -13,10 +13,15 @@ icon: material/refresh
 ## Requirements
 
 - **The Tri-State Jujutsu Strategy:** Mandatory management of three code states: **Upstream** (Remote), **Local** (Active), and **Dream** (Shadow Realm).
-- **The Rebase Ritual:** Updates must be applied via Jujutsu rebase, preserving local Autopoiesis on top of the new upstream foundation.
-- **The Conflict Resolution Loop:** If a merge conflict occurs, the system must not crash; it must treat the conflict as a reasoning task, utilizing the system's cognitive engine to resolve the divergence in a sandboxed environment.
+- **The Rebase Ritual:** Updates are prepared through a Jujutsu rebase candidate that attempts to
+  preserve attributable local changes on the new upstream foundation.
+- **The Conflict Resolution Loop:** A merge conflict blocks promotion and becomes a bounded repair
+  task in a sandboxed environment. Failure returns truthful noncompletion; it does not force the
+  active body to accept a guessed resolution.
 - **The Breaking Change Detector:** Automated execution of the verification suite against all active extensions *after* the code merge but *before* the physical restart.
-- **The Atomic Rollback:** If the system fails to prove its own health after an update attempt, it must restore the Jujutsu body state, lockfile, and **[Phylactery (06)](06-persistence.md)** schema to the pre-update **[Snapshot (07)](07-snapshots.md)**.
+- **The Recovery Plan:** Before promotion, the workflow records tested recovery coordinates for
+  body, lockfile, and **[Phylactery (06)](06-persistence.md)** state. Recovery follows each
+  owner's contract and reconciles external effects; it is not assumed to be one atomic rollback.
 - **Policy-Governed Promotion:** Update promotion must be authorized by explicit Magus consent or a Codex-defined low-risk maintenance preauthorization. High-stakes update, migration, and host-lifecycle steps remain live HitL gated.
 - **Elevated Execution:** Authorization to trigger the **[Host Reactor (10)](10-privilege.md)** to restart the **[Vessel (11)](11-backend.md)** only after the code has been successfully transmuted and packaged.
 
@@ -37,11 +42,17 @@ icon: material/refresh
 
     -   **Pros:**
         -   **Preservation of Self:** Local modifications (Autopoiesis) are prioritized and reapplied on top of updates.
-        -   **Immunity to Breakage:** The update is rejected if the system cannot mathematically prove it is healthy.
+        -   **Evidence Before Promotion:** The update is rejected when its declared verification
+            and authorization gates do not pass. Passing them proves only those predicates.
 
 ## Decision Outcome
 
 **The Ouroboros Protocol** is adopted as the Prime Directive of the Lifecycle. It defines how the **[Creation (16)](16-creation.md)** and **[Packaging (17)](17-packaging.md)** rituals are applied to the Core itself.
+
+!!! warning "Implementation State"
+    The end-to-end Ouroboros update, repair, migration, recovery, and restart composition is
+    **Designed**. No autonomous updater or self-healing lifecycle ships today. The steps below are
+    target law and must not be read as a current command or recovery guarantee.
 
 !!! note "Implementation Scope"
     This ADR governs the evolution of the LychD implementation only. LychD is not "the Agentic OS" and does not require every agentic system to target its body. Other daemon implementations may evolve by their own rites. Across bodies, they speak protocols such as A2A.
@@ -59,7 +70,9 @@ Before touching a single byte, the system triggers the **[Snapshot Protocol (07)
 
 - **The Body:** It captures the `core/` and `extensions/` Jujutsu hexadecimal Commit IDs, lockfiles, and repository state.
 - **The Soul:** It performs a database checkpoint of the **[Phylactery (06)](06-persistence.md)**.
-This is the **Save Point**: the known-good state. If the Ouroboros chokes, the system reverts to this instant.
+This is the **Save Point**: an attributable recovery coordinate across separately owned state. It
+is not one distributed instant, and restoration may require operator action or external-effect
+reconciliation.
 
 ### 2. The Rebase Ritual (Jujutsu Topology)
 
@@ -79,7 +92,9 @@ Once the code is merged, the system runs the **Verification Suite**:
 1. It reinstalls dependencies (`uv sync`) to match the new lockfile.
 2. It runs the test suite for **All Active Extensions**.
 
-**The Crisis:** If a local extension fails because the Upstream renamed a core function, the system launches a **Repair Task** to refactor the local code to match the new reality.
+**The Crisis:** If a local extension fails because the Upstream renamed a core function, policy
+may launch a bounded **Repair Task** to propose a compatible candidate. Exhaustion rejects the
+update or asks for operator intervention.
 
 **Why External Boundaries Survive:** A capability isolated behind an external-service Animator can survive Core refactors when its network contract, adapter, and Codex declaration remain stable. The capability may be inference, tooling, observability, peer delegation, or another service function. In-process independent compatibility is not promised today. A future public API can earn that status only after LychD harvests a small versioned surface from real components, conformance tests, and Forge packaging rules. Until then, in-process Crypt components are verified and repaired as part of the composed runtime image.
 
@@ -90,18 +105,24 @@ If—and only if—all tests pass and the promotion is authorized by live Magus 
 1. The system triggers **[The Forge (17)](17-packaging.md)** to build the new container image.
 2. It performs any required **Alembic Migrations** on the **[Phylactery (06)](06-persistence.md)**.
 3. It writes the `INTENT_RESTART_VESSEL` signal to the **[Host Reactor (10)](10-privilege.md)**.
-4. The host system restarts the service. The Lich wakes up. It has the new features of the Upstream, but it retains the memories and modifications of the Self.
+4. The host system attempts the validated restart. Success receipts must show which upstream
+   features, local changes, and retained state actually survived; the ritual does not infer
+   continuity from process startup alone.
 
 ### 5. The Great Reject (Rollback)
 
 If the system *cannot* fix the breakage after ($N$) attempts:
 
-1. It abandons the candidate change or returns the working copy to the pre-update Jujutsu state.
-2. It restores the **Save Point**.
+1. It abandons the candidate change or returns the working copy to the pre-update Jujutsu state
+   when that coordinate remains available.
+2. It requests the tested recovery path for each affected state owner and names any indeterminate
+   or externally visible effects.
 3. It preserves a rejection record: intent, candidate diff, failing checks, relevant traces, and the reason the timeline was abandoned.
 4. It notifies the Magus: *"I cannot evolve. The upstream reality is incompatible with my local components. Manual intervention required."*
 
-Rollback restores the known-good body and Phylactery state. The failed timeline is physically banished, but its autopsy may become a future test, memory record, or operator note.
+Recovery aims to restore a proved body and Phylactery coordinate; it may fail partially and must
+report that state honestly. The rejected candidate no longer has promotion authority, while its
+autopsy may become a future test, memory candidate, or operator note.
 
 ### 6. Dual-Plane Trust Delta
 
@@ -125,9 +146,12 @@ Evolution follows the same control/unsafe split:
 ## Consequences
 
 !!! success "Positive"
-    -   **Living Code:** The system stays current without sacrificing its unique, locally-grown capabilities.
-    -   **Self-Healing:** API breaking changes are automatically refactored by the AI.
-    -   **Safety:** The Daemon never enters a "Boot Loop" state from a bad update.
+    -   **Living Code:** Verified updates can preserve selected local capabilities while adopting
+        upstream change.
+    -   **Bounded Repair:** API breakage can receive attributable candidate repairs under a finite
+        budget; unresolved breakage rejects the update.
+    -   **Reduced Boot Risk:** Pre-restart checks and external recovery coordinates reduce the
+        chance and duration of a bad-update boot loop without claiming to eliminate it.
 
 !!! failure "Negative"
     -   **Update Latency:** An update is a "Ritual" that takes minutes, involving testing, potential AI refactoring, and rebuilding.

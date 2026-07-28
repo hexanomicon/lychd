@@ -10,6 +10,6 @@
 
 <svelte:head><title>LychD — The Altar</title></svelte:head>
 <div class="shell-placeholder" aria-busy="true">
-  <span class="glyph-big">◈</span>
+  <span class="glyph-big">⬡</span>
   <span class="rune-head">Opening the Bridge</span>
 </div>

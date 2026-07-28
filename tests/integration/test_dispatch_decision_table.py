@@ -15,9 +15,11 @@ required (a parked run holds no lease).
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
+from contextlib import aclosing
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
@@ -35,6 +37,8 @@ from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
+from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
+from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
 from lychd.domain.cortex.leases import LeaseAdmissionClosed, LeaseLedger
 
 _KEY = "router:chat:main"
@@ -42,6 +46,16 @@ _KEY = "router:chat:main"
 
 class _BoomError(RuntimeError):
     """Sentinel raised inside a lease CM body to exercise release-on-exception."""
+
+
+class _FailingRunEvents:
+    """Observer double that fails after lease acquisition."""
+
+    def emitter(self, run_id: str) -> _FailingRunEvents:
+        return self
+
+    def dispatch(self, capability_key: str, **metadata: str) -> None:
+        raise _BoomError
 
 
 class FakeRegistry:
@@ -158,6 +172,59 @@ async def test_warm_row_issues_grant_directly() -> None:
     assert "issue_grant" in registry.calls
     assert "activate" not in registry.calls
     assert leases.active() == []  # released on exit
+
+
+@pytest.mark.asyncio
+async def test_graph_dispatch_emits_post_acquisition_occurrence_and_grant_identity() -> None:
+    """Only an admitted lease becomes a Dispatcher selection observation."""
+    registry = FakeRegistry(phase=CapabilityPhase.WARM)
+    leases = LeaseLedger()
+    events = InProcessEventBus()
+    dispatcher = Dispatcher(registry=registry, leases=leases, events=events)
+    occurrence_token = bind_occurrence("occurrence-1")
+    try:
+        async with dispatcher.lease_grant(
+            family=CapabilityFamily.CHAT,
+            run_id="run-1",
+        ) as grant:
+            assert [lease.grant_id for lease in leases.active()] == [grant.lease.grant_id]
+            stream = cast("AsyncGenerator[RunEvent]", events.subscribe("run-1"))
+            async with aclosing(stream):
+                event = await anext(stream)
+    finally:
+        reset_occurrence(occurrence_token)
+
+    assert event.kind is RunEventKind.DISPATCH
+    assert event.data == _KEY
+    assert event.meta == {
+        "animator": "router",
+        "family": "chat",
+        "model_id": "main",
+        "phase": "warm",
+        "occurrence_id": "occurrence-1",
+        "grant_id": grant.lease.grant_id,
+    }
+    assert leases.active() == []
+
+
+@pytest.mark.asyncio
+async def test_dispatch_observer_failure_releases_acquired_lease() -> None:
+    registry = FakeRegistry(phase=CapabilityPhase.WARM)
+    leases = LeaseLedger()
+    dispatcher = Dispatcher(
+        registry=registry,
+        leases=leases,
+        events=cast("Any", _FailingRunEvents()),
+    )
+
+    with pytest.raises(_BoomError):
+        async with dispatcher.lease_grant(
+            family=CapabilityFamily.CHAT,
+            run_id="run-observer-failure",
+        ):
+            pytest.fail("a failed observation must not enter the lease body")
+
+    assert leases.active() == []
 
 
 @pytest.mark.asyncio

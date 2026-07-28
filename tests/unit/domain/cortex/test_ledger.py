@@ -44,6 +44,7 @@ async def test_create_persists_queued_run() -> None:
     assert run.run_id == "run_1"
     assert run.status is RunStatus.QUEUED
     assert run.workflow_name == "bridge_chat"
+    assert run.pattern_manifest["revision"] == "legacy-unversioned"
     assert run.queue_name == "runs"
     assert run.priority == 70
     assert run.sigil_name == "operator"

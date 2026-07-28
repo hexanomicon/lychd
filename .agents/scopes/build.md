@@ -30,6 +30,20 @@ assembly, persistence, execution, capabilities, agents, orchestration, extension
 - Extensions and host effects: `docs/adr/05-extensions.md`, `docs/adr/08-containers.md`,
   `docs/adr/10-privilege.md`, `src/lychd/extensions/`, `src/lychd/system/`
 
+## Optional Reference Probes
+
+After inspecting tracked code, installed packages, and the owning ADR, use the
+[local references scope](references.md) for one bounded implementation comparison:
+
+- [agent systems and cognition](references.md#agent-systems-and-cognition);
+- [backend, workers, and application structure](references.md#backend-workers-and-application-structure);
+- [local inference, hardware, and packaging](references.md#local-inference-hardware-and-packaging);
+- [vision and document ingestion](references.md#vision-and-document-ingestion);
+- [developer workflow](references.md#developer-workflow).
+
+Examples are not APIs. Check the lockfile and installed package source before adapting behavior,
+and add no dependency merely because a reference uses it.
+
 ## Typical Change Surface
 
 This is routing guidance, not authorization. A build slice normally changes one semantic owner,

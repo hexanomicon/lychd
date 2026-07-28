@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
+from uuid import uuid4
 
 from pydantic import BaseModel
-from pydantic_graph import BaseNode, Graph
+from pydantic_graph import BaseNode, End, Graph
 from pydantic_graph.persistence import BaseStatePersistence
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
 from lychd.domain.cortex.runs import ConsentPending, RunParked
 from lychd.extensions.protocols import PhylacteryProtocol
 
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from lychd.domain.cortex.priority import Priority
+    from lychd.domain.orchestration.schema import TransitionTrace
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -23,6 +26,31 @@ class StasisPolicy:
 
     max_resumes: int = 8  # total transition retries per run
     max_same_key: int = 3  # identical-capability convergence bound
+
+
+@dataclass(frozen=True, kw_only=True)
+class NodeOccurrenceEvent:
+    """One lifecycle edge for a single logical node invocation attempt."""
+
+    occurrence_id: str
+    node_type: type[BaseNode[Any, Any, Any]]
+    phase: Literal["entered", "settled", "waiting", "failed"]
+    wait_kind: Literal["hardware", "consent"] | None = None
+    transition_request_id: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class TransitionTraceEvent:
+    """A safe immutable observation copied from a mutable transition trace."""
+
+    request_id: str
+    phase: str
+    target_capability_key: str
+    run_id: str | None
+    occurrence_id: str | None
+    physical_transition_id: str | None
+    compensation_transition_id: str | None
+    action_type: str | None
 
 
 def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
@@ -56,7 +84,13 @@ def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_
 class TransitionOrchestrator(Protocol):
     """Orchestration surface required by graph stasis recovery."""
 
-    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: Priority) -> None: ...
+    async def handle_transition(
+        self,
+        exception: HardwareTransitionRequired,
+        signal_priority: Priority,
+        *,
+        trace: TransitionTrace | None = None,
+    ) -> None: ...
 
 
 class GraphRunner[StateT: BaseModel]:
@@ -70,6 +104,9 @@ class GraphRunner[StateT: BaseModel]:
         signal_priority: Priority,
         on_stasis_enter: Callable[[], Awaitable[None]] | None = None,
         on_stasis_exit: Callable[[], Awaitable[None]] | None = None,
+        on_node_event: Callable[[NodeOccurrenceEvent], None] | None = None,
+        on_transition_event: Callable[[TransitionTraceEvent], None] | None = None,
+        run_id: str | None = None,
         policy: StasisPolicy | None = None,
     ) -> None:
         """Initialize graph runner dependencies.
@@ -86,7 +123,47 @@ class GraphRunner[StateT: BaseModel]:
         self.signal_priority = signal_priority
         self._on_stasis_enter = on_stasis_enter
         self._on_stasis_exit = on_stasis_exit
+        self._on_node_event = on_node_event
+        self._on_transition_event = on_transition_event
+        self._run_id = run_id
         self._policy = policy or StasisPolicy()
+
+    def _node_event(
+        self,
+        *,
+        occurrence_id: str,
+        node: BaseNode[Any, Any, Any],
+        phase: Literal["entered", "settled", "waiting", "failed"],
+        wait_kind: Literal["hardware", "consent"] | None = None,
+        transition_request_id: str | None = None,
+    ) -> None:
+        """Publish a runtime occurrence edge without making GraphRunner an evidence store."""
+        if self._on_node_event is not None:
+            self._on_node_event(
+                NodeOccurrenceEvent(
+                    occurrence_id=occurrence_id,
+                    node_type=type(node),
+                    phase=phase,
+                    wait_kind=wait_kind,
+                    transition_request_id=transition_request_id,
+                )
+            )
+
+    def _transition_event(self, trace: TransitionTrace) -> None:
+        """Copy the mutable trace at one acknowledged semantic boundary."""
+        if self._on_transition_event is not None:
+            self._on_transition_event(
+                TransitionTraceEvent(
+                    request_id=trace.request_id,
+                    phase=trace.phase,
+                    target_capability_key=trace.target_capability_key,
+                    run_id=trace.run_id,
+                    occurrence_id=trace.occurrence_id,
+                    physical_transition_id=trace.physical_transition_id,
+                    compensation_transition_id=trace.compensation_transition_id,
+                    action_type=trace.plan.action_type if trace.plan is not None else None,
+                )
+            )
 
     async def run_graph(
         self,
@@ -114,7 +191,7 @@ class GraphRunner[StateT: BaseModel]:
         """
         return await self._run_with_stasis(graph, is_resume=True, deps=deps)
 
-    async def _run_with_stasis(  # noqa: C901, PLR0912 - bounded-retry stasis loop is intentionally branchy
+    async def _run_with_stasis(  # noqa: C901, PLR0912, PLR0915 - bounded stasis execution loop
         self,
         graph: Graph[StateT, Any, Any],
         *,
@@ -147,9 +224,22 @@ class GraphRunner[StateT: BaseModel]:
                 )
 
             async with context_manager as graph_run:
+                active_node: BaseNode[Any, Any, Any] | None = None
+                occurrence_id: str | None = None
                 try:
-                    async for _ in graph_run:
-                        pass
+                    next_node = graph_run.next_node
+                    while not isinstance(next_node, End):
+                        active_node = next_node
+                        occurrence_id = str(uuid4())
+                        self._node_event(occurrence_id=occurrence_id, node=active_node, phase="entered")
+                        occurrence_token = bind_occurrence(occurrence_id)
+                        try:
+                            next_node = await graph_run.next(active_node)
+                        finally:
+                            reset_occurrence(occurrence_token)
+                        self._node_event(occurrence_id=occurrence_id, node=active_node, phase="settled")
+                        active_node = None
+                        occurrence_id = None
 
                 except Exception as exc:
                     # Consent park (C3): a Gate raised ConsentPending. Snapshot the
@@ -157,27 +247,95 @@ class GraphRunner[StateT: BaseModel]:
                     # SUSPENDS (it does not fail, and it is not a hardware transition).
                     park = _extract_signal(exc, ConsentPending)
                     if park is not None:
-                        await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        try:
+                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        except BaseException:
+                            if active_node is not None and occurrence_id is not None:
+                                self._node_event(
+                                    occurrence_id=occurrence_id,
+                                    node=active_node,
+                                    phase="failed",
+                                )
+                            raise
+                        if active_node is not None and occurrence_id is not None:
+                            self._node_event(
+                                occurrence_id=occurrence_id,
+                                node=active_node,
+                                phase="waiting",
+                                wait_kind="consent",
+                            )
                         return RunParked(consent_id=park.consent_id, tool_name=park.tool_name)
 
                     signal = _extract_signal(exc, HardwareTransitionRequired)
 
                     if signal:
+                        from lychd.domain.orchestration.schema import TransitionTrace
+
                         resume_count += 1
                         if signal.capability_key == repeated_key:
                             repeated_count += 1
                         else:
                             repeated_key, repeated_count = signal.capability_key, 1
-                        if resume_count > self._policy.max_resumes or repeated_count >= self._policy.max_same_key:
+                        if resume_count > self._policy.max_resumes or repeated_count > self._policy.max_same_key:
+                            if active_node is not None and occurrence_id is not None:
+                                self._node_event(
+                                    occurrence_id=occurrence_id,
+                                    node=active_node,
+                                    phase="failed",
+                                )
                             msg = (
                                 f"Stasis did not converge for capability '{signal.capability_key}' after "
                                 f"{resume_count} transition(s); aborting the run."
                             )
                             raise RuntimeError(msg) from signal
-                        await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        trace = TransitionTrace(
+                            target_capability_key=signal.capability_key,
+                            priority=float(self.signal_priority),
+                            run_id=self._run_id,
+                            occurrence_id=occurrence_id,
+                            observer=self._transition_event,
+                        )
+                        try:
+                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        except BaseException:
+                            if active_node is not None and occurrence_id is not None:
+                                self._node_event(
+                                    occurrence_id=occurrence_id,
+                                    node=active_node,
+                                    phase="failed",
+                                )
+                            raise
+                        if active_node is not None and occurrence_id is not None:
+                            self._node_event(
+                                occurrence_id=occurrence_id,
+                                node=active_node,
+                                phase="waiting",
+                                wait_kind="hardware",
+                                transition_request_id=trace.request_id,
+                            )
+                        self._transition_event(trace)
                         if self._on_stasis_enter is not None:
                             await self._on_stasis_enter()
-                        await self.orchestrator.handle_transition(signal, signal_priority=self.signal_priority)
+                        try:
+                            await self.orchestrator.handle_transition(
+                                signal,
+                                signal_priority=self.signal_priority,
+                                trace=trace,
+                            )
+                        except BaseException:
+                            if trace.phase not in {
+                                "declined_no_effect",
+                                "failed_restored",
+                                "cancelled_restored",
+                                "contained_uncertain",
+                                "failed",
+                            }:
+                                trace.phase = "failed"
+                                self._transition_event(trace)
+                            raise
+                        if trace.phase == "requested":
+                            trace.phase = "completed"
+                            self._transition_event(trace)
                         # Exceptions from handle_transition skip the exit callback: the
                         # run is failing, and reconcile owns the row.
                         if self._on_stasis_exit is not None:
@@ -185,6 +343,8 @@ class GraphRunner[StateT: BaseModel]:
                         current_is_resume = True
                         continue
 
+                    if active_node is not None and occurrence_id is not None:
+                        self._node_event(occurrence_id=occurrence_id, node=active_node, phase="failed")
                     raise
                 else:
                     result = graph_run.result

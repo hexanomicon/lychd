@@ -7,7 +7,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from lychd.agents.router import Intent
-from lychd.domain.cortex.events import RunEventKind
+from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
 
 if TYPE_CHECKING:
@@ -91,7 +91,13 @@ def test_snapshot_reconstructs_selected_process_local_active_runs(
             "run_id": "run_selected",
             "cursor": 2,
             "content": "still speaking",
-            "status": "weaving",
+            "run_status": "running",
+            "activity": "weaving",
+            "pattern_id": "bridge_chat",
+            "pattern_revision": "legacy-unversioned",
+            "loom_path": None,
+            "orb_path": "/orb/run_selected",
+            "evidence_capture": "process_local",
             "fragments": [
                 {
                     "kind": "genui.plan_checklist",
@@ -100,9 +106,126 @@ def test_snapshot_reconstructs_selected_process_local_active_runs(
                     "actions": [],
                 },
             ],
+            "occurrence_id": None,
+            "dispatch_occurrence_id": None,
+            "grant_id": None,
+            "capability_key": None,
+            "transition_occurrence_id": None,
+            "transition_request_id": None,
+            "transition_phase": None,
             "terminal": False,
         },
     ]
+
+
+def test_run_snapshot_reconstructs_latest_dispatch_and_transition_from_ledger(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+    run_id = "run_reconstructed"
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(
+                session_id=session.id,
+                run_id=run_id,
+                prompt="raise the dead",
+                source="bridge",
+            ),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status(run_id, RunStatus.RUNNING)
+        await fake_services.ledger.set_status(run_id, RunStatus.AWAITING_HARDWARE)
+        await fake_services.ledger.append_event(
+            RunEvent(
+                run_id=run_id,
+                seq=0,
+                kind=RunEventKind.DISPATCH,
+                data="chat:local",
+                meta={"occurrence_id": "occ-1", "grant_id": "grant-1"},
+            )
+        )
+        await fake_services.ledger.append_event(
+            RunEvent(
+                run_id=run_id,
+                seq=1,
+                kind=RunEventKind.TRANSITION,
+                data="request-1",
+                meta={
+                    "occurrence_id": "occ-1",
+                    "capability_key": "chat:local",
+                    "phase": "verifying",
+                },
+            )
+        )
+
+    asyncio.run(_seed())
+
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["occurrence_id"] == "occ-1"
+    assert body["dispatch_occurrence_id"] == "occ-1"
+    assert body["grant_id"] == "grant-1"
+    assert body["capability_key"] == "chat:local"
+    assert body["transition_occurrence_id"] == "occ-1"
+    assert body["transition_request_id"] == "request-1"
+    assert body["transition_phase"] == "verifying"
+
+
+def test_run_snapshot_preserves_cross_occurrence_correlations(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    """A resumed dispatch must never be presented as the prior transition's occurrence."""
+    session = _session(fake_services)
+    run_id = "run_cross_occurrence"
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id=run_id, prompt="raise", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status(run_id, RunStatus.RUNNING)
+        for event in (
+            RunEvent(
+                run_id=run_id,
+                seq=0,
+                kind=RunEventKind.TRANSITION,
+                data="request-a",
+                meta={"occurrence_id": "occ-a", "capability_key": "chat:local", "phase": "ready"},
+            ),
+            RunEvent(
+                run_id=run_id,
+                seq=1,
+                kind=RunEventKind.NODE,
+                data="converse",
+                meta={"occurrence_id": "occ-b"},
+            ),
+            RunEvent(
+                run_id=run_id,
+                seq=2,
+                kind=RunEventKind.DISPATCH,
+                data="chat:local",
+                meta={"occurrence_id": "occ-b", "grant_id": "grant-b"},
+            ),
+        ):
+            await fake_services.ledger.append_event(event)
+
+    asyncio.run(_seed())
+
+    body = altar_client.get(f"/api/v1/bridge/runs/{run_id}").json()
+    assert body["occurrence_id"] == "occ-b"
+    assert body["dispatch_occurrence_id"] == "occ-b"
+    assert body["grant_id"] == "grant-b"
+    assert body["transition_occurrence_id"] == "occ-a"
+    assert body["transition_request_id"] == "request-a"
 
 
 def test_send_unknown_session_404(altar_client: TestClient[Litestar]) -> None:
@@ -138,6 +261,11 @@ def test_send_happy_path(
     assert response.status_code == 200
     body = response.json()
     assert body["run_id"]
+    assert body["pattern_id"] == "bridge_chat"
+    assert body["pattern_revision"] == "1"
+    assert body["loom_path"] == "/loom/bridge_chat/1"
+    assert body["orb_path"] == f"/orb/{body['run_id']}"
+    assert body["evidence_capture"] == "process_local"
     assert body["turn"]["content"] == "raise the dead"
     assert body["turn"]["role"] == "user"
     assert len(fake_services.run_engine.submitted) == 1

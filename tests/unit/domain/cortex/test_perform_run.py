@@ -10,6 +10,8 @@ the graph runs on a `TestModel` handed through the fake dispatcher's grant.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -99,10 +101,25 @@ def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, Bri
 
 
 async def _seed_run(ledger: InMemoryRunLedger, sessions: BridgeSessionStore, run_id: str) -> Intent:
+    from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
+
     session = await sessions.create_session(title="t")
     intent = Intent(session_id=session.id, run_id=run_id, prompt="hello", source="bridge")
-    await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
+    await ledger.create(
+        intent,
+        workflow_name="bridge_chat",
+        pattern_manifest=BRIDGE_CHAT.manifest.snapshot(),
+        queue_name="runs",
+        priority=70,
+    )
     return intent
+
+
+def _redigest_pattern(snapshot: dict[str, Any]) -> None:
+    """Recompute a persisted Pattern digest after an intentional test mutation."""
+    unsigned = {key: value for key, value in snapshot.items() if key != "digest"}
+    encoded = json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()
+    snapshot["digest"] = hashlib.sha256(encoded).hexdigest()
 
 
 @pytest.mark.asyncio
@@ -128,6 +145,18 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
     assert dones[0].data == "done"
+    node_events = [event for event in channel._replay if event.kind is RunEventKind.NODE]
+    assert [(event.data, event.meta["phase"]) for event in node_events] == [
+        ("weave_context", "entered"),
+        ("weave_context", "settled"),
+        ("converse", "entered"),
+        ("converse", "settled"),
+        ("project_reply", "entered"),
+        ("project_reply", "settled"),
+    ]
+    assert all(event.meta["pattern_revision"] == "1" for event in node_events)
+    assert len({event.meta["occurrence_id"] for event in node_events}) == 3
+    assert all(len(event.event_id) == 36 for event in node_events)
     # the settled agent turn landed on the session
     session_rec = await sessions.get_session(run.session_id)
     assert session_rec is not None
@@ -574,6 +603,39 @@ async def test_perform_run_unknown_workflow_emits_terminal_and_closes() -> None:
     assert len(dones) == 1
     assert dones[0].data == "failed"
     assert channel.closed is True  # F2: the stream ends instead of tailing keepalives
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "case",
+    ["invalid_checksum", "drifted_snapshot", "unavailable_revision"],
+)
+async def test_perform_run_fails_honestly_when_pinned_pattern_is_unavailable(
+    case: str,
+) -> None:
+    """A worker never executes against corrupt, drifted, or unavailable Pattern law."""
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, f"pattern-{case}")
+    run = await ledger.get(f"pattern-{case}")
+    assert run is not None
+
+    if case == "invalid_checksum":
+        run.pattern_manifest["digest"] = "0" * 64
+    elif case == "drifted_snapshot":
+        run.pattern_manifest["nodes"][0]["label"] = "Drifted station"
+        _redigest_pattern(run.pattern_manifest)
+    else:
+        run.pattern_manifest["revision"] = "unavailable"
+        _redigest_pattern(run.pattern_manifest)
+
+    channel = substrate.bus.open(run.run_id)
+    result = await perform_run({"run_substrate": substrate}, run_id=run.run_id)
+
+    assert result == {"status": "failed", "run_id": run.run_id}
+    assert run.status is RunStatus.FAILED
+    assert "pinned Pattern unavailable" in (run.error or "")
+    assert [event.data for event in channel._replay if event.kind is RunEventKind.DONE] == ["failed"]
+    assert channel.closed is True
 
 
 @pytest.mark.asyncio

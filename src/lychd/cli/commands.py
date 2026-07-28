@@ -324,6 +324,7 @@ async def _consume_reactor_intents() -> None:
         inbox_dir=switching.host_reactor_dir,
         journal_dir=switching.host_reactor_journal_dir,
         systemctl_bin=systemctl_bin,
+        systemctl_timeout_s=switching.systemctl_timeout_s,
         policy=resolve_switch_policy(switching.policy),
     ).consume_all()
     get_console().print(f"[green]✓[/] Host Reactor consumed {processed} transition(s).")

@@ -26,6 +26,7 @@ from lychd.extensions.builtin.animator.runtimes import ExLlamaV3RuntimeAdapter
 from lychd.extensions.builtin.animator.soulstones import ExLlamaV3SoulstoneConfig
 from lychd.system.schemas import QuadletContainer, QuadletPod
 from lychd.system.services.scribe import ScribeService
+from lychd.system.unit_names import animator_target_unit
 
 respx = pytest.importorskip("respx")
 
@@ -197,7 +198,7 @@ def test_exllamav3_transmutation_isolates_auth_and_sizes_shared_ipc() -> None:
 
     assert pod.shm_size == "8g"
     assert tabby.secrets == ["tabby_exl3_auth,target=/app/api_tokens.yml,mode=0444"]
-    assert tabby.binds_to == ["lychd-vessel.service"]
+    assert tabby.binds_to == [animator_target_unit("exl3-router"), "lychd-vessel.service"]
     assert "lychd-vessel.service" in tabby.after
     assert "--shm-size=8g" not in tabby.podman_args
     assert "tabby_exl3_auth" in vessel.secrets

@@ -93,7 +93,7 @@ def test_lychd_toml_round_trips_through_settings(
     reparsed = Settings()
 
     assert reparsed.model_dump(mode="json", exclude_none=True) == content
-    assert reparsed.orchestration.switching.policy == "evict-idle"
+    assert reparsed.orchestration.switching.policy == "declared-conflicts"
     assert reparsed.orchestration.whim.idle_evict_after_s == 0
     assert reparsed.orchestration.whim.preload == []
 

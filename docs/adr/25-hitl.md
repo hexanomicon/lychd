@@ -29,9 +29,9 @@ icon: material/account-voice
 !!! failure "Option 2: Continuous Polling"
     Having the worker process loop indefinitely, checking a database flag or file for an "Approved" status.
     - **Pros:** Allows for state persistence; simpler than a full asynchronous deferral system.
-    - **Cons:** **Wasteful Cycles.** Consumes CPU resources and database I/O for an idle task. It provides no standard mechanism for "Shadow Scrying," making it difficult to present the user with a verified outcome before the choice is made.
+    - **Cons:** **Wasteful Cycles.** Consumes CPU resources and database I/O for an idle task. It provides no standard mechanism for shadow scrying, making it difficult to present the user with a verified outcome before the choice is made.
 
-!!! success "Option 3: Deferred Consecration (Stasis & Scrying)"
+!!! success "Option 3: Deferred Consecration (Stasis and scrying)"
     Adopting a "Halt and Scry" workflow utilizing Pydantic AI's `DeferredToolRequests` and the Shadow Realm sandbox.
     - **Pros:**
         - **Hardware Agility:** Physically liberates the machine's body while the mind waits, allowing the **[Orchestrator (ADR 23)](./23-orchestrator.md)** to reallocate VRAM.
@@ -105,7 +105,7 @@ This human feedback forms a **Crucible**. HitL captures the Magus's Will; Karma 
 !!! success "Positive"
     - **Absolute Sovereignty:** The machine remains bound to the Magus's Will; autonomous "runaway" behaviors are physically impossible for critical tasks.
     - **Zero-Cost Deliberation:** The system can wait indefinitely for a human signal without consuming active memory or locking inference ports.
-    - **High-Fidelity Scrying:** By presenting "Verified Outcomes" (Visions) rather than raw text, the Magus makes decisions based on the projected reality of the change.
+    - **High-fidelity scrying:** By presenting "Verified Outcomes" (Visions) rather than raw text, the Magus makes decisions based on the projected reality of the change.
 
 !!! failure "Negative"
     - **Operational Latency:** High-stakes self-modification is strictly bound by human reaction time, slowing the pace of Autopoiesis.

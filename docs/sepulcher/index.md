@@ -14,9 +14,8 @@ database, an agent, or a model by itself. [State of the Work](../state-of-the-wo
 sole record of what current evidence supports and which boundaries remain unproved, designed, or
 externally owned.
 
-> _The Sepulcher is the anatomy of the daemon. Its organs are not merely colocated services: each
-> receives a place, a boundary, and one burden it must answer for. The body endures because no
-> single organ is mistaken for the whole._
+> _“Every organ receives a place, a boundary, and one burden it must answer for. No organ is the
+> whole.”_
 
 ## The Anatomy
 

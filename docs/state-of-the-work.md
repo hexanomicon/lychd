@@ -18,7 +18,7 @@ LychD names the software body under construction. The Lich names the recurrent w
 meant to sustain—not any one model.
 
 Inside the current repository-test envelope, evidence covers typed configuration, core CLI
-behavior, deployment planning, local runs and one-round consent, the current agent and dispatch
+behavior, deployment planning, local runs and bounded chained single-approval consent, the current agent and dispatch
 paths, safe runtime-transition protocols, and structured logging configuration. The records below
 bind every part of that foundation to its exact proof and limit.
 
@@ -284,11 +284,13 @@ inspection, matching public artifacts, and a named clean-host install/start/repl
 
 **State:** Available
 
-**Proved now:** LychD can compile Soulstone and extension intent into validated Quadlet/systemd
-plans and materialize the declared files through the Scribe boundary.
+**Proved now:** LychD can compile Soulstone and extension intent—including per-Animator targets,
+the conservative/default conflict graph, and compatible Coven aggregates—into validated
+Quadlet/systemd plans and materialize the declared files through the Scribe boundary.
 
 **Boundary:** Generated unit intent is not evidence that systemd or Podman started the workload on
-a real host.
+a real host. Runtime graph attestation and compound target actuation are tracked separately below;
+this compilation record does not pre-claim them.
 
 **Evidence**
 
@@ -305,27 +307,42 @@ a real host.
 
 **State:** Available
 
-**Proved now:** The software protocol covers inbox claim, validation, exact-prefix recovery,
-cancellation/startup fences, terminal journaling, and readiness inversion. Fresh intents carry the
-exact target capability as well as its Animator; legacy records without that field are accepted
-only when the Animator has one unambiguous configured capability. Host consumption shares the
-interprocess lifecycle lock with the other mutating rites and invokes only an injected,
-root-controlled absolute `systemctl` discovery. The explicit uncaged Systemd composition also
-holds that lock across observation, effects, and compensation; contention surfaces as a typed,
-verified no-effect precondition.
+**Proved now:** The software protocol covers durable inbox claim, validation, Scribe-owned loaded
+graph attestation, one compound Animator-target transaction, exact target-and-service world
+observation, cancellation-safe settlement, exact-prior-world compensation, crash recovery,
+readiness inversion, bounded `systemctl` clients, and host-owned outcome journaling. A client
+timeout terminates and reaps the local process; before submission it is a typed no-effect decline,
+while after submission the actuator still settles and classifies the systemd-owned job before
+acceptance, compensation, or containment. Fresh intents carry the exact target capability as well
+as its Animator; legacy records without that field are accepted only when the Animator has one
+unambiguous configured capability. Host consumption shares the interprocess lifecycle lock with
+the other mutating rites and invokes only an injected, root-controlled absolute `systemctl`
+discovery. The explicit uncaged Systemd composition holds that lock across attestation,
+observation, effects, and compensation; contention surfaces as a typed, verified no-effect
+precondition.
 
-**Boundary:** This is protocol evidence, not a real-host receipt. Arbitrary non-prefix physical
-repair remains outside the contract.
+**Boundary:** Repository protocol tests and an isolated private systemd user-manager receipt prove
+the generated relation surface and a conflicting target switch with real systemd job ordering.
+That hermetic receipt uses inert services; it is not the operator's live
+Quadlet/Podman/GPU-host receipt. A `.declined` record proves no new effect, `.restored` proves the
+exact prior world, `.contained` preserves a fresh physically uncertain outcome across application
+restart, and an uncertain crash-reclaimed record remains `.processing`; `.rejected` is reserved
+for an invalid delivery rather than physical classification. Startup remains fenced on
+`.processing` or `.contained`. General repair of an arbitrary physical world remains outside the
+contract.
 
 **Evidence**
 
 - **Source:** [Host Reactor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/reactor.py),
   [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py),
+  [runtime topology attestor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime_topology.py),
   [lifecycle lock](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/lifecycle/lock.py),
   [private Reactor composition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/cli/commands.py),
   and [trusted host-tool discovery](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/host_tools.py)
 - **Verification:** [Reactor recovery tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_reactor.py),
   [runtime action tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
+  [isolated real-systemd target receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_systemd_target_transaction.py),
   [cross-environment lock tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_lifecycle.py),
   [entrypoint composition tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py),
   and [host-tool attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_host_tools.py)
@@ -340,13 +357,16 @@ repair remains outside the contract.
 Linux deployment shape.
 
 **Receipt needed:** A maintained receipt naming Linux distribution and kernel, systemd and Podman
-versions, generated units, startup result, and shutdown/recovery result. GPU and model validation
-remain separate receipts.
+versions, the generated Animator/Coven targets and conflict edges, loaded-source attestation, a
+forward compound switch, exact-prior-world compensation, crash recovery, startup, and shutdown.
+GPU and model validation remain separate receipts.
 
 **Evidence**
 
 - **Source:** [Runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py)
-- **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py)
+  and [runtime topology attestor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime_topology.py)
+- **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
   and [pending llama.cpp fixture boundary](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/llamacpp/README.md)
 - **Rite:** [The Summoning](./summoning.md)
 - **Law:** [ADR 08 — Containers](./adr/08-containers.md) and
@@ -399,6 +419,7 @@ transactional outbox or full memory/Postgres adapter parity.
 **Evidence**
 
 - **Source:** [First-light migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0001_phylactery_first_light.py),
+  [pinned Pattern-manifest migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0002_pin_pattern_manifest.py),
   [checkpoint adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/checkpoints.py),
   and [run ledger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/ledger.py)
 - **Verification:** [Run-ledger contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_ledger.py),
@@ -411,7 +432,11 @@ transactional outbox or full memory/Postgres adapter parity.
 **State:** Available
 
 **Proved now:** One Vessel process can admit, claim, execute, cancel, settle, and project live run
-events with replay fencing inside the repository-test envelope.
+events with replay fencing inside the repository-test envelope. Each admitted run pins the
+validated immutable Pattern manifest it began with. Runtime node evidence carries a stable
+occurrence identity for the entered/settled/waiting/failed phases of one attempt; Dispatcher grant
+evidence carries that occurrence plus the issued grant/lease identity; Orchestrator transition
+evidence carries the same run/occurrence correlation through its observed phase.
 
 **Boundary:** This does not claim a transactional event outbox, separate-worker truth, replayable
 multi-process streaming, or federation. Replay retention is bounded, but live per-subscriber queues
@@ -427,7 +452,11 @@ are currently unbounded; slow-subscriber overflow and backpressure are not gover
   [event replay and resynchronization tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_events.py),
   and [HTTP event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py)
 - **Law:** [ADR 14 — Workers](./adr/14-workers.md),
-  [ADR 24 — Graph](./adr/24-graph.md), and [ADR 28 — Workflow](./adr/28-workflow.md)
+  [ADR 22 — Dispatcher](./adr/22-dispatcher.md),
+  [ADR 23 — Orchestrator](./adr/23-orchestrator.md),
+  [ADR 24 — Graph](./adr/24-graph.md),
+  [ADR 28 — Workflow](./adr/28-workflow.md), and
+  [ADR 29 — Observability](./adr/29-observability.md)
 
 ### Pydantic AI 1.25.1 cognitive adapter {#pydantic-ai-v1-adapter}
 
@@ -471,11 +500,12 @@ contracts are not installed LychD behavior.
 
 **State:** Partial
 
-**Proved now:** Focused tests cover logical parking, one approval round, memory-profile simulated
-restart, reconciliation, idempotent settlement, and graph re-admission.
+**Proved now:** Focused tests cover logical parking, bounded chained single-approval rounds,
+memory-profile simulated restart, reconciliation, idempotent settlement, and graph re-admission.
+Each model round may request one supported approval; a resumed run may enter another bounded round.
 
 **Boundary — Not yet:** This is not a Postgres Consent-plus-Checkpoint restart receipt. Multiple
-approval calls in one model round remain unsupported; after verdict commit plus enqueue failure,
+approval calls in one model response are rejected; after verdict commit plus enqueue failure,
 web and CLI suppress the live retry, leaving startup reconciliation as the automatic repair path.
 
 **Evidence**
@@ -628,26 +658,83 @@ quantization, cache mode, GPU split, runtime flags, load/inference/unload result
 - **Law:** [ADR 22 — Dispatcher](./adr/22-dispatcher.md) and
   [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
 
+### Declared conflict topology and systemd target switching {#declared-conflict-topology}
+
+**State:** Available
+
+**Proved now:** Soulstone `conflict_domains` validate into an undirected incompatibility graph.
+Omission on a dedicated non-resident becomes the conservative `default-exclusive` wildcard;
+explicit `[]` alone declares coexistence. Bind compiles one target per Animator plus inspectable
+conflict edges, rejects internally conflicting Covens, and aggregates compatible Animator targets.
+Bind and live registry load also reject any Soulstone whose registered adapter synthesizes no
+capability, because phase-one planner activity truth is capability-derived while host attestation
+is unit-derived.
+The switch policy selects only the target's exact active neighbors from that same graph. Before one
+compound target request, the actuator validates the intent closure, exact Scribe ownership and
+source paths, installed/loaded LychD target namespace, target/service/Coven relations, unit-file
+state, and current target-and-service world. Every `systemctl` client has a configurable positive
+timeout and is terminated, killed if necessary, and reaped when that budget expires. Failure
+handling still waits for relevant systemd jobs and classifies the settled whole world before
+accepting success or exact restoration; timing out the client never impersonates cancellation of a
+systemd-owned job.
+
+**Boundary:** Repository evidence proves compilation, attestation, request shape, and recovery
+semantics. A hermetic private user-manager receipt additionally proves the generated relation
+surface and real systemd ordering during a conflicting target switch with inert services; it does
+not prove the operator's live Quadlet/Podman/GPU host. An explicit empty conflict set remains an
+operator assertion of safe coexistence, not measured capacity admission. The separate
+[systemd and Podman embodiment](#systemd-podman-embodiment) record owns that live-host receipt.
+
+**Evidence**
+
+- **Source:** [Concurrency schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/schemas/concurrency.py),
+  [conflict compiler](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/conflicts.py),
+  [bind compiler](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/bind_compilation.py),
+  [Animator registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py),
+  [target transmutation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/transmute.py),
+  [switch policy](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/policies.py),
+  [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py),
+  and [runtime topology attestor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime_topology.py)
+- **Verification:** [Conflict-schema and topology tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_conflicts.py),
+  [target-generation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute.py),
+  [switch-policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_policies.py),
+  [compound transaction tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
+  and [isolated real-systemd target receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_systemd_target_transaction.py)
+- **Law:** [ADR 08 — Containers](./adr/08-containers.md) and
+  [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
+
 ### Safe runtime transitions {#safe-runtime-transitions}
 
 **State:** Available
 
 **Proved now:** Admission closure, lease drain, serialized transition plans, readiness convergence,
-typed hard-transition compensation, and fail-closed containment have focused software-protocol
-tests.
+loaded-graph attestation, one compound per-Animator target transaction, settled-world
+classification, exact-prior-world compensation, typed cancellation restoration, and fail-closed
+containment have focused software-protocol tests. A proved restoration reopens the manager barrier;
+in mediated mode, an uncertain fresh host effect becomes a durable `.contained` startup fence,
+while uncertain crash recovery remains `.processing`. The Host Reactor refuses all new work when
+containment already exists and stops the current batch before claiming another intent as soon as
+fresh containment or unresolved recovery appears.
 
-**Boundary:** This does not prove a swap on a real GPU and does not claim capacity-optimal model
-selection. A failed soft in-runtime model load has no trustworthy rollback and requires contained
-operator recovery.
+**Boundary:** This proves the bounded software protocol, not a swap on a real GPU or
+capacity-optimal model selection. A failed soft in-runtime model load has no trustworthy rollback
+and requires contained operator recovery. General repair of an arbitrary host world remains an
+operator responsibility.
 
 **Evidence**
 
 - **Source:** [Orchestrator manager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/manager.py),
   [actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/actuator.py),
-  and [arbiter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/arbiter.py)
+  [arbiter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/orchestration/arbiter.py),
+  [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py),
+  and [runtime topology attestor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime_topology.py)
 - **Verification:** [Manager transition tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_manager.py),
   [actuator tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_actuator.py),
   [arbiter serialization tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/orchestration/test_arbiter.py),
+  [runtime transaction tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [Host Reactor recovery tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_reactor.py),
+  [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
   and [orchestration integration tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_orchestrator.py)
 - **Law:** [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
 
@@ -658,10 +745,11 @@ operator recovery.
 **Proved now:** ADR 23 provides a policy seam, and the current `EvictIdlePolicy` has deterministic
 tests for its deliberately simple behavior.
 
-**Do not expect yet:** The policy evicts all active dedicated non-residents for a cold target and
-prices only their count. It does not know VRAM capacity, model footprint, load time, topology,
-bandwidth, LRU, refit profiles, tier substitution, or transition peaks. `persistent_resident` is
-not capacity admission.
+**Do not expect yet:** The current declared-conflict policy selects exact active graph neighbors
+and prices only their count. This is an incompatibility graph, not a capacity solver: it does not
+know VRAM capacity, model footprint, load time, topology, bandwidth, LRU, refit profiles, tier
+substitution, or transition peaks. `persistent_resident` and explicit coexistence are not capacity
+admission.
 
 **Evidence**
 
@@ -696,47 +784,82 @@ not capacity admission.
 
 **Proved now:** The Svelte Bridge consumes generated `/api/v1` contracts for local sessions,
 message submission, pending consent cards and decisions, and inspection. Per-run events arrive as
-versioned semantic JSON SSE and closed GenUI descriptors. A cursor-bound run snapshot replaces
-live text, status, and descriptors after an explicit resync or detected numeric gap; duplicate and
-gapped events are not projected speculatively. The selected-session snapshot also exposes active
-run identities and current process-local projections, so a Bridge route remount or hard browser
-reload reconstructs missing live turns and reattaches their streams from the supplied cursors.
-Focused Python and component tests cover admission, consent ordering, terminal replay, descriptor
-safety, snapshot replacement, reload reconstruction, delayed-admission navigation ownership, and
+versioned semantic JSON SSE and closed GenUI descriptors. Status, node occurrence, Dispatcher grant,
+and Orchestrator transition are distinct event classes rather than one overloaded activity label.
+A successful admission response carries the server-minted Run, exact Pattern, Loom, Orb, and
+evidence-capture identities; the client does not guess them. Completed turns append their visible
+agent reply and Pydantic AI `new_messages()` suffix together, normalizing every provider hop to
+the owning LychD run so one completed turn remains indivisible. The next turn reads only that
+completed session model history, applies whole-turn and character governors, rebinds Context after
+the actual capability grant, and passes the validated bounded messages to Pydantic AI with a
+resolved context-window usage fence. A parked consent chain is reserved whole and prior settled
+history is re-bounded under the capability acquired on resume. Display turns never become model history.
+A Bridge admission retains the user turn under the server-minted run identity before publishing
+the queue hop, so a fast worker cannot settle a reply ahead of its prompt.
+A cursor-bound run snapshot replaces live text, status, and descriptors after an explicit resync or
+detected numeric gap; duplicate and gapped events are not projected speculatively. The
+selected-session snapshot also exposes active Run identities, exact Pattern/Orb links, and
+current process-local projections. Snapshot reconstruction preserves separate current-node,
+dispatch, and transition occurrence identities, so a Bridge route remount or hard browser reload
+neither hides an acknowledged body crossing nor falsely joins evidence from two occurrences. Focused Python and
+component tests cover admission, consent ordering, terminal replay, descriptor safety, snapshot
+replacement, reload reconstruction, delayed-admission navigation ownership, and
 terminal-refresh navigation races.
 
 **Boundary — Not yet:** There is no complete production-factory receipt, durable cross-process
 event or token delivery, general multi-approval round, Attention contract, or external
 notification channel. Active-run reconstruction is process-local and does not recover token bytes
-lost with a process. Text is the implemented command modality; the designed record-then-send voice
+lost with a process. Run admission uses ordered user-turn retention before broker publication plus
+failure compensation, rather than one database transaction/outbox spanning the session, run, and
+broker. Text is the implemented command modality; the designed record-then-send voice
 path and continuous voice mode are not delivered.
 
 **Evidence**
 
 - **Source:** [Bridge controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/bridge.py),
   [client Bridge](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/BridgeView.svelte),
+  [Context assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py),
+  [Bridge Pattern](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/bridge_chat.py),
+  [session history](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/sessions.py),
+  [run admission](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py),
   and [event contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/contracts.py)
 - **Verification:** [Bridge behavior tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_bridge.py),
   [consent endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_consent_endpoint.py),
+  [Context tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py),
+  [consent-resume tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_consent_resume.py),
+  [session-history tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sessions.py),
+  [run-admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py),
   [event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py),
   and [Bridge component tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/BridgeView.test.ts)
-- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
-  [ADR 25 — Human in the Loop](./adr/25-hitl.md)
+- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md),
+  [ADR 21 — Context](./adr/21-context.md),
+  [ADR 22 — Dispatcher](./adr/22-dispatcher.md),
+  [ADR 24 — Graph](./adr/24-graph.md),
+  [ADR 25 — Human in the Loop](./adr/25-hitl.md),
+  [ADR 28 — Workflow](./adr/28-workflow.md), and
+  [ADR 29 — Observability](./adr/29-observability.md)
 
 ### Nexus transition board {#nexus-transition-board}
 
 **State:** Partial
 
 **Proved now:** The Svelte Nexus consumes typed Coven state and transition plans from `/api/v1`,
-submits explicit swap intents, and follows process-local tickets to settled or failed outcomes over
-semantic JSON SSE. The bounded store retains terminal endpoint and SSE reconnect truth for a
-60-second process-local window, retires it only after expiry, and refuses capacity rather than
-evicting active or fresh-terminal tickets.
+labels preview as non-binding, submits explicit swap intents, and follows process-local tickets to
+settled or failed outcomes over semantic JSON SSE. A separate bounded process-local transition
+journal projects the latest observed phase for both run-origin and operator-origin requests,
+including run, occurrence, physical-transition, and compensation correlation where those records
+exist, orders updates by latest observation, and exposes each capability probe's own `checked_at`
+rather than presenting response-construction time as fresh hardware truth. Direct transition URLs
+resolve and refresh the same latest observation. The ticket store retains
+terminal endpoint and SSE reconnect truth for a 60-second process-local window, retires it only
+after expiry, and refuses capacity rather than evicting active or fresh-terminal tickets.
 
-**Boundary — Not yet:** It has no general resource truth. Tickets wrap process-local tasks without
-a durable owner, cross-process retention or restart recovery, or operator-visible created,
-settled, and retention timestamps; the production lifespan also lacks an operator-browser receipt.
-It is not a general resource, queue, GPU, VRAM, topology, thermal, or hardware-pressure dashboard.
+**Boundary — Not yet:** It has no general resource truth. Tickets and transition observations have
+no durable owner, complete history, cross-process retention, or restart recovery; the production
+lifespan also lacks an operator-browser receipt. It is not a general resource, queue, GPU, VRAM,
+topology, thermal, or hardware-pressure dashboard. Nexus has no broad binding inventory,
+configuration mutation, proposal workflow, or separate Bindings instrument; Configuration remains
+the owning authority.
 
 **Evidence**
 
@@ -752,9 +875,12 @@ It is not a general resource, queue, GPU, VRAM, topology, thermal, or hardware-p
 
 **State:** Partial
 
-**Proved now:** The Svelte Loom browses the registered workflow catalogue, renders inert Mermaid
-source locally, gives each Pattern an honest deep link, and exposes the same source as plain text
-through `/api/v1`.
+**Proved now:** The Svelte Loom browses exact immutable Pattern revisions, presents their semantic
+station/permission outline as the primary score, and exposes the pinned checkpoint schema and
+manifest digest. Optional Mermaid source is a secondary local diagram lens. The same typed Pattern
+manifest and source are available through `/api/v1`, and ambiguous unversioned browser deep links
+fail rather than selecting a revision silently. The unversioned catalogue API remains an
+intentional current-revision lookup.
 
 **Boundary — Not yet:** It is a view over the fixed workflow registry, not a general Weaver editor,
 workflow mutation surface, Svelte Flow drafting canvas, or production-browser receipt.
@@ -768,54 +894,33 @@ workflow mutation surface, Svelte Flow drafting canvas, or production-browser re
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 28 — Workflow](./adr/28-workflow.md)
 
-### Scrying instrument {#scrying-instrument}
+### Orb instrument {#orb-instrument}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** The static Svelte Altar exposes an honestly marked Scrying route and placeholder.
+**Proved now:** `/orb/{run_id}` returns and renders one selected Run as an ordered,
+bounded evidence list. The snapshot identifies its exact Pattern revision when the pinned manifest
+still validates, labels process-local versus durable-best-effort capture, exposes the ledger head
+and current page boundary separately, interleaves explicit gaps, and links recorded transition
+requests to Nexus. Safe events have URL-stable selection, bounded pagination, a narrow-screen
+detail sheet, and an explicit failure-presence notice without exposing private diagnostics.
 
-**Do not expect yet:** There is no useful trace query, timeline, health read model, or native
-observability backend behind that client route.
+**Boundary — Not yet:** There is no authorized run-list query, live Orb tail, graph-shaped
+evidence view, durable native Oculus ingestion/read model, cross-process completeness, health
+query, artifact custody, annotation, or multi-run field. Token deltas are intentionally omitted
+from retained structural evidence. The focused Altar does not expose a separate Reliquary route.
 
 **Evidence**
 
-- **Source:** [Altar shell routes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/altar.py)
-- **Verification:** [Unbuilt-instrument presentation tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py)
-- **Topic:** [Scrying](./divination/altar/scrying.md)
-- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
+- **Source:** [Orb controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/orb.py),
+  [Orb contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/contracts.py),
+  and [client Orb](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/OrbView.svelte)
+- **Verification:** [Orb endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb.py)
+  and [Altar route tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py)
+- **Topic:** [Orb](./divination/altar/orb.md)
+- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md),
+  [ADR 24 — Graph](./adr/24-graph.md), and
   [ADR 29 — Observability](./adr/29-observability.md)
-
-### Reliquary instrument {#reliquary-instrument}
-
-**State:** Designed
-
-**Proved now:** The static Svelte Altar exposes an honestly marked Reliquary route and placeholder.
-
-**Do not expect yet:** There is no artifact upload, byte custody, authorized retrieval, retention,
-or provenance backend behind that client route.
-
-**Evidence**
-
-- **Source:** [Altar shell routes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/altar.py)
-- **Verification:** [Unbuilt-instrument presentation tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py)
-- **Topic:** [Reliquary](./divination/altar/reliquary.md)
-- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md)
-
-### Bindings instrument {#bindings-instrument}
-
-**State:** Designed
-
-**Proved now:** The static Svelte Altar exposes an honestly marked Bindings route and placeholder.
-
-**Do not expect yet:** There is no useful binding inventory, grant control, lease control, or
-mutation backend behind that client route.
-
-**Evidence**
-
-- **Source:** [Altar shell routes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/altar.py)
-- **Verification:** [Unbuilt-instrument presentation tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py)
-- **Topic:** [Bindings](./divination/altar/bindings.md)
-- **Law:** [ADR 15 — Frontend](./adr/15-frontend.md)
 
 ### Structured logging configuration {#structured-logging}
 
@@ -845,17 +950,18 @@ capture-class redaction, retention, resource correlation, or Oculus.
 
 **State:** Designed
 
-**Proved now:** The observability law makes LychD's own evidence model and Altar surface canonical;
-a telemetry class has a narrow direct unit test.
+**Proved now:** The observability law makes LychD's own evidence model and Altar surface canonical.
+A dormant Phoenix-specific export adapter has a narrow direct unit test; it is external-Eye
+compatibility evidence, not native Oculus delivery.
 
 **Do not expect yet:** The telemetry class is not installed by current application or extension
-composition. There is no native ingestion, durable query/read model, retention path, or canonical
-Svelte Scrying projection.
+composition. There is no native ingestion, durable query/read model, retention path, or
+native-Oculus-backed Svelte read service. The delivered Orb is a bounded selected-Run projection
+over currently available records, not native Oculus.
 
 **Evidence**
 
-- **Source:** [Telemetry class](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/observability/telemetry.py),
-  [observability registration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/observability/register.py),
+- **Source:** [Dormant Phoenix export adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/observability/telemetry.py)
   and [current application assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py)
 - **Verification:** [Narrow telemetry capture test](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_telemetry.py)
 - **Topic:** [Oculus](./sepulcher/extensions/oculus.md)
@@ -865,8 +971,8 @@ Svelte Scrying projection.
 
 **State:** External
 
-**Proved now:** LychD can generate an optional Phoenix service contribution as a legacy
-interoperability surface.
+**Proved now:** LychD can generate an optional Phoenix Eye service contribution. New configuration
+uses the `lychd-phoenix` identity; an explicitly configured legacy service name remains loadable.
 
 **External owner and boundary:** [Arize owns Phoenix](https://github.com/arize-ai/phoenix). LychD
 does not own its lifecycle or state, does not require it for Oculus, and does not currently prove
@@ -943,6 +1049,25 @@ contracts pass.
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 11 — Backend](./adr/11-backend.md), and
   [ADR 15 — Frontend](./adr/15-frontend.md)
+
+### Scout web acquisition {#scout-web-acquisition}
+
+**State:** Designed
+
+**Proved now:** ADR 30 separates search, fetch, extraction, crawl, rendering, interaction,
+credential use, session custody, screenshots, downloads, and artifact admission into distinct
+authority contracts. It selects one bounded static public-page fetch and network-free extraction
+as the first passage.
+
+**Do not expect yet:** There is no Scout provider, browser service, web endpoint, Agent tool,
+destination-pinning implementation, acquisition receipt, download quarantine, authenticated
+session, Smith ingestion path, or automatic Toll. A URL, redirect, CAPTCHA, payment challenge, or
+provider failure cannot authorize a stronger effect.
+
+**Evidence**
+
+- **Topic:** [Scout](./sepulcher/extensions/scout.md)
+- **Law:** [ADR 30 — Web Acquisition](./adr/30-webcrawler.md)
 
 ### Vision admission {#vision-admission}
 
@@ -1140,12 +1265,12 @@ reconciliation, budget enforcement, or safe response to an HTTP 402 challenge.
 
 **State:** Designed
 
-**Proved now:** ADR 42 names the multi-node jurisdiction and the distinction between a cognitive
-Master and resource-bearing nodes.
+**Proved now:** ADR 42 names the multi-node jurisdiction, separates cognitive Master authority
+from node-local physical authority, and rejects shared databases and universal credentials.
 
 **Do not expect yet:** There is no node enrollment, expiring advertisement, local resource
 reservation, fencing, artifact transfer, durable spool, cancellation, or settlement. ADR 42's
-shared-Postgres and universal-Master-Sigil design must be replaced before implementation.
+accepted Node Agent protocol remains architecture rather than an implemented fleet.
 
 **Evidence**
 

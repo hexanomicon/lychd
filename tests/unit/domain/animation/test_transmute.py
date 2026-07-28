@@ -18,12 +18,15 @@ from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegi
 from lychd.domain.animation.transmute import Transmuter
 from lychd.system import constants
 from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget
+from lychd.system.unit_names import animator_service_unit, animator_target_unit, coven_target_unit
 
 
 class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
     """Factory for generating valid concrete Soulstone config instances."""
 
     __model__ = GenericSoulstoneConfig
+    groups: list[str] = []  # noqa: RUF012 - deterministic valid declaration
+    concurrency: ConcurrencyIntent = ConcurrencyIntent()
     volumes: list[str] = []  # noqa: RUF012 Override the instance attribute
 
 
@@ -48,8 +51,8 @@ def test_transmute_core_infrastructure(transmuter: Transmuter) -> None:
     assert "lychd-vessel" in containers
     assert "lychd-phylactery" in containers
     assert "lychd-migrate" in containers
-    # The Oculus (Phoenix) is no longer an unconditional core container; it is
-    # emitted only when an observability extension rune is active.
+    # The external Phoenix Eye is not an unconditional core container; it is
+    # emitted only when its observability integration rune is active.
     vessel = containers["lychd-vessel"]
     assert settings.server.web.secret_key_secret in vessel.secrets
     assert settings.server.database.password_secret in vessel.secrets
@@ -111,7 +114,8 @@ def test_transmute_soulstone_to_manifest(transmuter: Transmuter) -> None:
     assert manifest.user == "%U"
     assert manifest.pod_service == "lychd-pod.service"
     assert manifest.wants == ["lychd-pod.service"]
-    assert manifest.after == ["lychd-pod.service"]
+    assert manifest.binds_to == [animator_target_unit("hermes")]
+    assert manifest.after == ["lychd-pod.service", animator_target_unit("hermes")]
     assert manifest.env_vars["XDG_CONFIG_HOME"] == str(constants.PATH_XDG_CONFIG_HOME)
     assert manifest.env_vars["XDG_DATA_HOME"] == str(constants.PATH_XDG_DATA_HOME)
 
@@ -434,30 +438,47 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
     ]
 
 
-def test_solitary_stones_have_no_implicit_systemd_conflicts(transmuter: Transmuter) -> None:
-    """Only the orchestrator may stop managed runtimes during a transition."""
+def test_conflict_domains_compile_to_ordered_animator_targets(transmuter: Transmuter) -> None:
+    """The Orchestrator owns admission/drain; systemd owns the authorized swap."""
     stone_a = SoulstoneFactory.build(name="alpha", groups=[])
     stone_b = SoulstoneFactory.build(name="beta", groups=[])
 
     manifests = transmuter.transmute_all([stone_a, stone_b])
 
-    alpha_manifest = next(
-        manifest
+    containers = {manifest.container_name: manifest for manifest in manifests if isinstance(manifest, QuadletContainer)}
+    targets = {
+        manifest.name: manifest
         for manifest in manifests
-        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-alpha"
-    )
-    assert alpha_manifest.conflicts == []
+        if isinstance(manifest, QuadletTarget) and manifest.kind == "animator"
+    }
+
+    assert containers["lychd-alpha"].conflicts == []
+    assert containers["lychd-alpha"].binds_to == [animator_target_unit("alpha")]
+    assert containers["lychd-alpha"].after == ["lychd-pod.service", animator_target_unit("alpha")]
+    assert containers["lychd-beta"].binds_to == [animator_target_unit("beta")]
+
+    assert targets["alpha"].requires == [animator_service_unit("alpha")]
+    assert targets["alpha"].before == [animator_service_unit("alpha")]
+    assert targets["alpha"].conflicts == []
+    assert targets["alpha"].after == []
+
+    # Emit one deterministic direction only; Conflicts= itself is reciprocal.
+    assert targets["beta"].requires == [animator_service_unit("beta")]
+    assert targets["beta"].before == [animator_service_unit("beta")]
+    assert targets["beta"].conflicts == [animator_target_unit("alpha")]
+    assert targets["beta"].after == [animator_target_unit("alpha")]
 
 
-def test_covens_are_operator_targets_not_implicit_conflict_graphs(transmuter: Transmuter) -> None:
-    """Coven targets group units without bypassing orchestrator drain ownership."""
+def test_covens_aggregate_compatible_animator_targets(transmuter: Transmuter) -> None:
+    """A Coven starts compatible Animator gates and owns no conflict policy."""
     # Members of Coven 'logic'
-    alpha = SoulstoneFactory.build(name="alpha", groups=["logic"])
-    beta = SoulstoneFactory.build(name="beta", groups=["logic"])
+    compatible = ConcurrencyIntent(conflict_domains=[])
+    alpha = SoulstoneFactory.build(name="alpha", groups=["logic"], concurrency=compatible)
+    beta = SoulstoneFactory.build(name="beta", groups=["logic"], concurrency=compatible)
 
     # Member of Coven 'creative'
-    gamma = SoulstoneFactory.build(name="gamma", groups=["creative"])
-    delta = SoulstoneFactory.build(name="delta", groups=["creative"])
+    gamma = SoulstoneFactory.build(name="gamma", groups=["creative"], concurrency=compatible)
+    delta = SoulstoneFactory.build(name="delta", groups=["creative"], concurrency=compatible)
 
     manifests = transmuter.transmute_all([alpha, beta, gamma, delta])
 
@@ -467,11 +488,28 @@ def test_covens_are_operator_targets_not_implicit_conflict_graphs(transmuter: Tr
         if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-alpha"
     )
     assert alpha_manifest.conflicts == []
+    assert coven_target_unit("logic") not in alpha_manifest.binds_to
 
-    # Verify targets are generated
-    targets = {manifest.name: manifest for manifest in manifests if isinstance(manifest, QuadletTarget)}
-    assert "logic" in targets
-    assert "creative" in targets
+    animator_targets = {
+        manifest.name: manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletTarget) and manifest.kind == "animator"
+    }
+    coven_targets = {
+        manifest.name: manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletTarget) and manifest.kind == "coven"
+    }
+
+    assert set(coven_targets) == {"logic", "creative"}
+    assert coven_targets["logic"].wants == [
+        animator_target_unit("alpha"),
+        animator_target_unit("beta"),
+    ]
+    assert coven_targets["logic"].after == coven_targets["logic"].wants
+    assert coven_target_unit("logic") in animator_targets["alpha"].part_of
+    assert coven_target_unit("logic") in animator_targets["beta"].part_of
+    assert all(target.conflicts == [] for target in animator_targets.values())
 
 
 def test_dedicated_soulstone_not_wanted_at_boot(transmuter: Transmuter) -> None:
@@ -494,6 +532,11 @@ def test_persistent_resident_soulstone_wanted_at_boot(transmuter: Transmuter) ->
     manifests = transmuter.transmute_all([resident])
     manifest = next(m for m in manifests if isinstance(m, QuadletContainer) and m.container_name == "lychd-resident")
     assert manifest.wanted_by == ["default.target"]
+    assert manifest.binds_to == [animator_target_unit("resident")]
+    target = next(
+        m for m in manifests if isinstance(m, QuadletTarget) and m.kind == "animator" and m.name == "resident"
+    )
+    assert target.conflicts == []
 
 
 def test_core_containers_remain_wanted_at_boot(transmuter: Transmuter) -> None:
@@ -512,13 +555,23 @@ def test_coven_of_one_no_target(transmuter: Transmuter) -> None:
     manifests = transmuter.transmute_all([stone])
 
     # No Quadlet target named 'logic'
-    targets = [manifest for manifest in manifests if isinstance(manifest, QuadletTarget) and manifest.name == "logic"]
+    targets = [
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletTarget) and manifest.kind == "coven" and manifest.name == "logic"
+    ]
     assert len(targets) == 0
 
-    # Hermes manifest should not have targets list set to 'logic' if it's not a real coven
+    # The Animator lifecycle gate still exists, but it does not join a one-member Coven.
     hermes_manifest = next(
         manifest
         for manifest in manifests
         if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-hermes"
     )
-    assert "logic" not in hermes_manifest.targets
+    assert hermes_manifest.binds_to == [animator_target_unit("hermes")]
+    hermes_target = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletTarget) and manifest.kind == "animator" and manifest.name == "hermes"
+    )
+    assert hermes_target.part_of == ["lychd-pod.service"]

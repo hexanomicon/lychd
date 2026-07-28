@@ -31,7 +31,18 @@ _CONSENT_STATE: dict[str, str] = {
     "denied": "refused",
     "expired": "refused",
 }
-EventKind = Literal["token", "status", "node", "fragment", "consent", "log", "done", "resync"]
+EventKind = Literal[
+    "token",
+    "status",
+    "node",
+    "dispatch",
+    "transition",
+    "fragment",
+    "consent",
+    "log",
+    "done",
+    "resync",
+]
 
 
 class EventProjector:
@@ -53,7 +64,7 @@ class EventProjector:
         """Project one internal run event without interpreting data as markup."""
         kind = cast("EventKind", str(event.kind))
         payload: dict[str, Any]
-        if kind in {"token", "status", "node", "log"}:
+        if kind in {"token", "status", "node", "dispatch", "transition", "log"}:
             payload = {"text": event.data, **event.meta}
         elif kind == "fragment":
             payload = self._project_fragment(event.data)
@@ -65,6 +76,7 @@ class EventProjector:
             payload = {"reason": event.data, "cursor": event.seq}
         return RunEventEnvelope(
             run_id=event.run_id,
+            event_id=event.event_id,
             seq=event.seq,
             kind=kind,
             occurred_at=event.ts,
@@ -146,8 +158,14 @@ class EventProjector:
             state = "warming"
         return SwapTicket(
             id=record.id,
+            request_id=record.trace.request_id,
             target=record.target,
             state=state,
-            action_type=record.action_type,
-            total_metabolic_cost=record.total_metabolic_cost,
+            phase=record.trace.phase,
+            action_type=record.trace.plan.action_type if record.trace.plan is not None else record.action_type,
+            total_metabolic_cost=(
+                record.trace.plan.total_metabolic_cost if record.trace.plan is not None else record.total_metabolic_cost
+            ),
+            physical_transition_id=record.trace.physical_transition_id,
+            compensation_transition_id=record.trace.compensation_transition_id,
         )

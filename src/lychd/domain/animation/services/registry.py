@@ -19,7 +19,9 @@ from lychd.domain.animation.capabilities import (
     CapabilitySpec,
     CapabilityState,
     GrantLease,
+    SourceKind,
 )
+from lychd.domain.animation.conflicts import require_soulstone_capability_coverage
 from lychd.domain.animation.connectors import ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
@@ -147,6 +149,12 @@ class AnimatorRegistry:
                     rune_type=rune.__class__.__name__,
                 )
 
+        require_soulstone_capability_coverage(
+            raw_soulstones,
+            capability_animator_names=(
+                spec.animator_name for spec in new_capabilities.values() if spec.source_kind is SourceKind.SOULSTONE
+            ),
+        )
         self._soulstones = new_soulstones
         self._portals = new_portals
         self._groups = new_groups
@@ -247,6 +255,11 @@ class AnimatorRegistry:
     def get_soulstone_rune(self, name: str) -> SoulstoneConfig | None:
         self.ensure_loaded()
         return self._soulstones.get(name)
+
+    def list_soulstone_runes(self) -> list[SoulstoneConfig]:
+        """Return every local runtime declaration, including capability-empty stones."""
+        self.ensure_loaded()
+        return list(self._soulstones.values())
 
     def get_portal_rune(self, name: str) -> PortalConfig | None:
         self.ensure_loaded()

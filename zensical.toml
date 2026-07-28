@@ -75,11 +75,10 @@ nav = [
         "divination/index.md",
         { "Altar" = [
             "divination/altar/index.md",
-            "divination/altar/scrying.md",
+            "divination/altar/bridge.md",
+            "divination/altar/orb.md",
             "divination/altar/nexus.md",
-            "divination/altar/loom.md",
-            "divination/altar/reliquary.md",
-            "divination/altar/bindings.md"
+            "divination/altar/loom.md"
         ]},
         { "Transcendence" = [
             "divination/transcendence/index.md",
@@ -90,16 +89,17 @@ nav = [
             "divination/transcendence/infinity.md"
         ]}
     ]},
-    { "Reference Compositions" = [
+    { "Compositions" = [
         "compositions/index.md",
         "compositions/voidlight-studio.md",
+        "compositions/game-foundry.md",
+        "compositions/broadcast-studio.md",
         "compositions/minecraft-agent-server.md",
         "compositions/health-food-and-movement.md",
-        "compositions/walking-communion.md"
-    ]},
-    { "Incubator" = [
-        "incubator/index.md",
-        "incubator/building-in-public.md"
+        "compositions/walking-communion.md",
+        "compositions/tech-scavenger.md",
+        "compositions/lifestyle-steward.md",
+        "compositions/building-in-public.md"
     ]},
     { "Covenants" = [
         "adr/index.md",

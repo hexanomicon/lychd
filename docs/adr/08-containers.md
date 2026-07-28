@@ -18,12 +18,18 @@ icon: material/cube-outline
 
 - **Finite Hardware Governance:** Scarce hardware domains (e.g., GPU VRAM) must be explicitly managed to prevent contention and undefined behavior.
 
-- **Explicit Operational Grouping:** Containers may be grouped into **Coven targets** for operator/systemd aggregation without turning group metadata into a hidden stop policy.
+- **Explicit Operational Grouping:** Containers may be grouped into **Coven targets** for
+  operator/systemd aggregation without confusing membership with physical incompatibility.
 
-- **Single Runtime Effect Owner:** Every application- or agent-initiated stop/start set must come
-  from the serialized Orchestrator plan so lease admission and drain cover every physical effect.
-  Generated units must not hide additional `Conflicts=` stops. A host operator retains an explicit
-  break-glass Systemd path and assumes responsibility when bypassing that protocol.
+- **Declared Conflict Topology:** Soulstone Runes must be able to name the finite hardware domains
+  they cannot share. Binding must compile that declaration into inspectable systemd relationships
+  rather than infer incompatibility from Coven names.
+
+- **Divided Lifecycle Authority:** The Orchestrator decides *when* a transition is admissible and
+  closes and drains the exact affected set. Systemd decides *how* the physical stop/switch/start
+  transaction is executed from generated Animator targets and `Conflicts=` edges. The Orchestrator
+  and actuator must derive the same graph, and the actuator must bind the loaded runtime units to
+  the exact Scribe-owned unit set and source paths before any effect.
 
 - **Semantic Capability Expression:** Infrastructure definitions must support overlapping and composable capability tags (e.g., `vision`, `reasoning`, `stt`) without introducing deployment ambiguity.
 
@@ -59,7 +65,8 @@ icon: material/cube-outline
 Podman Quadlets are adopted as the exclusive container manifestation mechanism. These unit
 definitions serve as the physical blueprint of the Daemon. They may join **Coven targets** for
 operator grouping and are paired with logical Animator capabilities for semantic discovery; the
-Orchestrator remains the only lifecycle policy owner.
+Orchestrator remains the only lifecycle policy owner while systemd remains the physical
+transaction engine.
 
 ### Platform Support Boundary
 
@@ -82,12 +89,14 @@ Terminology boundary: configuration **runes** are TOML declarations in the Codex
 The Sepulcher is organized into a strict hierarchy managed by the host's init system:
 
 1. **The Pod (`lychd.pod`):** A shared network and resource namespace forming the physical boundary of the Sepulcher.
-2. **The Coven Target (`lychd-coven-*.target`):** A meta-unit generated for multi-member Covens,
-   providing an explicit operator aggregation and break-glass switch. The application Orchestrator
-   addresses planned member units, not this bypass surface.
-3. **The Core Units:** Persistent services essential for the system (`vessel`, `phylactery`).
-4. **The Extension Units:** Dynamic services defined by installed organs.
-5. **The Portals:** Logical bridges to remote APIs (no physical containers).
+2. **The Animator Target (`lychd-animator-*.target`):** One generated transaction boundary per
+   local Soulstone. It requires and gates the concrete service and carries the compiled conflict
+   topology addressed by the Orchestrator.
+3. **The Coven Target (`lychd-coven-*.target`):** A compatible aggregate of Animator targets,
+   generated for real multi-member Covens and reserved as an explicit operator break-glass surface.
+4. **The Core Units:** Persistent services essential for the system (`vessel`, `phylactery`).
+5. **The Extension Units:** Dynamic services defined by installed organs.
+6. **The Portals:** Logical bridges to remote APIs (no physical containers).
 
 ### 2. Capabilities: The Soul of the Animator
 
@@ -98,31 +107,58 @@ Capabilities define what an Animator can do (for example `chat`, `vision`, `tts`
 - **`is_dynamic`**: `False` (ready as soon as the container's endpoint is reachable) or `True` (the container is up but the model needs an in-runtime activation step). For dynamic containers (like a `llama.cpp` router) that swap models internally without restarting, the Orchestrator invokes a model load before that capability reaches `WARM`.
 - **`CapabilityPhase`**: the live readiness ladder — `COLD`, `ACTIVATABLE`, `WARMING`, `WARM`, `ERROR`, `UNKNOWN`.
 
-### 3. Covens: Grouping Without Hidden Mutation
+### 3. Covens and Conflict Domains
 
-Containers may be organized into **Covens** through their `groups` labels. A real multi-member group
-produces a systemd target so operators can address the members as a named aggregate. Group metadata
-does not synthesize `Conflicts=` and does not decide which runtime may coexist.
+Covens and conflict domains answer different questions:
 
-- **The Coven (`groups`):** A container belongs to one or more Covens.
-- **The Alliance (`alliances`):** Reserved configuration shape for a future group-aware policy. It
-  is non-enforcing in the v1 `evict-idle` runtime and must not be treated as a safety boundary.
-- **The Effect Law:** Generated Soulstone units contain no hidden conflict side effects. The v1
-  switch policy conservatively plans every active, dedicated, non-`persistent_resident` Animator as
-  an evictee, regardless of group, then closes admission and drains that exact set before the
-  actuator stops anything.
+- **The Coven (`groups`):** which compatible Soulstones should an operator be able to address as
+  one named aggregate?
+- **The Conflict Domain (`[concurrency].conflict_domains`):** which dedicated, non-resident
+  Soulstones cannot inhabit the same finite hardware domain?
+- **The Alliance (`alliances`):** reserved configuration shape for later policy. It is not a
+  conflict declaration or a safety boundary.
 
-Starting a Coven target explicitly starts its installed members; stopping the target propagates to
-members through their `PartOf=` relationship. Those are host-operator actions outside the runtime
-protocol. They bypass priority admission, lease drain, and WARM convergence, so application code,
-agents, and extension policy must never invoke Coven targets as an actuation shortcut. This
-break-glass authority is operationally useful, but it is not a safe workload orchestration API.
+Conflict domains form an undirected graph. Two lifecycle-managed Soulstones conflict when their
+declared domain sets overlap. An explicit empty list means the operator declares that Soulstone
+compatible with every other managed Soulstone in this graph. Omitting the field on a dedicated,
+non-resident Soulstone assigns the compiler-owned `default-exclusive` unknown domain. It is a
+conservative wildcard: it conflicts with every dedicated non-resident whose effective domain set
+is non-empty, including explicitly labelled Runes. Only explicit `[]` declares coexistence and
+removes that Soulstone from the graph, so partially migrating legacy Runes cannot silently widen
+coexistence. A persistent resident or shared Soulstone may not participate in a conflict domain:
+binding rejects a non-empty set rather than generating a unit capable of mutating a runtime outside
+that law.
+
+Binding compiles one Animator target per Soulstone and places each conflict edge on those targets.
+The target `Requires=` and is `Before=` its concrete service; the service `BindsTo=` and is
+`After=` its target, so one lifetime boundary represents the Animator. For each sorted conflict
+pair `A < B`, the compiler emits the edge once on `B` as `Conflicts=A.target` plus
+`After=A.target`. `Conflicts=` is reciprocal while the single lexical ordering edge avoids a cycle
+and provides stop-before-start behavior in either direction. Coven targets `Wants=` and are
+`After=` only mutually compatible Animator targets; each member is `PartOf=` its Coven. Binding
+rejects a Coven whose own members conflict.
+
+These generated effects are **declared, not hidden**. The Orchestrator recomputes the same graph
+from validated Rune intent, closes admission and drains the exact active conflict neighborhood,
+and validates the observed world immediately before mutation. In mediated mode the Host Reactor
+separately rejects an intent whose configuration digest no longer matches current registry truth.
+In both actuator modes, loaded-graph attestation then requires a validated Scribe ownership
+receipt; enumerates the installed and loaded LychD target namespace; and proves the exact
+Animator-target, service, and Coven relationships, receipt-owned sources, unit-file states, and
+reload/drop-in condition. Only then does the actuator ask systemd to start the selected target in
+one compound transaction. Systemd, not application code, performs the resulting
+stop/switch/start.
+
+Directly starting an Animator or Coven target remains a host-operator break-glass action. It
+bypasses priority admission, lease drain, stale-world validation, WARM convergence, and
+compensation, so application code, agents, and extension policy must never use either target class
+as a shortcut.
 
 Every joined container declares `StartWithPod=false`. Starting `lychd.pod` therefore establishes the
 shared namespace without implicitly starting every Soulstone. Core dependency edges start the
-Phylactery, migration gate, and Vessel in order; only `persistent_resident` Soulstones are wanted at
-boot, while dedicated non-residents are started on demand by the Orchestrator or by an explicit
-operator Coven-target action. This keeps
+Phylactery, migration gate, and Vessel in order; only `persistent_resident` Animator targets are
+wanted at boot, while dedicated non-residents are started on demand by the Orchestrator or by an
+explicit operator target action. This keeps
 Pod creation from bypassing exclusivity and boot policy.
 
 ### 4. Intra-Coven Dependencies (The Chain of Command)
@@ -131,8 +167,9 @@ The Magus can specify standard Systemd ordering and dependency directives direct
 
 - **Direct Translation:** The transmutation pipeline carries keys like `after`, `wants`, and `requires` into the generated Quadlet manifest.
 - **Target Interaction:** When an operator explicitly starts a Coven Target, Systemd resolves the
-  internal dependency graph, ensuring services start in the correct order (e.g., pre-processors
-  before models). This is a break-glass/administrative path, not an Orchestrator transition.
+  compatible Animator-target dependency graph, ensuring services start in the correct order (e.g.,
+  pre-processors before models). This is a break-glass/administrative path, not an Orchestrator
+  transition.
 
 ### 5. Federated Quadlet Registration
 
@@ -190,7 +227,10 @@ The inscription pipeline (via the Scribe service) implements a transactional upd
   malformed manifests, invalid authority metadata, and a requested target name already occupied
   by an unowned file fail the bind closed.
 - **Per-File Atomic Replacement:** Every staged unit is copied to its destination filesystem, flushed, and installed with an atomic rename. Files from the prior generation are removed only when the ownership manifest names that exact path. Unrelated operator Quadlets and systemd units remain untouched, including files with suffixes LychD also generates.
-- **Complete-State Transaction:** The binding command supplies the complete desired set of generated Quadlets, Coven targets, and LychD plain user units to one reconciliation. A previously owned plain unit absent from that desired set is stale and is removed in the same commit; it is never left behind by a partial second write.
+- **Complete-State Transaction:** The binding command supplies the complete desired set of
+  generated Quadlets, Animator targets, Coven targets, and LychD plain user units to one
+  reconciliation. A previously owned plain unit absent from that desired set is stale and is
+  removed in the same commit; it is never left behind by a partial second write.
 - **Cross-Site Rollback:** Quadlet and plain systemd binding sites form one Scribe transaction. Before mutation, the Scribe prepares same-filesystem backups; a failure at either site restores both sites and the prior same-UID, `0600` authority manifest.
 - **Shared Directory Law:** The Scribe never initializes a Git repository or stages files in either shared user binding directory. Source history belongs to the Codex and project repositories; generated projections are recovered from validated intent and the ownership ledger.
 
@@ -205,12 +245,15 @@ Physical Quadlets are transmuted from logical **Soulstone Runes** and paired by 
 The `llama-server` router mode supports a models preset `.ini` file (`--models-preset`) that defines per-model launch arguments and global defaults. This capability is adopted as a first-class container behavior for `llama.cpp` covens.
 
 - **Dual-Layer Control Plane:**
-    - **Static Layer (Codex Rune):** target grouping and lifecycle intent (`groups`, `dedicated`, `persistent_resident`); `alliances` is reserved for a future group-aware policy.
+    - **Static Layer (Codex Rune):** target grouping and lifecycle intent (`groups`, `dedicated`,
+      `persistent_resident`, `conflict_domains`); `alliances` is reserved for later policy.
     - **Dynamic Layer (Router Preset):** In-server model loading profiles, per-model runtime knobs, and router defaults.
-- **Soft-Swap Priority:** If a `llama.cpp` coven is already warm, model transitions should prefer router-native `/models/load` behavior over physical container restarts.
-- **Hard-Swap Boundary:** The Orchestrator's serialized plan/drain/actuate path is authoritative for
-  application VRAM reclamation. Coven targets group units and add no conflict-driven stop; a manual
-  operator target action remains an explicit bypass.
+- **Soft-Swap Priority:** If a `llama.cpp` Animator is already warm, model transitions should
+  prefer router-native `/models/load` behavior over physical container restarts.
+- **Hard-Swap Boundary:** The Orchestrator's serialized choose/close/drain/validate path is
+  authoritative for application VRAM reclamation. It submits one Animator-target start after graph
+  attestation; systemd executes the compiled conflict transaction. A manual operator target action
+  remains an explicit bypass.
 - **Precedence Law:** Router runtime behavior follows upstream precedence semantics:
     1. CLI args passed to `llama-server`
     2. Model-specific preset section
@@ -241,13 +284,15 @@ For the full definition of the Dual-Plane Trust Delta, secret distribution, and 
 ### Consequences
 
 !!! success "Positive"
-    - **Hardware Determinism:** One serialized runtime effect owner plans every application/agent
-      stop/start and drains the exact evictee set before mutation.
+    - **Hardware Determinism:** The Orchestrator admits and drains the exact declared conflict set;
+      systemd executes one inspectable physical transaction from the same graph.
     - **Operational Reliability:** Atomic updates guarantee a bootable state at all times.
     - **Identity Fluidity:** Technical UID mapping enables native, non-root filesystem interaction.
 
 !!! failure "Negative"
     - **Linux Ecology Lock-in:** Binds LychD irrevocably to Systemd and Podman.
     - **Orchestration Overhead:** State transitions require deterministic startup/shutdown latency.
-    - **Break-Glass Responsibility:** Direct operator actions on Coven targets bypass runtime
-      admission, drain, and readiness guarantees.
+    - **Declaration Responsibility:** An explicit empty conflict set is an operator assertion of
+      coexistence; systemd cannot compensate for an incorrect hardware declaration.
+    - **Break-Glass Responsibility:** Direct operator actions on Animator or Coven targets bypass
+      runtime admission, drain, and readiness guarantees.

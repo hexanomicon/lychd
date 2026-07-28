@@ -37,9 +37,10 @@ icon: material/star-shooting-outline
         -   **Automated DTOs:** Native support for generating API schemas directly from persistence models, ensuring the Database remains the single source of truth without writing Pydantic schemas multiple times.
         -   **Advanced Alchemy Repository Pattern:** Out-of-the-box async Repository patterns (`SQLAlchemyAsyncRepository`) provide robust, type-safe CRUD operations, pagination, and UUID handling without writing raw SQL or repetitive session logic.
         -   **Typed OpenAPI & Telemetry:** First-class OpenAPI generation from typed route
-            contracts (aligning with the **[Frontend (15)](15-frontend.md)** Altar strategy) and
-            built-in OpenTelemetry for tracing Agent "Thought Traces" (aligning with the
-            **[Observability (29)](29-observability.md)** Oculus strategy).
+            contracts (aligning with the **[Frontend (15)](15-frontend.md)** Altar strategy) and an
+            OpenTelemetry integration surface for optional bounded external exports. Native
+            **[Oculus (29)](29-observability.md)** remains a LychD evidence office, not a framework
+            plugin.
         -   **Plugin Protocols:** First-party support for `InitPluginProtocol` and `CLIPluginProtocol` allows for elegant, context-aware bootstrapping.
         -   **Native msgspec Integration:** Offers the high-performance serialization required for the system's binary transmutation strategy.
 
@@ -178,12 +179,15 @@ async def list_runes(repo: RuneRepository) -> list[RuneReadDTO]:
   Litestar controllers. OpenAPI is the source for the generated Svelte TypeScript types, runtime
   schemas, route helpers, and Fetch SDK. The browser may add a small EventSource transport, but it
   must consume the same named event schemas.
-- **Oculus (Observability):** Use Litestar's built-in `OpenTelemetryPlugin` for tracing Agent Thought Traces. Do not introduce `opentelemetry-instrumentation-fastapi` or equivalent shims.
-- **Graph Scrying (Mermaid):** Graph visualizations render client-side from the `stateDiagram-v2` source produced by `graph.mermaid_code()` (see **[Graph (24)](24-graph.md)**). The Vessel ships diagram source as text; there is no server-side image-rendering API.
+- **External Eye export:** If ADR 29 admits an OpenTelemetry export, use Litestar's supported
+  `OpenTelemetryPlugin` behind the shaped allowlist and privacy boundary. Installing the plugin
+  does not implement Oculus or authorize prompt, completion, body, header, or secret capture.
+  Do not introduce `opentelemetry-instrumentation-fastapi` or equivalent shims.
+- **Graph projection (Mermaid):** Graph visualizations render client-side from the `stateDiagram-v2` source produced by `graph.mermaid_code()` (see **[Graph (24)](24-graph.md)**). The Vessel ships diagram source as text; there is no server-side image-rendering API.
 
 ```python
-# ✅ Correct — native plugins, no external shims
-from litestar.plugins.opentelemetry import OpenTelemetryPlugin, OpenTelemetryConfig
+# Optional bounded external export adapter; not native Oculus.
+from litestar.plugins.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
 from litestar import Litestar
 
 app = Litestar(

@@ -353,6 +353,7 @@ devices = ["nvidia.com/gpu=all"]
 [concurrency]
 dedicated = true
 persistent_resident = false
+conflict_domains = ["gpu-main"]
 
 [[models]]
 id = "first-model"
@@ -366,6 +367,9 @@ supports_tools = true
 
 The top-level `model_path` is a current router-identity compatibility field: it makes the connector
 probe `first-model`, matching the explicit model ID it asks the router to load.
+`conflict_domains = ["gpu-main"]` declares the finite device domain this dedicated runtime cannot
+share. A later Soulstone with the same label will be physically switched by systemd rather than
+co-started; do not replace it with `[]` unless you have measured safe coexistence.
 
 Confirm that the saved Rune contains the real mount, pre-pull the runtime image, record its resolved
 identity, then bind:
@@ -394,6 +398,8 @@ podman secret exists lychd_app_secret_key && echo "application secret present"
 podman secret exists lychd_db_password && echo "database secret present"
 test -f "$QUADLET_DIR/lychd-vessel.container" \
   && echo "Vessel Quadlet present"
+test -f "$USER_UNIT_DIR/lychd-animator-atelier.target" \
+  && echo "Animator target present"
 test -f "$USER_UNIT_DIR/lychd-reactor.path" \
   && echo "Host Reactor path present"
 ```

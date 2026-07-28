@@ -5,16 +5,18 @@ icon: material/eye-outline
 
 # :material-eye-outline: Oculus
 
-**Purpose.** Oculus is LychD's designed native observability service. It is intended to let the
-operator (the **Magus**) follow one agent workflow (an **Invocation**) across run state, tool calls,
-consent, runtime readiness, and outcome—without giving an external dashboard custody of LychD's
-memory or control.
+**Purpose.** Oculus is LychD's designed native observability service. It first lets the operator
+(the **Magus**) follow one selected workflow act (an **Invocation**) across run state, tool calls,
+consent, runtime readiness, and outcome. After that read model proves its semantics, it may provide
+a bounded attention field over authorized active, waiting, and recent Invocations—without giving
+an external dashboard custody of LychD's memory or control.
 
 **Current boundary.** Native Oculus is not available. LychD has structured logging configuration,
 owning Run and Consent records, and a kind-aware trail of non-token run events called Steps. One
 telemetry class has a narrow direct test, but current application and extension composition do not
-install it. The `/scrying` route remains an unbuilt shell. There is no native ingestion, durable
-evidence view, retention service, GPU inventory, or trace UI. [State owns the exact native Oculus
+install it. The `/orb/{run_id}` route provides a bounded selected-Run projection over those
+available records; it is not native Oculus. There is no native ingestion, durable read model,
+retention service, GPU inventory, or multi-run trace UI. [State owns the exact native Oculus
 boundary](../../state-of-the-work.md#native-oculus).
 
 !!! danger "Do not simply install the dormant telemetry class"
@@ -28,25 +30,26 @@ an optional legacy Phoenix service contribution, but no current evidence proves 
 traces reach it. Phoenix is an external **Eye**, not Oculus. [State owns the exact Phoenix
 boundary](../../state-of-the-work.md#phoenix-eye).
 
+**Extension form.** Oculus is an Extension Domain manifested as a native, Core-coupled evidence
+office. External Eyes are optional provider integrations behind a one-way export boundary; they
+are not replacement Oculus packages. The Domain may remain dormant in a lean profile without
+changing which office owns each authoritative event.
+
 !!! warning "Legacy Phoenix is not yet the one-way Eye"
     The generated compatibility service still uses the mutable
-    `docker.io/arize-ai/phoenix:latest` image and historical `lychd-oculus` identity. It connects to
-    LychD's PostgreSQL server with the LychD database role for a separate `phoenix` database, and
-    the default bootstrap creates that database even when Phoenix is not selected. LychD proves no
-    exporter path and configures no Phoenix retention, authentication, product-telemetry, or
-    external-resource policy. Modern Phoenix also carries prompt, MCP, agent, OAuth/RBAC, and
-    mutation surfaces of its own. Treat this fixture as migration debt, not as the conforming
-    one-way adapter described below.
+    `docker.io/arize-ai/phoenix:latest` image. New configuration defaults to the honest
+    `lychd-phoenix` identity; an explicit legacy `name = "oculus"` remains loadable until the
+    operator migrates it. The service connects to LychD's PostgreSQL server with the LychD database
+    role for a separate `phoenix` database, and default bootstrap creates that database even when
+    Phoenix is not selected. LychD proves no exporter path and configures no Phoenix retention,
+    authentication, product-telemetry, or external-resource policy. Modern Phoenix also carries
+    prompt, MCP, agent, OAuth/RBAC, and mutation surfaces of its own. Treat this fixture as
+    migration debt, not as the conforming one-way adapter described below.
 
-**Pending law reconciliation.** This page records the proposed correction to
-[ADR 29](../../adr/29-observability.md). ADR 29's mandatory full-content trace, global
-`LYCHD_SECURE_MODE`, direct metrics-to-scheduling, and Thrall-to-Master-Postgres clauses must be
-amended before source work begins.
-
-**Target law.** The office that performs an act owns its record. Oculus will own typed
+**Law.** The office that performs an act owns its record. Oculus will own typed
 observations, correlation, and rebuildable read models; the
 [Phylactery](../phylactery/index.md) will own their persistence jurisdiction; and
-[Scrying](../../divination/altar/scrying.md) will own the Altar projection. The
+the [Orb](../../divination/altar/orb.md) owns the Altar projection through which the Magus scries. The
 [Orchestrator](../../adr/23-orchestrator.md), [Riddle](./riddle.md), [Ward](./ward.md), and
 [Reliquary](../../divination/altar/reliquary.md) keep their own authority. The glass may join their
 evidence. It may not become their hand.
@@ -167,16 +170,21 @@ replaced, or absent without changing which records LychD trusts.
 
 ## Seeing Never Commands
 
-The first useful [Scrying](../../divination/altar/scrying.md) surface will be read-only: a run list,
-one correlated timeline, explicit gaps, and links to the office that can answer the next question.
+The delivered [Orb](../../divination/altar/orb.md) starts with one selected Run, its bounded ordered
+evidence, explicit gaps, and links to the office that can answer the next question. It deliberately
+omits the authorized Run list, live tail, graph, and durable native read service. A later multi-Run
+field remains an authorized,
+time-windowed, filtered, cardinality-bounded attention query with visible truncation and gaps. It
+is not an omniscient view or a fabricated total order.
 [Nexus](../../divination/altar/nexus.md) owns present transition controls;
-[Reliquary](../../divination/altar/reliquary.md) will own retained bytes and artifacts; Riddle will
-own evaluation. If a later instrument requests an action, the owning service must reauthorize it
+[a future artifact-custody lifecycle](../../divination/altar/reliquary.md) may own retained bytes
+and artifacts; Riddle owns evaluation. If a later instrument requests an action, the owning service must reauthorize it
 and record its own decision. A chart crossing a line is never itself a capability grant.
 
 Until the native read model exists, use [The Awakening](../../summoning.md#the-awakening) for the
 current journal and first-life observations, use Nexus for its bounded capability projection, and
-treat `/scrying` as the unbuilt shell it is.
+**look into the Orb** for the selected Run while keeping its process-local and retained-evidence
+limits visible.
 
 > _Let the eye gather light without claiming the sun. Let every visible thread lead back to its
 > owner, and let every missing thread keep its name._

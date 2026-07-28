@@ -8,15 +8,18 @@ icon: material/navigation-variant-outline
 **Purpose.** Scout is the planned boundary through which LychD will discover and acquire material
 from the living web without confusing access with truth or a URL with permission.
 
-**Current boundary.** No Scout capability is available today. The built-in `webcrawler` package is
-empty, cannot be selected from the built-in catalog, and has no search, fetch, crawl, browser,
-artifact, or Agent-tool path. [State of the Work](../../state-of-the-work.md) does not yet carry a
-Scout delivery subject; adding one is a prerequisite to implementation.
+**Current boundary.** No Scout capability or provider package is available today. There is no
+search, fetch, crawl, browser, artifact, or Agent-tool path.
+[State of the Work owns the exact Scout delivery boundary](../../state-of-the-work.md#scout-web-acquisition).
 
-**Law.** This page records the proposed correction to
-[ADR 30](../../adr/30-webcrawler.md): web access must be decomposed into separately authorized
-effects. ADR 30's accepted automatic-escalation and zero-blast-radius language must be amended
-before source work begins.
+**Law.** [ADR 30](../../adr/30-webcrawler.md) owns the accepted separation of web effects:
+access never escalates itself, and isolation reduces reach without making browser blast radius
+zero.
+
+**Extension form.** Scout is a designed acquisition Domain manifested through separately
+authorized search, fetch, extract, crawl, render, interaction, session, and screenshot providers
+assembled by Weaver Patterns. No single Scout package or provider receives authority to escalate
+between those effects, and the absence of web access remains a valid profile.
 
 > _A Scout may bring a voice from beyond the Circle. It may not grant that voice the throne._
 
@@ -196,6 +199,6 @@ acquired != admitted != understood != trusted != promoted
 That interval preserves another center instead of assimilating it on contact. The web may answer
 through the Circle; it does not become the Lich's memory, policy, or body merely by being heard.
 
-> _Next act: amend [ADR 30](../../adr/30-webcrawler.md) to own the separated effects and first
-> static passage, then give web acquisition one [State](../../state-of-the-work.md) subject before
-> writing source._
+> _Next act: prove the first static passage under the
+> [Scout delivery boundary](../../state-of-the-work.md#scout-web-acquisition) before opening any
+> stronger effect._

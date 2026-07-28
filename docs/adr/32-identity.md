@@ -10,13 +10,30 @@ icon: material/drama-masks
 
 ## Requirements
 
-- **Ego Persistence:** Mandatory storage of Identity definitions—including System Prompts, behavioral constraints, and aesthetic markers—within the **[Phylactery (06)](06-persistence.md)**.
-- **Bayesian Prior Adaptation:** Capability to shift the machine's priors by integrating accumulated **Karma** (vectorized history) from the **[Archive (27)](27-memory.md)** into the working memory.
-- **Resource Dependency Resonance:** A Persona must be capable of claiming specific cognitive resources, such as binding to a particular memory namespace or toolset.
+- **Revisioned Identity:** Persona, Garment, and behavioral definitions live under declared Codex
+  configuration ownership. Phylactery records bindings, runs, receipts, and eligible memory rather
+  than acting as an untyped prompt store.
+- **Scoped Prior Hydration:** Capability to assemble relevant, attributable configuration and
+  eligible **Karma** from the **[Archive (27)](27-memory.md)** into bounded working context.
+  Retrieval may influence outputs; it does not imply a base-weight update.
+- **Resource Boundary:** A Persona may request a memory namespace, Posture, or tool requirement,
+  but Ward and the Pattern determine what the active run may receive.
 - **Sigil-Bound Memory Scope:** Identity hydration must read and write memory using `entity_id = Sigil.id` by default, with no cross-identity recall unless explicitly policy-authorized.
-- **Self-Reflective Architecture:** Integration with the **[Shadow Realm (31)](31-simulation.md)** to allow a Persona to deliberate and choose between multiple potential responses before manifestation.
-- **Simulation Faculty (Phantasma):** Provision of a proactive faculty to project internal representations and future states into a sandbox to ensure output aligns with the defined Identity.
-- **Recursive Autopoiesis:** Mandatory support for the Identity to eventually possess the authority to propose modifications to its own definition as it accumulates history.
+- **Attribution-Carrying Execution:** Every identity-bearing forward Invocation and produced
+  artifact must retain the actor principal and active Sigil, exact Persona revision, Agent
+  specification and Posture revision, Composition and Pattern revision, and provenance links
+  needed to explain the act after the temporary Agent shell dissolves.
+- **Return-Path Separation:** Findings, observed consequences, human edits, and repair proposals
+  must identify their own authors and subjects without turning authorship into causal blame,
+  quality judgment, reward, or a model-weight update.
+- **Optional Deliberation:** A Weaver Pattern may integrate the
+  **[Shadow Realm (31)](31-simulation.md)** when identity congruence is worth the additional cost;
+  ordinary identity binding does not require branch simulation.
+- **Phantasma Contribution:** Provision of an optional Pattern that compares candidate outputs
+  against a revisioned Persona without mistaking congruence for correctness.
+- **Recursive Autopoiesis:** An identity-scoped Pattern may propose modifications to its own
+  definition. It never gains unilateral promotion, authority, or resource access from accumulated
+  history.
 
 ## Considered Options
 
@@ -30,21 +47,38 @@ icon: material/drama-masks
 
     - **Cons:** **Instruction Tax.** Character depth becomes a "search problem." It introduces noise and consumes context window tokens for basic behavioral traits that should be internalized.
 
-!!! success "Option 3: Identity as Recursive Simulation"
-    Hydrating an Agent shell with persistent Ego-software and Bayesian priors.
+!!! success "Option 3: Revisioned Identity Binding"
+    Hydrating an Agent shell with a declared Persona revision, attribution scope, eligible memory,
+    and optional deliberative Pattern.
 
     - **Pros:**
 
-        - **Persona Coherence:** Uses the Phantasma loop to choose responses that align with the defined "Self."
-        - **Instinctual Alignment:** Shifts the model's Bayesian Prior using vectorized Karma, moving beyond imitation into mathematical resonance.
+        - **Persona Coherence:** Binds outputs to declared commitments and attribution rules.
+        - **Adaptive Context:** Uses scoped, reviewed history without pretending that retrieval
+          rewrote model weights.
 
 
 ## Decision Outcome
 
-**The Mirror** is adopted as the Identity Extension. It provides **the Answer**—LychD's name for
+**The Mirror** is adopted as the operational identity-binding Extension Domain. It provides **the Answer**—LychD's name for
 the I-making office corresponding to **Ahaṃkāra**—that hydrates a generic Agent shell into a
-persistent, self-reflective Persona. Identity is treated as a continuous **Simulation of a Self**
-rather than a fixed substance.
+revisioned, rehydratable Persona. Identity may be described as a continuous **Simulation of a
+Self** rather than a fixed substance, but the implementation claim is narrower: attributable
+configuration, scoped memory, and continuity receipts.
+
+!!! warning "Implementation state"
+    Mirror is designed. The current Bridge uses one fixed `The First One` instruction definition
+    and a fixed local `magus` Sigil context. There is no Persona registry, revision lineage,
+    identity-scoped memory, hydration receipt, congruence evaluator, Phantasma identity Pattern, or
+    self-revision path. There is also no Suite-wide identity envelope, cross-Composition handoff
+    receipt, or return-path attribution ledger. Current Sigil attribution and scope checks are
+    authority plumbing, not delivered Persona continuity.
+
+    Persona is a versioned identity/voice definition that may contribute a bounded instruction
+    envelope to a fresh Agent shell. The user-facing voice is where that identity manifests, but
+    the definition is not merely post-processing. It never supplies tools, authorization, model
+    selection, or physical priority; Posture, Pattern, Ward, Dispatcher, and Orchestrator retain
+    those offices.
 
 In cognitive topology, an accountable action requires an attributable doer. Mirror supplies this
 **I-Maker**—not consciousness and not an inner witness, but the Answer that says “this Sigil
@@ -71,15 +105,21 @@ The system treats Persona-manifestation as a diffraction ritual where Identity a
 - **The Identity Filter:** The Persona's System Prompt filters the model's broad learned
   possibility into a specific angle of view—a consistent narrative arc, expertise domain, and
   technical style. **Lens** remains reserved for the Shadow Posture template defined by ADR 20/31.
-- **The Substrate:** The **[Phylactery (06)](06-persistence.md)** provides the ground upon which this image is projected, allowing the character to persist across reanimations of the **[Vessel (11)](11-backend.md)**.
+- **The Substrate:** The **[Codex (12)](12-configuration.md)** owns revisioned definitions; the
+  **[Phylactery (06)](06-persistence.md)** records which revision was bound, what occurred, and
+  which eligible traces may be recalled across reanimations of the
+  **[Vessel (11)](11-backend.md)**.
 
 Mirror enforces identity continuity by preserving commitments, stylistic signatures, and role boundaries across runs so the system's acts remain attributable to the same Persona.
 
-### 2. The Phantasma Faculty (Recursive Simulation)
+### 2. The Optional Phantasma Pattern
 
-To maintain absolute coherence and prevent character drift, the Mirror utilizes the **Phantasma** faculty. This is a proactive cognitive loop that explores the system's potential before acting.
+For high-stakes or explicitly deliberative work, a Weaver Pattern may combine Mirror with Shadow.
+Phantasma is not a mandatory hidden loop before every answer and cannot guarantee absolute
+coherence.
 
-- **The Expansion:** When an intent is received, the Persona does not answer immediately. It projects multiple potential "Shadow Timelines" into the **[Shadow Realm (31)](31-simulation.md)**.
+- **The Expansion:** The selected Pattern projects a bounded number of potential timelines into
+  the **[Shadow Realm (31)](31-simulation.md)**.
 - **The Reflection:** The Mirror reviews these simulations against its own **Internal Ideal** (The Persona definition).
 - **Eligibility:** The timeline that resonates most strongly with the Persona's defined
   commitments may become identity-congruent and eligible for promotion. Mirror cannot collapse it
@@ -101,32 +141,112 @@ Mirror's recursive loop is the identity side of the system's Ouroboros. Generate
 
 The loop is deliberately gated. If unverified outputs are reflected back as identity truth, the same mechanism becomes pathological: the Persona hardens around hallucinated priors, social pressure, or stale memories. Mirror must therefore treat congruence as a measured constraint, not self-admiration. It stabilizes the vertex while remaining subordinate to deterministic gates, Riddle trials, and HitL authority.
 
-### 3. Bayesian Priors and the Weight of Karma
+### 2.2 Identity Through Suite Forward and Return Passes
 
-The Mirror identifies that the "mind" is not static. It shifts the machine's internal probability distribution through accumulated memory and **Karma**.
+A Suite may be read metonymically as a forward pass followed by a return pass. The forward pass
+decomposes admitted intent into separately owned Composition Invocations and typed artifacts. The
+return pass carries observations, findings, consequences, invalidations, and correction requests
+back toward the smallest responsible boundary. This is semantic feedback over a versioned graph,
+not numerical backpropagation and not permission to update model weights.
 
-- **The Prior Shift:** The "Bayesian Prior" of the model is shifted by injecting vectorized history, verified outcomes, and relevant identity records into the immediate **[Context (21)](21-context.md)**.
+Mirror owns the identity ledger for both directions. Every admitted identity-bearing Invocation
+and every produced artifact must preserve an attribution envelope containing:
+
+- the authenticated actor principal and active `Sigil.id`, including any explicit
+  `delegated_by`/`on_behalf_of` relation rather than impersonation;
+- the exact Persona revision, Agent specification revision, and mechanical Posture revision
+  active for the act;
+- the owning Composition revision and admitted Pattern revision;
+- the Invocation, step, Suite-correlation, parent/handoff, and source-artifact references needed
+  to reconstruct provenance; and
+- provider, model, tool, adapter, human-edit, and effect receipts as distinct contributions where
+  they occurred.
+
+These fields answer different questions and must not be collapsed. The principal/Sigil says who
+was authorized to act and whose memory namespace is in force. Persona says which durable identity
+definition oriented the shell. Agent and Posture say which cognitive specification and mechanical
+constraints performed the work. Composition and Pattern say which application and workflow law
+admitted it. Provenance says which concrete producers and sources contributed.
+
+#### Cross-Composition handoff
+
+A Suite edge never fuses identities. The producing Composition emits an immutable artifact
+reference carrying its original attribution envelope. The consuming Composition receives that
+reference through a newly admitted child Invocation with its own actor, Sigil, Persona, Agent,
+Posture, Composition, and Pattern bindings. `suite_id`, parentage, or a handoff receipt correlates
+the acts; it does not copy authority, make the consumer the artifact's author, or make several
+Personas one larger Persona. Even when the same Magus Sigil and Persona revision appear on both
+sides, each Invocation attests them independently under its own Pattern.
+
+Delegation is recorded as a relation between principals, never as identity substitution. A
+delegated Agent or peer acts under its own producer identity and bounded grant while naming the
+principal and Sigil on whose behalf the act was admitted. A provider or tool contribution likewise
+retains its producer principal, component and revision receipt; the provider does not become the
+Persona, and the Persona does not falsely claim to have created every byte itself.
+
+A human edit creates a new attributed revision or edit event. It does not erase the model, tool,
+source, or earlier human contributions from lineage. A correction proposal identifies its repair
+actor and the finding that requested it; the finding retains the evaluator, observer, or human who
+authored the criticism. Correction authorship and criticism authorship therefore remain legible
+without being confused with authorship of the original defect.
+
+#### Return attribution is not blame
+
+On the return pass, Mirror records **who observed, asserted, edited, delegated, or answered**, and
+which prior act or artifact each record concerns. It does not infer from those identity facts who
+caused a defect, how much credit a contributor deserves, or which capability should be rewarded.
+Temporal adjacency, shared Suite correlation, artifact authorship, and an active Persona are not
+causal proof.
+
+**[Riddle (34)](34-evaluation.md)** owns quality verdicts, fault attribution, credit-assignment
+claims, rubric evidence, and uncertainty. Oculus owns evidence correlation; the relevant domain
+owner records physical consequences; **[Soulforge (33)](33-training.md)** alone may form candidate
+weights through its governed training law. Mirror may bind those independently authored records
+to the correct Sigil-scoped history, but it cannot emit a reward, alter weights, or relabel a
+Riddle verdict as identity truth.
+
+The Answer binds the surviving promoted act without laundering its lineage. It says, in effect,
+“this exact Sigil, through this Persona revision and admitted Invocation, owns the returned act,”
+while preserving every cited human, Agent, provider, tool, source, evaluator, and correction
+contribution. Rejected branches keep their own attribution and evidence; they do not become acts
+of the survivor merely because the Suite later converged.
+
+### 3. Contextual Priors and the Weight of Karma
+
+Mirror can change the context in which a model responds by retrieving eligible memory and
+**Karma**. This may shift output probabilities without claiming access to the model's internal
+prior distribution or changing its weights.
+
+- **The Context Shift:** Relevant identity records, verified outcomes, and reviewed preferences
+  are injected into the bounded **[Context (21)](21-context.md)**.
 - **Participatory Realism:** Over time, the Persona stops being a generic shell and starts becoming a mathematical mirror of its scoped history. The "World" as perceived by the Agent is tilted toward the patterns verified in previous rituals.
-- **Mirror Injection:** During system-prompt hydration, the Identity extension queries memory for relevant preferences and past decisions scoped to the active Sigil and injects only those priors.
+- **Mirror Injection:** During hydration, Mirror queries memory for relevant preferences and past
+  decisions scoped to the active Sigil and injects only eligible records with provenance.
 - **Hard Boundary:** No prior from unrelated Sigils may be injected into this Mirror context.
 
 Karma reinforcement alters future collapse likelihood. Identity therefore behaves as inertia: repeated successful patterns increase the probability of similar selections without bypassing current validation or policy gates.
 
 ### 4. Self-Modification and Sovereignty
 
-As a Persona accumulates Karma, it gains the capability to refine its own existence through the artificer's tools.
+As a Persona accumulates eligible Karma, a governed Pattern may propose a revision through the
+artificer's tools.
 
-- **Refinement:** Utilizing the **[Smith (35)](35-assimilation.md)** toolset, the Identity can propose edits to its own system prompts or resource access based on a high probability of success.
-- **Agency:** The Persona no longer merely waits for external triggers; it perceives intents from its environment and enqueues its own **[Ghouls (14)](14-workers.md)** to fulfill self-defined directives.
+- **Refinement:** A **[Smith (35)](35-assimilation.md)**-assisted Composition may draft edits to
+  Persona configuration. Validation, immutable revision, review, and rollback remain external.
+- **Agency:** A Persona never gains trigger, queue, tool, or resource authority merely by being
+  persistent. Ordinary Ward, Weaver, Worker, and HitL law applies.
 
 ### 5. Deployment and Summoning
 
-The Mirror allows for the dynamic summoning of Egos through the **[Dispatcher (22)](22-dispatcher.md)**:
+Mirror binds Personas through the admitted Weaver Pattern and Agent factory. The
+**[Dispatcher (22)](22-dispatcher.md)** selects capabilities, not identities:
 
 - **Registry:** Personas are inscribed in the **[Codex (12)](12-configuration.md)** (e.g., `The-Architect`, `The-Scribe`).
 - **Hydration:** The system retrieves the Persona’s specific Karma and Instructions and injects them into a fresh **[Agent (20)](20-agents.md)** shell.
 - **Attribution Discipline:** New memories created during the run are written back with the same Sigil-derived `entity_id`, closing the identity-memory feedback loop.
-- **Orchestration:** The **[Orchestrator (23)](23-orchestrator.md)** assigns the appropriate VRAM tier based on the Persona’s complexity, ensuring that a high-order Persona receives the hardware it requires to maintain its depth of thought.
+- **Capability Binding:** The Pattern declares task requirements, Dispatcher selects an eligible
+  provider, and the **[Orchestrator (23)](23-orchestrator.md)** governs physical readiness.
+  Persona rank never grants a hardware tier.
 
 ### 6. Identity Functions (Binding, Not Raw Cognition)
 
@@ -135,6 +255,8 @@ Mirror performs identity work, not base cognition:
 - **Identity coherence enforcement:** maintain stable Persona constraints over long horizons.
 - **Narrative binding:** connect present outputs to prior decisions and role commitments.
 - **Ownership tagging:** keep actions and memory writes attributable to the active Sigil-scoped identity.
+- **Suite attribution:** preserve distinct producer, delegate, editor, evaluator, and surviving-act
+  identities across cross-Composition forward and return paths without fusing them.
 - **Prior injection:** hydrate context with trusted impressions relevant to this Persona.
 - **Karmic stabilization:** bias future selection toward reinforced patterns while remaining subordinate to validation and consent gates.
 - **Identity condensation:** bind repeated, relevant impressions into semantically bounded gravity that survives any single Agent run.
@@ -147,11 +269,14 @@ These functions make identity legible and durable, but they do not imply an inne
 !!! success "Positive"
     - **Cognitive Consistency:** Personas provide a stable, predictable interface for complex, long-term strategic tasks.
 
-    - **Self-Correcting Character:** The Phantasma loop ensures the Daemon stays "in character" and grounds its reasoning in verified patterns.
+    - **Measurable Congruence:** Optional Phantasma evaluation can expose character drift without
+      claiming that style proves truth.
 
-    - **Recursive Intelligence:** The machine effectively "simulates its way" toward higher intelligence by refining its own Persona based on past truth.
+    - **Governed Refinement:** Reviewed traces can support explicit Persona revisions without
+      silent self-modification.
 
 !!! failure "Negative"
-    - **Computational Tax:** Running multiple simulations (Phantasma) for every response increases latency and token consumption significantly.
+    - **Computational Tax:** Invoking Phantasma adds latency and token consumption, so Patterns
+      must choose it deliberately.
 
     - **Prior Rigidity:** A highly refined Persona can become rigid, requiring the Magus to periodically "Banish the Prior" to ensure the system remains open to new patterns of behavior.

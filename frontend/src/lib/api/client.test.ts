@@ -45,6 +45,7 @@ function runEvent(seq: number): RunEventEnvelope {
   return {
     schema_version: 1,
     run_id: "run-a",
+    event_id: "00000000-0000-4000-8000-000000000001",
     seq,
     kind: "token",
     occurred_at: "2026-07-28T00:00:00Z",

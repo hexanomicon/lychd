@@ -19,6 +19,13 @@ the [Veil boundary](../../state-of-the-work.md#proxy-veil).
 **Law:** [ADR 40 — Proxy](../../adr/40-proxy.md), constrained by
 [ADR 09 — Security](../../adr/09-security.md) and the future [Ward](./ward.md).
 
+**Extension form:** Veil is an infrastructure Extension Domain, not a synonym for one proxy
+package. The sole planned LychD-managed pre-v1 manifestation is pinned stock Caddy 2 configured
+from LychD-generated native JSON. An existing Nginx, Traefik, HAProxy, or other edge may remain an
+externally managed attachment and may later satisfy a narrow black-box compatibility profile; a
+private coupled Crypt package may attempt lifecycle management without a stable provider API.
+Exactly one manager owns each concrete listener, certificate, route generation, and rollback path.
+
 > _"The Sepulcher is a sanctuary of silence. At the edge of the Forest, the Veil must turn noise
 > into one narrow passage—without mistaking a protected passage for a trusted voice."_
 

@@ -5,68 +5,88 @@ icon: material/hubspot
 
 # :material-hubspot: The Federation of Extensions
 
-> _"The Core provides the skeleton; the Extensions provide the organs. But organs alone do not make a body. They must sing in one key, move toward one will, and remember the same night in which they were called to life."_
+> _“An organ may extend the body. It does not inherit the body's authority.”_
 
 The Federation is a jurisdiction map, not a list of working features.
 [State of the Work](../../state-of-the-work.md) is the sole current-delivery record; the Function
 column below names intended responsibility unless a current source-map note says otherwise.
 
-LychD employs a strict philosophy of **Dogfooding**. The core kernel remains a minimal vessel for routing and state. Every advanced capability—from the API Proxy to the Swarm Protocol—functions as an **Extension**.
+LychD proves extension law on its own body. The Core remains a narrow kernel for routing and
+state; the Fifteen name the principal directions in which that body may grow. They are
+**Extension Domains**, not promises of interchangeable plugins.
 
-This architecture proves the **[Extension Protocol (ADR 05)](../../adr/05-extensions.md)**: the system constructs itself using the same tools available to the Magus. LychD's first extension boundary is not compatibility; it is assimilation.
+This architecture is governed by the
+**[Extension Protocol (ADR 05)](../../adr/05-extensions.md)**. LychD's first in-process extension
+boundary is assimilation, not a premature compatibility promise.
 
 Read that boundary narrowly: pre-v1 in-process organs are composed with the body they join; durable compatibility is reserved for surfaces that LychD explicitly versions and tests.
 
-An Extension is how code, schemas, tools, routes, workloads, or future workflow metadata enter the
-body. A [Reference Composition](../../compositions/index.md) is the complete application assembled
-from those contributions and existing organs. The four accepted Compositions are not four new
-members of the Federation of Fifteen, and an application does not earn one ADR merely by existing.
+Two maps meet here without becoming synonyms:
 
-Each extension is more than a plugin-era module. It is an organ with a fantasy, a discipline, and a jurisdiction:
+| Term | Meaning |
+| :--- | :--- |
+| **Extension Domain** | One of the Fifteen user-facing jurisdictions and directions of growth. |
+| **Extension package** | Concrete built-in or Crypt code selected through `register(context)`. |
+| **Manifestation** | The form a Domain takes in one body: Core office, selectable built-in, governed Composition, managed provider, external attachment, or dormant design. |
+| **Provider** | A concrete engine or service behind a typed contract; it never inherits domain authority merely by being selected. |
+| **Contribution** | A typed addition admitted through a shaped store owned by the receiving domain. |
+
+A [Reference Composition](../../compositions/index.md) is a complete application assembled from
+Patterns, existing offices, providers, and optional contributions. It may manifest part of an
+Extension Domain without becoming a sixteenth member of the Fifteen. Conversely, a singular Core
+office such as the Weaver can remain an Extension Domain even though replacing that authority
+would fork system truth.
+
+Each Domain has a fantasy, a discipline, and a jurisdiction:
 
 - **The Watchers** see and remember.
 - **The Threshold Rites** secure the border.
 - **The Cognitive Organs** think, judge, simulate, and evolve.
 - **The Sovereign Hands** reach beyond the local machine into the Forest, the Swarm, and the Infinite Naught.
 
-Read this section not as a package index but as an anatomy of powers. Each page below should feel like a distinct chamber of the same body.
+Read this section as operated doctrine: what each Extension means to the Magus, how it may
+manifest, where its authority ends, and what the present body can honestly do. Read ADR 05 for
+package assimilation and each linked ADR for technical selection and law.
 
-## 🏛️ The Federation of Fifteen
+## The Federation of Fifteen
 
-Fifteen official extension domains form the planned body of the Daemon. Near-term built-ins live under `src/lychd/extensions/builtin/` and evolve atomically with the Core. Private Crypt organs may live under `~/.local/share/lychd/extensions/` as Forge-composed repositories, but that location does not by itself create a stable third-party API contract.
+Fifteen official Extension Domains describe the planned growth of the Daemon. A Domain name is
+stable user-facing language; its manifestation may change with profile and maturity. Near-term
+built-in packages live under `src/lychd/extensions/builtin/` and evolve atomically with the Core.
+Private Crypt packages may live under `~/.local/share/lychd/extensions/` as explicitly selected,
+coupled source trees. Future Forge-composed repository pinning will own reproducibility; the
+location alone creates neither a lock receipt nor a stable third-party API contract.
 
-Source-map note: doctrine names are domain names, not guaranteed package slugs. Current built-in source uses functional package names such as `animator`, `observability`, `vpn`, `proxy`, `iam`, `workflow`, `webcrawler`, `assimilation`, `training`, `video`, `audio`, `simulation`, `identity`, and `swarm`.
+Source-map note: doctrine names are not package slugs. A placeholder source directory is not
+delivery, and absence of a package does not erase a Domain's accepted jurisdiction.
 
-| Doctrine Domain | Current Source Mapping |
-| :--- | :--- |
-| Prism / Vision | Official domain; current source exposes the media substrate through `video` while the full `vision.coven` surface matures. |
-| Riddle / Evaluation | Official domain; no dedicated built-in package has landed yet. Evaluation work currently routes through simulation/Tomb execution doctrine. |
-| Toll / Economics | Official domain; no dedicated built-in package has landed yet. |
-
-| Name | Domain | Sigil | Function | ADR |
+| Name | Domain | Typical manifestation | Jurisdiction | ADR |
 | :--- | :--- | :--- | :--- | :--- |
-| **[The Oculus](./oculus.md)** | **Observability** | :material-eye-outline: | Native evidence and Scrying jurisdiction; Phoenix may remain an optional external Eye. | **[29](../../adr/29-observability.md)** |
-| **[The Tether](./tether.md)** | **VPN** | :material-shield-link-variant-outline: | Establishes a WireGuard tunnel for secure, remote access. | **[39](../../adr/39-vpn.md)** |
-| **[The Veil](./veil.md)** | **Proxy** | :material-shield-key-outline: | Manages automated **TLS** and shields the Vessel via Caddy. | **[40](../../adr/40-proxy.md)** |
-| **[The Ward](./ward.md)** | **IAM & Auth** | :material-shield-account-outline: | Governs Sigils and Scopes to secure the **Inner Circle**. | **[38](../../adr/38-iam.md)** |
-| **[The Weaver](./weaver.md)** | **Workflow** | :material-tune-vertical: | Orchestrates multi-step **Patterns** and weaves memory into context. | **[28](../../adr/28-workflow.md)** |
-| **[The Scout](./scout.md)** | **Web acquisition** | :material-navigation-variant-outline: | Coordinates separately authorized web-acquisition effects; no Scout runtime is available yet. | **[30](../../adr/30-webcrawler.md)** |
-| **[The Smith](./smith.md)** | **Assimilation** | :material-hammer-wrench: | Drafts code and executes the autonomous **Evolution** of the system. | **[35](../../adr/35-assimilation.md)** |
-| **[The Soulforge](./soulforge.md)** | **Training** | :material-anvil: | Transmutes Karma into model weights via **LoRA** fine-tuning. | **[33](../../adr/33-training.md)** |
-| **[The Riddle](./riddle.md)** | **Evaluation** | :material-help-rhombus-outline: | Evaluates model performance in the agentic harness. | **[34](../../adr/34-evaluation.md)** |
-| **[The Toll](./toll.md)** | **Economics** | :material-cash-register: | Enforces **x402** payments and trades VRAM for Tithes. | **[41](../../adr/41-x402.md)** |
-| **[The Prism](./prism.md)** | **Vision** | :material-pyramid: | Manages the **Vision Coven** to perceive and analyze pixel data. | **[36](../../adr/36-vision.md)** |
-| **[The Echo](./echo.md)** | **Audio** | :material-waveform: | Operates the **Resonance Pipeline** for real-time speech. | **[37](../../adr/37-audio.md)** |
-| **[The Shadow](./shadow.md)** | **Simulation** | :material-brightness-6: | Deliberative reasoning engine that projects potential futures. | **[31](../../adr/31-simulation.md)** |
-| **[The Mirror](./mirror.md)** | **Identity** | :material-mirror: | Maintains persistent **Personas** and shifts Bayesian Priors. | **[32](../../adr/32-identity.md)** |
-| **[The Legion](./legion.md)** | **Swarm** | :material-account-multiple-plus: | The Magus's army of Thralls. | **[42](../../adr/42-legion.md)** |
+| **[The Oculus](./oculus.md)** | **Observability** | Native evidence office plus optional external Eyes | Correlates bounded observations without becoming canonical event authority. | **[29](../../adr/29-observability.md)** |
+| **[The Tether](./tether.md)** | **Private reachability** | Managed WireGuard, external attachment, or private coupled provider | Narrows which enrolled devices can reach which services; never grants application authority. | **[39](../../adr/39-vpn.md)** |
+| **[The Veil](./veil.md)** | **Hostile ingress** | Managed Caddy, external edge attachment, or private coupled provider | Terminates transport security and admits typed routes; never authenticates the application caller. | **[40](../../adr/40-proxy.md)** |
+| **[The Ward](./ward.md)** | **IAM and authorization** | Singular Core-coupled backend authority with credential/policy adapters | Resolves principals and current object/effect authority. | **[38](../../adr/38-iam.md)** |
+| **[The Weaver](./weaver.md)** | **Workflow** | Singular Core office receiving Pattern and Composition contributions | Owns Pattern validation, registration, admission, continuity, and logical time; each Composition owns its application purpose. | **[28](../../adr/28-workflow.md)** |
+| **[The Scout](./scout.md)** | **Web acquisition** | Separately authorized effect providers assembled by Patterns | Acquires external material without converting contact into truth or further permission. | **[30](../../adr/30-webcrawler.md)** |
+| **[The Smith](./smith.md)** | **Assimilation** | Smith Agent inside the governed Assimilation Composition | Produces attributable candidate organs; never promotes or reanimates itself. | **[35](../../adr/35-assimilation.md)** |
+| **[The Soulforge](./soulforge.md)** | **Training** | Governed formation Composition with local or external trainer providers | Binds corpus, objective, recipe, run, and candidate-weight lineage. | **[33](../../adr/33-training.md)** |
+| **[The Riddle](./riddle.md)** | **Evaluation** | Trial and calibration Composition with domain-contributed cases | Forms calibrated capability claims; never grants privilege or promotion. | **[34](../../adr/34-evaluation.md)** |
+| **[The Toll](./toll.md)** | **Economics** | Governed middleware plus optional settlement adapters | Binds quote, authorization, settlement, delivery, and reconciliation. | **[41](../../adr/41-x402.md)** |
+| **[The Prism](./prism.md)** | **Vision** | Visual lifecycle with independent Animator providers | Grounds visual observations and transformations to exact source regions and times. | **[36](../../adr/36-vision.md)** |
+| **[The Echo](./echo.md)** | **Audio** | Speech-session lifecycle with independent Animator providers | Preserves temporal and causal speech semantics across capture, transcription, and synthesis. | **[37](../../adr/37-audio.md)** |
+| **[The Shadow](./shadow.md)** | **Simulation** | Possibility-lineage office invoked by Weaver; Tomb executes unsafe payloads | Holds incompatible candidate worlds without letting one appoint itself reality. | **[31](../../adr/31-simulation.md)** |
+| **[The Mirror](./mirror.md)** | **Identity** | Core-coupled identity binding with Persona/Posture contributions | Attributes acts to a versioned operative identity without minting caller authority. | **[32](../../adr/32-identity.md)** |
+| **[The Legion](./legion.md)** | **Distributed embodiment** | Owned-node protocol/profile with node-local providers | Fences delegated work across bodies while each body retains authority over its iron. | **[42](../../adr/42-legion.md)** |
 
 
 ---
 
-## 🧬 Anatomy of the Flesh
+## Anatomy of the Flesh
 
-Every extension, from simple script to complex multi-module architecture, adheres to the laws of the Federation.
+Every concrete extension package, from a small registration shim to a coupled multi-module organ,
+adheres to the Extension Protocol below. An Extension Domain may instead be Core-resident,
+Composition-shaped, externally attached, or dormant; those forms do not acquire
+`register(context)` merely because they belong to the Fifteen.
 
 ### I. The Extension Protocol
 
@@ -189,7 +209,12 @@ This is the designed assimilation sequence, not a runnable end-to-end workflow t
 the delivery of each participating office.
 
 1. **Genesis:** The Magus or **The Smith** drafts logic in the **[Lab (13)](../../adr/13-layout.md)**.
-2. **Speculation:** The system executes the code within the **[Shadow Realm (31)](../../adr/31-simulation.md)**.
+2. **Speculation:** A Weaver Pattern holds the candidate in the
+   **[Shadow Realm (31)](../../adr/31-simulation.md)** and routes only unsafe payloads to the Tomb.
 3. **Validation:** The **Ghouls** execute the "Rite of Speculation" (Linting, Typing, Testing).
-4. **Promotion:** Upon **[Sovereign Consent (25)](../../adr/25-hitl.md)** or an explicit Codex-governed preauthorization class, the system moves code to the **Crypt** and updates the lockfile. High-stakes mutation remains live Magus authority.
-5. **Rebirth:** The system triggers **[Packaging (17)](../../adr/17-packaging.md)** and restarts into its new physical body.
+4. **Promotion:** Upon **[Sovereign Consent (25)](../../adr/25-hitl.md)**, or only within an
+   explicitly defined low-risk preauthorization class, the owning services may move code to the
+   **Crypt** and update the lockfile. High-stakes mutation remains live Magus authority.
+5. **Rebirth:** An authorized lifecycle office may request
+   **[Packaging (17)](../../adr/17-packaging.md)** and a validated restart. Failure enters an
+   explicit recovery state; automatic code-and-database rollback is not assumed.

@@ -8,6 +8,10 @@ LychD's tracked agent context comes from **[AGENTS.md](AGENTS.md)** and the trac
 
 Agents must not load checkout-local overlays such as `.agents/AGENTS.md`, host-level profiles such as `~/.agents/AGENTS.md`, or tool-specific local profiles for this repo unless the operator explicitly assigns one for the current task. Ignored local shelves may exist as private scratch space, but they are not repository authorities and must not be required for LychD to build, test, package, or run.
 
+The operator-enabled [reference scope](.agents/scopes/references.md) progressively routes agents
+into an ignored `.agents/references/` shelf when it exists. That shelf remains optional,
+non-authoritative, and outside every build or test contract.
+
 ## The Iron Pact (Implicit DCA)
 
 By submitting code, you license your contribution under **MPL-2.0** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
@@ -29,7 +33,10 @@ make help                # View all available rituals
 The Altar lives under `frontend/`. The repository pins Node.js 24 LTS in `.nvmrc`; npm 11 owns the
 exact `frontend/package-lock.json`, SvelteKit owns client routing, Vite compiles the static build,
 and Litestar serves the result. Run `make frontend-check` after API or client changes and
-`make frontend-build` before testing the packaged browser shell.
+`make frontend-build` before testing the packaged browser shell. Local builds use the deterministic
+SvelteKit app version `source`; release or receipt builders may set `LYCHD_ALTAR_VERSION` to an
+immutable source identity, while GitHub builds use `GITHUB_SHA`. Never restore SvelteKit's
+timestamp default: the compiled Altar is tracked and must rebuild reproducibly.
 
 ### Purification (Quality Control)
 
@@ -80,7 +87,7 @@ jj git push         # Synchronize with the external world (Git remotes)
 - **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.
 - **Paths**: Never hardcode `~/.config/...`. Use `PATH_*` constants from `src/lychd/system/constants.py`.
 - **Boundaries**: Domain computes intent (pure); System performs mutations (filesystem, systemd).
-- **Documentation**: Follow **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Keep root entry doors (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) thin and routed; put architectural law in ADRs, canonical terms in `docs/lexicon.md`, published orientation in `docs/index.md`, accepted application contracts in `docs/compositions/`, domain doctrine in Sepulcher/Divination pages, uncommitted proposals in `docs/incubator/`, and routing hints in `.agents/scopes/`. Composition pages are accepted architecture but not delivery evidence; Incubator pages are neither accepted architecture nor actionable backlog. When a docs change moves system truth, update the links and hints that route readers to that truth.
+- **Documentation**: Follow **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Keep root entry doors (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) thin and routed; put architectural law in ADRs, canonical terms in `docs/lexicon.md`, application designs and explicitly marked candidate studies in `docs/compositions/`, domain doctrine in Sepulcher/Divination pages, and routing hints in `.agents/scopes/`. A page's declared maturity—not its directory—says whether it is a proposal or accepted architecture, and neither status is delivery evidence. When a docs change moves system truth, update the links and hints that route readers to that truth.
 - **Vessel (Litestar) Laws**: See **[ADR 11 §6](docs/adr/11-backend.md)** for full mandates:
     1. **Unbound Routing**: Use standalone `Controller` or `Router`. Never use `@app.get`.
     2. **DTO Mandate**: Use `SQLAlchemyDTO`. Never write redundant Pydantic models for ORM.

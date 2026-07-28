@@ -14,8 +14,8 @@ the **Magus**; that recurrent whole is the **Lich**. These are relational names,
 claims that every faculty is delivered. [State of the Work](../state-of-the-work.md) remains the
 sole record of what can answer now.
 
-> _“Command is blunt. Asking is not surrender. The Magus practices Divination: shaping a question
-> so precisely that only one answer can survive.”_
+> _“Command is blunt. Asking is not surrender. Divination makes the question precise enough that
+> uncertainty must show its shape.”_
 
 ## The Two Doors
 
@@ -32,9 +32,10 @@ exposes, or answer a supported request for human judgment.
     boundary](../state-of-the-work.md#local-browser-bind-boundary). A loopback listener is not
     caller authentication or browser-origin isolation.
 
-The [Altar map](./altar/index.md) begins at the **Bridge**, then routes to the other instruments
-without implying that every named surface is complete. State owns the exact Bridge, Nexus, Loom,
-and later-instrument boundaries; an item appearing in navigation is not delivery evidence.
+The [Altar map](./altar/index.md) begins at the **[Bridge](./altar/bridge.md)**, then routes to the
+**[Orb](./altar/orb.md)**, **[Nexus](./altar/nexus.md)**, and **[Loom](./altar/loom.md)** without
+implying that every named capability is complete. State owns each exact boundary; an item appearing
+in navigation is not delivery evidence.
 
 ### Read the journey through Transcendence
 
@@ -55,4 +56,4 @@ The act below assumes that the four observations in [Summoning](../summoning.md)
 that runs them. Until they do, remain in the rite rather than treating this page as liveness proof.
 
 > _Under the temporary browser boundary, [enter the Altar](./altar/index.md) and begin at the
-> Bridge._
+> [Bridge](./altar/bridge.md)._

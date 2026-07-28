@@ -159,6 +159,9 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     assert run.status is RunStatus.QUEUED
     assert run.queue_name == "runs"
     assert run.priority == 70  # bridge default
+    assert run.pattern_manifest["key"] == "bridge_chat"
+    assert run.pattern_manifest["revision"] == "1"
+    assert len(str(run.pattern_manifest["digest"])) == 64
 
     assert len(queues["runs"].enqueued) == 1
     job = queues["runs"].enqueued[0]
@@ -170,6 +173,47 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     # R9 wire inversion: doctrine bridge=70 → saq priority number 100-70=30 (saq
     # dequeues lowest-first, so a hotter run gets a LOWER number on the wire).
     assert job["priority"] == 30
+
+
+@pytest.mark.asyncio
+async def test_submit_retains_caller_context_before_broker_visibility() -> None:
+    """Bridge's user turn is linked to the canonical run before a worker can claim it."""
+    engine, ledger, queues = _engine()
+    retained: list[str] = []
+
+    async def retain(run_id: str) -> None:
+        assert await ledger.get(run_id) is not None
+        assert queues["runs"].enqueued == []
+        retained.append(run_id)
+
+    await engine.submit(
+        Intent(session_id="s", run_id="ordered", prompt="hi", source="bridge"),
+        retain_before_publish=retain,
+    )
+
+    assert retained == ["ordered"]
+    assert [job["run_id"] for job in queues["runs"].enqueued] == ["ordered"]
+
+
+@pytest.mark.asyncio
+async def test_submit_retention_failure_never_publishes_work() -> None:
+    """A caller-record failure settles the invisible row before any broker publish."""
+    engine, ledger, queues = _engine()
+
+    async def fail_retention(_run_id: str) -> None:
+        msg = "session write failed"
+        raise RuntimeError(msg)
+
+    with pytest.raises(RuntimeError, match="session write failed"):
+        await engine.submit(
+            Intent(session_id="s", run_id="retain-fail", prompt="hi", source="bridge"),
+            retain_before_publish=fail_retention,
+        )
+
+    run = await ledger.get("retain-fail")
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert queues["runs"].enqueued == []
 
 
 @pytest.mark.asyncio

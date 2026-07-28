@@ -40,7 +40,27 @@ icon: material/text-box-multiple-outline
 
 ## Decision Outcome
 
-**Context Aware Generation (CAG)** is adopted as the primary strategy for deep reasoning, enabled by a strict **Prompt Caching** discipline and a heuristic **Context Manager**. The implementation utilizes Pydantic AI's `RunContext` as the universal primitive for all cognitive rituals.
+**Context Aware Generation (CAG)** is adopted as the target strategy for deep reasoning, enabled by
+a strict **Prompt Caching** discipline and a heuristic **Context Manager**. LychD's typed
+`ContextOrchestrator` owns assembly. Pydantic AI's `RunContext` is an invocation-local dependency
+and instruction seam; it is not LychD's universal or persisted context primitive.
+
+!!! warning "Implementation state"
+    The delivered floor is a six-layer keyed skeleton. Identity, Environment, State, and Query
+    (layers 1, 3, 5, and 6) are populated; Codex and Karma (layers 2 and 4) are empty reserved
+    blocks. Environment currently names only the active capability and observed warm Coven—not
+    VRAM, power, connectivity, low-power mode, or Sigil scopes.
+
+    Current governors retain newest whole completed turns under turn and character limits, reserve
+    the required consent continuation whole, reassemble after the actual grant, read
+    `max_context`/`max_tokens` from the grant's resolved generation profile, and apply Pydantic AI
+    `UsageLimits`. The keyed prefix digest proves deterministic bytes for the represented blocks;
+    it does not prove provider KV-cache reuse.
+
+    Tokenizer-driven CAG/RAG arbitration, dataset ingestion, Codex/path hydration, Karma recall,
+    formatter registration, VRAM-aware condensation, measured cache reuse, quality-drift blocks,
+    and metacognitive pressure valves remain designed work. The sections below define that target
+    unless they explicitly name the delivered floor.
 
 Context is the temporary active surface of **the Spirit**—LychD's correspondence for Citta. It
 functions as the **Aisthēsis** (Gk. Αἴσθησις — integrated experience; the perceived simulacrum):
@@ -58,7 +78,8 @@ To exploit KV Cache capabilities, a deterministic ordering of message blocks is 
 5. **The State (Dynamic):** The current reasoning history or multi-turn conversation thread.
 6. **The Query (Volatile):** The specific user request. This is the transient perturbation.
 
-**The Result:** The inference engine hashes the prefix. As long as the Codex, Identity, and Karma remain unchanged, the system "remembers" the bulk of the data without re-processing, collapsing time-to-first-token.
+**The intended result:** a supporting inference engine may reuse an unchanged prefix. LychD does
+not yet measure or guarantee that provider behavior or a time-to-first-token reduction.
 
 Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of
 the **[Lich](../sepulcher/lich/index.md)**, Context is the active surface of **the Spirit**. The
@@ -138,9 +159,12 @@ The valve is not a friendliness layer or a substitute for proof. It is a small e
 ## Consequences
 
 !!! success "Positive"
-    - **Latency Collapse:** Successful prompt caching reduces the processing time of massive context from minutes to seconds.
-    - **Systemic Reasoning:** CAG allows the Agent to maintain a coherent understanding of complex structures that chunked retrieval cannot provide.
-    - **Hardware Alignment:** By acknowledging the "Weight" of context, the system prevents Out-of-Memory crashes during deep thinking rituals.
+    - **Deterministic Floor:** Current keyed assembly can prove the represented stable prefix is
+      byte-identical for the same keys.
+    - **Bounded Continuity:** Current whole-turn and character governors preserve completed session
+      history without splitting a required consent continuation.
+    - **Future Measurement Seam:** Provider cache reuse, CAG/RAG quality, and hardware pressure can
+      be measured without changing Context ownership.
 
 !!! failure "Negative"
     - **Cache Fragility:** A single character change in a static file invalidates the entire cached prefix, forcing a full re-computation.

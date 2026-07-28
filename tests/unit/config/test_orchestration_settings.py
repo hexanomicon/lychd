@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 import lychd.config.settings.root as settings_mod
-from lychd.config.settings.orchestration import OrchestrationSettings
+from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
 from lychd.config.settings.root import Settings
 from lychd.config.settings.server import ServerJobsSettings
 from lychd.domain.cortex.engine import DEFAULT_ROUTING, RouteRule
@@ -15,10 +16,11 @@ from lychd.domain.cortex.engine import DEFAULT_ROUTING, RouteRule
 
 def test_orchestration_defaults() -> None:
     orch = OrchestrationSettings()
-    assert orch.switching.policy == "evict-idle"
+    assert orch.switching.policy == "declared-conflicts"
     assert orch.switching.actuator == "host-reactor"
     assert orch.switching.min_priority_for_hard_swap == 40
     assert orch.switching.drain_timeout_s == 120.0
+    assert orch.switching.systemctl_timeout_s == 120.0
     assert orch.whim.idle_evict_after_s == 0
     assert orch.whim.preload == []
 
@@ -34,9 +36,11 @@ def test_orchestration_env_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
     """Nested env vars override the switching knobs (env_nested_delimiter='__')."""
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__MIN_PRIORITY_FOR_HARD_SWAP", "15")
     monkeypatch.setenv("ORCHESTRATION__SWITCHING__DRAIN_TIMEOUT_S", "7.5")
+    monkeypatch.setenv("ORCHESTRATION__SWITCHING__SYSTEMCTL_TIMEOUT_S", "8.5")
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 15
     assert settings.orchestration.switching.drain_timeout_s == 7.5
+    assert settings.orchestration.switching.systemctl_timeout_s == 8.5
 
 
 def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -46,6 +50,7 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
         "[orchestration.switching]\n"
         'policy = "evict-idle"\n'
         "min_priority_for_hard_swap = 33\n"
+        "systemctl_timeout_s = 9.5\n"
         "[server.jobs]\n"
         "interactive_concurrency = 9\n",
         encoding="utf-8",
@@ -54,8 +59,15 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setattr(settings_mod, "PATH_LYCHD_TOML", toml)
     settings = Settings()
     assert settings.orchestration.switching.min_priority_for_hard_swap == 33
+    assert settings.orchestration.switching.systemctl_timeout_s == 9.5
     assert settings.server.jobs.interactive_concurrency == 9
     assert settings.server.jobs.background_concurrency == 4
+
+
+@pytest.mark.parametrize("timeout_s", [0.0, -1.0, float("inf"), float("nan")])
+def test_systemctl_timeout_requires_a_finite_positive_budget(timeout_s: float) -> None:
+    with pytest.raises(ValidationError):
+        SwitchingSettings(systemctl_timeout_s=timeout_s)
 
 
 def test_v1_queue_topology_rejects_unimplemented_physical_queues() -> None:

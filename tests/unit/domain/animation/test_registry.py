@@ -12,6 +12,7 @@ from lychd.config.runes import ConfigLoader
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityPhase
+from lychd.domain.animation.conflicts import ConflictTopologyError
 from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.links import Link
@@ -362,6 +363,8 @@ def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest
         runtime_adapters=_builtin_adapters(),
         runtime_factories=[unresolved],
     )
-    registry.load()
-
-    assert registry.get_runtime("qwen-local") is None
+    with pytest.raises(
+        ConflictTopologyError,
+        match=r"at least one capability.*qwen-local",
+    ):
+        registry.load()

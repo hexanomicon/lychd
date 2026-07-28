@@ -2,7 +2,7 @@
 
 `pump_agent_events` streams one agent run (token deltas → `emit.token`, RAW; the
 client renders as text), captures the typed output, and returns the JSONABLE message
-history. `park_on_consent` serializes the pause into graph STATE and writes the
+history. `park_on_consent` serializes the current logical turn into graph STATE and writes the
 consent record — but does NOT emit (S4: the `CONSENT` event moves to `perform_run`,
 fired only AFTER `set_status(AWAITING_CONSENT)`).
 """
@@ -10,11 +10,18 @@ fired only AFTER `set_status(AWAITING_CONSENT)`).
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Final
 
-from pydantic_ai.messages import PartDeltaEvent, PartStartEvent, TextPart, TextPartDelta
+from pydantic_ai.messages import (
+    ModelMessagesTypeAdapter,
+    PartDeltaEvent,
+    PartStartEvent,
+    TextPart,
+    TextPartDelta,
+)
 from pydantic_ai.run import AgentRunResultEvent
-from pydantic_core import to_jsonable_python
+from pydantic_ai.usage import UsageLimits
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -30,8 +37,19 @@ if TYPE_CHECKING:
 
 MAX_CONSENT_ROUNDS: Final[int] = 3
 
+
+@dataclass(frozen=True, slots=True)
+class PumpResult:
+    """One agent hop split into resumable history and its new durable suffix."""
+
+    output: Any
+    all_messages: list[Any]
+    new_messages: list[Any]
+
+
 __all__ = [
     "MAX_CONSENT_ROUNDS",
+    "PumpResult",
     "is_single_approval",
     "new_step_id",
     "park_on_consent",
@@ -68,8 +86,9 @@ async def pump_agent_events(
     emit: RunEmitter,
     message_history: list[Any] | None = None,
     deferred_tool_results: Any = None,
-) -> tuple[Any, list[Any]]:
-    """Stream one agent run; return (typed output, jsonable all_messages()).
+    usage_limits: UsageLimits | None = None,
+) -> PumpResult:
+    """Stream one agent run and return typed output plus serialized message scopes.
 
     Token deltas are emitted raw (`emit.token`); clients must render them as text.
     """
@@ -82,6 +101,7 @@ async def pump_agent_events(
         toolsets=list(toolsets),
         message_history=message_history,
         deferred_tool_results=deferred_tool_results,
+        usage_limits=usage_limits,
     ):
         if isinstance(event, PartDeltaEvent) and isinstance(event.delta, TextPartDelta):
             emit.token(event.delta.content_delta)
@@ -93,7 +113,11 @@ async def pump_agent_events(
         msg = "agent run produced no result event"
         raise RuntimeError(msg)
     result = result_event.result
-    return result.output, to_jsonable_python(result.all_messages())
+    return PumpResult(
+        output=result.output,
+        all_messages=list(ModelMessagesTypeAdapter.dump_python(result.all_messages(), mode="json")),
+        new_messages=list(ModelMessagesTypeAdapter.dump_python(result.new_messages(), mode="json")),
+    )
 
 
 async def park_on_consent(
@@ -103,6 +127,8 @@ async def park_on_consent(
 ) -> ConsentDecision:
     """C3 step-2 park: serialize the pause into STATE and write the consent record.
 
+    `messages` is only the indivisible current LychD turn suffix. Settled history is
+    re-bounded under the grant acquired on resume, then prepended to this chain.
     S4: writes the row but does NOT emit — the `CONSENT` event fires in `perform_run`
     after `set_status(AWAITING_CONSENT)`, so a fast verdict can never beat the guard.
     """

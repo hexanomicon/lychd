@@ -1,1 +1,0 @@
-import"../chunks/DiKmhS7I.js";import"../chunks/xihTtKlq.js";import"../chunks/CrYQ6BbV.js";import{t as e}from"../chunks/CZHkopaJ.js";function t(t){e(t,{name:`Bindings`,description:`Typed configuration proposals will be projected here.`})}export{t as component};

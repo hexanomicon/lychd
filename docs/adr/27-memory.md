@@ -12,7 +12,9 @@ icon: material/brain
 
 - **Unified Substrate:** Mandatory integration of high-dimensional storage within the primary relational database to ensure atomic backups and eliminate operational complexity.
 - **Anatomical Partitioning:** Mandatory division of the database into logical chambers (schemas) to isolate Relational State, Vector Karma, System Traces, and Task Queues.
-- **Standardized Embedding Interface:** Adoption of a unified API for generating vectors across pluggable local and remote providers, utilizing the Pydantic AI `Embedder` class.
+- **Standardized Embedding Interface:** A LychD-owned embedding port must support pluggable local
+  and remote providers. A future Pydantic AI `Embedder` may implement that port only after the
+  dependency version providing it is deliberately admitted.
 - **Capability-Driven Recall:** Treatment of text-to-vector conversion as a functional capability, allowing the machine to manifest specialized hardware containers for heavy ingestion rituals.
 - **Asynchronous Ingestion:** Offloading of document partitioning and embedding to background labor to prevent blocking the primary cognitive reasoning loop.
 - **Karma-Based Evolution:** Provision of a mechanism to inscribe attributed, consecrated outcomes
@@ -20,9 +22,13 @@ icon: material/brain
   selected. Consecration preserves provenance and judgment; it does not make memory infallible.
 - **Agentic Tool Integration:** Manifestation of memory as a dynamically granted tool within the arsenal, rather than a hardcoded context injection.
 - **Logical Domain Isolation:** Mandatory support for partitioned vector namespaces to facilitate isolated memory domains for different users, personas, or speculative timelines.
-- **Sovereign Retrieval Thresholds:** Implementation of a "Hard Refusal" policy where the machine refuses to guess if retrieval confidence is below a defined mathematical limit.
+- **Sovereign Retrieval Thresholds:** Retrieval declares eligibility and relevance thresholds. A
+  miss must be reported honestly; a similarity score is never promoted into mathematical
+  confidence that a memory is true.
 - **Dimension Locking:** Mandatory sealing of vectors with the active model's signature to prevent drift when swapping embedding providers.
-- **Standardized Semantic Schema:** Adoption of a proven third-normal-form (3NF) schema for storing entity facts, process attributes, and knowledge graph triples to ensure interoperability with existing memory protocols.
+- **Inspectable Semantic Schema:** Candidate facts, process attribution, provenance, and any graph
+  relations must remain queryable through LychD-owned versioned records rather than an opaque recall
+  API. No vendor schema is constitutional law before an adapter spike proves it.
 - **Metabolic Engine Contract:** Memory framework must be integrated as a wrapped substrate driver, not as an autonomous execution loop, preserving Orchestrator and Dispatcher authority.
 - **Identity-Scoped Attribution:** Every memory write and recall path must carry an `entity_id` bound to the active Sigil to prevent cross-identity contamination.
 - **Consent-Governed Sharing:** Expertise, priors, and reinforced memory remain owned by the Sigil that cultivated them unless an explicit shared-memory or publication policy grants broader access.
@@ -47,20 +53,41 @@ icon: material/brain
     Implementing complex, multi-service ingestion and retrieval pipelines.
     - **Cons:** **Operational Overload.** These systems are designed for distributed enterprise clusters. On a single node, the CPU and RAM tax of their orchestration layers is prohibitive and contradicts the requirement for a lean, sovereign kernel.
 
-!!! success "Option 4: Integrated pgvector Archive + Memori Metabolic Engine"
-    Leveraging native `pgvector` inside PostgreSQL and Memori for asynchronous fact/triple extraction, while keeping lifecycle control in LychD.
+!!! success "Option 4: Integrated pgvector Archive with replaceable memory adapters"
+    Keep vector and attribution records inside PostgreSQL behind a LychD-owned memory port. Compare
+    a small native adapter with candidates such as Memori before selecting an augmentation engine.
     - **Pros:**
         - **Substrate Purity:** Memory becomes a logical chamber within the existing database, governed by the same transactional and snapshot laws as the rest of the machine.
-        - **Atomic Session Cohesion:** Memori's SQLAlchemy adapter binds to the *same async session* as the Vessel, so a memory write commits inside the same transaction and lands in the same Phylactery snapshot — not merely the same engine reached over a side connection. This is what makes **[Reanimation (ADR 07)](./07-snapshots.md)** bit-perfect.
-        - **Harvestable Karma:** Memori writes an inspectable 3NF schema (`memori_entity_fact`, `memori_knowledge_graph` triples, process attribution) directly into our own tables. The Soulforge Crucible can `SELECT`/`JOIN` consecrated Karma with its semantic vertex intact — memory is feedstock the **[Forge (ADR 33)](./33-training.md)** reads, not a recall API it must scrape.
-        - **Metabolic Lift:** Memori solves extraction/deduplication of facts and triples asynchronously, avoiding custom pipeline sprawl, while LychD retains Curator, decay, and lifecycle authority.
-        - **Standardization:** Pydantic AI’s native `Embedder` remains the runtime embedding contract for reasoning and retrieval.
+        - **Harvestable Karma:** LychD can shape records for direct governed queries instead of
+          scraping a recall API.
+        - **Adapter Evidence:** A bake-off can measure atomicity, async behavior, provenance,
+          deletion, migration ownership, and retrieval quality before coupling the Archive to a
+          framework.
+        - **Replaceable Mechanism:** Extraction and retrieval providers remain adapters; Curator,
+          decay, consecration, and lifecycle authority remain LychD-owned.
 
 ## Decision Outcome
 
-**Pgvector** is adopted as the definitive storage engine, utilizing the **Memori** framework as the underlying "Memory Fabric." The system adopts Memori’s schema and asynchronous augmentation logic while maintaining absolute control over the execution lifecycle via the LychD Orchestrator.
+**Pgvector inside PostgreSQL** is adopted as the target vector-storage substrate behind a
+LychD-owned memory port. No augmentation framework is selected yet. Memori is a candidate adapter,
+not a dependency or constitutional schema.
 
-The deciding criterion is **substrate ownership, not retrieval accuracy**. A pure-recall workload would now justify either framework — Mem0 v3's local retrieval is competitive. But because the **[Soulforge (ADR 33)](./33-training.md)** transmutes verified Karma into LoRA weights, memory must be a structured, attributed substrate LychD owns and mines in SQL, not a retrieval service it queries. Memori writes that substrate into our own session and exposes its facts and triples as plain tables; a retrieval-layer framework would keep them behind its API. That single difference — *mined, not recalled* — is why Memori is selected.
+The deciding criterion is **substrate and lifecycle ownership, not retrieval accuracy alone**.
+Memory must remain structured, attributable, removable, and inspectable under LychD policy. An
+adapter may help extract or retrieve records, but it may not silently own commits, migrations,
+curation, consent, or training eligibility.
+
+!!! warning "Implementation and adapter state"
+    Current matter is only a narrow `karma` row with nullable dimensionless vector, JSON metadata,
+    and optional session/Run references. It has no `entity_id`, candidate/consecrated status,
+    provenance contract, curation fields, retrieval port, embedding capability, or production
+    vector index.
+
+    Memori is not pinned. The checkout-local reference uses connection factories and performs its
+    own commits, including augmentation commits; this does not prove atomic participation in
+    LychD's async application transaction. The installed `pydantic-ai-slim==1.25.1` also has no
+    `Embedder` module. Before either enters law, a spike must prove async compatibility,
+    transaction ownership, migration ordering, deletion, provenance, and recovery.
 
 Memory is treated as sedimented experience rather than mere storage. Structured events capture the
 instrumented portion of **the Flux**—the project correspondence for active **Vṛttis**—through the
@@ -81,11 +108,13 @@ This boundary is social as well as technical. If a person's history, expertise, 
 
 ### 0. Build-vs-Buy Posture (Glue, Not Surrender)
 
-LychD adopts a hybrid strategy:
+LychD adopts a staged hybrid strategy:
 
-- **Buy the hard metabolism:** fact/triple extraction and graph normalization from Memori.
+- **Compare the hard metabolism:** evaluate a minimal native pgvector adapter and candidate
+  extraction/retrieval adapters against the same port.
 - **Keep sovereign control:** orchestration, queueing, policy, identity, and tool binding remain first-class LychD concerns.
-- **Integration shape:** Memori is wrapped as a substrate driver behind LychD interfaces (not exposed as a black-box runtime policy engine).
+- **Integration shape:** any selected framework is wrapped as a substrate driver behind LychD
+  interfaces, never exposed as a black-box runtime policy engine.
 
 This resolves the "build vs glue" crossroads while preserving ADR boundaries.
 
@@ -94,8 +123,9 @@ This resolves the "build vs glue" crossroads while preserving ADR boundaries.
 At Phylactery initialization:
 
 1. Ensure Postgres extension `pgvector` is enabled.
-2. Initialize Memori against the same SQLAlchemy/Session substrate used by the Vessel.
-3. Execute Memori storage build/migration to ensure core tables (including `memori_entity_fact` and `memori_knowledge_graph`) exist in the unified substrate.
+2. Apply only LychD-owned versioned Archive migrations.
+3. Initialize an explicitly selected memory adapter after its transaction and migration contract
+   has passed the adapter spike.
 
 Failure to satisfy `pgvector` capability is a hard startup error for memory-enabled deployments.
 
@@ -118,7 +148,9 @@ To maintain organizational and transactional purity, the Phylactery is divided i
 
 ### 3. The Standardized Embedding Pipeline
 
-The system adopts the Pydantic AI **`Embedder`** class as its primary interface.
+The system owns an embedding port. A future Pydantic AI **`Embedder`** may become one adapter after
+the installed dependency is upgraded and its contract is verified; it is not available in the
+current `1.25.1` baseline.
 
 - **The Capability:** Embedding is treated as a functional capability. It is provided by specialized **[containers (ADR 08)](./08-containers.md)** (e.g., `sentence-transformers`) within an Embedding Coven.
 - **Local Preference:** The system defaults to local embedding containers to ensure sensitive data never leaves the Sepulcher.
@@ -130,9 +162,13 @@ The system adopts the Pydantic AI **`Embedder`** class as its primary interface.
 Learning is an orchestrated background ritual that separates the storage (the database) from the compute (the model):
 
 1. A background **[Ghoul (ADR 14)](./14-workers.md)** partitions text and identifies the need for the `embedding` capability.
-2. The Advanced Augmentation logic (inspired by Memori) extracts entities, relationships, and facts.
+2. An admitted LychD memory adapter may propose entities, relationships, and facts as
+   provenance-bearing candidates. Memori remains one unselected comparison, not the owner of this
+   step.
 3. The **[Orchestrator (ADR 23)](./23-orchestrator.md)** manifests the required embedding service.
-4. The Ghoul generates vectors and performs an atomic bulk insert into the `vectors` chamber, updating HNSW indexes for sub-second concept-based retrieval.
+4. The Ghoul generates vectors and commits them through the memory port using the transaction and
+   indexing contract selected for that deployment. HNSW is one target index; latency remains a
+   measured property of the corpus, hardware, and query rather than a sub-second guarantee.
 5. Extracted memory is first written as a candidate record with provenance and confidence metadata for later curator adjudication.
 
 All ingestion writes are attributed:
@@ -174,14 +210,19 @@ durable records from which supported state can be reconstituted:
 
 - **Substrate Independence:** Inference engines are ephemeral processors; the Phylactery is the
   continuity anchor and candidate seed-vault. It is neither a person's soul nor the whole Lich.
-- **Declared Reanimation:** If the system substrate is moved or rebuilt, the state preserved in the chambers allows the Daemon to restore memory, persona, queues, and active **[Graph (ADR 24)](./24-graph.md)** tasks from their last valid committed boundaries. Volatile breath is reconstructed or abandoned according to graph, worker, and policy law.
+- **Declared Reanimation:** Future Archive and Persona records may participate in restoration only
+  at explicitly versioned committed boundaries. Current recovery proves neither semantic memory nor
+  Persona restoration. Volatile breath is reconstructed or abandoned according to graph, worker,
+  and policy law.
 
 ### 7. The Retrieval Lens (The Granted Tool)
 
 Memory is manifested as a dynamic power granted to an **[Agent (ADR 20)](./20-agents.md)** by the **[Dispatcher (ADR 22)](./22-dispatcher.md)**:
 
 - **The Grant:** A `query_archive()` tool is injected into the arsenal only when the required Embedding Coven is active.
-- **The Hard Refusal:** If a retrieval ritual returns a similarity score below the **Sovereign Threshold**, the Agent is physically barred from "guessing." It must return a hard refusal: *"The Archive contains no truth regarding this intent."*
+- **The Hard Refusal:** If no eligible retrieval clears the declared threshold, the Agent must say
+  that no admissible memory was found. It may not recast a similarity miss as proof that no truth
+  exists.
 - **Sigil Scope:** Retrieval MUST include `entity_id` scoping (or explicit policy-authorized shared scope) so one identity cannot read another identity’s Karma.
 - **Shared Scope Is Exceptional:** Cross-persona or cross-organization recall is a deliberate grant, not the default shape of memory. The system begins from sovereignty and moves outward only by consent.
 - **Cross-Identity Recall Is Hard-Gated:** Cross-identity recall is a hard-gated class under the **[Codex (ADR 12)](./12-configuration.md)** whose grant record is future work. Until that grant record is defined, **[Archive Gating (ADR 38)](./38-iam.md)** admits no exception, and every recall stays scoped to the active Sigil's `entity_id`.
@@ -190,9 +231,13 @@ Memory is manifested as a dynamic power granted to an **[Agent (ADR 20)](./20-ag
 
 The Archive is a programmable space. Extensions and Agents can modify the "Retrieval Rites" of the Daemon:
 
-- **Schema Extensions:** Extensions can define their own relational tables and Alembic migrations within the user's namespace, allowing the mind to structure its own specialized memories.
+- **Schema Contributions:** Selected extensions may propose shaped Archive records through ADR 05.
+  Migration ownership, ordering, upgrade, uninstall, and recovery remain with the Phylactery and
+  Extension Protocol; an extension does not gain independent migration authority.
 - **Dimension Lock:** Every vector is sealed with a **Model Slug**. The retrieval tool filters results by the active embedding provider. If the Magus swaps embedders, a ritual triggers background re-indexing to prevent "Dimension Drift."
-- **Reaper Coupling:** Pruning signals derive from access metadata (`last_accessed`, reinforcement counters), allowing the **[Branch Reaper (31)](31-simulation.md)** to purge low-signal memory without harming anchored knowledge.
+- **Curator Ownership:** Pruning signals may derive from access metadata (`last_accessed`,
+  reinforcement counters), but the Archive Curator owns memory lifecycle. Shadow's Branch Reaper
+  owns speculative workspaces and may only submit evidence candidates.
 - **Decay Semantics:** Decay is modeled as loss of salience rather than immediate deletion. Records may be down-ranked or moved to colder scopes before final pruning unless policy requires hard removal.
 
 ### 9. The Curator Loop (Good vs Garbage)
@@ -223,7 +268,10 @@ The Curator therefore manages sedimentation, not only deletion: it governs how e
 !!! note "Staged Memory Promotion"
     Curator output is staged and versioned before it becomes a future prior. A live run may write working memory, but batch consolidation should produce inspectable candidates or a new Archive version rather than silently mutating the active context underneath an Agent. Mirror, policy, and Context hydration decide when staged memories become active priors for a later run.
 
-    The staged-promotion boundary is already provided by the `vectors` chamber (**[Persistence (ADR 06)](./06-persistence.md)**): Curator writes are born `speculative`; the Rite of Consecration (**[HitL (ADR 25)](./25-hitl.md)**) alone flips a record to `consecrated`; and the **[Soulforge (ADR 33)](./33-training.md)** mines only consecrated Karma. Staged promotion is therefore a status transition under explicit authority, never a silent overwrite of live memory.
+    The staged-promotion boundary is designed, not delivered by the current `karma` row. A future
+    Curator may write `candidate` records; explicit policy or a Rite of Consecration may promote an
+    eligible record; and Soulforge may consume only an independently admitted training manifest.
+    The current schema has none of those status transitions.
 
 !!! note "Curator Consolidation Is Not Shadow Dreaming"
     Batch consolidation of traces, transcripts, tool outcomes, and HitL feedback belongs to the Archive and Curator loop. Shadow Simulation dreams candidate futures; the Curator distills the verified past into staged memory candidates. Mirror may then decide whether those candidates strengthen the active Sigil's semantic vertex before Context hydrates them as priors.
@@ -231,10 +279,13 @@ The Curator therefore manages sedimentation, not only deletion: it governs how e
 ## Consequences
 
 !!! success "Positive"
-    - **Atomic Stability:** The entire state of the machine (State, Memory, and Work) is captured in a single, consistent snapshot of the database directory.
-    - **Sovereign Extensibility:** New memory strategies can be implemented as Extensions that manipulate the existing chambers without requiring new infrastructure.
+    - **Unified Backup Target:** PostgreSQL keeps a path toward one governed backup substrate once
+      the memory schema and snapshot receipt are implemented.
+    - **Sovereign Extensibility:** New memory strategies can implement a shaped port without gaining
+      independent lifecycle or migration authority.
     - **Physical Purity:** By rejecting intrusive external frameworks, absolute control over execution loops and hardware utilization is maintained.
-    - **Truth Integrity:** The Hard Refusal ensures that reasoning is always grounded in verified or high-confidence data.
+    - **Epistemic Honesty:** A retrieval miss can be reported explicitly; similarity never proves
+      that a recalled record is true.
 
 !!! failure "Negative"
     - **Index Build Pressure:** Large-scale ingestion generates significant I/O pressure when rebuilding HNSW indexes, potentially impacting real-time performance.

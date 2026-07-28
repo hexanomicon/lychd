@@ -31,8 +31,9 @@ icon: material/language-html5
 - **Replaceable Renderer:** Framework-specific reactivity remains inside the presentation
   boundary. Transport, schemas, validation, event reduction, and domain rules remain ordinary
   TypeScript that another renderer can consume.
-- **Multi-Instrument Map:** Bridge, Scrying, Nexus, Loom, Reliquary, and Bindings remain distinct,
-  deep-linkable instruments under one application shell.
+- **Focused Instrument Map:** Bridge, Orb, Nexus, and Loom remain distinct, deep-linkable
+  instruments under one application shell. Artifact references and orchestration-relevant
+  declarations appear contextually without creating empty top-level authorities.
 - **Live Projection:** Snapshots plus resumable SSE must project token flow, run movement,
   approvals, transitions, logs, and terminal outcomes without making the browser a ledger.
 - **Closed Generative UI:** Models select and parameterize server-validated component descriptors.
@@ -129,16 +130,23 @@ Altar.
 
 | Instrument | Owning subsystem | Browser responsibility |
 | :--- | :--- | :--- |
-| **Bridge** | [Agents (20)](20-agents.md) | Conversation, input, stream projection, consent, and artifacts |
-| **Scrying** | [Observability (29)](29-observability.md) / [Graph (24)](24-graph.md) | Live and retained causal evidence |
-| **Nexus** | [Orchestrator (23)](23-orchestrator.md) | Capability, queue, lease, and physical-pressure projection |
-| **Loom** | [Weaver (28)](28-workflow.md) / [Graph (24)](24-graph.md) | Pattern browsing and inert graph drafts |
-| **Reliquary** | [Persistence (06)](06-persistence.md) / [Memory (27)](27-memory.md) | Artifact custody, lineage, and retrieval |
-| **Bindings** | [Configuration (12)](12-configuration.md) | Configuration provenance and typed proposals |
+| **Bridge** | [Agents (20)](20-agents.md) | Conversation, input, stream projection, consent, and contextual artifact references |
+| **Orb** | [Observability (29)](29-observability.md) / [Graph (24)](24-graph.md) | Bounded selected-Run structural evidence with explicit correlation and gaps |
+| **Nexus** | [Orchestrator (23)](23-orchestrator.md) | Current capability observations, retained transition observations, non-binding preview, and explicit transition request |
+| **Loom** | [Weaver (28)](28-workflow.md) / [Graph (24)](24-graph.md) | Immutable Pattern-revision browsing and an optional diagram lens |
 
 The top-level application shell owns navigation and shared caller/session presentation. Each
 instrument owns its route subtree and local layout. An instrument never owns the subsystem truth it
 projects.
+
+Bridge, Orb, Nexus, and Loom form the current conversation–evidence–body–design review loop.
+**Scrying** is the act of inspecting evidence through the Orb, not a fifth instrument.
+Artifact references stay attached to the conversation, event, or Pattern records that cite them
+until LychD owns custody, retention, and retrieval semantics substantial enough to justify a
+Reliquary instrument. Nexus may project the declarations that explain physical orchestration, but
+Configuration remains their authority; it is not absorbed by the Orchestrator. A future dedicated
+artifact or configuration instrument requires its own proved lifecycle and a deliberate revision
+of this Covenant.
 
 ### 1. The Projection Law
 
@@ -213,8 +221,9 @@ Live output uses semantic JSON SSE. Every event envelope carries at least:
 {
   "schema_version": 1,
   "run_id": "run-id",
+  "event_id": "producer-stable-event-id",
   "seq": 42,
-  "kind": "token|status|node|fragment|consent|log|done|resync",
+  "kind": "token|status|node|dispatch|transition|fragment|consent|log|done|resync",
   "occurred_at": "2026-01-01T00:00:00Z",
   "payload": {}
 }
@@ -227,10 +236,11 @@ or trace deltas may be batched once per animation frame before visual publicatio
 changes ledger order.
 
 The Bridge snapshot includes the selected session's active run identities and exact process-local
-projections. A route remount or browser reload rebuilds each missing live turn, seeds its reducer
-from the supplied cursor, and reattaches its stream. This reconstructs only the content and
-descriptors still owned by the current process's event channels; it does not make token deltas
-durable or promise cross-process token recovery.
+projections. A route remount or browser reload rebuilds each missing live turn, including the
+latest retained occurrence, dispatch grant, and transition correlation, seeds its reducer from
+the supplied cursor, and reattaches its stream. This reconstructs only the content and descriptors
+still owned by the current process's event channels plus best-effort retained structural evidence;
+it does not make token deltas durable or promise cross-process token recovery.
 
 Audio output may arrive as a completed authenticated artifact or a later proved streaming
 transport. The browser's transport convenience does not dictate the Animator contract.
@@ -274,9 +284,35 @@ extension may be compiled into the Altar behind an explicit registration adapter
 third-party UI requires a separately designed sandbox boundary; a Svelte component or Web
 Component is not a security sandbox.
 
-Loom and graph-shaped Scrying views may use Svelte Flow behind one LychD-owned adapter. The adapter
-owns pan, zoom, selection, edges, and inert draft gestures. Weaver and the Vessel own validation,
-publication, execution, persistence, and consent.
+Loom and future graph-shaped Orb views may use Svelte Flow behind one LychD-owned adapter.
+Graph-shaped Nexus details may use the same presentation mechanics when a graph answers a concrete
+operator question better than its primary table, list, or form. Acceptance of this seam does not
+claim that `@xyflow/svelte` is installed.
+
+The adapter contract is strict:
+
+- each mode consumes a closed, mode-specific DTO; no universal browser graph model erases the
+  difference between Pattern permission, execution evidence, physical state, lineage, and declared
+  configuration;
+- stable domain identity remains separate from renderer identity and coordinates;
+- pan, geometric zoom, selection, expansion, layout, and inert gestures are disposable
+  presentation state;
+- read-only modes structurally disable graph mutation while retaining selection, focus, and
+  meaningful keyboard operation;
+- scope changes through explicit selection, URLs, breadcrumbs, and drill-down controls; wheel zoom
+  never silently changes the domain query;
+- every edge names its epistemic relation, including containment, permission, correlation,
+  explicit causality, lineage, or declaration; shared time or trace identity never creates a
+  causal edge;
+- every canvas has a semantically equivalent keyboard-operable outline, list, table, or timeline
+  and inspector;
+- motion is a pausable, reduced-motion-safe acknowledgement of a typed event, never proof of state;
+  and
+- realistic node, edge, update, layout-time, and memory budgets are measured before a large graph
+  becomes a required operator surface.
+
+Weaver and the Vessel own validation, publication, execution, persistence, authorization, and
+consent. Oculus and each acting office own evidence semantics. The adapter owns none of them.
 
 ### 6. Styling Boundary
 
@@ -361,15 +397,16 @@ The rewrite was a replacement, not a permanent hybrid:
 3. Establish `/api/v1`, generated contracts, semantic JSON SSE, and the shared error law.
 4. Build Bridge as the first complete vertical slice: send, stream, reconnect, consent, settle,
    refresh.
-5. Port Nexus, Scrying, Loom, Reliquary, and Bindings by route.
+5. Port Orb, Nexus, and Loom by route.
 6. Use the former HTMX behavior only as a temporary parity oracle.
 7. Remove Jinja Altar templates, HTMX, Alpine, HTML SSE projection, polling fragments, and their
    obsolete tests once the corresponding Svelte behavior is proved.
 
 This migration boundary has now been crossed for the existing Altar: steps 1–7 are represented in
-source, generated assets, focused tests, and State of the Work. Scrying, Reliquary, and Bindings
-remain honest client-side placeholders rather than fabricated feature parity. New Altar work must
-extend the Svelte contract and must not reintroduce the retired HTMX/Jinja surface.
+source, generated assets, focused tests, and State of the Work. The Orb now has a bounded
+selected-run projection while the durable Oculus, live trace tail, run index, and graph-shaped
+evidence field remain later work. New Altar work must extend the Svelte contract and must not
+reintroduce the retired HTMX/Jinja surface.
 
 ### 10. Decision Reopening Criteria
 
@@ -400,6 +437,8 @@ Any replacement must preserve the API, event, GenUI, authority, and production-r
   [`$effect`](https://svelte.dev/docs/svelte/$effect)
 - [SvelteKit SPA mode](https://svelte.dev/docs/kit/single-page-apps) and
   [`adapter-static`](https://svelte.dev/docs/kit/adapter-static)
+- [Svelte Flow concepts](https://svelteflow.dev/learn) and
+  [accessibility configuration](https://svelteflow.dev/api-reference/types/aria-label-config)
 - [Litestar-Vite type generation](https://litestar-org.github.io/litestar-vite/usage/types.html)
 - [React external-store integration](https://react.dev/reference/react/useSyncExternalStore) and
   [React Compiler](https://react.dev/learn/react-compiler/introduction)

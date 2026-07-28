@@ -5,6 +5,8 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
+import structlog
+
 from lychd.domain.animation.capabilities import (
     CapabilityPhase,
     CapabilitySpec,
@@ -14,13 +16,16 @@ from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.cortex.leases import AnimatorAdmission
 from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
+    RuntimeCancellationRestoredError,
     RuntimePreconditionError,
     TransitionIntent,
     build_compensation_intent,
     capability_config_generation,
 )
 from lychd.domain.orchestration.arbiter import TransitionArbiter, TransitionDeclined
-from lychd.domain.orchestration.schema import TransitionPlan
+from lychd.domain.orchestration.journal import TransitionJournal
+from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -30,8 +35,11 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.priority import Priority
     from lychd.domain.orchestration.actuator import RuntimeActuator
     from lychd.domain.orchestration.policies import SwitchPolicy
+    from lychd.domain.orchestration.schema import TransitionPhase
 
 __all__ = ["OrchestratorManager", "TransitionDeclined"]
+
+logger = structlog.get_logger()
 
 
 class _RuntimeMutationBarrierState:
@@ -60,6 +68,7 @@ class OrchestratorManager:
         arbiter: TransitionArbiter,
         actuator: RuntimeActuator,
         switching: SwitchingSettings,
+        transitions: TransitionJournal | None = None,
     ) -> None:
         """Initialize orchestration against the injected registry, leases, and policy.
 
@@ -73,7 +82,33 @@ class OrchestratorManager:
         self._arbiter = arbiter
         self._actuator = actuator
         self._switching = switching
+        self.transitions = transitions or TransitionJournal()
         self._contained_reason: str | None = None
+
+    def _publish(
+        self,
+        trace: TransitionTrace,
+        phase: TransitionPhase,
+        *,
+        detail: str | None = None,
+    ) -> None:
+        """Acknowledge one semantic phase to the shared journal and optional Run sink."""
+        trace.phase = phase
+        if detail is not None:
+            trace.detail = detail
+        self.transitions.record(trace)
+        if trace.observer is not None:
+            try:
+                trace.observer(trace)
+            except Exception:  # noqa: BLE001 - projection sinks are deliberately isolated
+                # Evidence is a projection of physical truth, never a participant
+                # in it. A broken sink must not trigger rollback or containment.
+                logger.warning(
+                    "transition_observer_failed",
+                    request_id=trace.request_id,
+                    phase=trace.phase,
+                    exc_info=True,
+                )
 
     @property
     def containment_reason(self) -> str | None:
@@ -103,6 +138,7 @@ class OrchestratorManager:
                     "warm": state.warm,
                     "health": state.health,
                     "reason": state.reason,
+                    "checked_at": state.checked_at,
                     "dedicated": spec.concurrency.dedicated,
                     "persistent_resident": spec.concurrency.persistent_resident,
                 }
@@ -152,7 +188,13 @@ class OrchestratorManager:
             reason=decision.reason,
         )
 
-    async def handle_transition(self, exception: HardwareTransitionRequired, signal_priority: Priority) -> None:
+    async def handle_transition(
+        self,
+        exception: HardwareTransitionRequired,
+        signal_priority: Priority,
+        *,
+        trace: TransitionTrace | None = None,
+    ) -> None:
         """Execute the required transition and converge deterministically on WARM.
 
         ``TransitionDeclined`` (a priority-gated HARD_SWAP) propagates to `perform_run`
@@ -160,9 +202,15 @@ class OrchestratorManager:
         The terminal ``await_warm`` fails the transition loudly (``ActivationTimeout``)
         instead of handing a cold capability back to the stasis loop.
         """
-        await self.request_transition(exception.capability_key, signal_priority)
+        await self.request_transition(exception.capability_key, signal_priority, trace=trace)
 
-    async def request_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan:
+    async def request_transition(
+        self,
+        target_capability_key: str,
+        priority: Priority,
+        *,
+        trace: TransitionTrace | None = None,
+    ) -> TransitionPlan:
         """Calculate, execute, and converge a lifecycle transition on WARM.
 
         A HARD_SWAP below ``min_priority_for_hard_swap`` is declined loudly.
@@ -172,25 +220,78 @@ class OrchestratorManager:
         reflects post-predecessor reality — a stale plan computed against an older world
         can no longer evict the wrong animator and violate the Law of Exclusivity.
         """
-        self._raise_if_contained()
-        pre = await self.calculate_transition_plan(target_capability_key)
-        # The refresh above yields. Another transition may have latched global
-        # containment while this request was planning; recheck before the fast
-        # NO_OP return, which otherwise bypasses the arbiter-side check.
-        self._raise_if_contained()
-        target_animator = self._target_animator(target_capability_key)
-        if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
-            return pre
-        return await self._arbiter.run(
-            target_capability_key,
-            priority,
-            lambda: self._execute_transition(target_capability_key, priority),
-        )
+        trace = trace or TransitionTrace(target_capability_key=target_capability_key, priority=float(priority))
+        self.transitions.record(trace)
+        try:
+            self._raise_if_contained()
+            pre = await self.calculate_transition_plan(target_capability_key)
+            # The refresh above yields. Another transition may have latched global
+            # containment while this request was planning; recheck before the fast
+            # NO_OP return, which otherwise bypasses the arbiter-side check.
+            self._raise_if_contained()
+            target_animator = self._target_animator(target_capability_key)
+            if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
+                trace.plan = pre
+                self._publish(trace, "completed")
+                return pre
+            self._publish(trace, "arbitrating")
+            result = await self._arbiter.run(
+                target_capability_key,
+                priority,
+                lambda: self._execute_transition(target_capability_key, priority, trace=trace),
+            )
+        except TransitionDeclined as exc:
+            trace.plan = exc.plan
+            self._publish(trace, "declined_no_effect", detail=str(exc))
+            raise
+        except RuntimePreconditionError as exc:
+            self._publish(trace, "declined_no_effect", detail=str(exc))
+            raise
+        except RuntimeActuationRestoredError as exc:
+            self._publish(trace, "failed_restored", detail=str(exc))
+            raise
+        except RuntimeCancellationRestoredError as exc:
+            self._publish(trace, "cancelled_restored", detail=str(exc))
+            raise
+        except BaseException as exc:
+            if trace.phase not in {
+                "declined_no_effect",
+                "failed_restored",
+                "cancelled_restored",
+                "contained_uncertain",
+            }:
+                phase = (
+                    "contained_uncertain"
+                    if self._contained_reason is not None
+                    else "declined_no_effect"
+                    if trace.phase == "requested"
+                    else "failed"
+                )
+                self._publish(
+                    trace,
+                    phase,
+                    detail=str(exc),
+                )
+            else:
+                trace.detail = str(exc)
+                self.transitions.record(trace)
+            raise
+        if trace.plan is None:
+            trace.plan = result  # coalesced follower: actual owner plan, no invented host id
+        self._publish(trace, "completed")
+        return result
 
-    async def _execute_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan:
+    async def _execute_transition(  # noqa: PLR0915 - explicit transition/compensation state machine
+        self,
+        target_capability_key: str,
+        priority: Priority,
+        *,
+        trace: TransitionTrace,
+    ) -> TransitionPlan:
         """Run the arbiter-guarded critical section: re-plan against fresh world, then actuate."""
         self._raise_if_contained()
         plan = await self.calculate_transition_plan(target_capability_key)  # fresh, post-predecessor
+        trace.plan = plan
         if plan.action_type == "NO_OP":
             target_animator = self._target_animator(target_capability_key)
             if self._leases.admission(target_animator) is not AnimatorAdmission.OPEN:
@@ -207,6 +308,7 @@ class OrchestratorManager:
                 raise TransitionDeclined(plan, priority, threshold)
 
             affected_animators = list(dict.fromkeys([*plan.evict_coven_ids, *plan.launch_coven_ids]))
+            self._publish(trace, "draining")
             async with self._runtime_mutation_barrier(affected_animators) as barrier:
                 intent = TransitionIntent(
                     config_generation=self._config_generation(),
@@ -216,11 +318,18 @@ class OrchestratorManager:
                     launch_animators=tuple(plan.launch_coven_ids),
                     expected_active_animators=self._active_animators(),
                 )
+                trace.physical_transition_id = intent.transition_id
+                self._publish(trace, "actuating")
                 try:
                     await self._actuator.apply(intent)
-                except RuntimePreconditionError:
-                    # Host observation rejected the stale precondition before
-                    # any effect; the barrier can safely reopen for recovery.
+                except (
+                    RuntimePreconditionError,
+                    RuntimeActuationRestoredError,
+                    RuntimeCancellationRestoredError,
+                ):
+                    # The host either rejected before mutation or proved that a
+                    # failed transaction restored the exact pre-transition
+                    # world. In both cases the barrier may safely reopen.
                     raise
                 except (Exception, asyncio.CancelledError):
                     # The current actuator contract cannot prove whether a
@@ -232,10 +341,13 @@ class OrchestratorManager:
                     # The actuator returns only after the physical transition has
                     # a terminal outcome. Keep queue claims and evictee admission
                     # closed for the separate readiness convergence that follows.
+                    self._publish(trace, "verifying")
                     await self._converge_warm(target_capability_key)
                     await self._converge_evicted_cold(plan.evict_coven_ids)
-                except (Exception, asyncio.CancelledError):
+                except (Exception, asyncio.CancelledError) as convergence_error:
                     compensation = build_compensation_intent(intent)
+                    trace.compensation_transition_id = compensation.transition_id
+                    self._publish(trace, "compensating")
                     compensation_task = asyncio.create_task(self._actuator.apply(compensation))
                     try:
                         await asyncio.shield(compensation_task)
@@ -248,6 +360,14 @@ class OrchestratorManager:
                             "its typed compensation failed; runtime admission remains closed."
                         )
                         raise RuntimeError(message) from compensation_error
+                    self._publish(
+                        trace,
+                        (
+                            "cancelled_restored"
+                            if isinstance(convergence_error, asyncio.CancelledError)
+                            else "failed_restored"
+                        ),
+                    )
                     raise
             return plan
 
@@ -255,8 +375,10 @@ class OrchestratorManager:
         # can unload model A from the same process. Drain the whole animator so
         # an existing A grant cannot be invalidated underneath a running graph.
         target_animator = self._target_animator(target_capability_key)
+        self._publish(trace, "draining")
         async with self._runtime_mutation_barrier([target_animator]) as barrier:
             try:
+                self._publish(trace, "actuating")
                 await self._converge_warm(target_capability_key)
             except (Exception, asyncio.CancelledError):
                 # There is no trustworthy model-level inverse without recording

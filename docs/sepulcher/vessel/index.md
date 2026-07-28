@@ -5,26 +5,37 @@ icon: material/skull-scan
 
 # :material-skull-scan: Vessel
 
-> _"The Vessel is the reanimated husk through which the Lich speaks. It is not a tool; it is a conduit."_
+> _“The Vessel is where the daemon takes breath: one trusted process, never the whole Lich.”_
 
-The Vessel is the **[Lich's](../lich/index.md)** physical form in the mortal plane, a construct of code and will that serves as the nexus for all interaction. It renders the [Altar](../../divination/altar/), summons [Ghouls](./ghouls.md), and orchestrates [Shadow](../extensions/shadow.md).
-
-It is the face the Magus sees and the voice that answers the call.
+The Vessel is LychD's application process and composition root. It serves the
+[Altar](../../divination/altar/index.md), admits supported Invocations, binds domain services, and
+hands background execution to [Ghouls](./ghouls.md). It is the running body through which the
+[Lich](../lich/index.md) can answer, not the whole Lich by itself.
 
 !!! abstract "Anatomy of the Husk"
-    The Vessel is a sophisticated homunculus, constructed from several key arcane components:
+    Four technologies give the current Vessel its shape:
 
-    - **The Breath (`Granian`):** The Rust-based RSGI server that breathes life into the code. It is the raw, high-performance interface that connects the Vessel to the network, allowing it to speak and hear with multi-threaded fury.
-    - **The Skeleton (`Litestar`):** The asynchronous framework that provides the husk with its structure. Litestar holds the routing logic, the dependency injection, and the application lifecycle, allowing the Vessel to stand upright.
-    - **The Wards (`Pydantic`):** The runes of protection that define the Vessel's reality. Pydantic models act as the immune system, enforcing strict type validation to ensure that no corrupted or malformed data can penetrate the inner logic.
-    - **The Synapses (`Pydantic AI`):** The neural pathways that direct the flow of thought. While model-backed **[Animators](../animator/index.md)** provide the raw *capacity* to think, the Synapses define the *strategy* by structuring prompts, managing context windows, and routing decisions through directed graphs.
+    - **The Breath (`Granian`):** the production ASGI server that carries HTTP into the process.
+    - **The Skeleton (`Litestar`):** routing, dependency injection, lifecycle, and API authority.
+    - **The Wards (`Pydantic`):** typed configuration and boundary validation.
+    - **The Synapses (`Pydantic AI`):** typed Agent and Graph mechanics over capabilities supplied
+      by [Animators](../animator/index.md).
 
 !!! info "The Will of the Vessel"
-    The Vessel is the primary executor of the Lich's will. Its core duties are threefold:
+    The current Vessel has three concrete duties:
 
-    1. **To Serve the Altar:** It renders the sacred interface, presenting the Magus with a window into the Lich's operations and a means to issue commands. (The Altar is not a separate microservice; it is Server-Side Rendered HTML generated directly by the Vessel and served on the same port.)
-    2. **To Summon the Ghouls:** Upon receiving an Intent, it quickens a swarm of Ghouls, dispatching them to perform the necessary rites in the background.
-    3. **To Dream in Shadow:** It orchestrates the speculative execution of tasks in the Shadow Realm and presents the resulting timelines to the Magus for judgment.
+    1. **Serve the Altar:** Litestar serves the compiled static SvelteKit client and remains the
+       sole API and production-server authority.
+    2. **Admit work:** supported Intent enters a pinned Pattern, run, authority, and continuity
+       boundary before execution.
+    3. **Coordinate execution:** Ghouls perform admitted background work while the Dispatcher,
+       Orchestrator, Graph, and Phylactery retain their separate jurisdictions.
+
+    [Shadow](../extensions/shadow.md) remains a designed simulation office; it is not a fourth
+    delivered Vessel duty.
 
 !!! warning "A Conduit, Not the Source"
-    Remember that the Vessel is a mortal shell. While it is the Lich's primary instrument, its true soul is anchored in the [Phylactery](../phylactery/index.md). If the Vessel is destroyed, it is from the Phylactery that it is **[Reanimated](../phylactery/reanimation.md)**, its form restored and its purpose renewed.
+    Process death is not durable continuity. Only state committed through the
+    [Phylactery](../phylactery/index.md) can cross that boundary, and only the supported
+    [Reanimation](../phylactery/reanimation.md) paths may bring it back. A database record is not a
+    soul, and an uncommitted frame is not promised a return.

@@ -9,7 +9,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.orchestration.actuator import (
+    RuntimeActuationRestoredError,
     TransitionIntent,
     build_compensation_intent,
     capability_config_generation,
@@ -18,6 +20,8 @@ from lychd.system.services.reactor import HostReactor, render_reactor_path_unit,
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from pytest_mock import MockerFixture
 
 
 class _Spec:
@@ -78,12 +82,15 @@ def _host_reactor(
 def _registry() -> Any:
     runes = {
         "local": SimpleNamespace(
+            name="local",
+            groups=[],
             service_name="lychd-local",
-            concurrency=SimpleNamespace(dedicated=True, persistent_resident=False),
+            concurrency=ConcurrencyIntent(),
         )
     }
     return SimpleNamespace(
         list_capabilities=lambda: [_Spec()],
+        list_soulstone_runes=lambda: list(runes.values()),
         get_soulstone_rune=runes.get,
     )
 
@@ -92,13 +99,16 @@ def _swap_registry() -> Any:
     names = ("local", "old", "other")
     runes = {
         name: SimpleNamespace(
+            name=name,
+            groups=[],
             service_name=f"lychd-{name}",
-            concurrency=SimpleNamespace(dedicated=True, persistent_resident=False),
+            concurrency=ConcurrencyIntent(),
         )
         for name in names
     }
     return SimpleNamespace(
         list_capabilities=lambda: [_Spec(name) for name in names],
+        list_soulstone_runes=lambda: list(runes.values()),
         get_soulstone_rune=runes.get,
     )
 
@@ -128,6 +138,33 @@ def _write_intent(path: Path, intent: TransitionIntent) -> None:
     path.chmod(0o600)
 
 
+def test_reactor_threads_the_systemctl_client_budget(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    actuator_type = mocker.patch(
+        "lychd.system.services.reactor.SystemdRuntimeActuator",
+    )
+
+    HostReactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        systemctl_bin="/usr/bin/systemctl",
+        systemctl_timeout_s=6.5,
+        lock_factory=_uncontended_lock,
+    )
+
+    actuator_type.assert_called_once_with(
+        registry,
+        systemctl_bin="/usr/bin/systemctl",
+        systemctl_timeout_s=6.5,
+        observe_systemd=True,
+    )
+
+
 @pytest.mark.asyncio
 async def test_reactor_claims_applies_and_journals_once(tmp_path: Path) -> None:
     registry = _registry()
@@ -148,6 +185,31 @@ async def test_reactor_claims_applies_and_journals_once(tmp_path: Path) -> None:
     assert await reactor.consume_all() == 0
     actuator.apply_mock.assert_awaited_once()
     assert not pending.exists()
+
+
+@pytest.mark.asyncio
+async def test_reactor_journals_verified_prior_world_restoration(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    _write_intent(inbox / f"{intent.transition_id}.json", intent)
+
+    async def restore(_intent: TransitionIntent) -> None:
+        message = "systemd transaction failed; prior runtime world restored"
+        raise RuntimeActuationRestoredError(message)
+
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=_Actuator(apply=restore),
+    )
+
+    with pytest.raises(RuntimeError, match="did not apply transition"):
+        await reactor.consume_all()
+
+    assert (journal / f"{intent.transition_id}.restored.json").is_file()
+    assert not (journal / f"{intent.transition_id}.rejected.json").exists()
 
 
 @pytest.mark.asyncio
@@ -200,6 +262,141 @@ async def test_reactor_recovers_preexisting_processing_record(tmp_path: Path) ->
 
 
 @pytest.mark.asyncio
+async def test_reactor_keeps_uncertain_recovery_as_durable_processing_fence(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    processing = journal / f"{intent.transition_id}.processing.json"
+    _write_intent(processing, intent)
+
+    async def uncertain(_intent: TransitionIntent) -> None:
+        message = "systemd world cannot be classified"
+        raise RuntimeError(message)
+
+    actuator = _Actuator(recover=uncertain)
+    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
+
+    with pytest.raises(RuntimeError, match="cannot be classified"):
+        await reactor.consume_all()
+
+    assert processing.is_file()
+    assert not (journal / f"{intent.transition_id}.rejected.json").exists()
+    assert not (journal / f"{intent.transition_id}.contained.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_uncertain_recovery_fences_later_pending_effects(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    recovered = _intent(registry)
+    pending = recovered.model_copy(update={"transition_id": "b" * 32})
+    processing_path = journal / f"{recovered.transition_id}.processing.json"
+    pending_path = inbox / f"{pending.transition_id}.json"
+    _write_intent(processing_path, recovered)
+    _write_intent(pending_path, pending)
+
+    async def uncertain(_intent: TransitionIntent) -> None:
+        message = "systemd world cannot be classified"
+        raise RuntimeError(message)
+
+    actuator = _Actuator(recover=uncertain)
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=actuator,
+    )
+
+    with pytest.raises(RuntimeError, match="cannot be classified"):
+        await reactor.consume_all()
+
+    actuator.recover_mock.assert_awaited_once_with(recovered)
+    actuator.apply_mock.assert_not_awaited()
+    assert processing_path.is_file()
+    assert pending_path.is_file()
+
+
+@pytest.mark.asyncio
+async def test_reactor_persists_fresh_uncertain_actuation_as_containment(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    intent = _intent(registry)
+    _write_intent(inbox / f"{intent.transition_id}.json", intent)
+
+    async def uncertain(_intent: TransitionIntent) -> None:
+        message = "systemd world cannot be restored"
+        raise RuntimeError(message)
+
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=_Actuator(apply=uncertain),
+    )
+
+    with pytest.raises(RuntimeError, match="cannot be restored"):
+        await reactor.consume_all()
+
+    assert (journal / f"{intent.transition_id}.contained.json").is_file()
+    assert not (journal / f"{intent.transition_id}.rejected.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_fresh_containment_fences_later_pending_effects(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    first = _intent(registry)
+    second = first.model_copy(update={"transition_id": "b" * 32})
+    _write_intent(inbox / f"{first.transition_id}.json", first)
+    second_path = inbox / f"{second.transition_id}.json"
+    _write_intent(second_path, second)
+
+    async def uncertain(_intent: TransitionIntent) -> None:
+        message = "systemd world cannot be restored"
+        raise RuntimeError(message)
+
+    actuator = _Actuator(apply=uncertain)
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=actuator,
+    )
+
+    with pytest.raises(RuntimeError, match="cannot be restored"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_awaited_once_with(first)
+    assert (journal / f"{first.transition_id}.contained.json").is_file()
+    assert second_path.is_file()
+
+
+@pytest.mark.asyncio
+async def test_preexisting_containment_refuses_every_new_effect(tmp_path: Path) -> None:
+    registry = _registry()
+    inbox, journal = _secure_dirs(tmp_path)
+    contained = _intent(registry)
+    pending = contained.model_copy(update={"transition_id": "b" * 32})
+    _write_intent(journal / f"{contained.transition_id}.contained.json", contained)
+    pending_path = inbox / f"{pending.transition_id}.json"
+    _write_intent(pending_path, pending)
+    actuator = _Actuator()
+    reactor = _host_reactor(
+        registry,
+        inbox_dir=inbox,
+        journal_dir=journal,
+        actuator=actuator,
+    )
+
+    with pytest.raises(RuntimeError, match="containment is active"):
+        await reactor.consume_all()
+
+    actuator.apply_mock.assert_not_awaited()
+    actuator.recover_mock.assert_not_awaited()
+    assert pending_path.is_file()
+
+
+@pytest.mark.asyncio
 async def test_reactor_accepts_exact_inverse_of_completed_forward(tmp_path: Path) -> None:
     registry = _swap_registry()
     inbox, journal = _secure_dirs(tmp_path)
@@ -222,8 +419,8 @@ async def test_reactor_accepts_exact_inverse_of_completed_forward(tmp_path: Path
 
     assert await reactor.consume_all() == 1
 
-    actuator.recover_mock.assert_awaited_once_with(compensation)
-    actuator.apply_mock.assert_not_awaited()
+    actuator.apply_mock.assert_awaited_once_with(compensation)
+    actuator.recover_mock.assert_not_awaited()
     assert original_record.is_file()
     assert (journal / f"{compensation.transition_id}.completed.json").is_file()
 
@@ -304,12 +501,18 @@ async def test_reactor_recomputes_policy_before_host_effect(tmp_path: Path) -> N
     specs = [_Spec("old"), _Spec("local")]
     runes = {
         name: SimpleNamespace(
+            name=name,
+            groups=[],
             service_name=f"lychd-{name}",
-            concurrency=SimpleNamespace(dedicated=True, persistent_resident=False),
+            concurrency=ConcurrencyIntent(),
         )
         for name in ("old", "local")
     }
-    registry: Any = SimpleNamespace(list_capabilities=lambda: specs, get_soulstone_rune=runes.get)
+    registry: Any = SimpleNamespace(
+        list_capabilities=lambda: specs,
+        list_soulstone_runes=lambda: list(runes.values()),
+        get_soulstone_rune=runes.get,
+    )
     inbox, journal = _secure_dirs(tmp_path)
     intent = TransitionIntent(
         transition_id="b" * 32,
