@@ -45,6 +45,10 @@ BUILTIN_EXTENSIONS: Final = MappingProxyType(
             register_module="lychd.extensions.builtin.simulation.register",
             description="Shadow simulation rune schema.",
         ),
+        "delegation": BuiltinExtension(
+            register_module="lychd.extensions.builtin.delegation.register",
+            description="Delegated-agent runtime catalogue and no-network reference adapter.",
+        ),
     }
 )
 

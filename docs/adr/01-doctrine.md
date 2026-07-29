@@ -181,6 +181,10 @@ Four Gates without carrying every architectural rule itself.
 
 Within `docs/`, authority is divided by purpose:
 
+- **docs/map.md** is the top-level relational projection across the Hexanomicon. It compresses the
+  principal roads between Intent, anatomy, applications, execution, evidence, return, and their
+  canonical owners. It defines no rival terminology, architectural law, delivery state, or
+  implementation order.
 - **docs/adr/** defines architectural law, current boundaries, and decision
   rationale.
 - **docs/state-of-the-work.md** is the sole granular public delivery record. It

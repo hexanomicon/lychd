@@ -11,6 +11,7 @@ from pydantic_graph.persistence import BaseStatePersistence
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
 from lychd.domain.cortex.runs import ConsentPending, RunParked
+from lychd.domain.delegation.signals import DelegatedAgentParked, DelegatedAgentPending
 from lychd.extensions.protocols import PhylacteryProtocol
 
 if TYPE_CHECKING:
@@ -35,8 +36,10 @@ class NodeOccurrenceEvent:
     occurrence_id: str
     node_type: type[BaseNode[Any, Any, Any]]
     phase: Literal["entered", "settled", "waiting", "failed"]
-    wait_kind: Literal["hardware", "consent"] | None = None
+    wait_kind: Literal["hardware", "consent", "delegate"] | None = None
     transition_request_id: str | None = None
+    delegated_job_id: str | None = None
+    delegated_runtime: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -134,8 +137,10 @@ class GraphRunner[StateT: BaseModel]:
         occurrence_id: str,
         node: BaseNode[Any, Any, Any],
         phase: Literal["entered", "settled", "waiting", "failed"],
-        wait_kind: Literal["hardware", "consent"] | None = None,
+        wait_kind: Literal["hardware", "consent", "delegate"] | None = None,
         transition_request_id: str | None = None,
+        delegated_job_id: str | None = None,
+        delegated_runtime: str | None = None,
     ) -> None:
         """Publish a runtime occurrence edge without making GraphRunner an evidence store."""
         if self._on_node_event is not None:
@@ -146,6 +151,8 @@ class GraphRunner[StateT: BaseModel]:
                     phase=phase,
                     wait_kind=wait_kind,
                     transition_request_id=transition_request_id,
+                    delegated_job_id=delegated_job_id,
+                    delegated_runtime=delegated_runtime,
                 )
             )
 
@@ -265,6 +272,29 @@ class GraphRunner[StateT: BaseModel]:
                                 wait_kind="consent",
                             )
                         return RunParked(consent_id=park.consent_id, tool_name=park.tool_name)
+
+                    delegated = _extract_signal(exc, DelegatedAgentPending)
+                    if delegated is not None:
+                        try:
+                            await self.persistence.rehydrate_stasis(graph_run.state, graph_run.next_node)
+                        except BaseException:
+                            if active_node is not None and occurrence_id is not None:
+                                self._node_event(
+                                    occurrence_id=occurrence_id,
+                                    node=active_node,
+                                    phase="failed",
+                                )
+                            raise
+                        if active_node is not None and occurrence_id is not None:
+                            self._node_event(
+                                occurrence_id=occurrence_id,
+                                node=active_node,
+                                phase="waiting",
+                                wait_kind="delegate",
+                                delegated_job_id=delegated.job.job_id,
+                                delegated_runtime=delegated.job.runtime,
+                            )
+                        return DelegatedAgentParked(job=delegated.job)
 
                     signal = _extract_signal(exc, HardwareTransitionRequired)
 

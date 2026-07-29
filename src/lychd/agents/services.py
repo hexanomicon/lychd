@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.context import ContextOrchestrator
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.priority import Priority
+    from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
     from lychd.domain.orchestration.schema import TransitionPlan
     from lychd.domain.web.fragments import FragmentRegistry
 
@@ -132,6 +133,7 @@ class WorkflowServices:
     events: RunEventBus
     forge: AgentForge
     sigil_provider: Callable[[], Sigil]
+    delegates: DelegatedAgentCoordinatorPort | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +157,7 @@ def build_workflow_services(
     events: RunEventBus,
     forge: AgentForge,
     sigil_provider: Callable[[], Sigil] = default_sigil,
+    delegates: DelegatedAgentCoordinatorPort | None = None,
 ) -> WorkflowServices:
     """Assemble `WorkflowServices` from run-scoped service handles.
 
@@ -173,6 +176,7 @@ def build_workflow_services(
         events=events,
         forge=forge,
         sigil_provider=sigil_provider,
+        delegates=delegates,
     )
 
 

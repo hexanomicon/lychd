@@ -22,6 +22,8 @@ icon: material/package-variant-closed
 - **Manual Transition Gate:** Air-gapped activation of new images requiring a manual signal via the **CLI** to prevent autonomous "Infection and Restart" loops.
 - **Installable Runtime:** A clean wheel install must contain every dependency required by the shipped `lychd` CLI, Vessel, workers, persistence, and agent runtime in its wheel metadata.
 - **Development-Only Groups:** Dependency groups may carry documentation, test, lint, and type-check tools; they may not hide packages required by an installed runtime.
+- **License-Complete Artifacts:** Source distributions, wheels, images, and synthesized bodies must
+  carry every license and attribution notice required by incorporated or adapted source.
 
 ## Considered Options
 
@@ -66,7 +68,9 @@ non-negotiable contract:
   commands are not public roots.
 - A release gate builds the wheel, creates a clean environment, installs that wheel alone, checks
   its dependency metadata, imports the runtime composition root, and invokes the CLI help surface.
-  Passing inside the developer's already-synchronized `.venv` is not evidence of installability.
+  It also verifies that the project license and required third-party source notices survive into
+  every distributed artifact. Passing inside the developer's already-synchronized `.venv` is not
+  evidence of installability.
 
 This wheel-clean-install gate is implemented foundation law. Multi-manifest extension synthesis,
 the signed Synthesis Manifest, the Nix strategy, and autonomous Forge/Rebirth remain staged work;
@@ -124,23 +128,29 @@ This is the advanced, functional upgrade path for the image construction.
 
 The resulting image is loaded into the local registry as `lychd:custom`. To ensure the Magus remains the ultimate arbiter, the activation of the new body is an air-gapped ritual. The system refuses to restart the container or apply the new **[Quadlets (08)](08-containers.md)** until it receives a manual confirmation command via the **CLI**.
 
-### 4. Dual-Plane Trust Delta
+### 4. Runtime Trust Profiles
 
-Packaging now emits two runtime classes:
+The Forge target emits three separately auditable runtime profiles:
 
 - Vessel image: trusted control plane.
 - **The Tomb** image: untrusted execution runtime. Carries Python, `uv`, `nono`, and common CLI tools only. No agent framework, no LLM client libraries, no graph runner dependencies.
 - **Tomb** dependency expansion uses curated cache/broker channels by default.
+- **The Coffin** image: delegated-agent runtime. Carries only audited adapter CLIs, the effectful
+  supervisor, `nono`, and required transport libraries. It has no Core graph runner, database
+  client, promotion tool, browser/keychain integration, or real provider credential.
+
+Tomb and Coffin may share a hardened base layer, but they remain distinct generated profiles with
+different entrypoints, dependency manifests, network policies, and adversarial receipts. Shipping
+an executable or Python policy compiler in the Vessel does not prove either lower-trust image.
 
 ### 5. Authority Matrix
 
-| Dimension | Vessel Artifact (Trusted Control Plane) | The Tomb Artifact (Untrusted Execution Plane) |
-| :--- | :--- | :--- |
-| Secrets | Runtime secret injection for control-plane duties only. | No provider, signing, or control-plane secret injection. A Tomb worker profile may receive a queue-only SAQ/Postgres execution credential. |
-| Mounts | Trusted Codex/persistence mount contract. | Minimal execution mounts; no writable Codex and no Codex-wide privileged mounts. |
-| Network | Controlled provider/control-plane access. | Constrained egress; brokered resources preferred. |
-| Queue Ownership | Carries queue-capable control-plane components. | Carries execution-plane queue claim/ack components only. |
-| Authority Boundaries | Participates in controlled rebirth signaling. | Cannot trigger rebirth or infrastructure transitions. |
+| Dimension | Vessel artifact | Tomb artifact | Coffin artifact |
+| :--- | :--- | :--- | :--- |
+| Secrets | Required control-plane injection only. | At most one narrow execution-queue credential. | Phantom Provider Gate capability only; no real provider or database secret. |
+| Mounts | Trusted Codex/persistence contract. | Minimal disposable execution mounts. | Immutable projection or disposable candidate worktree plus scratch/artifacts. |
+| Network | Controlled provider/control-plane access. | Brokered resources outside the zero-network child. | Exact Provider Gate protocol only. |
+| Authority | May participate in controlled rebirth. | Claim/settle execution jobs; no rebirth. | Run one delegated job; no queue, promotion, rebirth, or infrastructure transition. |
 
 ### Consequences
 

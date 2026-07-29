@@ -78,7 +78,7 @@
 
   <div class="spacer"></div>
   <a class="sigil" data-state={pending > 0 ? "lit" : "dormant"} href="/bridge">
-    ◈ {pending > 0 ? `${pending} awaiting` : "Consent clear"}
+    ⬡ {pending > 0 ? `${pending} awaiting` : "Consent clear"}
   </a>
   <span class="sigil-identity" title="Fixed local authority context; not authentication">
     Local Sigil · <b>Magus</b>

@@ -1,7 +1,7 @@
 """Side-effect-free factory functions that assemble Litestar plugin/app config.
 
 Importing this module performs NO I/O and resolves NO secrets: every config
-object is produced by a ``build_*`` factory called from the composition root
+object is produced by a ``build_*`` factory called from the application assembly root
 (``AppInit.on_app_init``) or from a SAQ worker startup hook.
 """
 

@@ -58,6 +58,8 @@ deliberate relation with the Lich is called the **Magus**.
   [the source-candidate Summoning](./summoning.md) within the boundary that rite names.
 - **I want to judge it:** read [State of the Work](./state-of-the-work.md), then follow its evidence
   to source and tests.
+- **I want to see how the whole system fits:** [unfold the Map](./map.md), then enter the smallest
+  owning chamber that can answer your question.
 - **I want to build it:** enter [the Covenants](./adr/index.md) to find the owning decision, then
   return to the repository contract and implementation.
 - **I want to understand its telos:** enter the voluntary [Great Work of

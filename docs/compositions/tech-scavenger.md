@@ -57,7 +57,7 @@ to watch listings all day.
 | Support tier | Architecture-only reference; unsupported |
 | Purpose | Complete one bounded, evidence-aware used-technology purchase campaign |
 | Default manual Pattern | `scavenger.plan_campaign@1` |
-| Default scheduled Pattern | `scavenger.daily_hunt@1` |
+| Default scheduled Pattern | `scavenger.daily_watch@1` |
 | Primary projection | Campaign board: build slots, candidates, seller threads, commitments, and expected parcels |
 | Provider binding | Scout effects, deterministic catalogues/parsers, and operator-selected local `chat`/`vision` Runes |
 | Principal non-goal | Unbounded scraping, spam, undisclosed impersonation, autonomous payment, or a resale business |
@@ -72,7 +72,7 @@ The setup surface asks for outcomes before component jargon:
    trusted specifications.
 3. **What are the limits?** Total campaign budget, per-slot ceiling, deadline, maximum outstanding
    cash-on-delivery exposure, and maximum number of purchases.
-4. **How far may it hunt?** Home region represented only by a coarse search origin, personal-pickup
+4. **How far may it search?** Home region represented only by a coarse search origin, personal-pickup
    radius, travel-cost policy, and acceptable shipping territory.
 5. **What proof is enough?** Listing-only alert, remote screenshot/report, challenge-bound video,
    personal test, warranty receipt, or a component-specific combination.
@@ -162,7 +162,7 @@ The output is a versioned shopping plan, not a promise that the recommended part
 remain available. Unknown existing hardware creates a question or a blocked compatibility edge; a
 model guess never becomes a socket, clearance, power, firmware, or memory-support fact.
 
-### `scavenger.daily_hunt@1`
+### `scavenger.daily_watch@1`
 
 ```text
 AdmitDailyOccurrence
@@ -346,6 +346,23 @@ the same typed contracts, and it keeps source acquisition separate from any cred
 channel. Exact home location remains private; a campaign may receive only a chosen region, radius,
 or locally derived distance.
 
+### Scout listing-observation boundary
+
+Saved queries, permitted source acquisition, listing normalization, deduplication, change
+observation, and site-effect receipts are reusable Scout acquisition machinery, not a marketplace
+Composition. A Bazoš or other market adapter may emit a pinned `ListingObservationBatch@1` under
+its exact source, selector, policy, and acquisition revisions.
+
+Tech Scavenger owns the human purpose around that observation: the purchase campaign, hardware
+compatibility, requested tests, value reasoning, negotiation limits, parcel lifecycle, and
+received-item inspection. [Home Seeker](home-seeker.md) may consume the same marketplace
+observation shape while owning entirely different property, location, ranking, and due-diligence
+law. Neither application receives the other's private state or effect authority.
+
+If generic marketplace monitoring someday acquires an independent operator-visible purpose,
+domain records, policies, projections, and lifecycle beyond supplying source observations, it may
+be proposed as a Composition then. Reuse, scheduling, or deduplication alone is insufficient.
+
 The future Smith may read this Reference Composition, Scout law, routed scopes, Bazoš fixtures,
 and the target bazaar's attributable public surfaces to fabricate a candidate adapter and tests
 in the Lab. It must re-establish target terms, robots behavior, identity requirements, fields,
@@ -393,6 +410,20 @@ Each send has a prepared receipt with thread, template revision, redacted payloa
 class, consent or standing-authority reference, and expected postcondition. If the site provides no
 idempotency key and the acknowledgement is lost, the outcome is `unknown_send`; the Pattern parks
 for reconciliation or the Magus rather than sending the same message again.
+
+### Candidate extraction through Bazaar Haggler
+
+The accepted Tech Scavenger design currently owns its seller-thread, negotiation, and COD closure
+Patterns directly. A candidate refinement may issue a pinned `NegotiationMandate@1` to
+[Bazaar Haggler](bazaar-haggler.md), receive an attributed `NegotiationOutcome@1`, revalidate the
+hardware candidate, and only then issue an exact `CodClosureMandate@1`.
+
+Haggler would own reusable conversation state, counteroffer discipline, stop signals, prepared
+sends, and unknown-send reconciliation. Tech Scavenger would retain compatibility, evidence,
+value, hard price and all-in ceilings, campaign budget, component-slot reservation, purchase
+count, parcel expectation, and received-item inspection. Scout would still own the actual
+interaction/session effect. This candidate boundary is not part of Tech Scavenger revision 1 and
+does not weaken its current end-to-end contract.
 
 ## Cash-on-delivery commitment and address disclosure
 

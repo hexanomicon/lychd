@@ -150,3 +150,22 @@ ADR prose should be direct and durable:
 - Earlier ADRs may foreshadow or subtly reference later concepts to establish the shape of the architecture.
 - Later ADRs should expand upon and specify the details foreshadowed by earlier ADRs (e.g., the Extensions ADR provides the summary of what is being extended, while specific extension ADRs detail the "how").
 - Explicit linking is permitted and encouraged to bind the covenants together.
+
+#### 6. Cross-Cutting Ownership
+
+An architectural feature that crosses existing offices does not earn a new Covenant merely by
+being large. It extends the smallest current owners unless it establishes a genuinely new
+authority. Delegated-agent execution follows this rule:
+
+- [Graph (24)](24-graph.md#3-delegated-agent-macro-nodes) owns the macro-node and durable
+  `AgentJob` handshake;
+- [Security (09)](09-security.md#the-coffin-delegated-agent-profile) owns Coffin containment and
+  the Provider Gate;
+- [Extensions (05)](05-extensions.md#delegated-agent-runtime-adapters) owns foreign runtime
+  adapters;
+- [Dispatcher (22)](22-dispatcher.md#delegated-agent-capability-grants) and
+  [Orchestrator (23)](23-orchestrator.md#3-delegated-provider-capacity) own selection and capacity
+  admission; and
+- [Oculus (29)](29-observability.md#4-delegated-agent-evidence) owns evidence projection.
+
+This routing intentionally leaves the Forty-Third Covenant unwritten.

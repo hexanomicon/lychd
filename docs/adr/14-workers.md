@@ -181,6 +181,24 @@ artifact region. To prevent file collisions, every job must create a unique, iso
 under the Tomb job root (e.g., `~/.local/share/lychd/tomb/jobs/<job_id>/`). The executor will own
 bounded cleanup. This is a design requirement, not current runtime behavior.
 
+#### Delegated `AgentJob` Labor
+
+A foreign delegated agent is not raised as a Tomb Ghoul. Its
+[`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) creates or recovers one durable
+`AgentJob` and submits that envelope to a distinct Coffin supervisor. The graph worker checkpoints,
+parks in Durable Stasis, and may exit; it does not hold a coroutine open while a CLI session runs.
+
+The Coffin supervisor owns only effectful preparation, process-tree lifecycle, bounded collection,
+and terminal submission. The `AgentJob` ledger owns idempotent occurrence truth. The adapter owns
+foreign protocol interpretation. Reanimation occurs only after the terminal job commit. Worker
+retry may re-observe or re-claim the same job; it may not start another external job for the same
+Run/node occurrence/attempt.
+
+The first safe slice therefore requires durable job persistence and crash pickup, not merely a
+SAQ wrapper around a subprocess. The currently typed in-memory coordinator and graph park signal
+are a Partial domain seam; they are not the delivered supervisor or restart boundary. [State of
+the Work](../state-of-the-work.md#delegated-agent-execution) owns the exact evidence.
+
 ### 3. Orchestrated Labor (The Command)
 
 The Ghouls operate under the strict discipline of the **[Orchestrator (23)](23-orchestrator.md)**.
@@ -222,10 +240,11 @@ Memory curation runs as a separate periodic Ghoul specialization:
 
 The architecture allows extensions to register their own background functions (Rites). This ensures that heavy logic added by extensions (e.g., document processing or code compilation) does not degrade the performance of the core Vessel.
 
-### 6. Dual-Plane Trust Delta (Target Topology)
+### 6. Lower-Trust Execution Delta (Target Topology)
 
-The completed worker topology must span Trusted and Semi-Trusted planes. V1 currently implements
-only the trusted Vessel side; every Tomb statement below is a required future boundary.
+The completed worker topology must span trusted and lower-trust profiles. The foundation currently
+implements only the trusted worker side; every effectful Tomb or Coffin statement below is a
+required future boundary.
 
 - Vessel workers remain fully trusted for control-plane tasks.
 - Tomb workers will be **Semi-Trusted** execution hands. The main Python loop in the Tomb container
@@ -237,6 +256,9 @@ only the trusted Vessel side; every Tomb statement below is a required future bo
   direct reads of unmounted Vessel secrets, while database roles and every reachable service must
   enforce their own authorization. The current local-only LychD API is not a hostile-network
   authentication boundary.
+- Coffin supervisors must receive no queue/database or provider credential. Their delegated child
+  receives one disposable filesystem projection and one revocable Provider Gate capability under
+  the fixed profiles in [Security](./09-security.md#the-coffin-delegated-agent-profile).
 
 ### Policy Table
 

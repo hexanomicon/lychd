@@ -64,6 +64,13 @@ icon: material/spider-thread
 **The Scout Domain is adopted as a composition of separately authorized acquisition effects.**
 There is no sovereign `Scout` package and no provider may upgrade its own grant.
 
+Scout is the common external-observation boundary, not an operator-facing application catalogue.
+Bazoš, Google Maps or another geo provider, a merchant catalogue, a shop, and a public menu source
+are source/provider adapters beneath Scout even when they expose different APIs, feeds, pages, or
+browser surfaces. A consuming Composition owns why the observation matters and what consequence
+may follow; the adapter owns only lawful acquisition, normalization, provenance, freshness,
+budgets, and source-specific policy.
+
 ### 1. The First Passage
 
 The first supported path will be one bounded, unauthenticated HTTPS GET followed by network-free

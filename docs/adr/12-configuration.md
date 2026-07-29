@@ -100,6 +100,40 @@ traffic must enter through the authenticated Ward/Proxy path defined by IAM.
 Extension instance intent belongs to its Rune. In particular, model mounts,
 runtime images, portals, and coven membership do not belong in global settings.
 
+### Extension activation and application selection
+
+The Codex keeps two independent selection questions separate:
+
+| Question | Owner | Configuration boundary |
+| --- | --- | --- |
+| Which optional code packages may register contributions? | Extension host | `[extensions]` |
+| Which registered applications may the Magus operate? | Weaver Portfolio | future `[portfolio]` |
+| Which model, provider, source, or managed-runtime instances satisfy declared capabilities? | Owning extension/domain | `runes/` |
+| Which campaigns, saved searches, schedules, budgets, inventories, or other live application records exist? | Owning Composition | Phylactery domain state |
+
+Selecting an Extension permits its `register(context)` shim to contribute schemas, adapters, and
+future Pattern, Composition, or Suite metadata. It does not enable any contributed application.
+Conversely, Portfolio selection cannot import a package that was not admitted through Extension
+assembly. This is a two-pass contract: assemble eligible code first, then resolve exact registered
+application revisions.
+
+The current delivered Settings root accepts only `[server]`, `[orchestration]`, and
+`[extensions]`. There is no accepted `[portfolio]` section yet because the Composition and Suite
+stores do not exist in the current `ExtensionContext`. The target boundary, once Weaver owns the
+registry and validation path, is a separate top-level selector shaped approximately as:
+
+```toml
+[portfolio]
+compositions = ["example.application@1"]
+suites = []
+```
+
+This sketch reserves ownership, not accepted syntax or delivery. Exact revision grammar,
+dependency closure, unavailable-contribution errors, defaults, and upgrade behavior must enter
+with the shaped Portfolio store, tests, initialization output, and a matching
+[State of the Work](../state-of-the-work.md) boundary. Composition-specific runtime records do not
+belong in that selector, and application selection must not be smuggled into `[extensions]`.
+
 The caged foundation selects the Host Reactor explicitly in the generated default tree:
 
 ```toml

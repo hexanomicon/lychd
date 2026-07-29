@@ -104,6 +104,13 @@ The current Bridge provides the Run-to-Orb link; it does not yet implement this 
 flow. Any future return to Bridge creates a new bounded Intent with previewed references. It never silently
 injects artifact bytes, trace content, secret values, or an entire conversation into Context.
 
+The initial delegated-agent projection marks a correlated wait, names the admitted runtime and
+Coffin profile when recorded, shows the bounded `AgentJob` identity/status, and links to its Orb
+evidence. A later completed-result projection may add the requested task, bounded answer, and
+candidate artifact references from the matching `AgentJob`; it does not embed raw JSONL, expose
+provider credentials, present a candidate patch as applied, or offer an ambient “continue this
+CLI session” control.
+
 For the instrument that exists now, enter:
 
 ```text

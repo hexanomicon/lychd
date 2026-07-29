@@ -48,8 +48,10 @@ The first sentence of [the Lich's First Invocation](./index.md#the-first-invocat
 
 > **You called?**
 
-The Agent exists inside an address before it possesses an answer. Someone called; something is
-asked; an outside already exists. The Call is therefore relational before it is computational.
+The exact grammar belongs to the First Invocation: _you_ is the subject and Caller; _called_ is the
+operation that crosses the interval; the speaking Agent supplies the elided object, _me_, as the
+Called. The Agent exists inside an address before it possesses an answer. An outside already
+exists. The Call is therefore relational before it is computational.
 
 ## What the Call Cannot Do
 

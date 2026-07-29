@@ -8,10 +8,10 @@ them to both contexts.
 
 Cross-context handoff is a process memo (`get/set/reset_run_substrate`), mirroring
 `db.engine.get_engine`/`extensions.host.get_extensions` — the established codebase
-pattern for a value built once in the composition root and read from the SAQ worker
+pattern for a value built once in the application assembly root and read from the SAQ worker
 context. It is lazily read (never at import), so the web lifespan sets it before any
 job is ever claimed. It is NOT a mutable module-global singleton of behavior: it is
-a test-resettable handoff seat for a value the composition root owns.
+a test-resettable handoff seat for a value the application assembly root owns.
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.stasis import StasisStore
+    from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
     from lychd.domain.web.fragments import FragmentRegistry
 
 __all__ = [
@@ -71,7 +72,7 @@ class RunSubstrate:
     sigil_provider: Callable[[], Sigil] = field(default_factory=_default_sigil_provider)
     # Wave 4: the ConsentLedger the graph parks into + the web reads (one-record rule).
     # Cortex must NOT import codex (import law), so this is an opaque handle: the
-    # composition root and the consent tests thread the real ledger.
+    # application assembly root and the consent tests thread the real ledger.
     # A run that never parks (a linear/non-Gate workflow) never touches it.
     consents: Any = None
     # Wave 3: the lease ledger + SAQ queues, shared per process. Defaulted so existing
@@ -84,6 +85,9 @@ class RunSubstrate:
     # Durable Stasis is a run-keyed store. Production injects Postgres; the memory
     # profile uses this DB-free implementation only for tests/local memory mode.
     stasis_store: StasisStore = field(default_factory=InMemoryStasisStore)
+    # Optional until a concrete sandboxed runtime is composed. Delegation-bearing
+    # workflows fail closed when this port is absent; no adapter is fabricated here.
+    delegates: DelegatedAgentCoordinatorPort | None = None
 
     def build_services(self, *, sigil: Sigil | None = None) -> WorkflowServices:
         """Assemble run services with the persisted caller identity.
@@ -106,6 +110,7 @@ class RunSubstrate:
             events=self.bus,
             forge=self.forge,
             sigil_provider=sigil_provider,
+            delegates=self.delegates,
         )
 
 
@@ -113,7 +118,7 @@ _active: RunSubstrate | None = None
 
 
 def set_run_substrate(substrate: RunSubstrate) -> None:
-    """Publish the process run substrate (composition root: web lifespan / CLI)."""
+    """Publish the process run substrate (application assembly root: web lifespan / CLI)."""
     global _active  # noqa: PLW0603 - process handoff seat, mirrors db.engine.get_engine
     _active = substrate
 
@@ -121,7 +126,7 @@ def set_run_substrate(substrate: RunSubstrate) -> None:
 def get_run_substrate() -> RunSubstrate:
     """Return the published run substrate, or raise if the root has not set it."""
     if _active is None:
-        msg = "RunSubstrate is not published; the composition root must call set_run_substrate()."
+        msg = "RunSubstrate is not published; the application assembly root must call set_run_substrate()."
         raise RuntimeError(msg)
     return _active
 

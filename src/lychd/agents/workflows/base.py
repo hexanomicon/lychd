@@ -65,13 +65,22 @@ class Gate:
     """
 
 
+class DelegatedAgentNode:
+    """Marker mixin for a node that can enter Durable Stasis on delegated labor.
+
+    The marker is execution policy, not decoration: any workflow containing one is
+    assigned durable checkpoint persistence, and its Pattern station must declare
+    ``kind="delegate"``.
+    """
+
+
 @dataclass(frozen=True, kw_only=True)
 class PatternNode:
     """One stable semantic station in an immutable Weaver Pattern revision."""
 
     key: str
     label: str
-    kind: Literal["step", "gate", "terminal"] = "step"
+    kind: Literal["step", "gate", "delegate", "terminal"] = "step"
     implementation: type[Any] | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -81,6 +90,18 @@ class PatternNode:
             raise ValueError(msg)
         if self.kind != "terminal" and self.implementation is None:
             msg = f"Executable Pattern node '{self.key}' requires an implementation."
+            raise ValueError(msg)
+        if self.kind == "delegate" and (
+            self.implementation is None or not issubclass(self.implementation, DelegatedAgentNode)
+        ):
+            msg = f"Delegated Pattern node '{self.key}' must use a DelegatedAgentNode implementation."
+            raise ValueError(msg)
+        if (
+            self.implementation is not None
+            and issubclass(self.implementation, DelegatedAgentNode)
+            and self.kind != "delegate"
+        ):
+            msg = f"DelegatedAgentNode implementation '{self.key}' must declare kind='delegate'."
             raise ValueError(msg)
 
     def snapshot(self) -> dict[str, str]:
@@ -221,7 +242,11 @@ class Workflow:
             except KeyError as exc:
                 msg = f"Pattern '{self.manifest.key}@{self.manifest.revision}' must bind every graph node exactly once."
                 raise ValueError(msg) from exc
-        object.__setattr__(self, "durable", any(issubclass(node, Gate) for node in self.graph.get_nodes()))
+        object.__setattr__(
+            self,
+            "durable",
+            any(issubclass(node, (Gate, DelegatedAgentNode)) for node in self.graph.get_nodes()),
+        )
 
     def mermaid(self, *, highlight: type[BaseNode[Any, Any, Any]] | None = None) -> str:
         """Return the stateDiagram-v2 source, optionally highlighting one node."""

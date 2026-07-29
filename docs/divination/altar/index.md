@@ -51,6 +51,13 @@ universal graph or domain model. A Pattern edge in Loom says what a score permit
 in the Orb says what a record supports; a physical edge in Nexus says what the Orchestrator
 reported. The renderer never erases those differences.
 
+Delegated-agent work does not add a fifth instrument. Bridge offers the bounded task and returns
+its result; Loom declares one opaque macro-node; the Orb shows observed job evidence and trace
+gaps; Nexus shows selected runtime declarations while explicitly naming unavailable Gate service
+and unconfigured capacity observation. The current delegated
+projection is [Partial or Designed exactly as State records](../../state-of-the-work.md#delegated-agent-execution);
+the four existing pages do not infer it from raw CLI output.
+
 ## The doors that answer now
 
 All four instruments have useful but bounded implementations:

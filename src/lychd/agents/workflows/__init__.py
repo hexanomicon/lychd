@@ -5,9 +5,9 @@ The engine routes an `Intent` to a `Workflow` ONCE via `WorkflowRegistry.route`
 persists the choice, and thereafter `perform_run` looks the workflow up by name
 via `WorkflowRegistry.get` — it never re-routes an in-flight run.
 
-The full workflow packs are a later wave; here the registry wraps the single
-built-in `bridge_chat` workflow. Consumers (engine, Loom) read the registry
-directly via `WORKFLOW_REGISTRY`.
+The full workflow packs are a later wave; here the registry wraps the built-in
+`bridge_chat` and offline reference `delegated_rite` workflows. Consumers (engine,
+Loom) read the registry directly via `WORKFLOW_REGISTRY`.
 """
 
 from __future__ import annotations
@@ -17,12 +17,14 @@ from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
 
 from lychd.agents.workflows.base import Trigger, Workflow
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
+from lychd.agents.workflows.delegated_rite import DELEGATED_RITE
 
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
 
 __all__ = [
     "BRIDGE_CHAT",
+    "DELEGATED_RITE",
     "WORKFLOW_REGISTRY",
     "BuiltinWorkflowRegistry",
     "Trigger",
@@ -85,7 +87,7 @@ class BuiltinWorkflowRegistry:
 
     def route(self, intent: Intent) -> Workflow:
         """Return the first workflow whose trigger matches, else the default."""
-        for workflow in self.workflows:
+        for workflow in self.workflows[1:]:
             if workflow.trigger.match(intent):
                 return workflow
         return self.default
@@ -111,7 +113,7 @@ class BuiltinWorkflowRegistry:
 
 def builtin_workflow_registry() -> BuiltinWorkflowRegistry:
     """Build the built-in workflow registry (the sole construction site today)."""
-    return BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT,))
+    return BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT, DELEGATED_RITE))
 
 
 # Built once from frozen workflow config data (not mutable module state).

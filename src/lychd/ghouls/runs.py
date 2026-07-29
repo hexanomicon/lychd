@@ -23,11 +23,12 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import structlog
 
-from lychd.domain.cortex.engine import admit_consent_resume, run_job_key
+from lychd.domain.cortex.engine import admit_consent_resume, admit_delegate_resume, run_job_key
 from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent, TransitionTraceEvent
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunParked, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
+from lychd.domain.delegation.signals import DelegatedAgentParked
 from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
@@ -210,6 +211,8 @@ async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/r
                 pattern_revision=workflow.manifest.revision,
                 wait_kind=event.wait_kind or "",
                 transition_request_id=event.transition_request_id or "",
+                delegated_job_id=event.delegated_job_id or "",
+                delegated_runtime=event.delegated_runtime or "",
             )
 
         def _on_transition_event(event: TransitionTraceEvent) -> None:
@@ -251,6 +254,8 @@ async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/r
             )
         if isinstance(result, RunParked):
             return await _commit_consent_park(substrate, ledger, emitter, run_id, result)
+        if isinstance(result, DelegatedAgentParked):
+            return await _commit_delegate_park(substrate, ledger, emitter, run_id, result)
         await settle_terminal(RunStatus.DONE)
         await _cleanup_claim_resources(
             substrate,
@@ -444,6 +449,40 @@ async def _commit_consent_park(
         if run is not None and await admit_consent_resume(substrate.queues, ledger, run):
             return {"status": "queued", "run_id": run_id}
     return {"status": "awaiting_consent", "run_id": run_id}
+
+
+async def _commit_delegate_park(
+    substrate: RunSubstrate,
+    ledger: RunLedger,
+    emitter: RunEmitter,
+    run_id: str,
+    parked: DelegatedAgentParked,
+) -> dict[str, Any]:
+    """Commit a delegated wait, then close the pre-status terminal-result race."""
+    from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
+
+    await ledger.park_delegate(run_id, parked.job.job_id)
+    emitter.status(RunStatus.AWAITING_DELEGATE.value)
+    if substrate.delegates is not None:
+        job = await substrate.delegates.refresh(parked.job.job_id)
+        if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+            run = await ledger.get(run_id)
+            if run is not None and await admit_delegate_resume(
+                substrate.queues,
+                ledger,
+                run,
+                job_id=parked.job.job_id,
+            ):
+                return {
+                    "status": RunStatus.QUEUED.value,
+                    "run_id": run_id,
+                    "job_id": parked.job.job_id,
+                }
+    return {
+        "status": RunStatus.AWAITING_DELEGATE.value,
+        "run_id": run_id,
+        "job_id": parked.job.job_id,
+    }
 
 
 async def _cleanup_stasis(substrate: RunSubstrate, run_id: str, _persistence: PhylacteryProtocol) -> None:

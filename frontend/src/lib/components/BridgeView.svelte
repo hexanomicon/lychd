@@ -17,7 +17,9 @@
     type LiveTurn
   } from "$lib/bridge/projection";
   import ConsentCard from "./ConsentCard.svelte";
+  import DelegateMark from "./DelegateMark.svelte";
   import GenUI from "./GenUI.svelte";
+  import { delegationStatusLabel } from "$lib/delegation/presentation";
 
   let { sessionId }: { sessionId?: string } = $props();
   let snapshot = $state<BridgeSnapshot | null>(null);
@@ -25,7 +27,7 @@
   let loading = $state(true);
   let sending = $state(false);
   let error = $state("");
-  let thread: HTMLElement;
+  let thread: HTMLDivElement | undefined;
   let loadVersion = 0;
   let renderVersion = $state(0);
   let stickToTail = true;
@@ -37,6 +39,7 @@
     "running",
     "awaiting_hardware",
     "awaiting_consent",
+    "awaiting_delegate",
     "done",
     "failed",
     "cancelled"
@@ -44,6 +47,7 @@
 
   function operatorState(value: string): string {
     if (value === "awaiting_hardware") return "awaiting animators";
+    if (value === "awaiting_delegate") return "delegated labor";
     return value.replaceAll("_", " ");
   }
 
@@ -101,12 +105,20 @@
 
   $effect.pre(() => {
     renderVersion;
-    if (thread && stickToTail) {
+    const target = thread;
+    if (target && stickToTail) {
       void tick().then(() => {
-        thread.scrollTop = thread.scrollHeight;
+        target.scrollTop = target.scrollHeight;
       });
     }
   });
+
+  function captureThread(node: HTMLDivElement) {
+    thread = node;
+    return () => {
+      if (thread === node) thread = undefined;
+    };
+  }
 
   onDestroy(() => {
     loadVersion++;
@@ -164,6 +176,14 @@
             typeof payload.occurrence_id === "string" && payload.occurrence_id
               ? payload.occurrence_id
               : active.occurrenceId;
+          active.delegatedJobId =
+            typeof payload.delegated_job_id === "string" && payload.delegated_job_id
+              ? payload.delegated_job_id
+              : active.delegatedJobId;
+          active.delegatedRuntime =
+            typeof payload.delegated_runtime === "string" && payload.delegated_runtime
+              ? payload.delegated_runtime
+              : active.delegatedRuntime;
         } else if (event.kind === "dispatch") {
           active.capabilityKey = String(payload.text ?? "");
           active.grantId = typeof payload.grant_id === "string" ? payload.grant_id : null;
@@ -280,7 +300,11 @@
           capabilityKey: null,
           transitionOccurrenceId: null,
           transitionRequestId: null,
-          transitionPhase: null
+          transitionPhase: null,
+          delegatedJobId: null,
+          delegatedRuntime: null,
+          delegatedProfile: null,
+          delegatedStatus: null
         };
         liveTurns.push(live);
       }
@@ -320,7 +344,7 @@
   <aside class="bridge-rail">
     <h1 class="visually-hidden">Bridge — conversations</h1>
     <button class="rune-btn new-seance" type="button" onclick={createSession}>✦ &nbsp;New Séance</button>
-    <div class="divider">◆</div>
+    <div class="divider">⬡</div>
     {#if snapshot?.sessions.length}
       {#each snapshot.sessions as session (session.id)}
         <a class:current={selected?.id === session.id} class="seance" href="/bridge/{session.id}">
@@ -334,14 +358,19 @@
   </aside>
 
   <div class="bridge-thread">
-    <div class="thread-scroll" bind:this={thread} onscroll={trackScroll} aria-label="Conversation">
+    <div
+      class="thread-scroll"
+      {@attach captureThread}
+      onscroll={trackScroll}
+      aria-label="Conversation"
+    >
       {#if loading}
         <div class="mist"></div><div class="mist"></div>
       {:else if error && !selected}
         <div class="turn__fault">{error}</div>
       {:else if !selected}
         <div class="shell-placeholder">
-          <span class="glyph-big">◈</span>
+          <span class="glyph-big">⬡</span>
           <span class="rune-head">The Bridge awaits</span>
           <p>Open a séance to begin a local communion.</p>
         </div>
@@ -382,10 +411,27 @@
                 {/if}
               </div>
             {/if}
+            {#if turn.runStatus === "awaiting_delegate" || turn.delegatedJobId}
+              <div class="body-crossing delegate-crossing" data-state={turn.delegatedStatus ?? turn.runStatus}>
+                <span class="body-crossing__title">
+                  <DelegateMark /> Delegated labor
+                </span>
+                <span>
+                  {turn.delegatedRuntime ?? "runtime"} ·
+                  {turn.delegatedProfile ?? "contained profile"}
+                </span>
+                <span>
+                  {turn.delegatedJobId ? `AgentJob ${turn.delegatedJobId.slice(0, 12)}` : "AgentJob pending"}
+                  · {delegationStatusLabel(turn.delegatedStatus ?? turn.runStatus)}
+                </span>
+              </div>
+            {/if}
             <nav class="run-sigil" aria-label="Run links">
               <span class="run-sigil__id">run {turn.runId.slice(0, 12)}</span>
               <span>{turn.patternId}@{turn.patternRevision}</span>
-              <a href={turn.orbPath}>Look into the Orb →</a>
+              <a href={turn.delegatedJobId ? `${turn.orbPath}?job=${encodeURIComponent(turn.delegatedJobId)}` : turn.orbPath}>
+                Look into the Orb →
+              </a>
             </nav>
             <div class="turn__extras">
               {#each turn.fragments as fragment (fragment)}<GenUI descriptor={fragment} />{/each}
@@ -409,7 +455,7 @@
           aria-label="Message"
         ></textarea>
         <button class="rune-btn" disabled={sending || !prompt.trim()} type="button" onclick={submit}>
-          Offer {#if sending}<span class="thinking-rune">◆</span>{/if}
+          Offer {#if sending}<span class="thinking-rune">⬢</span>{/if}
         </button>
       </div>
       {#if error}<div class="turn__fault">{error}</div>{/if}

@@ -6,7 +6,7 @@ icon: material/lan-connect
 # :material-lan-connect: 39. The VPN Tether
 
 !!! abstract "Context and Problem Statement"
-    The **[Proxy (40)](40-proxy.md)** secures the public face of the Daemon, but administrative tasks—such as scrying traces in **[The Oculus (29)](29-observability.md)**, inspecting the database, or managing system lifecycles—require access to internal ports that must remain air-gapped from the public internet. A mechanism is required to extend the "Trust Boundary" of the localhost to authorized remote devices, creating a private, encrypted tunnel directly into the Sepulcher without relying on third-party relay servers or centralized coordination.
+    The **[Proxy (40)](40-proxy.md)** secures the public face of the Daemon, but administrative tasks—such as inspecting traces in **[The Oculus (29)](29-observability.md)**, inspecting the database, or managing system lifecycles—require access to internal ports that must remain air-gapped from the public internet. A mechanism is required to extend the "Trust Boundary" of the localhost to authorized remote devices, creating a private, encrypted tunnel directly into the Sepulcher without relying on third-party relay servers or centralized coordination.
 
 ## Requirements
 

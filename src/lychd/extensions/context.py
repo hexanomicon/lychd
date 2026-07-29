@@ -8,6 +8,7 @@ from lychd.domain.animation.extension import PortalStore, SoulstoneStore
 from lychd.domain.animation.transmute import TransmutationStore
 from lychd.domain.cortex.operations import AGENT_RUN_OPERATION, RunOperationStore
 from lychd.extensions.base import ExtensionStore
+from lychd.extensions.delegation import DelegatedRuntimeStore
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -36,6 +37,9 @@ class ExtensionContext:
         self.portals = PortalStore(self.runes)
         self.transmutation = TransmutationStore()
         self.vessel = VesselStore()
+        self.delegated_runtimes = DelegatedRuntimeStore(
+            current_provider=lambda: self.current_extension_id,
+        )
         self.run_operations = RunOperationStore(
             current_provider=lambda: self.current_extension_id,
             core_operations=(AGENT_RUN_OPERATION,),

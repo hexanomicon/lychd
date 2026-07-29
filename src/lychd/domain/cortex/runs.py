@@ -43,6 +43,7 @@ class RunStatus(StrEnum):
     RUNNING = "running"  # ghoul claimed; graph iterating
     AWAITING_HARDWARE = "awaiting_hardware"  # parked in stasis; orchestrator transitioning
     AWAITING_CONSENT = "awaiting_consent"  # parked on HitL; durable checkpoint written
+    AWAITING_DELEGATE = "awaiting_delegate"  # parked on isolated delegated-agent labor
     DONE = "done"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -62,6 +63,7 @@ LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
         {
             RunStatus.AWAITING_HARDWARE,
             RunStatus.AWAITING_CONSENT,
+            RunStatus.AWAITING_DELEGATE,
             RunStatus.DONE,
             RunStatus.FAILED,
             RunStatus.CANCELLED,
@@ -72,6 +74,8 @@ LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
     ),
     # AWAITING_CONSENT → QUEUED on approve OR refuse (both re-enqueue, C3); → CANCELLED only via engine.cancel.
     RunStatus.AWAITING_CONSENT: frozenset({RunStatus.QUEUED, RunStatus.CANCELLED}),
+    # Result adoption re-enqueues one durable resume hop; cancellation remains terminal.
+    RunStatus.AWAITING_DELEGATE: frozenset({RunStatus.QUEUED, RunStatus.CANCELLED}),
     RunStatus.DONE: frozenset(),
     RunStatus.FAILED: frozenset({RunStatus.QUEUED}),  # explicit retry (bumps attempt)
     RunStatus.CANCELLED: frozenset(),
@@ -141,6 +145,7 @@ class RunRecord:
     enqueue_seq: int = 0
     error: str | None = None
     consent_id: str | None = None
+    delegated_job_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     finished_at: datetime | None = None

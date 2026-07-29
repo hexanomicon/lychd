@@ -67,7 +67,7 @@ distinct office; none is a measure of how seriously the project takes the myth.
 | --- | --- | --- |
 | **Law** | ADRs, Composition specifications, and security or technical contracts | Exact boundaries, application contracts, decisions, failures, compatibility, and proof requirements. |
 | **Iron** | Commands, configuration, recovery, and troubleshooting | Literal, copyable, observable, and recoverable. |
-| **Threshold** | README, Prophecy, State, and section indexes | Lucid enchantment, current orientation, and one clear next act. |
+| **Threshold** | README, Prophecy, Map, State, and section indexes | Lucid enchantment, current orientation, and one clear next act. |
 | **Operated doctrine** | Sepulcher and Altar | Mythic meaning joined to actual operation and explicit limits. |
 | **Great Work** | Transcendence | Full mythic voltage, exact internal relations, and distinct sources. |
 
@@ -77,6 +77,11 @@ application's Patterns, ownership, policy, data, and proving burden concrete. Ca
 in the same catalogue remain outside these five registers until explicitly accepted. Neither
 kind is an operated manual or delivery evidence, and publication alone creates no backlog
 commitment.
+
+The [Map](../map.md) is a Threshold projection, not another owner of project truth. It may compress
+relationships and route readers across canonical pages, but each definition, law, application
+contract, operation, and delivery claim remains with its existing owner. It is a map of roads, not
+a release roadmap.
 
 The Great Work is optional for executing an ordinary command; it is not optional project purpose
 or disposable theming. Technical readers may take the Iron path without first learning the full

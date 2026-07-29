@@ -5,6 +5,8 @@
 
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunSnapshot } from "$lib/api/models";
+  import { delegationStatusLabel } from "$lib/delegation/presentation";
+  import DelegateMark from "./DelegateMark.svelte";
 
   type Evidence = OrbRunSnapshot["evidence"][number];
   type TimelineItem =
@@ -24,8 +26,13 @@
   let error = $state("");
   let selectionNote = $state("");
   let loadVersion = 0;
-  let selectedInspector = $state<HTMLElement>();
+  let selectedInspector: HTMLElement | undefined;
   let requestedEventId = $derived(page.url.searchParams.get("event"));
+  let requestedJobId = $derived(page.url.searchParams.get("job"));
+
+  function delegatedJobElementId(jobId: string): string {
+    return `delegated-job-${jobId}`;
+  }
 
   let timeline = $derived.by((): TimelineItem[] => {
     if (!snapshot) return [];
@@ -52,6 +59,17 @@
       selected = null;
       loading = false;
     }
+  });
+
+  $effect(() => {
+    const jobId = requestedJobId;
+    const current = snapshot;
+    if (!jobId || !current?.delegated_jobs.some((job) => job.job_id === jobId)) return;
+    void tick().then(() => {
+      const target = document.getElementById(delegatedJobElementId(jobId));
+      target?.scrollIntoView?.({ block: "nearest" });
+      target?.focus({ preventScroll: true });
+    });
   });
 
   $effect(() => {
@@ -111,6 +129,13 @@
     } finally {
       if (version === loadVersion) loadingMore = false;
     }
+  }
+
+  function captureSelectedInspector(node: HTMLElement) {
+    selectedInspector = node;
+    return () => {
+      if (selectedInspector === node) selectedInspector = undefined;
+    };
   }
 
   async function selectEvidence(evidence: Evidence) {
@@ -183,6 +208,55 @@
           <div class="evidence-failure" role="status">
             A failure record exists. Its private diagnostic detail is not exposed in this projection.
           </div>
+        {/if}
+
+        {#if snapshot.delegated_jobs.length}
+          <section class="delegated-jobs panel" aria-labelledby="delegated-jobs-title">
+            <div class="panel-head">
+              <h2 id="delegated-jobs-title" class="rune-head">Delegated jobs</h2>
+              <span>{snapshot.delegated_jobs.length} sealed occurrence{snapshot.delegated_jobs.length === 1 ? "" : "s"}</span>
+            </div>
+            <ol class="delegated-job-list">
+              {#each snapshot.delegated_jobs as job (job.job_id)}
+                <li
+                  id={delegatedJobElementId(job.job_id)}
+                  class:current={requestedJobId === job.job_id}
+                  class="delegated-job"
+                  data-state={job.status}
+                  aria-current={requestedJobId === job.job_id ? "true" : undefined}
+                  tabindex="-1"
+                >
+                  <header>
+                    <span class="delegated-job__title"><DelegateMark /> AgentJob {job.job_id.slice(0, 12)}</span>
+                    <span class="chip" data-state={job.status}>{delegationStatusLabel(job.status)}</span>
+                  </header>
+                  <dl class="kv">
+                    <dt>runtime</dt><dd>{job.runtime}</dd>
+                    <dt>coffin</dt><dd>{job.profile}</dd>
+                    <dt>station</dt><dd>{job.step_id}</dd>
+                    <dt>result</dt>
+                    <dd>
+                      {job.output_present ? "bounded output retained" : "no textual output"}
+                      · {job.artifact_count} artifact reference{job.artifact_count === 1 ? "" : "s"}
+                      {job.error_present ? " · private error retained" : ""}
+                    </dd>
+                  </dl>
+                  <ol class="delegated-event-list" aria-label="AgentJob lifecycle">
+                    {#each job.events as event (event.event_id)}
+                      <li>
+                        <span>#{event.seq}</span>
+                        <strong>{delegationStatusLabel(event.status)}</strong>
+                        <time datetime={event.occurred_at}>{new Date(event.occurred_at).toLocaleTimeString()}</time>
+                      </li>
+                    {/each}
+                  </ol>
+                  {#if job.events_truncated}
+                    <p class="inspector-copy">Older lifecycle events are outside this bounded snapshot.</p>
+                  {/if}
+                </li>
+              {/each}
+            </ol>
+          </section>
         {/if}
 
         <section class="coverage-strip" aria-labelledby="coverage-title">
@@ -261,7 +335,7 @@
       {#if selected}
         <section
           class="panel selected-evidence"
-          bind:this={selectedInspector}
+          {@attach captureSelectedInspector}
           tabindex="-1"
         >
           <div class="panel-head">

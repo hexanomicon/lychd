@@ -40,6 +40,9 @@ icon: material/scale-balance
 - **Fluid Model Tiering:** Mandatory support for VRAM budgeting, allowing for the downgrading of model scales (e.g., 70B to 8B) to accommodate concurrent sensory and reasoning requirements.
 - **Lexical Reservation:** Permanent allocation of a specific VRAM margin for the system's core lexical parser to ensure basic cognitive stability during heavy hardware transitions.
 - **Embedding Coven Priority:** During memory ingestion windows, embedding covens must be schedulable with explicit priority so metabolic writes do not starve indefinitely.
+- **Delegated Provider Capacity:** Provider-backed delegated-agent work must be admitted against
+  configured concurrency, quota, cooldown, automation, and spending ceilings without changing
+  Graph semantics or evading provider limits.
 - **Host-Native Authority:** Host mutation must cross a configurable, narrow `RuntimeActuator`
   boundary. Direct Systemd and mediated **[Host Reactor (10)](10-privilege.md)** delivery with a
   read-only terminal receipt are trusted implementations; the Orchestrator exposes neither shell
@@ -365,7 +368,41 @@ Future resource-aware strategies will manage a fluid manifest:
 - **Lexical Reservation:** The Orchestrator enforces a permanent 1-2GB margin for the system's **Native Lexicon** (a sub-2B parameter model), ensuring the "Brain Stem" remains resident and operational during all swaps.
 - **Ingestion Scheduling:** Background memory augmentation may run in batched ingestion epochs. During these epochs, embedding covens receive bounded priority and must yield to high-priority interactive reflexes.
 
-### 3. Swarm Lease Management
+### 3. Delegated Provider Capacity
+
+The Orchestrator also owns physical and economic admission for delegated-agent provider pools after
+the Dispatcher has selected a compatible capability. This is capacity policy, not semantic
+routing: it may delay or decline a selected `AgentJob`, but it cannot rewrite the task, choose a
+different provider, create Graph branches, or make a result true.
+
+Each pool is configured from legitimately authorized provider accounts or seats and records the
+minimum of operator, provider, contract, and observed ceilings. The adapter may report usage,
+rate-limit, reset, cooldown, and health observations; an absent or unverifiable limit is
+**unknown**, never invented. Unknown quota degrades to the conservative configured hard ceiling.
+
+The named quota posture is selected on the provider pool or scheduler, never embedded as meaning in
+a Pattern:
+
+| Posture | Admission intent |
+| :--- | :--- |
+| `conservative` | Reserve substantial headroom, admit at most one slot by default, and avoid speculative work. |
+| `balanced` | Use a configured middle share while retaining recovery and interactive headroom. This is the default. |
+| `maximize` | Use the highest configured and authorized concurrency and the remaining admitted quota before a trustworthy reset. |
+
+Every posture remains below the same hard concurrency, request/token/spend, timeout, cooldown, and
+automation-policy ceilings. `maximize` does not mean unbounded: it never rotates or farms accounts,
+evades rate limits, violates provider terms, fabricates reset times, or silently falls back to
+paid capacity. A reset estimate affects pacing only when its source and freshness are retained.
+
+Capacity reservation, admission, release, and denial produce correlated evidence. Job cancellation
+releases the local slot only after process settlement and Gate revocation; a disappeared child is
+not evidence that its upstream request stopped.
+
+The present typed capacity policy is a Partial calculation seam. It does not prove a provider
+observation loop, durable reservation ledger, Gate integration, or effectful scheduler. [State of
+the Work](../state-of-the-work.md#delegated-agent-execution) owns that boundary.
+
+### 4. Swarm Lease Management
 
 To protect the local Magus from resource exhaustion by the **[Legion (42)](42-legion.md)**, the Orchestrator reserves **Workload Tiering** as a policy target:
 
@@ -378,7 +415,7 @@ To protect the local Magus from resource exhaustion by the **[Legion (42)](42-le
     4. When the local user is satisfied and the GPU is free, the Orchestrator restores the lease and the swarm Ghoul rehydrates from the serialized state.
 - **Ghost Lease Cleanup:** If a swarm task fails or the peer disconnects, the dead lease is swept from the registry on the next Watchdog cycle.
 
-### 4. Watchdog and Recovery
+### 5. Watchdog and Recovery
 
 The planned Orchestrator Watchdog will supervise active container services. If a hardware state
 fails to manifest after a bounded number of attempts or a model consumes resources beyond policy

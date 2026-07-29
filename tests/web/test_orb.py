@@ -9,6 +9,7 @@ from lychd.agents.router import Intent
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.delegation.models import DelegatedAgentProfile, DelegatedAgentRequest
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -95,3 +96,73 @@ def test_selected_run_is_bounded_and_unknown_is_404(
     assert first.json()["next_after_seq"] == 0
     assert altar_client.get("/api/v1/orb/runs/missing").status_code == 404
     assert altar_client.get("/api/v1/scrying/runs/run-page").status_code == 404
+
+
+def test_selected_run_projects_prompt_free_delegated_job_evidence(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    _seed(fake_services, "run-delegated")
+
+    async def seed_job() -> None:
+        ref = await fake_services.delegates.submit(
+            DelegatedAgentRequest(
+                request_id="request-secret",
+                run_id="run-delegated",
+                step_id="dispatch_delegate",
+                runtime="reference",
+                profile=DelegatedAgentProfile.READ,
+                prompt="private delegated prompt",
+            )
+        )
+        await fake_services.delegates.refresh(ref.job_id)
+
+    asyncio.run(seed_job())
+
+    response = altar_client.get("/api/v1/orb/runs/run-delegated")
+
+    assert response.status_code == 200
+    jobs = response.json()["delegated_jobs"]
+    assert len(jobs) == 1
+    assert jobs[0]["runtime"] == "reference"
+    assert jobs[0]["profile"] == "read"
+    assert jobs[0]["status"] == "succeeded"
+    assert jobs[0]["output_present"] is True
+    assert [event["status"] for event in jobs[0]["events"]] == [
+        "queued",
+        "admitted",
+        "preparing",
+        "running",
+        "succeeded",
+    ]
+    assert "private delegated prompt" not in response.text
+    assert "Reference delegate completed" not in response.text
+
+
+def test_selected_run_bounds_delegated_job_cardinality(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    _seed(fake_services, "run-many-delegates")
+
+    async def seed_jobs() -> None:
+        for index in range(33):
+            await fake_services.delegates.submit(
+                DelegatedAgentRequest(
+                    request_id=f"request-many-{index:02d}",
+                    run_id="run-many-delegates",
+                    step_id=f"delegate-{index:02d}",
+                    runtime="reference",
+                    profile=DelegatedAgentProfile.READ,
+                    prompt="bounded private prompt",
+                )
+            )
+
+    asyncio.run(seed_jobs())
+
+    body = altar_client.get("/api/v1/orb/runs/run-many-delegates").json()
+
+    assert len(body["delegated_jobs"]) == 32
+    assert body["delegated_jobs"][0]["request_id"] == "request-many-01"
+    assert body["delegated_jobs"][-1]["request_id"] == "request-many-32"
+    assert any("1 older delegated job" in omission for omission in body["known_omissions"])

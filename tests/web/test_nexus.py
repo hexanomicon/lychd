@@ -37,6 +37,16 @@ def test_board_lists_covens(altar_client: TestClient[Litestar]) -> None:
     board = response.json()["board"]
     assert any(row["capability_key"] == "chat:local" for _, rows in board["covens"] for row in rows)
     assert "portals" in board
+    runtimes = response.json()["delegated_runtimes"]
+    assert [runtime["runtime_id"] for runtime in runtimes] == [
+        "reference",
+        "codex-cli",
+        "claude-code",
+        "opencode-go",
+        "openrouter",
+    ]
+    assert runtimes[0]["runnable"] is True
+    assert all(runtime["runnable"] is False for runtime in runtimes[1:])
 
 
 def test_plan_is_json(altar_client: TestClient[Litestar]) -> None:

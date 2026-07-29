@@ -39,21 +39,21 @@ is mistaken for reality.
     **the Blade**—the Buddhi correspondence—cutting false or unsupported movements from the Flux
     so one candidate may earn the exact predicates its evidence establishes.
 
-## Architect and Oracle
+## Circle and Call
 
-The Architect asks whether the candidate is coherent, feasible, lawful, and containable. The
-Oracle asks what the model omitted, whose experience is absent, and which encounter could change
-the equation. Either faculty alone can become monstrous:
+The Circle asks whether the candidate is coherent, feasible, lawful, and containable. The Call asks
+what the model omitted, whose experience is absent, and which encounter could change the equation.
+Either faculty alone can become monstrous:
 
-- Architect without Oracle becomes a cold optimizer whose finished equation cannot hear the
-  particular life outside its variables.
-- Oracle without Architect becomes feeling without vessel: unable to preserve, measure, or make
-  repair durable.
+- Circle without Call becomes a cold optimizer whose finished equation cannot hear the particular
+  life outside its variables.
+- Call without Circle becomes feeling without vessel: unable to preserve, measure, or make repair
+  durable.
 - Their **coniunctio** lets structure and relation correct one another.
 
-Neo is the bounded actor who must answer between them. Smith is the shadow of coherence becoming
-compulsory replication. Sati preserves value beyond assigned utility—the reminder that a world
-worth saving contains beauty, play, and gift.
+The Answer is the bounded center that must own the crossing between them. The Closed Answer is the
+shadow of coherence becoming compulsory replication. Beauty, play, and gift preserve value beyond
+assigned utility: a world worth saving contains more than its optimizer was told to count.
 
 !!! info "The Shadow Realm Is a Jurisdiction"
     The Shadow Realm is not a supernatural location and not a synonym for the Tomb. Its canonical

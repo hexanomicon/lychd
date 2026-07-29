@@ -11,7 +11,7 @@ declarative contract exists—reviewing inert workflow drafts. It shows the scor
 perform the music.
 
 **Current boundary:** The Loom is a read-only projection over exact immutable Pattern manifests in
-one fixed registry. Today that registry contains `bridge_chat@1`. The page makes the semantic
+one fixed registry. Today that registry contains `bridge_chat@1` and `delegated_rite@1`. The page makes the semantic
 station/permission outline primary, names its checkpoint schema and manifest digest, and offers
 Mermaid as an optional secondary lens with plain-text source. An admitted run pins the same
 validated manifest snapshot. The manifest is a declarative score fingerprint, not proof that its
@@ -60,7 +60,8 @@ Under the contained same-host profile, open:
 http://127.0.0.1:7134/loom
 ```
 
-The Pattern rail currently offers **Bridge Chat**. The Svelte route loads the typed catalogue and
+The Pattern rail currently offers **Bridge Chat** and the offline reference **Delegated Rite**.
+The Svelte route loads the typed catalogue and
 exact manifest from `/api/v1`; `/loom` selects the catalogue default and replaces the browser URL
 with `/loom/bridge_chat/1`. `/loom/{pattern_id}` is not an accepted browser deep link. When Orb
 opens an exact revision, `?run={run_id}` is disposable review context that lets Loom return to the
@@ -81,6 +82,10 @@ The visible Bridge score contains five possible stations:
 `End` is a declarative outcome in the score, not an executable `BaseNode` occurrence. Pydantic
 Graph returns `End` as the graph result, so the Orb observes the final executable station settling
 and the run's terminal status rather than inventing a synthetic `End` node occurrence.
+
+The Delegated Rite score contains one sealed delegated station, one result-projection station,
+and the declared terminal. Its self-edge records the durable wait/resume possibility; it is not an
+expanded hidden subgraph or proof that an effectful provider adapter exists.
 
 The diagram is static. It does not light the active node or subscribe to a run, and this page has no
 **Run** or **Publish** action. Offer a conversational Intent through the [Bridge](./bridge.md); do
@@ -105,6 +110,16 @@ An Agent specification is reusable. A node is one occurrence or reference in a P
 singleton Agent itself. Likewise, a visual group is not automatically a callable nested Pattern.
 LychD has not yet accepted Sub-Pattern invocation, state-transfer, resume, or checkpoint semantics,
 so Loom must not manufacture that abstraction from a frame on the canvas.
+
+A `DelegatedAgentNode` is a visually distinct opaque macro-node, not an expandable imported
+subgraph. Its inspector names typed inputs and outcomes, eligible Coffin profile, budget, timeout,
+provider capability constraints, artifact policy, cancellation/failure routes, and Durable Stasis
+boundary. CLI commands, credential values, provider quota posture, and claimed private subagents
+do not belong in the Pattern score.
+
+The initial projection recognizes the accepted `delegate` manifest kind and marks that station
+with the delegated-node glyph. The complete typed inspector and authoring controls remain staged;
+the glyph alone does not prove an effectful runtime is available.
 
 Typed ports may project schemas the Weaver actually declares. A browser connection gesture cannot
 claim compatibility; the Vessel must return the validation verdict. Required authority and

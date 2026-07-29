@@ -57,6 +57,69 @@ Typical outcomes:
 - Timeline B: fast but structurally wrong.
 - Timeline C: verified and promotable.
 
+### The Dancer posture and the Hunter posture
+
+Shadow gives two internal roles simple public terms: **the Dancer posture** and **the Hunter
+posture**. They are complementary Postures within a governed simulation Pattern, not Personas,
+product marks, independent authorities, or claims about hidden faculties inside a model.
+
+**The Dancer posture** opens the possibility space. It is divergent, energetic, and
+improvisational: it follows promising motion, combines distant ideas, changes rhythm when a branch
+reveals an unexpected affordance, and produces alternatives that a rigid decomposition might
+never ask for. It works under broad providence—high-level purpose, containment, budget, and stop
+conditions—rather than a narrow prescribed route. Providence here means bounded room to explore,
+not supernatural guidance or ambient permission.
+
+Its typed expansion output contains:
+
+- `alternatives`;
+- the `assumptions` each alternative makes;
+- `required_state` each alternative presupposes; and
+- unresolved `unknowns`.
+
+The Dancer posture cannot score, rank, prune, or choose among its alternatives. It cannot certify
+them, promote them, or conceal their Vikalpa status.
+
+**The Hunter posture** is cold by function: deliberate, decomposition-first candidate analysis
+that attempts to falsify the attractive path. It hunts unsupported premises, bias, evidence
+corruption, overconfidence, missing counterexamples, boundary violations, and plausible
+explanations that outran observation.
+
+Its typed challenge output contains:
+
+- `challenges` tied to a named alternative or assumption;
+- `evidence_requests` that could resolve a challenge; and
+- `withhold_recommendations` for further Shadow spend on a named candidate.
+
+A withhold recommendation is only an input to the owning Pattern's decision about further
+simulation expenditure. The Hunter posture cannot withhold or redefine the original Intent,
+declare truth, determine identity, grant a capability, authorize promotion, or manufacture
+consent.
+
+Their collaboration is a yin-and-yang image of complementarity, not a claim that one role is pure
+creation and the other pure destruction. The Dancer posture supplies a wider candidate field; the
+Hunter posture stress-tests that field without sharing the same generation context. Their join is
+a review package—candidate lineage, explicit assumptions, challenges, evidence requests, and
+unresolved uncertainty. It remains Vikalpa and candidate analysis, not a completed account or a
+new class of evidence.
+
+Recurrence is never an ambient debate loop. Each expansion or challenge round is a separate,
+isolated invocation. The Weaver Pattern and Graph own ordering, fan-out, joins, checkpoints, and
+termination, with hard branch-count, round-count, token, and wall-time bounds declared before
+execution. Exhausting a bound yields a truthful incomplete result rather than another implicit
+round.
+
+Before this named separation can enter an active Shadow Pattern, Riddle must compare it with a
+neutral baseline under the same tasks and budgets. Acceptance requires measured improvement in
+useful candidate diversity or error discovery without an unacceptable increase in false
+withholds, overconfidence, cost, or latency. The names themselves are not evidence of benefit.
+
+!!! warning "Designed doctrine, not delivered machinery"
+    The Dancer posture and the Hunter posture name a future Shadow Pattern separation. No active
+    runtime role, prompt, output schema, scheduler lane, frontend control, or autonomous
+    two-agent loop is delivered. The selectable `simulation` package still contributes only its
+    Rune schema, and the general Shadow Composition remains designed.
+
 ## II. The Simulation Engine (Phantasma)
 
 While a standard **[Agent](../../adr/20-agents.md)** call returns one typed result, a Shadow Pattern
@@ -77,7 +140,7 @@ physical workspace use are explicit policy choices.
   **[Lab (13)](../../adr/13-layout.md)**.
 - Each unsafe job uses an isolated job-scoped directory and declares its artifacts.
 
-### B. Scrying the branch (evaluation)
+### B. Judging the branch (evaluation)
 
 Candidate reduction may use several independent gates:
 

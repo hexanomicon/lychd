@@ -64,6 +64,10 @@ class RunProjectionSnapshot(ClientContract):
     transition_occurrence_id: str | None
     transition_request_id: str | None
     transition_phase: str | None
+    delegated_job_id: str | None
+    delegated_runtime: str | None
+    delegated_profile: str | None
+    delegated_status: str | None
     terminal: bool
 
 
@@ -166,6 +170,21 @@ class TransitionRecordView(ClientContract):
     bridge_path: str | None
 
 
+class DelegatedRuntimeObservation(ClientContract):
+    """One selected extension's honest delegated-runtime delivery boundary."""
+
+    runtime_id: str
+    display_name: str
+    provider_id: str
+    transport: str
+    delivery: str
+    runnable: bool
+    coffin_profiles: list[str]
+    provider_gate: Literal["not_required", "required_unavailable"]
+    capacity_posture: Literal["not_configured"]
+    limitations: list[str]
+
+
 class NexusSnapshot(ClientContract):
     """A projection assembled from explicitly timestamped capability observations."""
 
@@ -173,6 +192,7 @@ class NexusSnapshot(ClientContract):
     board: NexusBoard
     containment_reason: str | None
     transitions: list[TransitionRecordView]
+    delegated_runtimes: list[DelegatedRuntimeObservation]
 
 
 class SwapIntent(ClientContract):
@@ -255,6 +275,32 @@ class EvidenceItem(ClientContract):
     capture: Literal["process_local", "durable_best_effort"]
 
 
+class DelegatedJobEventView(ClientContract):
+    """One bounded semantic AgentJob lifecycle event safe for the Orb."""
+
+    event_id: str
+    seq: int
+    kind: str
+    status: str
+    occurred_at: datetime
+
+
+class DelegatedJobSummary(ClientContract):
+    """Prompt-free, output-free AgentJob evidence correlated to a selected Run."""
+
+    job_id: str
+    request_id: str
+    step_id: str
+    runtime: str
+    profile: str
+    status: str
+    output_present: bool
+    error_present: bool
+    artifact_count: int
+    events_truncated: bool
+    events: list[DelegatedJobEventView]
+
+
 class OrbRunSnapshot(ClientContract):
     """Selected-run Orb evidence page with explicit capture and gap limits."""
 
@@ -270,6 +316,7 @@ class OrbRunSnapshot(ClientContract):
     known_omissions: list[str]
     gaps: list[EvidenceGap]
     evidence: list[EvidenceItem]
+    delegated_jobs: list[DelegatedJobSummary]
     next_after_seq: int | None
 
 

@@ -27,7 +27,7 @@ icon: material/source-branch
 - **The Shadow Realm Topology:** Pure reasoning branches may remain typed graph state. Branches
   with filesystem effects use isolated **[Lab (13)](13-layout.md)** workspaces; Jujutsu is the
   native workspace provider.
-- **Measured scrying:** Deterministic predicates, **[Riddle (34)](34-evaluation.md)** claims, and
+- **Measured evaluation:** Deterministic predicates, **[Riddle (34)](34-evaluation.md)** claims, and
   optional **[Mirror (32)](32-identity.md)** congruence remain separately attributed.
 - **Metabolic Pruning (The Reaper):** A cleanup protocol releases branch-owned resources only
   after required evidence and provenance are retained. It does not own Memory pruning.
@@ -136,7 +136,7 @@ Shadow Simulation contains multiple roles that must remain distinct:
 
 This separation keeps the simulation substrate from becoming an implicit identity authority.
 
-### 2. Heuristic scrying (attributed gates)
+### 2. Heuristic evaluation (attributed gates)
 
 To navigate the search space without exhausting the Magus's tokens, Shadow Simulation employs a
 two-tier evaluation system. In the cognitive topology of the

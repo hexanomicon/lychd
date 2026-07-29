@@ -135,5 +135,5 @@ urgency; the **[Orchestrator (23)](23-orchestrator.md)** applies physical readin
 
 !!! failure "Negative"
     - **State Swap Latency:** Activating a heavy dedicated Eye may introduce friction into
-      interactive scrying rituals.
+      interactive visual-inspection rituals.
     - **Context Pressure:** Visual tokens are expensive. Ingesting multiple artifacts can rapidly saturate the context window.

@@ -76,6 +76,10 @@ function projection(
     transition_occurrence_id: null,
     transition_request_id: null,
     transition_phase: null,
+    delegated_job_id: null,
+    delegated_runtime: null,
+    delegated_profile: null,
+    delegated_status: null,
     terminal: false
   };
 }

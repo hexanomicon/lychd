@@ -46,10 +46,9 @@ a tool call meeting validation, a lease meeting physical pressure, a decision en
 an outcome returning with evidence. Where evidence is absent, the instrument must show absence
 rather than complete the vision from inference.
 
-The Weaver's design also reserves an internal **Scry** before a reasoning step: it would retrieve
-relevant Karma into Context. That memory-preparation path is not implemented today. The same verb
-names two related acts—preparing the field and witnessing its movement—but the operator-facing
-instrument is always the **Orb**.
+The Weaver's design also reserves an internal **Recall** before a reasoning step: it would retrieve
+relevant Karma into Context. That memory-preparation path is not implemented today. Recall prepares
+the field; **scrying** witnesses its movement through the operator-facing **Orb**.
 
 ## The First Invocation
 
@@ -151,6 +150,17 @@ references, retrieved memories with provenance, tool/handoff requests, evaluatio
 and artifacts. These are first-person testimony or operated telemetry with named provenance—not
 hidden chain-of-thought or a mind-reading claim. Content, arguments, and context remain governed by
 capture, redaction, privacy, and retention policy.
+
+For a delegated macro-node, the detail may show the `AgentJob` lifecycle, Coffin profile, admitted
+adapter/provider capability, quota posture and hard ceilings, LychD-observed Gate/tool/file
+effects, provider-reported usage, security denials, trace gaps, candidate artifacts, and terminal
+adoption. The two provenance classes remain visibly separate. Raw JSONL is an untrusted,
+redacted artifact—not a hidden graph, an exact mind transcript, or authority to settle the job.
+
+The initial projection shows only the bounded substrate already owned by LychD: AgentJob identity,
+runtime, Coffin profile, status, semantic lifecycle events, and whether bounded output, error, or
+artifact references are present. It does not expose their private contents or manufacture Gate,
+usage, and effect evidence that the current runtime slice does not record.
 
 A document-rewrite or concept-coverage result belongs to
 [Riddle's rubric projection](../../sepulcher/extensions/riddle.md#vii-rubric-coverage-is-evidence-not-geometry):

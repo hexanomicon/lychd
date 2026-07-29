@@ -17,29 +17,9 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lychd.domain.artifacts import ArtifactRef
+
 __all__ = ["ArtifactContent", "ArtifactRef", "ContentPart", "Intent", "TextContent"]
-
-
-class ArtifactRef(BaseModel):
-    """Immutable metadata for a blob stored outside the run/checkpoint record."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    artifact_id: str = Field(min_length=1)
-    digest: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
-    media_type: str = Field(min_length=1)
-    size: int = Field(ge=0)
-    classification: Literal["public", "internal", "private", "restricted"] = "private"
-
-    @property
-    def modality(self) -> str:
-        """Project MIME type onto the dispatch modality vocabulary."""
-        prefix = self.media_type.split("/", maxsplit=1)[0].lower()
-        if prefix in {"image", "audio", "video"}:
-            return prefix
-        if self.media_type.lower() == "application/pdf":
-            return "document"
-        return "binary"
 
 
 class TextContent(BaseModel):

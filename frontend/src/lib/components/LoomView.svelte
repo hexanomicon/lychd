@@ -9,6 +9,7 @@
     OrbRunSnapshot
   } from "$lib/api/models";
   import MermaidGraph from "./MermaidGraph.svelte";
+  import DelegateMark from "./DelegateMark.svelte";
 
   let {
     patternId,
@@ -141,7 +142,10 @@
             <li class="station" data-kind={node.kind}>
               <span class="station__index">{String(index + 1).padStart(2, "0")}</span>
               <span class="station__body">
-                <strong>{node.label}</strong>
+                <strong>
+                  {#if node.kind === "delegate"}<DelegateMark />{/if}
+                  {node.label}
+                </strong>
                 <code>{node.key}</code>
               </span>
               <span class="declaration-kind" data-kind={node.kind}>{node.kind}</span>
@@ -184,7 +188,7 @@
       </aside>
     {:else}
       <div class="shell-placeholder">
-        <span class="glyph-big">◇</span>
+        <span class="glyph-big">⬡</span>
         <h2 class="rune-head">No Pattern revisions are registered</h2>
       </div>
     {/if}

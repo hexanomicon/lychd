@@ -191,6 +191,15 @@ Complex behaviors are achieved by composing Agents in a hierarchy:
 - **Programmatic Hand-off:** One agent completes a task and returns a structured object, which the application logic then passes to a different specialized agent for the next step of the ritual.
 - **Deep Agents:** For self-directed system evolution, agents are granted specialized toolsets for file operations and sandboxed code execution, managed via isolated speculative environments.
 
+These are native LychD relationships: the parent and child are Pydantic AI Agents whose usage
+ledger and admitted tools are visible to the trusted runtime. A
+[`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) is categorically different. It
+hands one typed task to an opaque foreign agent runtime inside a Coffin and receives an untrusted
+typed result. The foreign runtime is neither inserted into the native Agent registry nor permitted
+to inherit `RunContext`, the parent's tools, provider object, Sigil, or `UsageLimits` object.
+Equivalent hard budgets are serialized into the `AgentJob` grant and independently enforced by
+the Provider Gate.
+
 ### 8. Semantic Senses (Embedders as Infrastructure)
 
 Embedding is a LychD-owned capability port, not a currently delivered Pydantic AI Agent feature.

@@ -67,7 +67,7 @@ The intended sequence is explicit:
 1. A destination-pinned connector produces a candidate request and asks for a quote.
 2. The Counting House validates the quote against merchant identity, request digest, resource,
    amount, fees, asset, network, expiry, redirect policy, and budget.
-3. Policy rejects it, admits a bounded standing authority, or parks the run for the Magus to scry
+3. Policy rejects it, admits a bounded standing authority, or parks the run for the Magus to review
    the exact terms.
 4. Accounting reserves the worst-case total before any key is used.
 5. The isolated signer revalidates the same facts, signs once, submits once, and records the

@@ -35,6 +35,8 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunRecord
+    from lychd.domain.delegation.models import DelegatedAgentResult
+    from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
 
 __all__ = [
     "DEFAULT_ROUTING",
@@ -43,6 +45,7 @@ __all__ = [
     "RunEngine",
     "RunQueue",
     "admit_consent_resume",
+    "admit_delegate_resume",
     "enqueue_run",
     "run_job_key",
 ]
@@ -119,6 +122,43 @@ async def admit_consent_resume(
     return True
 
 
+async def admit_delegate_resume(
+    queues: Mapping[str, RunQueue],
+    ledger: RunLedger,
+    run: RunRecord,
+    *,
+    job_id: str,
+) -> bool:
+    """Admit and publish only the job that owns the current delegated wait."""
+    admit_task = asyncio.ensure_future(ledger.try_admit_delegate(run.run_id, job_id=job_id))
+    try:
+        enqueue_seq = await asyncio.shield(admit_task)
+    except asyncio.CancelledError:
+        enqueue_seq = await complete_under_cancellation(admit_task)
+        if enqueue_seq is not None:
+            await complete_under_cancellation(
+                ledger.try_restore_delegate_wait(run.run_id, job_id=job_id, enqueue_seq=enqueue_seq)
+            )
+        raise
+    if enqueue_seq is None:
+        return False
+    try:
+        refreshed = await ledger.get(run.run_id) or run
+        await enqueue_run(
+            queues,
+            ledger,
+            refreshed,
+            resume=True,
+            enqueue_seq=enqueue_seq,
+        )
+    except BaseException:
+        await complete_under_cancellation(
+            ledger.try_restore_delegate_wait(run.run_id, job_id=job_id, enqueue_seq=enqueue_seq)
+        )
+        raise
+    return True
+
+
 class RunQueue(Protocol):
     """The narrow SAQ-queue surface the engine needs (`saq.Queue` satisfies it)."""
 
@@ -177,7 +217,16 @@ class RunEngine:
     infrastructure collaborators (ledger, bus, queues) from HTTP input.
     """
 
-    __slots__ = ("bus", "cancellations", "ledger", "queue_router", "queues", "stasis_store", "workflows")
+    __slots__ = (
+        "bus",
+        "cancellations",
+        "delegates",
+        "ledger",
+        "queue_router",
+        "queues",
+        "stasis_store",
+        "workflows",
+    )
 
     def __init__(
         self,
@@ -189,6 +238,7 @@ class RunEngine:
         queues: Mapping[str, RunQueue],
         cancellations: RunCancellationCoordinator | None = None,
         stasis_store: Any | None = None,
+        delegates: DelegatedAgentCoordinatorPort | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
         self.ledger = ledger
@@ -197,6 +247,7 @@ class RunEngine:
         self.queue_router = queue_router
         self.queues = queues
         self.cancellations = cancellations or RunCancellationCoordinator()
+        self.delegates = delegates
         if stasis_store is None:
             from lychd.domain.cortex.stasis import InMemoryStasisStore
 
@@ -324,6 +375,9 @@ class RunEngine:
             if fresh is None or fresh.status in TERMINAL_STATUSES:
                 return
             run = fresh
+            if self.delegates is not None:
+                for job in await self.delegates.jobs_for_run(run.run_id):
+                    await self.delegates.cancel(job.ref.job_id)
             await self._abort_job(run)
             try:
                 await self.ledger.set_status(run.run_id, RunStatus.CANCELLED)
@@ -356,6 +410,30 @@ class RunEngine:
             return
         await admit_consent_resume(self.queues, self.ledger, run)
 
+    async def adopt_delegate(self, job_id: str, result: DelegatedAgentResult) -> bool:
+        """Adopt a terminal delegated result, then publish one durable graph resume."""
+        delegates = self._require_delegates()
+        await delegates.adopt(job_id, result)
+        return await self.resume_delegate(job_id)
+
+    async def resume_delegate(self, job_id: str) -> bool:
+        """Publish a resume only after the coordinator holds terminal job truth.
+
+        Repeated callbacks remain useful: if a prior broker publication failed, the
+        Run was restored to ``AWAITING_DELEGATE`` and this method retries admission.
+        Once a caller wins the status CAS, every duplicate becomes an inert ``False``.
+        """
+        from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
+
+        delegates = self._require_delegates()
+        job = await delegates.get(job_id)
+        if job is None or job.status not in TERMINAL_DELEGATED_AGENT_STATUSES:
+            return False
+        run = await self.ledger.get(job.request.run_id)
+        if run is None:
+            return False
+        return await admit_delegate_resume(self.queues, self.ledger, run, job_id=job_id)
+
     async def _enqueue(self, run: RunRecord, *, resume: bool = False) -> None:
         """Enqueue `perform_run` for the run on its physical queue (unique key)."""
         await enqueue_run(self.queues, self.ledger, run, resume=resume)
@@ -372,3 +450,9 @@ class RunEngine:
     async def _discard_stasis_checkpoint(self, run_id: str) -> None:
         """Delete a cancelled run's checkpoint from the shared Stasis store."""
         await self.stasis_store.delete(run_id)
+
+    def _require_delegates(self) -> DelegatedAgentCoordinatorPort:
+        if self.delegates is None:
+            msg = "Delegated-agent coordination is not configured."
+            raise RuntimeError(msg)
+        return self.delegates

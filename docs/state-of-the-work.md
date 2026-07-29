@@ -266,7 +266,9 @@ placeholder `lychd==0.0.1` on PyPI while source declares `0.0.2`; an anonymous p
 configured `ghcr.io/hexanomicon/lychd:latest` was denied, and no immutable tag or digest pairs it
 with the source wheel. That audit did build and isolated-install the source wheel, expose the real
 CLI tree, and complete `lychd init`, but a one-time manual pass is not a public release or a
-maintained packed-artifact receipt. Promotion needs one version owner, automated wheel/image
+maintained packed-artifact receipt. The repository now carries the Litestar Fullstack MIT notice
+required by identified adapted source, but no receipt proves that every wheel, source archive, and
+image retains it. Promotion needs one version owner, automated wheel/image and license-notice
 inspection, matching public artifacts, and a named clean-host install/start/reply/stop receipt.
 
 **Evidence**
@@ -276,6 +278,7 @@ inspection, matching public artifacts, and a named clean-host install/start/repl
 - **Version:** [Distribution and version declarations](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml),
   [Vessel build](https://github.com/hexanomicon/lychd/blob/main/Containerfile),
   [tag-triggered image workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/build.yml),
+  [third-party source notices](https://github.com/hexanomicon/lychd/blob/main/THIRD_PARTY_NOTICES.md),
   and [public PyPI project](https://pypi.org/project/lychd/)
 - **Law:** [ADR 17 — Packaging](./adr/17-packaging.md) and
   [ADR 18 — Evolution](./adr/18-evolution.md)
@@ -517,6 +520,81 @@ web and CLI suppress the live retry, leaving startup reconciliation as the autom
   [startup reconciliation tests](https://github.com/hexanomicon/lychd/blob/main/tests/cortex/test_reconcile.py),
   and [web consent endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_consent_endpoint.py)
 - **Law:** [ADR 25 — Human in the Loop](./adr/25-hitl.md)
+
+### Delegated agent execution {#delegated-agent-execution}
+
+**State:** Partial
+
+**Proved now:** Typed repository contracts cover secret-free delegated requests, artifact
+references, idempotent in-memory `AgentJob` submission and terminal adoption, cancellation,
+runtime-adapter ports, Graph parking with `AWAITING_DELEGATE`, and bounded run re-admission after a
+matching result is adopted. The Run row binds the current delegated `job_id`, and resume admission
+requires that exact wait owner so a terminal job from an earlier station cannot wake a later one.
+Separate pure policy modules validate fixed Coffin filesystem,
+network, resource, environment, command, Provider Gate, and provider-capacity decisions. Focused
+tests exercise replay conflicts, stale or forged results, cancelled and terminal-lost jobs, restart-shaped
+re-admission against the current run ledger, path and environment rejection, exact Gate
+capabilities, quota postures, and generated `nono` invocation/profile shape. The selectable
+built-in `delegation` extension, when selected, publishes a typed runtime catalogue: its
+deterministic process-local `reference` adapter completes and cancels jobs through the
+coordinator without filesystem, subprocess, model, or network work, while Codex CLI, Claude Code,
+OpenCode Go, and OpenRouter entries remain explicitly declared-only and fail closed. The source
+also defines delegated-job/event tables, migration `0003`, and a PostgreSQL job-store adapter
+wired into the PostgreSQL Altar service profile. Initial Altar projections correlate a delegated
+wait in Bridge, render the declared delegate station in Loom, list selected runtime delivery
+boundaries in Nexus, and summarize bounded AgentJob lifecycle evidence in the Orb.
+
+**Boundary — Not yet:** The PostgreSQL job ledger has no focused real-PostgreSQL or migration
+receipt, and its existence does not prove transactional runtime submission/outbox,
+cross-process claim/recovery, or restart settlement of a live foreign job. The memory profile
+still uses an in-memory store. No Codex CLI, Claude Code, OpenCode Go, OpenRouter, or other
+provider-backed adapter launches; catalogue metadata and locally observed command help are not
+execution receipts. The Coffin and Provider Gate modules compile and validate policy only: there
+is no generated lower-trust container, effectful supervisor, actual `nono` child, process-tree
+cancellation, credential-injecting Gate service, upstream provider call, egress enforcement
+receipt, or proof that secrets are absent from the child. Raw provider trace normalization,
+durable artifact custody, measured usage, reservation ledger, and a provider observation loop are
+also absent. Focused Bridge, Orb, and Nexus web-contract tests now cover the initial delegated
+projections, and the generated client compiles against those contracts. There is still no live
+browser or accessibility receipt for the complete crossing; the pages must not imply live Gate
+health, quota observation, or an effectful provider execution.
+
+**First proving slice:** Promotion beyond this Partial seam requires one documented,
+provider-backed headless adapter; durable idempotent `AgentJob` recovery and cancellation;
+effectful `read` and
+`candidate` Coffin profiles in disposable workspaces; a Provider Gate that keeps the real
+credential out of child environment, arguments, files, output, errors, and trace; hard
+time/resource/request/token/spend ceilings; normalized LychD-observed versus provider-reported
+events; and the four existing Altar projections. Adversarial receipts must cover filesystem and
+network escape, malicious or oversized JSONL, Gate replay and budget denial, crash/reclaim,
+process-tree kill and revocation, and candidate-patch containment. The feature remains disabled
+for real delegated execution until those boundaries agree.
+
+**Evidence**
+
+- **Source:** [Delegation contracts and coordinator](https://github.com/hexanomicon/lychd/tree/main/src/lychd/domain/delegation),
+  [PostgreSQL delegated-job store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/delegation.py),
+  [delegated-job records](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/delegation.py),
+  [delegated-job migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0003_delegated_agent_ledger.py),
+  [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py),
+  [run engine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py),
+  [delegated-runtime extension store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/delegation.py),
+  [built-in delegation catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/delegation/register.py),
+  [delegated web contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/contracts.py),
+  [Orb delegation projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/orb.py),
+  and [Coffin, Gate, and capacity policy](https://github.com/hexanomicon/lychd/tree/main/src/lychd/system/delegation)
+- **Verification:** [Delegation coordinator tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/delegation/test_coordinator.py),
+  [Graph park tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_delegate_stasis.py),
+  [run re-admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_delegate_resume.py),
+  [delegation extension tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py),
+  and [security/capacity policy tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/system/delegation)
+- **Law:** [ADR 05 — Extensions](./adr/05-extensions.md),
+  [ADR 09 — Security](./adr/09-security.md),
+  [ADR 14 — Workers](./adr/14-workers.md),
+  [ADR 22 — Dispatcher](./adr/22-dispatcher.md),
+  [ADR 23 — Orchestrator](./adr/23-orchestrator.md),
+  [ADR 24 — Graph](./adr/24-graph.md), and
+  [ADR 29 — Observability](./adr/29-observability.md)
 
 ### Durable in-app Attention {#durable-attention}
 

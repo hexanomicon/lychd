@@ -47,10 +47,10 @@ icon: material/toy-brick-outline
         - **Low Boundary Overhead:** Direct contributions avoid a network hop where in-process
           coupling is actually warranted.
         - **Shaped Integration:** Extensions contribute only through domain-owned stores. Current
-          active stores cover Runes, Soulstone definitions, Portals, transmutation, and typed
-          `run` operations; Vessel is empty/reserved, while tools, routes, status sections,
-          workloads, migrations, Patterns, and Compositions remain target stores until
-          individually delivered.
+          active stores cover Runes, Soulstone definitions, Portals, transmutation, delegated
+          runtime declarations/adapters, and typed `run` operations; Vessel is empty/reserved,
+          while tools, routes, status sections, workloads, migrations, Patterns, and
+          Compositions remain target stores until individually delivered.
         - **Assimilable Source:** Standard Git tooling preserves source history while Forge/Smith verification repairs organs with the body they join.
 
 ## Decision Outcome
@@ -129,12 +129,18 @@ The architecture relies on an **Inversion of Control** pattern to facilitate ass
   `context.run_operations`. The contribution appears beneath `lychd run`, inherits the shared
   admission/authority/traceability path, and never becomes a public root command. Its declaration
   is inert metadata rather than an arbitrary host-side Click callback.
+- **Delegated Runtimes:** An extension may register immutable delegated-runtime definitions
+  through `context.delegated_runtimes`. A definition declares transport, delivery state, security
+  requirements, limitations, and an optional runtime adapter. Declared-only entries cannot
+  become executable adapters merely because a matching binary exists on the host.
 - **Schema Exposure:** Selected in-process organs register `RuneConfig` subclasses through the extension context after import. Runtime package/source scanning is not the extension ledger.
 - **Application Contributions:** Future shaped `patterns`, `compositions`, and `suites` stores may
   accept immutable Pattern revisions plus application and cross-Composition handoff metadata for
   the living [Composition
   Portfolio](../compositions/index.md). They do not exist in the current `ExtensionContext`;
-  application pages are design rather than runnable registration.
+  application pages are design rather than runnable registration. These logical stores do not
+  imply a second source loader or a Crypt `compositions/` directory: package activation remains an
+  Extension concern, while application selection belongs to the Portfolio after registration.
 - **Substrate Declarations:** Synthesis-time requirements (system libraries, binaries, container needs) belong to the wider Extension Protocol and feed the Forge manifest. They must not be confused with the boot-time context itself.
 
 The activation selector has list semantics, not boolean map semantics:
@@ -165,10 +171,12 @@ packages on its own.
 ### 3. Contributions as Organs
 
 Extensions are more than isolated code, but no Extension is automatically a complete application.
-Today `ExtensionContext` exposes active Rune, Soulstone, Portal, transmutation, and `run` operation
-stores plus an empty reserved Vessel store. Read-only `status` sections remain a target store. The
-broader list below is the Extension Protocol target; each item remains absent until its shaped
-store, lifecycle, tests, and State boundary exist:
+Today `ExtensionContext` exposes active Rune, Soulstone, Portal, transmutation, delegated-runtime,
+and `run` operation stores plus an empty reserved Vessel store. The built-in `delegation` extension
+uses the delegated-runtime store to publish one runnable no-network reference adapter and
+fail-closed declarations for provider-backed candidates; declaration is not delivery. Read-only
+`status` sections remain a target store. The broader list below is the Extension Protocol target;
+each item remains absent until its shaped store, lifecycle, tests, and State boundary exist:
 
 - **Configuration and Runtime Definitions:** Rune schemas, Animator definitions, adapters, and
   lifecycle hooks through their owning stores.
@@ -242,7 +250,10 @@ Therefore, the near-term doctrine is:
 
 - Do not build a separate SDK until real third-party distribution pressure exists.
 - Do not promise independent in-process compatibility across arbitrary Core refactors.
-- Do not treat foreign agent frameworks as first-class in-process runtimes. Wrap them behind external-service Animators, A2A Emissaries, or assimilate their useful patterns into LychD's native Pydantic AI agent runtime.
+- Do not treat foreign agent frameworks as first-class in-process runtimes. Wrap them behind
+  external-service Animators, A2A Emissaries, or a
+  [`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) runtime adapter; otherwise
+  assimilate their useful patterns into LychD's native Pydantic AI agent runtime.
 - Treat unpinned Crypt-side source loading as a future Forge/Smith assimilation concern, not as a live runtime registration path.
 - Prefer external-service Animators when a capability needs a true decoupling boundary. "External-service" describes placement and protocol isolation; the exposed capability may be cognitive, observational, procedural, networked, or tool-bearing.
 - Promote only the minimal host surfaces that survive repeated internal use into a future `lychd.extensions.api` module.
@@ -280,6 +291,32 @@ implement `Runic`"; the stable boundary is "LychD owns user-facing
 configuration through Codex, then the adapter translates that validated rune
 into the foreign engine's native configuration shape." This permits fast
 Rust-side kernels while keeping operator configuration in one place.
+
+#### Delegated-Agent Runtime Adapters
+
+Provider and CLI particulars for bounded delegated labor are Extension concerns. A Codex CLI,
+Claude Code, OpenCode, or later adapter may contribute:
+
+- capability declarations and validated Rune schema;
+- an exact, non-shell command builder for one audited runtime/version range;
+- start, poll or stream, cancel, and process-tree settlement behavior;
+- conversion from untrusted provider output into the stable `AgentJob` result and event contract;
+  and
+- provider usage, rate-limit, reset, and health observations with explicit provenance.
+
+The adapter receives a secret-free job grant and a
+[Coffin](./09-security.md#the-coffin-delegated-agent-profile) execution envelope. It does not own
+Graph topology, job persistence, quota policy, provider credentials, artifact promotion, or
+Reanimation. Raw JSONL may be retained as a bounded redacted artifact; it is never imported as a
+hidden LychD graph or treated as chain-of-thought.
+
+Core may ship one built-in adapter to prove this port. A new provider then remains an adapter plus
+configuration contribution, not a new node class or a second orchestration kernel.
+
+A provider aggregator such as OpenRouter is different again: it is a Portal or Provider-Gate
+upstream behind an admitted provider/model allowlist, not a delegated CLI runtime or node type.
+Aggregation does not authorize unknown models, implicit paid fallback, credential sharing, or
+account rotation.
 
 #### Cross-Language Organs
 

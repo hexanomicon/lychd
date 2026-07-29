@@ -17,6 +17,13 @@ def test_route_bridge_source_selects_bridge_chat() -> None:
     assert workflow.name == "bridge_chat"
 
 
+def test_route_delegate_command_selects_delegated_rite_before_default() -> None:
+    workflow = WORKFLOW_REGISTRY.route(
+        Intent(session_id="s", run_id="r", prompt="/delegate inspect this", source="bridge")
+    )
+    assert workflow.name == "delegated_rite"
+
+
 def test_route_unknown_source_falls_to_default() -> None:
     """An unmatched source falls back to the default (first-registered) workflow."""
     workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else"))
