@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from lychd.agents.router import Intent
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.delegation.models import DelegatedAgentProfile, DelegatedAgentRequest
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -113,6 +114,10 @@ def test_snapshot_reconstructs_selected_process_local_active_runs(
             "transition_occurrence_id": None,
             "transition_request_id": None,
             "transition_phase": None,
+            "delegated_job_id": None,
+            "delegated_runtime": None,
+            "delegated_profile": None,
+            "delegated_status": None,
             "terminal": False,
         },
     ]
@@ -175,6 +180,65 @@ def test_run_snapshot_reconstructs_latest_dispatch_and_transition_from_ledger(
     assert body["transition_occurrence_id"] == "occ-1"
     assert body["transition_request_id"] == "request-1"
     assert body["transition_phase"] == "verifying"
+
+
+def test_run_snapshot_reconstructs_delegated_crossing(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+    run_id = "run_delegate_crossing"
+
+    async def _seed() -> str:
+        await fake_services.ledger.create(
+            Intent(
+                session_id=session.id,
+                run_id=run_id,
+                prompt="/delegate inspect",
+                source="bridge",
+            ),
+            workflow_name="delegated_rite",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status(run_id, RunStatus.RUNNING)
+        job = await fake_services.delegates.submit(
+            DelegatedAgentRequest(
+                request_id="request-crossing",
+                run_id=run_id,
+                step_id="dispatch_delegate",
+                runtime="reference",
+                profile=DelegatedAgentProfile.READ,
+                prompt="inspect",
+            )
+        )
+        await fake_services.ledger.append_event(
+            RunEvent(
+                run_id=run_id,
+                seq=0,
+                kind=RunEventKind.NODE,
+                data="dispatch_delegate",
+                meta={
+                    "phase": "waiting",
+                    "occurrence_id": "occ-delegate",
+                    "delegated_job_id": job.job_id,
+                    "delegated_runtime": "reference",
+                },
+            )
+        )
+        await fake_services.ledger.set_status(run_id, RunStatus.AWAITING_DELEGATE)
+        return job.job_id
+
+    job_id = asyncio.run(_seed())
+    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["run_status"] == "awaiting_delegate"
+    assert body["delegated_job_id"] == job_id
+    assert body["delegated_runtime"] == "reference"
+    assert body["delegated_profile"] == "read"
+    assert body["delegated_status"] == "running"
 
 
 def test_run_snapshot_preserves_cross_occurrence_correlations(

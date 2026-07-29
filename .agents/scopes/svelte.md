@@ -98,7 +98,7 @@ Route all renderer access through one LychD-owned adapter:
 - server DTOs become explicit presentation nodes and edges;
 - stable domain identity remains separate from renderer identity and layout coordinates;
 - Loom draft gestures never become publication or execution authority;
-- Scrying animation never becomes evidence;
+- Orb scrying animation never becomes evidence;
 - reconnect/backfill must reconstruct the same semantic state;
 - annotations target stable server identities, not canvas coordinates;
 - keyboard, reduced-motion, list/table, and inspector alternatives remain first-class;

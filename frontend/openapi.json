@@ -196,6 +196,149 @@
         "title": "CsrfClientContract",
         "type": "object"
       },
+      "DelegatedJobEventView": {
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "kind",
+          "occurred_at",
+          "seq",
+          "status"
+        ],
+        "title": "DelegatedJobEventView",
+        "type": "object"
+      },
+      "DelegatedJobSummary": {
+        "properties": {
+          "artifact_count": {
+            "type": "integer"
+          },
+          "error_present": {
+            "type": "boolean"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/DelegatedJobEventView"
+            },
+            "type": "array"
+          },
+          "events_truncated": {
+            "type": "boolean"
+          },
+          "job_id": {
+            "type": "string"
+          },
+          "output_present": {
+            "type": "boolean"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "runtime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "step_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_count",
+          "error_present",
+          "events",
+          "events_truncated",
+          "job_id",
+          "output_present",
+          "profile",
+          "request_id",
+          "runtime",
+          "status",
+          "step_id"
+        ],
+        "title": "DelegatedJobSummary",
+        "type": "object"
+      },
+      "DelegatedRuntimeObservation": {
+        "properties": {
+          "capacity_posture": {
+            "const": "not_configured",
+            "type": "string"
+          },
+          "coffin_profiles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "delivery": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "provider_gate": {
+            "enum": [
+              "not_required",
+              "required_unavailable"
+            ],
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          },
+          "runnable": {
+            "type": "boolean"
+          },
+          "runtime_id": {
+            "type": "string"
+          },
+          "transport": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "capacity_posture",
+          "coffin_profiles",
+          "delivery",
+          "display_name",
+          "limitations",
+          "provider_gate",
+          "provider_id",
+          "runnable",
+          "runtime_id",
+          "transport"
+        ],
+        "title": "DelegatedRuntimeObservation",
+        "type": "object"
+      },
       "EvidenceGap": {
         "properties": {
           "classification": {
@@ -632,6 +775,12 @@
               }
             ]
           },
+          "delegated_runtimes": {
+            "items": {
+              "$ref": "#/components/schemas/DelegatedRuntimeObservation"
+            },
+            "type": "array"
+          },
           "snapshot_at": {
             "format": "date-time",
             "type": "string"
@@ -646,6 +795,7 @@
         "required": [
           "board",
           "containment_reason",
+          "delegated_runtimes",
           "snapshot_at",
           "transitions"
         ],
@@ -660,6 +810,12 @@
               "durable_best_effort"
             ],
             "type": "string"
+          },
+          "delegated_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/DelegatedJobSummary"
+            },
+            "type": "array"
           },
           "evidence": {
             "items": {
@@ -728,6 +884,7 @@
         },
         "required": [
           "capture",
+          "delegated_jobs",
           "evidence",
           "gaps",
           "has_more",
@@ -917,6 +1074,46 @@
           "cursor": {
             "type": "integer"
           },
+          "delegated_job_id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delegated_profile": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delegated_runtime": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "delegated_status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "dispatch_occurrence_id": {
             "oneOf": [
               {
@@ -1033,6 +1230,10 @@
           "capability_key",
           "content",
           "cursor",
+          "delegated_job_id",
+          "delegated_profile",
+          "delegated_runtime",
+          "delegated_status",
           "dispatch_occurrence_id",
           "evidence_capture",
           "fragments",

@@ -15,6 +15,7 @@ def test_catalog_has_only_explicitly_supported_builtin_ids() -> None:
         "animator/sglang",
         "observability/phoenix",
         "simulation",
+        "delegation",
     }
     assert builtin_register_module("animator/exllamav3").endswith("animator.exllamav3.register")
     assert builtin_register_module("animator/llamacpp").endswith("animator.llamacpp.register")

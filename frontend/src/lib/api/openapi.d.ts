@@ -422,6 +422,44 @@ export interface components {
             cookie_name: string;
             header_name: string;
         };
+        /** DelegatedJobEventView */
+        DelegatedJobEventView: {
+            event_id: string;
+            kind: string;
+            /** Format: date-time */
+            occurred_at: string;
+            seq: number;
+            status: string;
+        };
+        /** DelegatedJobSummary */
+        DelegatedJobSummary: {
+            artifact_count: number;
+            error_present: boolean;
+            events: components["schemas"]["DelegatedJobEventView"][];
+            events_truncated: boolean;
+            job_id: string;
+            output_present: boolean;
+            profile: string;
+            request_id: string;
+            runtime: string;
+            status: string;
+            step_id: string;
+        };
+        /** DelegatedRuntimeObservation */
+        DelegatedRuntimeObservation: {
+            /** @constant */
+            capacity_posture: "not_configured";
+            coffin_profiles: string[];
+            delivery: string;
+            display_name: string;
+            limitations: string[];
+            /** @enum {string} */
+            provider_gate: "not_required" | "required_unavailable";
+            provider_id: string;
+            runnable: boolean;
+            runtime_id: string;
+            transport: string;
+        };
         /** EvidenceGap */
         EvidenceGap: {
             /**
@@ -531,6 +569,7 @@ export interface components {
         NexusSnapshot: {
             board: components["schemas"]["NexusBoard"];
             containment_reason: string | null;
+            delegated_runtimes: components["schemas"]["DelegatedRuntimeObservation"][];
             /** Format: date-time */
             snapshot_at: string;
             transitions: components["schemas"]["TransitionRecordView"][];
@@ -539,6 +578,7 @@ export interface components {
         OrbRunSnapshot: {
             /** @enum {string} */
             capture: "process_local" | "durable_best_effort";
+            delegated_jobs: components["schemas"]["DelegatedJobSummary"][];
             evidence: components["schemas"]["EvidenceItem"][];
             gaps: components["schemas"]["EvidenceGap"][];
             has_more: boolean;
@@ -606,6 +646,10 @@ export interface components {
             capability_key: string | null;
             content: string;
             cursor: number;
+            delegated_job_id: string | null;
+            delegated_profile: string | null;
+            delegated_runtime: string | null;
+            delegated_status: string | null;
             dispatch_occurrence_id: string | null;
             /** @enum {string} */
             evidence_capture: "process_local" | "durable_best_effort";

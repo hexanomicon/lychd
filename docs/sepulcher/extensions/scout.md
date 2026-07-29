@@ -52,6 +52,48 @@ search result != fetched response != extracted statement != trusted fact
 fetch != render != interact != credential use
 ```
 
+## Sources Are Senses, Not Applications
+
+Scout is the acquisition boundary for observations from outside the LychD body. A website,
+marketplace, map service, catalogue, menu feed, social surface, or external read API is therefore
+not a Composition merely because a Magus wants information from it. Its adapter contributes one
+or more separately authorized Scout effects plus normalization and evidence contracts:
+
+| External surface | Scout/provider contribution | Composition that may use the observation |
+| --- | --- | --- |
+| Bazoš or another marketplace | listing search/fetch/extract, locality and price grammar, change/deletion observation, optional separately granted interaction | Tech Scavenger, Home Seeker, or another domain application |
+| Google Maps, OpenStreetMap, OSRM, or another geo source | geocode, place, amenity, route, distance, duration, freshness, precision, and cost observations through an eligible API/feed/read adapter | Home Seeker or Lifestyle Steward |
+| Kaufland, Lidl, Tesco, or another merchant | catalogue/feed/page acquisition, offer extraction, store scope, validity and stock-disclaimer observations | Lifestyle Steward |
+| AliExpress or another shop | product discovery and bounded product-page observations; later separately granted session, cart, or interaction effects | Lifestyle Steward or another shopping application |
+| Restaurant site, PDF, or public social post | menu acquisition with publication time, validity, provenance, and uncertainty | Lifestyle Steward |
+
+An official API, structured feed, bounded static page, renderer, or browser session may implement
+different acquisition effects and carry different placement, credential, cost, and policy
+requirements. A Portal-backed provider still returns a source observation; it does not acquire
+the consuming Composition's domain judgment.
+
+The Composition owns the human purpose and consequence: whether a DIMM is compatible, whether an
+apartment satisfies private constraints, whether a shop is worth the walk, or whether a menu fits
+the household's declared needs. Scout owns how the external observation was lawfully obtained,
+bounded, attributed, normalized, and refreshed. A reusable crawl, saved-query, deduplication, or
+change-detection component remains a Scout contribution or Pattern until it acquires an
+independent operator-visible purpose, domain state, policy, and lifecycle sufficient to justify a
+Composition of its own.
+
+The vocabulary remains equally strict. **Hunter** is already the
+[Shadow posture](./shadow.md#the-dancer-posture-and-the-hunter-posture) that hunts unsupported
+premises inside candidate reasoning. External acquisition therefore uses **Scout**, **Search**,
+**Watch**, **Source Profile**, **Listing Observation**, and **Geo Observation** language. A source
+adapter observes the outside world; it does not perform Shadow's adversarial hunt.
+
+```text
+external source
+→ Scout effect + source adapter
+→ attributed observation
+→ Composition-specific interpretation
+→ separately authorized consequence
+```
+
 ## The First Passage: One Static Public Page
 
 The first implementation should prove one useful path before opening the browser:

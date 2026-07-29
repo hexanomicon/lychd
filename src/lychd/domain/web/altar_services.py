@@ -28,6 +28,10 @@ from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.substrate import RunSubstrate
+from lychd.domain.delegation.services import (
+    DelegatedAgentCoordinator,
+    InMemoryDelegatedAgentJobStore,
+)
 from lychd.domain.orchestration.arbiter import TransitionArbiter
 from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -46,8 +50,10 @@ if TYPE_CHECKING:
     from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.ledger import RunLedger
+    from lychd.domain.delegation.ports import DelegatedAgentRuntime
     from lychd.domain.web.fragments import FragmentRegistry
     from lychd.domain.web.sessions import SessionStorePort
+    from lychd.extensions.delegation import RegisteredDelegatedRuntime
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -68,6 +74,8 @@ class AltarServices:
     ledger: RunLedger
     bus: InProcessEventBus
     substrate: RunSubstrate
+    delegates: DelegatedAgentCoordinator | None
+    delegated_runtime_catalog: tuple[RegisteredDelegatedRuntime, ...]
 
     async def aclose(self) -> None:
         """Cancel tracked tasks and drain per-run resources on shutdown.
@@ -142,12 +150,34 @@ def _build_consent_ledger(profile: str) -> ConsentLedger:
     return CodexConsentLedger(session_factory=get_session_factory())
 
 
+def _build_delegation_coordinator(
+    profile: str,
+    runtimes: Sequence[DelegatedAgentRuntime],
+) -> DelegatedAgentCoordinator | None:
+    """Compose one AgentJob coordinator only when an admitted adapter exists."""
+    if not runtimes:
+        return None
+    if profile == "memory":
+        store = InMemoryDelegatedAgentJobStore()
+    else:
+        from lychd.db.delegation import DbDelegatedAgentJobStore
+        from lychd.db.engine import get_session_factory
+
+        store = DbDelegatedAgentJobStore(get_session_factory())
+    return DelegatedAgentCoordinator(
+        runtimes={runtime.name: runtime for runtime in runtimes},
+        store=store,
+    )
+
+
 def build_altar_services(
     *,
     queues: Mapping[str, RunQueue],
     runes: RuneRegistry,
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
     portal_factories: Sequence[PortalRuntimeFactory] = (),
+    delegated_runtime_adapters: Sequence[DelegatedAgentRuntime] = (),
+    delegated_runtime_catalog: Sequence[RegisteredDelegatedRuntime] = (),
     profile: str | None = None,
     settings: Settings | None = None,
     systemctl_bin: str | None = None,
@@ -201,6 +231,7 @@ def build_altar_services(
     tickets = TicketStore()
     projector = EventProjector(fragments=fragments, sessions=bridge_sessions, consents=consents)
     workflows = builtin_workflow_registry()
+    delegates = _build_delegation_coordinator(profile, delegated_runtime_adapters)
     cancellations = RunCancellationCoordinator()
     if profile == "postgres":
         from lychd.db.checkpoints import PostgresStasisStore
@@ -227,6 +258,7 @@ def build_altar_services(
         queues=queues,
         cancellations=cancellations,
         stasis_store=stasis_store,
+        delegates=delegates,
     )
     run_engine = RunEngine(
         ledger=ledger,
@@ -236,6 +268,7 @@ def build_altar_services(
         queues=queues,
         cancellations=cancellations,
         stasis_store=stasis_store,
+        delegates=delegates,
     )
     return AltarServices(
         registry=registry,
@@ -252,4 +285,6 @@ def build_altar_services(
         ledger=ledger,
         bus=bus,
         substrate=substrate,
+        delegates=delegates,
+        delegated_runtime_catalog=tuple(delegated_runtime_catalog),
     )

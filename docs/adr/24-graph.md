@@ -25,6 +25,9 @@ icon: material/graph-outline
 - **Join and Reduce Synchronization:** Implementation of specialized synchronization points to
   aggregate parallel results into one candidate or typed aggregate. A join determines graph shape;
   it does not establish factual truth by consensus.
+- **Opaque Delegated Labor:** A Pattern may contain a typed delegated-agent macro-node whose
+  foreign runtime can plan and use tools internally without importing that hidden topology into
+  the LychD Graph.
 - **Visible Topology and Evidence:** Pattern topology must remain inspectable independently of the
   correlated runtime events that say which stations an Invocation actually entered.
 
@@ -174,7 +177,88 @@ handshake:
     SAQ enqueue compensation and reconciliation narrow the current failure windows, but they are
     not a transactional outbox and must not be documented as one.
 
-### 3. Parallel Reasoning: Broadcasting and Spreading
+### 3. Delegated Agent Macro-Nodes
+
+A **`DelegatedAgentNode`** is one typed Graph station that delegates a bounded task to an isolated
+foreign agent runtime. Codex CLI, Claude Code, OpenCode, and later compatible runtimes are adapter
+possibilities, not node kinds. The Graph sees one macro-node with declared inputs, outcomes, and
+evidence. The runtime's private planner, tool loop, subagents, and provider-specific session format
+remain opaque.
+
+This boundary is deliberate:
+
+- a delegated runtime is not a native LychD [Agent](./20-agents.md), Emissary, or child-agent lane;
+- its hidden execution graph is not imported, inferred, or redrawn as LychD topology;
+- provider JSONL is testimony from an adapter, not chain-of-thought or authoritative inner state;
+  and
+- multiple delegated jobs may execute concurrently only where the Pattern topology and admitted
+  provider capacity both allow it. Internal foreign parallelism creates no implicit Graph edges.
+
+The stable ownership is:
+
+| Concern | Owner |
+| :--- | :--- |
+| Why the labor occurs, typed inputs and outcomes, and downstream routing | Pattern and Graph |
+| Compatible `delegated_agent` capability and secret-free execution grant | [Dispatcher](./22-dispatcher.md) |
+| Admitted provider capacity and configured quota posture | [Orchestrator](./23-orchestrator.md) |
+| CLI/protocol invocation and provider-event normalization | [Extension adapter](./05-extensions.md) |
+| Durable occurrence, idempotency, terminal adoption, and cancellation | `AgentJob` ledger |
+| Filesystem, process, resource, and provider-egress containment | [Coffin and Provider Gate](./09-security.md) |
+| Retained evidence and operator projection | [Oculus and Orb](./29-observability.md) |
+
+#### The `AgentJob` Covenant
+
+Every admitted macro-node occurrence creates or recovers one **`AgentJob`**. Its request binds an
+idempotency key to the Run, Pattern station occurrence, attempt, delegated capability, input and
+revision references, containment profile, allowed actions, timeout, resource and spending
+ceilings, output schema, and capture policy. Prompts and artifacts are bounded values or references;
+the job is not an ambient grant to the repository, home directory, network, or provider account.
+
+The terminal result contains a terminal status, typed output, artifact or candidate-patch
+references, normalized evidence, measured usage where available, and an explicit error or
+unresolved condition. Blob bytes and credentials do not ride in the result. A returned patch is an
+untrusted candidate artifact; it cannot promote itself or mutate the authoritative checkout.
+
+The durable target state machine is:
+
+```text
+QUEUED → ADMITTED → PREPARING → RUNNING → SUCCEEDED
+                                      ↘ FAILED
+                                      ↘ TIMED_OUT
+                                      ↘ CANCELLED
+                                      ↘ LOST
+```
+
+An implementation may collapse preparatory states in its first internal model, but it may not
+collapse the distinction between non-terminal and terminal truth. Transport is treated as
+at-least-once. Submission, claim, terminal adoption, and resumption are therefore idempotent by the
+stable Run/node-occurrence/attempt identity. A repeated id with different content fails closed.
+`LOST` is terminal indeterminate truth: the external job can no longer be observed safely, so the
+same occurrence is never started again automatically. It requires explicit reconciliation or a
+new Pattern-authorized attempt with a new identity.
+
+Once external labor is admitted, the Graph checkpoints and enters Durable Stasis with the reason
+`AWAITING_DELEGATE`; the worker is free to exit. The `AgentJob` outlives that worker. Only an
+idempotently committed terminal result correlated to the same occurrence and grant may request
+Reanimation. Cancellation and timeout must stop the whole delegated process tree, revoke its Gate
+capability, settle the job exactly once, and resume or terminate the Graph according to the
+Pattern's declared route.
+
+An in-memory coordinator, typed request/result models, or a parked-run signal proves only the
+domain seam. It does not prove durable restart recovery, an effectful Coffin supervisor, provider
+credential containment, or a working provider adapter. [State of the
+Work](../state-of-the-work.md#delegated-agent-execution) owns that delivery distinction.
+
+#### Provider Trace Boundary
+
+Adapters may retain a bounded, redacted raw trace as an artifact and must project stable semantic
+events for lifecycle, admitted tools, file or artifact effects, usage, denials, and terminal
+outcome. Every field is labelled either **LychD-observed** or **provider-reported**. Neither label
+licenses storage of hidden chain-of-thought. Unsupported or malformed provider events remain
+untrusted input: they may be quarantined or represented as an explicit gap, never executed or
+silently promoted into system truth.
+
+### 4. Parallel Reasoning: Broadcasting and Spreading
 
 This section defines the future GraphBuilder target; none of these parallel primitives is delivered
 by the current serial `BaseNode` engine. The architecture may later treat concurrent graph
@@ -197,7 +281,7 @@ traversals as movements within **the Flux** (Vṛtti correspondence):
   The predicate proves only what it declares; `ReduceFirstValue` is a convergent cut expressed as
   graph topology, not a universal Pramāṇa gate.
 
-### 4. Deterministic Routing & The Halting Problem
+### 5. Deterministic Routing & The Halting Problem
 
 The current `BaseNode` runtime routes through typed return values. A future GraphBuilder adapter may
 also use:
@@ -208,7 +292,7 @@ also use:
 
 Topology is cognition without ownership: the graph determines process flow, while identity and promotion authority are handled elsewhere.
 
-### 5. Pattern Topology and Runtime Observation
+### 6. Pattern Topology and Runtime Observation
 
 The two visual contracts must not be conflated:
 

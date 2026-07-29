@@ -18,6 +18,7 @@ from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.delegation.services import DelegatedAgentCoordinator, InMemoryDelegatedAgentJobStore
 from lychd.domain.orchestration.journal import TransitionJournal
 from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
@@ -26,6 +27,7 @@ from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
 from lychd.domain.web.tickets import TicketStore
+from lychd.extensions.manager import ExtensionManager
 from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController, OrbController
 from lychd.interface.web.deps import web_dependencies
 
@@ -230,6 +232,11 @@ def fake_services() -> SimpleNamespace:
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
     projector = EventProjector(fragments=fragments, sessions=sessions, consents=consents)
+    extension_context = ExtensionManager(builtins=["delegation"], crypt=[]).assemble()
+    delegates = DelegatedAgentCoordinator(
+        runtimes=dict(extension_context.delegated_runtimes.runtime_adapters),
+        store=InMemoryDelegatedAgentJobStore(),
+    )
     return SimpleNamespace(
         registry=FakeRegistry(),
         dispatcher=None,
@@ -244,6 +251,8 @@ def fake_services() -> SimpleNamespace:
         projector=projector,
         ledger=ledger,
         bus=bus,
+        delegates=delegates,
+        delegated_runtime_catalog=extension_context.delegated_runtimes.registrations,
     )
 
 

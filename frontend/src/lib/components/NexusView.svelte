@@ -17,6 +17,7 @@
     TransitionPlan,
     TransitionRecordView
   } from "$lib/api/models";
+  import DelegateMark from "./DelegateMark.svelte";
 
   type Preview = { target: string; plan: TransitionPlan };
 
@@ -32,8 +33,8 @@
   let refreshVersion = 0;
   let transitionVersion = 0;
   let closeStream: (() => void) | null = null;
-  let planInspector = $state<HTMLElement>();
-  let transitionInspector = $state<HTMLElement>();
+  let planInspector: HTMLElement | undefined;
+  let transitionInspector: HTMLElement | undefined;
 
   let requestedTransitionId = $derived(page.url.searchParams.get("transition"));
   let requestedEventId = $derived(page.url.searchParams.get("event"));
@@ -102,7 +103,7 @@
     }
   }
 
-  async function scry(target: string) {
+  async function previewTransition(target: string) {
     await clearTransition();
     const version = ++previewVersion;
     preview = null;
@@ -125,6 +126,20 @@
     if (!window.matchMedia("(max-width: 760px)").matches) return;
     await tick();
     element?.focus();
+  }
+
+  function capturePlanInspector(node: HTMLElement) {
+    planInspector = node;
+    return () => {
+      if (planInspector === node) planInspector = undefined;
+    };
+  }
+
+  function captureTransitionInspector(node: HTMLElement) {
+    transitionInspector = node;
+    return () => {
+      if (transitionInspector === node) transitionInspector = undefined;
+    };
   }
 
   async function clearTransition() {
@@ -219,7 +234,11 @@
                 <time class="probe-time" datetime={row.checked_at ?? undefined}>
                   {row.checked_at ? `checked ${new Date(row.checked_at).toLocaleTimeString()}` : "freshness unknown"}
                 </time>
-                <button class="scry" type="button" onclick={() => scry(row.capability_key)}>
+                <button
+                  class="preview-trigger"
+                  type="button"
+                  onclick={() => previewTransition(row.capability_key)}
+                >
                   Preview
                 </button>
               </div>
@@ -243,6 +262,44 @@
               </div>
             {/each}
           </section>
+        {/if}
+      </section>
+
+      <section class="delegated-runtime-pools panel" aria-labelledby="delegated-runtime-title">
+        <div class="panel-head">
+          <h2 id="delegated-runtime-title" class="rune-head">Delegated runtime pools</h2>
+          <span>selected extensions · read only</span>
+        </div>
+        {#if snapshot.delegated_runtimes.length}
+          <div class="delegated-runtime-grid">
+            {#each snapshot.delegated_runtimes as runtime (runtime.runtime_id)}
+              <article class="delegated-runtime" data-state={runtime.delivery}>
+                <header>
+                  <span class="delegated-runtime__title"><DelegateMark /> {runtime.display_name}</span>
+                  <span class="chip" data-state={runtime.runnable ? "active" : "cold"}>
+                    {runtime.runnable ? "available" : runtime.delivery}
+                  </span>
+                </header>
+                <dl class="kv">
+                  <dt>adapter</dt><dd>{runtime.runtime_id} · {runtime.transport}</dd>
+                  <dt>extension</dt><dd>{runtime.provider_id}</dd>
+                  <dt>coffin</dt>
+                  <dd>{runtime.coffin_profiles.length ? runtime.coffin_profiles.join(" · ") : "not required"}</dd>
+                  <dt>Provider Gate</dt><dd>{runtime.provider_gate.replaceAll("_", " ")}</dd>
+                  <dt>capacity</dt><dd>{runtime.capacity_posture.replaceAll("_", " ")}</dd>
+                </dl>
+                {#if runtime.limitations.length}
+                  <ul class="limits-list">
+                    {#each runtime.limitations as limitation (limitation)}<li>{limitation}</li>{/each}
+                  </ul>
+                {/if}
+              </article>
+            {/each}
+          </div>
+        {:else}
+          <p class="inspector-copy">
+            No delegated runtime extension is selected for this Vessel.
+          </p>
         {/if}
       </section>
 
@@ -280,7 +337,7 @@
     <section
       class="panel nexus-plan"
       data-open={preview !== null}
-      bind:this={planInspector}
+      {@attach capturePlanInspector}
       tabindex="-1"
     >
       <div class="panel-head">
@@ -330,7 +387,7 @@
     <section
       class="panel transition-inspector"
       data-open={selectedTransition !== null}
-      bind:this={transitionInspector}
+      {@attach captureTransitionInspector}
       tabindex="-1"
     >
       <div class="panel-head">

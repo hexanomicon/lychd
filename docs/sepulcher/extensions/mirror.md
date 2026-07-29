@@ -138,7 +138,7 @@ The Mirror is the primary engine of **Citrinitas** (The Yellowing)—the stage o
 Mirror binds different Personas through the admitted Weaver Pattern and Agent factory. The
 **[Dispatcher](../../adr/22-dispatcher.md)** chooses capabilities, not identities.
 
-1. **The Registry:** Personas are inscribed in the **[Codex](../codex.md)** (e.g., `The-Architect`, `The-Scribe`).
+1. **The Registry:** Personas are inscribed in the **[Codex](../codex.md)** (e.g., `The-Curator`, `The-Scribe`).
 2. **The Hydration:** When a task is initiated, the system retrieves the Persona’s specific Karma and instructions, hydrating a fresh Agent shell with these identity priors.
 3. **The Requirements:** The Pattern declares the task's capability and quality requirements.
    Dispatcher selects an eligible provider; the

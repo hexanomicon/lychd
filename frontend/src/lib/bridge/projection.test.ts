@@ -53,7 +53,11 @@ function live(sessionId: string, runId: string): LiveTurn {
     capabilityKey: null,
     transitionOccurrenceId: null,
     transitionRequestId: null,
-    transitionPhase: null
+    transitionPhase: null,
+    delegatedJobId: null,
+    delegatedRuntime: null,
+    delegatedProfile: null,
+    delegatedStatus: null
   };
 }
 
@@ -82,7 +86,11 @@ function runProjection(
     transition_request_id: null,
     transition_phase: null,
     terminal: false,
-    ...overrides
+    ...overrides,
+    delegated_job_id: overrides.delegated_job_id ?? null,
+    delegated_runtime: overrides.delegated_runtime ?? null,
+    delegated_profile: overrides.delegated_profile ?? null,
+    delegated_status: overrides.delegated_status ?? null
   };
 }
 
@@ -180,7 +188,11 @@ describe("Bridge snapshot/live merge", () => {
         capabilityKey: null,
         transitionOccurrenceId: null,
         transitionRequestId: null,
-        transitionPhase: null
+        transitionPhase: null,
+        delegatedJobId: null,
+        delegatedRuntime: null,
+        delegatedProfile: null,
+        delegatedStatus: null
       }
     ]);
   });

@@ -156,10 +156,19 @@ The useful questions are concrete:
   replans, and the later admitted transition and actual outcome are separate records.
 
 Every canvas relation has a card or table twin. A compact Orb correlation may open the matching
-Nexus object, but scrying never swaps an Animator by moving a Run. Nexus may show bounded
+Nexus object, but a preview never swaps an Animator by moving a Run. Nexus may show bounded
 orchestration-relevant declarations contextually; the Codex remains their authority, and no
 dedicated Bindings instrument exists. Nexus remains the surface for present physical evidence and
 explicit lifecycle intent.
+
+The initial board includes selected delegated-runtime declarations as a distinct, read-only
+service class. It shows adapter id, transport, owning extension, delivery/runnable boundary,
+required Coffin profiles, Provider Gate requirement, unconfigured capacity posture, and declared
+limitations. A later observed pool may add provider/model allowlists, Gate health,
+quota/cooldown freshness, authorized and active slots, hard ceilings, and the selected
+`conservative`, `balanced`, or `maximize` posture. Secret references may be named; secret values
+never appear. A pool card is not a provider account manager, billing console, credential editor,
+or authority to rotate accounts around a limit.
 
 ## Enter after first life
 

@@ -139,7 +139,38 @@ provider exchanges may appear only when an explicit current capture policy admit
 must remain useful when content is unavailable, and **no evidence** must remain a first-class
 state.
 
-### 4. Orb Read Models
+### 4. Delegated-Agent Evidence
+
+Delegated runtimes are observable only at their admitted boundary. Oculus correlates the Graph
+occurrence, `AgentJob`, capability grant, Coffin profile, Provider Gate decisions, normalized
+adapter events, usage, artifacts, and terminal adoption. It does not claim access to the foreign
+runtime's hidden planner, graph, subagent tree, or chain-of-thought.
+
+Every field declares one of two provenance classes:
+
+- **LychD-observed:** job lifecycle, process settlement, Gate allow/deny, filesystem/artifact
+  effects, budget decisions, cancellation, and terminal adoption witnessed by LychD; or
+- **provider-reported:** provider usage, session events, tool narratives, rate-limit metadata, and
+  other facts parsed from the foreign protocol.
+
+A bounded redacted raw JSONL or protocol trace may be retained as an artifact for diagnosis. It is
+untrusted data: malformed lines, unknown event kinds, oversized payloads, embedded terminal
+control, prompt injection, and credential-shaped values must be bounded, redacted, or quarantined
+before normalization. Unsupported content becomes a visible gap. It never mutates the Graph,
+authorizes a tool, settles a job, or becomes a training corpus by default.
+
+The Altar projects this evidence through its existing instruments:
+
+- **Bridge:** the offered delegated task and returned result or candidate artifact;
+- **Loom:** the special macro-node, its typed contract, policy, and routes;
+- **Orb:** actual activity, waits, denials, usage, quota posture, trace gaps, and artifacts; and
+- **Nexus:** configured adapters, provider pools, Gate health, capacity, cooldown, and secret
+  references without secret values.
+
+No fifth delegated-agent control page is created. The projections remain read models of the owning
+Graph, security, scheduling, and evidence records.
+
+### 5. Orb Read Models
 
 The first useful **[Orb](../divination/altar/orb.md)** target is:
 
@@ -167,7 +198,7 @@ validates, explicit retained bounds and gaps, and links to the owning Bridge, Lo
 surfaces. It deliberately omits the run list, live tail, graph, durable Oculus read model,
 artifacts, annotations, and multi-run attention field rather than simulating them in the client.
 
-### 5. The Physical Body and Pulse
+### 6. The Physical Body and Pulse
 
 This subsection is target law for a conforming future physical-observation boundary. The current
 Orchestrator and Nexus do not possess a general Resource Snapshot for VRAM, thermals, power,
@@ -193,7 +224,7 @@ Prometheus, Grafana, Loki, Alloy, Cockpit, or similar tools may become optional 
 Animators when fleet scale, historical queries, alerting, or log volume justify them. They remain
 replaceable consumers/providers and do not replace native owning records.
 
-### 6. Privacy, Retention, and Failure
+### 7. Privacy, Retention, and Failure
 
 Structure-only capture is the minimum default, not a claim that structure is harmless. Every
 evidence class declares capture purpose, allowed fields, classification, retention, visibility,

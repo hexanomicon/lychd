@@ -98,6 +98,21 @@ This Domain contains the persistent reality of the system. It is the primary sto
 - **`snapshots/`:** Reserved recovery-snapshot geography. Current initialization creates the
   shelf; it does not yet coordinate whole-body snapshots or restore.
 
+There is intentionally no parallel `compositions/` source region in the Crypt. `extensions/`
+answers where optional code enters the body; a Composition answers which application the Magus
+operates after eligible contributions have been registered. One Extension package may contribute
+several Compositions, and one Composition may assemble contributions from several Extension
+packages, so mirroring the two names as sibling loaders would encode a false one-to-one
+relationship.
+
+Future immutable Composition and Suite descriptors belong to Weaver's logical Portfolio registry,
+their explicit enablement belongs to the Codex boundary reserved by
+[Configuration (12)](12-configuration.md#extension-activation-and-application-selection), and
+their mutable campaigns, schedules, inventories, and other domain records belong to the
+Phylactery. A future export, cache, or artifact bundle may acquire governed physical geography
+only through its owning lifecycle law; no runtime may infer applications by scanning a
+`compositions/` directory.
+
 ### 3. The Forge (`XDG_CACHE_HOME`)
 
 **"The Industrial District."**

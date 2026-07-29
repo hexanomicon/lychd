@@ -241,7 +241,7 @@ artificer's tools.
 Mirror binds Personas through the admitted Weaver Pattern and Agent factory. The
 **[Dispatcher (22)](22-dispatcher.md)** selects capabilities, not identities:
 
-- **Registry:** Personas are inscribed in the **[Codex (12)](12-configuration.md)** (e.g., `The-Architect`, `The-Scribe`).
+- **Registry:** Personas are inscribed in the **[Codex (12)](12-configuration.md)** (e.g., `The-Curator`, `The-Scribe`).
 - **Hydration:** The system retrieves the Persona’s specific Karma and Instructions and injects them into a fresh **[Agent (20)](20-agents.md)** shell.
 - **Attribution Discipline:** New memories created during the run are written back with the same Sigil-derived `entity_id`, closing the identity-memory feedback loop.
 - **Capability Binding:** The Pattern declares task requirements, Dispatcher selects an eligible

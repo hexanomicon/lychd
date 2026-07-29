@@ -101,6 +101,8 @@ class RunChannelSnapshot:
     transition_occurrence_id: str | None
     transition_request_id: str | None
     transition_phase: str | None
+    delegated_job_id: str | None
+    delegated_runtime: str | None
     terminal: bool
 
 
@@ -162,6 +164,8 @@ class RunChannel:
     _transition_occurrence_id: str | None = None
     _transition_request_id: str | None = None
     _transition_phase: str | None = None
+    _delegated_job_id: str | None = None
+    _delegated_runtime: str | None = None
     _drained: asyncio.Event = field(default_factory=asyncio.Event)
 
     def __post_init__(self) -> None:
@@ -190,6 +194,8 @@ class RunChannel:
             self._fragments.append(event)
         elif kind is RunEventKind.NODE:
             self._occurrence_id = meta.get("occurrence_id") or self._occurrence_id
+            self._delegated_job_id = meta.get("delegated_job_id") or self._delegated_job_id
+            self._delegated_runtime = meta.get("delegated_runtime") or self._delegated_runtime
         elif kind is RunEventKind.DISPATCH:
             self._occurrence_id = meta.get("occurrence_id") or self._occurrence_id
             self._dispatch_occurrence_id = meta.get("occurrence_id") or self._dispatch_occurrence_id
@@ -244,6 +250,8 @@ class RunChannel:
             transition_occurrence_id=self._transition_occurrence_id,
             transition_request_id=self._transition_request_id,
             transition_phase=self._transition_phase,
+            delegated_job_id=self._delegated_job_id,
+            delegated_runtime=self._delegated_runtime,
             terminal=self._closed,
         )
 

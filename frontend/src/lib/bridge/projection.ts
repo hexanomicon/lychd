@@ -20,6 +20,10 @@ export type LiveTurn = {
   transitionOccurrenceId: string | null;
   transitionRequestId: string | null;
   transitionPhase: string | null;
+  delegatedJobId: string | null;
+  delegatedRuntime: string | null;
+  delegatedProfile: string | null;
+  delegatedStatus: string | null;
 };
 
 export type LiveTurnMerge = {
@@ -51,7 +55,11 @@ export function liveTurnFromSnapshot(snapshot: RunProjectionSnapshot): LiveTurn 
     capabilityKey: snapshot.capability_key ?? null,
     transitionOccurrenceId: snapshot.transition_occurrence_id ?? null,
     transitionRequestId: snapshot.transition_request_id ?? null,
-    transitionPhase: snapshot.transition_phase ?? null
+    transitionPhase: snapshot.transition_phase ?? null,
+    delegatedJobId: snapshot.delegated_job_id ?? null,
+    delegatedRuntime: snapshot.delegated_runtime ?? null,
+    delegatedProfile: snapshot.delegated_profile ?? null,
+    delegatedStatus: snapshot.delegated_status ?? null
   };
 }
 

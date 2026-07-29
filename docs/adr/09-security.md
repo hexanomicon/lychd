@@ -310,12 +310,15 @@ Permissions at rest protect secrets from other host users and less-privileged ho
 
 If a unit can use a secret, that unit must be assumed capable of reading it.
 
-#### Layer 8: The Two-Plane Trust Boundary
+#### Layer 8: The Two-Class Trust Boundary
 
-Security is built around a hard split between trusted and untrusted roles:
+Security is built around a hard split between trusted and lower-trust roles. A trust class may
+contain more than one service profile:
 
 - **Vessel**: trusted control plane, durable authority, queue ownership, secret-bearing provider operations
 - **The Tomb**: untrusted execution plane, arbitrary code, risky tools, disposable workspaces, constrained output return
+- **The Coffin**: lower-trust delegated-agent plane, foreign agent runtimes, disposable workspaces,
+  bounded artifacts, and Provider-Gate-only model egress
 
 Invariant:
 
@@ -349,6 +352,39 @@ This ensures **zero exfiltration** of mounted user files and prevents the untrus
 
 The Tomb does not run agent logic, graph runners, or LLM provider calls. It is a brainless executor. The full doctrine is defined in **[Workers (14)](14-workers.md)**.
 
+#### The Coffin Delegated-Agent Profile
+
+The **Coffin** is not a Tomb exception. Tomb remains a brainless, zero-network execution hand.
+Coffin is a separate lower-trust service profile for one
+[`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) occurrence. Because its foreign
+runtime can plan, invoke tools, and attempt arbitrary reads or connections, the service and its
+outputs remain untrusted even when the underlying provider or CLI is reputable.
+
+Every Coffin job receives both an outer rootless-container boundary and an inner audited `nono`
+profile. The initial mandatory profiles are:
+
+| Profile | Workspace | Intended return |
+| :--- | :--- | :--- |
+| `read` | immutable task-scoped projection | analysis and bounded artifacts |
+| `candidate` | disposable copy-on-write or jj worktree only | candidate patch and bounded artifacts |
+
+The `verify` specialization may add audited build tools without weakening either profile.
+No Coffin receives the authoritative checkout writable, a Core or Codex-wide mount, the Magus's
+home, browser or keychain data, shell history, infrastructure mutation surfaces, queue/database
+credentials, or promotion authority. Candidate output returns through quarantine and requires a
+trusted admission path before it can affect authoritative source.
+
+The Coffin's only network destination is the **Provider Gate**. Direct provider, package-registry,
+LAN, loopback-service, or arbitrary web access is denied. Time, memory, CPU, process count, file
+size, output size, and wall-clock ceilings are enforced outside the guest process. Cancellation or
+timeout kills the complete process tree and revokes the job's Gate capability. An adapter that
+cannot operate without exposing a durable provider credential or widening egress is not admitted.
+
+This profile is a target boundary until the effectful supervisor, generated manifests, and
+adversarial receipts prove it. Typed policy and command-compilation code alone does not establish
+containment; [State of the
+Work](../state-of-the-work.md#delegated-agent-execution) owns the exact delivery claim.
+
 ### 2. Egress Posture (Network Is Authority)
 
 Outbound network is treated as authority, not convenience.
@@ -381,6 +417,23 @@ The system allows multiple worker postures depending on need:
 - **Broader egress with reduced authority elsewhere**
 
 This keeps security practical without pretending all workloads are equal.
+
+#### Provider Gate
+
+The **Provider Gate** is a trusted, fail-closed credential and egress mediation service for Coffin
+jobs. The external runtime receives only provider-compatible phantom credential material or a
+short-lived opaque Gate capability. The real provider credential remains in a trusted unit and
+must never enter the Coffin's environment, argument vector, filesystem, output, trace, or error.
+
+For each request the Gate validates the live `AgentJob`, delegated capability grant, provider and
+model allowlist, automation policy, remaining request/token/spend budget, output ceiling, and
+revocation state before injecting the real secret into its own upstream request. It accepts only
+the provider protocol surface required by the selected adapter; it is not a general HTTP proxy.
+Cancellation, terminal settlement, expiration, or budget exhaustion revokes the capability.
+
+The Provider Gate enforces an already-issued job grant. It does not replace the Dispatcher's
+Portal Egress Gate, which decides whether content may leave the system, or the Weaver's Censor,
+which transforms admitted content. All three must agree; none may widen another's decision.
 
 #### Portal Egress Gate
 
@@ -457,22 +510,19 @@ The same law governs every input crossing into cognition from a lower-trust plan
 
 ### 5. Authority Matrix
 
-| Dimension          | Vessel (Trusted Control Plane)                                 | The Tomb (Untrusted Execution Plane)                                   |
-| :-------------------| :---------------------------------------------------------------| :-----------------------------------------------------------------------|
-| **Identity**       | Invoking unprivileged host UID through Pod-level `keep-id`; `User=%U` for the Vessel. | Same Pod user-namespace geometry where manifested; identity alone is not the plane boundary. |
-| **Secrets**        | Accesses control-plane database credentials and high-value API keys. | Narrow queue-only SAQ/Postgres execution credential when required; no provider keys, signing keys, Codex secrets, or control-plane credentials. |
-| **Mounts**         | Codex RO; Lab RW; Core/Extensions RO; Reactor inbox RW plus terminal journal RO only in Host Reactor mode; no whole Crypt. | No Codex mount (the No-Codex Law); the runtime envelope travels in the job payload. RW access only to disposable workspaces and artifacts. |
-| **Network**        | Shared Pod network and egress; host publication is loopback-only and not caller authentication. | Tomb loop may use shared Pod connectivity for queueing and approved proxy work; sandboxed `nono` subprocesses have zero network. |
-| **Queue Control**  | Owns enqueue policy, durable scheduling, and control-plane retries. | Claims, acks, and retries execution-plane SAQ jobs only.               |
-| **Agent / LLM**    | All cognitive labor runs here exclusively.                     | Forbidden. The Tomb is a brainless executor.                           |
-| **Context Egress** | Applies privatization and anonymization gates.                 | Cannot bypass egress policy.                                           |
-| **Host Authority** | May emit typed intents into the inbox; the host validates and journals them before acting. | Cannot mount the inbox, emit host intents, or mutate infrastructure.   |
-| **Arbitrary Code** | Forbidden.                                                     | Allowed only in constrained execution contexts (`nono` sandbox).       |
-| **Mutation**       | Forbidden. Protected by Git Branching and RO Mounts.           | Allowed only in disposable/task-scoped areas.                          |
+| Dimension | Vessel (trusted control) | Tomb (brainless execution) | Coffin (delegated agent) |
+| :--- | :--- | :--- | :--- |
+| **Secrets** | Control-plane database and required provider credentials. | Narrow queue credential where required; no provider or control-plane secrets. | No database or real provider secret; one revocable phantom Gate capability only. |
+| **Mounts** | Codex RO; Lab RW; Core/Extensions RO; bounded Reactor surfaces. | No Codex mount; disposable workspaces and artifacts only. | One immutable projection or disposable candidate worktree, scratch, and artifact roots only. |
+| **Network** | Controlled service and provider egress. | Tomb loop may reach approved broker surfaces; inner `nono` has zero network. | Inner process may reach only the exact Provider Gate protocol. |
+| **Queue control** | Owns enqueue policy, durable scheduling, and retries. | Claims and settles execution jobs only. | Owns no queue; acts under one `AgentJob` envelope. |
+| **Agent / LLM** | Runs native LychD Agents and trusted orchestration. | Forbidden. | Runs one foreign agent runtime; provider calls are Gate-mediated. |
+| **Host authority** | May emit typed Host Reactor intents subject to host validation. | No inbox or infrastructure mutation. | No inbox, systemd, container, authoritative VCS, or promotion authority. |
+| **Mutation** | Trusted runtime body is immutable. | Disposable task-scoped areas only. | Scratch/artifacts, or a disposable candidate worktree only. |
 
 ### 6. Compromise Response
 
-Detection of a Tomb or worker compromise triggers deterministic containment.
+Detection of a Tomb, Coffin, or worker compromise triggers deterministic containment.
 
 Minimum expected actions:
 
@@ -504,7 +554,7 @@ Security posture is only real if it is inspectable after the fact.
 
 The implemented foundation (shared Pod, narrow mounts, loopback-only host publication, and service
 credentials) is deliberately pragmatic. It does not include remote caller authentication or the
-Tomb/`nono` untrusted-execution plane.
+effectful Tomb/Coffin supervisors and their generated `nono` boundaries.
 
 However, the architecture explicitly acknowledges possible future sovereign security milestones for later versions (V2+):
 
@@ -514,9 +564,9 @@ However, the architecture explicitly acknowledges possible future sovereign secu
 - **Dedicated Worker API Plane:** Tomb workers communicating with the Vessel purely over a restricted internal API, removing direct database access from the worker completely.
 - **Sovereign Egress Proxy:** Moving the egress routing into a dedicated Vessel service, potentially dropping the reliance on `nono`'s internal Rust proxy in favor of a pure-Python boundary.
 
-These are valid long-term directions. The Tomb/`nono` boundary is, however, an immediate
-prerequisite for exposing any untrusted code-execution feature; the current Vessel container must
-not be substituted for it.
+These are valid long-term directions. The matching Tomb or Coffin outer boundary plus its audited
+`nono` profile is, however, an immediate prerequisite for exposing the corresponding lower-trust
+execution feature; the current Vessel container must not be substituted for it.
 
 ## Consequences
 

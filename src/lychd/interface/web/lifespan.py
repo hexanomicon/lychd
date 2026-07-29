@@ -5,7 +5,7 @@ Builds one queue-bound `AltarServices`, publishes its process `RunSubstrate`
 `app.state.services`, warms the registry off the event loop, reconciles orphaned
 runs at startup, and drains on shutdown.
 
-This module is a composition root — importing `extensions.host` here is allowed.
+This module is an application assembly root — importing `extensions.host` here is allowed.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def _collect_run_queues(app: Litestar) -> dict[str, RunQueue]:
 async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
     """Assemble, warm, publish, reconcile, and later drain the Altar services."""
     from lychd.config.settings.root import get_settings
-    from lychd.extensions.host import get_extensions  # composition root only
+    from lychd.extensions.host import get_extensions  # application assembly root only
     from lychd.system.host_tools import trusted_host_tool
     from lychd.system.services.runtime import wait_for_host_reactor_idle
 
@@ -85,6 +85,8 @@ async def altar_services_lifespan(app: Litestar) -> AsyncIterator[None]:
             runes=runes,
             runtime_adapters=exts.runtime_adapters,
             portal_factories=exts.portal_factories,
+            delegated_runtime_adapters=tuple(exts.delegated_runtime_adapters.values()),
+            delegated_runtime_catalog=exts.delegated_runtime_catalog,
             settings=settings,
             systemctl_bin=systemctl_bin,
         )

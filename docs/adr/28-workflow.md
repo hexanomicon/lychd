@@ -11,7 +11,7 @@ icon: material/tournament
 ## Requirements
 
 - **Absolute Sequencing:** Mandatory enforcement of task order and temporal pacing for multi-stage processes spanning across the asynchronous worker substrate.
-- **The Archivist Pattern:** Implementation of "Memory Weaving"—the automated execution of semantic scrying prior to agent invocation to hydrate the **[Context (ADR 21)](./21-context.md)** with relevant historical truth.
+- **The Archivist Pattern:** Implementation of "Memory Weaving"—the automated execution of semantic retrieval prior to agent invocation to hydrate the **[Context (ADR 21)](./21-context.md)** with relevant historical truth.
 - **Associative Logic:** Integration of memory-filling rituals directly into the execution flow, transforming raw database artifacts into associative links within the reasoning cortex.
 - **Interception and Cleansing:** Provision of a "Censor" middleware to perform anonymization or verification of data as it transitions between internal and external synapses.
 - **Transactional Consistency:** Mandatory utilization of the **[Archive (ADR 27)](./27-memory.md)** and the Graph persistence boundary to record committed state transitions, enabling recovery from the last valid boundary without assuming every checkpoint already lives in Postgres.
@@ -125,7 +125,7 @@ Weaver or acquire the jurisdictions of Graph, Dispatcher, Orchestrator, Phylacte
 ### 2. The Archivist (Memory Weaving)
 
 When a Pattern explicitly declares memory preparation, the future Archivist performs a bounded
-“Scry” ritual through the typed Archive port:
+**Recall** ritual through the typed Archive port:
 
 - It submits a classified, budgeted **[Vector Search (ADR 27)](./27-memory.md)** request rather than
   hidden SQL.
@@ -162,6 +162,14 @@ evidence law:
 - **Outcome Rubrics:** Carrying explicit success criteria through a multi-stage run so Riddle, Oculus, HitL, and the Magus can evaluate the final artifact against the same declared target.
 
 The Weaver governs tempo and synchronization of these movements; validity and selection remain the responsibility of the workflow's evaluators and approval gates.
+
+One station may be a
+[`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes). The Pattern declares why it is
+needed, its typed inputs and outcomes, eligible containment profile, budget envelope, timeout,
+failure/cancellation routes, and permitted downstream use. It does not name a CLI command, mount a
+credential, choose quota posture, interpret provider JSONL, or expose the foreign runtime's private
+subgraph. Provider adapters and pool policy are configuration and Extension concerns, not new
+Compositions.
 
 At each join, the workflow can close a loop: generated branches return to a shared state, failed branches become evidence, and the surviving continuation carries both measurement and identity forward. This is the practical shape of the semantic vortex in execution time.
 
@@ -273,7 +281,7 @@ Weaver branches execute inside the live Run, and their joins commit into real st
       remain later consolidation.
 
 !!! failure "Negative"
-    - **Synapse Cost:** Scrying, cleansing, checkpointing, and gates add work that must be measured
+    - **Synapse Cost:** Retrieval, cleansing, checkpointing, and gates add work that must be measured
       per Pattern; no universal latency bound is assumed.
     - **Architectural Rigor:** Pattern authors must satisfy the typed contribution and continuity
       contract, requiring more initial work than a simple script.

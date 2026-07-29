@@ -114,7 +114,7 @@ The Smith workflow therefore spans all three collapse stages: structural validit
 
 The Smith acts as the archetype for a category of reference implementations known as Extensions.
 
-- **Substrate Replication:** Utilizing the **[Intercom (ADR 26)](./26-a2a.md)** protocols, the Smith can scry the Legion for patterns to replicate.
+- **Substrate Replication:** Utilizing the **[Intercom (ADR 26)](./26-a2a.md)** protocols, the Smith can inspect the Legion for patterns to replicate.
 - **Autonomous Expansion:** This establishes the Lich as a growing system rather than a finite tool. The Smith provides the initial spark of construction, allowing the machine to multiply its own capabilities and manifest a complete, sovereign runtime through self-directed fabrication.
 - **Reference Implementation Analysis:** The Smith may use proven built-in organs as bounded
   examples of the current coupled extension style, Extension Context, and schema/runtime split.

@@ -7,7 +7,9 @@ This is the coding-agent entrypoint for [LychD](README.md). It defines the share
 This file is the stable entry node. Load only the next probe needed by the task; do not drag the whole castle into context.
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): setup commands, quality commands, conventions.
-- Public/user orientation: [README.md](README.md), then [docs/index.md](docs/index.md) when the published Hexanomicon entry matters.
+- Public/user orientation: [README.md](README.md), then [docs/index.md](docs/index.md) when the
+  published Hexanomicon entry matters; use [docs/map.md](docs/map.md) only when a whole-system
+  relational overview is the cheapest useful probe.
 - Current delivery boundary: [docs/state-of-the-work.md](docs/state-of-the-work.md), loaded when a
   claim depends on what is Available, requires Operator validation, is Partial, remains Designed,
   is Experimental, or belongs to an External project.

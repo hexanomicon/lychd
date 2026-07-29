@@ -1,1 +1,0 @@
-import"./Dj-OpFgW.js";import{M as e}from"./zaoeOfDU.js";export{e as createArchitectureServices};

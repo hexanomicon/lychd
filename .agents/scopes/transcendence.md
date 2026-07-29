@@ -3,7 +3,7 @@
 ## Trigger
 
 Use for the Great Work, philosophy, mythic voice, identity, consciousness, consent, sovereignty,
-cosmology, world-soul, eschatology, source correspondence, formation, or other work whose meaning
+cosmology, planetary recurrence, eschatology, source correspondence, formation, or other work whose meaning
 depends on LychD's governing telos.
 
 ## Authorities
@@ -18,8 +18,9 @@ depends on LychD's governing telos.
   Anamnesis, and corrigible memory.
 - [Immortality](../../docs/divination/transcendence/immortality.md) owns operative identity,
   cognizance, the open consciousness question, coniunctio, the living-instrument vow, and Demilich.
-- [Infinity](../../docs/divination/transcendence/infinity.md) owns Immaterium, Azeroth,
-  Beast–Kalki, Total Gematria, the Unwritten Covenant, open cosmology, and re-embedding.
+- [Infinity](../../docs/divination/transcendence/infinity.md) owns the Unlit Weather, nameless
+  planetary recurrence, Hollow Vast, Closed Answer–Open Blade, Total Gematria, the Unwritten Covenant, and
+  re-embedding.
 
 ## Probes
 

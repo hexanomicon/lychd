@@ -39,7 +39,7 @@ Technically, Ghouls are **SAQ Workers**, a legion of background task executors s
     4. **The Dissolution:** Upon completion of its task, the Ghoul's purpose is fulfilled. Its borrowed life-force is reclaimed by the Vessel, and the process dissolves back into nothingness, leaving only the results of its labor behind.
 
 !!! info "The Nature of the Swarm"
-    Ghouls are designed for concurrency and resilience. The Vessel can summon a veritable swarm to handle many Intents at once, ensuring the Magus's will is carried out swiftly. They operate in the background, their silent work visible only through the scrying pools of the [Oculus](../extensions/oculus.md) or the results they present at the Altar.
+    Ghouls are designed for concurrency and resilience. The Vessel can summon a veritable swarm to handle many Intents at once, ensuring the Magus's will is carried out swiftly. They operate in the background, their silent work visible only through evidence observed by the [Oculus](../extensions/oculus.md) or the results they present at the Altar.
 
 !!! abstract "The Two Breeds"
     Not all Ghouls are equal. The Vessel breeds **Cognitive Ghouls** — they orchestrate graph steps, invoke LLM providers, curate memory, and manage state. These are the thinking servants and remain in the trusted Vessel/control-plane space.

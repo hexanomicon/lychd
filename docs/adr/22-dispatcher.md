@@ -206,6 +206,24 @@ names the selected capability, Animator, family/model, observed warm phase, occu
 and exact grant/lease identity. Workflows do not emit a look-alike selection event: only the office
 that actually acquired the grant may claim that relation.
 
+#### Delegated-Agent Capability Grants
+
+A [`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) requests the canonical
+`delegated_agent` service capability with task traits such as required artifact handling, candidate
+workspace, and output contract. The Dispatcher may choose only a registered compatible adapter and
+provider pool permitted by the current Sigil, privatization policy, and economic ceiling.
+
+The resulting grant names the adapter capability, selected provider/model allowlist, Coffin
+profile, job budget, and correlation identity. It is **secret-free**: no API key, OAuth refresh
+token, browser session, CLI account database, or provider client enters Graph state or the
+delegated process. The Provider Gate separately maps the live grant to trusted credential material
+at request time.
+
+Selection does not reserve provider capacity or start the CLI. The Orchestrator admits configured
+capacity and quota posture; the `AgentJob` coordinator owns submission and terminal adoption; the
+Extension adapter performs provider-specific protocol work. There is no fallback to a different
+paid provider, account, or model unless a new ordinary dispatch decision explicitly admits it.
+
 #### Durable Content and `ArtifactRef`
 
 Multimodal bytes do not belong inside an `Intent`, run row, queue payload, graph state, or

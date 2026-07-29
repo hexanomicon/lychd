@@ -9,6 +9,7 @@ from __future__ import annotations
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.graph_runner import _extract_signal  # pyright: ignore[reportPrivateUsage]
 from lychd.domain.cortex.runs import ConsentPending
+from lychd.domain.delegation import DelegatedAgentJobRef, DelegatedAgentPending
 
 
 def test_extract_finds_direct_signal() -> None:
@@ -27,6 +28,19 @@ def test_extract_unwraps_exception_group() -> None:
     sig = HardwareTransitionRequired("chat:local", "local", None)
     group = BaseExceptionGroup("mid-stream", [ValueError("noise"), sig])
     assert _extract_signal(group, HardwareTransitionRequired) is sig
+
+
+def test_extract_finds_nested_delegated_agent_signal() -> None:
+    sig = DelegatedAgentPending(
+        DelegatedAgentJobRef(
+            job_id="job-1",
+            request_id="request-1",
+            run_id="run-1",
+            runtime="fake",
+        )
+    )
+    group = BaseExceptionGroup("mid-stream", [RuntimeError("noise"), sig])
+    assert _extract_signal(group, DelegatedAgentPending) is sig
 
 
 def test_extract_returns_none_when_absent() -> None:

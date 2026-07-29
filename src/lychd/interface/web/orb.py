@@ -56,4 +56,5 @@ class OrbController(Controller):
             after_seq=after_seq,
             limit=limit,
             loom_available=loom_available,
+            delegates=getattr(state.services, "delegates", None),
         )

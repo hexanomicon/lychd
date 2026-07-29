@@ -302,6 +302,19 @@ class BridgeController(Controller):
         )
         retained_transition_request_id = latest_transition.data if latest_transition is not None else None
         retained_transition_phase = latest_transition.meta.get("phase") if latest_transition is not None else None
+        retained_delegated_job_id = latest_node.meta.get("delegated_job_id") if latest_node is not None else None
+        retained_delegated_runtime = latest_node.meta.get("delegated_runtime") if latest_node is not None else None
+        delegates = getattr(state.services, "delegates", None)
+        delegated_jobs = await delegates.jobs_for_run(run.run_id) if delegates is not None else ()
+        delegated_job = delegated_jobs[-1] if delegated_jobs else None
+        retained_delegated_job_id = retained_delegated_job_id or (
+            delegated_job.ref.job_id if delegated_job is not None else None
+        )
+        retained_delegated_runtime = retained_delegated_runtime or (
+            delegated_job.ref.runtime if delegated_job is not None else None
+        )
+        delegated_profile = delegated_job.ref.profile if delegated_job is not None else None
+        delegated_status = delegated_job.status.value if delegated_job is not None else None
         live = run_bus.snapshot(run.run_id)
         if live is not None:
             fragments = [(await projector.project(fragment)).payload for fragment in live.fragments]
@@ -325,6 +338,10 @@ class BridgeController(Controller):
                 transition_occurrence_id=live.transition_occurrence_id or retained_transition_occurrence_id,
                 transition_request_id=live.transition_request_id or retained_transition_request_id,
                 transition_phase=live.transition_phase or retained_transition_phase,
+                delegated_job_id=live.delegated_job_id or retained_delegated_job_id,
+                delegated_runtime=live.delegated_runtime or retained_delegated_runtime,
+                delegated_profile=delegated_profile,
+                delegated_status=delegated_status,
                 terminal=live.terminal,
             )
 
@@ -349,6 +366,10 @@ class BridgeController(Controller):
             transition_occurrence_id=retained_transition_occurrence_id,
             transition_request_id=retained_transition_request_id,
             transition_phase=retained_transition_phase,
+            delegated_job_id=retained_delegated_job_id,
+            delegated_runtime=retained_delegated_runtime,
+            delegated_profile=delegated_profile,
+            delegated_status=delegated_status,
             terminal=run.status in TERMINAL_STATUSES,
         )
 

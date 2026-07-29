@@ -35,7 +35,7 @@ This is an order of presentation, not a software pipeline or a ladder of rank. N
 the other three. The four are names for distinguishable work performed by one inner instrument.
 Patañjali's Yoga uses *citta* in a broader analysis of mind and Vṛtti; it does not prescribe this
 four-page architecture. The
-[Inner Tongue](../../../lexicon.md#ii-the-inner-tongue--esoteric-cartography) preserves that
+[Inner Tongue](../../../lexicon.md#iii-the-inner-tongue-esoteric-cartography) preserves that
 boundary.
 
 The palace topology makes both equality and depth visible:

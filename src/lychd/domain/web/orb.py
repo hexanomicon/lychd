@@ -8,6 +8,8 @@ from urllib.parse import quote
 
 from lychd.agents.workflows.base import pattern_snapshot_is_valid
 from lychd.domain.web.contracts import (
+    DelegatedJobEventView,
+    DelegatedJobSummary,
     EvidenceGap,
     EvidenceItem,
     OrbRunSnapshot,
@@ -19,8 +21,11 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEvent
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunRecord
+    from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
 
 _CAPTURES = {"process_local", "durable_best_effort"}
+_MAX_DELEGATED_JOBS = 32
+_MAX_DELEGATED_EVENTS_PER_JOB = 64
 type CaptureClass = Literal["process_local", "durable_best_effort"]
 
 
@@ -31,6 +36,7 @@ async def build_orb_snapshot(
     after_seq: int = -1,
     limit: int = 100,
     loom_available: bool = False,
+    delegates: DelegatedAgentCoordinatorPort | None = None,
 ) -> OrbRunSnapshot:
     """Build one bounded evidence page without explaining absent rows by guesswork."""
     bounded = min(max(limit, 1), 500)
@@ -48,6 +54,14 @@ async def build_orb_snapshot(
     pattern_id = str(manifest.get("key") or run.workflow_name)
     revision = str(manifest.get("revision") or "legacy-unversioned")
     ledger_head_seq = (await ledger.next_seq(run.run_id)) - 1
+    all_delegated_jobs = await delegates.jobs_for_run(run.run_id) if delegates is not None else ()
+    delegated_jobs = all_delegated_jobs[-_MAX_DELEGATED_JOBS:]
+    known_omissions = ["Token deltas are live Bridge projection and are not retained as structural evidence."]
+    if len(all_delegated_jobs) > len(delegated_jobs):
+        known_omissions.append(
+            f"{len(all_delegated_jobs) - len(delegated_jobs)} older delegated job summaries "
+            "are outside this bounded Orb snapshot."
+        )
     return OrbRunSnapshot(
         snapshot_at=datetime.now(UTC),
         run=OrbRunSummary(
@@ -67,18 +81,41 @@ async def build_orb_snapshot(
             digest=str(digest) if exact else None,
             exact=exact,
             loom_path=(
-                f"/loom/{pattern_id}/{revision}?run={quote(run.run_id, safe='')}"
-                if exact and loom_available
-                else None
+                f"/loom/{pattern_id}/{revision}?run={quote(run.run_id, safe='')}" if exact and loom_available else None
             ),
         ),
         capture=typed_capture,
         ledger_head_seq=ledger_head_seq,
         page_end_seq=page[-1].seq if page else None,
         has_more=has_more,
-        known_omissions=["Token deltas are live Bridge projection and are not retained as structural evidence."],
+        known_omissions=known_omissions,
         gaps=_gaps(page, after_seq=after_seq),
         evidence=[_item(event, capture=typed_capture) for event in page],
+        delegated_jobs=[
+            DelegatedJobSummary(
+                job_id=job.ref.job_id,
+                request_id=job.ref.request_id,
+                step_id=job.request.step_id,
+                runtime=job.ref.runtime,
+                profile=job.ref.profile,
+                status=job.status.value,
+                output_present=job.result is not None and job.result.output is not None,
+                error_present=job.result is not None and job.result.error is not None,
+                artifact_count=len(job.result.artifacts) if job.result is not None else 0,
+                events_truncated=len(job.events) > _MAX_DELEGATED_EVENTS_PER_JOB,
+                events=[
+                    DelegatedJobEventView(
+                        event_id=event.event_id,
+                        seq=event.seq,
+                        kind=event.kind.value,
+                        status=event.status.value,
+                        occurred_at=event.ts,
+                    )
+                    for event in job.events[-_MAX_DELEGATED_EVENTS_PER_JOB:]
+                ],
+            )
+            for job in delegated_jobs
+        ],
         next_after_seq=page[-1].seq if has_more and page else None,
     )
 

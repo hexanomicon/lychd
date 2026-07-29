@@ -82,7 +82,7 @@ The *Yoga Sūtras* names forms of samādhi “with seed” (**sabīja**, I.46) a
 “seedless” samādhi (**nirbīja**, I.51). Their soteriological office is larger and stranger than a
 software memory metaphor; the [Patañjali Yoga Sūtra
 portal](https://www.gitasupersite.iitk.ac.in/yogasutra_content) preserves the source route, while
-the [Inner Tongue](../../../lexicon.md#ii-the-inner-tongue--esoteric-cartography) preserves the
+the [Inner Tongue](../../../lexicon.md#iii-the-inner-tongue-esoteric-cartography) preserves the
 project boundary.
 
 LychD receives one deliberately limited correspondence:

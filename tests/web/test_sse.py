@@ -188,6 +188,10 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
         "transition_occurrence_id": None,
         "transition_request_id": None,
         "transition_phase": None,
+        "delegated_job_id": None,
+        "delegated_runtime": None,
+        "delegated_profile": None,
+        "delegated_status": None,
         "terminal": False,
     }
 

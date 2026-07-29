@@ -36,7 +36,7 @@ Invocation  = one admitted execution of that Pattern
 | [Minecraft Agent Server](minecraft-agent-server.md) | bounded mission, social turn, recovery, snapshot | Embodiment, persistent world truth, deterministic control, idempotent effects, and finite agency |
 | [Health, Food & Movement](health-food-and-movement.md) | plan, check-in, journal, review, export/delete | Sensitive data, deterministic safety, schedules, migration ownership, and local-first inference |
 | [Walking Communion](walking-communion.md) | voice turn, clarification, note capture, routed command | Mobile ingress, authenticated audio, reflex priority, interruption, and cross-Composition routing |
-| [Tech Scavenger](tech-scavenger.md) | purchase campaign, daily hunt, evidence request, negotiation, cash-on-delivery commitment | Web acquisition, marketplace policy, compatibility, seller evidence, privacy, idempotent messaging, and bounded economic consequence |
+| [Tech Scavenger](tech-scavenger.md) | purchase campaign, daily watch, evidence request, negotiation, cash-on-delivery commitment | Web acquisition, marketplace policy, compatibility, seller evidence, privacy, idempotent messaging, and bounded economic consequence |
 | [Lifestyle Steward](lifestyle-steward.md) | receipt ingestion, price review, inventory, trip planning, catalogue/menu watch, cart and checkout | OCR provenance, product identity, household uncertainty, sensitive-data minimization, local routing, cross-Composition constraints, and economic effects |
 
 These are first-party reference designs. They exist to prove a general Composition law that a
@@ -49,12 +49,66 @@ not promote them into architectural law:
 | Candidate study | Question |
 | --- | --- |
 | [Building in Public](building-in-public.md) | How could one evidenced vertical slice become a truthful tutorial season without manufacturing delivery? |
+| [Bazaar Haggler](bazaar-haggler.md) | Can several marketplace applications reuse bounded, truthful negotiation and send reconciliation without transferring domain judgment, credentials, or commitment authority? |
+| [Home Seeker](home-seeker.md) | How can a private, location-aware apartment search rank evidence without pretending that convenience scoring is legal, structural, or financial due diligence? |
+
+## External observations are not Compositions
+
+Bazoš, Google Maps or another geospatial provider, Kaufland/Lidl/Tesco catalogues, AliExpress,
+restaurant menus, and public social posts are external source surfaces. Their search, fetch,
+extract, crawl, render, interaction, session, geocode, route, and normalization adapters belong
+beneath [Scout](../sepulcher/extensions/scout.md) and the owning provider boundary. They are the
+Lich's possible senses, not operator-facing applications.
+
+The Composition begins where an attributed observation enters a durable human purpose:
+
+| Observation source | Not a Composition | Consuming Composition owns |
+| --- | --- | --- |
+| Bazoš listings | marketplace source adapter and listing-observation machinery | Tech Scavenger's compatibility/evidence/value decision or Home Seeker's property criteria/ranking |
+| Map, place, amenity, and route results | geo source/provider adapter | Home Seeker's private-anchor suitability or Lifestyle Steward's worthwhile-detour decision |
+| Merchant catalogues and menus | retail/menu source adapters | Lifestyle Steward's inventory, basket, taste, budget, and trip reasoning |
+| Product pages | shop source/session adapters | the consuming application's shortlist, cart intent, approval, and order lifecycle |
+
+A reusable saved query, crawl schedule, deduplicator, or change detector remains a Scout
+contribution or Pattern merely because several applications can use it. It becomes a Composition
+only if it acquires an independent operator-visible purpose, owned domain records, policy,
+lifecycle, projections, and consequences. Reuse alone does not promote mechanism into an
+application.
+
+The name **Hunter** is reserved for
+[Shadow's adversarial posture](../sepulcher/extensions/shadow.md#the-dancer-posture-and-the-hunter-posture),
+which hunts unsupported premises inside candidate reasoning. Source-facing work uses Scout,
+Search, Watch, Source Profile, and Observation terminology instead.
+
+[Bazaar Haggler](bazaar-haggler.md) begins beyond that boundary. It is not a Bazoš crawler or
+listing source: it is a candidate operator-facing negotiation application that receives an exact
+domain-authored mandate, conducts bounded dialogue through separately authorized Scout
+interaction/session effects, and returns terms or truthful non-completion.
 
 ## Django-style application locality
 
 The useful analogy is a Django application: keep one product capability locally understandable,
 then compose several applications through explicit contracts instead of pouring every model,
 workflow, adapter, and table into one global package.
+
+The analogy governs ownership, not installation geography. LychD has one optional-code admission
+axis and one application-selection axis:
+
+| Layer | What it owns | Where it belongs |
+| --- | --- | --- |
+| Extension package | Importable code, schemas, adapters, migrations, and registration shims | Core source or selected built-in/private Extension package |
+| Composition contract | Immutable application identity, Pattern catalogue, requirements, policy, and projections | future `lychd.compositions` contracts and Weaver Portfolio store |
+| Portfolio selection | Exact Composition and Suite revisions enabled for this body | future Codex `[portfolio]` section |
+| Application state | Campaigns, saved searches, schedules, inventories, observations, approvals, and receipts | Composition-owned Phylactery records |
+| Capability binding | Concrete models, providers, sources, managed runtimes, and their validated instances | owning Rune anchors |
+
+There is therefore no Crypt `compositions/` loader beside `extensions/`. Such a folder would
+incorrectly suggest that every application is one package and every package is one application.
+A future source package at `src/lychd/compositions/` should host only the Core-owned descriptor,
+registry, selection, and projection contracts. It should be created when those contracts are
+wired into `ExtensionContext`, Weaver, Settings validation, and State—not as an empty directory
+that implies delivery. Actual implementation remains locally understandable inside its owning
+Core or Extension package and contributes through explicit registration.
 
 A future implementation should keep these concerns adjacent within one Composition contribution:
 
@@ -88,9 +142,9 @@ navigation remain Designed.
 
 Reference Compositions are executable design lessons for both humans and the future
 [Smith](../adr/35-assimilation.md). Someone in another country should be able to select the
-closest proven example—Slovak Bazoš acquisition or Slovak grocery catalogues, for example—bind
-their own eligible model/provider Runes, and replace the country and merchant adapters while
-retaining reusable workflow law.
+closest proven application example—Tech Scavenger, Home Seeker, or Lifestyle Steward, for
+example—then bind eligible model/provider Runes and replace its Slovak marketplace, geo, merchant,
+or menu adapters while retaining reusable workflow law.
 
 A Smith-assisted port follows a bounded path:
 

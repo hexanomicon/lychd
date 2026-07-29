@@ -162,6 +162,12 @@ MPL 2.0 protects the shared body at the distribution boundary. This is a plain-l
 - **The SaaS Scar is Honest:** Hosted network access is not distribution. LychD answers cloud capture through local-first architecture, protocol distrust, peer choice, provenance, and refusal to surrender private continuity to a hosted surface.
 - **No CLA, No Private Relicensing:** There is no Contributor License Agreement and no maintainer-only relicensing grant. By contributing, you certify that you have the right to submit under MPL-2.0 and agree that the contribution is licensed under MPL-2.0.
 
+Source incorporated from or adapted under another license retains its required attribution in
+[Third-Party Source Notices](THIRD_PARTY_NOTICES.md). Dependency acknowledgements in the Hall of
+Spirits are orientation, not a substitute for those notices. The
+[visual asset provenance register](docs/assets/README.md) records operator attestations, hashes,
+embedded generation metadata, and the limits of that evidence.
+
 **Source sovereignty.** The Magus must possess the source of every software layer that possesses
 the Lich. LychD therefore supports one host embodiment: a free and open-source Linux stack.
 Proprietary host operating systems are outside project scope. Private operator-owned extensions

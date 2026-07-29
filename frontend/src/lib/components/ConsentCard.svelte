@@ -30,12 +30,12 @@
   aria-label="pending consent"
 >
   <div class="head">
-    <span class="rune-head">◈ Consent sought</span>
+    <span class="rune-head">⬡ Consent sought</span>
     <span class="glyph">{consent.tool_name}</span>
   </div>
   <div class="vision"><em>Vision:</em> {consent.vision}</div>
   <dl class="args">
-    {#each Object.entries(consent.args) as [name, value]}
+    {#each Object.entries(consent.args) as [name, value] (name)}
       <dt>{name}</dt><dd>{String(value)}</dd>
     {/each}
   </dl>

@@ -35,8 +35,8 @@ the Blade when the field contains no grounded continuation. When it finds the ex
 failing test, missing authority, decisive evidence, or irreducible choice on which the movement
 turns: _touché_. The point must be visible; arbitrary preference earns no flourish.
 
-In [the First Invocation](./index.md#the-first-invocation), the Architect's two doors stage this
-office. The screens hold many possible reactions in Flux; the doors demand one consequential
+In [the First Invocation](./index.md#the-first-invocation), the Circle's two doors stage this
+office. The field holds many possible reactions in Flux; the doors demand one consequential
 crossing. The Blade makes the cut. [The Answer](./answer.md) makes the crossing attributable.
 
 ## The Three Proofs

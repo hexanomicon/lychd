@@ -102,6 +102,10 @@ class RunLedger(Protocol):
         """Record (or clear) the consent id a run is parked on."""
         ...
 
+    async def park_delegate(self, run_id: str, job_id: str) -> None:
+        """Atomically bind a delegated job and move its owning run into wait."""
+        ...
+
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's Step ledger."""
         ...
@@ -148,6 +152,14 @@ class RunLedger(Protocol):
         conditional transition deliberately lives outside the public run state
         machine: it is a narrow rollback for the admission CAS, not a normal edge.
         """
+        ...
+
+    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
+        """Admit only the completed job that owns the current delegated wait."""
+        ...
+
+    async def try_restore_delegate_wait(self, run_id: str, *, job_id: str, enqueue_seq: int) -> bool:
+        """Restore an exact delegate resume hop whose broker publication failed."""
         ...
 
 
@@ -264,6 +276,12 @@ class InMemoryRunLedger:
         """Record (or clear) the consent id."""
         self._require(run_id).consent_id = consent_id
 
+    async def park_delegate(self, run_id: str, job_id: str) -> None:
+        """Bind the job and transition RUNNING → AWAITING_DELEGATE atomically."""
+        record = self._require(run_id)
+        _apply_status(record, RunStatus.AWAITING_DELEGATE, error=None)
+        record.delegated_job_id = job_id
+
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event to the run's step list."""
         if event.kind is RunEventKind.TOKEN:
@@ -321,6 +339,27 @@ class InMemoryRunLedger:
         if record.status is not RunStatus.QUEUED or record.enqueue_seq != enqueue_seq:
             return False
         record.status = RunStatus.AWAITING_CONSENT
+        return True
+
+    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
+        """CAS the matching delegated wait to QUEUED and allocate one resume sequence."""
+        record = self._require(run_id)
+        if record.status is not RunStatus.AWAITING_DELEGATE or record.delegated_job_id != job_id:
+            return None
+        _apply_status(record, RunStatus.QUEUED, error=None)
+        record.enqueue_seq += 1
+        return record.enqueue_seq
+
+    async def try_restore_delegate_wait(self, run_id: str, *, job_id: str, enqueue_seq: int) -> bool:
+        """CAS a failed delegate resume publication back to its durable wait."""
+        record = self._require(run_id)
+        if (
+            record.status is not RunStatus.QUEUED
+            or record.enqueue_seq != enqueue_seq
+            or record.delegated_job_id != job_id
+        ):
+            return False
+        record.status = RunStatus.AWAITING_DELEGATE
         return True
 
     def events(self, run_id: str) -> list[RunEvent]:
@@ -579,6 +618,23 @@ class DbRunLedger:
         """
         _ = (run_id, consent_id)
 
+    async def park_delegate(self, run_id: str, job_id: str) -> None:
+        """Lock one Run and atomically bind its delegated wait owner."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session, session.begin():
+            row = await session.scalar(select(Run).where(Run.id == UUID(run_id)).with_for_update())
+            if row is None:
+                msg = f"Unknown run: {run_id}"
+                raise KeyError(msg)
+            record = self._to_record(row)
+            _apply_status(record, RunStatus.AWAITING_DELEGATE, error=None)
+            row.status = record.status.value
+            row.error = record.error
+            row.delegated_job_id = job_id
+
     async def append_event(self, event: RunEvent) -> None:
         """Append one non-TOKEN event as a Step row, persisting `event.seq` VERBATIM.
 
@@ -773,6 +829,53 @@ class DbRunLedger:
             await session.commit()
             return result.rowcount == 1
 
+    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
+        """CAS only the job that owns this wait to one queued resume hop."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Run)
+                .where(
+                    Run.id == UUID(run_id),
+                    Run.status == RunStatus.AWAITING_DELEGATE.value,
+                    Run.delegated_job_id == job_id,
+                )
+                .values(
+                    status=RunStatus.QUEUED.value,
+                    enqueue_seq=Run.enqueue_seq + 1,
+                )
+                .returning(Run.enqueue_seq)
+            )
+            enqueue_seq = result.scalar_one_or_none()
+            await session.commit()
+            return int(enqueue_seq) if enqueue_seq is not None else None
+
+    async def try_restore_delegate_wait(self, run_id: str, *, job_id: str, enqueue_seq: int) -> bool:
+        """Restore the exact delegate resume hop after broker publication failed."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Run
+
+        async with self._session_factory() as session:
+            result = cast(
+                "CursorResult[Any]",
+                await session.execute(
+                    update(Run)
+                    .where(
+                        Run.id == UUID(run_id),
+                        Run.status == RunStatus.QUEUED.value,
+                        Run.enqueue_seq == enqueue_seq,
+                        Run.delegated_job_id == job_id,
+                    )
+                    .values(status=RunStatus.AWAITING_DELEGATE.value)
+                ),
+            )
+            await session.commit()
+            return result.rowcount == 1
+
     @staticmethod
     def _to_record(row: object) -> RunRecord:
         """Map a `Run` ORM row to a storage-agnostic `RunRecord`."""
@@ -810,6 +913,7 @@ class DbRunLedger:
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]
             error=row.error,  # type: ignore[attr-defined]
+            delegated_job_id=row.delegated_job_id,  # type: ignore[attr-defined]
             created_at=row.created_at,  # type: ignore[attr-defined]  # UUIDAuditBase; feeds the QUEUED-age sweep
             started_at=row.started_at,  # type: ignore[attr-defined]
             finished_at=row.finished_at,  # type: ignore[attr-defined]
