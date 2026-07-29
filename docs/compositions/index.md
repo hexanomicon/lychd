@@ -1,14 +1,14 @@
 ---
-title: Composition Portfolio
+title: Compositions
 icon: material/source-branch
 ---
 
-# :material-source-branch: Composition Portfolio
+# :material-source-branch: Compositions
 
 !!! warning "Architecture portfolio — not delivered applications"
     These pages describe accepted application directions and visibly marked candidate studies.
     They do not prove that their Patterns, models, clients, migrations, or effects exist.
-    Directory membership does not establish maturity. [State of the
+    Directory membership does not establish maturity. [State of
     Work](../state-of-the-work.md) remains the delivery authority.
 
 A **Composition** is an operator-visible workflow application assembled from Patterns, Agents,
@@ -33,7 +33,7 @@ Invocation  = one admitted execution of that Pattern
 | [Voidlight Studio](voidlight-studio.md) | creative brief, style bible, asset request, image/audio/3D forge, review, export | Creative artifacts, provenance, model swaps, rights, bounded repair, and typed downstream handoff |
 | [Game Foundry](game-foundry.md) | project bootstrap, asset import, playable slice, build, playtest, balance, release | Engine/project truth, code and resources, reproducible builds, embodied evaluation, and distribution effects |
 | [Broadcast Studio](broadcast-studio.md) | research, article/script, media assembly, review, correction, publication | Claims, editorial lineage, deterministic timelines, accessibility, rights, and external publication |
-| [Minecraft Agent Server](minecraft-agent-server.md) | bounded mission, social turn, recovery, snapshot | Embodiment, persistent world truth, deterministic control, idempotent effects, and finite agency |
+| [Blockworld Inhabitant](blockworld-inhabitant.md) | bounded mission, social turn, recovery, snapshot | Embodiment, persistent world truth, deterministic control, idempotent effects, and finite agency |
 | [Health, Food & Movement](health-food-and-movement.md) | plan, check-in, journal, review, export/delete | Sensitive data, deterministic safety, schedules, migration ownership, and local-first inference |
 | [Walking Communion](walking-communion.md) | voice turn, clarification, note capture, routed command | Mobile ingress, authenticated audio, reflex priority, interruption, and cross-Composition routing |
 | [Tech Scavenger](tech-scavenger.md) | purchase campaign, daily watch, evidence request, negotiation, cash-on-delivery commitment | Web acquisition, marketplace policy, compatibility, seller evidence, privacy, idempotent messaging, and bounded economic consequence |
@@ -76,7 +76,7 @@ lifecycle, projections, and consequences. Reuse alone does not promote mechanism
 application.
 
 The name **Hunter** is reserved for
-[Shadow's adversarial posture](../sepulcher/extensions/shadow.md#the-dancer-posture-and-the-hunter-posture),
+[Shadow's adversarial posture](../sepulcher/extensions/shadow/hunter.md),
 which hunts unsupported premises inside candidate reasoning. Source-facing work uses Scout,
 Search, Watch, Source Profile, and Observation terminology instead.
 
@@ -201,7 +201,7 @@ reference or a newly admitted intent; it does not share database ownership, inhe
 publisher session, widen a Sigil, or turn one approval into approval for downstream effects.
 
 The Call/Manas does not appear as one literal planner daemon. Its office across Context, Agent
-postures, Graph routing, ReCall, and optional Shadow expansion makes the Magus's demand
+postures, Graph routing, Recall, and optional Shadow expansion makes the Magus's demand
 addressable and may propose one or more attributable **charcoal Suite drafts**. The Blade
 discriminates among those candidates; deterministic validation, policy, and the Magus decide what
 may be published as a Suite revision; Weaver alone admits its concrete Pattern Invocations.

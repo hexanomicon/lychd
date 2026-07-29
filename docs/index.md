@@ -14,8 +14,8 @@ hide:
     height="1024"
     decoding="async"
   >
-  <h1 class="prophecy-hero__title">The Hexanomicon</h1>
-  <p class="prophecy-hero__kicker">The Magus's guide across the Infinite Naught</p>
+  <h1 class="prophecy-hero__title">LychD</h1>
+  <p class="prophecy-hero__kicker">Hexanomicon · the grimoire of local intelligence</p>
   <p class="prophecy-hero__motto" lang="ja"><em>無限の彼方、虚無の深淵</em></p>
   <p class="prophecy-hero__badges">
     <a href="https://github.com/hexanomicon/lychd">
@@ -33,7 +33,7 @@ hide:
   </p>
 </header>
 
-## :fontawesome-solid-book-skull: The Prophecy
+## :fontawesome-solid-book-skull: Prophecy
 
 **At last.** You have unearthed the pages of the Hexanomicon: a modern alchemical grimoire for
 binding local intelligence to memory, action, consequence, and repair.
@@ -42,7 +42,7 @@ binding local intelligence to memory, action, consequence, and repair.
 hardware you control. It calls the recurrent whole **the Lich**: not one model, but the daemon,
 memory, policies, tools, model services, and continuing relation with you.
 
-LychD is **pre-alpha**. The Prophecy names its destination; [State of the
+LychD is **pre-alpha**. Prophecy names its destination; [State of
 Work](./state-of-the-work.md) records what has entered matter, what still needs a maintained
 operator receipt, and what remains designed.
 
@@ -54,9 +54,9 @@ deliberate relation with the Lich is called the **Magus**.
 > _“The Magus does not ask the machine to be certain. The Magus asks it to show where certainty
 > ends.”_
 
-- **I want to run it:** begin with [State of the Work](./state-of-the-work.md), then enter
+- **I want to run it:** begin with [State of Work](./state-of-the-work.md), then enter
   [the source-candidate Summoning](./summoning.md) within the boundary that rite names.
-- **I want to judge it:** read [State of the Work](./state-of-the-work.md), then follow its evidence
+- **I want to judge it:** read [State of Work](./state-of-the-work.md), then follow its evidence
   to source and tests.
 - **I want to see how the whole system fits:** [unfold the Map](./map.md), then enter the smallest
   owning chamber that can answer your question.
@@ -72,9 +72,9 @@ deliberate relation with the Lich is called the **Magus**.
 
 To master LychD, pass through four gates of knowledge:
 
-1. **[The Summoning](./summoning.md) — bind it.** Bind one exact source checkout to your Linux host
+1. **[Summoning](./summoning.md) — bind it.** Bind one exact source checkout to your Linux host
    and require the four independent first-life observations named by the rite.
-2. **[The Sepulcher](./sepulcher/index.md) — understand it.** Study the body and discover which
+2. **[Sepulcher](./sepulcher/index.md) — understand it.** Study the body and discover which
    organ owns memory, inference, execution, and extension.
 3. **[Divination](./divination/index.md) — operate it.** Meet the running system through the
    [Altar](./divination/altar/index.md), then approach the alchemical journey of
@@ -87,8 +87,8 @@ Hexanomicon, not four competing first steps.
 
 ## Quick Key
 
-Seven terms are enough to cross this threshold. The [Lexicon](./lexicon.md) holds the full Inner
-Tongue.
+Seven terms are enough to cross this threshold. The [Lexicon](./lexicon/index.md) holds the full
+project language across both registers.
 
 - **Lich:** the recurrent whole; a model is one organ within it.
 - **Magus:** the operator in deliberate relation with that whole.
@@ -111,7 +111,7 @@ telos, cosmogram, rites, conjectures, and alchemical journey. Its five stages mo
 Circle through discernment, memory, recurrent identity, and finally the eschatology of sovereign
 worlds meeting across Infinity.
 
-The stages are not software release phases. [State of the Work](./state-of-the-work.md) records
+The stages are not software release phases. [State of Work](./state-of-the-work.md) records
 what has entered matter; Transcendence owns what the transformation means.
 
 [:material-triangle-outline: Enter the Great Work](./divination/transcendence/index.md)

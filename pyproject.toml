@@ -4,10 +4,15 @@ dynamic = ["version"]
 description = "Systemd-native daemon for local agentic orchestration"
 readme = "README.md"
 authors = [
-    { name = "The Hexanomicon", email = "hexanomicon@proton.me" }
+    { name = "LychD contributors", email = "hexanomicon@proton.me" }
 ]
 requires-python = ">=3.12, <3.15"
-license = { text = "MPL-2.0" }
+license = "MPL-2.0"
+license-files = [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "frontend/static/THIRD_PARTY_NOTICES.txt",
+]
 keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai", "quadlet", "ai"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -34,8 +39,9 @@ dependencies = [
     "jinja2>=3.1.6",
     "litestar[sqlalchemy,structlog,pydantic,opentelemetry]>=2.24.0,<3", # v3 migration not audited
     "litestar-granian>=0.14.2",
-    "litestar-saq[psycopg]>=0.5.3",
+    "litestar-saq>=0.5.3",
     "pgvector>=0.4.0",
+    "psycopg[pool]>=3.2.13,<4",
     "pydantic>=2.10.0",
     "pydantic-ai-slim[openai,logfire]==1.25.1", # exact until the v2 durability/message migration suite lands
     "pydantic-settings[toml]>=2.10.1",
@@ -43,6 +49,14 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "structlog>=24.4.0",
     "tomlkit>=0.13.3",
+]
+
+[project.optional-dependencies]
+# Local contributors may opt into Psycopg's self-contained native wheel when
+# system libpq is unavailable. The production Vessel never installs extras and
+# explicitly rejects this distribution at image-build time.
+postgres-binary = [
+    "psycopg-binary==3.2.13",
 ]
 
 [project.urls]
@@ -89,7 +103,7 @@ lychd = "lychd.__main__:run_cli"
 
 # --- BUILD SYSTEM ---
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
@@ -97,9 +111,14 @@ path = "src/lychd/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/Containerfile",
     "/LICENSE",
+    "/Makefile",
     "/README.md",
+    "/THIRD_PARTY_NOTICES.md",
+    "/frontend",
     "/pyproject.toml",
+    "/scripts",
     "/src",
     "/tests",
 ]
@@ -257,7 +276,7 @@ indent-style = "space"
 
 # --- TYPE CHECKING (BasedPyright) ---
 [tool.pyright]
-include = ["src", "tests"]
+include = ["scripts", "src", "tests"]
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "strict"
@@ -271,19 +290,19 @@ reportPrivateUsage = true
 
 # --- VERSIONING ---
 [tool.bumpversion]
-current_version = "0.1.0"
+current_version = "0.0.2"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
 replace = "{new_version}"
 regex = false
 ignore_missing_files = false
-tag = true
+tag = false
 sign_tags = false
 tag_name = "v{new_version}"
 tag_message = "Bump version: {current_version} → {new_version}"
 allow_dirty = false
-commit = true
+commit = false
 message = "Bump version: {current_version} → {new_version}"
 commit_args = ""
 
@@ -296,8 +315,3 @@ replace = 'version = "{new_version}"'
 filename = "src/lychd/__about__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
-
-[[tool.bumpversion.files]]
-filename = "package.json"
-search = '"version": "{current_version}"'
-replace = '"version": "{new_version}"'

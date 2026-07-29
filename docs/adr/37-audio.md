@@ -3,7 +3,7 @@ title: 37. Audio
 icon: material/headphones
 ---
 
-# :material-headphones: 37. The Audio Echo
+# :material-headphones: 37. Audio
 
 !!! abstract "Context and Problem Statement"
     A text-only Daemon cannot participate in spoken interaction. Speech-to-Text (STT),

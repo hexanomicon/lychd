@@ -3,7 +3,7 @@ title: 40. Proxy
 icon: material/key-chain
 ---
 
-# :material-key-chain: 40. The Proxy Veil
+# :material-key-chain: 40. Proxy
 
 !!! abstract "Context and Problem Statement"
     Exposing a raw Python ASGI application server directly to the public internet presents a critical security liability. Standard application servers lack robust DDoS mitigation, high-performance static asset handling, and automated TLS lifecycle management required for production-grade sovereignty. A barrier is required to stand as the **Veil** between the internal Sepulcher and the public network—shielding the Daemon from malformed traffic while managing the acquisition of cryptographic trust for the decentralized swarm.

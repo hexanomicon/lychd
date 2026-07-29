@@ -3,7 +3,7 @@ title: 20. Agents
 icon: material/robot-outline
 ---
 
-# :material-robot-outline: 20. Agents: The Cognitive Atom
+# :material-robot-outline: 20. Agents
 
 !!! abstract "Context and Problem Statement"
     To summon a Daemon capable of reason requires a computational primitive that bridges the gap between the probabilistic "Word" of current Large Language Models, future reasoning substrates, and the deterministic "Law" of application code. Standard API calls are unstructured, stateless, and blind to the system's internal state. Furthermore, hardcoding a specific model or toolset into a feature creates a "Brain-Locked" architecture that cannot adapt to the dynamic state of the machine's hardware. A primitive is required that decouples the **Persona** (Identity) and the **Arsenal** (Capabilities) from the underlying intelligence source, while enforcing strict type-safe contracts for all cognitive labor.
@@ -87,7 +87,9 @@ remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
 [The Lich's First Invocation](../sepulcher/lich/index.md#the-first-invocation) owns the complete
 birth correspondence.
 
-!!! note "Mechanical Cognitive Postures"
+### Mechanical Cognitive Postures
+
+!!! note "Separation is mechanical"
     Agent specialization may be expressed as mechanically separated postures, not merely as roleplay. An expander-only Agent opens candidate space and must not rank its own ideas. A reviewer-only Agent evaluates, groups related paths, flags hazards, and must not invent new branches unless explicitly routed into repair. A repair-only Agent receives measured failure traces and proposes corrections. A red-team Agent searches for breach paths and plausible-but-wrong proposals. These postures are enforced through separate runs, prompts, output schemas, tool grants, and `ModelSettings`, so Shadow and Graph can compose the Call and the Blade without mixing evaluation into the expansion context.
 
     Each posture treats honest dead-end recognition as a valid cognitive act. If the field contains contradiction, missing variables, or impossible constraints, the Agent must name the bottleneck within its typed result instead of satisfying pressure by fabricating certainty. This prevents the Call from hardening Viparyaya into a confident answer merely because the prompt demands closure.

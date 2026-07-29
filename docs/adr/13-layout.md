@@ -3,7 +3,7 @@ title: 13. Layout
 icon: material/file-tree
 ---
 
-# :material-file-tree: 13. Layout: The Three Domains
+# :material-file-tree: 13. Layout
 
 !!! abstract "Context and Problem Statement"
     The LychD architecture functions as a hermetic system, interacting with the host filesystem in a highly structured manner to ensure that agents can effectively manipulate their environment without violating user security boundaries. Standard containerization often creates a disjointed experience where file paths valid on the host are invalid inside the container. Without a definitive and symmetric topology, the system cannot reliably locate its own memory, source code, or configuration across different execution contexts. There is a fundamental need for a map that enforces a clear separation between immutable logic and mutable state while reserving bounded geography for later governed creation and recovery.

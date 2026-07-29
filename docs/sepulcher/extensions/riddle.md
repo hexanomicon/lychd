@@ -60,7 +60,7 @@ that an LLM judge is proof. `deepfabric` is one possible harness provider.
 
 - **The Interception:** The admitted harness captures the subject's typed response and environment.
 - **The Shadow Routing:** A Trial Composition may coordinate proposed changes through
-  **[Shadow](./shadow.md)** branches, then sends raw execution payloads via SAQ to the sandboxed
+  **[Shadow](./shadow/index.md)** branches, then sends raw execution payloads via SAQ to the sandboxed
   **Tomb**. The evaluation agent and graph remain in the Vessel; the Tomb executes scripts and
   returns untrusted `stdout`, `stderr`, and declared artifacts.
 - **The Claim:** Deterministic receipts may support an `execution_success_rate` with explicit

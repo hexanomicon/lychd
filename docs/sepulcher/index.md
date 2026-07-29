@@ -10,7 +10,7 @@ that house its organs on a Linux host. Read this map when your question is **whi
 It points to the smallest chamber that can answer; each child page owns its operation and detail.
 
 The **Lich** is the recurrent whole sustained through that body—not the Vessel process, the
-database, an agent, or a model by itself. [State of the Work](../state-of-the-work.md) remains the
+database, an agent, or a model by itself. [State of Work](../state-of-the-work.md) remains the
 sole record of what current evidence supports and which boundaries remain unproved, designed, or
 externally owned.
 

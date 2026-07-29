@@ -60,8 +60,7 @@ a provider catalog.
 ## Open one intentionally
 
 This is an **already-summoned-host** operation. If LychD's preflight, units, local runtime
-readiness, and Bridge reply have not already agreed, begin with [The Summoning
-Rite](../../summoning.md) instead of extracting commands from this page.
+readiness, and Bridge reply have not already agreed, begin with [Summoning](../../summoning.md) instead of extracting commands from this page.
 
 ### 1. Activate the Portal schema
 
@@ -84,7 +83,7 @@ crypt = []
 Then let the active extension inscribe its provider anchors and inactive samples:
 
 ```bash
-uv run lychd init
+uv run --extra postgres-binary lychd init
 ```
 
 Selecting any built-in `animator/*` runtime also registers the shared Portal base, so an existing
@@ -145,10 +144,10 @@ the intended endpoint is genuinely OpenAI-compatible.
     work may still be active or its continuity matters, stop here and do not restart.
 
 ```bash
-uv run lychd bind --dry-run
-uv run lychd bind
+uv run --extra postgres-binary lychd bind --dry-run
+uv run --extra postgres-binary lychd bind
 systemctl --user restart lychd-vessel.service
-uv run lychd status
+uv run --extra postgres-binary lychd status
 ```
 
 Read the results narrowly:

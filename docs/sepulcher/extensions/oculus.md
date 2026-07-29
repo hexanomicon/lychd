@@ -49,10 +49,10 @@ changing which office owns each authoritative event.
 **Law.** The office that performs an act owns its record. Oculus will own typed
 observations, correlation, and rebuildable read models; the
 [Phylactery](../phylactery/index.md) will own their persistence jurisdiction; and
-the [Orb](../../divination/altar/orb.md) owns the Altar projection through which the Magus scries. The
-[Orchestrator](../../adr/23-orchestrator.md), [Riddle](./riddle.md), [Ward](./ward.md), and
-[Reliquary](../../divination/altar/reliquary.md) keep their own authority. The glass may join their
-evidence. It may not become their hand.
+the [Orb](../../divination/altar/orb.md) owns the Altar projection through which the Magus scries.
+The [Orchestrator](../../adr/23-orchestrator.md), [Riddle](./riddle.md), [Ward](./ward.md), and
+[future artifact custody](../../state-of-the-work.md#artifact-reference-contract) each keep their
+own authority. The glass may join their evidence. It may not become their hand.
 
 > _The Great Seer is not the eye that claims to see all. It is the eye that can name what it saw,
 > how it saw it, and where the darkness remains._
@@ -110,7 +110,7 @@ means **unknown**, never free VRAM. A reported cache hit is an observation. A pr
 latency estimate is a derivation, with its method and uncertainty intact.
 
 In a future [Legion](./legion.md), each node remains authoritative for its own iron and sends
-bounded observations through an authenticated [Intercom](../../adr/26-a2a.md) contract. A Thrall
+bounded observations through an authenticated [Intercom](../../adr/26-a2a.md) contract. A Legionnaire
 never writes a Master database or borrows a Master telemetry service.
 
 ## Three Chambers of Interior Evidence
@@ -177,9 +177,10 @@ field remains an authorized,
 time-windowed, filtered, cardinality-bounded attention query with visible truncation and gaps. It
 is not an omniscient view or a fabricated total order.
 [Nexus](../../divination/altar/nexus.md) owns present transition controls;
-[a future artifact-custody lifecycle](../../divination/altar/reliquary.md) may own retained bytes
-and artifacts; Riddle owns evaluation. If a later instrument requests an action, the owning service must reauthorize it
-and record its own decision. A chart crossing a line is never itself a capability grant.
+[a future artifact-custody lifecycle](../../state-of-the-work.md#artifact-reference-contract) may
+own retained bytes and artifacts; Riddle owns evaluation. If a later instrument requests an action,
+the owning service must reauthorize it and record its own decision. A chart crossing a line is
+never itself a capability grant.
 
 Until the native read model exists, use [The Awakening](../../summoning.md#the-awakening) for the
 current journal and first-life observations, use Nexus for its bounded capability projection, and

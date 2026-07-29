@@ -3,7 +3,7 @@ title: 29. Observability
 icon: material/telescope
 ---
 
-# :material-telescope: 29. Observability: The Oculus
+# :material-telescope: 29. Observability
 
 !!! abstract "Context and Problem Statement"
     An agentic runtime crosses deterministic infrastructure, probabilistic model behavior,
@@ -72,7 +72,7 @@ authorization, retention, or evidence semantics.
     into native Oculus. The static Svelte Altar now has a bounded selected-Run Orb projection
     over the run/event records available to the current process. That projection is not native
     Oculus ingestion, durable evidence custody, a live trace service, or cross-process
-    completeness. State of the Work owns the exact delivery boundary.
+    completeness. State of Work owns the exact delivery boundary.
 
 ### 1. Evidence Ownership and Correlation
 
@@ -203,7 +203,7 @@ artifacts, annotations, and multi-run attention field rather than simulating the
 This subsection is target law for a conforming future physical-observation boundary. The current
 Orchestrator and Nexus do not possess a general Resource Snapshot for VRAM, thermals, power,
 process ownership, or system-wide pressure; current delivery is limited to declared capability
-state and retained transition observations named in State of the Work.
+state and retained transition observations named in State of Work.
 
 Physical truth begins with a fresh node-local Resource Snapshot owned by the physical runtime and
 Orchestrator boundary. It names the device, capacity, reservations, process ownership,
@@ -217,7 +217,7 @@ their source and units. Estimates and trends remain derivations; they do not bec
 reservations, Riddle verdicts, or automatic promotion thresholds.
 
 In a future Legion, each node remains authoritative for its own iron and sends bounded observations
-through an authenticated Intercom contract. A Thrall never writes directly to a Master's
+through an authenticated Intercom contract. A Legionnaire never writes directly to a Master's
 Phylactery or borrows a Master's telemetry authority.
 
 Prometheus, Grafana, Loki, Alloy, Cockpit, or similar tools may become optional Watcher-class

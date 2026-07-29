@@ -3,7 +3,7 @@ title: 21. Context
 icon: material/text-box-multiple-outline
 ---
 
-# :material-text-box-multiple-outline: 21. Context: The Active Cognitive Field
+# :material-text-box-multiple-outline: 21. Context
 
 !!! abstract "Context and Problem Statement"
     In the era of large-scale context windows (128k+ tokens), reliance on fragmented retrieval creates a reasoning bottleneck by destroying the semantic relationships between disconnected data chunks. While retrieval facilitates discovery, it fails to provide the systemic understanding required for complex, interconnected datasets. Full-context ingestion offers superior comprehension but introduces prohibitive latency and computational costs regarding KV cache management and re-processing overhead. A fundamental gap exists in balancing the depth of total context with the physical constraints of local hardware and inference efficiency.

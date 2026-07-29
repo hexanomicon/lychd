@@ -18,7 +18,7 @@ Covens are declared by the `groups` field on a Soulstone Rune. Sharing a group r
 membership only. Bind permits that aggregate only when its members' conflict-domain sets do not
 overlap; an internally conflicting Coven fails closed. Different groups do not create
 incompatibility. The `alliances` shape remains reserved for later policy and is not an enforcement
-boundary. See [Soulstone](./soulstone.md#-coven-management-the-group-rule).
+boundary. See [Soulstone](./soulstone.md#coven-management-the-group-rule).
 
 !!! warning "Operator break-glass surface"
     Starting a generated Coven target explicitly starts its compatible Animator targets, and

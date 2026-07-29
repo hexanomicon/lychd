@@ -3,7 +3,7 @@ title: 3. Quality
 icon: material/check-all
 ---
 
-# :material-check-all: 3. Strict Toolchain & Code Quality Standards
+# :material-check-all: 3. Quality
 
 !!! abstract "Context and Problem Statement"
     A project of this complexity requires an unwavering commitment to quality and determinism. Inconsistent formatting, weak type safety, and slow, fragile dependency management accumulate as technical debt. A system is required that is instantaneous, strict, and reproducible.

@@ -3,7 +3,7 @@ title: 11. Backend
 icon: material/star-shooting-outline
 ---
 
-# :material-star-shooting-outline: 11. Backend: The Vessel
+# :material-star-shooting-outline: 11. Backend
 
 !!! abstract "Context and Problem Statement"
     The LychD architecture requires a modern, async-first Python web framework—referred to as **The Vessel**—to serve as the system's backbone. Python is retained as the foundational substrate due to its unmatched AI ecosystem and agility, delegating concurrency to the architectural level (async routing + background workers) rather than switching to Go, Rust, or Elixir. Traditional frameworks often enforce patterns that lead to code duplication or structural rigidity, such as circular imports caused by bound decorators. To achieve a truly modular and federated system, a solution is required that inherently reduces boilerplate, facilitates a decoupled "Plugin" architecture, and scales cleanly from a lightweight management tool to a high-concurrency server capable of handling massive cognitive state dumps without CPU bottlenecking.
@@ -199,7 +199,7 @@ app = Litestar(
 
 The current Altar follows this boundary: Litestar exposes the versioned contract and serves one
 compiled static Svelte fallback; no template or JavaScript server owns application truth.
-[State of the Work](../state-of-the-work.md#altar-and-observability) owns the delivered extent.
+[State of Work](../state-of-the-work.md#altar-and-observability) owns the delivered extent.
 
 ### Policy Table
 

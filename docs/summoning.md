@@ -3,7 +3,7 @@ title: Summoning
 icon: material/fire
 ---
 
-# :material-fire: The Summoning Rite
+# :material-fire: Summoning
 
 This rite brings one LychD source revision to first life on one Linux host and receives one reply
 in its **Bridge chat instrument**. Follow it top to bottom in one shell. At the end, configuration
@@ -31,7 +31,7 @@ The path has six movements:
 !!! warning "Foundation boundary"
     Repository tests exercise the local software foundation. Rootless Podman, systemd, NVIDIA,
     llama.cpp, and your selected weights meet only on your host; their conjunction must be observed
-    there and is not something documentation can pre-claim. [State of the
+    there and is not something documentation can pre-claim. [State of
     Work](state-of-the-work.md) owns every other delivery boundary and the metadata required for a
     maintained operator receipt.
 
@@ -142,7 +142,7 @@ host-side consumer.
 
 ```bash
 git rev-parse HEAD
-uv run lychd --help
+uv run --extra postgres-binary lychd --help
 podman image inspect localhost/lychd:dev --format '{{.Id}}'
 ```
 
@@ -175,8 +175,8 @@ one-Soulstone proof.
 Preview and then perform the first inscription:
 
 ```bash
-uv run lychd init --dry-run
-uv run lychd init
+uv run --extra postgres-binary lychd init --dry-run
+uv run --extra postgres-binary lychd init
 vi "$CODEX_DIR/lychd.toml"
 ```
 
@@ -209,10 +209,10 @@ mounted Phylactery remain outside that grant.
     data in the Codex and Phylactery:
 
     ```bash
-    uv run lychd del --dry-run
-    uv run lychd del
-    uv run lychd init --dry-run
-    uv run lychd init
+    uv run --extra postgres-binary lychd del --dry-run
+    uv run --extra postgres-binary lychd del
+    uv run --extra postgres-binary lychd init --dry-run
+    uv run --extra postgres-binary lychd init
     ```
 
     `del` asks for confirmation because its intended scope is the whole LychD installation,
@@ -243,8 +243,8 @@ exists. Run `init` a second time so the now-active extension can contribute its 
 marked, inactive sample:
 
 ```bash
-uv run lychd init --dry-run
-uv run lychd init
+uv run --extra postgres-binary lychd init --dry-run
+uv run --extra postgres-binary lychd init
 ```
 
 `init` does not overwrite the existing `lychd.toml`. The second pass reads your extension selection
@@ -380,8 +380,8 @@ grep -F "$MODEL_DIR:/models:ro,Z" \
 podman pull ghcr.io/ggml-org/llama.cpp:server-cuda
 podman image inspect ghcr.io/ggml-org/llama.cpp:server-cuda \
   --format '{{.Id}} {{json .RepoDigests}}'
-uv run lychd bind --dry-run
-uv run lychd bind
+uv run --extra postgres-binary lychd bind --dry-run
+uv run --extra postgres-binary lychd bind
 ```
 
 The dry run validates the active settings and Rune, host prerequisites, ports, mount boundaries,
@@ -426,14 +426,14 @@ runtime **Orchestrator** path.
 Start the normal caged installation:
 
 ```bash
-uv run lychd start
+uv run --extra postgres-binary lychd start
 ```
 
 Do not manually enable the generated caged Quadlet. Ask the Pulse for live inventory and
 readiness:
 
 ```bash
-uv run lychd status
+uv run --extra postgres-binary lychd status
 ```
 
 The Phase-1 report distinguishes initialization, binding ownership, exact unit activity, and the
@@ -455,7 +455,7 @@ The four units must each print `active`; migration must show `Result=success` an
 it as needed:
 
 ```bash
-uv run lychd logs --lines 120
+uv run --extra postgres-binary lychd logs --lines 120
 ```
 
 The Phase-1 log projection is a bounded read, not a live follow.
@@ -497,7 +497,7 @@ used for admission; the settled reply does not prove arbitrary tool calling.
 When a non-empty response settles in the Bridge, ask the Pulse for the joined live truth again:
 
 ```bash
-uv run lychd status
+uv run --extra postgres-binary lychd status
 ```
 
 You can witness the same cached capability through the **Nexus transition board** at
@@ -523,8 +523,8 @@ settled turn.
 **If it fails.** Start with the joined report, then narrow the log target shown by that report:
 
 ```bash
-uv run lychd status
-uv run lychd logs services --lines 120
+uv run --extra postgres-binary lychd status
+uv run --extra postgres-binary lychd logs services --lines 120
 ```
 
 If the core is healthy but inference fails, recheck the exact model filename, the CDI selector,

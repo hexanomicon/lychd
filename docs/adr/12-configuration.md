@@ -3,7 +3,7 @@ title: 12. Configuration
 icon: material/cog-box
 ---
 
-# :material-cog-box: 12. Configuration: The Codex
+# :material-cog-box: 12. Configuration
 
 !!! abstract "Context and Problem Statement"
     Configuration fragmentation creates structural blindness. When intent is scattered across hardcoded paths, environment variables, and implicit runtime state, the system loses determinism. In a Sepulcher that bridges Host and Container, this fragmentation produces port collisions, permission mismatches, and non-reproducible infrastructure states.
@@ -131,7 +131,7 @@ suites = []
 This sketch reserves ownership, not accepted syntax or delivery. Exact revision grammar,
 dependency closure, unavailable-contribution errors, defaults, and upgrade behavior must enter
 with the shaped Portfolio store, tests, initialization output, and a matching
-[State of the Work](../state-of-the-work.md) boundary. Composition-specific runtime records do not
+[State of Work](../state-of-the-work.md) boundary. Composition-specific runtime records do not
 belong in that selector, and application selection must not be smuggled into `[extensions]`.
 
 The caged foundation selects the Host Reactor explicitly in the generated default tree:

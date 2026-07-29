@@ -1,9 +1,9 @@
 ---
 title: Bazaar Haggler
-icon: material/account-voice
+icon: material/handshake-outline
 ---
 
-# :material-account-voice: Bazaar Haggler
+# :material-handshake-outline: Bazaar Haggler
 
 !!! warning "Candidate study — not accepted architecture or delivered software"
     Bazaar Haggler explores one reusable marketplace-negotiation application above Scout,

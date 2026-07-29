@@ -3,7 +3,7 @@ title: 35. Assimilation
 icon: material/import
 ---
 
-# :material-import: 35. Assimilation (The Smith)
+# :material-import: 35. Assimilation
 
 !!! abstract "Context and Problem Statement"
     The gap between abstract cognitive intent and bit-perfect physical implementation presents a significant obstacle to autonomous system evolution. While the kernel possesses the theoretical capacity for structural extension, the manual orchestration of file trees, dependency manifests, and hardware-aware infrastructure remains an error-prone burden. LychD is built for an era where source can be inspected, rewritten, verified, and assimilated; the danger is not coupling by itself, but unverified mutation. Entrusting self-modification to a raw probabilistic mind without a disciplined construction loop introduces the risk of systemic collapse, syntax corruption, and logical fragmentation.

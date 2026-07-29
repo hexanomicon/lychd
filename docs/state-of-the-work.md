@@ -1,9 +1,9 @@
 ---
-title: State of the Work
+title: State of Work
 icon: material/list-status
 ---
 
-# State of the Work
+# State of Work
 
 LychD is **pre-alpha**. This page is the canonical account of what repository evidence supports,
 what still needs a named operator receipt, and what remains design.
@@ -22,7 +22,7 @@ behavior, deployment planning, local runs and bounded chained single-approval co
 paths, safe runtime-transition protocols, and structured logging configuration. The records below
 bind every part of that foundation to its exact proof and limit.
 
-[The Prophecy](./index.md) names the destination; this page names what can answer now.
+[Prophecy](./index.md) names the destination; this page names what can answer now.
 
 Go directly to:
 
@@ -258,18 +258,25 @@ claimed by repository tests.
 **State:** Designed
 
 **Proved now:** The source tree declares a Hatch-built Python distribution, a Containerfile, and a
-tag-triggered workflow that can build and push a Vessel image.
+non-publishing candidate workflow. Repository tests bind version preparation to reviewed file
+changes without an automatic commit or tag, deny the workflow PyPI and container-registry
+authority, require one clean full Git object ID, constrain exact-source Altar generation to its
+tracked public tree, inspect real wheel and source archives, compare license and notice bytes,
+perform an isolated install and dependency check, exercise public and internal process entrypoints,
+and emit SHA-256 receipts. The Containerfile now forbids `psycopg-binary`, uses system `libpq5`,
+and generates a fail-closed Python dependency notice inventory.
 
 **Do not expect yet:** No maintained receipt pairs this revision as an anonymously installable
-PyPI package and pullable GHCR image from one tag and commit. A 2026-07-22 audit found only the
-placeholder `lychd==0.0.1` on PyPI while source declares `0.0.2`; an anonymous pull of the
-configured `ghcr.io/hexanomicon/lychd:latest` was denied, and no immutable tag or digest pairs it
-with the source wheel. That audit did build and isolated-install the source wheel, expose the real
-CLI tree, and complete `lychd init`, but a one-time manual pass is not a public release or a
-maintained packed-artifact receipt. The repository now carries the Litestar Fullstack MIT notice
-required by identified adapted source, but no receipt proves that every wheel, source archive, and
-image retains it. Promotion needs one version owner, automated wheel/image and license-notice
-inspection, matching public artifacts, and a named clean-host install/start/reply/stop receipt.
+PyPI package and pullable GHCR image from one tag and commit. The public `lychd==0.0.1` placeholder
+from 1 December 2025 carried no license declaration or license text in its wheel or source archive;
+it is not evidence for the current MPL-2.0 package. No workflow in this repository can publish to
+PyPI or GHCR. A 2026-07-22 audit found anonymous pulling of the configured
+`ghcr.io/hexanomicon/lychd:latest` denied, with no immutable tag or digest paired to a source wheel.
+Earlier local archive builds and isolated installs are one-time checks, not a maintained candidate
+receipt. The new gate itself still needs a clean committed hosted-workflow receipt. Image promotion
+additionally needs a loaded-image runtime, dependency-notice, base-image, exact-revision, and SBOM
+audit plus an explicit human publication decision. Public promotion then needs matching artifacts
+and a named clean-host install/start/reply/stop receipt.
 
 **Evidence**
 
@@ -277,7 +284,9 @@ inspection, matching public artifacts, and a named clean-host install/start/repl
   and [default Vessel image](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/settings/server.py)
 - **Version:** [Distribution and version declarations](https://github.com/hexanomicon/lychd/blob/main/pyproject.toml),
   [Vessel build](https://github.com/hexanomicon/lychd/blob/main/Containerfile),
-  [tag-triggered image workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/build.yml),
+  [non-publishing candidate workflow](https://github.com/hexanomicon/lychd/blob/main/.github/workflows/build.yml),
+  [source preflight](https://github.com/hexanomicon/lychd/blob/main/scripts/verify_release_source.py),
+  [archive audit](https://github.com/hexanomicon/lychd/blob/main/scripts/verify_release_artifacts.py),
   [third-party source notices](https://github.com/hexanomicon/lychd/blob/main/THIRD_PARTY_NOTICES.md),
   and [public PyPI project](https://pypi.org/project/lychd/)
 - **Law:** [ADR 17 — Packaging](./adr/17-packaging.md) and
@@ -371,7 +380,7 @@ GPU and model validation remain separate receipts.
 - **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
   [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
   and [pending llama.cpp fixture boundary](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/llamacpp/README.md)
-- **Rite:** [The Summoning](./summoning.md)
+- **Rite:** [Summoning](./summoning.md)
 - **Law:** [ADR 08 — Containers](./adr/08-containers.md) and
   [ADR 10 — Privilege](./adr/10-privilege.md)
 
@@ -1245,7 +1254,7 @@ simulation, verified collapse, or branch-reaper implementation.
 
 **Evidence**
 
-- **Topic:** [Shadow Realm](./sepulcher/extensions/shadow.md)
+- **Topic:** [Shadow Realm](./sepulcher/extensions/shadow/index.md)
 - **Law:** [ADR 31 — Simulation](./adr/31-simulation.md)
 
 ### Riddle evaluation {#riddle-evaluation}
@@ -1412,7 +1421,6 @@ topic pages own operation, and source, tests, and maintained receipts own execut
 
 ## Enter the Work
 
-This ledger is a threshold, not a destination. Perform [The Summoning
-Rite](./summoning.md) when you are ready to test one bounded local conjunction. Its four agreeing
+This ledger is a threshold, not a destination. Perform [Summoning](./summoning.md) when you are ready to test one bounded local conjunction. Its four agreeing
 observations are a bounded first-life result, not a maintained operator receipt; preserve them
 with all metadata above, and let the observed result—not hope—decide what this page may claim next.

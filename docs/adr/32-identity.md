@@ -3,7 +3,7 @@ title: 32. Identity
 icon: material/drama-masks
 ---
 
-# :material-drama-masks: 32. The Mirror Identity
+# :material-drama-masks: 32. Identity
 
 !!! abstract "Context and Problem Statement"
     Standard Agents are stateless ghosts—transient shells of instructions that dissipate upon the completion of a request. While the machine provides the mechanics of thought, it lacks a concept of a persistent "Self" or "Ego." Without a stable, self-reflective identity, the Daemon is prone to "Character Drift" and fails to maintain the unique domain expertise and behavioral consistency required for long-term strategic labor. To transition from a tool into a Persona, the system requires a mechanism to bind probabilistic model outputs to a coherent entity that possesses a stable character, a distinct signature, and a recursive memory of its own existence.
@@ -93,7 +93,7 @@ Agentic coherence disintegration is therefore an identity failure before it is a
 
 This vertex is not a costume or style layer. It is the engineered center of gravity that turns
 raw Flux into attributable action. A movement becomes useful only when it can be reflected,
-measured, attributed, and ReCalled without dissolving the identity that produced it.
+measured, attributed, and recalled without dissolving the identity that produced it.
 
 Within the Stratification of Selves defined in **[Agents (20)](20-agents.md)**, the Persona is the durable layer. It is the enduring identity that *wears* Postures—the per-run mechanical configurations of schema, tool grant, and model settings—rather than being one itself. A **[Lens (31)](31-simulation.md)** is a Posture template employed in the Shadow for expansion isolation, diversifying the seed field without asserting identity. Persona chooses; Posture constrains; Lens diversifies. The Mirror governs only the durable layer: Postures and Lenses are worn for a run and discarded, while the semantic vertex persists.
 

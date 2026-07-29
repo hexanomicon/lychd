@@ -8,7 +8,7 @@ icon: material/camera-timer
 !!! warning "Reference design — not a delivered studio"
     Voidlight Studio is an accepted Composition study. LychD does not currently ship its Pattern
     pack, creative schemas, asset library, media tools, model profiles, export adapters, Suite
-    projection, or artifact migrations. [State of the Work](../state-of-the-work.md) remains the
+    projection, or artifact migrations. [State of Work](../state-of-the-work.md) remains the
     delivery authority.
 
 **Voidlight Studio** is the shared creative workshop and asset library of the Voidlight Suite

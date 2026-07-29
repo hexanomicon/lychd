@@ -3,7 +3,7 @@ title: 9. Security
 icon: material/shield-lock-outline
 ---
 
-# :material-shield-lock-outline: 9. Security: Defense in Depth
+# :material-shield-lock-outline: 9. Security
 
 !!! abstract "Context and Problem Statement"
     LychD executes powerful AI-driven workflows that can:
@@ -382,7 +382,7 @@ cannot operate without exposing a durable provider credential or widening egress
 
 This profile is a target boundary until the effectful supervisor, generated manifests, and
 adversarial receipts prove it. Typed policy and command-compilation code alone does not establish
-containment; [State of the
+containment; [State of
 Work](../state-of-the-work.md#delegated-agent-execution) owns the exact delivery claim.
 
 ### 2. Egress Posture (Network Is Authority)

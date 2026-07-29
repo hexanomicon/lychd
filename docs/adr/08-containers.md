@@ -3,7 +3,7 @@ title: 8. Containers
 icon: material/cube-outline
 ---
 
-# :material-cube-outline: 8. Containers: Systemd Quadlets
+# :material-cube-outline: 8. Containers
 
 !!! abstract "Context and Problem Statement"
     The LychD architecture functions as a unified **pod** of interconnected **services** including the primary **Vessel**, the **Phylactery**, and a dynamic federation of **extensions**.

@@ -3,7 +3,7 @@ title: 15. Frontend
 icon: material/language-html5
 ---
 
-# :material-language-html5: 15. Frontend: The Altar
+# :material-language-html5: 15. Frontend
 
 !!! abstract "Context and Problem Statement"
     LychD needs one rich browser surface for conversation, live run inspection, orchestration,
@@ -320,6 +320,17 @@ The Altar uses native CSS custom properties, cascade layers, media queries, and 
 classes. Component state is expressed through meaningful classes, attributes, and `data-state`
 values rather than generated utility strings.
 
+Its chromatic hierarchy is icy blue first, Matrix green second, and deep violet third. Icy blue
+owns interactive chrome, focus, links, selection, and readiness; green marks live computation and
+healthy activity; violet remains a restrained structural shadow and ceremonial wash. Labels,
+shape, and copy continue to carry meaning when color is unavailable. Banked orange marks a
+decision, activation, or physical transition threshold; it is not another health state. Matte red
+remains reserved for fault, refusal, and lost work and never receives a decorative glow. Large
+low-luminance violet fields may carry atmosphere without outranking the smaller, brighter primary
+and live-state marks. A static contact seam may illuminate where opposing atmospheric fields meet,
+but it remains non-interactive decoration: it carries no lifecycle evidence, never flashes, and
+must fade beneath readable content.
+
 Tailwind is rejected because the Altar already owns a small semantic design vocabulary. A utility
 compiler would duplicate that vocabulary, expand the dependency and generated-code surface, and
 force agents to translate between component meaning and styling tokens. Sass is rejected because
@@ -403,7 +414,7 @@ The rewrite was a replacement, not a permanent hybrid:
    obsolete tests once the corresponding Svelte behavior is proved.
 
 This migration boundary has now been crossed for the existing Altar: steps 1–7 are represented in
-source, generated assets, focused tests, and State of the Work. The Orb now has a bounded
+source, generated assets, focused tests, and State of Work. The Orb now has a bounded
 selected-run projection while the durable Oculus, live trace tail, run index, and graph-shaped
 evidence field remain later work. New Altar work must extend the Svelte contract and must not
 reintroduce the retired HTMX/Jinja surface.

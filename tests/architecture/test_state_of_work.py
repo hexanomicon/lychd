@@ -65,7 +65,7 @@ def test_each_subject_is_one_complete_vertical_record() -> None:
     records = _records(text)
     seen_states: list[str] = []
 
-    assert records, "State of the Work must contain delivery records"
+    assert records, "State of Work must contain delivery records"
     assert len({record.group("anchor") for record in records}) == len(records), "State record anchors must be unique"
 
     for record in records:

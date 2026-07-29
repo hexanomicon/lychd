@@ -1,9 +1,9 @@
 ---
-title: 30. Web Acquisition
+title: 30. Webcrawler
 icon: material/spider-thread
 ---
 
-# :material-spider-thread: 30. Web Acquisition: The Scout
+# :material-spider-thread: 30. Webcrawler
 
 !!! abstract "Context and Problem Statement"
     LychD needs a path to material on the living web, but “web access” is not one capability.
@@ -133,7 +133,7 @@ retrieval authority, and explicit Reliquary admission.
 This ADR accepts architecture, not implementation. LychD currently has no Scout provider,
 browser service, acquisition endpoint, Agent tool, custody path, or automatic Toll. The exact
 public boundary remains on the **[Scout page](../sepulcher/extensions/scout.md)** and its maintained
-**[State of the Work subject](../state-of-the-work.md#scout-web-acquisition)**.
+**[State of Work subject](../state-of-the-work.md#scout-web-acquisition)**.
 
 ## Consequences
 

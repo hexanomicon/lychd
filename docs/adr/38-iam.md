@@ -3,7 +3,7 @@ title: 38. IAM
 icon: material/account-check-outline
 ---
 
-# :material-account-check-outline: 38. IAM: The Ward
+# :material-account-check-outline: 38. IAM
 
 !!! abstract "Context and Problem Statement"
     LychD is a sovereign daemon, but it must be capable of interacting with multiple external entities—human "Apprentices" (Family) or automated "Peers" (API/SaaS)—without compromising the Master's total control. A mechanism is required to authenticate diverse identities and enforce granular access boundaries (**Wards**) over routes and capabilities, ensuring that the machine's "Inner Sanctum" remains air-gapped from restricted users.

@@ -10,7 +10,7 @@ from the living web without confusing access with truth or a URL with permission
 
 **Current boundary.** No Scout capability or provider package is available today. There is no
 search, fetch, crawl, browser, artifact, or Agent-tool path.
-[State of the Work owns the exact Scout delivery boundary](../../state-of-the-work.md#scout-web-acquisition).
+[State of Work owns the exact Scout delivery boundary](../../state-of-the-work.md#scout-web-acquisition).
 
 **Law.** [ADR 30](../../adr/30-webcrawler.md) owns the accepted separation of web effects:
 access never escalates itself, and isolation reduces reach without making browser blast radius
@@ -41,7 +41,8 @@ navigational rings, not three shared grants:
   [Ward](./ward.md) authority. Session custody owns cookies, browser storage, revocation, expiry,
   and destruction for one principal and purpose.
 - **Preserve a visual result.** Screenshot requests pixels from a renderer. Durable custody is a
-  separate [Reliquary](../../divination/altar/reliquary.md) admission; [Prism](./prism.md) may later
+  separate [artifact-custody](../../state-of-the-work.md#artifact-reference-contract) admission;
+  [Prism](./prism.md) may later
   prepare admitted pixels for a vision model.
 
 Download and archive admission, OCR, and artifact materialization remain adjacent typed contracts,
@@ -81,7 +82,7 @@ independent operator-visible purpose, domain state, policy, and lifecycle suffic
 Composition of its own.
 
 The vocabulary remains equally strict. **Hunter** is already the
-[Shadow posture](./shadow.md#the-dancer-posture-and-the-hunter-posture) that hunts unsupported
+[Shadow posture](./shadow/hunter.md) that hunts unsupported
 premises inside candidate reasoning. External acquisition therefore uses **Scout**, **Search**,
 **Watch**, **Source Profile**, **Listing Observation**, and **Geo Observation** language. A source
 adapter observes the outside world; it does not perform Shadow's adversarial hunt.

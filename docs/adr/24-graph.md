@@ -3,7 +3,7 @@ title: 24. Graph
 icon: material/graph-outline
 ---
 
-# :material-graph-outline: 24. Graph: The Cognitive Topology
+# :material-graph-outline: 24. Graph
 
 !!! abstract "Context and Problem Statement"
     Reasoning via single agents provides atomic intelligence but proves insufficient for complex architectural tasks such as recursive self-modification or multi-stage strategic planning. Standard procedural scripts and nested function calls lack formal memory of the reasoning process, fail to navigate the physical constraints of hardware resources, and cannot be gracefully suspended across system restarts. A stateful, asynchronous, and non-linear engine is necessary to model complex workflows as directed graphs capable of surviving the "Long Sleep" of hibernation and facilitating parallel exploration of solution spaces.
@@ -130,7 +130,9 @@ handshake:
 !!! note "Volatile Breath and Committed Progress"
     Volatile state is allowed. Active iterator frames, partial token streams, warm grants, derived context windows, and live adapter handles may live only in memory. The durable promise is narrower: committed step outputs, graph checkpoints, approval waits, external commitments, recovery markers, and traces must be persisted at declared boundaries. A crash may kill breath, but not committed progress.
 
-!!! note "Checkpoint Ownership and Terminal Commit"
+### Checkpoint Ownership and Terminal Commit
+
+!!! note "Commit before cleanup"
     `GraphRunner` may create or resume snapshots, but it does not own their deletion. A returned
     graph result is not yet durable run truth: the process can still die before `RunStatus.DONE`
     reaches the ledger. The run worker therefore commits `DONE`, `FAILED`, or another terminal
@@ -246,7 +248,7 @@ Pattern's declared route.
 
 An in-memory coordinator, typed request/result models, or a parked-run signal proves only the
 domain seam. It does not prove durable restart recovery, an effectful Coffin supervisor, provider
-credential containment, or a working provider adapter. [State of the
+credential containment, or a working provider adapter. [State of
 Work](../state-of-the-work.md#delegated-agent-execution) owns that delivery distinction.
 
 #### Provider Trace Boundary

@@ -3,7 +3,7 @@ title: 22. Dispatcher
 icon: material/directions-fork
 ---
 
-# :material-directions-fork: 22. Dispatcher: The Switchboard
+# :material-directions-fork: 22. Dispatcher
 
 !!! abstract "Context and Problem Statement"
     Cognitive and operational labor in a sovereign system requires abstract intents: reasoning, visual analysis, vocal perception, tool execution, telemetry queries, browsing, and peer delegation. The physical infrastructure is fragmented across discrete local containers (**Soulstones**), remote APIs (**Portals**), and peer-to-peer nodes (**The Legion**).

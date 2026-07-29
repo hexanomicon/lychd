@@ -3,7 +3,7 @@ title: 16. Creation
 icon: material/creation
 ---
 
-# :material-creation: 16. Creation: The Workflow of Autopoiesis
+# :material-creation: 16. Creation
 
 !!! abstract "Context and Problem Statement"
     The LychD architecture is designed for Autopoiesis (self-creation)—the capability for the system to autonomously expand its own logic and manifest new capabilities. However, allowing a probabilistic process to modify its own live source code presents a fundamental stability dilemma. A single syntax error or logical loop introduced during self-modification results in an immediate system lobotomy, causing a crash that prevents self-recovery and violates the doctrine of immutability. A formal ritual is required to govern the transition from "Idea" to "Reality."

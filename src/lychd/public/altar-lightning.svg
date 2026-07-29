@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="violet-current" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="800" y2="0">
+      <stop offset="0" stop-color="#7c58bd" stop-opacity="0.06"/>
+      <stop offset="0.12" stop-color="#7c58bd" stop-opacity="0.46"/>
+      <stop offset="0.58" stop-color="#7c58bd" stop-opacity="0.16"/>
+      <stop offset="0.9" stop-color="#7c58bd" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#a77ee8" stop-opacity="0.56"/>
+    </linearGradient>
+    <linearGradient id="frost-current" gradientUnits="userSpaceOnUse" x1="1600" y1="0" x2="800" y2="0">
+      <stop offset="0" stop-color="#39ff8a" stop-opacity="0.04"/>
+      <stop offset="0.12" stop-color="#8be7ff" stop-opacity="0.42"/>
+      <stop offset="0.58" stop-color="#8be7ff" stop-opacity="0.14"/>
+      <stop offset="0.9" stop-color="#8be7ff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#b7efff" stop-opacity="0.58"/>
+    </linearGradient>
+    <radialGradient id="violet-contact">
+      <stop offset="0" stop-color="#a77ee8" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#7c58bd" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="frost-contact">
+      <stop offset="0" stop-color="#b7efff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#8be7ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="current-bloom" x="-20%" y="-160%" width="140%" height="420%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="url(#violet-current)">
+      <path d="M-24 42 112 104 198 92 284 158 378 148 456 220 548 214 612 292 680 306 724 374 764 396 798 449" stroke-width="7" opacity="0.07" filter="url(#current-bloom)"/>
+      <path d="M-24 42 112 104 198 92 284 158 378 148 456 220 548 214 612 292 680 306 724 374 764 396 798 449" stroke-width="0.85" vector-effect="non-scaling-stroke"/>
+      <path d="M-20 548 122 530 224 552 324 510 426 520 516 480 606 492 676 468 738 474 798 449" stroke-width="0.58" opacity="0.62" vector-effect="non-scaling-stroke"/>
+      <path d="M284 158 242 204 184 220" stroke-width="0.58" opacity="0.34" vector-effect="non-scaling-stroke"/>
+      <path d="M456 220 428 166 382 132" stroke-width="0.54" opacity="0.28" vector-effect="non-scaling-stroke"/>
+      <path d="M612 292 572 344 524 354" stroke-width="0.52" opacity="0.24" vector-effect="non-scaling-stroke"/>
+      <path d="M426 520 392 566 346 584" stroke-width="0.48" opacity="0.25" vector-effect="non-scaling-stroke"/>
+      <path d="M606 492 574 450 534 438" stroke-width="0.46" opacity="0.22" vector-effect="non-scaling-stroke"/>
+      <path d="M724 374 688 350 650 354" stroke-width="0.48" opacity="0.2" vector-effect="non-scaling-stroke"/>
+    </g>
+    <g stroke="url(#frost-current)">
+      <path d="M1624 856 1490 800 1400 816 1312 746 1218 758 1138 688 1048 692 978 620 910 606 866 538 832 508 802 450" stroke-width="7" opacity="0.07" filter="url(#current-bloom)"/>
+      <path d="M1624 856 1490 800 1400 816 1312 746 1218 758 1138 688 1048 692 978 620 910 606 866 538 832 508 802 450" stroke-width="0.85" vector-effect="non-scaling-stroke"/>
+      <path d="M1620 284 1482 304 1380 282 1282 326 1180 316 1090 356 1000 344 928 372 866 366 802 450" stroke-width="0.58" opacity="0.6" vector-effect="non-scaling-stroke"/>
+      <path d="M1312 746 1354 700 1410 682" stroke-width="0.58" opacity="0.32" vector-effect="non-scaling-stroke"/>
+      <path d="M1138 688 1168 742 1212 774" stroke-width="0.54" opacity="0.26" vector-effect="non-scaling-stroke"/>
+      <path d="M978 620 1018 570 1064 558" stroke-width="0.52" opacity="0.23" vector-effect="non-scaling-stroke"/>
+      <path d="M1180 316 1212 268 1258 250" stroke-width="0.48" opacity="0.24" vector-effect="non-scaling-stroke"/>
+      <path d="M1000 344 1032 386 1072 398" stroke-width="0.46" opacity="0.21" vector-effect="non-scaling-stroke"/>
+      <path d="M866 538 902 560 940 554" stroke-width="0.48" opacity="0.19" vector-effect="non-scaling-stroke"/>
+    </g>
+  </g>
+
+  <ellipse cx="798" cy="449" rx="30" ry="19" fill="url(#violet-contact)" opacity="0.24" filter="url(#current-bloom)"/>
+  <ellipse cx="802" cy="450" rx="30" ry="19" fill="url(#frost-contact)" opacity="0.24" filter="url(#current-bloom)"/>
+  <circle cx="798.8" cy="449.4" r="1" fill="#a77ee8" opacity="0.5"/>
+  <circle cx="801.2" cy="449.8" r="1" fill="#b7efff" opacity="0.52"/>
+</svg>

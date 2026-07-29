@@ -25,7 +25,7 @@ depends on LychD's governing telos.
 ## Probes
 
 Load the Transcendence index, then only the stage matching the task. Route compact terminology to
-the [Lexicon](../../docs/lexicon.md), decisions to ADRs, current behavior to
+the [Lexicon](../../docs/lexicon/index.md), decisions to ADRs, current behavior to
 [State](../../docs/state-of-the-work.md), operated mechanics to the owning topic page, and causal
 interpretability work to Oculus and Riddle.
 

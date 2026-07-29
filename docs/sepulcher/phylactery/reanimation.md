@@ -47,7 +47,7 @@ succeeded. Current outcomes after a successful reconciliation attempt are delibe
 - **A missing consent checkpoint fails honestly.** Reanimation never silently restarts the graph
   from its first node when durable stasis has been lost.
 
-Focused tests prove a memory-profile consent restart and these reconciliation rules. [State of the
+Focused tests prove a memory-profile consent restart and these reconciliation rules. [State of
 Work](../../state-of-the-work.md#graph-stasis-consent) records the missing Postgres
 Consent-plus-Checkpoint restart receipt and the current single-approval boundary.
 
@@ -97,14 +97,14 @@ do not bind merely to restart:
 
 ```bash
 # Only when Codex or generated-unit intent changed:
-uv run lychd bind --dry-run
-uv run lychd bind
+uv run --extra postgres-binary lychd bind --dry-run
+uv run --extra postgres-binary lychd bind
 
 systemctl --user restart lychd-vessel.service
-uv run lychd status
+uv run --extra postgres-binary lychd status
 systemctl --user show lychd-migrate.service \
   --property=Result --property=ExecMainStatus
-uv run lychd logs services --lines 200
+uv run --extra postgres-binary lychd logs services --lines 200
 ```
 
 The public `stop` verb cannot yet perform this restart: while the Vessel is active, arbitration

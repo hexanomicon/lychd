@@ -3,7 +3,7 @@ title: 10. Privilege
 icon: material/transfer-up
 ---
 
-# :material-transfer-up: 10. Privilege: The Signal Mechanism
+# :material-transfer-up: 10. Privilege
 
 !!! abstract "Context and Problem Statement"
     The LychD security model traps the Agent in an unprivileged, rootless container to contain the blast radius of any potential compromise. However, the machine requires the capability to perform infrastructure actions that exist outside the container's scope, such as starting and stopping generated user services for Coven swaps. Granting the container direct access to host sockets or the shell violates the principle of least privilege and provides a path for escape. A physical gap exists between the unprivileged reasoning engine and the host-authoritative user-service substrate that must be bridged without compromising the system's seal.

@@ -19,12 +19,16 @@
           securityLevel: "strict",
           theme: "base",
           themeVariables: {
-            background: "#0b0c10",
-            primaryColor: "#17171f",
-            primaryTextColor: "#e7e4ee",
-            primaryBorderColor: "#8c63ff",
-            lineColor: "#6f5aa8",
-            tertiaryColor: "#101117",
+            background: "#0e141a",
+            primaryColor: "#171d24",
+            primaryTextColor: "#e1f8ff",
+            primaryBorderColor: "#8be7ff",
+            lineColor: "#447b91",
+            secondaryColor: "#10281f",
+            secondaryBorderColor: "#39ff8a",
+            secondaryTextColor: "#d9ffe9",
+            tertiaryColor: "#251738",
+            tertiaryBorderColor: "#7c58bd",
             fontFamily: "ui-monospace, monospace"
           }
         });

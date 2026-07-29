@@ -3,7 +3,7 @@ title: 14. Workers
 icon: material/excavator
 ---
 
-# :material-excavator: 14. Workers: The Ghouls
+# :material-excavator: 14. Workers
 
 !!! abstract "Context and Problem Statement"
     The LychD Vessel is designed to be a high-performance, non-blocking interface. However, many tasks required of an autonomous daemon—waiting for long generative responses, performing recursive file operations, or executing complex verification rituals—are inherently slow and blocking. Running these tasks inside the primary web process presents a critical stability risk: a system crash wipes the volatile state, a container restart kills the active thought, and heavy CPU-bound operations can block the event loop, causing the application to fail health checks.

@@ -12,7 +12,7 @@ icon: material/pillar
 
 !!! info "Decision is not delivery"
     An accepted Covenant records current architectural law; it does not prove that the capability is
-    implemented or validated on a real host. [State of the Work](../state-of-the-work.md) owns the
+    implemented or validated on a real host. [State of Work](../state-of-the-work.md) owns the
     public delivery boundary. Source, focused tests, lockfiles, and maintained operator receipts own
     executable evidence. ADR pages do not carry copied status chips.
 

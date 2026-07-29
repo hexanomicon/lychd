@@ -3,7 +3,7 @@ title: 7. Snapshots
 icon: material/camera-timer
 ---
 
-# :material-camera-timer: 7. Snapshots: Atomic State Synchronization
+# :material-camera-timer: 7. Snapshots
 
 !!! abstract "Context and Problem Statement"
     The LychD system possesses the capability for self-directed evolution—altering its own source code and persistent memory simultaneously. This dual evolution introduces a critical synchronization risk: if the logic of the machine (the code) is reverted to a previous version while the memory (the database) remains in a later state, the Daemon encounters schema mismatches and catastrophic logic failures upon awakening. A mechanism is required to ensure that every capture of the system's state represents a mathematically exact, synchronized union of both the logic and the data, preventing the "drift" between the body and the soul.
@@ -110,7 +110,7 @@ When a snapshot is restored, the system enforces a strict alignment check before
 
 A restore rewinds the Soul, but not the world that surrounded it. Leases, worker claims, and external effects survive the snapshot instant and must be reconciled before the Vessel accepts new work. The system therefore performs the **Rite of Reconciliation**—a deterministic post-restore sweep that runs after every restore, before the Vessel resumes labor:
 
-- **Sweep ghost leases:** Swarm leases and Thrall attachments held by workers that no longer exist are revoked. This reuses the ghost-lease sweep of the **[Orchestrator (23)](23-orchestrator.md)** and the Thrall reattachment against the Master Phylactery defined in **[Legion (42)](42-legion.md)**.
+- **Sweep ghost leases:** Swarm leases and Legionnaire attachments held by workers that no longer exist are revoked. This reuses the ghost-lease sweep of the **[Orchestrator (23)](23-orchestrator.md)** and the Legionnaire reattachment against the Master Phylactery defined in **[Legion (42)](42-legion.md)**.
 - **Abandon mid-flight runs:** A run that was in flight at snapshot time is marked `abandoned` unless its next checkpoint is a declared recovery boundary, in which case it may be replayed.
 - **Taint newer external commitments:** Any run whose trace shows an external commitment newer than the snapshot—an A2A message sent, a Toll payment, a file written to the Outlands, a host intent fired—is tainted, surfaced, and never silently replayed. External effects do not rewind; the doctrine only guarantees they are not compounded.
 - **Consecrate before replay:** Tainted work requires manual consecration before it may be replayed.

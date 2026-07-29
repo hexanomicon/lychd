@@ -1,36 +1,61 @@
-name: Build and Push LychD Image
+name: Release Candidate (No Publication)
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
+  candidate:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       contents: read
-      packages: write
+    env:
+      UV_CACHE_DIR: .cache/uv
+      RELEASE_REVISION: ${{ github.sha }}
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      RELEASE_ARTIFACT_DIR: dist
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Check out the immutable candidate source
+        uses: actions/checkout@v6
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Install Python and uv
+        uses: astral-sh/setup-uv@v8
         with:
-          images: ghcr.io/hexanomicon/lychd
+          version: "0.11.28"
+          python-version: "3.13"
+          enable-cache: true
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Install Node
+        uses: actions/setup-node@v6
         with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install pinned npm and Altar dependencies
+        run: |
+          npm install --global npm@11.16.0
+          npm ci --prefix frontend
+
+      - name: Build and audit the candidate
+        run: make release-candidate
+
+      - name: Retain private candidate archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: lychd-${{ github.sha }}
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

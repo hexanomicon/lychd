@@ -3,7 +3,7 @@ title: 36. Vision
 icon: material/eye-settings-outline
 ---
 
-# :material-eye-settings-outline: 36. The Vision Prism
+# :material-eye-settings-outline: 36. Vision
 
 !!! abstract "Context and Problem Statement"
     Interpreting terminal output, structural diagrams, and graphical user interfaces depends on the ingestion and analysis of pixel data. Vision Language Models (VLMs) impose significant VRAM demands, creating a physical resource conflict with high-tier reasoning models on consumer-grade hardware. A static infrastructure model results in either systemic OOM failures or permanent "blindness." Additionally, visual services operate in a dual capacity: providing model-backed Animator capabilities and specialized tool capabilities. This duality necessitates an orchestration strategy that manages sight as a stateful, dynamically dispatched capability without destabilizing the machine’s primary cognitive loop.

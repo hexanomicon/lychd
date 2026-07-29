@@ -3,7 +3,7 @@ title: 17. Packaging
 icon: material/package-variant-closed
 ---
 
-# :material-package-variant-closed: 17. Packaging: The Synthetic Forge
+# :material-package-variant-closed: 17. Packaging
 
 !!! abstract "Context and Problem Statement"
     The capability for autonomous evolution creates a fundamental substrate dilemma. A Lich is a composite organism, its physical body formed by merging disparate manifests (Python, Node, System) and infrastructure intents (Systemd Quadlets) into a single, cohesive runtime. Standard imperative container build cycles suffer from "Substrate Drift"—where external repository shifts or re-tagged base images cause the same source code to produce different binary artifacts over time. In the agentic era, the substrate must also preserve enough inspectable source for the Smith to repair coupled organs instead of freezing a premature extension ABI. A mechanism is required to resolve dependency conflicts and forge a new body for the Daemon that is both mathematically deterministic and synchronized with the machine's physical state.
@@ -67,14 +67,23 @@ non-negotiable contract:
   wheel without a source checkout on `PYTHONPATH`. Framework-native `serve` and `database`
   commands are not public roots.
 - A release gate builds the wheel, creates a clean environment, installs that wheel alone, checks
-  its dependency metadata, imports the runtime composition root, and invokes the CLI help surface.
-  It also verifies that the project license and required third-party source notices survive into
-  every distributed artifact. Passing inside the developer's already-synchronized `.venv` is not
-  evidence of installability.
+  its dependency metadata, imports the runtime composition root, and invokes the public and
+  internal process help surfaces. It verifies exact package-version parity, the immutable source
+  revision embedded in the Altar, byte-identical project and dependency notices, source archive
+  completeness, and SHA-256 receipts. Passing inside the developer's already-synchronized
+  `.venv` is not evidence of installability.
+- Candidate construction begins from a clean checkout at one full Git object ID. It may rewrite
+  only the generated `src/lychd/public/` tree while compiling the exact-source Altar.
+- Version preparation changes reviewed files only. It does not commit, tag, publish, or push.
+- The repository's candidate workflow has read-only repository permission and retains wheel and
+  source archives as short-lived workflow artifacts. It has no PyPI or container-registry
+  publication authority.
 
-This wheel-clean-install gate is implemented foundation law. Multi-manifest extension synthesis,
-the signed Synthesis Manifest, the Nix strategy, and autonomous Forge/Rebirth remain staged work;
-they may build on the wheel contract but may not weaken it.
+The source and archive gates are implemented foundation law, but they are not a public-release
+receipt. State remains Designed until a committed candidate passes the hosted workflow and a
+separately approved public artifact pair is validated. Multi-manifest extension synthesis, the
+signed Synthesis Manifest, the Nix strategy, and autonomous Forge/Rebirth remain staged work; they
+may build on the archive contract but may not weaken it.
 
 !!! warning "Forge doctrine beyond the foundation"
     The sections below define the intended synthetic Forge. Today the repository has a checked-in,
@@ -115,6 +124,12 @@ foundation build does not claim to render the Containerfile dynamically.
 2. **Builder Stage:** Mounts the `uv` binary and cache to perform a frozen sync of the synthesized manifests.
 3. **Runner Stage:** A hardened, non-root environment based on `python-slim`.
 4. **The Seal:** The `/app` directory is stripped of write permissions. `PYTHONDONTWRITEBYTECODE=1` is set to ensure the source remains readable for Agentic introspection.
+
+The checked-in foundation avoids the `psycopg-binary` distribution and its bundled native-library
+set. It uses pure-Python `psycopg` with Debian `libpq5`, preserves Debian package copyright records,
+and generates a fail-closed inventory of the Python distributions installed in the Vessel. This
+narrows the redistributable surface; it does not promote the current Containerfile to a published
+or fully attested image.
 
 #### The Sovereign Path (The Nix Sigil)
 

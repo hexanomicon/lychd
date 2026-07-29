@@ -13,7 +13,7 @@ This file is the stable entry node. Load only the next probe needed by the task;
 - Current delivery boundary: [docs/state-of-the-work.md](docs/state-of-the-work.md), loaded when a
   claim depends on what is Available, requires Operator validation, is Partial, remains Designed,
   is Experimental, or belongs to an External project.
-- Terminology: [docs/lexicon.md](docs/lexicon.md), loaded when vocabulary or lore/code naming boundaries matter.
+- Terminology: [docs/lexicon/index.md](docs/lexicon/index.md), loaded when vocabulary or lore/code naming boundaries matter.
 - Lore/identity: [docs/sepulcher/lich/index.md](docs/sepulcher/lich/index.md), loaded only for voice-sensitive docs or doctrine work.
 - The Great Work: [docs/divination/transcendence/index.md](docs/divination/transcendence/index.md),
   loaded for mythic doctrine, source correspondence, formation, consciousness, eschatology, or
@@ -45,7 +45,7 @@ and the leaf documentation/source owns the actual behavior.
   into a large documentation tree or local reference shelf.
 - Load one cheapest useful edge at a time. Add another scope only when the task genuinely crosses
   domains.
-- A scope routes context; it never overrides an ADR, State of the Work, tracked source, tests,
+- A scope routes context; it never overrides an ADR, State of Work, tracked source, tests,
   lockfiles, or maintained receipts.
 - If a routed path is missing or stale, do not guess. Use the next authoritative probe and repair
   the routing only when that maintenance is within the task.
@@ -60,7 +60,7 @@ Then follow the cheapest useful edge:
    [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) and follow its smallest
    canonical path. Do not infer delivery from the Logos.
 5. For documentation work, use [docs/index.md](docs/index.md) as the published parent map,
-   [docs/lexicon.md](docs/lexicon.md) for terms, and directory `index.md` files before child pages.
+   [docs/lexicon/index.md](docs/lexicon/index.md) for terms, and directory `index.md` files before child pages.
    Route application architecture and unselected possibilities through
    [docs/compositions/index.md](docs/compositions/index.md); use the page's declared maturity
    rather than its directory as the acceptance boundary.
@@ -78,7 +78,7 @@ Then follow the cheapest useful edge:
   vocabulary, and boundaries in the right layer, then derive domain language and implementation
   from it. Myth is constitutional telos, not disposable styling; it may never impersonate delivery
   evidence. Lore belongs in docs/docstrings; engineering belongs in code/logs.
-- **Delivery Ownership**: [State of the Work](docs/state-of-the-work.md) owns public delivery
+- **Delivery Ownership**: [State of Work](docs/state-of-the-work.md) owns public delivery
   boundaries. ADRs own decisions; topic pages own operation; source, focused tests, lockfiles, and
   maintained receipts own executable evidence.
 - **Documentation Topology**: For docs changes, follow [ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology) and the documentation convention in [CONTRIBUTING.md](CONTRIBUTING.md#implementation-conventions). Keep AGENTS.md as an entrypoint, not the full doctrine.

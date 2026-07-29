@@ -89,6 +89,12 @@
   {@render children()}
 </main>
 
+<footer class="legal-links">
+  <span>Altar {__LYCHD_ALTAR_VERSION__.slice(0, 12)}</span>
+  <a href={__LYCHD_SOURCE_URL__} rel="noreferrer">{__LYCHD_SOURCE_LABEL__}</a>
+  <a href="/THIRD_PARTY_NOTICES.txt">Third-party notices</a>
+</footer>
+
 <div class="omen-stack" role="status" aria-live="polite">
   {#each omens as omen (omen.id)}
     <div class="omen" data-state={omen.fault ? "fault" : "info"}>

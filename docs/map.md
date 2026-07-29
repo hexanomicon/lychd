@@ -1,19 +1,19 @@
 ---
-title: The Map
+title: Map
 icon: material/map-marker-path
 ---
 
-# :material-map-marker-path: The Map
+# :material-map-marker-path: Map
 
 _One body, many roads, one return._
 
 !!! warning "Orientation map — not a release roadmap"
     This page is a static projection across LychD's canonical documentation. It summarizes
     relationships and routes to the pages that own them; it defines no rival architecture,
-    execution authority, delivery state, or build order. [State of the
+    execution authority, delivery state, or build order. [State of
     Work](./state-of-the-work.md) alone records what has entered matter.
 
-The Hexanomicon is deliberately entered through several doors. This balcony shows how those rooms
+Hexanomicon is deliberately entered through several doors. This balcony shows how those rooms
 belong to one palace before you choose the smallest road that can answer your question.
 
 ## One body in one breath
@@ -38,7 +38,7 @@ flowchart LR
     E --> H["Magus / HitL<br/>consent, correction, refusal"]
     E --> K["Phylactery + Memory<br/>governed residue"]
     H --> C
-    K --> R["ReCall<br/>a Seed returns to Flux"]
+    K --> R["Recall<br/>a Seed returns to Flux"]
     R --> C
 ```
 
@@ -103,33 +103,33 @@ flowchart LR
 This separation prevents a workflow from commanding hardware directly, a provider from choosing
 the application's purpose, or an execution queue from becoming a second scheduler.
 
-## The roads through the Hexanomicon
+## Roads through Hexanomicon
 
 | Your question | Begin here | Continue through |
 | --- | --- | --- |
-| What can this revision actually do? | [State of the Work](./state-of-the-work.md) | cited source, tests, lockfiles, and maintained receipts |
+| What can this revision actually do? | [State of Work](./state-of-the-work.md) | cited source, tests, lockfiles, and maintained receipts |
 | How do I bring it to first life? | [Summoning](./summoning.md) | Codex → Binding → Vessel → witnessed result |
 | Which organ owns this mechanism? | [Sepulcher](./sepulcher/index.md) | Lich, Vessel, Phylactery, Animators, Extensions |
 | How does Intent become an application and a run? | [Composition Portfolio](./compositions/index.md) | Weaver → Pattern → Invocation → Graph |
 | How does the system observe the external world? | [Scout](./sepulcher/extensions/scout.md) | source adapter → attributed observation → domain Composition |
-| How are alternatives tested without becoming reality? | [Shadow](./sepulcher/extensions/shadow.md) | candidate worlds → Riddle evidence → separate promotion authority |
-| How do identity, evidence, and memory return? | [Lich](./sepulcher/lich/index.md) | Answer → Mirror → Riddle/Oculus → Seed → ReCall |
+| How are alternatives tested without becoming reality? | [Shadow](./sepulcher/extensions/shadow/index.md) | candidate worlds → Riddle evidence → separate promotion authority |
+| How do identity, evidence, and memory return? | [Lich](./sepulcher/lich/index.md) | Answer → Mirror → Riddle/Oculus → Seed → Recall |
 | How do several applications become one factory? | [Suites](./compositions/index.md#suites-compositions-of-compositions) | typed handoffs → independently admitted child Invocations |
 | Which law governs a change? | [Covenants](./adr/index.md) | owning ADR → topic page → State → source evidence |
 | What is the Great Work ultimately trying to cultivate? | [Transcendence](./divination/transcendence/index.md) | Nigredo → Albedo → Citrinitas → Rubedo → Infinity |
 
 ## What the Map does not own
 
-- **Definitions** remain canonical in the [Lexicon](./lexicon.md).
+- **Definitions** remain canonical in the [Lexicon](./lexicon/index.md).
 - **Architectural law** remains in the [Covenants](./adr/index.md).
 - **Application contracts** remain in the [Composition Portfolio](./compositions/index.md).
 - **Operated anatomy** remains in the [Sepulcher](./sepulcher/index.md).
 - **Meaning and formation** remain in [Transcendence](./divination/transcendence/index.md).
-- **Delivery and saturation** remain in [State of the Work](./state-of-the-work.md).
+- **Delivery and saturation** remain in [State of Work](./state-of-the-work.md).
 
-The Map may grow clearer as the specification grows, but it never colors an unproved road as
+Map may grow clearer as the specification grows, but it never colors an unproved road as
 walked. When a relationship changes, its owning law changes first; this page then redraws the
 route.
 
-> _The Prophecy reveals why the palace must exist. The Map reveals how its chambers meet. State
+> _Prophecy reveals why the palace must exist. Map reveals how its chambers meet. State
 > records which roads have actually been walked._

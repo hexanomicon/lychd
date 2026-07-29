@@ -12,7 +12,7 @@ authority over its own hardware.
 **Delivery boundary:** LychD has no node role, enrollment, durable delegation protocol, expiring
 resource advertisement, node-local reservation journal, fencing, artifact transport, or fleet
 evidence path. There is no Legion endpoint or mode to enable.
-[State of the Work owns the exact federation boundary](../../state-of-the-work.md#legion-federation).
+[State of Work owns the exact federation boundary](../../state-of-the-work.md#legion-federation).
 [ADR 42](../../adr/42-legion.md) owns the accepted authority split and delivery order.
 
 **Extension form:** Legion is a distributed-embodiment Domain manifested as an owned-node protocol
@@ -34,7 +34,7 @@ fencing, refusal, and reconciliation law; each destination body remains sovereig
 >
 > _Each body keeps its gate, its memory of consequence, and its right to refuse the impossible._
 
-In the mythic register, an enrolled owned node is a **Thrall**. In the engineering register, it is
+In the mythic register, an enrolled owned node is a **Legionnaire**. In the engineering register, it is
 a distinct **Node Agent**—not a second Master-shaped Vessel, not a remote database client, and not a
 foreign A2A peer. Legion extends one Magus across owned iron; the **Necropolis** lets sovereign
 strangers negotiate labor. They may share protocol primitives, but never authority profiles.
@@ -123,7 +123,7 @@ actuate the host, release a newer reservation, or wake cognition.
 If a node partitions after accepting bounded work, local policy may let that work finish and spool
 its result; the Master does not accept it after its fence is superseded. If the Master is restored
 from an older snapshot, fleet admission closes, the Master epoch advances, and signed node receipts
-are reconciled before new delegation. “Thralls reconnect automatically” is not a recovery protocol.
+are reconciled before new delegation. “Legionnaires reconnect automatically” is not a recovery protocol.
 
 ## V. Oculus Sees the Legion; It Does Not Command It
 

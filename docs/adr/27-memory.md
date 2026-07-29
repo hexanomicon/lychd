@@ -3,7 +3,7 @@ title: 27. Memory
 icon: material/brain
 ---
 
-# :material-brain: 27. Memory: The Archive
+# :material-brain: 27. Memory
 
 !!! abstract "Context and Problem Statement"
     Reasoning within a sovereign system is physically restricted by the volatile context window of active model requests, preventing the accumulation of historical experience or the refinement of behavioral instinct. Reliance on fragmented, retrieval-less reasoning creates a "Cognitive Ceiling" where the machine fails to maintain systemic coherence over long-term strategic tasks. Furthermore, the adoption of external vector database solutions introduces architectural disjunction and the risk of "Logic Sync Drift," where relational metadata and high-dimensional states fall out of alignment during system restores or snapshots. A unified memory strategy is necessary to provide high-fidelity recall and self-directed evolution while maintaining a sovereign, single-node infrastructure.
@@ -97,7 +97,7 @@ and worker outcomes.
 Retention does not itself perform remembering. A retained, attributable record with future recall
 value is a candidate **Seed** (**Bīja**): conditioning that still has the power to shape a later
 Flux. Retrieval finds a candidate and **[Context](21-context.md)** makes the selected form
-available; **the Spirit completes ReCall** (**Smṛti**) only when that form becomes active in
+available; **the Spirit completes Recall** (**Smṛti**) only when that form becomes active in
 present cognition again. Over time, stored Karma reveals semantic relationships and repeated
 return deepens conditioning (**Saṃskāra**). **[Mirror](32-identity.md)** reflects those
 relationships into identities.
@@ -183,16 +183,16 @@ This attribution is mandatory for downstream isolation and pruning.
 Memory is not a static log; it is a sedimentation process:
 
 - **Retention:** Structured events may be retained as candidate **Seeds** when they carry future
-  recall value; a stored record is not yet the active ReCall.
+  recall value; a stored record is not yet active Recall.
 - **Stored Past:** Verified, corrected, or consecrated outcomes become **Karma**: the past available for future reasoning rather than a raw event stream.
 - **Prior Shift:** Retrieval may select relevant Karma and Context may make it available to a
-  subsequent reasoning ritual; the Spirit ReCalls when that retained form begins shaping present
+  subsequent reasoning ritual; the Spirit recalls when that retained form begins shaping present
   Flux.
 - **Identity Reflection:** **[Mirror](32-identity.md)** reflects semantic relationships among
   memory records into identities, while **[Context](21-context.md)** carries only the records and
   bindings authorized for the active Invocation.
 
-### 5.1 Memory Layering (Sediment, Not Dump)
+### 5.1 Memory Layering (Sediment, Not Dump) {#memory-layering-sediment-not-dump}
 
 The Archive is managed as a layered substrate:
 

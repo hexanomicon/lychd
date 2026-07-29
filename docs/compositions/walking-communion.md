@@ -8,7 +8,7 @@ icon: material/account-voice
 !!! warning "Reference design — not a working mobile interface"
     Walking Communion is an accepted Composition study. Current LychD has no Android client,
     remote caller authentication, Tether, audio WebSocket, working STT/TTS adapters, or playable
-    artifact custody. [State of the Work](../state-of-the-work.md) owns that boundary.
+    artifact custody. [State of Work](../state-of-the-work.md) owns that boundary.
 
 **Walking Communion** gives the Magus a deliberate voice path into the Lich while away from the
 Altar. A thin Kotlin Android client—the **Mobile Emissary**—carries a bounded utterance through a
