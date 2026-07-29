@@ -3,7 +3,7 @@ title: 0. License
 icon: material/link-variant
 ---
 
-# :material-link-variant: 0. The Iron Pact: MPL 2.0 and Implicit DCA
+# :material-link-variant: 0. License
 
 !!! abstract "Context and Problem Statement"
     The choice of a software license defines the **Soul** of the project. It is a declaration of intent—a pact defining the relationship between the creator, the community, and the forces that would seek to chain the work.
@@ -72,7 +72,11 @@ This Covenant is absolute and eternal.
 
 - **Private relicensing is explicitly rejected.** LychD is not a commodity for sale. There is no CLA and no side grant that lets a central owner sell proprietary terms to the core.
 - **Plain MPL compatibility is preserved.** LychD currently uses plain MPL-2.0 and does not attach the Exhibit B "Incompatible With Secondary Licenses" notice. Eligible Larger Works may therefore use the MPL-2.0 Secondary License path under the license's own terms. That compatibility is not a private dual-license sales path.
-- **Implicit DCA:** The corporate rights-grab is rejected. By submitting a contribution, a contributor certifies the right to submit it under MPL-2.0 and agrees that it is licensed under MPL-2.0. Manual git sign-off is not required by project policy. Combined with MPL 2.0, this makes LychD a sanctuary for builders to protect both open-source contributions and proprietary extensions.
+- **Inbound equals outbound:** The corporate rights-grab is rejected. Contributions are accepted
+  under the same MPL-2.0 terms under which LychD distributes them. There is no CLA, private
+  relicensing grant, or claim that an unaudited “implicit DCA” substitutes for the standard DCO.
+  A future DCO policy would require the exact certification, contributor instructions, and
+  enforcement in one reviewed change.
 
 ## The Boundary of the Pact: Soul vs. Mind
 

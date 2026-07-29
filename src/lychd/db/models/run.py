@@ -23,7 +23,7 @@ class Run(UUIDAuditBase):
     pattern_manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     source: Mapped[str] = mapped_column(String(20))  # bridge|cli|api|rite
     status: Mapped[str] = mapped_column(String(20), default="queued", server_default=text("'queued'"), index=True)
-    #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|done|failed|cancelled
+    #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|awaiting_delegate|done|failed|cancelled
     priority: Mapped[int] = mapped_column(default=50, server_default=text("50"))
     sigil_name: Mapped[str] = mapped_column(String(100))
     intent: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)  # serialized Intent

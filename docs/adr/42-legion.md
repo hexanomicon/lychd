@@ -3,7 +3,7 @@ title: 42. Legion
 icon: material/sitemap
 ---
 
-# :material-sitemap: 42. The Legion: Sovereign Expansion
+# :material-sitemap: 42. Legion
 
 !!! abstract "Context and Problem Statement"
     LychD begins as one source-sovereign host, but an operator may own other machines,
@@ -69,7 +69,7 @@ icon: material/sitemap
 ## Decision Outcome
 
 **Legion is adopted as a distributed-embodiment Domain manifested through a bounded owned-node
-protocol and deployment profile.** An enrolled body is a **Thrall** in the mythic register and a
+protocol and deployment profile.** An enrolled body is a **Legionnaire** in the mythic register and a
 **Node Agent** in engineering. It is not a second Master-shaped Vessel, a remote database client,
 a universal shell, or a foreign A2A peer.
 
@@ -157,7 +157,7 @@ publish, and corruption quarantine.
 
 This ADR accepts architecture, not a deployed fleet. LychD currently has no node role, enrollment,
 durable delegation protocol, expiring advertisement, node journal, fencing, artifact transport,
-or fleet evidence path. **[State of the Work](../state-of-the-work.md#legion-federation)** owns
+or fleet evidence path. **[State of Work](../state-of-the-work.md#legion-federation)** owns
 that boundary; the **[Legion page](../sepulcher/extensions/legion.md)** owns its user-facing
 doctrine.
 

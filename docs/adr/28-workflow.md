@@ -3,7 +3,7 @@ title: 28. Workflow
 icon: material/tournament
 ---
 
-# :material-tournament: 28. Workflow: The Weaver
+# :material-tournament: 28. Workflow
 
 !!! abstract "Context and Problem Statement"
     Cognitive labor involving multiple asynchronous **[Workers (ADR 14)](./14-workers.md)** and specialized **[Agents (ADR 20)](./20-agents.md)** often devolves into execution chaos without a centralized executive function to govern tempo and sequence. While the machine possesses the raw topology of the **[Graph (ADR 24)](./24-graph.md)**, tactical movement between synapses remains uncoordinated, leading to fragmentation and logic drift. A mechanism is necessary to translate authenticated operator and application intent into synchronized, verifiable, stateful workflow and semantic capability demand while respecting the physical constraints of the iron.
@@ -194,7 +194,7 @@ compensation, and truthful partial completion. Until then, cross-Composition han
 artifact-backed admissions and Loom may project the graph without executing it.
 
 The Call/Manas may open and route an Intent into one or more attributable charcoal Suite drafts
-through bounded Agent, Graph, ReCall, or Shadow work. It is an office distributed across those
+through bounded Agent, Graph, Recall, or Shadow work. It is an office distributed across those
 mechanisms, not a planner service and not promotion authority. The Blade and declared evaluators
 discriminate among candidates; schema validation, policy, and the Magus govern publication; only
 Weaver admits the resulting exact Pattern Invocations.

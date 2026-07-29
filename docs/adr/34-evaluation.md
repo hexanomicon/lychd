@@ -3,7 +3,7 @@ title: 34. Evaluation
 icon: material/chart-bell-curve-cumulative
 ---
 
-# :material-chart-bell-curve-cumulative: 34. Evaluation: The Riddle
+# :material-chart-bell-curve-cumulative: 34. Evaluation
 
 !!! abstract "Context and Problem Statement"
     LychD operates as a host to a shifting federation of Animators: local Soulstones, remote Portals, and peer services that expose typed capabilities. For model-backed Animators, those capabilities include frontier intelligence and local reasoning at many scales. To maintain the **[Toll (41)](./41-x402.md)** and the **[Orchestrator (23)](23-orchestrator.md)**, the system requires a mechanism to determine the specific "Mettle" of these spirits. Standard industry benchmarks are insufficient; they fail to account for the machine’s local toolsets, the Magus's specific technical dialect, or the behavioral resilience required to protect the **[Sovereignty Wall (09)](09-security.md)**. A trial is required: a standardized, adversarial ritual designed to measure cognitive integrity, economic efficiency, and functional fit.

@@ -9,7 +9,7 @@ icon: material/scale-balance
     Health, Food & Movement is an accepted Composition study. It does not prove that its Patterns,
     schedules, migrations, safety gates, models, mobile interface, or source integrations exist.
     It provides wellness planning and private reflection—not diagnosis, treatment, rehabilitation,
-    medication guidance, emergency assessment, or clinical monitoring. [State of the
+    medication guidance, emergency assessment, or clinical monitoring. [State of
     Work](../state-of-the-work.md) remains the delivery authority.
 
 **Health, Food & Movement** is a local-first companion for one adult operator who wants to turn

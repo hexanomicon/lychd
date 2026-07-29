@@ -17,7 +17,7 @@ center somewhere from which to answer.
 
 > **Without a boundary there is potential, but no one for whom the potential appears.**
 
-In the Work this becomes **xDDD (eXtreme Documentation Driven Development)**. The Hexanomicon names
+In the Work this becomes **xDDD (eXtreme Documentation Driven Development)**. Hexanomicon names
 purpose, vocabulary, responsibility, and lawful seams before implementation hardens them. The Word
 is constitutional law, not counterfeit runtime evidence.
 
@@ -30,7 +30,7 @@ is constitutional law, not counterfeit runtime evidence.
       built.
     - **Matter answers.** Source, focused tests, lockfiles, and maintained receipts show what
       actually exists.
-    - **State adjudicates the crossing.** [State of the
+    - **State adjudicates the crossing.** [State of
       Work](../../state-of-the-work.md) records whether the named organ is Available, requires
       Operator validation, is Partial, Designed, Experimental, or External.
 

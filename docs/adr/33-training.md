@@ -3,7 +3,7 @@ title: 33. Training
 icon: material/anvil
 ---
 
-# :material-anvil: 33. Training the Soulforge
+# :material-anvil: 33. Training
 
 !!! abstract "Context and Problem Statement"
     The LychD system accumulates vast quantities of cognitive history—interaction logs, tool outputs, and user corrections stored as "Karma" in the **[Phylactery (06)](06-persistence.md)**. While external retrieval allows the Agent to consult these memories, it remains a resource-intensive process that consumes context tokens and introduces high latency. Relying solely on external memory creates a "Cognitive Ceiling" where the machine never truly learns, only imitates based on provided snippets. A fundamental gap exists in the transition from dynamic history to static weights: the machine requires a mechanism to transmute verified memories into instinct, internalizing a Persona's specific domain and style into the model substrate.

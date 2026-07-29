@@ -31,7 +31,7 @@ hands background execution to [Ghouls](./ghouls.md). It is the running body thro
     3. **Coordinate execution:** Ghouls perform admitted background work while the Dispatcher,
        Orchestrator, Graph, and Phylactery retain their separate jurisdictions.
 
-    [Shadow](../extensions/shadow.md) remains a designed simulation office; it is not a fourth
+    [Shadow](../extensions/shadow/index.md) remains a designed simulation office; it is not a fourth
     delivered Vessel duty.
 
 !!! warning "A Conduit, Not the Source"

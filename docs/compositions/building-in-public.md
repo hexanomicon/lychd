@@ -8,7 +8,7 @@ icon: material/hammer-wrench
 !!! warning "Candidate Composition study — not accepted architecture"
     This page proposes how future LychD work can become articles and videos. Directory membership
     does not promote it into architectural law, promise a release sequence, or make any Reference
-    Composition available. Follow [State of the Work](../state-of-the-work.md) for the real
+    Composition available. Follow [State of Work](../state-of-the-work.md) for the real
     software boundary.
 
 The strongest Hexanomicon tutorial is not a polished reconstruction performed after the struggle.
@@ -68,7 +68,7 @@ Follow one multimodal Pattern through source acquisition, claim checking, script
 local model swaps, voice and image providers, artifact custody, reproducible rendering,
 multimodal review, final consent, and an idempotent publication receipt.
 
-### [Minecraft Agent Server](minecraft-agent-server.md)
+### [Blockworld Inhabitant](blockworld-inhabitant.md)
 
 Build a private server and one bounded bot from the container and Rune through typed observation
 and action tools, world snapshots, an `observe → plan → act → verify` Pattern, player consent,
@@ -111,6 +111,6 @@ faithful account of one bounded transition from word into matter.
 
 - Return to the [Composition Portfolio](index.md).
 - Review the accepted Reference Compositions in that Portfolio.
-- Read [State of the Work](../state-of-the-work.md) before presenting any current capability.
+- Read [State of Work](../state-of-the-work.md) before presenting any current capability.
 - Use the [contributor forge](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md) and the
   [Covenants](../adr/index.md) when a seed becomes selected work.

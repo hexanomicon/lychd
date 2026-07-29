@@ -3,7 +3,7 @@ title: 31. Simulation
 icon: material/source-branch
 ---
 
-# :material-source-branch: 31. Shadow Simulation and the Branch Reaper
+# :material-source-branch: 31. Simulation
 
 !!! abstract "Context and Problem Statement"
     One model call produces one typed result and cannot by itself establish which alternate action

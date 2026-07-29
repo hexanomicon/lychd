@@ -8,7 +8,7 @@ icon: material/hubspot
 > _“An organ may extend the body. It does not inherit the body's authority.”_
 
 The Federation is a jurisdiction map, not a list of working features.
-[State of the Work](../../state-of-the-work.md) is the sole current-delivery record; the Function
+[State of Work](../../state-of-the-work.md) is the sole current-delivery record; the Function
 column below names intended responsibility unless a current source-map note says otherwise.
 
 LychD proves extension law on its own body. The Core remains a narrow kernel for routing and
@@ -74,7 +74,7 @@ delivery, and absence of a package does not erase a Domain's accepted jurisdicti
 | **[The Toll](./toll.md)** | **Economics** | Governed middleware plus optional settlement adapters | Binds quote, authorization, settlement, delivery, and reconciliation. | **[41](../../adr/41-x402.md)** |
 | **[The Prism](./prism.md)** | **Vision** | Visual lifecycle with independent Animator providers | Grounds visual observations and transformations to exact source regions and times. | **[36](../../adr/36-vision.md)** |
 | **[The Echo](./echo.md)** | **Audio** | Speech-session lifecycle with independent Animator providers | Preserves temporal and causal speech semantics across capture, transcription, and synthesis. | **[37](../../adr/37-audio.md)** |
-| **[The Shadow](./shadow.md)** | **Simulation** | Possibility-lineage office invoked by Weaver; Tomb executes unsafe payloads | Holds incompatible candidate worlds without letting one appoint itself reality. | **[31](../../adr/31-simulation.md)** |
+| **[Shadow](./shadow/index.md)** | **Simulation** | Possibility-lineage office invoked by Weaver; Tomb executes unsafe payloads | Holds incompatible candidate worlds without letting one appoint itself reality. | **[31](../../adr/31-simulation.md)** |
 | **[The Mirror](./mirror.md)** | **Identity** | Core-coupled identity binding with Persona/Posture contributions | Attributes acts to a versioned operative identity without minting caller authority. | **[32](../../adr/32-identity.md)** |
 | **[The Legion](./legion.md)** | **Distributed embodiment** | Owned-node protocol/profile with node-local providers | Fences delegated work across bodies while each body retains authority over its iron. | **[42](../../adr/42-legion.md)** |
 

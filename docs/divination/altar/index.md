@@ -9,7 +9,7 @@ The **Altar** is LychD's local web surface. Its accepted architecture is a stati
 client projecting generated Litestar API and semantic event truth. Litestar serves its compiled
 fallback and remains the sole production authority. Its conversational instrument is the
 **[Bridge](./bridge.md)**. The Altar names four focused instruments, but a visible door is not
-proof that the instrument behind it is complete. [State of the
+proof that the instrument behind it is complete. [State of
 Work](../../state-of-the-work.md#altar-and-observability) owns what can answer now.
 
 !!! danger "Temporary local-browser boundary"
@@ -35,8 +35,8 @@ The intended operator loop is:
 - **Bridge** speaks: Intent, conversation, consent, and result return.
 - **[Orb](./orb.md)** witnesses execution: first one selected Run, then a bounded multi-run field
   only after its evidence model earns that scale. **Scrying** is the act of using the Orb.
-- **[Nexus](./nexus.md)** explains the iron: Animators, capabilities, readiness, leases, queues,
-  and explicit physical transitions.
+- **[Nexus](./nexus.md)** explains the iron: observed Animators, capabilities, readiness, and
+  explicit physical transitions. Broader lease and queue pressure remains future work.
 - **[Loom](./loom.md)** maps possibility: exact Weaver Pattern revisions today, and later
   Portfolio navigation and inert drafts.
 
@@ -79,6 +79,7 @@ All four instruments have useful but bounded implementations:
   semantic score with checkpoint schema and digest; Mermaid remains an optional diagram lens. It
   is a viewer, not a general Weaver editor or workflow-mutation surface. [Current Loom
   boundary](../../state-of-the-work.md#loom-workflow-views)
+
 Artifact custody, retention, retrieval, and broad configuration editing remain outside the current
 Altar. Contextual references and declarations do not claim those futures are delivered.
 

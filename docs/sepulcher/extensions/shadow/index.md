@@ -7,8 +7,8 @@ icon: material/brightness-6
 
 _Status: doctrine ahead of code — the selectable `simulation` package contributes only a Rune
 schema; the Shadow Composition and execution contract do not ship. Law:
-[ADR 31](../../adr/31-simulation.md). Current truth:
-[source map](./index.md#the-federation-of-fifteen)._
+[ADR 31](../../../adr/31-simulation.md). Current truth:
+[source map](../index.md#the-federation-of-fifteen)._
 
 **Extension form:** Shadow is the possibility-lineage Domain invoked from Weaver Patterns. Graph
 supplies fan-out, the Tomb executes unsafe payloads, Riddle evaluates, and promotion remains
@@ -21,18 +21,18 @@ The Shadow Realm names two related things:
 
 1. The Domain contract for speculative, non-authoritative branch lineages.
 2. A planned Composition that may use the
-   **[Tomb](../../adr/14-workers.md#2-the-doctrine-brain-in-the-vessel-hands-in-the-tomb)**
+   **[Tomb](../../../adr/14-workers.md#2-the-doctrine-brain-in-the-vessel-hands-in-the-tomb-target-topology)**
    execution substrate when a branch contains unsafe work.
 
 **The Shadow** is the Deliberative Extension Domain of the system, governed by
-**[ADR 31 (Simulation)](../../adr/31-simulation.md)**. It creates room for explicit alternatives,
+**[ADR 31 (Simulation)](../../../adr/31-simulation.md)**. It creates room for explicit alternatives,
 measurement, and rejection. It does not prove a psychological “System 2,” require MCTS, or grant
 the model a hidden faculty of doubt.
 
 Shadow is also the present simulation-field of an active branch. To the Agent acting inside it, the branch is the current world: context, files, tools, traces, and feedback are all immediate. To the Sepulcher as a whole, that same world is still Vikalpa until measured and promoted. This distinction keeps the system honest: every experience inside Shadow may be operationally real while remaining ontologically untrusted.
 
 !!! abstract "The Crucible of Albedo"
-    In the alchemical map of [Transcendence](../../divination/transcendence/index.md), the Shadow Realm is the crucible of **Albedo** (Whitening).
+    In the alchemical map of [Transcendence](../../../divination/transcendence/index.md), the Shadow Realm is the crucible of **Albedo** (Whitening).
 
     Raw model output is *Nigredo*—mixed, chaotic, often hallucinatory. The Shadow Realm is where these timelines are generated safely, so the Magus can perform Whitening: reject noise, keep truth.
 
@@ -40,9 +40,9 @@ Shadow is also the present simulation-field of an active branch. To the Agent ac
 
 The process is a dance between intent, simulation, and judgment:
 
-1. **Intent:** The Magus submits an invocation at the **[Altar](../../divination/altar/)**.
+1. **Intent:** The Magus submits an invocation at the **[Altar](../../../divination/altar/)**.
 2. **Dispatch:** A Weaver Pattern establishes the branch lineage. Unsafe effects alone are routed
-   through the **[Vessel](../vessel/index.md)** into **The Tomb**.
+   through the **[Vessel](../../vessel/index.md)** into **The Tomb**.
 3. **Dreaming:** Graph fan-out and the selected search strategy produce candidates; Tomb executors
    run only serialized unsafe payloads in isolated workspaces.
 4. **Vision:** Candidate futures are returned as artifacts for review.
@@ -57,87 +57,46 @@ Typical outcomes:
 - Timeline B: fast but structurally wrong.
 - Timeline C: verified and promotable.
 
-### The Dancer posture and the Hunter posture
+### Dancer and Hunter
 
-Shadow gives two internal roles simple public terms: **the Dancer posture** and **the Hunter
-posture**. They are complementary Postures within a governed simulation Pattern, not Personas,
-product marks, independent authorities, or claims about hidden faculties inside a model.
+Shadow has two complementary named offices:
 
-**The Dancer posture** opens the possibility space. It is divergent, energetic, and
-improvisational: it follows promising motion, combines distant ideas, changes rhythm when a branch
-reveals an unexpected affordance, and produces alternatives that a rigid decomposition might
-never ask for. It works under broad providence—high-level purpose, containment, budget, and stop
-conditions—rather than a narrow prescribed route. Providence here means bounded room to explore,
-not supernatural guidance or ambient permission.
+- **[Dancer](./dancer.md)** opens the possibility space without ranking its own alternatives.
+- **[Hunter](./hunter.md)** hunts unsupported premises and boundary failures without inventing
+  replacement branches inside the review context.
 
-Its typed expansion output contains:
+They are separate Postures or Lenses in separate invocations, not two voices sharing one hidden
+chain of thought. Their join is a bounded review package containing candidate lineage,
+assumptions, challenges, evidence requests, and unresolved uncertainty. Weaver and Graph own the
+ordering, fan-out, joins, checkpoints, hard budgets, and termination.
 
-- `alternatives`;
-- the `assumptions` each alternative makes;
-- `required_state` each alternative presupposes; and
-- unresolved `unknowns`.
-
-The Dancer posture cannot score, rank, prune, or choose among its alternatives. It cannot certify
-them, promote them, or conceal their Vikalpa status.
-
-**The Hunter posture** is cold by function: deliberate, decomposition-first candidate analysis
-that attempts to falsify the attractive path. It hunts unsupported premises, bias, evidence
-corruption, overconfidence, missing counterexamples, boundary violations, and plausible
-explanations that outran observation.
-
-Its typed challenge output contains:
-
-- `challenges` tied to a named alternative or assumption;
-- `evidence_requests` that could resolve a challenge; and
-- `withhold_recommendations` for further Shadow spend on a named candidate.
-
-A withhold recommendation is only an input to the owning Pattern's decision about further
-simulation expenditure. The Hunter posture cannot withhold or redefine the original Intent,
-declare truth, determine identity, grant a capability, authorize promotion, or manufacture
-consent.
-
-Their collaboration is a yin-and-yang image of complementarity, not a claim that one role is pure
-creation and the other pure destruction. The Dancer posture supplies a wider candidate field; the
-Hunter posture stress-tests that field without sharing the same generation context. Their join is
-a review package—candidate lineage, explicit assumptions, challenges, evidence requests, and
-unresolved uncertainty. It remains Vikalpa and candidate analysis, not a completed account or a
-new class of evidence.
-
-Recurrence is never an ambient debate loop. Each expansion or challenge round is a separate,
-isolated invocation. The Weaver Pattern and Graph own ordering, fan-out, joins, checkpoints, and
-termination, with hard branch-count, round-count, token, and wall-time bounds declared before
-execution. Exhausting a bound yields a truthful incomplete result rather than another implicit
-round.
-
-Before this named separation can enter an active Shadow Pattern, Riddle must compare it with a
-neutral baseline under the same tasks and budgets. Acceptance requires measured improvement in
-useful candidate diversity or error discovery without an unacceptable increase in false
-withholds, overconfidence, cost, or latency. The names themselves are not evidence of benefit.
+Before this separation enters an active Shadow Pattern, Riddle must compare it with a neutral
+baseline under equal tasks and budgets. Names do not establish benefit.
 
 !!! warning "Designed doctrine, not delivered machinery"
-    The Dancer posture and the Hunter posture name a future Shadow Pattern separation. No active
-    runtime role, prompt, output schema, scheduler lane, frontend control, or autonomous
-    two-agent loop is delivered. The selectable `simulation` package still contributes only its
-    Rune schema, and the general Shadow Composition remains designed.
+    Dancer and Hunter describe a future Shadow Pattern separation. No active runtime role, prompt,
+    output schema, scheduler lane, frontend control, or autonomous two-agent loop is delivered.
+    The selectable `simulation` package still contributes only its Rune schema, and the general
+    Shadow Composition remains designed.
 
 ## II. The Simulation Engine (Phantasma)
 
-While a standard **[Agent](../../adr/20-agents.md)** call returns one typed result, a Shadow Pattern
+While a standard **[Agent](../../../adr/20-agents.md)** call returns one typed result, a Shadow Pattern
 may evaluate multiple candidates sequentially or in parallel. Branch count, search method, and
 physical workspace use are explicit policy choices.
 
 ### A. Expansion (Branching)
 
-- The extension uses **[Graph (ADR 24)](../../adr/24-graph.md)** primitives (broadcast/spread) as
+- The extension uses **[Graph (ADR 24)](../../../adr/24-graph.md)** primitives (broadcast/spread) as
   the engine of **the Call**, opening movements within **the Flux** to navigate the **Possibility
   Space**.
-- Each branch the Lich generates here is precisely **Vikalpa** — honest speculation: internally coherent, structurally plausible, and carrying no confirmed correspondence to reality. Vikalpa does not claim to be true. It exists to be judged. The Shadow Realm is the space where Vikalpa is held safely long enough for Viveka (the Dual-Gate) to determine which candidates have crossed into Pramāṇa and which are Viparyaya in disguise. See **[The Lich](../lich/index.md)** for the full cognitive taxonomy.
+- Each branch the Lich generates here is precisely **Vikalpa** — honest speculation: internally coherent, structurally plausible, and carrying no confirmed correspondence to reality. Vikalpa does not claim to be true. It exists to be judged. The Shadow Realm is the space where Vikalpa is held safely long enough for Viveka (the Dual-Gate) to determine which candidates have crossed into Pramāṇa and which are Viparyaya in disguise. See **[The Lich](../../lich/index.md)** for the full cognitive taxonomy.
 - For open-ended strategy work, Shadow may first run cheap, text-only idea branches through isolated operational lenses. These seed branches widen the pool without creating filesystem debris; only review-selected candidates become physical timelines.
 - A bounded policy may spawn $N$ branch timelines for complex intents.
 - Pure reasoning branches may remain typed graph state; only unsafe execution is physically
   performed in the `lychd-tomb` container.
 - Filesystem-changing branches may receive a Jujutsu workspace in the `shadow/` region of the
-  **[Lab (13)](../../adr/13-layout.md)**.
+  **[Lab (13)](../../../adr/13-layout.md)**.
 - Each unsafe job uses an isolated job-scoped directory and declares its artifacts.
 
 ### B. Judging the branch (evaluation)
@@ -146,12 +105,12 @@ Candidate reduction may use several independent gates:
 
 1. **Structural evidence:** Deterministic tests, linters, and outcome checks execute in the proper
    plane; the Tomb executes but does not judge.
-2. **Riddle claims:** **[Riddle](./riddle.md)** owns calibrated evaluation and comparative claims.
-3. **Mirror congruence:** **[Mirror](./mirror.md)** may score identity fit when the Pattern asks for
+2. **Riddle claims:** **[Riddle](../riddle.md)** owns calibrated evaluation and comparative claims.
+3. **Mirror congruence:** **[Mirror](../mirror.md)** may score identity fit when the Pattern asks for
    it; congruence is neither correctness nor authority.
 
 These gates reduce the candidate space. Live
-**[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)** or an eligible, explicit preauthorization
+**[Sovereign Consent (ADR 25)](../../../adr/25-hitl.md)** or an eligible, explicit preauthorization
 permits the owning promotion boundary to make the final decision.
 
 ### C. Pruning
@@ -166,11 +125,11 @@ permits the owning promotion boundary to make the final decision.
 
 When a branch reaches a verified state:
 
-1. The Magus reviews the Vision via **[Sovereign Consent (ADR 25)](../../adr/25-hitl.md)**.
+1. The Magus reviews the Vision via **[Sovereign Consent (ADR 25)](../../../adr/25-hitl.md)**.
 2. One timeline is selected.
 3. An authorized promotion owner applies the selected effect using the ordinary Snapshot,
    verification, and rollback law. Shadow supplies the candidate; it does not merge it.
-4. The **[Phylactery](../phylactery/index.md)** records the decision and evidence. Eligibility for
+4. The **[Phylactery](../../phylactery/index.md)** records the decision and evidence. Eligibility for
    Karma is a separate Memory policy decision, not an automatic reward for being selected.
 
 The machine simulates candidate value; the Magus defines promotable value.
@@ -193,22 +152,22 @@ a brainless executor.** It does not run agent logic, graph state machines, or LL
 It receives serialized script payloads (Python code, CLI commands) via the SAQ queue, executes them
 in the `nono` sandbox, and returns untrusted `stdout`/`stderr` plus declared artifacts. Safe
 planning, graph control, policy checks, and review packaging remain in the
-**[Vessel](../vessel/index.md)**; only unsafe hand-work enters Tomb.
+**[Vessel](../../vessel/index.md)**; only unsafe hand-work enters Tomb.
 
-If code executing in the Tomb needs LLM reasoning, it routes back through the Vessel via the "Ask the Brain" protocol defined in **[Security (09)](../../adr/09-security.md)**. The Tomb never holds LLM credentials or communicates directly with providers.
+If code executing in the Tomb needs LLM reasoning, it routes back through the Vessel via the "Ask the Brain" protocol defined in **[Security (09)](../../../adr/09-security.md)**. The Tomb never holds LLM credentials or communicates directly with providers.
 
-This section describes the concrete implementation boundary of the Shadow Realm concept. The full doctrine is defined in **[Workers (14)](../../adr/14-workers.md)**.
+This section describes the concrete implementation boundary of the Shadow Realm concept. The full doctrine is defined in **[Workers (14)](../../../adr/14-workers.md)**.
 
 ## V. Orchestration and Cost
 
 Shadow is one of the highest-cost rituals in the Sepulcher.
 
 - **Priority:** The admitting Pattern and policy declare logical priority; the
-  **[Orchestrator](../../adr/23-orchestrator.md)** alone governs physical readiness and
+  **[Orchestrator](../../../adr/23-orchestrator.md)** alone governs physical readiness and
   preemption.
-- **Providers:** The **[Dispatcher](../../adr/22-dispatcher.md)** resolves declared capabilities.
+- **Providers:** The **[Dispatcher](../../../adr/22-dispatcher.md)** resolves declared capabilities.
   Portal egress is never inferred merely because local silicon is constrained.
-- **Budgeting:** Pattern budgets and any economic limits from **[Toll](./toll.md)** still apply.
+- **Budgeting:** Pattern budgets and any economic limits from **[Toll](../toll.md)** still apply.
 
 ### Simulation Policy Layer (Future Direction)
 
@@ -235,6 +194,6 @@ iron, Ward owns policy enforcement, and the Tomb remains an execution substrate.
 
 !!! tip "Feeding the Soulforge"
     Do not discard required failure evidence as waste. A governed curation Pattern may propose
-    paired successes and failures as candidate material for **[Soulforge](./soulforge.md)**.
+    paired successes and failures as candidate material for **[Soulforge](../soulforge.md)**.
     Selection alone neither grants corpus eligibility nor explains why the Magus chose; factual
     claims retain their own evidence burden.

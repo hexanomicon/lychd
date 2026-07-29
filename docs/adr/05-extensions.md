@@ -3,7 +3,7 @@ title: 5. Extensions
 icon: material/toy-brick-outline
 ---
 
-# :material-toy-brick-outline: 5. Recursive Extension Architecture
+# :material-toy-brick-outline: 5. Extensions
 
 !!! abstract "Context and Problem Statement"
     The LychD system functions as a kernel for orchestrating sovereign intelligence. Static software architectures lack the flexibility to incorporate emerging hardware interfaces, novel reasoning topologies, or specialized memory structures without intrusive core modifications. Existing plugin models typically enforce a binary choice between high-latency network communication and restrictive execution environments that prevent deep integration into the system substrate. LychD is born in an agentic era where code can be inspected, rewritten, verified, and promoted by the same system that runs it. The first extension boundary is therefore assimilation, not premature compatibility.

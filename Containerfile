@@ -3,7 +3,7 @@
 # ==============================================================================
 # We define an alias 'uv' for the image containing the uv binary.
 # This allows us to "borrow" the tool later without downloading it into our layers.
-FROM ghcr.io/astral-sh/uv:0.5.22 AS uv
+FROM ghcr.io/astral-sh/uv:0.11.28 AS uv
 
 # ==============================================================================
 # STAGE I: BUILDER
@@ -29,7 +29,8 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
     /bin/uv sync --frozen --no-dev --no-install-project --no-editable
 
 # --- 2. Install Project (Frequent Change Layer) ---
-COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY pyproject.toml uv.lock README.md LICENSE THIRD_PARTY_NOTICES.md ./
+COPY scripts/generate_python_third_party_notices.py ./scripts/
 COPY src ./src
 
 # Install the project non-editably so the environment does not point back to /app/src.
@@ -37,10 +38,29 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     /bin/uv sync --frozen --no-dev --no-editable
 
+# Inventory the exact Python environment that will cross the image boundary. The
+# pure-Python psycopg package uses the runner's system libpq; its bundled-binary
+# distribution remains forbidden until its transitive native payload is audited.
+RUN /app/.venv/bin/python scripts/generate_python_third_party_notices.py \
+    --output /app/PYTHON_THIRD_PARTY_NOTICES.txt \
+    --forbid-distribution psycopg-binary
+
 # ==============================================================================
 # STAGE II: RUNNER (The Production Artifact)
 # ==============================================================================
 FROM python:3.13-slim-bookworm
+
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/hexanomicon/lychd" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.licenses="MPL-2.0"
+
+# Psycopg deliberately uses the pure-Python implementation plus Debian's
+# dynamically loaded libpq. Debian retains the package copyright record under
+# /usr/share/doc/libpq5/copyright.
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends libpq5 && \
+    rm -rf /var/lib/apt/lists/*
 
 # --- Layer 1: The Prisoner (Identity Setup) ---
 # We create a dedicated, unprivileged system user.
@@ -61,6 +81,9 @@ WORKDIR /app
 
 # --- The Transplant ---
 COPY --from=builder --chown=lich:lich /app/.venv /app/.venv
+COPY --from=builder --chown=lich:lich /app/LICENSE /app/LICENSE
+COPY --from=builder --chown=lich:lich /app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
+COPY --from=builder --chown=lich:lich /app/PYTHON_THIRD_PARTY_NOTICES.txt /app/PYTHON_THIRD_PARTY_NOTICES.txt
 
 # --- Layer 4: THE GREAT SEAL (Immutability) ---
 # We strip write access (-w) from the entire /app directory.

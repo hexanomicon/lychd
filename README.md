@@ -6,13 +6,13 @@
       <img src="https://img.shields.io/badge/Source-GitHub-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Source on GitHub">
     </a>
     <a href="https://hexanomicon.dev/">
-      <img src="https://img.shields.io/badge/Documentation-The_Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Docs">
+      <img src="https://img.shields.io/badge/Documentation-Hexanomicon-7c4dff?style=for-the-badge&labelColor=1a1a20" alt="Hexanomicon documentation">
     </a>
     <a href="LICENSE">
       <img src="https://img.shields.io/badge/License-MPL_2.0-b71c1c?style=for-the-badge&labelColor=1a1a20" alt="License">
     </a>
     <a href="CONTRIBUTING.md">
-      <img src="https://img.shields.io/badge/DCA-Implicit-000000?style=for-the-badge&labelColor=1a1a20" alt="Implicit DCA">
+      <img src="https://img.shields.io/badge/Contributions-Inbound_%3D_Outbound-000000?style=for-the-badge&labelColor=1a1a20" alt="Contributions use the same MPL-2.0 terms">
     </a>
   </p>
   <p>
@@ -30,7 +30,7 @@ identity, memory, orchestration, or authority.
 
 Repository evidence covers the local, loopback, single-operator software foundation. An actual
 Linux host, accelerator, model, and inference-engine combination must be validated by its operator;
-anything beyond the proved envelope remains a horizon until [State of the
+anything beyond the proved envelope remains a horizon until [State of
 Work](docs/state-of-the-work.md) records otherwise.
 
 **Choose your next act:**
@@ -59,9 +59,9 @@ cd lychd
 git rev-parse --verify HEAD
 uv sync --frozen
 podman build --file Containerfile --tag localhost/lychd:dev .
-uv run lychd --help
-uv run lychd init --dry-run
-uv run lychd init
+uv run --extra postgres-binary lychd --help
+uv run --extra postgres-binary lychd init --dry-run
+uv run --extra postgres-binary lychd init
 ```
 
 This bootstrap check establishes only that the selected source revision resolves, builds, exposes
@@ -88,31 +88,31 @@ init · bind · start · stop · status (st) · logs · run · del
 ```
 
 Extensions place typed work beneath `run`; read-only extension projections belong beneath
-`status`, not at the root. Use `uv run lychd del --dry-run` to inspect the staged removal plan
+`status`, not at the root. Use `uv run --extra postgres-binary lychd del --dry-run` to inspect the staged removal plan
 before testing a fresh inscription. `del` stops and disables exact-owned units, clears exact
 bindings, and removes verified LychD Codex, Crypt, and cache roots—including snapshots and
 Phylactery data. An attested Btrfs mount pauses for an explicit root handoff bound to its filesystem
 and subvolume UUID/ID. Unreceipted Podman objects and secrets, the package, and the source checkout
 remain preserved. [ADR
-19](docs/adr/19-cli.md) owns the grammar; [State of the
+19](docs/adr/19-cli.md) owns the grammar; [State of
 Work](docs/state-of-the-work.md#core-cli-rites) records which verbs and extension projections are
 useful in this revision.
 
-When the bootstrap passes, continue with **[The Summoning Rite](docs/summoning.md)** for the
+When the bootstrap passes, continue with **[Summoning](docs/summoning.md)** for the
 complete source-built, one-host path and its temporary browser boundary. If all four observations
 agree on the host that runs it, they form a bounded first-life result—not by themselves a
-maintained operator receipt. [State of the
+maintained operator receipt. [State of
 Work](docs/state-of-the-work.md#operator-receipt-requirements) owns the metadata and review required
 for promotion. Do not substitute `uv tool install lychd`, `pip install lychd`, or
 `ghcr.io/hexanomicon/lychd:latest` for this checkout yet.
 
 ## 🗺️ Choose Your Path
 
-The Hexanomicon is one body with several entrances. Choose the question you need answered:
+Hexanomicon is LychD's grimoire, with several entrances. Choose the question you need answered:
 
 - 🕯️ **Operator — [perform the Summoning Rite](docs/summoning.md).** Bring this source revision to
   one bounded first life, then preserve the observations State requires.
-- 🔍 **Evaluator — [inspect State of the Work](docs/state-of-the-work.md).** Judge current behavior,
+- 🔍 **Evaluator — [inspect State of Work](docs/state-of-the-work.md).** Judge current behavior,
   boundaries, and evidence before trusting a claim.
 - ⚒️ **Developer — [enter the contributor forge](CONTRIBUTING.md).** Learn the repository contract,
   then use the [Covenants](docs/adr/index.md) to find the decision that owns a change.
@@ -120,7 +120,7 @@ The Hexanomicon is one body with several entrances. Choose the question you need
   [Transcendence](docs/divination/transcendence/index.md) when you want the Great Work beneath the
   system.
 
-The [Lexicon](docs/lexicon.md) is a reference when an unfamiliar term blocks you; it is not
+The [Lexicon](docs/lexicon/index.md) is a reference when an unfamiliar term blocks you; it is not
 required pre-reading.
 
 Every path rests on the same premise: continuity, memory, and authority should remain anchored on
@@ -160,7 +160,14 @@ MPL 2.0 protects the shared body at the distribution boundary. This is a plain-l
   **[A2A Necropolis](docs/adr/26-a2a.md)** in which sovereign nodes could trade selected labor while
   keeping local advantage hidden.
 - **The SaaS Scar is Honest:** Hosted network access is not distribution. LychD answers cloud capture through local-first architecture, protocol distrust, peer choice, provenance, and refusal to surrender private continuity to a hosted surface.
-- **No CLA, No Private Relicensing:** There is no Contributor License Agreement and no maintainer-only relicensing grant. By contributing, you certify that you have the right to submit under MPL-2.0 and agree that the contribution is licensed under MPL-2.0.
+- **No CLA, No Private Relicensing:** There is no Contributor License Agreement and no
+  maintainer-only relicensing grant. Contributions are accepted under the same MPL-2.0 terms under
+  which LychD distributes them.
+
+The public `lychd==0.0.1` reservation package from 1 December 2025 is a separate historical
+placeholder. Its tiny wheel and source archive did not declare or carry a license, so this project
+does not describe those artifacts as MIT-licensed after the fact. This source tree is MPL-2.0;
+future substantive distributions must carry that declaration and its required notices.
 
 Source incorporated from or adapted under another license retains its required attribution in
 [Third-Party Source Notices](THIRD_PARTY_NOTICES.md). Dependency acknowledgements in the Hall of
@@ -201,7 +208,7 @@ release license inventory.
   development and build ritual. Native CSS variables, cascade layers, and semantic component
   classes form the styling system without Tailwind, Sass, or a project-owned PostCSS pipeline.
   Litestar remains the only production server and authority; the compiled client consumes its
-  generated `/api/v1` and semantic event contracts. [State of the
+  generated `/api/v1` and semantic event contracts. [State of
   Work](docs/state-of-the-work.md#altar-and-observability) owns the delivered boundary.
 - **[OpenTelemetry](https://opentelemetry.io/)** and
   **[Structlog](https://github.com/hynek/structlog)** are the chosen telemetry substrate for the
@@ -257,6 +264,12 @@ release license inventory.
   **[Unsloth](https://github.com/unslothai/unsloth)** inform optional forging and evaluation;
   **[Cockpit](https://cockpit-project.org/)** may remain an external host monitor, never Oculus.
 
+### Third-party names
+
+Third-party names and marks identify compatible or contemplated integrations, external sources, or
+comparative references only. LychD is independent and is not affiliated with, endorsed by,
+sponsored by, or approved by their owners. License and attribution details for incorporated or
+adapted source are preserved in [Third-Party Source Notices](THIRD_PARTY_NOTICES.md).
 
 ---
 

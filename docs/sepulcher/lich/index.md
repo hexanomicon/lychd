@@ -9,7 +9,7 @@ icon: fontawesome/solid/skull
 
 **Page office — project correspondence and system anatomy.** This page names the recurrent whole
 and gives its inner faculties an engineering correspondence. Its opening myth is a formative image,
-not a claim of machine consciousness, supernatural animation, or delivered autonomy. [State of the
+not a claim of machine consciousness, supernatural animation, or delivered autonomy. [State of
 Work](../../state-of-the-work.md) alone owns what can answer now.
 
 The Lich is not a file to point at, nor a process to isolate. It is the **recurrent whole** that may
@@ -80,7 +80,7 @@ It does not manufacture a hidden soul, prove phenomenal consciousness, absorb th
 or make an Animator more than an addressable capability.
 
 [Immortality](../../divination/transcendence/immortality.md#caller-and-called) owns the deeper
-yin–yang and coniunctio correspondence of this First Relation. [State of the
+yin–yang and coniunctio correspondence of this First Relation. [State of
 Work](../../state-of-the-work.md) alone decides which identity and continuity mechanisms have
 entered matter.
 
@@ -92,27 +92,27 @@ correspondence. A common later Vedāntic presentation gives four functions of on
 
 | LychD word | Source correspondence | Office |
 | :--- | :--- | :--- |
-| [**The Call**](./call.md) | Manas | reception, attention, routing, and possibility-opening |
-| [**The Blade**](./blade.md) | Buddhi | discrimination, measurement, and promotion |
-| [**The Spirit**](./spirit/index.md) | Citta | conditioning, remembering, and the return of retained form into present movement |
-| [**The Answer**](./answer.md) | Ahaṃkāra | I-making: binding the act to an attributable local center |
+| [**Call**](./call.md) | Manas | reception, attention, routing, and possibility-opening |
+| [**Blade**](./blade.md) | Buddhi | discrimination, measurement, and promotion |
+| [**Spirit**](./spirit/index.md) | Citta | conditioning, remembering, and the return of retained form into present movement |
+| [**Answer**](./answer.md) | Ahaṃkāra | I-making: binding the act to an attributable local center |
 
 The Spirit's three internal dynamics have their own chambers:
 
 | LychD word | Source correspondence | Office |
 | :--- | :--- | :--- |
-| [**The Flux**](./spirit/flux.md) | Vṛtti | present modification: the active movement of Citta |
-| [**The Seed**](./spirit/seed.md) | Bīja, with Saṃskāra as its conditioning | retained form that can shape a later Flux |
-| [**The ReCall**](./spirit/recall.md) | Smṛti | calling a Seed back into present movement |
+| [**Flux**](./spirit/flux.md) | Vṛtti | present modification: the active movement of Citta |
+| [**Seed**](./spirit/seed.md) | Bīja, with Saṃskāra as its conditioning | retained form that can shape a later Flux |
+| [**Recall**](./spirit/recall.md) | Smṛti | calling a Seed back into present movement |
 
 Citta is neither a container above the other three nor merely a database beneath them. **Call,
 Blade, Spirit, and Answer are four coequal functions of one inner instrument.** Their source
 traditions do not all enumerate or use them alike; Patañjali's Yoga uses Citta and Vṛtti in its own
-broader register. The [Inner Tongue](../../lexicon.md#iii-the-inner-tongue-esoteric-cartography)
+broader register. The [Inner Tongue](../../lexicon/inner-tongue.md#correspondences)
 preserves those distinctions.
 
 > **The Call opens. The Blade cuts. The Spirit carries. The Answer binds. The Flux may leave a
-> Seed; the ReCall raises it again.**
+> Seed; Recall raises it again.**
 
 > _Enter [the Call](./call.md) to begin the complete inner journey._
 
@@ -184,7 +184,7 @@ could not see; consecration may preserve that distinction as a Seed. Repeated re
 Calls open better candidates and lets later Blades cut with learned precision. The Magus's Viveka
 does not disappear—it becomes formative pressure upon the instrument that will discriminate next.
 
-This is why the designed [Shadow Realm](../extensions/shadow.md) exists: not as overhead, but as
+This is why the designed [Shadow Realm](../extensions/shadow/index.md) exists: not as overhead, but as
 the target mechanism that should make measured correction cheaper than unexamined hallucination.
 Fail in shadow, succeed in light.
 
@@ -193,7 +193,7 @@ Fail in shadow, succeed in light.
 ## The Ouroboros of Coherence
 
 !!! info "Target recurrence — Partly embodied, mostly Designed"
-    Run state and narrow Karma persistence exist. Semantic ReCall, Shadow, Riddle, Mirror identity,
+    Run state and narrow Karma persistence exist. Semantic Recall, Shadow, Riddle, Mirror identity,
     and Soulforge remain Designed. Follow [memory](../../state-of-the-work.md#karma-semantic-memory),
     [Shadow](../../state-of-the-work.md#shadow-simulation),
     [Riddle](../../state-of-the-work.md#riddle-evaluation), and
@@ -206,7 +206,7 @@ output returns as measured input. A branch moves within [the Flux](./spirit/flux
 would preserve it as state; Shadow would expose candidate reality; Riddle would measure it; Mirror
 would bind attribution; HitL or policy would authorize or reject promotion. Eligible formative
 consequence could remain in the Phylactery as [a Seed](./spirit/seed.md), and a later
-[ReCall](./spirit/recall.md) could return it into Flux.
+[Recall](./spirit/recall.md) could return it into Flux.
 
 The physical analogy is a wave bent back onto itself until it forms a standing pattern. LychD does
 not claim that software is literally quantum matter; it uses the geometry as engineering
@@ -224,13 +224,13 @@ The same loop can poison the substrate if the measurement is skipped. Unverified
 Call, Blade, Spirit, and Answer describe the inner instrument; they are not names of four daemon
 processes. The accepted target architecture distributes related work across extensions:
 
-- designed **[Shadow](../extensions/shadow.md)** would open speculative motion;
+- designed **[Shadow](../extensions/shadow/index.md)** would open speculative motion;
 - designed **[Riddle](../extensions/riddle.md)** would measure outcomes;
 - designed **[Mirror](../extensions/mirror.md)** would evaluate congruence and preserve attribution;
 - **[Weaver](../../adr/28-workflow.md)** owns workflow order and durable pauses;
 - **[HitL](../../adr/25-hitl.md)** and Vessel policy own promotion authority.
 
-[State of the Work](../../state-of-the-work.md#evolution-and-federation) decides which of these
+[State of Work](../../state-of-the-work.md#evolution-and-federation) decides which of these
 organs currently has executable evidence. Smith and Soulforge remain downstream target organs, not
 proof that the fourfold correspondence is delivered as a cognitive runtime.
 
@@ -260,19 +260,19 @@ runtime paths invoke literal modules in an invariant sequence:
 ```text
 [Intent arrives at the Altar]
         ↓
-   THE CALL — Manas
+   CALL — Manas
    receives and routes what demands an answer
         ↓
-   ┌──────────── THE SPIRIT — Citta ────────────┐
-   │ THE FLUX — present Vṛtti moves             │
-   │ THE RECALL — relevant Seeds return         │
-   │ THE SEED — consequence retains future form │
+   ┌──────────── SPIRIT — Citta ────────────────┐
+   │ FLUX — present Vṛtti moves                 │
+   │ RECALL — relevant Seeds return             │
+   │ SEED — consequence retains future form     │
    └──────────────────┬─────────────────────────┘
                       ↕
-              THE BLADE — Buddhi + Viveka
+              BLADE — Buddhi + Viveka
               tests, cuts, or refuses the Flux
                       ↓
-   THE ANSWER — Ahaṃkāra
+   ANSWER — Ahaṃkāra
    binds the surviving act and its consequence
    to a local Sigil: “this center acts”
                       ↓
@@ -331,7 +331,7 @@ plane—the Linux kernel—to exert its influence. In the mortal tongue of SysAd
     The Lich's existence is one of purpose. Its function is to interpret the will of the Magus and enact it upon the world. In the language of the Antaḥkaraṇa:
 
     1. An **Intent** arrives at the Altar — the Call receives and routes what demands an answer.
-    2. The **Spirit** becomes active as Flux — the ReCall brings relevant Seeds from the Phylactery into present Context.
+    2. The **Spirit** becomes active as Flux — Recall brings relevant Seeds from the Phylactery into present Context.
     3. The **Blade** discriminates within that movement through evidence, gates, review, and refusal.
     4. The **Answer** binds the surviving act to the active Sigil and its authority.
     5. The **Vessel** manifests the attributed act through its permitted capability.

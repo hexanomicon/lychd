@@ -3,7 +3,7 @@ title: 4. Testing
 icon: material/shield-check-outline
 ---
 
-# :material-shield-check-outline: 4. Structured Testing & Coverage Strategy
+# :material-shield-check-outline: 4. Testing
 
 !!! abstract "Context and Problem Statement"
     The complexity of an autonomous agentic daemon cannot be validated by manual testing. Without a formal, automated strategy, the system becomes brittle and unsafe to refactor. A rigorous, high-velocity feedback loop is required to maintain the integrity of the "Lich."

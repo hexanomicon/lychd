@@ -8,7 +8,7 @@ icon: material/broadcast
 !!! warning "Accepted architecture — not a delivered publisher"
     Broadcast Studio is an accepted Reference Composition. LychD does not currently ship its
     Pattern pack, source and claim schemas, editorial workspace, render environment, platform
-    adapters, Suite registry, or publication reconciliation. [State of the
+    adapters, Suite registry, or publication reconciliation. [State of
     Work](../state-of-the-work.md) remains the delivery authority.
 
 **Broadcast Studio** turns an approved source dossier and immutable creative assets into

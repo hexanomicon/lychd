@@ -9,7 +9,7 @@ navigation touching `docs/divination/**`.
 
 - [ADR 02](../../docs/adr/02-documentation.md) owns documentation topology and register boundaries.
 - The [Prophecy](../../docs/index.md) owns the published reader entry and route choice.
-- The [Lexicon](../../docs/lexicon.md) owns canonical project vocabulary.
+- The [Lexicon](../../docs/lexicon/index.md) owns canonical project vocabulary.
 - The nearest tracked Divination or Transcendence page owns its reader-facing subject.
 - Technical behavior remains owned by the matching ADR, source, tests, and delivery evidence.
   Scope cards and ignored work shelves do not establish product truth.
@@ -32,7 +32,7 @@ suggest interaction patterns but cannot establish vocabulary, doctrine, architec
 ## Typical Change Surface
 
 This is routing guidance, not authorization. Work commonly touches `docs/divination/**`, its
-cross-links in `README.md`, `docs/index.md`, `docs/lexicon.md`, nearby `docs/sepulcher/**` pages,
+cross-links in `README.md`, `docs/index.md`, `docs/lexicon/`, nearby `docs/sepulcher/**` pages,
 and `zensical.toml` when public navigation changes.
 
 ## Verification
@@ -40,7 +40,7 @@ and `zensical.toml` when public navigation changes.
 - Preserve a usable plain-language foothold while allowing the mythic register to deepen by stage.
 - Verify first-use terms against the Lexicon and technical claims against their owning ADR/source.
 - Check every added, moved, or removed page against Zensical navigation and inbound links.
-- Run `git diff --check -- docs/divination docs/sepulcher README.md docs/index.md docs/lexicon.md zensical.toml .agents/scopes`.
+- Run `git diff --check -- docs/divination docs/sepulcher README.md docs/index.md docs/lexicon zensical.toml .agents/scopes`.
 - Run the documentation build for navigation, rendering, or link changes.
 
 ## Escalate

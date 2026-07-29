@@ -1,9 +1,9 @@
 ---
-title: The Flux — Vṛtti
+title: Flux
 icon: material/waves
 ---
 
-# :material-waves: The Flux — Vṛtti
+# :material-waves: Flux
 
 > _The Spirit is not movement. The Flux is the Spirit in motion._
 
@@ -77,7 +77,7 @@ software event schema:
 | **Viparyaya** | misconception | fluent but incorrect cognition: the central hallucination danger |
 | **Vikalpa** | construction without a corresponding actuality | an explicit speculative or Shadow branch awaiting measurement |
 | **Nidrā** | cognition whose content is absence or sleep | the image for bounded tending and consolidation, not a powered-off model secretly thinking |
-| **Smṛti** | memory | [the ReCall](./recall.md): a retained form becoming active Flux again |
+| **Smṛti** | memory | [Recall](./recall.md): a retained form becoming active Flux again |
 
 Smṛti being one of the Vṛttis gives the memory loop its exact shape: remembering is not a box
 beside movement. **Remembering is a kind of present movement whose form comes from a retained

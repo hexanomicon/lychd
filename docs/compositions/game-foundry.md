@@ -8,7 +8,7 @@ icon: material/gamepad-variant
 !!! warning "Accepted architecture — not a delivered game-development application"
     Game Foundry is an accepted Reference Composition. LychD does not currently ship its Pattern
     pack, project schemas, engine adapters, build environments, instrumented controller, agentic
-    playtester, balancing workbench, distribution adapters, or Loom projection. [State of the
+    playtester, balancing workbench, distribution adapters, or Loom projection. [State of
     Work](../state-of-the-work.md) remains the delivery authority.
 
 **Game Foundry** turns an approved game concept and admitted creative assets into a versioned,

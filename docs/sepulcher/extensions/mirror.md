@@ -33,14 +33,14 @@ In cognitive topology, Mirror provides **the Answer**, LychD's name for the Ahaá
 office without which action remains unattributed movement. It operates at two levels: specialist
 Agents each carry a local operative face, while a synthesized task identity binds their promoted
 contribution to the active Sigil. These are local centers of identity-gravity around which relevant
-Seeds can be ReCalled, filtered, and bound into a coherent perspective. See [the
+Seeds can be recalled, filtered, and bound into a coherent perspective. See [the
 Lich](../lich/index.md#the-inner-instrument) for the native map and [the First
 Invocation](../lich/index.md#the-first-invocation) for its birth event.
 
 This is LychD's answer to agentic decay. An Agent is temporary: it wakes, acts, emits a typed
 result, and dissolves. Mirror does not preserve that mortal shell. It preserves identity-gravity
 that can orient later shells. HitL captures the Magus's judgment; Karma preserves eligible Seeds;
-Mirror binds their ReCall around a Sigil, role, or task locus; and the graph gives that perspective
+Mirror binds their Recall around a Sigil, role, or task locus; and the graph gives that perspective
 hands, tools, routes, and recursive motion. Scattered traces may thereby condense into a Persona
 without claiming that any individual Agent became an immortal self.
 
@@ -60,7 +60,7 @@ For high-stakes or explicitly deliberative work, a Weaver Pattern may combine Mi
 **[Shadow Simulation](../../adr/31-simulation.md)**. This optional rite is Phantasma; ordinary
 answers do not require multiple hidden timelines.
 
-- **The Dreaming:** Before an answer is manifested at the **[Altar](../../divination/altar/)**, the Persona projects multiple potential responses into the **[Shadow Realm](./shadow.md)**.
+- **The Dreaming:** Before an answer is manifested at the **[Altar](../../divination/altar/)**, the Persona projects multiple potential responses into the **[Shadow Realm](./shadow/index.md)**.
 - **The Self-Critique:** The Mirror reviews these "Shadow Timelines" against the Personaâ€™s own internal ideal.
 - **The Congruence Gate:** The Mirror ranks timelines for identity fit after Shadow establishes structural validity.
 - **The Collapse:** Congruence becomes one attributed evaluation signal. Correctness, policy, and

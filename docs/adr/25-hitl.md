@@ -3,7 +3,7 @@ title: 25. HitL
 icon: material/account-voice
 ---
 
-# :material-account-voice: 25. Human-in-the-Loop Consent
+# :material-account-voice: 25. HitL
 
 !!! abstract "Context and Problem Statement"
     The execution of autonomous reasoning presents a fundamental stability and safety dilemma. Large Language Models operate on probabilistic principles and lack an inherent sense of subjective value or systemic risk, creating a scenario where irreversible transitions—such as the modification of core system logic, the expenditure of significant Tithes, or the deletion of user data—could occur without oversight. A gap exists between the tireless computational labor of the machine and the subjective judgment of the Magus. The absence of a formal protocol to bridge this divide exposes the substrate to "Ghost Actions," where high-stakes intents are manifested by an engine that possesses no concept of consequence.

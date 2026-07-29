@@ -1,9 +1,9 @@
 ---
-title: The Call — Manas
+title: Call
 icon: material/call-made
 ---
 
-# :material-call-made: The Call — Manas
+# :material-call-made: Call
 
 > _What is here, and what must answer it?_
 
@@ -15,11 +15,11 @@ It opens possibility; it does not decide which possibility becomes action.
 !!! info "Delivery boundary"
     Typed local runs and the [Animator dispatch
     spine](../../state-of-the-work.md#animator-dispatch-spine) perform bounded routing today.
-    Speculative Shadow expansion and semantic ReCall remain
+    Speculative Shadow expansion and semantic Recall remain
     [Designed](../../state-of-the-work.md#evolution-and-federation); **Call** names their shared
     office, not one delivered Manas service.
 
-## The Call-Center
+## Call-Center
 
 The active [Flux](./spirit/flux.md) contains more movement than one act can carry: the present Intent,
 retrieved forms, model priors, tool affordances, constraints, interruptions, and specialist
@@ -36,7 +36,7 @@ Manas is therefore the Call-center rather than one more message inside the strea
 - coordinates attention among competing demands;
 - routes work toward tools, specialists, and graph stations;
 - opens speculative branches where more than one continuation deserves consideration;
-- calls relevant [Seeds](./spirit/seed.md) toward [ReCall](./spirit/recall.md).
+- calls relevant [Seeds](./spirit/seed.md) toward [Recall](./spirit/recall.md).
 
 ## The First Relation
 

@@ -9,9 +9,10 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "npm run licenses && vite build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
+    "licenses": "node ./scripts/generate-third-party-notices.mjs",
     "generate:api": "openapi-typescript ./openapi.json -o ./src/lib/api/openapi.d.ts",
     "verify": "npm run generate:api && npm run check && npm run test && npm run build"
   },

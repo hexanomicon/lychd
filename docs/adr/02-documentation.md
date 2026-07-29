@@ -3,7 +3,7 @@ title: 2. Documentation
 icon: material/book-cog-outline
 ---
 
-# :material-book-cog-outline: 2. Documentation Engine: Zensical
+# :material-book-cog-outline: 2. Documentation
 
 !!! abstract "Context and Problem Statement"
     LychD is a complex system combining ancient lore with modern engineering. The documentation must be as immersive as it is technical.
@@ -46,7 +46,7 @@ icon: material/book-cog-outline
 
 ## Decision Outcome
 
-**Zensical** is selected as the engine for **[The Hexanomicon](https://hexanomicon.dev/).**
+**Zensical** is selected as the engine for **[Hexanomicon](https://hexanomicon.dev/).**
 
 ### Implementation Details
 
@@ -100,7 +100,7 @@ Progressive revelation follows four rules:
 
 ### Decision, Delivery, and Evidence
 
-[State of the Work](../state-of-the-work.md) is the sole granular public delivery record. Its
+[State of Work](../state-of-the-work.md) is the sole granular public delivery record. Its
 visible values are exactly:
 
 - **Available** — repository evidence supports the whole boundary stated by the subject.

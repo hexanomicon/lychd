@@ -4,6 +4,40 @@ LychD is distributed under the [Mozilla Public License 2.0](LICENSE). The notice
 third-party source incorporated into or adapted by particular LychD files; they do not replace the
 project license.
 
+## Altar Browser Bundle
+
+The compiled Altar under `src/lychd/public/` contains third-party JavaScript and CSS dependencies.
+Their package identities, declared license expressions, copyright notices, and license texts are
+shipped with the browser artifact at
+`src/lychd/public/THIRD_PARTY_NOTICES.txt`. The deterministic source inventory lives at
+`frontend/static/THIRD_PARTY_NOTICES.txt` and is regenerated from the pinned
+`frontend/package-lock.json` with:
+
+```text
+cd frontend
+npm run licenses
+```
+
+The corresponding rebuildable Altar source is distributed in `frontend/` within the LychD source
+distribution. The browser footer links the source revision and this notice inventory.
+
+## Vessel Python Environment
+
+The production Vessel image generates `/app/PYTHON_THIRD_PARTY_NOTICES.txt` from the exact Python
+distributions installed in its locked virtual environment. The generator fails when a distribution
+has no readable license material and no explicit same-project fallback. It also forbids
+`psycopg-binary`: the Vessel uses pure-Python `psycopg` with Debian's dynamically loaded `libpq5`
+instead of redistributing Psycopg's bundled native-library set. Debian system-package copyright
+records remain under `/usr/share/doc`.
+
+Regenerate an environment-specific inventory with:
+
+```text
+python scripts/generate_python_third_party_notices.py \
+  --output PYTHON_THIRD_PARTY_NOTICES.txt \
+  --forbid-distribution psycopg-binary
+```
+
 ## Litestar Fullstack
 
 Portions of the database-engine connection setup in `src/lychd/db/factory.py` are adapted from

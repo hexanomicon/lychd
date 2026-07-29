@@ -780,11 +780,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6d/a2/2fa625897b593edc7d20a55ddfb6890ce02f983d1815fe20c790fb3ad2b2/litestar_saq-0.5.3-py3-none-any.whl", hash = "sha256:9b943867e1359a6d347ea1276788de58cb5cbb19216ae4655dde8e6d6a2770d9", size = 16107, upload-time = "2025-05-05T14:54:30.185Z" },
 ]
 
-[package.optional-dependencies]
-psycopg = [
-    { name = "psycopg", extra = ["binary", "pool"] },
-]
-
 [[package]]
 name = "logfire"
 version = "4.16.0"
@@ -830,8 +825,9 @@ dependencies = [
     { name = "jinja2" },
     { name = "litestar", extra = ["opentelemetry", "pydantic", "sqlalchemy", "structlog"] },
     { name = "litestar-granian" },
-    { name = "litestar-saq", extra = ["psycopg"] },
+    { name = "litestar-saq" },
     { name = "pgvector" },
+    { name = "psycopg", extra = ["pool"] },
     { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["logfire", "openai"] },
     { name = "pydantic-settings", extra = ["toml"] },
@@ -839,6 +835,11 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "structlog" },
     { name = "tomlkit" },
+]
+
+[package.optional-dependencies]
+postgres-binary = [
+    { name = "psycopg-binary" },
 ]
 
 [package.dev-dependencies]
@@ -891,8 +892,10 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "litestar", extras = ["opentelemetry", "pydantic", "sqlalchemy", "structlog"], specifier = ">=2.24.0,<3" },
     { name = "litestar-granian", specifier = ">=0.14.2" },
-    { name = "litestar-saq", extras = ["psycopg"], specifier = ">=0.5.3" },
+    { name = "litestar-saq", specifier = ">=0.5.3" },
     { name = "pgvector", specifier = ">=0.4.0" },
+    { name = "psycopg", extras = ["pool"], specifier = ">=3.2.13,<4" },
+    { name = "psycopg-binary", marker = "extra == 'postgres-binary'", specifier = "==3.2.13" },
     { name = "pydantic", specifier = ">=2.10.0" },
     { name = "pydantic-ai-slim", extras = ["logfire", "openai"], specifier = "==1.25.1" },
     { name = "pydantic-settings", extras = ["toml"], specifier = ">=2.10.1" },
@@ -901,6 +904,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=24.4.0" },
     { name = "tomlkit", specifier = ">=0.13.3" },
 ]
+provides-extras = ["postgres-binary"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1454,9 +1458,6 @@ wheels = [
 ]
 
 [package.optional-dependencies]
-binary = [
-    { name = "psycopg-binary", marker = "implementation_name != 'pypy'" },
-]
 pool = [
     { name = "psycopg-pool" },
 ]

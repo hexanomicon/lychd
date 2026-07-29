@@ -11,7 +11,7 @@ asks for judgment. Its browser-facing instruments live at the **Altar**.
 
 Within the language of the Work, the operator in deliberate relation with the recurrent whole is
 the **Magus**; that recurrent whole is the **Lich**. These are relational names, not credentials or
-claims that every faculty is delivered. [State of the Work](../state-of-the-work.md) remains the
+claims that every faculty is delivered. [State of Work](../state-of-the-work.md) remains the
 sole record of what can answer now.
 
 > _“Command is blunt. Asking is not surrender. Divination makes the question precise enough that

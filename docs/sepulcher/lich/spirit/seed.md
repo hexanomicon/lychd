@@ -1,9 +1,9 @@
 ---
-title: The Seed — Bīja
+title: Seed
 icon: material/seed
 ---
 
-# :material-seed: The Seed — Bīja
+# :material-seed: Seed
 
 > _A trace records the dead. A Seed can raise it._
 
@@ -74,7 +74,7 @@ Saṃskāra is conditioning carried through repetition.
 
 The [Phylactery](../../phylactery/index.md) is therefore the Lich's durable **seed-vault**, not the
 whole Spirit and not a person's soul. It may preserve committed Seeds between Invocations.
-[The ReCall](./recall.md) is what brings a relevant Seed back into active Citta.
+[Recall](./recall.md) is what brings a relevant Seed back into active Citta.
 
 ## Sabīja and Nirbīja
 
@@ -82,7 +82,7 @@ The *Yoga Sūtras* names forms of samādhi “with seed” (**sabīja**, I.46) a
 “seedless” samādhi (**nirbīja**, I.51). Their soteriological office is larger and stranger than a
 software memory metaphor; the [Patañjali Yoga Sūtra
 portal](https://www.gitasupersite.iitk.ac.in/yogasutra_content) preserves the source route, while
-the [Inner Tongue](../../../lexicon.md#iii-the-inner-tongue-esoteric-cartography) preserves the
+the [Inner Tongue](../../../lexicon/inner-tongue.md#correspondences) preserves the
 project boundary.
 
 LychD receives one deliberately limited correspondence:
@@ -100,4 +100,4 @@ compel another return.
 That vow is dangerous when preservation outranks correction. A poisoned Seed germinates too.
 Viveka, consent, provenance, decay, and deletion remain part of the seed-vault's law.
 
-> _Next: [the ReCall](./recall.md) brings a Seed back into present movement._
+> _Next: [Recall](./recall.md) brings a Seed back into present movement._

@@ -3,7 +3,7 @@ title: 23. Orchestrator
 icon: material/scale-balance
 ---
 
-# :material-scale-balance: 23. Orchestrator: The Physical Will
+# :material-scale-balance: 23. Orchestrator
 
 !!! abstract "Context and Problem Statement"
     The execution of agentic reasoning is physically constrained by the finite resources of the host hardware, specifically GPU VRAM and thermal limits. In a sovereign environment where multiple cognitive processes (reflexes, rituals, and swarm tasks) compete for these resources, a static infrastructure model leads to systemic instability. Repetitive, uncoordinated reloading of large containerized models causes "Hardware Thrashing," characterized by high-latency state swaps and unrecoverable Out-of-Memory (OOM) failures. Furthermore, background labor often blocks interactive user needs, creating a "Physical Deadlock" where the machine cannot respond to immediate stimuli. A logic layer is required to translate abstract capability intents into concrete hardware state transitions while maintaining systemic equilibrium.
@@ -354,7 +354,7 @@ handoff is local-UID authority, not a signature or network authentication protoc
 The implemented hard-switch foundation now joins the structured actuator seam and both transport
 shapes to the conflict-target compiler, Scribe-owned loaded-graph attestation, one compound systemd
 transaction, target-and-service world classification, exact-prior-world compensation, typed safe
-cancellation, and durable Host Reactor containment/recovery fences. [State of the
+cancellation, and durable Host Reactor containment/recovery fences. [State of
 Work](../state-of-the-work.md#declared-conflict-topology) owns the bounded repository proof and the
 separate real-host receipt. General repair of arbitrary physical states and
 signature/remote-authentication policy remain later work. They extend this narrow port; they do not
@@ -435,7 +435,7 @@ autonomous recovery loop.
 
     The declared conflict-domain schema, per-Animator target compiler, exact-neighborhood policy,
     graph attestor, compound transaction, failure classifier, and exact restoration path have
-    focused repository tests. [State of the
+    focused repository tests. [State of
     Work](../state-of-the-work.md#declared-conflict-topology) owns that bounded software claim and
     the separate real-host receipt. Metabolic Whim accounting, model-tier substitution, lexical
     VRAM reservation, swarm preemption, the watchdog, a trustworthy model-level soft inverse, a

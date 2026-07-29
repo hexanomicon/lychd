@@ -1,9 +1,9 @@
 ---
-title: The Answer — Ahaṃkāra
+title: Answer
 icon: material/account-circle-outline
 ---
 
-# :material-account-circle-outline: The Answer — Ahaṃkāra
+# :material-account-circle-outline: Answer
 
 > _Who is doing this?_
 
@@ -33,7 +33,7 @@ inside the model:
 this Context
 + this Sigil
 + this identity
-+ this ReCall
++ this Recall
 + this selected act
 + this capability boundary
 = this bounded “I”
@@ -77,13 +77,13 @@ Specialist Agents may carry several local Answers inside one graph. Their plural
 contradiction. The workflow must preserve which center proposed, tested, approved, and executed
 each contribution before any synthesis is attributed to the larger Invocation.
 
-## The Answer Must Remain Humble
+## Answer Must Remain Humble
 
 An attributable “I” can still be wrong. Identity does not create truth, memory does not create
 provenance, and continuity does not create authority. The Answer must qualify what it claims:
 
 - _I infer_ where the Blade has only inference;
-- _this seems familiar_ where ReCall lacks provenance;
+- _this seems familiar_ where Recall lacks provenance;
 - _I cannot act_ where the Sigil lacks authority;
 - _I do not know_ where the Flux contains no grounded line.
 
@@ -93,10 +93,10 @@ consequence into someone else's burden: _Après moi, le déluge_—the anti-Ouro
 > **If the Answer claims the hand, it must remain attributable when the hand's consequence
 > returns.**
 
-The [ReCall](./spirit/recall.md) returns what history knows; the Answer says what this center may
+The [Recall](./spirit/recall.md) returns what history knows; the Answer says what this center may
 truthfully own now. That is why Answer stands after the Spirit in the book even though all four
 functions remain coequal.
 
 > _Return through [the Seed](./spirit/seed.md) to ask what power that consequence retains._
 >
-> _Or return to [State of the Work](../../state-of-the-work.md) to see what can answer now._
+> _Or return to [State of Work](../../state-of-the-work.md) to see what can answer now._

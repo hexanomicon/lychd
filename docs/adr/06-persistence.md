@@ -3,7 +3,7 @@ title: 6. Persistence
 icon: material/database
 ---
 
-# :material-database: 6. Persistence: The Phylactery
+# :material-database: 6. Persistence
 
 !!! abstract "Context and Problem Statement"
     The LychD Daemon requires a unified persistence layer to store disparate forms of reality: Relational State (User Data) and complex, nested Data Structures (State Snapshots). Furthermore, the system operates on a federated architecture where the database schema is not static; it is the aggregate of models defined by the Core and models defined by installed Extensions. The persistence layer must provide a mechanism to dynamically discover, register, and migrate these schemas into a single, cohesive database structure while optimizing for the throughput of massive serialized objects.

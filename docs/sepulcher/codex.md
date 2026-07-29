@@ -5,7 +5,7 @@ icon: material/book-open-page-variant
 
 # :material-book-open-page-variant: Codex
 
-> _"The Hexanomicon is the prophecy. The Codex is the law."_
+> _"Hexanomicon is the prophecy. The Codex is the law."_
 
 The Codex is the **immutable configuration** from which the Sepulcher is summoned. It defines the fundamental laws of existence for the Lich.
 

@@ -9,12 +9,13 @@ documentation changes that define system truth.
 
 - [AGENTS.md](../../AGENTS.md) defines repository-wide agent behavior.
 - [ADR 01](../../docs/adr/01-doctrine.md) owns architectural doctrine and xDDD.
-- [ADR 02](../../docs/adr/02-documentation.md) owns documentation topology.
+- [ADR 01 §Documentation Topology](../../docs/adr/01-doctrine.md#documentation-topology) owns
+  documentation topology; ADR 02 records the historical documentation decision.
 - The [ADR index](../../docs/adr/index.md) routes to the decision that owns a particular invariant.
 - [ADR 28](../../docs/adr/28-workflow.md) owns Weaver and Pattern law; the
   [Composition index](../../docs/compositions/index.md) routes to accepted application designs
   and visibly marked candidate studies.
-- [State of the Work](../../docs/state-of-the-work.md) owns granular public delivery boundaries;
+- [State of Work](../../docs/state-of-the-work.md) owns granular public delivery boundaries;
   it derives claims from evidence and does not replace ADR law.
 - Tracked source and tests establish current implementation evidence. Ignored `.agents/work/**`
   material is review evidence only and cannot override tracked canon.

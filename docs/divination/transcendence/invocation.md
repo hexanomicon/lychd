@@ -57,7 +57,7 @@ assigned utility: a world worth saving contains more than its optimizer was told
 
 !!! info "The Shadow Realm Is a Jurisdiction"
     The Shadow Realm is not a supernatural location and not a synonym for the Tomb. Its canonical
-    engineering meaning is owned by [Shadow](../../sepulcher/extensions/shadow.md):
+    engineering meaning is owned by [Shadow](../../sepulcher/extensions/shadow/index.md):
 
     - speculation may remain text, acquire an isolated workspace, or dispatch bounded execution;
     - a Vision is a candidate, never direct authority to write primary reality;

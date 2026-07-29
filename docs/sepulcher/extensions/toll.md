@@ -11,7 +11,7 @@ Sepulcher.
 
 **Delivery boundary:** LychD has no Toll package, quote or budget ledger, signer, settlement path,
 or safe response to a payment challenge. There is nothing to enable or invoke on this page.
-[State of the Work owns the exact x402 boundary](../../state-of-the-work.md#x402-payments), while
+[State of Work owns the exact x402 boundary](../../state-of-the-work.md#x402-payments), while
 [ADR 41](../../adr/41-x402.md) owns the accepted commitment, signer, and reconciliation law.
 
 **Extension form:** Toll is an optional economic Domain manifested as governed middleware and

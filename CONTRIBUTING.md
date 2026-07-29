@@ -12,12 +12,17 @@ The operator-enabled [reference scope](.agents/scopes/references.md) progressive
 into an ignored `.agents/references/` shelf when it exists. That shelf remains optional,
 non-authoritative, and outside every build or test contract.
 
-## The Iron Pact (Implicit DCA)
+## The Iron Pact (Inbound = Outbound)
 
 By submitting code, you license your contribution under **MPL-2.0** as defined in **[ADR 00: License](docs/adr/00-license.md)**.
 
-**Implicit Developer Certificate of Origin (DCA):**
-There is no CLA to sign, no private relicensing grant, and no required git sign-off ritual. By submitting a contribution, you certify that you have the right to submit it under MPL-2.0 and agree that it is licensed under MPL-2.0.
+There is no CLA and no private relicensing grant. Contributions are accepted under the same
+MPL-2.0 terms under which the project distributes them. By submitting a contribution, you state
+that you have the right to submit it on those terms.
+
+LychD does not currently claim to run a Developer Certificate of Origin process and does not
+require `Signed-off-by` trailers. If the project later adopts the standard DCO, that change must
+include the exact certification text, contributor instructions, and enforcement together.
 
 ## Local Rituals (Setup & Commands)
 
@@ -29,6 +34,10 @@ make init                # Initialize the local LychD host layout
 make frontend-install    # Pinned Svelte Altar dependencies via npm
 make help                # View all available rituals
 ```
+
+`make install` installs the `postgres-binary` convenience extra for local development. The
+production Vessel installs no extras: it uses pure-Python `psycopg` with Debian `libpq5`, and its
+image gate rejects `psycopg-binary`.
 
 The Altar lives under `frontend/`. The repository pins Node.js 24 LTS in `.nvmrc`; npm 11 owns the
 exact `frontend/package-lock.json`, SvelteKit owns client routing, Vite compiles the static build,
@@ -42,8 +51,9 @@ timestamp default: the compiled Altar is tracked and must rebuild reproducibly.
 
 ```bash
 make lint [RUFF_TARGETS="..."]   # Targeted or repo-wide lint
+make format-check [FORMAT_TARGETS="..."] # Verify formatting without modifying files
 make type-check [TYPECHECK_TARGETS="..."] # Targeted or repo-wide BasedPyright
-make check                       # Full purification (Lint -> Type -> Test)
+make check                       # Full non-mutating purification
 ```
 
 When `rtk` is available on `PATH`, Makefile targets automatically route noisy CLI calls through it
@@ -87,7 +97,7 @@ jj git push         # Synchronize with the external world (Git remotes)
 - **Python**: Target 3.12+. Use PEP 695 generics. Use lazy imports in boot hooks.
 - **Paths**: Never hardcode `~/.config/...`. Use `PATH_*` constants from `src/lychd/system/constants.py`.
 - **Boundaries**: Domain computes intent (pure); System performs mutations (filesystem, systemd).
-- **Documentation**: Follow **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Keep root entry doors (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) thin and routed; put architectural law in ADRs, canonical terms in `docs/lexicon.md`, application designs and explicitly marked candidate studies in `docs/compositions/`, domain doctrine in Sepulcher/Divination pages, and routing hints in `.agents/scopes/`. A page's declared maturity—not its directory—says whether it is a proposal or accepted architecture, and neither status is delivery evidence. When a docs change moves system truth, update the links and hints that route readers to that truth.
+- **Documentation**: Follow **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Keep root entry doors (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`) thin and routed; put architectural law in ADRs, canonical terms in `docs/lexicon/`, application designs and explicitly marked candidate studies in `docs/compositions/`, domain doctrine in Sepulcher/Divination pages, and routing hints in `.agents/scopes/`. A page's declared maturity—not its directory—says whether it is a proposal or accepted architecture, and neither status is delivery evidence. When a docs change moves system truth, update the links and hints that route readers to that truth.
 - **Vessel (Litestar) Laws**: See **[ADR 11 §6](docs/adr/11-backend.md)** for full mandates:
     1. **Unbound Routing**: Use standalone `Controller` or `Router`. Never use `@app.get`.
     2. **DTO Mandate**: Use `SQLAlchemyDTO`. Never write redundant Pydantic models for ORM.

@@ -10,7 +10,7 @@ icon: material/cart-heart
     PaddleOCR Soulstone, merchant catalogue adapter, product ledger, pantry inventory, local route
     profile, restaurant-menu feed, shopping cart integration, checkout effect, or Composition
     registry. Nothing on this page can scrape a shop, infer what the Magus ate, or place an order.
-    [State of the Work](../state-of-the-work.md) remains the delivery authority.
+    [State of Work](../state-of-the-work.md) remains the delivery authority.
 
 **Lifestyle Steward** turns ordinary household evidence into an editable map of daily life. The
 Magus can photograph a receipt; a local pipeline transcribes it into a clear table of what was

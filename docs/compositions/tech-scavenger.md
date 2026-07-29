@@ -10,7 +10,7 @@ icon: material/chip
     adapter, browser-session custody, hardware evidence parser, marketplace messenger, purchase
     ledger, shipment tracker, or Composition registry. Nothing on this page authorizes scraping,
     messaging, buying, payment, or disclosure of a delivery address.
-    [State of the Work](../state-of-the-work.md) remains the delivery authority.
+    [State of Work](../state-of-the-work.md) remains the delivery authority.
 
 **Tech Scavenger** lets a person describe the computer they want, the money and month they have,
 the distance they will travel, and the proof they need from a seller. It turns that intent into a

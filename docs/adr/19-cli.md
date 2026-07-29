@@ -3,7 +3,7 @@ title: 19. CLI
 icon: material/console-line
 ---
 
-# :material-console-line: 19. CLI: The Pulse
+# :material-console-line: 19. CLI
 
 !!! abstract "Context and Problem Statement"
     LychD is primarily an always-on daemon, but the operator still needs one host-side control
@@ -449,7 +449,7 @@ decision was established:
 | `run` | Callback-free Core/extension registration carries typed execution, mutation, consent, progress, result, input, scope, and provenance metadata. Help works; the default client refuses execution until a Ward-authenticated submission route exists. |
 | `del` | A confirmed fingerprinted planner/executor retires exact units, supports the live-attested mounted Btrfs handoff and the receipt-v2-attested init-created unmounted subvolume handoff, clears exact bindings and verified dedicated roots, and replans after each stage. Unreceipted Podman objects, secrets, package, and checkout remain preserved. |
 
-The [State of the Work](../state-of-the-work.md#core-cli-rites) must be updated with source and
+The [State of Work](../state-of-the-work.md#core-cli-rites) must be updated with source and
 focused tests as each boundary lands. Presence in `--help` alone is not delivery.
 
 ### Consequences

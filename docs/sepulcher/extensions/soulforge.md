@@ -155,7 +155,7 @@ enters evaluation and promotion.
 - **The Binding:** Forge and the serving-domain owner may promote and register an evaluated
   Soul-Adapter as a distinct candidate capability. Soulforge cannot register its own output merely
   because training terminated successfully.
-- **The Summoning:** The Magus can now invoke an **[Agent](../../adr/20-agents.md)** with the specific directive to use the forged instinct.
+- **Summoning:** The Magus can now invoke an **[Agent](../../adr/20-agents.md)** with the specific directive to use the forged instinct.
 - **The Result:** The Lich no longer depends on archive retrieval for every repeated behavior. More knowledge moves into standing instinct, lowering instruction tax and retrieval latency for that domain.
 
 The governed loop is therefore:

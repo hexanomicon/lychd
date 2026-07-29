@@ -3,7 +3,7 @@ title: 18. Evolution
 icon: material/refresh
 ---
 
-# :material-refresh: 18. Evolution: The Ouroboros
+# :material-refresh: 18. Evolution
 
 !!! abstract "Context and Problem Statement"
     A sovereign daemon must be capable of two distinct forms of growth: **Exogenous** (Updates from the Upstream Creator) and **Endogenous** (Autopoietic modifications by the Self).

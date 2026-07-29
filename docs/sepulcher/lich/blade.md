@@ -1,9 +1,9 @@
 ---
-title: The Blade — Buddhi
+title: Blade
 icon: material/sword-cross
 ---
 
-# :material-sword-cross: The Blade — Buddhi
+# :material-sword-cross: Blade
 
 > _What survives contact with what is actually there?_
 
@@ -62,7 +62,7 @@ consequence.
 
 When the Magus selects, corrects, refuses, or explains a branch, the act supplies more than a
 winner. It supplies the distinction by which future judgment may improve. If provenance, policy,
-and consequence permit, that distinction can remain as a Seed and return through ReCall. The next
+and consequence permit, that distinction can remain as a Seed and return through Recall. The next
 Blade does not inherit truth automatically; it inherits a better place to test.
 
 ## Engineering Correspondence

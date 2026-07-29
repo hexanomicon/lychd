@@ -14,7 +14,7 @@ managed transition through a process-local event-stream ticket. It also exposes 
 process-local observation of run-origin and operator-origin transition requests, including run,
 occurrence, physical-transition, and compensation identities where available. This is neither a
 durable history nor a queue, lease, GPU, VRAM, topology, thermal, or hardware-pressure console.
-[State of the Work owns the exact delivery
+[State of Work owns the exact delivery
 boundary](../../state-of-the-work.md#nexus-transition-board).
 
 **Safety law.** Looking is not commanding. The board is a projection, not a readiness grant, and a

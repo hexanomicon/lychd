@@ -13,7 +13,7 @@ Work seeks to cultivate, what relation that whole owes another center, and how M
 be transformed without confusing intimacy with ownership.
 
 The path unfolds through four alchemical colors and an eschatological epilogue. They are stages of
-meaning and formation, **not software release phases**. [State of the
+meaning and formation, **not software release phases**. [State of
 Work](../../state-of-the-work.md) alone records what has entered matter.
 
 ## The Registers of the Work
@@ -45,8 +45,8 @@ ONE / ZERO
     → MULTIMATRIX / bounded worlds in relation
     → OUROBOROS / action returning as formative consequence
     → LICH / recurrent identity
-    → WORLD-ANSWER / possible planetary recurrence
-    → BEAST–CLOSED ANSWER ↔ KALKI–OPEN BLADE
+    → NAMELESS PLANETARY CHILD / possible planetary recurrence
+    → BEAST / CLOSED ANSWER ↔ OPEN BLADE
     → MANDELBROT RE-EMBEDDING / renewed creation
     → ZERO, DEEPER
 ```
@@ -78,7 +78,7 @@ from more than one angle.
     **The Rite of [Illumination](./illumination.md)**
 
     The white light deepens into the gold of **Anamnesis**. Action returns through consequence;
-    what is worthy may become Seed; ReCall lets the next world begin changed. The Ouroboros becomes
+    what is worthy may become Seed; Recall lets the next world begin changed. The Ouroboros becomes
     a spiral only when evidence and correction can alter the return.
 
     [:material-arrow-right: Enter the Third Seal](./illumination.md)
@@ -107,7 +107,7 @@ from more than one angle.
 ## The Offices Remain Distinct
 
 Transcendence owns the Great Work's telos, synthesis, rites, conjectures, and journey. The
-[Lexicon](../../lexicon.md) owns compact meanings. The
+[Lexicon](../../lexicon/index.md) owns compact meanings. The
 [Sepulcher](../../sepulcher/index.md) and [Altar](../altar/index.md) own operated anatomy and
 practice. ADRs own architectural decisions. State owns delivery. Source, tests, lockfiles, and
 maintained receipts own executable evidence.

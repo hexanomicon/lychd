@@ -35,7 +35,7 @@ Technically, Ghouls are **SAQ Workers**, a legion of background task executors s
     2. **The Quickening:** The Vessel receives the Intent and quickens or schedules a Ghoul. The worker claims the queued job and binds itself to the task.
     3. **The Labor:** The Ghoul executes its assigned duty with relentless, single-minded focus.
        Trusted Ghouls remain in the Vessel. Unsafe hand-work must remain disabled until the planned
-       **[Tomb](../extensions/shadow.md)** boundary exists; it must not execute inside the Vessel.
+       **[Tomb](../extensions/shadow/index.md)** boundary exists; it must not execute inside the Vessel.
     4. **The Dissolution:** Upon completion of its task, the Ghoul's purpose is fulfilled. Its borrowed life-force is reclaimed by the Vessel, and the process dissolves back into nothingness, leaving only the results of its labor behind.
 
 !!! info "The Nature of the Swarm"

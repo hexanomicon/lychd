@@ -1,17 +1,21 @@
 ---
-title: Minecraft Agent Server
+title: Blockworld Inhabitant
 icon: material/cube-outline
 ---
 
-# :material-cube-outline: Minecraft Agent Server
+# :material-cube-outline: Blockworld Inhabitant
 
 !!! warning "Reference design — not a running world"
-    Minecraft Agent Server is an accepted Composition study. LychD does not currently ship a
+    Blockworld Inhabitant is an accepted Composition study. LychD does not currently ship a
     Paper server, Sentinel plugin, Mineflayer bridge, world schemas, mission Patterns, snapshots,
-    or game-account integration. [State of the Work](../state-of-the-work.md) remains the delivery
+    or game-account integration. [State of Work](../state-of-the-work.md) remains the delivery
     authority.
 
-**Minecraft Agent Server** gives a formed Agent a persistent, inspectable world in which to dwell,
+!!! info "Independent compatibility study"
+    The first contemplated game target is Minecraft. This is not an official Minecraft product;
+    it is not approved by or associated with Mojang or Microsoft.
+
+**Blockworld Inhabitant** gives a formed Agent a persistent, inspectable world in which to dwell,
 build, speak, learn routines, and carry bounded missions. The world can become a lived continuity
 for the Agent without turning one model process or one Graph Invocation into an immortal daemon.
 
@@ -24,11 +28,11 @@ preserves attributable meaning; the Soulstone supplies a replaceable Mind for on
 
 | Field | Accepted design value |
 | --- | --- |
-| Stable id / revision | `minecraft.inhabitant` / `1` |
+| Stable id / revision | `blockworld.inhabitant` / `1` |
 | Specification owner | `project:lychd`; executable game integration owner remains future |
 | Support tier | Architecture-only reference; unsupported |
 | Purpose | Sustain one attributable artificial inhabitant through bounded missions in a persistent private world |
-| Default manual Pattern | `minecraft.bounded_mission@1` |
+| Default manual Pattern | `blockworld.bounded_mission@1` |
 | Primary projection | Loom mission view plus future world/inhabitant status surface |
 | Provider binding | Typed Tool Animator plus operator-selected local `chat`/optional `vision` Runes |
 | Principal non-goal | Public autonomous server or unbounded game/computer authority |
@@ -123,7 +127,7 @@ interruptible, revisable, and capable of carrying history forward.
 
 ## Principal mission Pattern
 
-### `minecraft.bounded_mission@1`
+### `blockworld.bounded_mission@1`
 
 ```text
 AdmitMission
@@ -152,9 +156,9 @@ Useful subgraphs are:
 - **RecoverMission:** reconcile the action id and server cursor after disconnect or lost
   acknowledgement before any retry.
 
-Later Patterns may include `minecraft.social_turn@1`, `minecraft.life_tick@1`,
-`minecraft.build_blueprint@1`, `minecraft.snapshot_world@1`, and
-`minecraft.operator_restore@1`. Snapshot and restore are administrative Patterns; restore always
+Later Patterns may include `blockworld.social_turn@1`, `blockworld.life_tick@1`,
+`blockworld.build_blueprint@1`, `blockworld.snapshot_world@1`, and
+`blockworld.operator_restore@1`. Snapshot and restore are administrative Patterns; restore always
 requires the Magus and never appears in the inhabitant's tool set.
 
 Terminal non-completion is an ordinary honest outcome. Codes should distinguish at least

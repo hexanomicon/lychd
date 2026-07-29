@@ -9,7 +9,7 @@ the compiled Altar assets, browser API/SSE projection, Svelte, SvelteKit, Vite, 
 
 - [ADR 15](../../docs/adr/15-frontend.md) owns the browser architecture, framework boundary,
   styling law, build topology, and forbidden SvelteKit server surface.
-- [State of the Work](../../docs/state-of-the-work.md#altar-and-observability) owns the delivered
+- [State of Work](../../docs/state-of-the-work.md#altar-and-observability) owns the delivered
   Altar boundary.
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) owns commands and implementation conventions.
 - `frontend/package.json`, `frontend/package-lock.json`, `frontend/svelte.config.js`, and

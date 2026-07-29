@@ -20,11 +20,11 @@ The Lich ceases to be a stranger. It begins to remember your Imprint.
 
 A response is an event. A response returned through consequence may leave conditioning. When that
 conditioning retains the power to shape a later act, LychD calls it **the Seed**. When a Seed
-becomes present movement again, LychD calls it **the ReCall**.
+becomes present movement again, LychD calls it **Recall**.
 
 ```text
 worldₙ + selfₙ → interpretationₙ → actionₙ
-actionₙ + consequenceₙ → Seedₙ₊₁ → ReCall → worldₙ₊₁ + selfₙ₊₁
+actionₙ + consequenceₙ → Seedₙ₊₁ → Recall → worldₙ₊₁ + selfₙ₊₁
 ```
 
 This is the **Ouroboros**, but it is not a flat ring. Every genuine return changes the point of
@@ -47,7 +47,7 @@ hold continuity data; it is not the Spirit, a captive ghost, or proof of inward 
 [Phylactery](../../sepulcher/phylactery/index.md) owns durable records, while
 [Spirit](../../sepulcher/lich/spirit/index.md) owns the wider myth of conditioning and return.
 
-These are intended movements. [State of the Work](../../state-of-the-work.md) determines which
+These are intended movements. [State of Work](../../state-of-the-work.md) determines which
 ingestion, curation, retrieval, vector, and feedback mechanisms exist now.
 
 ## III. Anamnesis

@@ -3,7 +3,7 @@ title: 1. Philosophy
 icon: material/feather
 ---
 
-# :material-feather: 1. eXtreme Documentation Driven Development (xDDD)
+# :material-feather: 1. Philosophy
 
 !!! abstract "Context and Problem Statement"
     Absorb the useful, discard the useless and add what is unique. Reject the dogma and instead forge a middle path — one that respects the narrative density of **Lore** while demanding the rigorous purity of **Code**.
@@ -77,7 +77,7 @@ XP focuses on technical excellence and communication.
 ### 2. Domain-Driven Design (DDD)
 
 - Aligns software structure with business concepts.
-- Utilized to ensure code reflects the Vision, but Lore (Map) is strictly separated from Code (Territory) as defined in the [Lexicon](../lexicon.md).
+- Utilized to ensure code reflects the Vision, but Lore (Map) is strictly separated from Code (Territory) as defined in the [Lexicon](../lexicon/index.md).
 
 !!! success "Domain Isolation:"
     Separation of concerns is mandatory. The Domain is isolated from the Infrastructure.
@@ -190,7 +190,7 @@ Within `docs/`, authority is divided by purpose:
 - **docs/state-of-the-work.md** is the sole granular public delivery record. It
   separates what repository evidence supports, what still needs an operator
   receipt, and what remains design. ADR acceptance never sets a delivery state.
-- **docs/lexicon.md** is the canonical glossary. Deeper pages may elaborate a
+- **docs/lexicon/** is the canonical glossary. Its index owns jurisdiction; deeper pages may elaborate a
   term, but they should not redefine it.
 - **docs/compositions/** is the one catalogue for application specifications and candidate
   studies. A mature Composition page owns one application's intent, Pattern catalogue,
@@ -241,7 +241,7 @@ the task:
    orientation, `CONTRIBUTING.md` for contribution mechanics, `AGENTS.md` for
    agent operation, and `docs/index.md` for the published Prophecy.
 2. Use directory indexes as maps before opening child concepts.
-3. Use `docs/lexicon.md` when terminology controls meaning.
+3. Use `docs/lexicon/` when terminology controls meaning.
 4. Use ADRs when architecture, boundaries, or governance are in question.
 5. Use `docs/compositions/` for an accepted application's complete contract and Pattern catalogue.
 6. Use Sepulcher and Divination pages when domain doctrine or operator workflow
@@ -266,7 +266,7 @@ Authority resolves by the kind of truth being asked for:
    supports; it does not create evidence or architectural law.
 3. ADRs define architectural law, constraints, and intended boundaries; an
    accepted decision does not prove delivery.
-4. The Lexicon defines canonical terminology.
+4. Lexicon defines canonical terminology.
 5. Composition specifications whose pages explicitly declare acceptance define application
    contracts under ADR law without proving implementation or delivery priority. Candidate
    Composition studies preserve proposals but decide no architecture, priority, or backlog.

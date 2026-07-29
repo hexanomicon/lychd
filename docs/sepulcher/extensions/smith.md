@@ -65,7 +65,7 @@ uses the **[Creation Protocol](../../adr/16-creation.md)** when it proposes a ne
 artifact; neither boundary transfers promotion authority.
 
 - **The Test:** It enqueues **[Ghouls](../../adr/14-workers.md)** to coordinate candidate state in
-  the **[Shadow Realm](./shadow.md)** and dispatch verification payloads (`ruff`, `basedpyright`,
+  the **[Shadow Realm](./shadow/index.md)** and dispatch verification payloads (`ruff`, `basedpyright`,
   `pytest`) via SAQ into the Tomb for sandboxed execution. The Smith agent itself remains in the
   Vessel; only raw scripts reach the Tomb.
 - **The Loop:** If verification fails, policy may grant a bounded correction budget. The Smith

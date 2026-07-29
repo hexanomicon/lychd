@@ -24,8 +24,12 @@ PYTEST_BASETEMP ?= .cache/pytest
 RUFF_TARGETS ?= .
 FORMAT_TARGETS ?= .
 TYPECHECK_TARGETS ?=
+RELEASE_REVISION ?=
+RELEASE_TAG ?=
+RELEASE_ARTIFACT_DIR ?= .cache/release-candidate/$(RELEASE_REVISION)
 PYTEST_EFFECTIVE_TARGETS := $(PYTEST_TARGETS)
 UV ?= uv
+UV_DEV_RUN := $(UV) run --extra postgres-binary
 UV_CACHE_DIR ?= .cache/uv
 RTK ?= rtk
 RTK_AVAILABLE := $(shell command -v $(RTK) >/dev/null 2>&1 && echo 1 || echo 0)
@@ -36,19 +40,19 @@ RTK_ACTIVE := 0
 endif
 
 ifeq ($(RTK_ACTIVE),1)
-RUN := $(UV) run $(RTK) run
-ERR := $(UV) run $(RTK) err
-RUFF := $(UV) run $(RTK) ruff
-PYTEST := $(UV) run $(RTK) pytest
-TYPECHECK := $(UV) run --group typing $(RTK) err basedpyright
+RUN := $(UV_DEV_RUN) $(RTK) run
+ERR := $(UV_DEV_RUN) $(RTK) err
+RUFF := $(UV_DEV_RUN) $(RTK) ruff
+PYTEST := $(UV_DEV_RUN) $(RTK) pytest
+TYPECHECK := $(UV_DEV_RUN) --group typing $(RTK) err basedpyright
 CURL := $(RTK) curl
 GREP := $(RTK) grep
 else
 RUN :=
 ERR :=
-RUFF := $(UV) run ruff
-PYTEST := $(UV) run pytest
-TYPECHECK := $(UV) run --group typing basedpyright
+RUFF := $(UV_DEV_RUN) ruff
+PYTEST := $(UV_DEV_RUN) pytest
+TYPECHECK := $(UV_DEV_RUN) --group typing basedpyright
 CURL := curl
 GREP := grep
 endif
@@ -135,14 +139,14 @@ frontend-dev: ## Run the SvelteKit Altar in loopback-only development mode
 .PHONY: frontend-build
 frontend-build: ## Generate contracts and compile the static Svelte Altar
 	@echo "${INFO} Building frontend assets..."
-	@$(UV) run python scripts/export_openapi.py
+	@$(UV_DEV_RUN) python scripts/export_openapi.py
 	@$(NPM) --prefix frontend run generate:api
 	@$(NPM) --prefix frontend run build
 	@echo "${OK} Frontend build complete."
 
 .PHONY: frontend-check
 frontend-check: ## Type-check and test the Svelte Altar
-	@$(UV) run python scripts/export_openapi.py
+	@$(UV_DEV_RUN) python scripts/export_openapi.py
 	@$(NPM) --prefix frontend run generate:api
 	@$(NPM) --prefix frontend run check
 	@$(NPM) --prefix frontend run test
@@ -179,6 +183,13 @@ format: ## Run Ruff (Formatter). Usage: make format FORMAT_TARGETS="src/lychd/ap
 	@$(RUFF) format $(FORMAT_TARGETS)
 	@echo "${OK} Formatted."
 
+.PHONY: format-check
+format-check: ## Check Ruff formatting without changing files
+	@$(call validate_paths,$(FORMAT_TARGETS))
+	@echo "${INFO} Checking formatting (Targets: $(FORMAT_TARGETS))..."
+	@$(RUFF) format --check $(FORMAT_TARGETS)
+	@echo "${OK} Formatting is clean."
+
 .PHONY: type-check
 type-check: ## Run BasedPyright. Usage: make type-check TYPECHECK_TARGETS="src/lychd/app.py"
 	@$(call validate_paths,$(TYPECHECK_TARGETS))
@@ -202,7 +213,7 @@ coverage: ## Run tests with coverage report
 	@echo "${OK} Report generated at htmlcov/index.html"
 
 .PHONY: check
-check: lint format type-check test ## Run ALL quality checks (The "CI" command)
+check: lint format-check type-check test ## Run all non-mutating quality checks
 
 ## ============================================================================
 ## Documentation
@@ -211,8 +222,8 @@ check: lint format type-check test ## Run ALL quality checks (The "CI" command)
 
 .PHONY: docs
 docs: ## Serve the documentation locally
-	@echo "${INFO} Serving The Hexanomicon at http://localhost:7778"
-	@$(RUN) $(UV) run zensical serve --dev-addr localhost:7778
+	@echo "${INFO} Serving Hexanomicon at http://localhost:7778"
+	@$(RUN) $(UV_DEV_RUN) zensical serve --dev-addr localhost:7778
 
 
 .PHONY: kill-docs
@@ -226,19 +237,46 @@ kill-docs: ## Kill any process running on the docs port (7778)
 # =============================================================================
 
 .PHONY: release
-release: ## Bump version and git tag. Usage: make release part=patch (or minor/major)
+release: ## Prepare version fields only; never commits, tags, or publishes
 ifndef part
 	$(error "You must specify a part! Usage: make release part=patch")
 endif
 	@echo "${INFO} Bumping version ($(part))..."
 	@$(ERR) $(UV) run bump-my-version bump $(part)
-	@echo "${OK} Version bumped and tagged."
+	@echo "${OK} Version fields updated locally; review and commit them manually."
 
 .PHONY: build
-build: ## Build the Python wheel
-	@echo "${INFO} Building wheel..."
+build: frontend-build ## Build local, explicitly non-release Python artifacts
+	@echo "${INFO} Building local source artifacts..."
 	@$(ERR) $(UV) build
 	@echo "${OK} Built."
+
+.PHONY: release-preflight
+release-preflight: ## Require a clean checkout at RELEASE_REVISION
+	@$(RUN) $(UV) run python scripts/verify_release_source.py "$(RELEASE_REVISION)"
+
+.PHONY: frontend-release-build
+frontend-release-build: release-preflight ## Compile Altar against exact RELEASE_REVISION
+	@echo "${INFO} Building Altar for immutable source $(RELEASE_REVISION)..."
+	@$(MAKE) frontend-build LYCHD_ALTAR_VERSION="$(RELEASE_REVISION)"
+	@echo "${OK} Exact-source Altar built."
+
+.PHONY: release-candidate
+release-candidate: release-preflight ## Test and build audited artifacts; never uploads them
+	@echo "${INFO} Verifying release candidate $(RELEASE_REVISION)..."
+	@$(MAKE) lint
+	@$(MAKE) format-check
+	@$(MAKE) type-check
+	@$(MAKE) test
+	@$(MAKE) frontend-check
+	@$(MAKE) frontend-release-build RELEASE_REVISION="$(RELEASE_REVISION)"
+	@$(ERR) $(UV) build --out-dir "$(RELEASE_ARTIFACT_DIR)"
+	@$(RUN) $(UV) run python scripts/verify_release_artifacts.py \
+		--dist-dir "$(RELEASE_ARTIFACT_DIR)" \
+		--source-revision "$(RELEASE_REVISION)" \
+		--release-tag "$(RELEASE_TAG)" \
+		--install-check
+	@echo "${OK} Release candidate verified locally; nothing was uploaded."
 
 
 # =============================================================================
@@ -247,11 +285,11 @@ build: ## Build the Python wheel
 
 .PHONY: init
 init: ## Initialize the local LychD host layout
-	@$(ERR) $(UV) run lychd init
+	@$(ERR) $(UV_DEV_RUN) lychd init
 
 .PHONY: bind
 bind: ## Bind Systemd units
-	@$(ERR) $(UV) run lychd bind
+	@$(ERR) $(UV_DEV_RUN) lychd bind
 
 # =============================================================================
 # 📚 Help
