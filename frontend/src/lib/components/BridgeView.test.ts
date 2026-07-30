@@ -205,13 +205,9 @@ describe("Bridge route and stream ownership", () => {
     remounted.unmount();
   });
 
-  it("reattaches exactly once after a hard close but not a transient reconnect", async () => {
-    let active = projection();
-    getSnapshotMock.mockImplementation(async (sessionId) =>
-      sessionId === "session-b"
-        ? snapshot("session-b")
-        : snapshot("session-a", [active])
-    );
+  it("performs one bounded authoritative recovery after a hard close", async () => {
+    const active = projection();
+    getSnapshotMock.mockResolvedValue(snapshot("session-a", [active]));
     const view = render(BridgeView, { sessionId: "session-a" });
     expect(await screen.findByText("authoritative partial")).toBeTruthy();
     expect(listenMock).toHaveBeenCalledOnce();
@@ -219,34 +215,29 @@ describe("Bridge route and stream ownership", () => {
     const firstCall = listenMock.mock.calls[0];
     if (!firstCall) throw new Error("The initial stream was not attached.");
     await act(() => firstCall[2]("The run stream went quiet; reconnecting."));
-
-    await view.rerender({ sessionId: "session-b" });
-    expect(await screen.findByText("session-b")).toBeTruthy();
-    await view.rerender({ sessionId: "session-a" });
-    expect(await screen.findByText("authoritative partial")).toBeTruthy();
     expect(listenMock).toHaveBeenCalledOnce();
 
     const onHardClose = firstCall[4]?.onHardClose;
     if (!onHardClose) throw new Error("The hard-close hook was not registered.");
-    await act(() => onHardClose());
-    active = {
-      ...active,
+    getRunSnapshotMock.mockResolvedValue({
+      ...projection(),
       cursor: 19,
       content: "recovered projection"
-    };
+    });
+    await act(() => onHardClose("The Vessel emitted an invalid run event."));
 
-    await view.rerender({ sessionId: "session-b" });
-    expect(await screen.findByText("session-b")).toBeTruthy();
-    await view.rerender({ sessionId: "session-a" });
     expect(await screen.findByText("recovered projection")).toBeTruthy();
+    expect(getRunSnapshotMock).toHaveBeenCalledOnce();
     expect(listenMock).toHaveBeenCalledTimes(2);
     expect(listenMock.mock.calls[1]?.[4]?.initialCursor).toBe(19);
 
-    await view.rerender({ sessionId: "session-b" });
-    expect(await screen.findByText("session-b")).toBeTruthy();
-    await view.rerender({ sessionId: "session-a" });
-    expect(await screen.findByText("recovered projection")).toBeTruthy();
+    const secondHardClose = listenMock.mock.calls[1]?.[4]?.onHardClose;
+    if (!secondHardClose) throw new Error("The recovered stream has no hard-close hook.");
+    await act(() => secondHardClose("The Vessel emitted an invalid run event."));
+    expect(screen.getByText("projection stale")).toBeTruthy();
+    expect(getRunSnapshotMock).toHaveBeenCalledOnce();
     expect(listenMock).toHaveBeenCalledTimes(2);
+    view.unmount();
   });
 
   it("keeps a delayed session-A admission out of session B", async () => {

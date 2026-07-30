@@ -20,7 +20,7 @@ from lychd.domain.animation.schemas import (
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-    from lychd.domain.animation.schemas import LocalModelConfig
+    from lychd.domain.animation.schemas import LocalModelConfig, PortalModelConfig
 
 logger = structlog.get_logger()
 
@@ -103,6 +103,20 @@ def model_infos_from_soulstone(soulstone: SoulstoneConfig) -> list[ModelInfo]:
     if soulstone.model_format is not None:
         metadata["format"] = soulstone.model_format.value
     return [_build_model_info(model_id=model_id, profile=profile, metadata=metadata)]
+
+
+def model_info_from_portal_model(model: PortalModelConfig) -> ModelInfo:
+    """Build the one connector/capability projection of a declared Portal model."""
+    hints = model.capabilities
+    return ModelInfo(
+        id=model.id,
+        description=model.description,
+        surface=(hints.surface if hints is not None else None) or ModelSurface.CHAT,
+        modalities_in=list((hints.modalities_in if hints is not None else None) or ["text"]),
+        modalities_out=list((hints.modalities_out if hints is not None else None) or ["text"]),
+        supports_tools=hints.supports_tools if hints is not None else None,
+        supports_streaming=True if hints is None or hints.supports_streaming is None else hints.supports_streaming,
+    )
 
 
 def capability_specs_from_soulstone(

@@ -7,6 +7,7 @@
     createNexusSwap,
     getNexusPlan,
     getNexusSnapshot,
+    getNexusSwap,
     getNexusTransition,
     listenToSwap
   } from "$lib/api/client";
@@ -25,25 +26,41 @@
   let preview = $state.raw<Preview | null>(null);
   let selectedTransition = $state.raw<TransitionRecordView | null>(null);
   let ticket = $state.raw<SwapTicket | null>(null);
+  let ticketStale = $state(false);
   let loading = $state(true);
   let busy = $state(false);
   let error = $state("");
   let transitionNote = $state("");
   let previewVersion = 0;
-  let refreshVersion = 0;
   let transitionVersion = 0;
+  let refreshInFlight: Promise<void> | null = null;
   let closeStream: (() => void) | null = null;
   let planInspector: HTMLElement | undefined;
   let transitionInspector: HTMLElement | undefined;
+  let planReturnFocus: HTMLElement | undefined;
+  let transitionReturnFocus: HTMLElement | undefined;
+  let destroyed = false;
+  const recoveredTickets = new Set<string>();
 
   let requestedTransitionId = $derived(page.url.searchParams.get("transition"));
   let requestedEventId = $derived(page.url.searchParams.get("event"));
 
   $effect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(false), 5000);
+    let cancelled = false;
+    let timer: number | undefined;
+    let initial = true;
+
+    async function poll() {
+      await refresh(initial);
+      initial = false;
+      if (!cancelled) timer = window.setTimeout(() => void poll(), 5000);
+    }
+
+    void poll();
     return () => {
-      window.clearInterval(timer);
+      cancelled = true;
+      destroyed = true;
+      if (timer !== undefined) window.clearTimeout(timer);
       closeStream?.();
     };
   });
@@ -58,23 +75,32 @@
     }
   });
 
-  async function refresh(showLoading = true) {
-    const version = ++refreshVersion;
+  function refresh(showLoading = true): Promise<void> {
+    if (refreshInFlight) return refreshInFlight;
+    const pending = performRefresh(showLoading);
+    refreshInFlight = pending;
+    void pending.finally(() => {
+      if (refreshInFlight === pending) refreshInFlight = null;
+    });
+    return pending;
+  }
+
+  async function performRefresh(showLoading: boolean) {
     if (showLoading) loading = true;
     try {
       const next = await getNexusSnapshot();
-      if (version !== refreshVersion) return;
+      if (destroyed) return;
       snapshot = next;
       error = "";
       if (requestedTransitionId) {
         await selectTransition(requestedTransitionId, false);
       }
     } catch (cause) {
-      if (version === refreshVersion) {
+      if (!destroyed) {
         error = cause instanceof Error ? cause.message : "The Nexus cannot be read.";
       }
     } finally {
-      if (version === refreshVersion) loading = false;
+      if (!destroyed && showLoading) loading = false;
     }
   }
 
@@ -103,8 +129,9 @@
     }
   }
 
-  async function previewTransition(target: string) {
-    await clearTransition();
+  async function previewTransition(target: string, opener?: HTMLElement) {
+    planReturnFocus = opener;
+    await clearTransition(false);
     const version = ++previewVersion;
     preview = null;
     ticket = null;
@@ -120,6 +147,14 @@
         error = cause instanceof Error ? cause.message : "The transition cannot be calculated.";
       }
     }
+  }
+
+  async function closePreview() {
+    const target = planReturnFocus;
+    planReturnFocus = undefined;
+    preview = null;
+    await tick();
+    if (target?.isConnected) target.focus();
   }
 
   async function focusOnMobile(element: HTMLElement | undefined) {
@@ -142,19 +177,27 @@
     };
   }
 
-  async function clearTransition() {
+  async function clearTransition(restoreFocus = true) {
+    const target = restoreFocus ? transitionReturnFocus : undefined;
+    transitionReturnFocus = undefined;
     transitionVersion++;
     selectedTransition = null;
     transitionNote = "";
-    if (!requestedTransitionId) return;
+    if (!requestedTransitionId) {
+      await tick();
+      if (target?.isConnected) target.focus();
+      return;
+    }
     const url = new URL(page.url);
     url.searchParams.delete("transition");
     url.searchParams.delete("event");
     await goto(`${url.pathname}${url.search}`, {
       replaceState: true,
-      keepFocus: true,
+      keepFocus: target !== undefined,
       noScroll: true
     });
+    await tick();
+    if (target?.isConnected) target.focus();
   }
 
   async function swap() {
@@ -165,27 +208,74 @@
     try {
       const accepted = await createNexusSwap(selected.target);
       ticket = accepted.ticket;
-      closeStream?.();
-      closeStream = listenToSwap(
-        accepted.ticket.id,
-        (event) => {
-          ticket = event.ticket;
-          if (event.ticket.state !== "warming") {
-            closeStream = null;
-            void refresh(false);
-            void selectTransition(event.ticket.request_id);
-          }
-        },
-        (message) => {
-          window.dispatchEvent(
-            new CustomEvent("altar:omen", { detail: { text: message, fault: false } })
-          );
-        }
-      );
+      ticketStale = false;
+      followTicket(accepted.ticket.id);
     } catch (cause) {
       error = cause instanceof Error ? cause.message : "The transition was refused.";
     } finally {
       busy = false;
+    }
+  }
+
+  function followTicket(ticketId: string) {
+    closeStream?.();
+    let hardClosed = false;
+    let close: (() => void) | undefined;
+    close = listenToSwap(
+      ticketId,
+      (event) => {
+        ticket = event.ticket;
+        ticketStale = false;
+        if (event.ticket.state !== "warming") {
+          closeStream = null;
+          void refresh(false);
+          void selectTransition(event.ticket.request_id);
+        }
+      },
+      (message) => {
+        window.dispatchEvent(
+          new CustomEvent("altar:omen", { detail: { text: message, fault: false } })
+        );
+      },
+      {
+        onHardClose: () => {
+          hardClosed = true;
+          if (close === undefined || closeStream === close) closeStream = null;
+          if (ticket?.id === ticketId && ticket.state === "warming") {
+            ticketStale = true;
+          }
+          void recoverHardClosedTicket(ticketId);
+        }
+      }
+    );
+    if (!hardClosed) closeStream = close;
+  }
+
+  async function recoverHardClosedTicket(ticketId: string) {
+    if (recoveredTickets.has(ticketId)) return;
+    recoveredTickets.add(ticketId);
+    try {
+      const recovered = await getNexusSwap(ticketId);
+      if (destroyed || ticket?.id !== ticketId) return;
+      ticket = recovered.ticket;
+      ticketStale = false;
+      if (recovered.ticket.state === "warming") {
+        followTicket(ticketId);
+      } else {
+        void refresh(false);
+        void selectTransition(recovered.ticket.request_id);
+      }
+    } catch {
+      if (!destroyed) {
+        window.dispatchEvent(
+          new CustomEvent("altar:omen", {
+            detail: {
+              text: "The transition projection remains stale; refresh the Nexus to retry.",
+              fault: true
+            }
+          })
+        );
+      }
     }
   }
 
@@ -237,7 +327,7 @@
                 <button
                   class="preview-trigger"
                   type="button"
-                  onclick={() => previewTransition(row.capability_key)}
+                  onclick={(event) => previewTransition(row.capability_key, event.currentTarget)}
                 >
                   Preview
                 </button>
@@ -315,6 +405,7 @@
                 <a
                   class:current={selectedTransition?.request_id === transition.request_id}
                   href="/nexus?transition={transition.request_id}"
+                  onclick={(event) => (transitionReturnFocus = event.currentTarget)}
                 >
                   <span class="transition-source">{transition.source}</span>
                   <strong>{transition.target_capability_key}</strong>
@@ -342,7 +433,7 @@
     >
       <div class="panel-head">
         <h2 class="rune-head">Non-binding preview</h2>
-        {#if preview}<button class="sheet-dismiss" type="button" onclick={() => (preview = null)}>Close</button>{/if}
+        {#if preview}<button class="sheet-dismiss" type="button" onclick={closePreview}>Close</button>{/if}
       </div>
       {#if preview}
         <div class="plan-verdict" data-state={preview.plan.action_type === "NO_OP" ? "clean" : "change"}>
@@ -375,9 +466,9 @@
         <p class="nexus-hint">Choose Preview on a managed capability.</p>
       {/if}
       {#if ticket}
-        <div class="swap-ticket" data-state={ticket.state}>
+        <div class="swap-ticket" data-state={ticketStale ? "stale" : ticket.state}>
           <span>{ticket.target}</span>
-          <strong>{ticket.phase}</strong>
+          <strong>{ticketStale ? "projection stale" : ticket.phase}</strong>
           <code>{ticket.request_id.slice(0, 12)}</code>
         </div>
       {/if}
@@ -393,7 +484,7 @@
       <div class="panel-head">
         <h2 class="rune-head">Selected transition observation</h2>
         {#if selectedTransition}
-          <button class="sheet-dismiss" type="button" onclick={clearTransition}>Close</button>
+          <button class="sheet-dismiss" type="button" onclick={() => void clearTransition()}>Close</button>
         {/if}
       </div>
       {#if selectedTransition}

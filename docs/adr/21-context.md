@@ -105,9 +105,11 @@ and complete continuation before history. If they overflow, `ContextBudgetExceed
 run. Continuation never splits; remaining space retains newest complete groups, up to the turn
 window, never cutting a request from response to keep an older fragment.
 
-Bridge separately derives Pydantic AI's input-token fence from the actual window after reserving
-output. Character and request-time token limits are two fences, not exact cross-provider token
-equivalence.
+Bridge separately gives Pydantic AI the actual window remaining after output reservation.
+Pydantic AI pre-counts only for models implementing `count_tokens`; current OpenAI-compatible
+models instead enforce provider-reported input usage after a response. The character governor and
+usage limit are therefore independent bounds, not exact cross-provider token equivalence or a
+universal pre-request fence.
 
 ## Stable history
 

@@ -84,6 +84,16 @@ One spec can run with any admitted model meeting the adapter contract. A foreign
 an in-process Agent by analogy: it remains a typed delegated runtime or Animator boundary until a
 later ADR admits a versioned interface.
 
+Provider Portals route their declared alias through the matching Pydantic AI provider or
+model-profile resolver, including unsupported-setting filtering. OpenRouter, LiteLLM, and Ollama
+use their provider resolvers; Google's OpenAI-shaped endpoint uses the Google model profile over
+the OpenAI transport. Generic OpenAI-compatible endpoints and local runtimes instead select
+LychD's conservative inline-schema, non-strict-tool profile. OpenRouter ids must retain their
+`provider/model` namespace. Under the pinned adapter, Google, LiteLLM, and Ollama aliases are
+Chat-only; Responses is admitted only for OpenAI, OpenRouter, or an explicitly compatible generic
+endpoint. This does not claim a native Gemini transport or providers outside the registered
+aliases.
+
 ## Run dependencies
 
 Every step receives fresh, frozen `LychDDeps`:
@@ -129,10 +139,11 @@ independent verifier, and Security's trusted Portal Egress Gate makes the exact 
 
 `pump_agent_events` streams one hop: text starts and deltas become raw Oculus token events, while
 the final result supplies typed output and Pydantic AI history. The workflow serializes complete
-history and the new suffix separately for settlement or suspension. Bridge derives its input-token
-fence from the selected context window after reserving the grant's output allowance, and asks a
-supporting model to count before the request. That protects this call, not a global recursive
-accounting system.
+history and the new suffix separately for settlement or suspension. Bridge reserves the grant's
+output allowance and passes the remainder as Pydantic AI's input-usage limit. Pre-request counting
+occurs only when a model implements `count_tokens`; the delivered OpenAI-compatible models do not,
+so their provider-reported limit is post-response rather than a guaranteed preflight fence.
+ADR 21 owns the separate character governor.
 
 LychD does not yet share one `UsageLimits` object across a child-Agent tree. Future nested native
 Agents need explicit budgets. Opaque delegates receive serialized limits through their own grant;
@@ -140,13 +151,17 @@ they inherit no `RunContext`, live toolsets, provider objects, or leases.
 
 ## Consent suspension
 
-The delivered deferred path allows one model round to return exactly one approval request and no
-external deferred calls. It serializes suffix and call identifiers—not a live
-`DeferredToolRequests` object—ends the lease before parking, re-enters Graph only after committed
-verdict, acquires a fresh grant, supplies `DeferredToolResults`, and bounds chained approvals.
+The delivered deferred substrate allows one model round to return exactly one approval request and
+no external deferred calls. It serializes suffix and call identifiers—not a live
+`DeferredToolRequests` object—plus the capability key, durable toolset id and type, tool name,
+project-owned effect id and revision, and prepared-definition digest. Resume reacquires a fresh
+grant and refuses execution if that binding changed before supplying `DeferredToolResults`;
+approval-required tools without an effect id and revision cannot park. The tool owner must revise
+the effect revision whenever executable semantics change without changing the prepared definition.
 Multiple approvals and generic `CallDeferred` labor fail truthfully because the record cannot
-represent them. Delegated labor is a separate Graph node with its own job and trust boundary; ADR
-25 owns durable consent ordering and recovery.
+represent them. No tracked production toolset currently originates an approval request; the
+executable path is exercised by test-injected toolsets only. Delegated labor is a separate Graph
+node with its own job and trust boundary; ADR 25 owns durable consent ordering and recovery.
 
 ## Artifacts and multimodality
 

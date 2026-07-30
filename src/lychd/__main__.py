@@ -6,40 +6,13 @@ from typing import TYPE_CHECKING, ClassVar, cast
 
 import click
 
+from lychd.interface.server_policy import (
+    ServerRuntimePolicyError,
+    evaluate_server_runtime_policy,
+)
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
-
-_WORKER_ENVIRONMENT_KEYS = (
-    "GRANIAN_WORKERS",
-    "LITESTAR_WEB_CONCURRENCY",
-    "WEB_CONCURRENCY",
-)
-_RELOAD_ENVIRONMENT_KEYS = (
-    "LITESTAR_RELOAD_DIRS",
-    "LITESTAR_RELOAD_INCLUDES",
-    "LITESTAR_RELOAD_EXCLUDES",
-)
-_DISABLED_ENVIRONMENT_VALUES = {"", "0", "false", "no", "off"}
-_WORKER_OPTIONS = frozenset({"--workers", "-W", "--wc", "--web-concurrency"})
-_LONG_WORKER_OPTIONS = ("--workers", "--wc", "--web-concurrency")
-_RELOAD_OPTIONS = frozenset(
-    {
-        "-r",
-        "--reload",
-        "-R",
-        "--reload-dir",
-        "-I",
-        "--reload-include",
-        "-E",
-        "--reload-exclude",
-    }
-)
-_LONG_RELOAD_VALUE_OPTIONS = (
-    "--reload-dir",
-    "--reload-include",
-    "--reload-exclude",
-)
-_SHORT_RELOAD_VALUE_OPTIONS = ("-R", "-I", "-E")
 
 
 class PulseGroup(click.Group):
@@ -101,68 +74,28 @@ def _run_litestar(args: Sequence[str], *, prog_name: str) -> None:
 @click.argument("server_args", nargs=-1, type=click.UNPROCESSED)
 def serve(server_args: tuple[str, ...]) -> None:
     """Run the ASGI vessel; remaining options are server options."""
-    _enforce_single_worker(server_args)
-    _run_litestar(("run", *server_args), prog_name="lychd serve")
+    from lychd.config.settings.root import get_settings
 
-
-def _enforce_single_worker(server_args: Sequence[str]) -> None:
-    """Reject process/reload settings that split the v1 event plane."""
-    _enforce_server_environment()
-    _enforce_server_arguments(server_args)
-
-
-def _enforce_server_environment() -> None:
-    """Reject ambient worker and reload settings incompatible with v1."""
-    for variable in _WORKER_ENVIRONMENT_KEYS:
-        environment_workers = os.getenv(variable)
-        if environment_workers is not None and environment_workers != "" and not _is_one_worker(environment_workers):
-            message = f"LychD v1 requires {variable}=1; the run event plane is process-local."
-            raise click.ClickException(message)
-    reload_environment = os.getenv("LITESTAR_RELOAD")
-    if reload_environment is not None and reload_environment.casefold() not in _DISABLED_ENVIRONMENT_VALUES:
-        message = "LychD v1 does not support Litestar reload mode; the run event plane is process-local."
-        raise click.ClickException(message)
-    for variable in _RELOAD_ENVIRONMENT_KEYS:
-        if os.getenv(variable) not in {None, ""}:
-            message = (
-                f"LychD v1 does not support {variable}; "
-                "Litestar treats it as reload mode and the run event plane "
-                "is process-local."
-            )
-            raise click.ClickException(message)
-
-
-def _enforce_server_arguments(server_args: Sequence[str]) -> None:
-    """Reject explicit worker and reload arguments incompatible with v1."""
-    for index, argument in enumerate(server_args):
-        raw_value: str | None = None
-        if argument in _WORKER_OPTIONS and index + 1 < len(server_args):
-            raw_value = server_args[index + 1]
-        elif any(argument.startswith(f"{option}=") for option in _LONG_WORKER_OPTIONS):
-            raw_value = argument.partition("=")[2]
-        elif argument.startswith("-W") and argument != "-W":
-            raw_value = argument[2:].removeprefix("=")
-        if raw_value is not None and not _is_one_worker(raw_value):
-            message = "LychD v1 requires exactly one ASGI worker; cross-process RunEventBus is not implemented."
-            raise click.ClickException(message)
-        reload_value = (
-            argument in _RELOAD_OPTIONS
-            or any(argument.startswith(f"{option}=") for option in _LONG_RELOAD_VALUE_OPTIONS)
-            or any(
-                argument.startswith(option) and len(argument) > len(option) for option in _SHORT_RELOAD_VALUE_OPTIONS
-            )
-        )
-        if reload_value:
-            message = "LychD v1 does not support Litestar reload mode; the run event plane is process-local."
-            raise click.ClickException(message)
-
-
-def _is_one_worker(value: str) -> bool:
-    """Return whether one CLI/environment value denotes exactly one worker."""
     try:
-        return int(value) == 1
-    except ValueError:
-        return False
+        policy = evaluate_server_runtime_policy(
+            environment=os.environ,
+            default_listener_port=get_settings().server.port,
+            server_arguments=server_args,
+        )
+    except ServerRuntimePolicyError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if policy.listener_port is None:
+        message = "LychD could not resolve one effective listener port."
+        raise click.ClickException(message)
+    previous_port = os.environ.get("LITESTAR_PORT")
+    os.environ["LITESTAR_PORT"] = str(policy.listener_port)
+    try:
+        _run_litestar(("run", *server_args), prog_name="lychd serve")
+    finally:
+        if previous_port is None:
+            os.environ.pop("LITESTAR_PORT", None)
+        else:
+            os.environ["LITESTAR_PORT"] = previous_port
 
 
 @cli.command(

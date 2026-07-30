@@ -64,9 +64,10 @@ uv run --extra postgres-binary lychd init
 ```
 
 The built-in `animator` extension contributes `runes/animator/portals/openai/` and
-`runes/animator/portals/google-gemini/`; both currently use the OpenAI-compatible Pydantic AI
-connector. Selecting an `animator/*` runtime also registers the shared Portal base. Another
-provider needs an extension-owned Rune schema and connector factory.
+`runes/animator/portals/google-gemini/`. Both speak an OpenAI-shaped HTTP interface, while the
+connector selects the declared provider's model-profile resolver. Selecting an `animator/*`
+runtime also registers the shared Portal base. Another interface needs an extension-owned Rune
+schema and connector factory.
 
 ### 2. Seal one credential
 
@@ -92,9 +93,6 @@ description = "Explicit remote chat capability."
 api_key_secret_name = "portal_openai_main"
 probe = false
 
-[generation]
-temperature = 0.5
-
 [[models]]
 id = "gpt-5.2"
 description = "Remote tool-capable chat model."
@@ -111,6 +109,14 @@ max_tokens = 4096
 The `openai` leaf supplies provider identity and its default URL. Override `base_url` only for an
 OpenAI-compatible endpoint. A Portal with no `[[models]]` blocks contributes no capability; LychD
 does not infer or download a provider catalogue.
+
+Portal models use the Pydantic AI profile selected by provider alias and model id, so settings
+known to be unsupported are omitted rather than forced onto the request. OpenRouter, LiteLLM, and
+Ollama retain their provider resolvers; Gemini's OpenAI-compatible leaf uses Google's model
+profile. Generic compatible endpoints and local Soulstones use a conservative compatibility
+profile. OpenRouter model ids keep their `provider/model` prefix. The current Google, LiteLLM, and
+Ollama aliases reject the Responses surface; OpenAI, OpenRouter, and explicitly compatible generic
+endpoints may select it. This is not evidence of a native Gemini transport.
 
 ### 4. Bind, restart, and observe
 

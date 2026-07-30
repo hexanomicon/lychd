@@ -52,6 +52,7 @@ authorization, semantics, and retained evidence.
 
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
+| `litestar` | `README.md`, then `docs/`, `litestar/`, or focused tests at the installed tag | Exact Litestar application, middleware, OpenAPI, dependency, exception, or lifecycle behavior matters |
 | `awesome-litestar` | `README.md` and its exact category | Discovering current Litestar ecosystem projects before verifying them at their primary source |
 | `litestar-fullstack` | `README.md`, then `docs/usage/`, `src/app/`, or focused tests | Comparing Litestar, SQLAlchemy, SAQ, Structlog, Granian, CLI, auth, or deployment patterns; its React/Jinja frontend is not Altar guidance |
 | `saq` | `README.md`, then `docs/`, `saq/queue/`, or tests | SAQ queue, worker, scheduling, Postgres/Redis, job status, retry, or web-monitor behavior matters |

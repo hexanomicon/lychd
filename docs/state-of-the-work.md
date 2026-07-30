@@ -21,7 +21,7 @@ operation are not current claims.
 | --- | --- | --- |
 | CLI bootstrap | **Partial.** The CLI grammar, dry-run planning, transactional `init`/`bind`, bounded `status`/`logs`, and guarded deletion have repository evidence. | No maintained real-host startup, shutdown, deletion, or full systemd/Podman receipt. See [Core CLI rites](#core-cli-rites) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
 | Local text chat | **Partial.** The exact Pydantic AI adapter, local run engine, and Bridge contracts work in the repository-test envelope. | No complete production-factory + PostgreSQL + named inference-engine + browser acceptance receipt. See [Bridge](#bridge-surface), [first-light persistence](#phylactery-first-light), and the engine records under [Animation](#animation-and-orchestration). |
-| Browser safety | **Loopback only; hostile-browser safety fails.** Generated deployment binds IPv4 loopback and CSRF is present. | Wildcard CORS, unconstrained Host authority, fixed bootstrap Sigil, and mutable CDN assets block untrusted-browser, proxy, tunnel, or remote use. See [Local browser and bind boundary](#local-browser-bind-boundary). |
+| Browser safety | **Loopback only.** Generated deployment binds IPv4 loopback; the app constrains Host and CORS, keeps schema assets local, and applies CSRF. | The fixed bootstrap Sigil is not caller authentication, direct-launch visibility is finite, and no production-browser security receipt exists. Proxy, tunnel, remote, and untrusted-browser use remain unsupported. See [Local browser and bind boundary](#local-browser-bind-boundary). |
 | PostgreSQL and runtime proof | **Receipts missing.** Memory-profile tests and software protocol tests are not host proof. | The real `create_app()` + PostgreSQL lifecycle test is a skipped skeleton; systemd/Podman/GPU/model engines require named receipts. See [Phylactery](#phylactery-first-light) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
 | Major blockers | Durable PostgreSQL/outbox parity, authenticated browser/remote authority, privacy-safe Portal egress, real runtime receipts, native Oculus, and resource-aware scheduling. | Delegated providers, artifacts, vision/audio bytes, evolution, and federation remain Partial or Designed in their records below. |
 
@@ -349,14 +349,21 @@ are currently unbounded; slow-subscriber overflow and backpressure are not gover
 **State:** Available
 
 **Proved now:** LychD constructs typed agents and runs its Bridge workflow through the exact
-`pydantic-ai-slim==1.25.1` contract with serializable state.
+`pydantic-ai-slim==1.25.1` contract with serializable state. Provider Portals retain model-aware
+profiles selected by alias, while local and generic endpoints explicitly use the conservative
+compatibility profile. OpenRouter ids and the provider/surface matrix fail before model dispatch.
 
 **Boundary:** This does not claim Pydantic AI v2 durability, v2 stream events, GraphBuilder, or
-automatic usage propagation.
+automatic usage propagation. Gemini still uses its OpenAI-compatible transport rather than a
+native adapter, and current OpenAI-compatible models do not provide exact pre-request token
+counting.
 
 **Evidence**
 
 - **Source:** [Agent factory](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/factory.py),
+  [model construction](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/model_factory.py),
+  [runtime connector](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/adapters/surfaces.py),
+  [provider registration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/animator/register.py),
   [workflow contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py),
   and [Bridge workflow](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/bridge_chat.py)
 - **Verification:** [Agent factory tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_factory.py),
@@ -387,12 +394,16 @@ contracts are not installed LychD behavior.
 **State:** Partial
 
 **Proved now:** Focused tests cover logical parking, bounded chained single-approval rounds,
-memory-profile simulated restart, reconciliation, idempotent settlement, and graph re-admission.
-Each model round may request one supported approval; a resumed run may enter another bounded round.
+memory-profile simulated restart, reconciliation, idempotent settlement, graph re-admission, and
+fail-closed capability/tool/effect/schema substitution on resume. Unversioned approval effects do
+not park. Each model round may request one supported approval; a resumed run may enter another
+bounded round.
 
 **Boundary — Not yet:** This is not a Postgres Consent-plus-Checkpoint restart receipt. Multiple
 approval calls in one model response are rejected; after verdict commit plus enqueue failure,
 web and CLI suppress the live retry, leaving startup reconciliation as the automatic repair path.
+No tracked production toolset currently originates approval; focused tests inject the only
+approval-required tool.
 
 **Evidence**
 
@@ -689,10 +700,10 @@ admission.
 
 !!! success "Canonical client foundation"
     ADR 15's client foundation is present: Svelte 5 runes, a SvelteKit static SPA, native CSS,
-    generated Litestar OpenAPI types, runtime-validated semantic JSON SSE, and versioned `/api/v1`.
-    Litestar serves the compiled client; Granian remains the production server. Focused Python and
-    Svelte tests prove contracts and shell, not a production-factory Playwright receipt, durable
-    cross-process browser events, Android, or every named instrument.
+    generated Litestar OpenAPI types, JSON framework errors, runtime-validated semantic JSON SSE,
+    and versioned `/api/v1`. Litestar serves the compiled client; Granian remains the production
+    server. Focused Python and Svelte tests prove contracts and shell, not a production-factory
+    Playwright receipt, durable cross-process browser events, Android, or every named instrument.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 
@@ -704,7 +715,8 @@ Pattern, Loom, Orb, and evidence identities remain authoritative. Completed turn
 bounded Pydantic AI history unit; consent resume re-bounds it after the actual grant. Admission
 stores the user turn before queue publication. Cursor-bound snapshots replace speculative client
 state on gaps or resync and reconstruct distinct node, grant, and transition occurrence identities
-after remount or reload.
+after remount or reload. Events are bound to the requested Run; a permanently closed stream becomes
+visibly stale and receives one bounded authoritative recovery attempt rather than remaining live.
 
 **Boundary — Not yet:** There is no production-factory/browser receipt, durable cross-process
 event or token delivery, transactional admission outbox, general multi-approval round, Attention,
@@ -729,6 +741,7 @@ only command modality.
   [session-history tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sessions.py),
   [run-admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py),
   [event-stream tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sse.py),
+  [client stream-contract tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/api/client.test.ts),
   and [Bridge component tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/BridgeView.test.ts)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md),
   [ADR 21 — Context](./adr/21-context.md),
@@ -746,7 +759,9 @@ only command modality.
 non-binding, submits explicit transitions, and follows process-local tickets over semantic SSE.
 Its bounded journal correlates run, occurrence, physical transition, and compensation, preserves
 each probe's `checked_at`, supports direct transition URLs, and retains terminal reconnect truth
-for 60 seconds without evicting active or fresh-terminal tickets.
+for 60 seconds without evicting active or fresh-terminal tickets. Polling is completion-driven and
+single-flight; ticket events are identity-bound and permanent closure becomes explicit stale state
+with one bounded authoritative recovery.
 
 **Boundary — Not yet:** Tickets and observations have no durable owner, complete history,
 cross-process retention, restart recovery, or production-browser receipt. Nexus is not a general
@@ -757,8 +772,10 @@ resource/GPU/topology dashboard or configuration surface.
 - **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py),
   [client Nexus](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.svelte),
   and [process-local ticket store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/tickets.py)
-- **Verification:** [Nexus board and endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py)
-  and [ticket-retention tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_tickets.py)
+- **Verification:** [Nexus board and endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py),
+  [ticket-retention tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_tickets.py),
+  [client stream-contract tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/api/client.test.ts),
+  and [Nexus component tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.test.ts)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 23 — Orchestrator](./adr/23-orchestrator.md)
 
@@ -934,25 +951,27 @@ its audit row. Current preauthorization tests are memory-backed and prove neithe
 **State:** Partial
 
 **Proved now:** Generated Pod ports and the generated uncaged systemd unit pin the Vessel to IPv4
-loopback. The Quadlet schema and extension-contribution boundary reject non-loopback publication,
-and the production application composes Litestar CSRF protection and publishes its configured
-double-submit cookie/header names to the generated browser contract.
+loopback. The Quadlet schema and extension-contribution boundary reject non-loopback publication.
+One shared launch policy rejects visible multi-worker/reload settings and gives the production
+application its detected listener port. Host admission permits literal loopback authorities on
+that port and the configured external port; CORS defaults to same-origin and validates configured
+exceptions as exact loopback origins. The application exposes deterministic schema JSON without
+remote UI assets, serves its two fixed root artifacts through narrow handlers, and publishes its
+CSRF names to the generated browser contract.
 
-**Boundary — Not yet:** The hostile-browser contract fails. Production configuration permits
-wildcard CORS, does not constrain the Host authority, and stamps ordinary requests with the fixed
-`magus:*` bootstrap Sigil rather than authenticating a caller. The internal foreground server
-entrypoint and its environment can bypass the typed loopback host setting, while `/schema/scalar`
-loads mutable CDN assets into the local browser origin. CSRF remains a useful unsafe-method layer,
-but it does not protect GET or SSE confidentiality or stop DNS rebinding. Remote, proxied, tunneled,
-direct-image-public, foreground non-loopback, and untrusted-browser use are unsupported until the
-bind, Host, Origin, local-asset, security-header, full-production-app, and hostile-browser
-contracts pass.
+**Boundary — Not yet:** Ordinary requests still receive the fixed `magus:*` bootstrap Sigil rather
+than an authenticated caller. The application can reject only direct-launch settings visible in
+its process; no hostile-browser/Playwright receipt, security-header contract, or remote principal
+exists. CSRF is useful for unsafe methods but is not authentication. Remote, proxied, tunneled,
+direct-image-public, foreground non-loopback, and untrusted-browser use remain unsupported.
 
 **Evidence**
 
 - **Source:** [Application composition](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py),
+  [shared server policy](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/server_policy.py),
   [CORS and CSRF builders](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/components.py),
   [web defaults](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/settings/server.py),
+  [fixed Altar asset routes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/altar.py),
   [bootstrap Sigil middleware](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/middleware.py),
   [foreground launcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/__main__.py),
   [deployment transmutation](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/transmute.py),
@@ -961,6 +980,11 @@ contracts pass.
   [extension publication tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_contributor.py),
   [Quadlet schema tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_schemas.py),
   [generated uncaged-unit tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_uncaged_unit.py),
+  [server-policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/test_app.py),
+  [native launcher handoff tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/cli/test_cli.py),
+  [Host/Origin boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_http_boundary.py),
+  [Altar route and asset tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py),
+  [error-contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_error_contract.py),
   and [explicit production-wiring receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 11 — Backend](./adr/11-backend.md), and

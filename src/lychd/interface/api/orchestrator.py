@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from litestar import Controller, Request, Response, get, post
+from litestar.di import NamedDependency
+from litestar.params import FromQuery
 from litestar.status_codes import HTTP_202_ACCEPTED, HTTP_409_CONFLICT
 
 from lychd.domain.codex.guards import requires_scopes
@@ -48,7 +50,7 @@ class OrchestratorController(Controller):
     tags = ("Orchestrator",)
 
     @get("/status", guards=[requires_scopes("altar:read")])
-    async def get_status(self, orchestrator: OrchestratorManager) -> dict[str, Any]:
+    async def get_status(self, orchestrator: NamedDependency[OrchestratorManager]) -> dict[str, Any]:
         """Return capability status from the canonical registry view."""
         capabilities = orchestrator.list_capability_statuses()
         return {
@@ -58,7 +60,11 @@ class OrchestratorController(Controller):
         }
 
     @get("/solver/plan", guards=[requires_scopes("altar:read")])
-    async def get_transition_plan(self, orchestrator: OrchestratorManager, target: str) -> TransitionPlan:
+    async def get_transition_plan(
+        self,
+        orchestrator: NamedDependency[OrchestratorManager],
+        target: FromQuery[str],
+    ) -> TransitionPlan:
         """Dry-run the transition solver for one capability key."""
         return await orchestrator.calculate_transition_plan(target)
 
@@ -69,7 +75,10 @@ class OrchestratorController(Controller):
         guards=[requires_scopes("orchestrator:transition")],
     )
     async def activate_capability(
-        self, orchestrator: OrchestratorManager, target: str, priority: int = PRIORITY_MAX
+        self,
+        orchestrator: NamedDependency[OrchestratorManager],
+        target: FromQuery[str],
+        priority: FromQuery[int] = PRIORITY_MAX,
     ) -> TransitionPlan:
         """Manually trigger the transition path for one capability key.
 
@@ -79,7 +88,11 @@ class OrchestratorController(Controller):
         return await orchestrator.request_transition(target, priority=priority)
 
     @get("/queues", guards=[requires_scopes("altar:read")])
-    async def get_queues(self, orchestrator: OrchestratorManager, leases: LeaseLedger) -> dict[str, Any]:
+    async def get_queues(
+        self,
+        orchestrator: NamedDependency[OrchestratorManager],
+        leases: NamedDependency[LeaseLedger],
+    ) -> dict[str, Any]:
         """Report live SAQ queue depths + the current lease rows (drain-truth view).
 
         Queues are read from the published `RunSubstrate` (zero substrate injection —

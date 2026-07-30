@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import pytest
+from litestar.openapi.plugins import JsonRenderPlugin
 
 from lychd.config.components import build_saq_config
 from lychd.config.settings.root import Settings
+from lychd.interface.web.openapi import build_openapi_config
 
 
 def _settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
@@ -42,6 +44,17 @@ def test_saq_admin_ui_is_optional_and_uses_the_vessel_http_server(monkeypatch: p
     config = build_saq_config(settings)
     assert config.web_enabled is True
     assert config.web_path == "/jobs"
+
+
+def test_openapi_runtime_is_json_only_and_has_no_remote_ui_assets() -> None:
+    config = build_openapi_config(
+        title="LychD",
+        version="test",
+        use_handler_docstrings=True,
+    )
+
+    assert len(config.render_plugins) == 1
+    assert isinstance(config.render_plugins[0], JsonRenderPlugin)
 
 
 def test_rites_queue_can_claim_perform_run(monkeypatch: pytest.MonkeyPatch) -> None:

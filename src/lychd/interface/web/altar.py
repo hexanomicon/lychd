@@ -12,12 +12,14 @@ from litestar.params import FromPath
 from litestar.response import Redirect, Response
 from litestar.status_codes import HTTP_302_FOUND
 
-from lychd.config.constants import PATH_ALTAR_INDEX
+from lychd.config.constants import PATH_ALTAR_INDEX, PATH_ALTAR_LIGHTNING, PATH_ALTAR_NOTICES
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.web.contracts import AltarStatus
 
 _ALTAR_INDEX = PATH_ALTAR_INDEX.read_text(encoding="utf-8")
+_ALTAR_LIGHTNING = PATH_ALTAR_LIGHTNING.read_text(encoding="utf-8")
+_ALTAR_NOTICES = PATH_ALTAR_NOTICES.read_text(encoding="utf-8")
 
 
 class AltarController(Controller):
@@ -27,6 +29,16 @@ class AltarController(Controller):
     async def index(self) -> Response[Any]:
         """Redirect the bare root to the resident Bridge instrument."""
         return Redirect("/bridge", status_code=HTTP_302_FOUND)
+
+    @get("/THIRD_PARTY_NOTICES.txt", name="altar:notices", include_in_schema=False)
+    async def notices(self) -> Response[str]:
+        """Return the packaged frontend dependency notices as plain text."""
+        return Response(content=_ALTAR_NOTICES, media_type=MediaType.TEXT)
+
+    @get("/altar-lightning.svg", name="altar:lightning", include_in_schema=False)
+    async def lightning(self) -> Response[str]:
+        """Return the one compiled-shell root image with an explicit SVG type."""
+        return Response(content=_ALTAR_LIGHTNING, media_type="image/svg+xml")
 
     @get(
         ["/bridge", "/nexus", "/loom", "/orb"],

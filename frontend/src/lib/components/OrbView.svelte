@@ -27,6 +27,7 @@
   let selectionNote = $state("");
   let loadVersion = 0;
   let selectedInspector: HTMLElement | undefined;
+  let selectionReturnFocus: HTMLElement | undefined;
   let requestedEventId = $derived(page.url.searchParams.get("event"));
   let requestedJobId = $derived(page.url.searchParams.get("job"));
 
@@ -138,7 +139,8 @@
     };
   }
 
-  async function selectEvidence(evidence: Evidence) {
+  async function selectEvidence(evidence: Evidence, opener: HTMLElement) {
+    selectionReturnFocus = opener;
     selected = evidence;
     selectionNote = "";
     const url = new URL(page.url);
@@ -155,13 +157,17 @@
   }
 
   async function clearSelection() {
+    const target = selectionReturnFocus;
+    selectionReturnFocus = undefined;
     const url = new URL(page.url);
     url.searchParams.delete("event");
     await goto(`${url.pathname}${url.search}`, {
       replaceState: true,
-      keepFocus: true,
+      keepFocus: target !== undefined,
       noScroll: true
     });
+    await tick();
+    if (target?.isConnected) target.focus();
   }
 </script>
 
@@ -290,7 +296,7 @@
                     class:current={selected?.event_id === item.evidence.event_id}
                     class="evidence-row"
                     type="button"
-                    onclick={() => void selectEvidence(item.evidence)}
+                    onclick={(event) => void selectEvidence(item.evidence, event.currentTarget)}
                   >
                     <span class="evidence-seq">#{item.evidence.seq}</span>
                     <span

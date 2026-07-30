@@ -22,10 +22,14 @@ The native Click CLI remains useful without an application graph. `serve` and `d
 lazily to Litestar; help, `init`, `bind`, lifecycle commands, and ordinary operator commands do
 not construct the ASGI application.
 
-The runtime is one Granian/Litestar process and one event loop. `GRANIAN_WORKERS` other than one,
-multiple worker requests, and reload supervision are refused because the run-event bus,
-cancellation coordinator, services, and SAQ workers are process-local. This is a correctness
-boundary, not a scalability claim.
+The runtime is one Granian/Litestar process and one event loop. The native launcher rejects
+multi-worker and reload configuration. The launcher and `create_app()` call one pure server policy
+which rejects server-visible worker/reload variables and detectable direct Litestar/Granian
+arguments. Listener authority resolves explicit `--port`, then `LITESTAR_PORT`, `GRANIAN_PORT`,
+and the configured server port; the native launcher publishes that result before Litestar loads
+the application, and Host admission consumes the same value. The run-event bus, cancellation
+coordinator, services, and SAQ workers are process-local. This is a correctness boundary, not a
+scalability claim or permission to use another launcher.
 
 ## Lifespan and ownership
 
@@ -55,10 +59,13 @@ bounded `SQLAlchemyDTO` is permitted for a true CRUD projection, but ORM shape n
 public API by accident. Includes, exclusions, aliases, nested depth, input rules, SSE envelopes,
 and compatibility are interface contracts with tests.
 
-Litestar owns typed HTTP/OpenAPI and JSON serialization; the static server delivers compiled
-Svelte assets, not browser state or templates. Mermaid is sent as inert source for client-side
-rendering. Structlog is present instrumentation; an uninstalled OpenTelemetry exporter does not
-establish external tracing.
+Litestar owns typed HTTP/OpenAPI and JSON serialization. Runtime and offline export share one
+JSON-only OpenAPI configuration. Controller validation and mapped application/repository failures
+retain Litestar's declared JSON shapes rather than an undeclared Problem Details transform;
+boundary middleware may still return its own non-API rejection. The static server delivers
+compiled Svelte assets, not browser state or templates. Mermaid is sent as inert source for
+client-side rendering. Structlog is present instrumentation; an uninstalled OpenTelemetry exporter
+does not establish external tracing.
 
 The process owns one async SQLAlchemy engine/session factory. Connection and signing secrets are
 resolved only by their consuming component; Settings retain references, never secret contents.
@@ -69,10 +76,13 @@ tests, not a throughput claim.
 ## Trust boundary and evidence
 
 The Vessel is the trusted control plane: HTTP admission, orchestration, persistence access,
-runtime projection, and its static client. Hostile-browser controls and queue/execution isolation
-belong to [Security (09)](09-security.md). Tomb is a designed, not delivered, execution plane;
-there is no Tomb queue, executor, credential, mount, sandbox, or promotion authority here. Its
-delivery boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted-execution).
+runtime projection, and its static client. Its default browser seam admits literal loopback Host
+authorities on the configured external port and detected listener port, same-origin requests, and
+only explicitly configured loopback CORS origins. This does not authenticate the fixed bootstrap
+Sigil. Wider browser controls and queue/execution isolation belong to
+[Security (09)](09-security.md). Tomb is a designed, not delivered, execution plane; there is no
+Tomb queue, executor, credential, mount, sandbox, or promotion authority here. Its delivery
+boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted-execution).
 
 Focused tests cover memory-profile composition and web contracts. The real application-factory
 plus PostgreSQL lifecycle test is still skipped, and asyncpg codec installation lacks direct

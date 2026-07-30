@@ -133,6 +133,34 @@ def test_bootstrap_server_rejects_public_bind_addresses() -> None:
         ServerSettings(host="0.0.0.0")  # noqa: S104  # type: ignore[arg-type]
 
 
+def test_cors_is_same_origin_by_default() -> None:
+    assert WebSettings().allowed_cors_origins == []
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "*",
+        "https://example.com",
+        "http://localhost:7134/",
+        "http://localhost:7134/path",
+        "http://user@localhost:7134",
+        "http://localhost:7134?query=yes",
+    ],
+)
+def test_cors_rejects_wildcard_remote_and_non_origin_values(origin: str) -> None:
+    with pytest.raises(ValueError, match="loopback origins"):
+        WebSettings(allowed_cors_origins=[origin])
+
+
+@pytest.mark.parametrize(
+    "origin",
+    ["http://localhost:5173", "http://127.0.0.1:7134", "https://[::1]:7443"],
+)
+def test_cors_accepts_exact_loopback_origins(origin: str) -> None:
+    assert WebSettings(allowed_cors_origins=[origin]).allowed_cors_origins == [origin]
+
+
 def test_server_rejects_port_claim_conflicts() -> None:
     with pytest.raises(ValueError, match="Port 5432 is claimed by multiple services"):
         ServerSettings(port=5432)

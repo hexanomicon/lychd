@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { RunEventEnvelope } from "./models";
-import { listenToRun } from "./client";
+import type { RunEventEnvelope, TransitionEventEnvelope } from "./models";
+import { listenToRun, listenToSwap } from "./client";
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
@@ -50,6 +50,24 @@ function runEvent(seq: number): RunEventEnvelope {
     kind: "token",
     occurred_at: "2026-07-28T00:00:00Z",
     payload: { text: "ash" }
+  };
+}
+
+function transitionEvent(ticketId: string): TransitionEventEnvelope {
+  return {
+    schema_version: 1,
+    seq: 0,
+    ticket: {
+      id: ticketId,
+      request_id: "request-a",
+      target: "chat:local",
+      state: "warming",
+      phase: "warming",
+      action_type: "SWAP",
+      total_metabolic_cost: 1,
+      physical_transition_id: null,
+      compensation_transition_id: null
+    }
   };
 }
 
@@ -105,5 +123,47 @@ describe("run stream lifecycle", () => {
 
     source.emit("token", "{}");
     expect(onHardClose).toHaveBeenCalledOnce();
+  });
+
+  it("hard-closes a structurally valid event from another run", () => {
+    const onEvent = vi.fn();
+    const onFault = vi.fn();
+    const onHardClose = vi.fn();
+    listenToRun("run-a", onEvent, onFault, vi.fn(), { onHardClose });
+    const source = FakeEventSource.instances[0];
+    if (!source) throw new Error("The EventSource was not opened.");
+
+    source.emit("token", JSON.stringify({ ...runEvent(0), run_id: "run-b" }));
+
+    expect(onEvent).not.toHaveBeenCalled();
+    expect(onHardClose).toHaveBeenCalledWith(
+      "The Vessel emitted a run event for another Run."
+    );
+    expect(onFault).toHaveBeenCalledWith(
+      "The Vessel emitted a run event for another Run."
+    );
+    expect(source.closeCalls).toBe(1);
+  });
+});
+
+describe("transition stream lifecycle", () => {
+  it("hard-closes a structurally valid event from another ticket", () => {
+    const onEvent = vi.fn();
+    const onFault = vi.fn();
+    const onHardClose = vi.fn();
+    listenToSwap("ticket-a", onEvent, onFault, { onHardClose });
+    const source = FakeEventSource.instances[0];
+    if (!source) throw new Error("The EventSource was not opened.");
+
+    source.emit("transition", JSON.stringify(transitionEvent("ticket-b")));
+
+    expect(onEvent).not.toHaveBeenCalled();
+    expect(onHardClose).toHaveBeenCalledWith(
+      "The Vessel emitted a transition event for another ticket."
+    );
+    expect(onFault).toHaveBeenCalledWith(
+      "The Vessel emitted a transition event for another ticket."
+    );
+    expect(source.closeCalls).toBe(1);
   });
 });

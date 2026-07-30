@@ -11,12 +11,15 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from advanced_alchemy.extensions.litestar import (
+    AlembicAsyncConfig,
+    AsyncSessionConfig,
+    SQLAlchemyAsyncConfig,
+)
+from litestar.config.allowed_hosts import AllowedHostsConfig
 from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
-from litestar.contrib.sqlalchemy.plugins import AsyncSessionConfig, SQLAlchemyAsyncConfig
-from litestar.plugins.problem_details import ProblemDetailsConfig
-from litestar.plugins.sqlalchemy import AlembicAsyncConfig
 from litestar_saq import QueueConfig, SAQConfig
 
 from lychd.config.constants import (
@@ -117,8 +120,26 @@ def build_structlog_config(settings: Settings) -> StructlogConfig:
 
 
 def build_cors_config(settings: Settings) -> CORSConfig:
-    """Build the CORS config from allowed origins."""
+    """Build fail-closed CORS from explicitly configured loopback origins."""
     return CORSConfig(allow_origins=settings.server.web.allowed_cors_origins)
+
+
+def build_allowed_hosts_config(
+    settings: Settings,
+    *,
+    listener_port: int | None = None,
+) -> AllowedHostsConfig:
+    """Admit literal loopback authorities on configured and actual listener ports."""
+    ports = tuple(dict.fromkeys((settings.server.port, listener_port)))
+    loopback_hosts = ("127.0.0.1", "localhost", "[::1]")
+    return AllowedHostsConfig(
+        allowed_hosts=[
+            host
+            for name in loopback_hosts
+            for host in (name, *(f"{name}:{port}" for port in ports if port is not None))
+        ],
+        www_redirect=False,
+    )
 
 
 def build_csrf_config(settings: Settings) -> CSRFConfig:
@@ -133,11 +154,6 @@ def build_csrf_config(settings: Settings) -> CSRFConfig:
 def build_compression_config(settings: Settings) -> CompressionConfig:  # noqa: ARG001
     """Build the gzip compression config."""
     return CompressionConfig(backend="gzip")
-
-
-def build_problem_details_config(settings: Settings) -> ProblemDetailsConfig:  # noqa: ARG001
-    """Build the RFC-9457 problem-details config."""
-    return ProblemDetailsConfig(enable_for_all_http_exceptions=True)
 
 
 async def worker_startup(ctx: dict[str, Any]) -> None:

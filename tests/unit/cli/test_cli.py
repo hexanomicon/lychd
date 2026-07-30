@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # pyright: reportPrivateUsage=false
+import os
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
@@ -444,16 +445,56 @@ def test_installed_entrypoint_keeps_effective_root_dry_run_observable(
     root.assert_called_once_with()
 
 
-def test_serve_delegates_to_litestar_lazily(runner: CliRunner, mocker: MockerFixture) -> None:
-    delegated = mocker.patch("lychd.__main__._run_litestar")
+@pytest.mark.parametrize(
+    ("server_args", "configured_port", "effective_port"),
+    [
+        (("--host", "127.0.0.1", "--port", "7134"), 7444, 7134),
+        ((), 7444, 7444),
+    ],
+)
+def test_serve_hands_one_effective_port_to_litestar_and_app_init(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+    server_args: tuple[str, ...],
+    configured_port: int,
+    effective_port: int,
+) -> None:
+    settings = SimpleNamespace(server=SimpleNamespace(port=configured_port))
+    mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
+    mocker.patch("lychd.app.get_settings", return_value=settings)
+    litestar = mocker.patch("lychd.app.Litestar")
+    observed: dict[str, object] = {}
 
-    result = runner.invoke(cli, ["serve", "--host", "127.0.0.1", "--port", "7134"])
+    def invoke_factory(arguments: tuple[str, ...], *, prog_name: str) -> None:
+        from lychd.app import AppInit, create_app
+
+        observed["arguments"] = arguments
+        observed["prog_name"] = prog_name
+        observed["environment_port"] = os.environ["LITESTAR_PORT"]
+        create_app()
+        plugin = litestar.call_args.kwargs["plugins"][0]
+        assert isinstance(plugin, AppInit)
+        observed["app_init_port"] = plugin.listener_port
+
+    delegated = mocker.patch("lychd.__main__._run_litestar", side_effect=invoke_factory)
+    monkeypatch.delenv("LITESTAR_PORT", raising=False)
+    monkeypatch.delenv("GRANIAN_PORT", raising=False)
+
+    result = runner.invoke(cli, ["serve", *server_args])
 
     assert result.exit_code == 0
     delegated.assert_called_once_with(
-        ("run", "--host", "127.0.0.1", "--port", "7134"),
+        ("run", *server_args),
         prog_name="lychd serve",
     )
+    assert observed == {
+        "arguments": ("run", *server_args),
+        "prog_name": "lychd serve",
+        "environment_port": str(effective_port),
+        "app_init_port": effective_port,
+    }
+    assert "LITESTAR_PORT" not in os.environ
 
 
 def test_litestar_entrypoint_ignores_ambient_foreign_app(
@@ -554,6 +595,7 @@ def test_serve_rejects_reload_supervisor(
     "variable",
     [
         "LITESTAR_RELOAD",
+        "GRANIAN_RELOAD",
         "LITESTAR_RELOAD_DIRS",
         "LITESTAR_RELOAD_INCLUDES",
         "LITESTAR_RELOAD_EXCLUDES",
