@@ -46,18 +46,40 @@ nav = [
         ]},
         { "Animator" = [
             "sepulcher/animator/index.md",
-            "sepulcher/animator/coven.md",
+            "sepulcher/animator/capabilities.md",
+            { "Soulstone" = [
+                "sepulcher/animator/soulstone/index.md",
+                "sepulcher/animator/soulstone/rune.md",
+                "sepulcher/animator/soulstone/disciplines.md",
+                "sepulcher/animator/soulstone/exllamav3.md",
+                "sepulcher/animator/soulstone/resources.md"
+            ]},
             "sepulcher/animator/portal.md",
-            "sepulcher/animator/soulstone.md",
-            "sepulcher/animator/capabilities.md"
+            "sepulcher/animator/coven.md"
         ]},
         { "Extensions" = [
             "sepulcher/extensions/index.md",
             "sepulcher/extensions/smith.md",
-            "sepulcher/extensions/weaver.md",
+            { "Weaver" = [
+                "sepulcher/extensions/weaver/index.md",
+                "sepulcher/extensions/weaver/pattern-lifecycle.md",
+                "sepulcher/extensions/weaver/stasis-and-return.md",
+                "sepulcher/extensions/weaver/anonymization.md",
+                "sepulcher/extensions/weaver/delegated-agents.md"
+            ]},
             "sepulcher/extensions/oculus.md",
-            "sepulcher/extensions/soulforge.md",
-            "sepulcher/extensions/riddle.md",
+            { "Soulforge" = [
+                "sepulcher/extensions/soulforge/index.md",
+                "sepulcher/extensions/soulforge/corpus.md",
+                "sepulcher/extensions/soulforge/training-run.md",
+                "sepulcher/extensions/soulforge/candidate-handoff.md"
+            ]},
+            { "Riddle" = [
+                "sepulcher/extensions/riddle/index.md",
+                "sepulcher/extensions/riddle/trials.md",
+                "sepulcher/extensions/riddle/capability-claims.md",
+                "sepulcher/extensions/riddle/returning-findings.md"
+            ]},
             "sepulcher/extensions/scout.md",
             "sepulcher/extensions/tether.md",
             "sepulcher/extensions/veil.md",
@@ -113,6 +135,7 @@ nav = [
         { "Iron Tongue" = "lexicon/iron-tongue.md" },
         { "Inner Tongue" = "lexicon/inner-tongue.md" }
     ]},
+    { "Visual Provenance" = "assets/README.md" },
     { "Covenants" = [
         "adr/index.md",
         "adr/00-license.md",

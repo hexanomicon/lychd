@@ -5,109 +5,90 @@ icon: material/lightning-bolt-circle
 
 # :material-lightning-bolt-circle: Capabilities
 
-Every [Animator](index.md) advertises what it can do as a set of **capabilities**. A
-capability is a typed contract — "this service can do `chat`", "this one can do
-`embedding`" — that the [Dispatcher](../../adr/22-dispatcher.md) resolves a request
-against. This page explains, for a Magus, how a capability comes to be ready and what the
-states on the [Nexus](../../divination/altar/nexus.md) mean. The canonical definitions live
-in the [Dispatcher (22)](../../adr/22-dispatcher.md).
+Every [Animator](./index.md) declares what it can do as one or more **capabilities**. A capability
+is the typed thing a caller requests; the Animator is the endpoint that may serve it. Its stable
+identity is:
 
-## The two axes: family and modalities
+```text
+{animator}:{family}:{model_id}
+```
 
-A capability is described along two orthogonal axes, and LychD never conflates them:
+That key passes between registry, Dispatcher, Orchestrator, Graph, and events. Mutable runtime
+handles do not cross a pause.
 
-- **Family** — the *kind of service*: `chat`, `vision`, `embedding`, `stt`, `tts`,
-  `tool_execution`, `rerank`.
-- **Modalities** — what a request *admits and emits*: `text`, `image`, `audio`.
+## Identity: Family and Modalities
 
-There is deliberately **no audio family**. A chat model that can hear is `chat` with
-`audio` in its input modalities; a chat model that can see is `chat` with `image` in its
-input modalities. The dedicated `vision` family (the Eye) is reserved for a purpose-built
-vision-analysis provider that you declare explicitly — a multimodal chat model that happens
-to accept images is still `chat`. This keeps routing honest: a request matches on
-`(family, required modalities)`, and image-in never silently promotes a chat model into the
-Eye.
+Two axes describe a capability:
 
-## `is_dynamic` vs phase
+- **family** names the kind of service: `chat`, `vision`, `embedding`, `stt`, `tts`,
+  `tool_execution`, or `rerank`;
+- **modalities** name admitted and emitted content: `text`, `image`, or `audio`.
 
-Each capability carries an **`is_dynamic` flag** (a fixed property of how it becomes ready)
-and projects a **phase** (its live readiness right now). These are independent.
+There is deliberately **no audio family**. Speech uses the `stt` and `tts` families. A chat model
+that hears remains `chat` with `audio` input; one that sees remains `chat` with `image` input. The
+dedicated `vision` family—the Eye—must be declared explicitly.
 
-### `is_dynamic` — how it becomes ready
+Resolution requires an exact family. An optional model must match exactly; every requested input
+modality must be present; and tools require `supports_tools = true`. Unknown support is not
+permission.
 
-- **`is_dynamic=False`** — the runtime is ready as soon as its endpoint is reachable. The
-  server binds its port only after the model is loaded, so a reachable endpoint *is* a warm
-  capability. Remote [Portals](portal.md) and single-model local servers (for example a
-  vLLM server pinned to one model) have `is_dynamic=False`.
-- **`is_dynamic=True`** — the container is up, but the specific model needs an in-runtime
-  activation step before it can serve (for example a `llama.cpp` router that loads a model
-  on demand). A capability with `is_dynamic=True` can be *awaited* and then activated
-  without restarting the container.
+## Dynamic Is Not Ready
 
-!!! note "The old names are gone"
-    An earlier draft used `FIXED`/`AWAITED` for this property, then a `STATIC`/`DYNAMIC`
-    enum. The shipped representation is a plain `is_dynamic: bool`; the legacy
-    `dynamic_soft` string normalizes to `is_dynamic=True`.
+`is_dynamic` is a fixed property of how a capability becomes ready:
 
-### Phase — whether it is ready now
+- `is_dynamic=False`: a reachable endpoint is warm because the server binds after its pinned model
+  loads. Portals and single-model local servers use this shape.
+- `is_dynamic=True`: the runtime can be reachable while this model still needs in-process
+  activation. llama.cpp router mode and ExLlamaV3 through TabbyAPI use this shape.
 
-The live readiness ladder, in order:
+The live **phase** answers a different question:
 
 | Phase | Meaning |
 | :--- | :--- |
 | `COLD` | Unit down or endpoint unreachable. |
-| `ACTIVATABLE` | Unit up; a model with `is_dynamic=True` is not yet loaded. |
-| `WARMING` | Activation in flight. |
-| `WARM` | Requests accepted now. |
-| `ERROR` | The capability is faulted. |
-| `UNKNOWN` | State not yet observed. |
+| `ACTIVATABLE` | Dynamic runtime up; this model is not loaded. |
+| `WARMING` | Activation or readiness convergence is in flight. |
+| `WARM` | Requests are accepted now. |
+| `ERROR` | Probe or runtime reported a terminal fault. |
+| `UNKNOWN` | No conclusive observation exists. |
 
-The [Nexus](../../divination/altar/nexus.md) renders these as operator words: `WARM`
-shows as **active**, `WARMING` as **warming**, an `ACTIVATABLE` capability with
-`is_dynamic=True` as **awaited**, `COLD`/(`ACTIVATABLE`-with-`is_dynamic=False`) as **cold**,
-and `ERROR` as **fault**.
+`is_active` covers `WARM` and `WARMING`. `runtime_started` also includes `ACTIVATABLE`, which
+matters when the host transition boundary revalidates stale state.
 
-Two derived questions intentionally differ. `is_active` means this model capability is loaded or
-loading (`WARM`/`WARMING`). `runtime_started` means the owning local service is physically up and
-also includes `ACTIVATABLE`. Host-transition stale-state checks use `runtime_started`, so an idle
-dynamic router and `systemctl is-active` describe the same physical world even before a model is
-loaded.
+The [Nexus](../../divination/altar/nexus.md) projects `WARM` as **active**, `WARMING` as
+**warming**, dynamic `ACTIVATABLE` as **awaited**, `COLD` or fixed `ACTIVATABLE` as **cold**, and
+`ERROR` as **fault**.
 
-## How a request drives readiness
+## What Dispatch Does Next
 
-When a run requests a family, the Dispatcher reads the resolved capability's phase and acts:
+After refreshing the selected record:
 
-- **WARM** — grant it immediately.
-- **ACTIVATABLE** — raise the typed readiness signal; the Orchestrator closes admission for the
-  whole Animator, drains all same-Animator leases, then soft-activates the model without restarting
-  the container. It waits for warm before retry; failure stays closed because v1 has no honest
-  model-level inverse.
-- **WARMING** — raise the same readiness signal so the Orchestrator owns the bounded wait; retry
-  dispatch only after convergence.
-- **COLD** (and LychD owns the lifecycle) — raise a hardware transition, so the Orchestrator
-  performs a coven swap; the run parks until the substrate is ready, then resumes.
-- **COLD** (not owned) or **ERROR** — the capability is unavailable, and the run settles
-honestly rather than hanging.
+| Observation | Result |
+| :--- | :--- |
+| `WARM`, admission open | Issue a grant and register its lease. |
+| `COLD`, `ACTIVATABLE`, or `WARMING`, lifecycle managed | Request a hardware transition; hold no lease while waiting. |
+| The same phases, lifecycle shared | Settle unavailable. |
+| `ERROR` | Settle unavailable with the observed reason. |
+| unresolved `UNKNOWN` | Probe again, then settle unavailable. |
 
-The bounded wait has one absolute `warmup_timeout_s` deadline. `estimated_ready_ms` may delay the
-first probe adaptively, but it and every later poll sleep are capped to remaining time; an estimate
-never adds a second timeout budget.
+The Dispatcher never starts, stops, loads, or evicts an Animator. It raises a handle-free
+transition request; the Orchestrator re-fetches canonical state and owns convergence.
 
-For the operator's view of these transitions, see
-[Coven](./coven.md) and the [Nexus](../../divination/altar/nexus.md).
+One absolute `warmup_timeout_s` deadline bounds readiness. `estimated_ready_ms` may delay the first
+probe, but that delay and every later polling sleep are capped to the remaining budget. An
+estimate never creates a second timeout.
 
-## Declaring capabilities
+## Declaration, Observation, and Proof
 
-A capability's identity is the key `{animator}:{family}:{model_id}`. Capabilities are
-synthesized from your rune declarations (the `[[models]]` blocks of a
-[Soulstone Rune](./soulstone.md#soulstone-rune-reference) or [Portal Rune](./portal.md#portal-rune-reference))
-and, for local runtimes, enriched by a live probe of what the server reports.
+Soulstone `[[models]]` blocks and Portal model declarations synthesize immutable capability
+specifications. Declaration controls routing. For local runtimes, an adapter probe may enrich an
+open runtime fact or downgrade readiness; it may not invent an undeclared model or family. A Portal
+with no model declarations yields no capability.
 
-Declaration is authoritative for *routing*: a rune hint always wins. A live probe may only
-*downgrade* — mark a declared capability temporarily unavailable — never invent one a rune
-did not declare. Verification tightens; it never loosens.
+Observation proves only the latest readiness fact. A `WARM` grant proves that admission and
+binding succeeded at that moment; it does not prove quality, privacy, cost, or long-term
+reachability. Those policies must enter before grant through their owning contracts.
 
-**For the builder:** the capability ontology, the two-axis law, the declare-then-verify
-doctrine, and the grant/lease model are specified in the
-[Dispatcher (22)](../../adr/22-dispatcher.md) and
-[Orchestrator (23)](../../adr/23-orchestrator.md).
+[Dispatcher (22)](../../adr/22-dispatcher.md) owns matching and leases;
+[Orchestrator (23)](../../adr/23-orchestrator.md) owns transition and containment; and
+[State of Work](../../state-of-the-work.md#animator-dispatch-spine) records the delivered spine.

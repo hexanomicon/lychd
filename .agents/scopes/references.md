@@ -2,40 +2,37 @@
 
 ## Trigger
 
-Load this scope only after the primary task scope when an external implementation, protocol,
-research project, benchmark, or worked example would materially improve the task. The operator has
-assigned the checkout-local `.agents/references/` shelf for this bounded use.
-
-The shelf is ignored and may be absent, stale, incomplete, locally modified, or unavailable in
-another checkout. Its contents are optional probes: never architecture, delivery evidence, a
-dependency, or permission to copy an upstream design.
+Load only after the primary scope when an external implementation, protocol, research project,
+benchmark, or example would materially improve the task. The ignored `.agents/references/` shelf
+is optional and may be absent, stale, incomplete, or locally modified. It is never architecture,
+delivery evidence, a dependency, or permission to copy upstream design.
 
 ## Progressive Use
 
 1. Establish LychD truth from tracked docs, source, tests, lockfiles, and installed packages first.
-2. Check that `.agents/references/index.md` and the selected reference exist.
-3. Read this map's one-line description, then the selected repository's top-level README.
-4. Search filenames or text before opening a subtree:
+2. Check `.agents/references/index.md` and the selected reference, then read its one-line
+   description and top-level README.
+3. Search before opening a subtree:
 
     ```bash
     rg --files .agents/references/<name>
     rg -n '<term>' .agents/references/<name>
     ```
 
-5. Load only the smallest relevant documentation, source, example, test, protocol, or benchmark.
-6. Verify claims against current primary upstream sources when freshness or correctness matters.
-7. Record no local path, private modification, or ignored-shelf state as public project truth.
+4. Load the smallest relevant documentation, source, example, test, protocol, or benchmark.
+5. Verify current primary upstream sources when freshness or correctness matters.
+6. Never publish local paths, private modifications, or ignored-shelf state as project truth.
 
 ## Agent Systems and Cognition
 
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
-| `pydantic-ai` | `README.md`, then `docs/agents/`, `docs/graph/`, `docs/durable_execution/`, `docs/evals/`, or `docs/ui/` | Pydantic AI Agent, graph, durable execution, evaluation, MCP/A2A, approval, or event-stream behavior matters |
+| `pydantic-ai` | `README.md`, then `docs/agents.md`, `docs/graph/`, `docs/durable_execution/`, `docs/evals/`, or `docs/ui/` | Pydantic AI Agent, graph, durable execution, evaluation, MCP/A2A, approval, or event-stream behavior matters |
 | `fasta2a` | `README.md`, then `fasta2a/` and focused tests | A2A task, storage, broker, worker, artifact, or ASGI behavior matters |
 | `avp-spec` | `README.md`, `SPECIFICATION.md`, then `protocol/` or `schemas/` | Evaluating the experimental Agent Vector Protocol, latent/KV transfer, transport, or security contract |
-| `avp-python` | `README.md`, then `docs/`, `src/avp/`, tests, or one benchmark | Inspecting an AVP implementation, connector, codec, context store, transport, or benchmark |
+| `avp-python` | `README.md`, then `docs/`, `src/avp/`, `tests/`, or `benchmarks/` | Inspecting an AVP implementation, connector, codec, context store, transport, or benchmark |
 | `LatentMAS` | `README.md`, then `methods/` or `example_logs/` | Researching experimental latent-space multi-agent collaboration; never as established LychD capability |
-| `Memori` | `README.md`, then `docs/features/`, `memori/memory/`, or one storage example | Comparing long-term memory, ingestion, retrieval, consolidation, or datastore boundaries |
+| `Memori` | `README.md`, then `docs/features/`, `memori/memory/`, or `examples/` | Comparing long-term memory, ingestion, retrieval, consolidation, or datastore boundaries |
 | `adhd` | `README.md`, then `skills/adhd/SKILL.md`, `src/`, or `bench/` | Exploring divergent ideation, isolated parallel reasoning, critic passes, or creative-agent evaluation |
 | `Gentle-Coding` | `README.md` | Examining the unverified hypothesis that coercive versus gentle prompt framing affects model behavior |
 | `cwc-workshops` | `README.md`, then one named workshop | Looking for worked examples of agent decomposition, eval-driven development, memory, MCP, multi-agent streaming, or UI verification; upstream says the materials are unmaintained |
@@ -48,8 +45,8 @@ dependency, or permission to copy an upstream design.
 | `cwc-workshops` | `production-ready-agent/` or `how-we-claude-code/` after the root README | Studying streamed agent events, gated tool calls, verifiable UI contracts, or human/agent design workflows |
 | `svelte-stack.md` | Specialized [Svelte shelf index](../references/svelte-stack.md) | Any Svelte 5, SvelteKit, Svelte Flow, graph canvas, or official Svelte AI-tooling task |
 
-Use these for interaction patterns only. ADR 15, semantic server contracts, accessibility,
-authorization, and retained evidence remain LychD-owned.
+These offer interaction patterns only. ADR 15 and LychD contracts still own accessibility,
+authorization, semantics, and retained evidence.
 
 ## Backend, Workers, and Application Structure
 
@@ -69,19 +66,19 @@ authorization, and retained evidence remain LychD-owned.
 | `llm-compressor` | `pyproject.toml`, `quantize.py`, and `sparse_logs/` | Inspecting a local uncommitted GPTQ/llmcompressor experiment only; it has no upstream remote or committed history |
 | `localllama-insights` | `README.md`, then one named article | Finding community leads about inference, quantization, or hardware; every claim is unverified Reddit-derived material |
 
-Never promote a benchmark, hardware number, patch, or compatibility claim without reproducing or
-checking the current primary source and LychD's operated substrate.
+Reproduce or check the primary source and LychD substrate before promoting any benchmark, hardware
+number, patch, or compatibility claim.
 
 ## Vision and Document Ingestion
 
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
-| `PaddleOCR` | `README.md`, then `docs/`, `paddleocr/`, `deploy/`, `api_sdk/`, `mcp_server/`, or one provided skill | OCR, document parsing, structured extraction, deployment, API, MCP, or vision-ingestion behavior matters |
+| `PaddleOCR` | `README.md`, then `docs/`, `paddleocr/`, `deploy/`, `api_sdk/`, `mcp_server/`, or `skills/` | OCR, document parsing, structured extraction, deployment, API, MCP, or vision-ingestion behavior matters |
 
 ## Frontend and Graph Rendering
 
-The seven Svelte-related directories are routed through the specialized
-[`svelte-stack.md`](../references/svelte-stack.md) index:
+Route the seven Svelte directories through
+[`svelte-stack.md`](../references/svelte-stack.md):
 
 - `svelte`
 - `sveltekit`
@@ -91,8 +88,7 @@ The seven Svelte-related directories are routed through the specialized
 - `svelte-flow-docs`
 - `xyflow`
 
-Load [`svelte.md`](svelte.md) first. It owns the official MCP/autofixer workflow and LychD's
-Svelte-specific drift gates.
+Load [`svelte.md`](svelte.md) first for the official MCP/autofixer workflow and LychD drift gates.
 
 ## Developer Workflow
 
@@ -102,8 +98,8 @@ Svelte-specific drift gates.
 
 ## Shelf Maintenance
 
-Any operation that adds, removes, renames, reclones, or materially repurposes a top-level
-`.agents/references/` entry must, in the same task:
+Adding, removing, renaming, recloning, or repurposing a top-level `.agents/references/` entry
+requires the same task to:
 
 1. update `.agents/references/index.md` with exactly one row per top-level directory;
 2. give it a one-line purpose, caveat, and progressive route;

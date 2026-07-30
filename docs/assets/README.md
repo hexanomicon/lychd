@@ -1,20 +1,16 @@
 # Visual Asset Provenance
 
-This register records source-provenance evidence for the repository's visual identity assets. On
-2026-07-29, the operator explicitly attested that **every image currently in this repository was
-AI-generated and that none was copied or downloaded from a third-party work**. The operator then
-clarified that the two published identity assets—the Hexanomicon book and the clipped Lich
-figure—were generated through Gemini, probably the Nano Banana image surface. Both files contain
-embedded C2PA manifest text identifying them as “Created by Google Generative AI” and
-`trainedAlgorithmicMedia`; this register observed that payload but has not independently
-cryptographically validated its signature chain. The exact historical model recollection remains
-qualified rather than being promoted into a reconstructed receipt. The earlier attestation
-identifies the remaining four files as ChatGPT generations.
+This register holds provenance evidence for the visual identity assets. On 2026-07-29 the operator
+attested that **every repository image was AI-generated and none was copied or downloaded from a
+third-party work**. They later identified the published Hexanomicon book and clipped Lich figure as
+Gemini generations, probably through Nano Banana. Both embed C2PA manifest text saying “Created by
+Google Generative AI” and `trainedAlgorithmicMedia`; the payload was observed, not independently
+cryptographically verified. The historical model recollection remains qualified. The earlier
+attestation identifies the other four files as ChatGPT generations.
 
-The attestation is evidence supplied by the operator, not a reconstructed generation receipt. The
-exact historical prompts, product model/version, generation dates, product terms then in force,
-and original generation records are unavailable unless separately recovered. A Git commit records
-when a file entered this repository, not when or how it was generated.
+This is operator-supplied evidence, not a reconstructed generation receipt. Exact prompts,
+product/model/version, generation date, then-current terms, and original records are unavailable
+unless recovered. A Git commit records entry into this repository—not generation time or method.
 
 | Asset | SHA-256 | First tracked | Published use | Rights evidence |
 | :--- | :--- | :--- | :--- | :--- |
@@ -25,14 +21,13 @@ when a file entered this repository, not when or how it was generated.
 | `phylactery-logo.png` | `f964af11bca8796088a6fff9ada2831868344b55ca37dd8f4a9eb2b0fce6799b` | `348cf7c` (2025-12-16) | Not currently referenced by tracked pages | **Operator-attested ChatGPT generation; no third-party copy/download.** Historical generation receipt unavailable. |
 | `phylactery.png` | `e38427e87b56d472e002b33f5982a11ea2590d4f6595d693b70e6f013a69bda6` | `348cf7c` (2025-12-16) | Not currently referenced by tracked pages | **Operator-attested ChatGPT generation; no third-party copy/download.** Historical generation receipt unavailable. |
 
-The files named `hexanomicon.png`, `lich-phylactery-cliparted.png`,
-`lich-phylactery.png`, `lich.png`, and `phylactery.png` currently contain JPEG data despite their
-extensions. That is a format-maintenance defect, not rights evidence.
+`hexanomicon.png`, `lich-phylactery-cliparted.png`, `lich-phylactery.png`, `lich.png`, and
+`phylactery.png` contain JPEG data despite their extensions. That is a format-maintenance defect,
+not rights evidence.
 
 ## Remaining record and review boundaries
 
-The missing historical generation material remains an evidence-quality gap. If recovered, the
-register should add:
+Missing historical material remains an evidence-quality gap. If recovered, add:
 
 1. the exact historical prompt and referenced inputs;
 2. the generation product, model/version, and surface;
@@ -40,8 +35,8 @@ register should add:
 4. the original generation receipt and material edit history; and
 5. any later export/transcoding lineage tied to the final distributable hash.
 
-Source provenance and visual similarity are separate questions. Manual visual review found no
-obvious copied franchise insignia in the six files, but generated output can still resemble
-protected expression, marks, characters, or trade dress. Neither the operator attestation nor
-that visual review establishes copyrightability, ownership of exclusive rights, trademark
-clearance, publicity clearance, model-training provenance, or freedom from contractual claims.
+Source provenance and visual similarity are separate. Manual review found no obvious copied
+franchise insignia in the six files, but generated output can resemble protected expression,
+marks, characters, or trade dress. Neither that review nor the attestation establishes
+copyrightability, exclusive-right ownership, trademark/publicity clearance, model-training
+provenance, or freedom from contractual claims.

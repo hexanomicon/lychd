@@ -5,47 +5,58 @@ icon: material/dance-ballroom
 
 # :material-dance-ballroom: Dancer
 
-_Status: designed Posture — no runtime role, prompt, schema, lane, or control ships._
-
 > _“Open another door, but do not call it the exit.”_
 
-**Dancer** is Shadow's divergent office. It follows promising motion, combines distant ideas,
-changes rhythm when a branch reveals an unexpected affordance, and produces alternatives that a
-rigid decomposition might never request.
+One source Intent forks beneath a declared Lens. **Dancer** is [Shadow's](./index.md) expansion
+office: it makes several alternatives legible from the same starting point, preserving what each
+assumes and requires while favoring none of them.
 
-It works under bounded providence: the owning Pattern supplies purpose, available context,
-containment, budget, branch limit, stop conditions, and the output contract. Providence means room
-to explore inside that Circle, not supernatural guidance or ambient permission.
+Dancer is **Designed**. The built-in `simulation` Rune supplies configuration only; no Dancer path
+runs. [State of Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while
+[ADR 31](../../../adr/31-simulation.md) owns the design.
 
-## Contract
+## One bounded fork
 
-One Dancer invocation returns typed expansion material:
+A Dancer Invocation receives the source Intent shared by its siblings, one operational Lens, and a
+pinned base and current Context. The owning [Weaver Pattern](../../../adr/28-workflow.md) supplies
+the containment and effect boundary, budget, branch limit, stop conditions, and expected output
+shape.
+
+The Lens is one angle of examination or variation. It carries no Persona, identity, or permission.
+A Dancer does not receive sibling output before the declared join, nor does it receive Hunter's
+review context. Weaver owns fan-out, joins, budgets, cancellation, and termination; Shadow owns
+branch identity and candidate lineage.
+
+## Return attributed alternatives
+
+One bounded Invocation returns:
 
 - `alternatives`, each with a stable local identity;
-- `assumptions` made by each alternative;
+- `assumptions` for each alternative;
 - `required_state` each alternative presupposes;
-- `unknowns` that remain unresolved; and
-- provenance for any source or observation it uses.
+- `unknowns` left unresolved; and
+- `provenance` for every source or observation it uses.
 
-Dancer may open, combine, reframe, and vary. It may not score, rank, prune, certify, promote, or
-choose among its own alternatives. Every branch remains **Vikalpa** until independent evidence and
-authority say otherwise.
+Shadow attaches that return to the common Intent and pinned Context. Dancer supplies typed
+expansion material, not a private reasoning trace.
 
-## Separation Law
+Every alternative remains **Vikalpa**—an honest possibility fashioned apart from actuality—until
+evidence and the responsible owner decide otherwise. **Phantasma** names Shadow's isolated
+expansion mode; it grants no identity, execution sandbox, or proof of containment.
 
-Dancer is a [Posture](../../../adr/20-agents.md#mechanical-cognitive-postures), not a durable
-Persona. It runs in an isolated invocation with a mechanically bounded output schema, tool grant,
-model settings, and prompt frame. It does not receive Hunter's private review context or repair its
-own work while pretending the second pass is independent.
+Dancer may open, combine, reframe, or vary candidate material. It produces no score, rank, pruning
+decision, certification, promotion, selection, live effect, or proof of novelty. An alternative
+may be useful, redundant, mistaken, or impossible without changing Dancer's duty to return it
+honestly.
 
-The owning [Shadow Pattern](./index.md) may run several Dancer branches in parallel, but declares
-branch count, rounds, token budget, wall time, tool effects, and cancellation before execution.
-Exhausted bounds yield an honest incomplete expansion.
+## Stop before selection
 
-## Handoff
+Exhausting the branch limit, time or token budget, or a declared stop condition returns an honest
+incomplete expansion. Existing alternatives remain attributed; unknowns and provenance remain
+visible. Dancer cannot silently substitute the first or cheapest candidate for the requested
+breadth.
 
-Dancer hands attributed candidates to [Hunter](./hunter.md), deterministic checks, or another
-named evaluator. The next office may reject every candidate. Dancer neither argues with the verdict
-inside the same context nor turns novelty into evidence.
-
-[:material-arrow-left: Return to Shadow](./index.md)
+A candidate may then enter [Hunter](./hunter.md) through a separate Invocation, undergo
+deterministic checks, or become a [Riddle](../riddle/trials.md) trial subject. Those passages may
+reject every alternative. Dancer neither argues their verdict nor repairs a candidate inside the
+same expansion context.

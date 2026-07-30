@@ -5,92 +5,81 @@ icon: material/eject-outline
 
 # :material-eject-outline: Reanimation
 
-> _"Daemons return through Systemd. A thought returns only through a boundary committed before
-> death."_
+> _“Daemons return through Systemd. A thought returns only through a boundary committed before
+> death.”_
 
-**Reanimation** is the recovery path after the Vessel process dies: Systemd raises a new process,
-the application rebuilds volatile services from the Codex and live probes, and the Phylactery and
-queue records decide what may continue. It is not hot reload, whole-body rollback, or a promise
-that every intermediate thought survives.
+**Reanimation** follows Vessel death: Systemd raises a process, volatile services rebuild, and
+Phylactery and queue records decide what may continue. It is not reload or rollback.
 
-The myth is exact here. Death separates breath from inscription. Process memory, live event
-subscribers, open leases, and uncommitted frames vanish. Durable rows and a valid graph checkpoint
-remain only where the running workflow committed them before the boundary.
+Death separates breath from inscription. Memory, subscribers, leases, and uncommitted frames
+vanish. Only prior commits remain.
 
 ## Three rites that must not be confused
 
 ### Live Stasis — the body never died
 
-An ordinary model or VRAM transition is **Live Stasis**. The run stays inside the Vessel process,
-releases its capability lease, waits while the Orchestrator drains and converges the hardware, and
-resumes itself. Restarting the Vessel is neither required nor a safe substitute.
+An ordinary model or VRAM transition is **Live Stasis**. The Run stays in the Vessel, releases its
+lease, waits for Orchestrator convergence, and resumes itself. Restart is not a substitute.
 
 ### Reanimation — a new Vessel judges durable truth
 
-After process death, the new Vessel reconnects the fixed `runs` and `rites` queues, warms the
-Animator registry, publishes a fresh process-local run substrate, and attempts startup
-reconciliation before serving the Altar. An unexpected reconciliation exception is contained and
-logged so the application may still serve; a live Altar therefore does not prove that reconciliation
-succeeded. Current outcomes after a successful reconciliation attempt are deliberately unequal:
+The new Vessel must reconnect `runs` and `rites`, construct services, warm the registry, and
+publish the run substrate before the Altar serves. Reconciliation then runs best-effort; failure
+is logged, and serving does not prove recovery:
 
 - **`AWAITING_CONSENT` remains parked.** A pending verdict waits. A verdict committed while the
-  process was down is re-fired through the run engine when reconciliation succeeds; the resume hop
-  reads the durable graph checkpoint and continues event sequence after the persisted history. If
-  that reconciliation attempt fails, the consent remains parked for a later retry or operator
-  recovery rather than being called resumed.
+  process was down is re-fired; one admission advances the sequence and reads durable verdict and
+  checkpoint. Failed reconciliation leaves it parked.
 - **`QUEUED` remains queue-owned.** An aged row is failed only after the exact
-  `(run_id, enqueue_seq)` SAQ job is proved absent. If the broker cannot be checked, the row is
-  preserved and reconciliation reports degradation rather than guessing.
-- **Previous-process `RUNNING` and `AWAITING_HARDWARE` do not resume.** They become `FAILED` with
-  `ghoul lost`, their checkpoint is deleted, and a terminal event is recorded. A checkpoint beside
-  an active row is not authority to replay arbitrary work.
-- **A missing consent checkpoint fails honestly.** Reanimation never silently restarts the graph
-  from its first node when durable stasis has been lost.
+  `(run_id, enqueue_seq)` job is proved absent, becoming `FAILED / enqueue lost`. An unprobeable
+  broker preserves it and reports degradation.
+- **Previous-process `RUNNING` and `AWAITING_HARDWARE` do not resume.** They become
+  `FAILED / ghoul lost`; checkpoint deletion and one sequence-correct terminal event follow.
+- **`AWAITING_DELEGATE` has no startup recovery today.** Its durable park is real, but startup does
+  not re-fire it.
+- **Missing resume checkpoints fail as `stasis lost`.** The Graph never restarts from its first
+  node or original Intent.
 
-Focused tests prove a memory-profile consent restart and these reconciliation rules. [State of
-Work](../../state-of-the-work.md#graph-stasis-consent) records the missing Postgres
-Consent-plus-Checkpoint restart receipt and the current single-approval boundary.
+Terminal truth commits before cleanup; [Ghouls](../vessel/ghouls.md#parks-terminal-truth-and-cancellation)
+owns the exact order, and cleanup cannot revise it. There is no periodic scheduler, automatic SAQ
+retry, public failed-Run retry, or outbox.
+
+Memory-profile recovery is proved. [Graph stasis and consent
+re-admission](../../state-of-the-work.md#graph-stasis-consent) remain **Partial**: no PostgreSQL
+restart receipt exists, and only one approval call per model round works.
 
 ### Restoration — the whole body moves through time
 
-Whole-body snapshot and restore is a different ritual. LychD has filesystem groundwork, but it
-does not yet coordinate database, code, configuration, freeze, restore, and post-restore
-reconciliation as one proved operation. See [State's snapshot
+Whole-body restore is different. Filesystem groundwork exists, but database, code, configuration,
+freeze, restore, and reconciliation are not one operation. See [State's snapshot
 boundary](../../state-of-the-work.md#whole-body-snapshot-restore); a service restart must never be
 sold as rollback.
 
 ## The generated body
 
-`lychd bind` compiles validated Codex intent into the current Pod, Phylactery, migration gate,
-Vessel, Host-Reactor units, selected extensions, and Soulstones, then asks the Scribe to reconcile
-the complete owned fileset atomically. The generated files are projections, not operator-authored
-configuration. Do not paste a Quadlet from this page or edit one in the binding directory.
+`lychd bind` compiles Codex intent into owned units; the Scribe reconciles them atomically. They
+are projections. Do not paste or edit a Quadlet in the binding directory.
 
-The current generated contract gives the Vessel a Systemd restart policy and requires the
-one-shot migration gate before an explicit Vessel start. That is repository protocol evidence, not
-yet a maintained real-host reboot receipt; [systemd and rootless Podman embodiment remains an
-operator-validation boundary](../../state-of-the-work.md#systemd-podman-embodiment).
+The generated contract gives the Vessel a restart policy and migration gate before start. This is
+protocol evidence, not a host receipt; [systemd and rootless Podman
+embodiment](../../state-of-the-work.md#systemd-podman-embodiment) remains **Operator validation**.
 
 !!! warning "A restart is a host-lifecycle action, not a checkpoint command"
-    Do not restart a Vessel with active work and expect that work to continue. Park at a supported
-    Durable Stasis boundary first, or accept that current active runs will settle as failed. A
-    direct Systemd action also bypasses the Orchestrator's admission and lease-drain protocol.
+    Do not restart with active work and expect continuation. Park at Durable Stasis or accept
+    failure. Direct Systemd action bypasses Orchestrator admission and lease drain.
 
-A Vessel-only restart does not mean “stop every Soulstone,” “clear all VRAM,” or “restore a
-snapshot.” Individual adapters may declare additional dependency edges, but model transitions
-belong to the Orchestrator and whole-pod actions remain explicit break glass.
+A Vessel restart does not stop every Soulstone, clear VRAM, or restore a snapshot. Model
+transitions remain Orchestrator work.
 
 ## Perform one bounded reanimation
 
-This rite assumes the four observations in [Summoning](../../summoning.md#the-awakening) have
-already agreed. If they have not, return there; Reanimation cannot repair an incomplete first life.
+This assumes the four [Awakening](../../summoning.md#the-awakening) observations already agree.
+Reanimation cannot repair an incomplete first life.
 
-The public Pulse reserves `status` for the active-run census and `stop` for graceful system-wide
-drain. [State](../../state-of-the-work.md#core-cli-rites) owns whether this revision has proved
-those boundaries. Until both are useful, this page cannot offer a copyable zero-loss precondition.
-For a bounded local demonstration, stop new submissions and wait for every run visible in the
-Bridge to settle; that observation is incomplete. If unseen work may exist or continuity matters,
-do not restart the Vessel.
+Pulse reserves `status` for Run census and `stop` for graceful drain.
+[State](../../state-of-the-work.md#core-cli-rites) owns delivery. There is no copyable zero-loss
+precondition: stop submissions and settle Bridge-visible Runs, but do not restart if unseen work or
+continuity matters.
 
 If Codex intent changed, bind the new projection first. If no configuration or unit intent changed,
 do not bind merely to restart:
@@ -107,16 +96,12 @@ systemctl --user show lychd-migrate.service \
 uv run --extra postgres-binary lychd logs services --lines 200
 ```
 
-The public `stop` verb cannot yet perform this restart: while the Vessel is active, arbitration
-correctly refuses direct actuation until an authenticated Vessel lifecycle port exists. The status
-projection proves exact owned unit activity and mount truth, while the separate migration probe
-must show `Result=success` and `ExecMainStatus=0`. Neither proves model warmth. Repeat the Nexus and
-Bridge observations rather than trusting process state alone.
+`stop` cannot restart an active Vessel until an authenticated lifecycle port exists. `status`
+proves unit and mount truth; migration must show `Result=success` and `ExecMainStatus=0`. Neither
+proves model warmth. Repeat Nexus and Bridge observations.
 
-Open the [Bridge](../../divination/altar/index.md) only through its stated same-host browser
-boundary and send one benign message. If unit state, runtime readiness, and the reply do not agree,
-stay in [The Awakening](../../summoning.md#the-awakening) and diagnose the first missing
-observation.
+At the same-host [Bridge](../../divination/altar/index.md), send one benign message. If state,
+readiness, and reply disagree, return to [The Awakening](../../summoning.md#the-awakening).
 
 ## Read the ashes
 
@@ -124,11 +109,12 @@ After return, inspect durable run truth before claiming continuity:
 
 - a consent card still pending is a preserved wait, not a hung process;
 - a decided consent that re-enters `QUEUED` is a re-admitted resume hop;
-- `FAILED / ghoul lost` names work that crossed death without a supported durable boundary; and
+- `FAILED / ghoul lost` names active work that crossed death without a supported durable boundary;
+- `FAILED / enqueue lost` names an aged queued Run whose exact broker job was proved absent; and
 - a surviving SAQ job protects queued labor, but does not recreate an in-memory event stream.
 
-Preserve the exact host, unit, image, database, queue, run, shutdown, and recovery observations if
-you intend to promote this from a bounded local result to a maintained operator receipt.
+Preserve host, unit, image, database, queue, Run, shutdown, and recovery observations before
+promoting a local result to an operator receipt.
 
 > _The promise is not that nothing dies. The promise is that the Phylactery never calls an
 > uncommitted breath immortal._

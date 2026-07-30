@@ -3,93 +3,73 @@
 ## Trigger
 
 Load this scope before creating, editing, reviewing, or diagnosing anything under `frontend/**`,
-the compiled Altar assets, browser API/SSE projection, Svelte, SvelteKit, Vite, or native CSS.
+compiled Altar assets, browser API/SSE projection, Svelte/SvelteKit, Svelte Flow, Vite, or native
+CSS.
 
 ## Authorities
 
-- [ADR 15](../../docs/adr/15-frontend.md) owns the browser architecture, framework boundary,
-  styling law, build topology, and forbidden SvelteKit server surface.
+- [ADR 15](../../docs/adr/15-frontend.md) owns browser architecture, styling, build topology, and
+  the forbidden SvelteKit server surface.
 - [State of Work](../../docs/state-of-the-work.md#altar-and-observability) owns the delivered
   Altar boundary.
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) owns commands and implementation conventions.
 - `frontend/package.json`, `frontend/package-lock.json`, `frontend/svelte.config.js`, and
-  `frontend/vite.config.ts` own the executable frontend toolchain.
-- The [official Svelte AI instructions](https://svelte.dev/docs/ai/instructions),
-  [skills guidance](https://svelte.dev/docs/ai/skills), and
-  [Svelte best practices](https://svelte.dev/docs/svelte/best-practices) are the upstream syntax
-  and validation references. They do not override ADR 15.
-- [Svelte scope](svelte.md) owns the progressive official-documentation, AI-tooling, and Svelte
-  Flow routing used after this frontend entrypoint.
+  `frontend/vite.config.ts` own executable toolchain behavior.
+- [Svelte scope](svelte.md) owns official Svelte documentation, MCP/autofixer use, framework
+  syntax, and Svelte Flow probes. Upstream advice never overrides ADR 15.
 
 ## Cheapest Probes
 
-- Components and reactivity: the target `.svelte` or `.svelte.ts` file, its direct callers, and the
-  relevant official rune/component documentation.
-- Routes and navigation: `frontend/src/routes/`, `frontend/svelte.config.js`, and ADR 15.
-- API and events: `frontend/src/lib/api/`, the matching Litestar controller/contracts, and the
-  generated OpenAPI document.
-- Styling: `frontend/src/app.css` and ADR 15's Styling Boundary.
-- Tooling: `frontend/package.json`, `frontend/package-lock.json`, `Makefile`, and the exact Node
-  version in `.nvmrc`.
+- Components or reactivity: continue through [Svelte scope](svelte.md), then inspect the target
+  file and direct callers.
+- Routes or navigation: `frontend/src/routes/`, Svelte configuration, then ADR 15.
+- API or events: `frontend/src/lib/api/`, generated OpenAPI types, and the matching Litestar
+  controller/contract.
+- Styling: `frontend/src/app.css`, the affected component, and ADR 15's Styling Boundary.
+- Tooling: package manifest, lockfile, `Makefile`, and `.nvmrc`.
 
-For agent, observability, graph, or streaming interaction research, the
-[agent and observability UX](references.md#agent-and-observability-ux) map offers optional local
-comparisons after ADR 15 and current Altar contracts are understood. For Svelte implementation,
-continue through the required [Svelte scope](svelte.md) instead.
+For optional agent, observability, graph, or streaming comparisons, use the
+[agent and observability UX](references.md#agent-and-observability-ux) map only after ADR 15 and
+current contracts are understood.
 
 ## Required Svelte Workflow
 
-For every task that creates, edits, reviews, or diagnoses a `.svelte`, `.svelte.ts`, or
-`.svelte.js` file:
-
-1. Load the tracked [Svelte scope](svelte.md).
-2. Use callable Svelte MCP tools when available: discover sections first, then retrieve every
-   relevant documentation section.
-3. If those tools are unavailable, use the official CLI at the version recorded in this scope:
-
-    ```bash
-    npx --yes @sveltejs/mcp@0.1.25 list-sections
-    npx --yes @sveltejs/mcp@0.1.25 get-documentation '$state,$derived,$effect'
-    ```
-
-4. Fetch only the sections relevant to the task. Prefer current official documentation over model
-   memory, old examples, blogs, or Svelte 3/4 training data.
-5. Run the official autofixer on every changed Svelte component or module and resolve its issues
-   and suggestions before finishing:
-
-    ```bash
-    npx --yes @sveltejs/mcp@0.1.25 svelte-autofixer \
-      frontend/src/lib/components/Example.svelte --svelte-version 5
-    ```
-
-6. Run `npm --prefix frontend run check` and the focused Vitest suite. Run
-   `npm --prefix frontend run build` when routes, configuration, CSS, or packaged assets change.
-
-Do not generate a Playground link for code written into the repository. Do not make a user-level
-MCP installation a hidden prerequisite. The versioned `npx` command is the portable fallback and
-must not become an application dependency.
+For every Svelte, SvelteKit, Svelte Flow, `.svelte`, `.svelte.ts`, or `.svelte.js` task, load
+[Svelte scope](svelte.md) after this file and complete its official documentation and autofixer
+workflow before project verification. Do not duplicate or bypass that workflow here.
 
 ## Project Drift Gates
 
-- New code uses Svelte 5 runes and current event/snippet syntax; no legacy stores, `$:`,
-  `export let`, `on:`, or slots.
-- Use `$derived` for computation. `$effect` is an external-synchronization escape hatch, not a
-  state-propagation mechanism.
-- Keep runes in components and explicitly presentation-owned `.svelte.ts` modules. Generated
-  contracts, transport, validation, reducers, and domain logic remain ordinary TypeScript.
-- Do not let reactive proxies cross Fetch, SSE, IndexedDB, structured-clone, or extension
-  boundaries.
-- SvelteKit owns static client routing only. Server routes, server loads, form actions, remote
-  functions, SSR, and a JavaScript production server remain forbidden even when generic SvelteKit
-  guidance recommends them.
-- Styling remains native CSS. Do not add Tailwind, Sass, a project-owned PostCSS configuration, or
-  a second styling vocabulary.
-- Preserve Litestar as the only API, authorization, mutation, persistence, and production-server
-  authority.
+- SvelteKit is a static client router. Server routes, server loads, form actions, remote
+  functions, SSR, and a JavaScript production server are forbidden.
+- Litestar remains the only API, authorization, mutation, persistence, and production-server
+  authority. Use generated transport contracts; do not handwrite browser mirrors.
+- The browser may own connection mechanics, backoff, filters, selection, and transient layout. It
+  may not infer durable Run, execution, consent, readiness, or publication truth from connection,
+  animation, or renderer state.
+- Native CSS and custom properties are the only styling vocabulary. Do not add Tailwind, Sass,
+  project-owned PostCSS, or a parallel token system.
+- Keyboard operation, visible focus, semantic labels, non-color distinctions, reduced motion, and
+  an accessible list/table or inspector alternative remain first-class. Animation must correspond
+  to a typed event or be visibly marked as projection; layout motion must preserve spatial memory.
+- Type uses shape, icon, and label; phase uses treatment; load uses bounded secondary marks.
+- Do not move secrets, provider credentials, unsafe HTML trust, domain policy, or durable state
+  into the browser.
+
+## Verify
+
+For frontend changes, run:
+
+```bash
+make frontend-check
+```
+
+This regenerates the Litestar OpenAPI contract and browser client before checking and testing it.
+Run `make frontend-build` when routes, configuration, CSS, dependencies, or packaged assets
+change. Documentation-only routing changes require `git diff --check` on the changed scope files.
 
 ## Escalate
 
-Escalate when official Svelte advice conflicts with ADR 15, the static SPA cannot express a
-required behavior, a proposed library requires a server/runtime or unsafe HTML boundary, the
-autofixer recommendation would change project semantics, or a renderer concern would move
-authority into the browser.
+Escalate when upstream advice conflicts with ADR 15, the static SPA cannot express required
+behavior, a library requires a server/runtime or unsafe HTML boundary, graph scale cannot meet
+accessibility or performance needs, or a renderer/browser concern would acquire domain authority.

@@ -1,10 +1,10 @@
 # llama.cpp Support Files
 
-Files here are not Rune TOMLs. They are host-side support files referenced by
-llama.cpp Soulstone examples.
+These are host-side support files, not Rune TOMLs, for llama.cpp Soulstone
+examples.
 
 - `router-models.ini`: model catalog for `llama-server --models-preset`.
 
-Copy this file to `~/.config/lychd/llamacpp/router-models.ini`, which the
-examples mount as `/presets/router-models.ini`, or edit the TOML
-`models_preset` path and `/presets` volume together.
+Copy it to `~/.config/lychd/llamacpp/router-models.ini`; examples mount that
+path as `/presets/router-models.ini`. If you relocate it, change the TOML
+`models_preset` and `/presets` volume together.

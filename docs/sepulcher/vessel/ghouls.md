@@ -7,47 +7,69 @@ icon: material/robot-dead
 
 > _Work is queued. The dead hand rises. The result returns._
 
-Ghouls are the tireless, undead servitors of the Vessel: worker bodies that carry delegated intent.
-The implemented Ghouls are cognitive Vessel workers that advance graph state and call trusted
-services. Brainless Tomb executors for serialized unsafe hand-work are the next trust-plane
-topology, not current runtime wiring. A Ghoul is not an agent identity by itself; it is the spectral
-hands and feet of the Lich.
+A **Ghoul** is one worker-task invocation carrying admitted labor. A **Run** is the canonical
+lifecycle record and may cross several sequential Ghouls after durable parks. Invocation, active
+Agent, pinned Pattern, and authority remain attributable to the Run.
 
-Technically, Ghouls are **SAQ Workers**, a legion of background task executors spawned, scheduled, or resumed to handle the asynchronous rites submitted by the Magus.
+## The living worker
 
-!!! note "The run ghoul (v1)"
-    In v1 the cognitive workers are not separate processes but **in-process ghouls** sharing the
-    Vessel's event loop (Topology A: `QueueConfig.separate_process=False` and
-    `SAQConfig.use_server_lifespan=False`, with startup owned by the application hook). Exactly one
-    ASGI process is required while the live `RunEventBus` is process-local. Every workflow run is a
-    SAQ job: `RunEngine.submit` enqueues `perform_run`, which is the only place a workflow graph
-    executes. The **`RunLedger`** (the `run`/`step` tables) is the run's truth, and a semantic
-    **`RunEvent`** bus carries its live trace to the Altar. See **[Workers (ADR 14)](../../adr/14-workers.md)**.
+The current topology has two fixed SAQ worker loops, for `runs` and `rites`, inside the single
+[Vessel](./index.md):
 
-    Run jobs are enqueued with SAQ `timeout=0`, disabling the queue library's short default wall
-    clock. The graph, model, and Orchestrator layers still apply their own meaningful bounded waits;
-    this setting only prevents the broker from terminating ordinary long inference blindly.
+- `QueueConfig.separate_process=False`;
+- `SAQConfig.use_server_lifespan=False`;
+- application startup owns the worker lifecycle; and
+- exactly one ASGI process is required while the live `RunEventBus` remains process-local.
 
-!!! abstract "The Summons"
-    A Ghoul's existence is a simple and brutal cycle, initiated by an **Intent** from the Altar:
+Every workflow Run is a queued SAQ job, not an isolated process. A blocking Ghoul can block HTTP;
+death destroys its live task and subscribers even when broker work survives.
 
-    1. **The Call:** A Magus submits a task, from a simple query to a complex Invocation.
-    2. **The Quickening:** The Vessel receives the Intent and quickens or schedules a Ghoul. The worker claims the queued job and binds itself to the task.
-    3. **The Labor:** The Ghoul executes its assigned duty with relentless, single-minded focus.
-       Trusted Ghouls remain in the Vessel. Unsafe hand-work must remain disabled until the planned
-       **[Tomb](../extensions/shadow/index.md)** boundary exists; it must not execute inside the Vessel.
-    4. **The Dissolution:** Upon completion of its task, the Ghoul's purpose is fulfilled. Its borrowed life-force is reclaimed by the Vessel, and the process dissolves back into nothingness, leaving only the results of its labor behind.
+### Admission and claim
 
-!!! info "The Nature of the Swarm"
-    Ghouls are designed for concurrency and resilience. The Vessel can summon a veritable swarm to handle many Intents at once, ensuring the Magus's will is carried out swiftly. They operate in the background, their silent work visible only through evidence observed by the [Oculus](../extensions/oculus.md) or the results they present at the Altar.
+`RunEngine.submit` selects workflow and queue. The `RunLedger` mints the Run id and commits
+`QUEUED`, Pattern, Intent, queue, priority, and authority. After caller retention, it opens the live
+channel, advances `enqueue_seq`, and publishes `run:<run_id>:<enqueue_seq>`.
 
-!!! abstract "The Two Breeds"
-    Not all Ghouls are equal. The Vessel breeds **Cognitive Ghouls** — they orchestrate graph steps, invoke LLM providers, curate memory, and manage state. These are the thinking servants and remain in the trusted Vessel/control-plane space.
+Creation and publication are not one transaction. Failure compensates only an unclaimed `QUEUED`
+row to `FAILED`, emits terminal truth, and closes. If an ambiguous job claimed, compensation loses.
 
-    The planned **Tomb** runs **Brainless Ghouls** — execution loops that receive serialized script
-    payloads through a dedicated queue, execute them in the `nono` sandbox, and return bounded,
-    untrusted results. They will hold a narrow execution credential but no LLM credentials, graph
-    state, or agent logic. The Tomb unit, queue/profile, credential role, and loop are not
-    implemented in v1.
+Only `perform_run` executes the Graph. It claims exact `(run_id, enqueue_seq)` through
+`QUEUED → RUNNING`; stale or duplicate delivery returns `skipped`. Missing workflow, changed
+Pattern, or missing checkpoint fails rather than starting over.
 
-    The full doctrine is defined in **[Workers (ADR 14)](../../adr/14-workers.md)**.
+SAQ `timeout=0` disables its generic wall clock, not Graph, provider, or Orchestrator deadlines.
+Workflow jobs have zero automatic SAQ retries; recovery belongs to Run and Graph state.
+
+### Parks, terminal truth, and cancellation
+
+Consent commits checkpoint and identity before `AWAITING_CONSENT`; delegated work parks as
+`AWAITING_DELEGATE` with its owner. Resume wins one admission, advances the sequence, and publishes
+a Ghoul. `AWAITING_HARDWARE` resumes in the same Ghoul and is not durable.
+
+Terminal order is commit `DONE`, `FAILED`, or `CANCELLED`; release context; delete stasis
+best-effort; publish one terminal event; close. Cleanup cannot conceal committed truth.
+Cancellation elects one writer and aborts the current job; completion winning makes it a no-op.
+
+`RunEvent` is process-local with bounded replay. Non-token events copy to `step` best-effort; token
+deltas are live-only. Evidence is `durable_best_effort`.
+
+### Death and reconciliation
+
+Startup settles previous-process `RUNNING` and `AWAITING_HARDWARE` as `FAILED / ghoul lost`,
+deletes checkpoints, and emits terminal events. Aged `QUEUED` becomes `FAILED / enqueue lost` only
+when its exact job is proved absent; an unprobeable queue preserves it and reports degradation.
+Pending consent stays parked; decided consent is re-fired. Startup does not recover
+`AWAITING_DELEGATE`; there is no public failed-Run retry, scheduler, or outbox.
+
+[Workers](../../adr/14-workers.md) owns claims, interruption, ordering, and recovery; [Graph
+(24)](../../adr/24-graph.md) owns checkpoints and terminal commits.
+[Topology-A](../../state-of-the-work.md#topology-a-local-runs) is **Available**; [graph stasis and
+consent re-admission](../../state-of-the-work.md#graph-stasis-consent) remain **Partial**.
+
+## The unbuilt worker
+
+The designed **Tomb** would accept a narrow payload and workspace grant without model credentials
+or Graph authority. Its worker, queue, credentials, and sandbox do not exist; unsafe execution is
+disabled.
+
+> _The Ghoul may borrow the hand. It never inherits the Will._

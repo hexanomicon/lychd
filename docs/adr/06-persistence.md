@@ -5,118 +5,68 @@ icon: material/database
 
 # :material-database: 6. Persistence
 
-!!! abstract "Context and Problem Statement"
-    The LychD Daemon requires a unified persistence layer to store disparate forms of reality: Relational State (User Data) and complex, nested Data Structures (State Snapshots). Furthermore, the system operates on a federated architecture where the database schema is not static; it is the aggregate of models defined by the Core and models defined by installed Extensions. The persistence layer must provide a mechanism to dynamically discover, register, and migrate these schemas into a single, cohesive database structure while optimizing for the throughput of massive serialized objects.
+!!! abstract "Context"
+    The Phylactery is LychD's jurisdiction for committed truth. It gives one body a transactional
+    home for relational records, JSON documents, vectors, execution history, and recoverable graph
+    state; it does not decide what a Domain record means.
 
-## Requirements
+## Decision
 
-- **Single-Node Efficiency:** The architecture must minimize the number of moving parts. A single backend service should handle all persistence needs (Relational, Document, Concurrency).
-- **Federated Schema Management:** The system must support the distributed definition of models, allowing Extensions to define their own tables which are then automatically detected and migrated by the Core.
-- **Anatomical Partitioning:** The database must be organized into logical chambers (schemas) to maintain separation between Relational State, high-dimensional artifacts, execution traces, and background labor.
-- **Concurrency Primitives:** The database must support row-locking mechanisms (e.g., `SKIP LOCKED`) to enable high-performance, atomic work distribution without external brokers.
-- **High-Throughput Serialization:** The system expects to store large, deeply nested JSON objects (e.g., execution history or state machines). A mechanism for **Binary Transmutation** is required to bypass the CPU overhead of standard text-based serialization.
+PostgreSQL is the single-node persistence backend. LychD reaches it through async SQLAlchemy and
+`asyncpg`. The Phylactery alone owns engine construction, codecs, sessions and transaction
+boundaries, migration order, and schema admission. Domains own record meaning and lifecycle;
+neither they nor extension packages gain ambient migration authority.
 
-## Considered Options
+Core owns the planned federation seam. Every admitted model derives from Core's `UUIDBase`; an
+extension explicitly calls `register_model(MyModel)` during initialization; Core aggregates those
+references before Alembic derives migration order. Runtime package scanning is not admission, and
+migration generation or application remains an explicit release or operator act. Colliding models,
+table names, or migrations refuse before a schema is changed.
 
-!!! failure "Option 1: Polyglot Stack"
-    Deploying Postgres (Relational), Mongo (Document), and Redis (Queue).
+The target chambers are deliberately logical rather than a claim of present deployment:
 
-    -   **Cons:** **Operational Complexity.** Managing three separate services contradicts the goal of a simple, self-contained daemon. Coordinating atomic transactions across disparate services is mathematically difficult.
+| Chamber | Responsibility |
+| --- | --- |
+| `public` | relational state, configuration, and extension registries |
+| `vectors` | attributed vector material, including its trust status |
+| `traces` | execution and observability traces |
+| `queue` | durable work distribution |
+| `verbatim` | JSONB exact values that must be consulted before semantic retrieval |
 
-!!! failure "Option 2: Static Schema Definition"
-    Requiring all database models to be defined in the Core codebase.
+`vectors` status can distinguish, for example, speculative material from governed precedent;
+consecration records authority, not universal factual truth.
 
-    -   **Cons:** **Extensibility Blocker.** Extensions would be unable to store their own persistent data without modifying the Core source code, violating the principle of deep modularity.
+## Wire and work contracts
 
-!!! success "Option 3: Dynamic Unified Postgres"
-    Leveraging Postgres for all data types—Relational and Document (via `JSONB`)—governed by a strict binary serialization protocol and organized into logical chambers.
+The async boundary uses the repository JSON serializer and deserializer. PostgreSQL binary `json`
+is the JSON payload; binary `jsonb` prefixes it with the `\x01` format-version byte. The current
+hook applies jsonb framing to both types. Its mapped paths are compatible because the present
+schema maps JSONB, but PostgreSQL `json` columns or expressions are not supported by that hook
+until codecs are split and live round trips prove both. Avoiding an intermediate text conversion
+is not zero-copy storage.
 
-    -   **Pros:**
-        -   **Transactional Integrity:** Guaranteed atomicity across all data types in a single commit.
-        -   **Minimalism:** Reduces the infrastructure footprint to a single robust engine.
-        -   **Flexibility:** Supports both structured relational data and unstructured artifacts within a single query context.
+Workers select pending work under row locks with `SKIP LOCKED`. Selection, ownership transition,
+and all facts that establish the claim commit atomically: no two workers may own one labor unit.
+The replaceable JSONB `run_checkpoint` is one unique, cascading row per `run`; it is recovery
+state, not the ordered `run`/`step` ledger.
 
-## Decision Outcome
+## Privacy and delivery boundary
 
-**Postgres** is selected as the unified backend, equipped with the capability to handle relational, vector, and document data. The persistence logic is orchestrated via **SQLAlchemy (Async)**.
+Persistence is designed to retain the labels and lineage defined by
+[Context](21-context.md#privatization-and-the-privacy-cut): defaults may originate in table or
+column metadata, policy may refine them by row, subject, or namespace, and derivatives retain
+their material sources and transformations. Checkpoints, history, memory, artifacts, and delegated
+records retain the applicable label or omit sensitive content. Missing ORM annotation never makes
+raw data public.
 
-!!! warning "First-light boundary"
-    The implemented database floor is one pgvector-enabled Postgres, the binary JSON/JSONB codec,
-    migration `0001_phylactery_first_light`, the Postgres `RunLedger` over `run`/`step`, and one
-    JSONB `run_checkpoint` row per durable graph run. The eight core
-    tables and SAQ's `saq_*` tables currently use the configured database's default
-    schema/search path. Extension model federation, dedicated `vectors`/`traces`/`queue`/`verbatim`
-    schemas and roles, privatization-taint propagation, and a transactional graph/queue outbox are
-    target architecture, not delivered isolation.
+This is storage and information-flow support, not declassification. Context owns the Privacy Cut;
+the [Dispatcher](22-dispatcher.md) enforces the resulting egress decision. Exact label schema,
+row policy, and full production persistence remain subject to the delivery boundary in
+[State of Work](../state-of-the-work.md#phylactery-first-light).
 
-### 1. The Dynamic Registry (Planned Federation)
+## Consequences
 
-The persistence layer will use a Schema Federation Protocol to support recursive evolution. The
-current Alembic environment imports the fixed core model package; no extension
-`context.register_model(...)` migration contract exists yet.
-
-1. **The Base:** All models inherit from a shared `UUIDBase` provided by the Core.
-2. **Registration:** During the initialization phase, extensions call `context.register_model(MyModel)`.
-3. **Aggregation:** The Core aggregates these references. When the migration tool (Alembic) runs, it imports all registered models, generating a single migration script that covers the entire Federation.
-
-### 2. Binary JSONB Transmutation
-
-To achieve maximum throughput for complex state objects and execution history, a **Zero-Copy Serialization** strategy is adopted via a custom `asyncpg` connection hook.
-
-- **The Problem:** Standard ORMs serialize objects to JSON strings, pass them to the driver, which encodes them to UTF-8 bytes, which the database then decodes. This "Double Encoding" is unacceptable for large payloads.
-- **The Solution:** The system injects a custom codec that accepts already-serialized bytes (from a high-performance serializer like `msgspec`), prepends the Postgres JSONB version header (`\x01`), and transmits the raw binary protocol directly.
-- **The Result:** The application memory maps directly to the database storage engine, bypassing text processing entirely. This is critical for future rituals involving massive cognitive data dumps.
-
-### 3. Anatomical Partitioning (Target Chambers)
-
-To maintain organizational purity, the mature Phylactery is divided into logical chambers. Except
-for the current default-schema state and SAQ tables, these schema boundaries are not yet created by
-the first migration:
-
-- **`public` (State):** Relational data for user state, configuration, and extension registries.
-- **`vectors` (Karma):** High-dimensional space for storing attributed artifacts and long-term
-  memory. Entries include a `status` metadata field (for example, `speculative` or `consecrated`)
-  to distinguish unreviewed candidates from governed precedent. Consecration records status and
-  authority; it does not make every factual claim inside an artifact true.
-- **`traces` (The Eye):** Specialized storage for execution traces and observability data.
-- **`queue` (Labor):** The persistence layer for the background task distribution system.
-- **`verbatim` (The Facts):** A high-priority Key-Value store (JSONB) for immutable facts (IP addresses, specific names, technical constants). The system is mandated to consult this chamber before semantic search to ensure 100% deterministic recall of critical data.
-
-### 4. Concurrency and Labor
-
-The database is configured to support atomic task distribution. By utilizing `SKIP LOCKED`, the system can manifest background ghouls that claim and execute pending labor without the risk of duplicate work or the need for an external broker.
-
-!!! success "First Light (delivered)"
-    The Phylactery's first real tables exist. Migration `0001_phylactery_first_light` creates seven
-    models on a `pgvector` Postgres — `session`, `run`, `step`, `consent`, `karma`,
-    `soulstone_record`, and `codex_preauthorization` — alongside the `vector` extension. The one
-    `db.profile` composition choice selects all three active stores: default `postgres` uses the
-    durable run/step ledger, Bridge session/turn store, and consent/preauthorization ledger;
-    `memory` selects their loop-confined DB-free adapters for focused tests. The `step` table carries
-    semantic `RunEvent` records except chatty `TOKEN` deltas. Karma promotion, memory retrieval, and
-    extension schema federation remain later work even though their first tables/shapes exist.
-
-### 5. Planned Schema-Level Privatization Tainting (The Radioactive Tag)
-
-To support the system's strict egress policies (foreshadowing **[The Dispatcher (22)](22-dispatcher.md)**), the persistence layer mandates explicit data classification at the schema level.
-
-- **The Mechanism:** Sensitive data is explicitly tagged utilizing SQLAlchemy's column metadata (e.g., `mapped_column(String, info={"privatization_weight": 1.0})`).
-- **The Application:** When the database is queried to construct an Agent's context window, these `info` dictionaries are evaluated. The resulting context window inherits the highest `privatization_weight` of the aggregated data.
-- **The Guarantee:** If a new table containing private user keys or internal system state is defined by an extension, its weight must be declared within the ORM. This ensures such data can be deterministically blocked from leaving the local host.
-
-### Consequences
-
-!!! success "Positive"
-    - **Atomic Reliability:** A single transaction can commit a user action and save a complex state snapshot simultaneously.
-
-    - **Serialization Efficiency:** Binary Transmutation removes a redundant text encode/decode
-      path for JSON/JSONB. Its end-to-end benefit must be measured on representative payloads; the
-      architecture does not claim an unrecorded orders-of-magnitude benchmark.
-
-    - **Extension Assimilation Horizon:** A future coupled extension contract can define models
-      without adding another persistence service.
-
-!!! failure "Negative"
-    - **Migration Complexity:** If two extensions define models with conflicting table names, the migration fails. The system relies on strict namespace conventions to prevent collisions.
-
-    - **Vacuum Tuning:** High-volume chambers (like the task queue) require aggressive autovacuum tuning to prevent database bloat.
+One logical state transition can share a PostgreSQL transaction, while write-heavy queue and trace
+tables need workload-specific retention and autovacuum policy. The first-light migration and
+ledger shapes are evidence of a partial boundary, not evidence of a transactional outbox, complete
+PostgreSQL adapter parity, or a production lifecycle receipt.

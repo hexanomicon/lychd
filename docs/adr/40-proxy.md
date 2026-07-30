@@ -5,70 +5,58 @@ icon: material/key-chain
 
 # :material-key-chain: 40. Proxy
 
-!!! abstract "Context and Problem Statement"
-    Exposing a raw Python ASGI application server directly to the public internet presents a critical security liability. Standard application servers lack robust DDoS mitigation, high-performance static asset handling, and automated TLS lifecycle management required for production-grade sovereignty. A barrier is required to stand as the **Veil** between the internal Sepulcher and the public network—shielding the Daemon from malformed traffic while managing the acquisition of cryptographic trust for the decentralized swarm.
+!!! abstract "Context"
+    A remote entrance needs TLS, protocol handling, route composition, and certificate lifecycle
+    outside the Vessel. It must not become a second authority plane or let one extension rewrite
+    another's edge policy.
 
-## Requirements
+## Decision
 
-- **Automated TLS (ACME):** Mandatory zero-config negotiation and renewal of HTTPS certificates (e.g., Let's Encrypt) without external sidecars or manual scripts.
-- **Container Cohesion:** Integration as a standard container within the pod, sharing the `localhost` namespace to route traffic to internal service ports.
-- **Composable Ingress Ritual:** Provision for "Configuration Fragments" where Extensions register their own routing rules (e.g., specific subpaths) without modifying a monolithic core file.
-- **Extension Assimilation:** Implementation as a coupled Extension, allowing the proxy engine to be swapped for alternative solutions through the Forge-composed body rather than hardwired core logic.
-- **Protocol Agnosticism:** Native support for modern transport protocols, including HTTP/2, HTTP/3, and WebSockets, to facilitate high-performance observation.
-- **A2A Shielding:** Mandatory provision of the first layer of defense for the **[Intercom (26)](26-a2a.md)**, enforcing path-based routing and encryption for peer-to-peer traffic.
-- **Nostr Gateway:** Support for Nostr-signed authentication at the edge, allowing the Magus and trusted peers to access internal routes via cryptographic signature rather than session credentials.
+**Caddy** is the default engine of the optional **Veil** extension. Without admitted remote ingress
+the Vessel remains at its local boundary; enabling Veil makes no route public by implication.
 
-## Considered Options
+Veil is a separately managed service forwarding admitted routes to the Vessel or another explicitly
+named backend over the local service network. Validated Runes own ports, domains, certificate
+issuer, backend identity, and transport policy. Port `80` may handle ACME challenge/redirect and
+port `443` admitted TLS; binding detects collisions. Internal or offline deployments may use an
+operator-provided certificate or separately accepted internal issuer.
 
-!!! failure "Option 1: Nginx"
-    The industry standard for high-concurrency proxies.
+## Compiled ingress, not shared text
 
-    - **Pros:** Unmatched performance and a massive community ecosystem.
+Core and extensions contribute typed route intent: host/route match, backend service and port,
+protocol/streaming behaviour, body/timeout/header limits, application-authentication preconditions,
+and permitted public, Tether, or local exposure tier. The compiler rejects ambiguous ownership,
+overlapping exclusive routes, unknown backends, unbounded raw directives, and ports outside the
+admitted service topology. It renders complete Caddy configuration in staging, validates it, then
+inscribes transactionally. The Scribe owns the generated projection; contributions remain separate
+and attributable.
 
-    - **Cons:** **High Manual Overhead.** Nginx lacks native ACME (SSL) handling, requiring external `certbot` processes and brittle shell scripting to manage certificates, violating the "Self-Contained Daemon" philosophy.
+## Transport is never application authority
 
-!!! failure "Option 2: Traefik"
-    A modern, cloud-native edge router.
+TLS authenticates the configured endpoint and protects bytes; path routing chooses a backend.
+Neither identifies a caller or permits an effect. Ward and Vessel authenticate callers and enforce
+Sigils, Grants, consent, and rate policy. A2A retains its own authentication and replay defence.
+Arrival through Tether, mTLS, forwarded metadata, Nostr, or another signature scheme may contribute
+evidence only under its owning authentication decision; none can mint a Sigil or administrator.
 
-    - **Pros:** Native label discovery and automated SSL.
+Veil may impose coarse connection, header, and traffic limits. It is neither full DDoS defence nor
+application validation, and receives only a narrow path to registered HTTP backends—not database,
+model, Reactor, systemd, container, application-secret, or arbitrary-egress authority.
 
-    - **Cons:** **Architectural Overkill.** Designed for dynamic, distributed clusters. Its internal state management and configuration logic introduce unnecessary complexity for a static, single-pod architecture.
+## Certificate failure and delivery
 
-!!! success "Option 3: Caddy"
-    A modern, memory-safe web server written in Go.
+Certificate state and account keys live in declared durable and secret boundaries. Validation
+precedes every configuration/certificate activation; rollback restores the prior generated
+projection. Renewal failure preserves the last valid configuration and degrades readiness before
+expiry. A public ACME Veil needs a resolvable domain plus reachable challenge path or configured
+DNS provider; without them the public entrance remains unavailable and the local Vessel continues.
+Removed routes close during reconciliation.
 
-    - **Pros:**
-        - **Automatic HTTPS:** Native, robust ACME client built directly into the binary.
-        - **Simplicity:** Uses the "Caddyfile"—a human-readable, highly composable configuration format.
-        - **Security:** Memory-safe execution and hardened default headers.
-        - **Composability:** Perfectly suited for the "Composite Caddyfile" pattern where extensions inject config snippets into a shared directory.
+This Covenant is **Designed**. No proxy provider, public listener, certificate lifecycle, edge
+compiler, hardening, or trusted-proxy policy ships. Generated deployment is IPv4-loopback-only and
+the browser boundary is unsafe to publish: no ad hoc reverse proxy, tunnel, or port-forward may
+stand in for the missing contract. [State of Work](../state-of-the-work.md#proxy-veil) owns the
+delivery boundary.
 
-## Decision Outcome
-
-**Caddy** is adopted as the **Proxy Extension**, serving as the primary gatekeeper for the Sepulcher.
-
-### 1. The Edge Gatekeeper
-
-The extension registers `lychd-proxy.container` within the Pod, claiming Host Ports 80 and 443. It acts as the internal NAT gateway, forwarding public traffic to the internal **[Vessel (11)](11-backend.md)** on port 8000. Caddy was selected specifically for its ability to automate the acquisition of cryptographic trust without human intervention, ensuring the Daemon is "Secure by Default."
-
-### 2. Composite Configuration (The Scribe's Protocol)
-
-To maintain the federation of logic, the Proxy utilizes a dynamic assembly mechanism. Extensions will register specific `.caddy` fragments through a shaped proxy store during the extension registration pass. During the **[Packaging (17)](17-packaging.md)** ritual, the system concatenates these fragments into a single manifest. This allows an extension to register a rule like `reverse_proxy /a2a/* localhost:8000` to expose the Intercom without requiring manual edits to the Proxy source.
-
-### 3. The Outer Intercom Ward
-
-The Veil provides the first layer of shielding for the swarm. By enforcing mandatory TLS and path-based routing, it ensures that the agentic communion defined in **[A2A (26)](26-a2a.md)** is encrypted and hidden from unauthorized discovery. Traffic reaching the application kernel is thus pre-filtered, allowing internal logic to focus exclusively on higher-order authentication and resource prioritization.
-
-### Consequences
-
-!!! success "Positive"
-    - **Privacy by Default:** The machine automatically achieves a "Grade A" security posture with encrypted traffic the moment it is bound to a domain.
-
-    - **Zero-Maintenance SSL:** The Magus no longer manages renewals; the Lich handles its own cryptographic hygiene.
-
-    - **Static Performance:** Caddy handles the serving of frontend assets significantly faster and more securely than the Python runtime.
-
-!!! failure "Negative"
-    - **Port Conflict:** Caddy requires ports 80/443. If the host machine is already running a web server, LychD fails to bind unless the user manually modifies the **[Codex (12)](12-configuration.md)**.
-
-    - **DNS Dependency:** Automated SSL requires a valid DNS record pointing to the host; without it, the Proxy fails to initialize the "Veil," leaving the system in a limited local-only state.
+Veil gives remote transport a dedicated owner, while adding certificate, DNS, firewall, abuse, and
+availability duties that do not exist on loopback.

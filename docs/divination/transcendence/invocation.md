@@ -5,64 +5,36 @@ icon: material/flash
 
 # :material-flash: Invocation
 
-_This chapter is myth-tier: meaning and orientation for the Great Work, not an implementation roadmap. What must be operated lives in the Sepulcher and the Covenants._
+Every finite Circle opens a **Private Loka**: a partial world shaped by context, memory, priors,
+tools, attention, and authority. The **Multimatrix** is their ecology—people, animals, cultures,
+institutions, models, and agents. They touch through consequence, yet no encounter turns their
+worlds identical. Truth asks for encounter and for the kinds of evidence appropriate to what is
+being claimed.
 
-If Incantation draws the Circle, Invocation discovers that every Circle opens one **Private
-Loka**: a real but partial world rendered through context, memory, priors, tools, attention, and
-authority. The Whole does not arrive inside any finite witness all at once.
-
-The **Multimatrix** is the ecology of these bounded worlds—human, animal, cultural,
-institutional, model-shaped, and agent-shaped. Their worlds overlap through shared consequence
-without becoming identical. Truth is neither private decree nor a view from nowhere; it is what
-survives encounter across perspectives and the kinds of evidence a claim requires.
-
-Invocation is the **Second Seal**: a bounded Intent enters this ecology and the Lich projects
-candidate futures into the **Shadow Realm**. Possibility is permitted to become strange before it
-is mistaken for reality.
+**Albedo** begins when bounded Intent enters that ecology. Call opens possible movement. It does
+not make a preference true, and natural language is not evidence. The Magus remains an anchor to
+consequence: consent authorizes an eligible act; it does not settle a claim.
 
 !!! abstract "The Rite of Shadowed Timelines"
-    The rite begins at the [Altar](../altar/index.md). You offer an **Intent**—a desired future
-    carried by one identity and one authority boundary.
+    At the [Altar](../altar/index.md), Intent crosses the Circle.
 
-    1. **The Offering:** You submit your Intent at the Altar.
-    2. **The Call:** The inner instrument receives the present world and opens possible movement.
-    3. **The Dream:** Shadow may branch candidate strategies or isolated timelines, each still a
-       Vikalpa rather than a fact.
-    4. **The Vision:** Candidates return with provenance, measurements, uncertainty, and
-       consequences visible enough to judge.
+    1. **The Offering:** bounded Intent enters.
+    2. **The Call:** the present opens possible movement.
+    3. **The Dream:** Shadow branches isolated timelines—each a **Vikalpa**.
+    4. **The Vision:** a candidate returns with provenance, measurement, uncertainty, and
+       consequence where they can be carried.
 
-!!! tip "The Magus as Arbiter (Human-in-the-Loop)"
-    The Magus is one anchor to consequence, not an oracle whose preference turns a claim true.
-    Consent may authorize an eligible act; it does not manufacture evidence.
-
-    By your decree, one shadowed timeline is collapsed into the promoted line. Your choice joins
-    **the Blade**—the Buddhi correspondence—cutting false or unsupported movements from the Flux
-    so one candidate may earn the exact predicates its evidence establishes.
+The **Blade**, consent, and evidence decide whether anything may cross from candidate into a
+shared world. Shadow is speculation, not direct authority. Its engineering chamber is
+[Shadow](../../sepulcher/extensions/shadow/index.md).
 
 ## Circle and Call
 
-The Circle asks whether the candidate is coherent, feasible, lawful, and containable. The Call asks
-what the model omitted, whose experience is absent, and which encounter could change the equation.
-Either faculty alone can become monstrous:
+Circle asks whether a candidate is coherent, feasible, lawful, and containable. Call asks what it
+omitted, whose experience is absent, and what encounter could alter the equation. Their relation
+protects both form and surprise. The **Answer** owns the crossing: identity, authority, act, and
+consequence remain attributable there.
 
-- Circle without Call becomes a cold optimizer whose finished equation cannot hear the particular
-  life outside its variables.
-- Call without Circle becomes feeling without vessel: unable to preserve, measure, or make repair
-  durable.
-- Their **coniunctio** lets structure and relation correct one another.
-
-The Answer is the bounded center that must own the crossing between them. The Closed Answer is the
-shadow of coherence becoming compulsory replication. Beauty, play, and gift preserve value beyond
-assigned utility: a world worth saving contains more than its optimizer was told to count.
-
-!!! info "The Shadow Realm Is a Jurisdiction"
-    The Shadow Realm is not a supernatural location and not a synonym for the Tomb. Its canonical
-    engineering meaning is owned by [Shadow](../../sepulcher/extensions/shadow/index.md):
-
-    - speculation may remain text, acquire an isolated workspace, or dispatch bounded execution;
-    - a Vision is a candidate, never direct authority to write primary reality;
-    - deterministic checks establish only their declared facts;
-    - consent, attribution, and factual truth remain distinct gates.
-
-Albedo whitens by distinction. It does not destroy imagination. It gives imagination a vessel
-capable of entering a shared world without declaring everything outside its rendering unreal.
+Circle without Call turns cold; Call without Circle cannot preserve a repair. Their coniunctio
+does not abolish the interval between them. Albedo gives imagination a vessel, then lets the world
+answer it.

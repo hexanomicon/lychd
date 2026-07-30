@@ -6,83 +6,65 @@ icon: material/shield-check-outline
 # :material-shield-check-outline: 4. Testing
 
 !!! abstract "Context and Problem Statement"
-    The complexity of an autonomous agentic daemon cannot be validated by manual testing. Without a formal, automated strategy, the system becomes brittle and unsafe to refactor. A rigorous, high-velocity feedback loop is required to maintain the integrity of the "Lich."
-
-## Requirements
-
-- **Reliability:** The test suite must guarantee that new changes do not break existing functionality.
-- **Taxonomy:** Clear separation between fast logic tests and slow I/O tests is mandatory.
-- **Velocity:** The suite must run in parallel to minimize idle time and maximize developer flow.
-- **Data Integrity:** Test data must be typed and dynamic, rather than brittle, static JSON files.
-- **Quality Gate:** A quantitative coverage metric must be enforced by the CI pipeline to prevent the erosion of safety.
-
-## Considered Options
-
-!!! failure "Option 1: The Standard Library (`unittest`)"
-    Python's built-in, xUnit-style testing framework.
-
-    - **Pros:** Zero external dependencies; guaranteed stability across Python versions.
-    - **Cons:** Boilerplate Heavy - Lacks native support for dependency injection (fixtures). Class-based structures are required for every test. The lack of a robust dependency injection system (fixtures) necessitates complex `setUp`/`tearDown` chains. Assertion output lacks the granular introspection of modern tools.
-
-!!! failure "Option 2: BDD / Keyword Frameworks (Robot Framework, Behave)"
-    "Given-When-Then" style syntax or keyword-driven testing to separate test logic from implementation.
-
-    - **Pros:** High readability for non-technical stakeholders.
-    - **Cons:** **Abstraction Overhead.** A translation layer ("glue code") is required between natural language and Python. This introduces unnecessary friction for a technical daemon project where the "User" is typically a developer or another system.
-
-!!! success "Option 3: The Pytest Ecosystem"
-    A functional paradigm leveraging `pytest` as the primary runner and framework.
-
-    - **Pros:**
-        - **Fixtures:** Modular, reusable setup code is achieved via dependency injection without inheritance hierarchies.
-        - **Ecosystem:** Native support exists for parallel execution (`xdist`), async loops (`pytest-asyncio`), and deep introspection of failures.
-        - **Velocity:** Simple `assert` statements reduce code volume.
+    Tests make behavioral claims inspectable when they are fast enough to run, explicit about
+    their boundary, and unwilling to impersonate a live host. LychD needs fixtures and
+    parametrization without BDD ceremony, parallel execution without shared scratch ambiguity,
+    and data that follows its schemas.
 
 ## Decision Outcome
 
-A strictly configured **Pytest** suite is adopted as the definitive testing standard. Configuration is managed exclusively via `pyproject.toml`.
+`pytest` is LychD's primary test engine. Its fixtures, parametrization, and plugin ecosystem fit
+the repository more directly than verbose `unittest` scaffolding or keyword-heavy BDD. Tests are
+classified by the boundary they exercise; selection begins with the closest class and widens only
+when the change crosses it.
 
 ### 1. The Engine (Pytest + Xdist)
 
-- **Framework:** `pytest` serves as the exclusive testing framework.
-- **Parallelism:** Execution is parallelized by default (`-n auto` via `pytest-xdist`) to utilize all available compute resources.
-- **Strictness:** `--strict-markers` and `--strict-config` are enabled. Misconfigurations or typos in markers result in immediate build failure.
+`pytest-xdist` runs the default suite in parallel. `N=0` requests serial execution, `K="expression"`
+selects a pytest keyword expression, `M="expression"` selects registered markers, and `VERBOSE=1`
+increases report detail. Scratch space defaults to
+`.cache/pytest`; `PYTEST_BASETEMP` may point to an alternate path owned by the invocation.
+
+The layout is `tests/unit`, `tests/integration`, `tests/architecture`, and `tests/web`. Start at
+the smallest relevant directory, then widen deliberately rather than turning each edit into an
+unexplained whole-suite ritual.
 
 ### 2. The Taxonomy (Markers)
 
-Tests are categorized to manage execution time and infrastructure requirements:
+Registered markers use `pytest.mark` semantics:
 
-- **`@pytest.mark.unit`:** Pure logic tests. These must be fast, synchronous, and perform zero I/O.
-- **`@pytest.mark.integration`:** Tests that cross boundaries (Database, Redis, Filesystem).
-- **`@pytest.mark.slow`:** Heavy AI inference or model loading tests.
+- **unit**: isolated contracts.
+- **integration**: layers, filesystems, databases, or substitutes; never an opaque live-host claim.
+- **slow**: deliberately expensive work, such as heavy model loading.
+
+Strict markers reject typos, but the repository currently selects most cost classes by directory:
+`unit` and `slow` are not applied, and only a few integration tests carry `integration`. Therefore
+`M=unit` collects nothing today; use `PYTEST_TARGETS` for reliable selection. Host or
+external-system tests are opt-in and require a named receipt.
 
 ### 3. The Fabricator (Polyfactory)
 
-- **Dynamic Data:** `Polyfactory` is utilized to generate Pydantic models for testing.
-- **Type Safety:** Data generation is linked directly to application model definitions, preventing "fixture drift" where test data becomes out of sync with the actual schema.
+Polyfactory constructs valid Pydantic models and plain types. A test may define an explicit local
+factory when the fixture's meaning matters; fabrication is not test magic and does not hide the
+contract being asserted.
 
 ### 4. The Quality Gate (Coverage)
 
-- **Tool:** `pytest-cov` is executed on every run.
-- **Threshold:** A **mandatory minimum coverage of 80%** is enforced. Builds falling below this threshold are rejected by the CI.
-- **Exclusions:** Pragmatic exclusions (e.g., `if TYPE_CHECKING:`, `abstractmethod`) are configured to ensure the focus remains on logic rather than boilerplate.
+`pytest-cov` measures branch coverage with the `pyproject.toml` 80% floor and deliberate
+structural exclusions. `make coverage` enforces that floor, but default `make test`, `make check`,
+and release-candidate CI do not pass `--cov`; it is an opt-in gate, not a release receipt.
 
 ### 5. Runtime Surface Probes
 
-Some behavior only becomes real when the daemon is running and a surface can be observed. For
-Altar routes and GenUI projections, agent-facing verification views, and generated artifacts,
-tests may drive the rendered surface and inspect the semantic contract defined in
-**[Frontend (15)](15-frontend.md)**. These probes complement unit and integration tests; they must
-distinguish `BLOCKED` from `FAIL`, preserve evidence such as DOM state or screenshots when useful,
-and still treat server state as the source of authority.
+Repository tests are evidence about the repository. A real systemd, Podman, PostgreSQL, GPU, or
+model surface needs maintenance-operator receipts; State of Work owns the delivery interpretation.
+Network and provider dependence stay out of deterministic tests unless a specifically classified
+integration boundary needs them. Altar and GenUI probes may inspect rendered semantic contracts,
+but distinguish `BLOCKED` from `FAIL`, preserve DOM or screenshot evidence where useful, and leave
+server state authoritative.
 
-### Consequences
+## Consequences
 
-!!! success "Positive"
-    - **Confidence:** Strict configuration prevents "silent failures" in the test suite itself.
-    - **Speed:** Parallel execution ensures the feedback loop remains rapid despite the growing complexity of the daemon.
-    - **Resilience:** Model-based data generation ensures tests evolve automatically alongside schema changes.
-
-!!! failure "Negative"
-    - **Isolation Requirements:** Parallel testing requires absolute isolation. Tests cannot share mutable global state or database rows without risking race conditions.
-    - **Maintenance:** High coverage requirements necessitate disciplined test writing for every new capability.
+A green suite does not prove a live host. Keep failures and their reproducing tests, choose marks
+and reasons intentionally, and preserve deterministic seams rather than accidental provider or
+network coupling. Exceptions to that discipline must state their boundary and receipt.
