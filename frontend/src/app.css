@@ -1006,6 +1006,11 @@
     box-shadow: inset 2px 0 var(--color-lich);
   }
   .turn--agent[data-state="done"] .turn__body { border-color: var(--color-engraving); }
+  .turn--agent[data-state="stale"] .turn__body {
+    border-style: dashed;
+    border-color: var(--color-ash);
+    box-shadow: none;
+  }
   .turn--agent[data-state="failed"] { opacity: .85; }
   .turn--agent[data-state="failed"] .turn__meta .who { color: var(--color-ember); }
   .turn--agent[data-state="failed"] .turn__body {
@@ -1310,6 +1315,14 @@
     box-shadow: none;
   }
   .swap-ticket[data-state="failed"]::before { content: "✕"; }
+  .swap-ticket[data-state="stale"] {
+    border-style: dashed;
+    border-color: var(--color-ash);
+    background: var(--color-obsidian-2);
+    color: var(--color-ash);
+    box-shadow: none;
+  }
+  .swap-ticket[data-state="stale"]::before { content: "?"; }
 
   /* ── Loom ─────────────────────────────────────────────────────────── */
   .loom-rail { width: 232px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }

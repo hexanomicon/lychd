@@ -122,18 +122,20 @@ class AgentForge:
 def build_local_model(*, model_id: str, base_url: str, api_key: str = "placeholder") -> Model:
     """Build the reference local OpenAI-compatible model (A5 §4, Part 5.A).
 
-    A thin wrapper over the ONE shared constructor in
-    `domain/animation/model_factory.py` — the SAME builder the production hydrator
-    (`AnimatorBinder` → `OpenAICompatibleConnector.get_model`) uses, so the reference
-    tests/CLI exercise is byte-for-byte the model the daemon runs (identical tool-call
-    JSON-schema profile). Previously this diverged: the reference carried the profile,
-    production did not.
+    A thin wrapper over the shared constructor in
+    `domain/animation/model_factory.py`, explicitly selecting the conservative local
+    compatibility profile used by Soulstone connectors.
     """
-    from lychd.domain.animation.model_factory import build_openai_compatible_model, openai_compatible_provider
+    from lychd.domain.animation.model_factory import (
+        LOCAL_COMPAT_PROFILE,
+        build_openai_compatible_model,
+        openai_compatible_provider,
+    )
 
     return build_openai_compatible_model(
         model_id=model_id,
         provider=openai_compatible_provider(base_url=base_url, api_key=api_key),
+        profile=LOCAL_COMPAT_PROFILE,
     )
 
 

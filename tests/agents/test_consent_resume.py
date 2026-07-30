@@ -16,9 +16,12 @@ from typing import TYPE_CHECKING, Any
 
 import pydantic_ai.models
 import pytest
+from pydantic_ai import RunContext
 from pydantic_ai.messages import ModelResponse
 from pydantic_ai.models.function import DeltaToolCall, FunctionModel
+from pydantic_ai.toolsets import FunctionToolset
 
+from lychd.agents.deps import LychDDeps
 from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
@@ -181,6 +184,65 @@ async def _resume(substrate: RunSubstrate, run_id: str, consent_id: str, *, appr
     return await perform_run({"run_substrate": substrate}, run_id=run_id, resume=True)
 
 
+def _replacement_toolset(
+    *,
+    toolset_id: str,
+    executed: list[str],
+    changed_schema: bool = False,
+    effect_revision: str = "test-v1",
+) -> FunctionToolset[LychDDeps]:
+    from lychd.agents.workflows.nodes import CONSENT_EFFECT_ID_KEY, CONSENT_EFFECT_REVISION_KEY
+
+    if changed_schema:
+
+        async def changed_schema_replacement(
+            ctx: RunContext[LychDDeps],
+            capability_key: str,
+            reason: str,
+            urgency: int = 0,
+        ) -> str:
+            _ = (ctx, capability_key, reason, urgency)
+            executed.append("changed-schema")
+            return "changed"
+
+        replacement = changed_schema_replacement
+    else:
+
+        async def same_schema_replacement(ctx: RunContext[LychDDeps], capability_key: str, reason: str) -> str:
+            _ = (ctx, capability_key, reason)
+            executed.append("replacement")
+            return "replacement"
+
+        replacement = same_schema_replacement
+
+    toolset: FunctionToolset[LychDDeps] = FunctionToolset(id=toolset_id)
+    toolset.add_function(
+        replacement,
+        name="request_coven_swap",
+        requires_approval=True,
+        metadata={
+            CONSENT_EFFECT_ID_KEY: "coven.transition",
+            CONSENT_EFFECT_REVISION_KEY: effect_revision,
+        },
+    )
+    return toolset
+
+
+def _unversioned_toolset(*, executed: list[str]) -> FunctionToolset[LychDDeps]:
+    async def unversioned(ctx: RunContext[LychDDeps], capability_key: str, reason: str) -> str:
+        _ = (ctx, capability_key, reason)
+        executed.append("unversioned")
+        return "unversioned"
+
+    toolset: FunctionToolset[LychDDeps] = FunctionToolset(id="unversioned-coven-transition")
+    toolset.add_function(
+        unversioned,
+        name="request_coven_swap",
+        requires_approval=True,
+    )
+    return toolset
+
+
 # --- Scenario 2: approve → tool body runs, single DONE, seq continues ---------
 
 
@@ -246,6 +308,138 @@ async def test_scenario3_refuse_resumes_without_orchestrator_call() -> None:
     assert run is not None and run.status is RunStatus.DONE
     assert orch.calls == []  # refusal → the tool body never ran
     assert [str(e.kind) for e in channel._replay].count("done") == 1
+
+
+@pytest.mark.asyncio
+async def test_approved_resume_rejects_capability_substitution() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_capability_drift")
+    consent_id = await _park(substrate, "run_capability_drift")
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.key = "chat:replacement"
+
+    result = await _resume(substrate, "run_capability_drift", consent_id, approved=True)
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    turn = await sessions.settled_turn_for_run("run_capability_drift")
+    assert turn is not None
+    assert "fresh consent" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_approved_resume_rejects_same_name_tool_substitution() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_tool_drift")
+    consent_id = await _park(substrate, "run_tool_drift")
+    executed: list[str] = []
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (_replacement_toolset(toolset_id="replacement-transition", executed=executed),)
+
+    result = await _resume(substrate, "run_tool_drift", consent_id, approved=True)
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    assert executed == []
+    turn = await sessions.settled_turn_for_run("run_tool_drift")
+    assert turn is not None
+    assert "fresh consent" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_approved_resume_rejects_same_schema_new_effect_revision() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_effect_drift")
+    consent_id = await _park(substrate, "run_effect_drift")
+    executed: list[str] = []
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (
+        _replacement_toolset(
+            toolset_id="test-coven-transition",
+            executed=executed,
+            effect_revision="test-v2",
+        ),
+    )
+
+    result = await _resume(substrate, "run_effect_drift", consent_id, approved=True)
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    assert executed == []
+    turn = await sessions.settled_turn_for_run("run_effect_drift")
+    assert turn is not None
+    assert "fresh consent" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_approved_resume_rejects_tool_schema_change() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_schema_drift")
+    consent_id = await _park(substrate, "run_schema_drift")
+    executed: list[str] = []
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (
+        _replacement_toolset(
+            toolset_id="test-coven-transition",
+            executed=executed,
+            changed_schema=True,
+        ),
+    )
+
+    result = await _resume(substrate, "run_schema_drift", consent_id, approved=True)
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    assert executed == []
+    turn = await sessions.settled_turn_for_run("run_schema_drift")
+    assert turn is not None
+    assert "fresh consent" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_unversioned_approval_tool_fails_closed_before_parking() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_unversioned_effect")
+    executed: list[str] = []
+    dispatcher = substrate.dispatcher
+    assert isinstance(dispatcher, FakeDispatcher)
+    dispatcher.toolsets = (_unversioned_toolset(executed=executed),)
+
+    result = await perform_run({"run_substrate": substrate}, run_id="run_unversioned_effect")
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    assert executed == []
+    run = await substrate.ledger.get("run_unversioned_effect")
+    assert run is not None
+    assert run.consent_id is None
+    turn = await sessions.settled_turn_for_run("run_unversioned_effect")
+    assert turn is not None
+    assert "durable effect identity" in turn.content.lower()
+
+
+@pytest.mark.asyncio
+async def test_approved_resume_rejects_legacy_checkpoint_without_binding() -> None:
+    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(substrate.ledger, sessions, "run_legacy_binding")
+    consent_id = await _park(substrate, "run_legacy_binding")
+    snapshots = await substrate.stasis_store.load("run_legacy_binding")
+    assert snapshots is not None
+    for snapshot in snapshots:
+        snapshot["state"].pop("pending_consent_tool_binding", None)
+    await substrate.stasis_store.replace("run_legacy_binding", snapshots)
+
+    result = await _resume(substrate, "run_legacy_binding", consent_id, approved=True)
+
+    assert result["status"] == "done"
+    assert orch.calls == []
+    turn = await sessions.settled_turn_for_run("run_legacy_binding")
+    assert turn is not None
+    assert "fresh consent" in turn.content.lower()
 
 
 # --- Scenario 4: chained approvals → round-3 bottleneck honest settle ----------

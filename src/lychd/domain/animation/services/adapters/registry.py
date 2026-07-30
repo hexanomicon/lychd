@@ -15,13 +15,10 @@ from lychd.domain.animation.capabilities import (
 from lychd.domain.animation.schemas import (
     ConcurrencyIntent,
     GenerationProfile,
-    ModelInfo,
-    ModelSurface,
     PortalConfig,
-    PortalModelConfig,
     SoulstoneConfig,
 )
-from lychd.domain.animation.services.adapters.catalog import synthesize_families
+from lychd.domain.animation.services.adapters.catalog import model_info_from_portal_model, synthesize_families
 from lychd.domain.animation.services.adapters.contracts import (
     ActivationObserver,
     PortalRuntimeFactory,
@@ -46,7 +43,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from lychd.config.settings.root import Settings
-    from lychd.domain.animation.schemas import ModelCapabilityHints
 
 
 class RuntimeAdapterRegistry:
@@ -212,7 +208,7 @@ class RuntimeAdapterRegistry:
         specs: list[CapabilitySpec] = []
         for model in portal.models:
             hints = model.capabilities
-            info = self._info_from_portal_model(portal, model, hints)
+            info = model_info_from_portal_model(model)
             generation = GenerationProfile().overlay(portal.generation).overlay(model.generation)
             specs.extend(
                 CapabilitySpec(
@@ -237,26 +233,6 @@ class RuntimeAdapterRegistry:
                 for family in synthesize_families(info, hints, None)
             )
         return specs
-
-    def _info_from_portal_model(
-        self,
-        portal: PortalConfig,
-        model: PortalModelConfig,
-        hints: ModelCapabilityHints | None,
-    ) -> ModelInfo:
-        """Build a ``ModelInfo`` from a Portal model declaration + optional hints."""
-        _ = portal
-        return ModelInfo(
-            id=model.id,
-            description=model.description,
-            surface=(hints.surface if hints is not None else None) or ModelSurface.CHAT,
-            modalities_in=list((hints.modalities_in if hints is not None else None) or ["text"]),
-            modalities_out=list((hints.modalities_out if hints is not None else None) or ["text"]),
-            supports_tools=hints.supports_tools if hints is not None else None,
-            supports_streaming=(
-                True if hints is None or hints.supports_streaming is None else hints.supports_streaming
-            ),
-        )
 
     async def _probe_portal_capability_states(
         self, animator: RuntimeAnimator, specs: list[CapabilitySpec]

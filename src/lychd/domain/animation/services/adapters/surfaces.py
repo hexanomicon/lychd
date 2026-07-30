@@ -65,10 +65,11 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         default_model_id: str | None = None,
         api_key_secret_name: str | None = None,
         default_surface: ModelSurface = ModelSurface.CHAT,
+        provider_name: str = "openai-compatible",
         toolsets: Sequence[AbstractToolset] = (),
         metadata: dict[str, object] | None = None,
     ) -> None:
-        """Store readiness, base URL, models, auth, and toolsets."""
+        """Store readiness, base URL, models, auth, profile policy, and toolsets."""
         self._kind = kind
         self._link = link
         self._base_url = base_url
@@ -76,6 +77,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._default_model_id = default_model_id
         self._api_key_secret_name = api_key_secret_name
         self._default_surface = default_surface
+        self._provider_name = provider_name
         self._toolsets = tuple(toolsets)
         self._metadata = dict(metadata or {})
 
@@ -108,21 +110,23 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         provider_model = self._provider_model_id(selected_model)
 
         try:
-            from lychd.domain.animation.model_factory import (
-                build_openai_compatible_model,
-                openai_compatible_provider,
-            )
+            from lychd.domain.animation.model_factory import build_openai_compatible_model, openai_interface_route
         except ModuleNotFoundError as exc:
             msg = "Pydantic AI OpenAI extras are required to hydrate an OpenAI-compatible connector model."
             raise RuntimeError(msg) from exc
 
-        # THE one model constructor (shared with agents.factory.build_local_model) so
-        # tool-call JSON schemas are identical between the reference and production.
-        provider = openai_compatible_provider(base_url=self._base_url, api_key=self._resolve_api_key())
+        provider, provider_profile = openai_interface_route(
+            provider_name=self._provider_name,
+            base_url=self._base_url,
+            model_id=provider_model,
+            responses=selected_surface == ModelSurface.RESPONSES,
+            api_key=self._resolve_api_key(),
+        )
         return build_openai_compatible_model(
             model_id=provider_model,
             provider=provider,
             responses=selected_surface == ModelSurface.RESPONSES,
+            profile=provider_profile,
         )
 
     def get_toolsets(self) -> Sequence[AbstractToolset]:

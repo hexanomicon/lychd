@@ -84,8 +84,10 @@ decisions remain ordinary TypeScript; a guard rejects runes in framework-neutral
 ### Typed JSON and semantic SSE
 
 `scripts/export_openapi.py` builds a small schema application from production Altar controllers
-and dependencies. It does not run `create_app()` or its middleware, lifespan, database, SAQ, or
-security configuration. The chain is:
+and dependencies. Runtime and exporter share the same deterministic JSON-only OpenAPI
+configuration; generated controller errors use Litestar's JSON `status_code`, `detail`, and
+optional `extra` fields. The exporter does not run `create_app()` or its middleware, exception
+handlers, lifespan, database, SAQ, or security configuration. The chain is:
 
 ```text
 Altar controllers → frontend/openapi.json → openapi-typescript
@@ -107,10 +109,13 @@ runs receive `resync`, not invented token replay.
 
 The client seeds from the snapshot cursor, serially validates and reduces events, ignores applied
 sequence numbers, and refetches on gap or `resync`. Its initial cursor is reducer state: the
-current `EventSource` constructor does not send an explicit cursor. Invalid data or failed
-authoritative refetch closes the stream; transient error is shown while the browser reconnects.
-Token deltas and channels are neither durable nor cross-process; retained structural Step evidence
-is best-effort. Nexus uses its own versioned transition envelope with the same retention boundary.
+current `EventSource` constructor does not send an explicit cursor. A run or ticket identity
+mismatch, invalid data, or failed authoritative refetch permanently closes that channel. Bridge
+and Nexus immediately mark the projection stale and attempt one bounded authoritative recovery;
+a second failure remains visibly stale rather than animated as live. Ordinary transport errors
+remain transient while `EventSource` reconnects. Token deltas and channels are neither durable nor
+cross-process; retained structural Step evidence is best-effort. Nexus uses its own versioned
+transition envelope with the same retention boundary and completion-driven single-flight polling.
 
 ### Closed rendering, readable form
 
@@ -133,10 +138,10 @@ read-only view, and keep a keyboard-operable outline, list, table, or timeline.
 
 Native CSS uses custom properties, cascade layers, media queries, semantic classes, and state
 attributes. Type, label, icon, shape, and copy carry meaning without colour; the stylesheet has a
-skip link, visible focus, hidden labels, narrow layout, and `prefers-reduced-motion`. Tailwind,
-Sass, project-owned PostCSS, and a parallel styling vocabulary are forbidden. Transitive Vite
-packages in the lockfile are not a styling API. Fonts and assets package locally, but delivery is
-proved only when a Litestar route and browser test exercise the public URL.
+skip link, visible focus, hidden labels, narrow layout, and `prefers-reduced-motion`. Inspectors
+restore their live opener after closing when one exists; deep links use router focus reset.
+Tailwind, Sass, project-owned PostCSS, and a parallel styling vocabulary are forbidden. Transitive
+Vite packages in the lockfile are not a styling API.
 
 ### Build boundary, security, and reopening
 
@@ -144,20 +149,23 @@ Development runs Vite on `127.0.0.1:5173`, proxying `/api` and `/schema` to the 
 Production serves static Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
 404. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or
-running image. Only `src/lychd/public/_app` is mounted: root assets such as `/altar-lightning.svg`
-and `/THIRD_PARTY_NOTICES.txt` package successfully but lack matching Litestar handlers, so their
-browser delivery is not proved.
+running image. Only `src/lychd/public/_app` is broadly mounted; the two known root artifacts,
+`/altar-lightning.svg` and `/THIRD_PARTY_NOTICES.txt`, have narrow typed Litestar handlers.
 
-The Altar is loopback-only. CSRF is only an unsafe-method control: defaults still allow wildcard
-CORS, do not constrain Host, use a fixed bootstrap Sigil, and Scalar has mutable CDN assets.
-Until Host, Origin, bind, authentication, local-asset, security-header, and hostile-browser
-receipts exist, remote, proxied, tunneled, DNS-rebinding, and untrusted-browser use is unsupported.
+The Altar is loopback-only. Defaults use same-origin CORS, accept only explicit loopback Origin
+exceptions, constrain Host to literal loopback authorities, and expose schema JSON without remote
+documentation assets. CSRF remains an unsafe-method layer, not authentication; ordinary requests
+still receive the fixed bootstrap Sigil. The foreground launcher can expose configuration the app
+cannot observe, security-header and production-browser receipts are absent, and no remote
+principal exists. Remote, proxied, tunneled, direct-image-public, and untrusted-browser use remains
+unsupported.
 
-Focused checks cover Svelte/TypeScript; frontend API, cursor, remount, stream, and GenUI tests;
-Python routes, controllers, consent, SSE, and four instruments; guards for unsafe HTML, server
-modules, styling, and misplaced runes; plus static build and archive audit. They do not establish
-Playwright against `create_app()`, full keyboard/a11y behavior, hostile-browser security, root
-asset delivery, performance budgets, Node-free production image, or durable cross-process events.
+Focused checks cover Svelte/TypeScript; frontend API, cursor, remount, stream, focus-return, and
+GenUI tests; Python routes, controllers, consent, SSE, fixed root assets, and four instruments;
+guards for unsafe HTML, server modules, styling, and misplaced runes; plus static build and archive
+audit. They do not establish Playwright against `create_app()`, full keyboard/a11y behavior,
+hostile-browser security, performance budgets, Node-free production image, or durable
+cross-process events.
 Reopen this renderer decision only for evidence that its static topology cannot meet a required
 security, packaging, accessibility, deep-link, or measured event-performance contract, or an
 upstream defect defeats an owned seam. Preference and hypothetical pages are not evidence; any

@@ -34,6 +34,8 @@
   let liveTurns = $state<LiveTurn[]>([]);
   const streams = new SvelteMap<string, () => void>();
   const refreshTimers = new SvelteMap<string, number>();
+  const recoveredHardClosures = new Set<string>();
+  let destroyed = false;
   const runStatuses = new Set([
     "queued",
     "running",
@@ -121,6 +123,7 @@
   }
 
   onDestroy(() => {
+    destroyed = true;
     loadVersion++;
     for (const close of streams.values()) close();
     streams.clear();
@@ -254,10 +257,46 @@
           if (close === undefined || streams.get(targetRunId) === close) {
             streams.delete(targetRunId);
           }
+          const active = liveTurns.find((item) => item.runId === targetRunId);
+          if (active?.state === "streaming") {
+            active.state = "stale";
+            active.activity = "projection stale";
+            renderVersion++;
+          }
+          void recoverHardClosedRun(targetRunId, targetSessionId);
         }
       }
     );
     if (!hardClosed) streams.set(targetRunId, close);
+  }
+
+  async function recoverHardClosedRun(runId: string, targetSessionId: string) {
+    if (recoveredHardClosures.has(runId)) return;
+    recoveredHardClosures.add(runId);
+    try {
+      const projection = await getRunSnapshot(runId);
+      if (destroyed) return;
+      if (projection.session_id !== targetSessionId) {
+        throw new Error("The authoritative run snapshot changed session identity.");
+      }
+      const index = liveTurns.findIndex((item) => item.runId === runId);
+      const active = liveTurns[index];
+      if (!active) return;
+      const recovered = replaceLiveTurnFromSnapshot($state.snapshot(active), projection);
+      liveTurns[index] = recovered;
+      renderVersion++;
+      if (projection.terminal) {
+        if (snapshot?.session?.id === targetSessionId) {
+          scheduleSettledRefresh(runId, targetSessionId);
+        }
+      } else {
+        attachStream(recovered, projection.cursor);
+      }
+    } catch {
+      if (!destroyed) {
+        omen("The run projection remains stale; refresh the Bridge to retry.", true);
+      }
+    }
   }
 
   async function submit() {

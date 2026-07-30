@@ -5,6 +5,7 @@ path, the event sequence, turn settlement, and context release — with no model
 request permitted (`ALLOW_MODEL_REQUESTS = False`).
 """
 
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
@@ -20,6 +21,7 @@ from tests.agents.fakes import (
     FakeConsents,
     FakeDispatcher,
     FakeEvents,
+    FakeGrant,
     FakeOrchestrator,
     FakeTurns,
     approval_test_toolset,
@@ -27,6 +29,9 @@ from tests.agents.fakes import (
 
 if TYPE_CHECKING:
     from pydantic_ai import AgentRunResult
+    from pydantic_ai.messages import ModelMessage
+    from pydantic_ai.models import ModelRequestParameters
+    from pydantic_ai.settings import ModelSettings
 
     from lychd.agents.factory import AgentForge
 
@@ -183,3 +188,52 @@ async def test_converse_forwards_grant_model_settings() -> None:
     assert "hello" not in str(expected_prior)
     assert "active capability: chat:test" in captured["floor"]
     assert len(turns.sessions["sess_1"].message_history) == 4
+
+
+def test_usage_limits_reserve_output_without_fake_precount() -> None:
+    from pydantic_ai.models.test import TestModel
+
+    from lychd.agents.workflows.bridge_chat import _usage_limits
+
+    limits = _usage_limits(8192, FakeGrant(model=TestModel()))
+
+    assert limits is not None
+    assert limits.input_tokens_limit == 7680
+    assert limits.request_limit == 50
+    assert limits.count_tokens_before_request is False
+
+
+def test_usage_limits_enable_precount_only_for_model_override() -> None:
+    from pydantic_ai.models.test import TestModel
+    from pydantic_ai.usage import RequestUsage
+
+    from lychd.agents.workflows.bridge_chat import _usage_limits
+
+    class _CountingModel(TestModel):
+        async def count_tokens(
+            self,
+            messages: list[ModelMessage],
+            model_settings: ModelSettings | None,
+            model_request_parameters: ModelRequestParameters,
+        ) -> RequestUsage:
+            _ = (messages, model_settings, model_request_parameters)
+            return RequestUsage()
+
+    limits = _usage_limits(8192, FakeGrant(model=_CountingModel()))
+
+    assert limits is not None
+    assert limits.count_tokens_before_request is True
+
+
+def test_usage_limits_reject_output_reserve_that_consumes_window() -> None:
+    from types import SimpleNamespace
+
+    from pydantic_ai.models.test import TestModel
+
+    from lychd.agents.workflows.bridge_chat import _usage_limits
+    from lychd.domain.cortex.context import ContextBudgetExceededError
+
+    grant = FakeGrant(model=TestModel(), generation=SimpleNamespace(max_context=4096, max_tokens=4096))
+
+    with pytest.raises(ContextBudgetExceededError, match="leaves no input budget"):
+        _usage_limits(4096, grant)

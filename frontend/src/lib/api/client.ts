@@ -119,6 +119,14 @@ export async function getNexusTransition(requestId: string): Promise<TransitionR
   ) as TransitionRecordView;
 }
 
+export async function getNexusSwap(ticketId: string): Promise<SwapAccepted> {
+  return unwrap(
+    await client.GET("/api/v1/nexus/swaps/{ticket_id}", {
+      params: { path: { ticket_id: ticketId } }
+    })
+  ) as SwapAccepted;
+}
+
 export async function createNexusSwap(target: string): Promise<SwapAccepted> {
   return unwrap(
     await client.POST("/api/v1/nexus/swaps", {
@@ -162,7 +170,7 @@ export async function getOrbRun(
 
 export type RunStreamOptions = {
   initialCursor?: number;
-  onHardClose?: () => void;
+  onHardClose?: (message: string) => void;
 };
 
 export function listenToRun(
@@ -195,7 +203,7 @@ export function listenToRun(
     stopped = true;
     source.close();
     try {
-      options.onHardClose?.();
+      options.onHardClose?.(message);
     } finally {
       onFault(message);
     }
@@ -208,6 +216,10 @@ export function listenToRun(
         event = runEventEnvelopeSchema.parse(JSON.parse((raw as MessageEvent<string>).data));
       } catch {
         fault("The Vessel emitted an invalid run event.");
+        return;
+      }
+      if (event.run_id !== runId) {
+        fault("The Vessel emitted a run event for another Run.");
         return;
       }
 
@@ -245,22 +257,51 @@ export function listenToRun(
   };
 }
 
+export type TransitionStreamOptions = {
+  onHardClose?: (message: string) => void;
+};
+
 export function listenToSwap(
   ticketId: string,
   onEvent: (event: ReturnType<typeof transitionEventSchema.parse>) => void,
-  onFault: (message: string) => void
+  onFault: (message: string) => void,
+  options: TransitionStreamOptions = {}
 ): () => void {
   const source = new EventSource(`/api/v1/nexus/swaps/${encodeURIComponent(ticketId)}/events`);
+  let stopped = false;
+
+  function fault(message: string) {
+    if (stopped) return;
+    stopped = true;
+    source.close();
+    try {
+      options.onHardClose?.(message);
+    } finally {
+      onFault(message);
+    }
+  }
+
   source.addEventListener("transition", (raw) => {
     try {
       const event = transitionEventSchema.parse(JSON.parse((raw as MessageEvent<string>).data));
+      if (event.ticket.id !== ticketId) {
+        fault("The Vessel emitted a transition event for another ticket.");
+        return;
+      }
       onEvent(event);
-      if (event.ticket.state !== "warming") source.close();
+      if (event.ticket.state !== "warming") {
+        stopped = true;
+        source.close();
+      }
     } catch {
-      source.close();
-      onFault("The Vessel emitted an invalid transition event.");
+      fault("The Vessel emitted an invalid transition event.");
     }
   });
-  source.onerror = () => onFault("The transition stream went quiet.");
-  return () => source.close();
+  source.onerror = () => {
+    if (!stopped) onFault("The transition stream went quiet.");
+  };
+  return () => {
+    stopped = true;
+    source.close();
+  };
 }

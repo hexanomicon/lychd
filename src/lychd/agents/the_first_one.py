@@ -15,12 +15,16 @@ Vessel/control-plane concern until it has an external, post-lease execution path
 
 from __future__ import annotations
 
+from typing import cast
+
 from pydantic_ai import Agent, DeferredToolRequests, RunContext
 
 from lychd.agents.deps import LychDDeps
 from lychd.agents.factory import AgentForge, AgentSpec, build_agent
 from lychd.agents.outputs import BridgeReply
 from lychd.domain.cortex.context import IDENTITY_BLOCK_KEY, IDENTITY_BLOCK_TEXT
+
+type BridgeAgentOutput = BridgeReply | DeferredToolRequests
 
 THE_FIRST_ONE_SPEC = AgentSpec(
     name="the_first_one",
@@ -37,12 +41,15 @@ async def stable_floor(ctx: RunContext[LychDDeps]) -> str:
     return ctx.deps.context.floor_text(ctx.deps.run_id)
 
 
-def build_the_first_one(spec: AgentSpec) -> Agent[LychDDeps, object]:
+def build_the_first_one(spec: AgentSpec) -> Agent[LychDDeps, BridgeAgentOutput]:
     """Construct the minimal late-bound agent with no lifecycle-mutating tools."""
-    return build_agent(
-        spec,
-        toolset_factories={},
-        instruction_hooks=(stable_floor,),
+    return cast(
+        "Agent[LychDDeps, BridgeAgentOutput]",
+        build_agent(
+            spec,
+            toolset_factories={},
+            instruction_hooks=(stable_floor,),
+        ),
     )
 
 

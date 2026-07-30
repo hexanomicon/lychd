@@ -61,6 +61,7 @@ class FakeDispatcher:
     model: Any
     toolsets: tuple[Any, ...] = ()
     settings: Any = None
+    key: str = "chat:test"
     calls: list[str] = field(default_factory=list)
     requires_tools_calls: list[bool] = field(default_factory=list)
 
@@ -81,7 +82,10 @@ class FakeDispatcher:
         # The graph deliberately consumes only the grant surface represented by
         # ``FakeGrant``.  The cast keeps that test double honest at the concrete
         # production seam without constructing live animator/model handles.
-        yield cast("CapabilityGrant", FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings))
+        yield cast(
+            "CapabilityGrant",
+            FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings, key=self.key),
+        )
 
 
 @dataclass
@@ -253,6 +257,8 @@ def approval_test_toolset() -> Any:
     """
     from pydantic_ai.toolsets import FunctionToolset
 
+    from lychd.agents.workflows.nodes import CONSENT_EFFECT_ID_KEY, CONSENT_EFFECT_REVISION_KEY
+
     async def request_coven_swap(ctx: RunContext[LychDDeps], capability_key: str, reason: str) -> str:
         plan = await ctx.deps.orchestrator.request_transition(capability_key, priority=ctx.deps.priority)
         return (
@@ -260,6 +266,13 @@ def approval_test_toolset() -> Any:
             f"(action {plan.action_type}, cost {plan.total_metabolic_cost}); reason: {reason}"
         )
 
-    toolset: FunctionToolset[LychDDeps] = FunctionToolset()
-    toolset.add_function(request_coven_swap, requires_approval=True)
+    toolset: FunctionToolset[LychDDeps] = FunctionToolset(id="test-coven-transition")
+    toolset.add_function(
+        request_coven_swap,
+        requires_approval=True,
+        metadata={
+            CONSENT_EFFECT_ID_KEY: "coven.transition",
+            CONSENT_EFFECT_REVISION_KEY: "test-v1",
+        },
+    )
     return toolset

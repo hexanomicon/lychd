@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import os
+import sys
 from typing import TYPE_CHECKING
 
+from advanced_alchemy.exceptions import RepositoryError
 from litestar import Litestar
-from litestar.openapi.config import OpenAPIConfig
-from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.plugins import InitPluginProtocol
-from litestar.repository.exceptions import RepositoryError
 
 # Runtime imports: Litestar evaluates the `provide_*` return annotations below at
 # app-init to type the injected dependencies, so these must resolve at runtime.
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
 from lychd.extensions.host import AssembledExtensions
+from lychd.interface.server_policy import (
+    ServerRuntimePolicyError,
+    evaluate_server_runtime_policy,
+)
+from lychd.interface.web.openapi import build_openapi_config
 from lychd.lib.exceptions import exception_to_http_response
 
 if TYPE_CHECKING:
@@ -33,7 +38,11 @@ def provide_runes(state: State) -> RuneRegistry:
 class AppInit(InitPluginProtocol):
     """Configure the server application from side-effect-free component factories."""
 
-    # Pre-declare attributes for memory optimization
+    __slots__ = ("listener_port",)
+
+    def __init__(self, *, listener_port: int | None = None) -> None:
+        """Retain the detected listener port for loopback Host admission."""
+        self.listener_port = listener_port
 
     def on_app_init(self, app_config: AppConfig) -> AppConfig:
         """Configure the application when run as a web server.
@@ -49,11 +58,10 @@ class AppInit(InitPluginProtocol):
 
         """
         # Lazy import of settings to keep startup fast
+        from advanced_alchemy.extensions.litestar import SQLAlchemyPlugin
         from advanced_alchemy.extensions.litestar.providers import create_service_provider
         from litestar.config.response_cache import ResponseCacheConfig
-        from litestar.contrib.sqlalchemy.plugins import SQLAlchemyPlugin
         from litestar.di import Provide
-        from litestar.plugins.problem_details import ProblemDetailsPlugin
         from litestar.plugins.structlog import StructlogPlugin
         from litestar.stores.memory import MemoryStore
         from litestar.stores.registry import StoreRegistry
@@ -62,10 +70,10 @@ class AppInit(InitPluginProtocol):
 
         from lychd.__about__ import __version__ as current_version
         from lychd.config.components import (
+            build_allowed_hosts_config,
             build_cors_config,
             build_csrf_config,
             build_db_config,
-            build_problem_details_config,
             build_saq_config,
             build_structlog_config,
         )
@@ -84,11 +92,10 @@ class AppInit(InitPluginProtocol):
 
         app_config.debug = settings.server.web.debug
 
-        app_config.openapi_config = OpenAPIConfig(
+        app_config.openapi_config = build_openapi_config(
             title=settings.server.web.name,
             version=current_version,
             use_handler_docstrings=True,
-            render_plugins=[ScalarRenderPlugin(version="latest")],
         )
 
         app_config.plugins.extend(
@@ -97,11 +104,14 @@ class AppInit(InitPluginProtocol):
                 SQLAlchemyPlugin(config=build_db_config(settings)),
                 SAQPlugin(config=build_saq_config(settings)),
                 StructlogPlugin(config=build_structlog_config(settings)),
-                ProblemDetailsPlugin(config=build_problem_details_config(settings)),
             ],
         )
 
-        # CORS / CSRF
+        # Loopback browser boundary / CSRF
+        app_config.allowed_hosts = build_allowed_hosts_config(
+            settings,
+            listener_port=self.listener_port,
+        )
         app_config.cors_config = build_cors_config(settings)
         csrf_config = build_csrf_config(settings)
         app_config.csrf_config = csrf_config
@@ -191,13 +201,20 @@ def create_app() -> Litestar:
         Litestar: Fully configured web application.
 
     """
-    import os
-
-    granian_workers = os.getenv("GRANIAN_WORKERS")
-    if granian_workers not in {None, "", "1"}:
-        message = "LychD v1 requires GRANIAN_WORKERS=1; the run event plane is process-local."
+    settings = get_settings()
+    try:
+        policy = evaluate_server_runtime_policy(
+            environment=os.environ,
+            default_listener_port=settings.server.port,
+            argv=sys.argv,
+            original_argv=getattr(sys, "orig_argv", ()),
+        )
+    except ServerRuntimePolicyError as exc:
+        raise RuntimeError(str(exc)) from exc
+    if policy.listener_port is None:
+        message = "LychD could not resolve one effective listener port."
         raise RuntimeError(message)
 
     return Litestar(
-        plugins=[AppInit()],
+        plugins=[AppInit(listener_port=policy.listener_port)],
     )

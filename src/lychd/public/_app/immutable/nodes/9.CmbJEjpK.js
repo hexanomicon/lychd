@@ -1,0 +1,1 @@
+import{X as e,Y as t,o as n}from"../chunks/DaGrqv_1.js";import"../chunks/xihTtKlq.js";import{t as r}from"../chunks/BTT3jetf.js";import"../chunks/DU3GQUV2.js";import{t as i}from"../chunks/M5pOx8c_.js";function a(a,o){e(o,!1),n(),i(a,{get runId(){return r.params.run_id}}),t()}export{a as component};

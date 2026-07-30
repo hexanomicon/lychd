@@ -34,10 +34,15 @@ State owns delivery.
 
 ### One verdict, one visible call
 
-A record names one Run, tool, deferred tool-call id, censored arguments, verdict, deciding
-principal, and preauthorization provenance. Bridge accepts one approval request per model round and
-rejects multiple or external deferred calls: Pydantic AI demands every deferred result, so one card
-cannot counterfeit consent for hidden calls.
+A consent record names one Run, tool, deferred tool-call id, censored arguments, verdict, deciding
+principal, and preauthorization provenance. Its paired checkpoint additionally binds capability,
+durable toolset id and concrete type, tool name, project-owned effect id and revision, and
+prepared-definition digest. Resume compares that binding before approved dispatch; missing or
+changed identity settles as a policy bottleneck without invoking a handler. Approval-required
+tools without an effect identity cannot park, and tool owners must revise the effect revision when
+executable semantics change without changing the prepared definition. Bridge accepts one approval
+request per model round and rejects multiple or external deferred calls: Pydantic AI demands every
+deferred result, so one card cannot counterfeit consent for hidden calls.
 
 Changed security-relevant argument, object, effect class, destination, amount, or authority creates
 a new call. A safe projection can redact; executor remains bound to validated call. Consent may

@@ -6,7 +6,7 @@ export type LiveTurn = {
   content: string;
   runStatus: string;
   activity: string;
-  state: "streaming" | "done" | "failed";
+  state: "streaming" | "stale" | "done" | "failed";
   fragments: Array<Record<string, unknown>>;
   patternId: string;
   patternRevision: string;

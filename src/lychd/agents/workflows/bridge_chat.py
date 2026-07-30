@@ -36,6 +36,9 @@ from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
 from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.nodes import (
     MAX_CONSENT_ROUNDS,
+    ConsentToolBinding,
+    ConsentToolBindingChangedError,
+    bind_consent_toolsets,
     is_single_approval,
     new_step_id,
     park_on_consent,
@@ -91,6 +94,7 @@ class BridgeChatState(BaseModel):
     paused_messages: list[Any] | None = None
     pending_call_ids: tuple[str, ...] = ()
     pending_consent_tool_name: str | None = None  # S4: remembered so perform_run emits without a codex read
+    pending_consent_tool_binding: ConsentToolBinding | None = None
     consent_rounds: int = 0  # bounded by MAX_CONSENT_ROUNDS
 
 
@@ -132,7 +136,7 @@ def _bind_logical_run(messages: list[Any], run_id: str) -> list[Any]:
 
 
 def _usage_limits(context_window: int | None, grant: Any) -> UsageLimits | None:
-    """Build Pydantic AI's hard input fence from the resolved grant."""
+    """Build the grant-bounded usage policy and enable pre-counting when supported."""
     if context_window is None:
         return None
     output_reserve = getattr(grant.generation, "max_tokens", None) or THE_FIRST_ONE_SPEC.max_tokens or 0
@@ -245,13 +249,14 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 priority=ctx.state.priority,
             )
             emit.status("thinking")
+            bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.key)
             pumped = await pump_agent_events(
                 agent,
                 build_user_prompt(ctx.state),
                 deps=deps,
                 model=grant.model,
                 model_settings=grant.model_settings(),
-                toolsets=list(grant.toolsets),
+                toolsets=[bound_toolset],
                 emit=emit,
                 message_history=ModelMessagesTypeAdapter.validate_python(ctx.state.history) or None,
                 usage_limits=_usage_limits(assembled.context_window, grant),
@@ -264,7 +269,20 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                     kind="policy_block", detail="multiple tool approvals in one turn are not yet supported"
                 )
                 return ProjectReply()
-            await park_on_consent(ctx, output, ctx.state.new_messages)  # S4: records the row; does NOT emit
+            tool_name = output.approvals[0].tool_name
+            binding = bound_toolset.binding_for(tool_name)
+            if binding is None:
+                ctx.state.bottleneck = Bottleneck(
+                    kind="policy_block",
+                    detail=f"approval tool '{tool_name}' has no durable effect identity",
+                )
+                return ProjectReply()
+            await park_on_consent(
+                ctx,
+                output,
+                ctx.state.new_messages,
+                binding,
+            )  # S4: records the row; does NOT emit
             return AwaitConsent()
         ctx.state.reply = output if isinstance(output, BridgeReply) else None
         return ProjectReply()
@@ -288,6 +306,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
         if verdict is None:  # THE park signal — the run suspends, it does not fail
             raise ConsentPending(consent_id, ctx.state.run_id, ctx.state.pending_consent_tool_name or "")
 
+        expected_binding = ctx.state.pending_consent_tool_binding
         results = DeferredToolResults(approvals=dict.fromkeys(ctx.state.pending_call_ids, verdict))
         continuation = list(ctx.state.paused_messages or [])
         emit = ctx.deps.events.emitter(ctx.state.run_id)
@@ -320,24 +339,38 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
                 priority=ctx.state.priority,
             )
             emit.status("thinking")
-            pumped = await pump_agent_events(
-                agent,
-                None,
-                deps=deps,
-                model=grant.model,
-                model_settings=grant.model_settings(),
-                toolsets=list(grant.toolsets),
-                emit=emit,
-                message_history=history,
-                deferred_tool_results=results,
-                usage_limits=_usage_limits(assembled.context_window, grant),
-            )
+            try:
+                bound_toolset = bind_consent_toolsets(
+                    grant.toolsets,
+                    capability_key=grant.key,
+                    expected=expected_binding,
+                    require_expected=True,
+                )
+                pumped = await pump_agent_events(
+                    agent,
+                    None,
+                    deps=deps,
+                    model=grant.model,
+                    model_settings=grant.model_settings(),
+                    toolsets=[bound_toolset],
+                    emit=emit,
+                    message_history=history,
+                    deferred_tool_results=results,
+                    usage_limits=_usage_limits(assembled.context_window, grant),
+                )
+            except ConsentToolBindingChangedError:
+                ctx.state.bottleneck = Bottleneck(
+                    kind="policy_block",
+                    detail="the approved tool or capability changed while consent was parked; fresh consent is required",
+                )
+                return ProjectReply()
         output = pumped.output
         ctx.state.new_messages.extend(pumped.new_messages)
         ctx.state.pending_consent_id = None
         ctx.state.paused_messages = None
         ctx.state.pending_call_ids = ()
         ctx.state.pending_consent_tool_name = None
+        ctx.state.pending_consent_tool_binding = None
         if isinstance(output, DeferredToolRequests):  # the tool chained another approval
             if not is_single_approval(output):  # F5: never share one card's verdict across calls
                 ctx.state.bottleneck = Bottleneck(
@@ -348,8 +381,16 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
             if ctx.state.consent_rounds >= MAX_CONSENT_ROUNDS:
                 ctx.state.bottleneck = Bottleneck(kind="policy_block", detail="consent round limit reached")
                 return ProjectReply()
-            await park_on_consent(ctx, output, ctx.state.new_messages)
-            return AwaitConsent()  # self-edge
+            tool_name = output.approvals[0].tool_name
+            binding = bound_toolset.binding_for(tool_name)
+            if binding is None:
+                ctx.state.bottleneck = Bottleneck(
+                    kind="policy_block",
+                    detail=f"approval tool '{tool_name}' has no durable effect identity",
+                )
+            else:
+                await park_on_consent(ctx, output, ctx.state.new_messages, binding)
+                return AwaitConsent()  # self-edge
         ctx.state.reply = output if isinstance(output, BridgeReply) else None
         return ProjectReply()
 

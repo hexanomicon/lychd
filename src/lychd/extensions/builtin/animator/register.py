@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lychd.domain.animation.schemas import PortalConfig
+from lychd.domain.animation.model_factory import validate_openai_interface_target
+from lychd.domain.animation.schemas import ModelSurface, PortalConfig
+from lychd.domain.animation.services.adapters.catalog import model_info_from_portal_model
 from lychd.domain.animation.services.adapters.surfaces import (
     OpenAICompatibleConnector,
     OpenAIPortal,
@@ -36,12 +38,23 @@ def build_openai_portal(portal: PortalConfig) -> RuntimeAnimator | None:
     if provider not in _OPENAI_COMPATIBLE_PROVIDERS:
         return None
 
+    model_infos = [model_info_from_portal_model(model) for model in portal.models]
+    for model in model_infos:
+        validate_openai_interface_target(
+            provider_name=provider,
+            model_id=model.id,
+            responses=model.surface is ModelSurface.RESPONSES,
+        )
+
     link = portal_link_default(base_url=base_url)
     connector = OpenAICompatibleConnector(
         kind=f"portal:{provider}",
         link=link,
         base_url=base_url,
+        model_infos=model_infos,
+        default_model_id=model_infos[0].id if model_infos else None,
         api_key_secret_name=portal.api_key_secret_name,
+        provider_name=provider,
         metadata={
             "provider_name": portal.provider_name,
             "base_url": base_url,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
+from urllib.parse import urlsplit
 
 from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
 from pydantic import Field, field_validator, model_validator
@@ -58,8 +59,8 @@ class WebSettings(SettingsSection):
     name: str = "lychd"
     image: str = "ghcr.io/hexanomicon/lychd:latest"
     url: str = "http://localhost:8000"
-    allowed_cors_origins: list[str] = Field(default_factory=lambda: ["*"])
-    """Browser origins allowed to make cross-origin requests to the loopback Vessel."""
+    allowed_cors_origins: list[str] = Field(default_factory=list)
+    """Exact loopback browser origins admitted for cross-origin development requests."""
     csrf_cookie_name: str = "csrftoken"
     csrf_cookie_secure: bool = False
     """Require HTTPS when browsers send the CSRF cookie; enable behind an HTTPS Ward/Proxy."""
@@ -69,6 +70,34 @@ class WebSettings(SettingsSection):
     def validate_secret_key_secret(cls, value: str) -> str:
         """Reject absolute/traversal names before secret-path composition."""
         return validate_podman_secret_name(value, field_name="server.web.secret_key_secret")
+
+    @field_validator("allowed_cors_origins")
+    @classmethod
+    def validate_allowed_cors_origins(cls, values: list[str]) -> list[str]:
+        """Admit only explicit HTTP(S) loopback origins without path material."""
+        for value in values:
+            try:
+                origin = urlsplit(value)
+                port = origin.port
+            except ValueError as exc:
+                msg = f"Invalid CORS origin: {value!r}"
+                raise ValueError(msg) from exc
+            if (
+                origin.scheme not in {"http", "https"}
+                or origin.hostname not in {"127.0.0.1", "::1", "localhost"}
+                or origin.username is not None
+                or origin.password is not None
+                or bool(origin.path)
+                or origin.query
+                or origin.fragment
+                or (port is not None and port < 1)
+            ):
+                msg = (
+                    "server.web.allowed_cors_origins accepts only exact HTTP(S) "
+                    "loopback origins without credentials, paths, queries, or fragments"
+                )
+                raise ValueError(msg)
+        return values
 
 
 class LoggingSettings(SettingsSection):

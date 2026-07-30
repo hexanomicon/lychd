@@ -24,6 +24,7 @@ from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.bridge_chat import BridgeChatState
+from lychd.agents.workflows.nodes import ConsentToolBinding
 from lychd.domain.cortex.runs import RunRecord, RunStatus
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore, LiveStasisPhylactery
 from lychd.ghouls.runs import _phylactery_for
@@ -55,12 +56,22 @@ async def test_bridge_state_round_trips_with_real_messages() -> None:
         paused_messages=to_jsonable_python(result.all_messages()),
         pending_call_ids=("call_a", "call_b"),
         pending_consent_tool_name="request_coven_swap",
+        pending_consent_tool_binding=ConsentToolBinding(
+            capability_key="chat:test",
+            toolset_id="test-coven-transition",
+            toolset_type="pydantic_ai.toolsets.function.FunctionToolset",
+            tool_name="request_coven_swap",
+            effect_id="coven.transition",
+            effect_revision="test-v1",
+            definition_digest="a" * 64,
+        ),
         consent_rounds=1,
     )
     restored = BridgeChatState.model_validate_json(state.model_dump_json())
     assert restored == state
     assert restored.pending_call_ids == ("call_a", "call_b")
     assert restored.paused_messages == state.paused_messages
+    assert restored.pending_consent_tool_binding == state.pending_consent_tool_binding
 
 
 # -- tier selection ----------------------------------------------------------

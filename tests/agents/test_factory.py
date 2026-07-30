@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import Any, cast
+from unittest.mock import AsyncMock
 
 import pytest
-from pydantic_ai.models.openai import OpenAIChatModel
+from openai._types import Omit
+from pydantic_ai.messages import ModelRequest
+from pydantic_ai.models import ModelRequestParameters
+from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
+from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.toolsets import FunctionToolset
 
 from lychd.agents.factory import AgentForge, build_local_model
@@ -57,12 +63,10 @@ def test_build_local_model_uses_base_url() -> None:
     assert str(model.client.base_url).rstrip("/") == "http://localhost:8080/v1"
 
 
-def test_reference_and_production_models_share_one_profile() -> None:
-    """Reference (`build_local_model`) and production (`get_model`) build the SAME profile.
+def test_reference_and_local_connector_share_compat_profile() -> None:
+    """Reference and local runtime connector build the same compatibility profile.
 
-    Guards the divergence that shipped once: the reference carried the inline-defs /
-    no-strict-tools profile and the production connector built a bare model, so tool-call
-    JSON schemas differed between tests and the running daemon.
+    Portals deliberately retain their provider/model profile instead.
     """
     from lychd.domain.animation.links import Link
     from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
@@ -79,3 +83,176 @@ def test_reference_and_production_models_share_one_profile() -> None:
     )
     production = connector.get_model()
     assert production.profile is LOCAL_COMPAT_PROFILE
+
+
+def test_provider_connector_retains_model_profile() -> None:
+    from lychd.domain.animation.links import Link
+    from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
+    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
+
+    connector = OpenAICompatibleConnector(
+        kind="portal:openai",
+        link=Link(up=True, activatable=False),
+        base_url="https://api.openai.com/v1",
+        default_model_id="gpt-5.2",
+        provider_name="openai",
+    )
+
+    model = connector.get_model()
+    profile = OpenAIModelProfile.from_profile(model.profile)
+
+    assert model.profile is not LOCAL_COMPAT_PROFILE
+    assert "temperature" in profile.openai_unsupported_model_settings
+    assert profile.openai_supports_strict_tool_definition is True
+
+
+@pytest.mark.parametrize(
+    ("provider_name", "model_id", "expected_system", "expected_transformer"),
+    [
+        ("openai", "gpt-5.2", "openai", "OpenAIJsonSchemaTransformer"),
+        ("google-gemini", "gemini-2.5-pro", "google-gla", "GoogleJsonSchemaTransformer"),
+        ("openrouter", "anthropic/claude-sonnet-4", "openrouter", "AnthropicJsonSchemaTransformer"),
+        ("litellm", "google/gemini-2.5-pro", "litellm", "GoogleJsonSchemaTransformer"),
+        ("ollama", "qwen3:8b", "ollama", "InlineDefsJsonSchemaTransformer"),
+        ("openai-compatible", "qwen3:8b", "openai", "InlineDefsJsonSchemaTransformer"),
+    ],
+)
+def test_portal_factory_routes_provider_profile(
+    provider_name: str,
+    model_id: str,
+    expected_system: str,
+    expected_transformer: str,
+) -> None:
+    from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
+    from lychd.domain.animation.schemas import OpenAIPortalConfig
+    from lychd.domain.animation.services.adapters.surfaces import OpenAIPortal
+    from lychd.extensions.builtin.animator.register import build_openai_portal
+
+    portal = OpenAIPortalConfig.model_validate(
+        {
+            "name": f"test-{provider_name}",
+            "provider_name": provider_name,
+            "base_url": "http://provider.test/v1",
+            "models": [{"id": model_id}],
+        }
+    )
+    runtime = build_openai_portal(portal)
+
+    assert isinstance(runtime, OpenAIPortal)
+    model = runtime.connector.get_model(model_id=model_id)
+    assert isinstance(model, OpenAIChatModel)
+    assert model.system == expected_system
+    assert model.profile.json_schema_transformer is not None
+    assert model.profile.json_schema_transformer.__name__ == expected_transformer
+    assert (model.profile is LOCAL_COMPAT_PROFILE) is (provider_name == "openai-compatible")
+
+
+def test_openrouter_rejects_unqualified_model_id_when_portal_is_built() -> None:
+    from lychd.domain.animation.schemas import OpenAIPortalConfig
+    from lychd.extensions.builtin.animator.register import build_openai_portal
+
+    portal = OpenAIPortalConfig.model_validate(
+        {
+            "name": "bad-openrouter",
+            "provider_name": "openrouter",
+            "base_url": "https://openrouter.ai/api/v1",
+            "models": [{"id": "gpt-5.2"}],
+        }
+    )
+
+    with pytest.raises(ValueError, match="provider/model"):
+        build_openai_portal(portal)
+
+
+def test_portal_factory_preserves_declared_responses_surface_at_hydration() -> None:
+    from lychd.domain.animation.schemas import ModelSurface, OpenAIPortalConfig
+    from lychd.domain.animation.services.adapters.surfaces import OpenAIPortal
+    from lychd.extensions.builtin.animator.register import build_openai_portal
+
+    portal = OpenAIPortalConfig.model_validate(
+        {
+            "name": "responses-openai",
+            "models": [
+                {
+                    "id": "gpt-5.2",
+                    "capabilities": {"surface": "responses"},
+                }
+            ],
+        }
+    )
+
+    runtime = build_openai_portal(portal)
+
+    assert isinstance(runtime, OpenAIPortal)
+    assert runtime.connector.list_models()[0].surface is ModelSurface.RESPONSES
+    assert isinstance(runtime.connector.get_model(), OpenAIResponsesModel)
+
+
+@pytest.mark.parametrize("provider_name", ["google-gemini", "litellm", "ollama"])
+def test_chat_only_provider_alias_rejects_responses_when_portal_is_built(provider_name: str) -> None:
+    from lychd.domain.animation.schemas import OpenAIPortalConfig
+    from lychd.extensions.builtin.animator.register import build_openai_portal
+
+    portal = OpenAIPortalConfig.model_validate(
+        {
+            "name": f"bad-{provider_name}",
+            "provider_name": provider_name,
+            "base_url": "http://provider.test/v1",
+            "models": [
+                {
+                    "id": "qualified/model",
+                    "capabilities": {"surface": "responses"},
+                }
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError, match="only the Chat surface"):
+        build_openai_portal(portal)
+
+
+@pytest.mark.asyncio
+async def test_provider_profile_filters_payload_while_generic_compat_preserves_it() -> None:
+    from lychd.domain.animation.links import Link
+    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
+
+    request = [ModelRequest.user_text_prompt("hello")]
+    request_parameters = ModelRequestParameters()
+
+    portal = OpenAICompatibleConnector(
+        kind="portal:openai",
+        link=Link(up=True, activatable=False),
+        base_url="https://api.openai.com/v1",
+        default_model_id="gpt-5.2",
+        provider_name="openai",
+    ).get_model()
+    assert isinstance(portal, OpenAIChatModel)
+    portal_create = AsyncMock(return_value=object())
+    cast("Any", portal.client.chat.completions).create = portal_create
+    await cast("Any", portal)._completions_create(
+        messages=request,
+        stream=False,
+        model_settings={"temperature": 0.4},
+        model_request_parameters=request_parameters,
+    )
+
+    local = OpenAICompatibleConnector(
+        kind="openai_compat",
+        link=Link(up=True, activatable=False),
+        base_url="http://localhost:8080/v1",
+        default_model_id="gpt-5.2",
+    ).get_model()
+    assert isinstance(local, OpenAIChatModel)
+    local_create = AsyncMock(return_value=object())
+    cast("Any", local.client.chat.completions).create = local_create
+    await cast("Any", local)._completions_create(
+        messages=request,
+        stream=False,
+        model_settings={"temperature": 0.4},
+        model_request_parameters=request_parameters,
+    )
+
+    assert portal_create.await_args is not None
+    assert local_create.await_args is not None
+    assert isinstance(portal_create.await_args.kwargs["temperature"], Omit)
+    assert local_create.await_args.kwargs["temperature"] == 0.4
