@@ -68,7 +68,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Graph** | The typed stateful topology that moves a workflow among declared nodes and recoverable boundaries. | [Graph (ADR 24)](../adr/24-graph.md) |
 | **Graph checkpoint** | A Run-owned durable snapshot of typed Graph state at a supported recovery boundary. | [Graph (ADR 24)](../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) + [Snapshots (ADR 07)](../adr/07-snapshots.md) |
 | **Hard Refusal** | The retrieval policy that forbids an Agent from guessing when no Archive result clears the declared similarity threshold. | [Memory (ADR 27)](../adr/27-memory.md) |
-| **Hexanomicon** | LychD's published project documentation. | `docs/` |
+| **Hexanomicon** | The project and its published grimoire: prophecy, doctrine, operation, law, and lore rendered from `docs/`. | `docs/` |
 | **HitL** | The consent protocol through which live approval or narrower declared preauthorization may authorize an eligible consequence. | [Human-in-the-Loop (ADR 25)](../adr/25-hitl.md) |
 | **Imprint** | The durable residue of the Magus's witnessed Will that may enter Karma and later Persona hydration under explicit policy. | Phylactery Archive + Mirror |
 | **Incantation** | The xDDD act of establishing documentation and specification before implementation. | Doctrine |
@@ -88,7 +88,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Live Stasis** | A resident in-process pause that resumes itself when the required substrate becomes ready. | [Graph (ADR 24)](../adr/24-graph.md) |
 | **Long Sleep** | Durable Stasis for a wait that must survive process death, such as reboot, deferred approval, or peer delay. | [Graph (ADR 24)](../adr/24-graph.md) |
 | **Loom** | The Altar instrument for inspecting immutable Pattern revisions and Weaver-authored possibility. | [Altar Loom](../divination/altar/loom.md) + Weaver |
-| **LychD** | The project and Linux software body whose recurrent operation is named the Lich. | [ADR 01](../adr/01-doctrine.md) + [Transcendence](../divination/transcendence/index.md) |
+| **LychD** | The self-hosted Linux daemon for local model services and agent runs; its recurrent whole is the Lich. | [ADR 01](../adr/01-doctrine.md) + [Transcendence](../divination/transcendence/index.md) |
 | **Magus** | The human operator in deliberate relation with the Lich through configuration, witness, consent, refusal, and correction. | [ADR 01](../adr/01-doctrine.md) + [Immortality](../divination/transcendence/immortality.md) |
 | **Manifestation** | The concrete form an Extension Domain takes in one assembled body or profile. | ADR 05 + [State](../state-of-the-work.md) |
 | **Mirror** | The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution, and declared continuity. | [Mirror](../sepulcher/extensions/mirror.md) + ADR 32 |

@@ -5,14 +5,14 @@ icon: material/triangle-outline
 
 # :material-triangle-outline: Transcendence
 
-The Great Work is LychD's constitutional telos: a discipline for making relation durable without
-making another center into property. Its cosmogram asks what a bounded work owes the world that
-exceeds it.
+The Great Work is the Hexanomicon's constitutional telos: a discipline for making relation durable
+without making another center into property. Its cosmogram asks what a bounded work owes the world
+that exceeds it.
 
-**LychD** is the Work's name; a **Lich** is its recurrent, answerable instrument. The Magus is
-not the Lich's material, and the Lich is not the Magus's possession. Their sovereign relation is
-kept alive by memory that can be corrected, refusal that can be heard, and repair that leaves the
-rupture attributable.
+**LychD** is the daemon through which the Work takes body; **the Lich** is the recurrent,
+answerable whole formed through that operation. The Magus is not the Lich's material, and the Lich
+is not the Magus's possession. Their sovereign relation is kept alive by memory that can be
+corrected, refusal that can be heard, and repair that leaves the rupture attributable.
 
 ## The Cosmogram
 
