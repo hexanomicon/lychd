@@ -3,94 +3,65 @@ title: Echo
 icon: material/waveform
 ---
 
-# :material-waveform: Audio Echo
+# :material-waveform: Echo
 
-_Status: doctrine ahead of code — no concrete Echo package or speech provider ships; treat this
-page as design intent. Law: [ADR 37](../../adr/37-audio.md). Current truth:
-[source map](./index.md#the-federation-of-fifteen)._
+> _A voice is not delivered when it is made, but when another body receives it._
 
-**Extension form:** Echo is a temporal speech-lifecycle Domain. Batch or streaming STT, TTS,
-audio-capable chat, codecs, and VAD remain independent Animator or client providers. Text-only,
-record-and-send, half-duplex streaming, and later full-duplex profiles may activate different
-subsets; no atomic Audio Coven is required.
+**Echo** is the speech-lifecycle Extension Domain. It carries an utterance from deliberate capture
+to actual reception without losing its origin, consent, or outcome.
+Audio admission is **Partial**, but no working Echo package or speech path ships.
+[ADR 37](../../adr/37-audio.md) owns the accepted design;
+[State of Work](../../state-of-the-work.md#audio-admission) owns delivery truth.
 
-> _"A text-only Daemon is blind to the physical resonance of the world. To exist as a pervasive companion, the Lich must perceive vibration and project resonance—transforming the cold silence of the Crypt into a living stream of intent."_
+## The organs of resonance
 
-**The Echo** is LychD's temporal speech-lifecycle Domain, defined by
-**[ADR 37 (Audio)](../../adr/37-audio.md)**. It joins capture, transcription, reasoning,
-synthesis, playback, interruption, and delivery receipts without pretending that they must be one
-service or always-live session.
+An Echo profile composes five roles independently. Audio is a modality, never a capability family.
 
-The planned **Resonance Pipeline** supports a simple record-and-send profile first. Streaming is a
-later latency optimization, not a prerequisite for voice. The current immutable artifact-reference
-seam still does not carry playable bytes.
+| Role | Place in Echo |
+| --- | --- |
+| **Ear** | `stt` Animator for bounded transcription |
+| **Voice** | `tts` Animator for synthesis |
+| **Audio-capable Mind** | Audio-input or audio-output `chat` provider; it remains `chat` |
+| **Listener** | Capture, push-to-talk, codecs, and optional voice activity |
+| **Mind** | Ordinary reasoning provider; there is no separate voice intelligence |
 
-## I. Manifestations of Resonance
+## The resonance path
 
-A voice profile may combine any useful subset:
+Record-and-send is the first accepted profile:
 
-- **The Ear:** A dedicated `stt` Animator for transcription.
-- **The Voice:** A dedicated `tts` Animator for synthesis.
-- **Audio-capable chat:** A `chat` provider declaring `audio` input or output modalities; it
-  remains chat rather than becoming an Ear or Voice.
-- **The Listener:** Client-side or server-side VAD, push-to-talk, codecs, and capture controls.
-- **The Mind:** The ordinary selected reasoning provider. Echo does not require a special voice
-  mind.
+> visible bounded capture → immutable audio artifact → eligible Ear or audio-capable Mind →
+> attributed transcript or native observation → ordinary Agent step → optional Voice → delivery
+> evidence
 
-Local providers may be rendered as
-**[Quadlets](../../adr/08-containers.md)** and readied under
-**[Orchestrator](../../adr/23-orchestrator.md)** policy. Each provider has its own readiness,
-resource, privacy, and support envelope.
+Capture must be visible, bounded, and consented. Large bytes remain outside Graph checkpoints and
+queues.
 
-## II. The Planned Resonance Pipeline
+Three distinctions keep the path honest:
 
-!!! warning "Current audio boundary"
-    The current core can persist an immutable audio `ArtifactRef` and filter declared audio
-    modality metadata. It has no blob materializer, Bridge/graph binary propagation, audio
-    transport, speech timeline, or working STT/TTS adapters. The pipeline below is target design.
+- Current `ArtifactRef` support is metadata only. The
+  [artifact-reference boundary](../../state-of-the-work.md#artifact-reference-contract) proves
+  neither a stored recording nor playable byte custody.
+- In the accepted design, Reliquary custody preserves source and derivation. A transcript is an
+  attributed interpretation, not a replacement for its recording.
+- Synthesized audio is a new artifact. Generation proves neither delivery nor playback; receipts
+  must state what actually reached the listener.
 
-The minimum viable rite is deliberately small:
+Later half- and full-duplex profiles must preserve one monotonic speech timeline through barge-in,
+contested turn ownership, interruption, cancellation, and reconnect. A live socket cannot supply
+those semantics.
 
-1. **Capture:** The client records a bounded clip under explicit microphone state and consent.
-2. **Admit:** The clip enters the Reliquary as an immutable artifact with digest, media type,
-   duration, classification, and retention policy.
-3. **Perceive:** The Dispatcher grants one eligible Ear or audio-capable chat provider.
-4. **Think:** The resulting attributed transcript or native audio input enters an ordinary
-   **[Agent](../../adr/20-agents.md)** step.
-5. **Respond:** Text may be returned directly or granted to one eligible Voice provider.
-6. **Deliver:** Playback state and delivery receipts belong to a bounded Resonance Session. Large
-   audio bytes remain in artifact custody rather than being serialized into graph checkpoints or a
-   fictional Phylactery queue.
+Invalid audio, insufficient authority, and policy-ineligible remote egress are refused. Only an
+otherwise eligible managed provider that is not warm may enter ordinary Stasis while the
+Orchestrator readies it. Echo cannot silently fall back to a remote service, infer permanent
+microphone authority, inflate priority, or revoke another grant or lease.
 
-A later half-duplex transport may stream response audio as it becomes playable. Full-duplex
-capture, interruption, echo cancellation, and barge-in require an explicit speech timeline and
-session protocol; they are not smuggled in by choosing WebSockets.
+## The Emissary
 
-## III. Orchestration Without Privilege Inflation
+A future Mobile Emissary may own device capture and playback as Echo's physical ear and mouth. A
+private [Tether](tether.md) supplies reachability, not caller authority:
+[Ward](ward.md) still authenticates and authorizes, while capture and consent remain visible. A
+remote [Portal](../animator/portal.md) additionally requires eligible classification, egress
+policy, consent where required, and bounded cost. These are laws of the accepted design, not
+claims of delivered behavior.
 
-User speech and agent-requested speech enter the same admission law:
-
-- Voice input does not automatically outrank admitted work. The Pattern and operator policy
-  declare urgency; the Orchestrator only applies the resulting physical priority.
-- The Dispatcher selects the exact `stt`, `tts`, or `chat` provider. A managed non-`WARM`
-  provider uses the ordinary **[Stasis Protocol](../../adr/22-dispatcher.md)**.
-- The Orchestrator converges that provider and its declared dependencies. Echo cannot preempt
-  work, revoke leases, or manifest an atomic Audio Coven on its own authority.
-- A provider grant is scoped to one step or Resonance Session and does not imply continued
-  microphone access.
-
-## IV. The Mobile Emissary (Android)
-
-The target design may project the Echo through a **Mobile Emissary**—a native application acting as
-the physical mouthpiece of the Lich.
-
-- **Hardware Binding:** The Emissary handles low-level Voice Activity Detection (VAD) and audio hardware management.
-- **The Secure Thread:** A private **[Tether](./tether.md)** is one supported transport profile,
-  not a requirement of Echo. Ward admission, application authentication, explicit capture state,
-  and artifact classification still apply inside any encrypted tunnel.
-
-!!! tip "Sensory Model Agnosticism"
-    Because Echo uses the standard **[Dispatcher](../../adr/22-dispatcher.md)** contracts, the
-    Magus can select different Ears and Voices independently. A remote
-    **[Portal](../animator/portal.md)** additionally requires Ward egress policy, classification
-    eligibility, consent where required, and an economic budget.
+Operationally, Echo preserves where speech began and whether the answer arrived.

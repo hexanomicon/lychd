@@ -5,226 +5,175 @@ icon: material/robot-outline
 
 # :material-robot-outline: 20. Agents
 
-!!! abstract "Context and Problem Statement"
-    To summon a Daemon capable of reason requires a computational primitive that bridges the gap between the probabilistic "Word" of current Large Language Models, future reasoning substrates, and the deterministic "Law" of application code. Standard API calls are unstructured, stateless, and blind to the system's internal state. Furthermore, hardcoding a specific model or toolset into a feature creates a "Brain-Locked" architecture that cannot adapt to the dynamic state of the machine's hardware. A primitive is required that decouples the **Persona** (Identity) and the **Arsenal** (Capabilities) from the underlying intelligence source, while enforcing strict type-safe contracts for all cognitive labor.
+!!! abstract "Context"
+    A model call is not an Agent. An Agent is one typed cognitive step whose instructions and
+    result contract remain stable while the selected model, generation settings, tools, and
+    authority arrive for the particular step. This permits the Vessel to change intelligence
+    without relocating policy, identity, or durable execution into an adapter.
 
 ## Requirements
 
-- **Type Safety as the Cogito:** Mandatory return of strictly typed Pydantic models rather than raw strings, enforced at the framework boundary to prevent systemic hallucination and ensure data integrity.
-- **Late-Binding Intelligence:** Decoupling of the Agent definition from its implementation; the concrete cognitive backend, LLM `Model`, or specialized reasoning capability must be injected at execution time based on hardware availability and the Sovereign's current priorities.
-- **Provider-Pair Hydration:** Mandatory support for dynamic toolsets bound by runtime provider identity; each run resolves a `model_provider` and `tool_provider` from the active physical substrate.
-- **Contextual Dependency Injection:** Provision of typed, safe access to the system's state (database sessions, validated settings) via a strongly-typed container.
-- **Durable Deferred Execution:** Native support for tools that require a "Long Sleep"—suspending the cognitive loop to await human approval or external labor completion without locking hardware resources.
-- **Usage & Token Propagation:** Capability to delegate sub-tasks to child agents while sharing and enforcing global usage limits (tokens, requests, and tool calls) to prevent runaway loops.
-- **Recursive Fault Tolerance:** Implementation of autonomous self-correction where validation or logic errors are fed back to the model via **`ModelRetry`** for internal reflection and retry.
-- **Truthful Non-Completion:** Agent contracts must permit typed outcomes for contradiction, insufficient context, or structurally unresolvable tasks. A truthful stop is preferable to a polished false manifestation.
-- **Multi-Modal Fluency:** The capability to handle and return non-textual artifacts (images, binary content, audio) as first-class components of the reasoning result.
+- An Agent must be distinct from a model, Graph, Pattern, Persona, Posture, and Lens.
+- Its stable recipe, available capability, fresh dependencies, output contract, and result limits
+  must be inspectable and separately owned.
+- Tools and delegation must not acquire authority through prompt text, construction, or a model
+  result; durable truth remains at domain, Graph, identity, consent, and persistence boundaries.
 
 ## Considered Options
 
-!!! failure "Option 1: LangChain / LlamaIndex"
-    Relying on established "chains" or "orchestration" frameworks.
+| Option | Decision | Why |
+| --- | --- | --- |
+| Put model, credentials, tools, and workflow in one prompt-defined actor | Rejected | It erases capability admission, tool policy, durability, and attribution boundaries. |
+| Make Pydantic AI the dispatcher and workflow ledger | Rejected | It owns the inner model/tool loop, not LychD's control plane. |
+| Typed spec with late-bound capability | Selected | It keeps cognitive construction stable and binds per-step authority at the Dispatcher seam. |
 
-    - **Cons:** **Architectural Bloat and Type Blindness.** These frameworks often rely on untyped dictionaries and "Prompt Templates," violating the requirement for strict Pydantic validation. Their heavy dependency trees introduce "Framework Lock-in" and conflict with the goal of a lean, sovereign kernel.
+## Decision
 
-!!! failure "Option 2: Agno (formerly Phidata) / CrewAI"
-    Utilizing opinionated "Agentic Roles" or "Assistant" frameworks.
+LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==1.25.1`. The
+[State](../state-of-the-work.md#pydantic-ai-v1-adapter) owns present adapter evidence; its
+[v2 migration](../state-of-the-work.md#pydantic-ai-v2-migration) is Designed.
+A v2 adapter must set `end_strategy` explicitly: allowing sibling mutating tools to finish is a
+security change requiring review, not a library upgrade.
 
-    - **Pros:** Modern Agno has a richer ready-made workflow vocabulary, including parallel,
-      router, condition, loop, review, persistence, resumable approval, A2A/MCP, scheduling, and
-      local deployment surfaces.
-    - **Cons:** Embedding AgentOS would introduce competing ownership for HTTP serving, sessions,
-      persistence, authentication, events, scheduling, and run lifecycle. Its workflow state and
-      dependency contracts also rely more heavily on `dict[str, Any]` than LychD's typed
-      `RunContext[LychDDeps]` boundary.
+An Agent joins immutable `AgentSpec`, process-local `AgentForge`, step-scoped `CapabilityGrant`,
+fresh `LychDDeps`, and a declared output union. The boundaries are deliberate:
 
-!!! success "Option 3: Pydantic AI"
-    An agent framework built on Pydantic and Python generics.
+| Concern | Owner |
+| --- | --- |
+| Instructions, output types, retry ceiling, optional declared toolsets | `AgentSpec` |
+| Construction and process-local cache | `AgentForge` |
+| Model, settings, runtime toolsets, capability lease | [Dispatcher](./22-dispatcher.md) and `CapabilityGrant` |
+| Workflow order, persistence, suspension, recovery | [Graph](./24-graph.md) |
+| Permission to act | [Security](./09-security.md), Sigil, grant, and tool handler |
+| Durable identity and attribution | [Mirror](./32-identity.md) |
+| Consequential human authority | [HitL](./25-hitl.md) |
 
-    - **Pros:**
-        - **Type Sovereignty:** Enforces strict data contracts for input dependencies and output results using Python type hints and generics.
-        - **Stateless Primitives:** Designed for global agent definitions that are hydrated into runs, matching the "Late-Binding" requirement perfectly.
-        - **Native Framework Support:** Provides first-class support for toolsets, deferred execution, and multi-agent delegation patterns.
+Pydantic AI owns the inner loop, never a second dispatcher, identity system, ledger, or control
+plane.
 
-## Decision Outcome
+## The Agent specification
 
-**Pydantic AI** is adopted as the atomic primitive for all reasoning. An `Agent` in LychD is defined as a static **Specification Class** that is hydrated into a living entity by the system's current state.
+`AgentSpec` is frozen and hashable, with `name`, `instructions_key`, `instructions`,
+`output_types`, optional `toolset_names`, `writes`, `retries`, and default `max_tokens`.
+`AgentForge.agent_for(spec)` selects a registered builder and caches by the whole specification;
+changing any field makes a distinct entry, while an unknown name or toolset fails construction.
 
-This is a least-conflict decision, not a claim that Pydantic AI is the more capable agent platform
-in every dimension. Agno remains a valid bounded benchmark when workflow velocity—especially
-parallel execution or richer approval choreography—outweighs static typing. Any prototype must sit
-behind LychD's Dispatcher, Orchestrator, Phylactery, and HitL ports; AgentOS may not become a second
-control plane.
+`build_agent` binds no model. It can bind named construction-time toolsets, but omits a mutating
+set when `writes` is false. Absence is the first gate; a present tool still checks live Sigil,
+grant, input, and domain policy at the handler.
 
-!!! note "Pydantic AI v2 horizon"
-    Upstream 2.14 strengthens this selection with composable durability capabilities, deferred
-    request/result stream events, enqueued live messages, model-resolution hooks, and richer usage
-    evidence. Those are migration candidates, not permission to hand execution ownership away.
-    Temporal, DBOS, or Prefect can durably wrap an inner Agent only inside their own workflow
-    runtime; they do not replace LychD's run ledger, Phylactery, SAQ, Sigils, consent ordering,
-    Dispatcher leases, or Oculus events. `LychDDeps` and a live `CapabilityGrant` must never cross
-    such a serialization boundary. A future adapter carries stable authorized capability IDs and
-    reacquires a fresh grant per activity.
+### The First One
 
-    The v2 migration is gated behind a final-v1 compatibility pass and a LychD-owned, versioned
-    workflow checkpoint. It must also choose `end_strategy` explicitly: accepting a new default
-    that lets sibling mutating tools finish would be a security behavior change, not a library
-    upgrade. Current upstream event names are `DeferredToolRequestsEvent` and
-    `DeferredToolResultsEvent`; they may enrich Oculus evidence, but the first event cannot replace
-    LychD's persist-consent → persist-wait-state → emit-card ordering.
+The delivered Bridge Agent, `THE_FIRST_ONE_SPEC`, returns `BridgeReply | DeferredToolRequests`,
+has no construction-time toolsets, and cannot request transition of the substrate leased to it.
+Its stable instructions receive the Context Orchestrator's floor at run time. `BridgeReply` is text
+plus `FragmentCall`s: each names a Vessel-owned registry entry and parameters, never markup, and
+the registry validates it before projection. `Bottleneck` represents contradiction, missing input,
+policy block, or unavailable dependency, but while Bridge can settle it as workflow state, it is
+not in The First One's current output union.
 
-This is a runtime decision, not merely an implementation detail. Pre-v1 LychD agents are **model/provider agnostic**, but they are not **agent-framework agnostic** inside the Vessel. Pydantic AI supplies the blessed execution grammar for typed outputs, `RunContext`, toolsets, deferred execution, retries, usage propagation, and graph-friendly composition. Other agent frameworks may still participate by being wrapped as external-service Animators or A2A Emissaries, or by being assimilated into native Pydantic AI agents. They are not loaded as independent in-process agent runtimes unless a future versioned `lychd.extensions.api` explicitly defines that product surface.
+## Late-bound capability
 
-This model/provider agnosticism is also a substrate horizon. LychD uses next-token LLMs as the current practical substrate for language, tool calls, and broad candidate generation, but the architecture does not declare autoregressive text generation to be the final form of machine reasoning. Future Animators may expose energy-based scorers, constraint optimizers, latent world-model rollouts, proof-search engines, or hybrid reasoning runtimes as typed tools, model-like grants, or graph steps. Such engines may compact inner loops that are explicit today, such as retry, branch scoring, repair, and heuristic judging. They do not replace the Graph, Dispatcher, Orchestrator, Phylactery, Mirror, HitL, or Vessel policy boundaries that make reasoning durable, governable, and sovereign.
+For each Bridge inference step, the workflow asks the Dispatcher for a `chat` grant containing
+capability specification and state, step/run lease, resolved generation profile, live Animator,
+optional Pydantic AI model, and admitted runtime toolsets. It passes `grant.model`,
+`grant.model_settings()`, and `grant.toolsets` to `agent.run_stream_events`. Agent specifications
+therefore name neither endpoint nor credential; no fictitious model/tool-provider pair is needed.
 
-An Agent is the execution atom of cognition, the fundamental unit of labor for both **the Call**
-(speculation and routing; Manas correspondence) and **the Blade** (discrimination and creation;
-Buddhi correspondence). An Agent spans both modes: its inference loop opens possibility while its
-typed output contract gives determination a concrete form. It is not the full Persona identity and
-not the final authority of promotion. **The Answer**—the Ahaṃkāric attribution office provided by
-**[Mirror (ADR 32)](./32-identity.md)**—binds its act to an identity; high-stakes manifestation
-remains governed by **[HitL (ADR 25)](./25-hitl.md)** and Vessel-side policy.
-[The Lich's First Invocation](../sepulcher/lich/index.md#the-first-invocation) owns the complete
-birth correspondence.
+One spec can run with any admitted model meeting the adapter contract. A foreign framework is not
+an in-process Agent by analogy: it remains a typed delegated runtime or Animator boundary until a
+later ADR admits a versioned interface.
 
-### Mechanical Cognitive Postures
+## Run dependencies
 
-!!! note "Separation is mechanical"
-    Agent specialization may be expressed as mechanically separated postures, not merely as roleplay. An expander-only Agent opens candidate space and must not rank its own ideas. A reviewer-only Agent evaluates, groups related paths, flags hazards, and must not invent new branches unless explicitly routed into repair. A repair-only Agent receives measured failure traces and proposes corrections. A red-team Agent searches for breach paths and plausible-but-wrong proposals. These postures are enforced through separate runs, prompts, output schemas, tool grants, and `ModelSettings`, so Shadow and Graph can compose the Call and the Blade without mixing evaluation into the expansion context.
+Every step receives fresh, frozen `LychDDeps`:
 
-    Each posture treats honest dead-end recognition as a valid cognitive act. If the field contains contradiction, missing variables, or impossible constraints, the Agent must name the bottleneck within its typed result instead of satisfying pressure by fabricating certainty. This prevents the Call from hardening Viparyaya into a confident answer merely because the prompt demands closure.
+| Field | Contract |
+| --- | --- |
+| `sigil` | Acting identity and scopes. |
+| `grant` | Capability grant for this step. |
+| `dispatcher` | Narrow grant-service port for tools. |
+| `orchestrator` | Narrow lifecycle-transition port. |
+| `context` | Context Orchestrator for the assembled floor. |
+| `run_id`, `step_id` | Correlation identities. |
+| `priority` | Admitted run priority. |
 
-    This is not a relaxation of rigor. It is the typed expression of the Pramāṇa boundary: when direct measurement, sound inference, or trusted testimony is absent, the Agent preserves the state as Vikalpa or returns a bottleneck instead of laundering uncertainty into Pramāṇa-shaped prose. The contract gives uncertainty a valid output channel so status pressure cannot become an implicit success criterion.
+It carries no database session, raw settings, or secret. The control plane consumes credentials to
+construct connectors; persistence and domain services remain narrow ports rather than cognitive
+smuggling.
 
-!!! note "Stratification of Selves"
-    Three identity-adjacent notions layer rather than compete. A **Posture** is a per-run mechanical configuration—output schema, tool grant, `ModelSettings`, and prompt frame. A **Lens** (**[Simulation (ADR 31)](./31-simulation.md)**) is a Posture template employed for expansion isolation in the Shadow. A **Persona** (**[Mirror (ADR 32)](./32-identity.md)**) is a durable identity that *wears* Postures across runs. Persona chooses; Posture constrains; Lens diversifies.
+## Typed results and truth
 
-!!! note "What names an acting agent"
-    An agent is its **tools** (its toolset — *what it can do*, hardcoded in the spec or made configurable in the Codex), its **model/provider**, and its **prompt + history**. Two identity-adjacent notions sit alongside it: the **Sigil** — *who* it acts as (permission scope + memory identity, **[Security (09)](./09-security.md)**; its scopes gate the usable tools), carried as run deps — and the **Persona** — a durable revisioned identity/voice definition maintained by **[Mirror (ADR 32)](./32-identity.md)**. A Persona may contribute a bounded instruction envelope to a fresh Agent shell and manifests as user-facing voice, but it never carries tools, authority, model choice, or runtime handles. There is no separate "Kit" or "Shed" abstraction: an agent's competence is its toolset, in code.
+Pydantic validation establishes shape, not the truth of prose, an effect's validity, claim
+identity, or permission to publish or promote. Deterministic validators, domain handlers, Sigil,
+grant, receipts, evaluation, HitL, and the Phylactery retain those proofs. A typed falsehood is
+still false. `AgentSpec.retries` bounds validation repair; tool argument repair may use Pydantic
+AI retries, while policy refusal and missing premises settle explicitly rather than demand success
+without bound.
 
-### 1. Late-Binding Intelligence
+### Mechanical cognitive postures
 
-To prevent "Brain-Locking," the Agent's definition is decoupled from its implementation. The `Model` and `FunctionToolset` are resources that must be requested from the system's sovereign controller at runtime.
+A **Posture** bounds instructions, output schema, model settings, and tool grant. Expansion,
+review, repair, and red-team work belong in separate runs when one proposal would otherwise grade
+itself. A **Lens** is a Posture template for [Simulation](./31-simulation.md)'s isolated Shadow
+branch. A **Persona** is a durable revisioned identity that may wear Postures. Persona names the
+actor; Posture constrains this act; Lens diversifies a simulation. These are enforceable contracts
+only where types, grants, settings, and Graph placement preserve the claimed separation.
 
-- **Dynamic Arsenal:** An Agent’s available tools are not static; they are hydrated from the resolved `tool_provider` for that run.
-- **Model Agnosticism:** The same Pydantic AI Agent logic can run on local quantized models, frontier cloud models, or specialized cognitive capabilities wrapped by Animators, as selected by the dispatcher at the moment of invocation.
-- **Framework Boundary:** This model/provider agnosticism does not imply arbitrary in-process agent-framework compatibility. Foreign frameworks must cross a protocol boundary or be assimilated into the native runtime.
-- **Provider Pair Contract:** Every run binds an explicit `model_provider` plus `tool_provider`; no agent hardcodes either side.
-- **Concrete Binding:** For OpenAI-compatible runtimes, binding is explicit through the resolved connector endpoint (`base_url`) plus the selected model id (for example `OpenAIProvider(base_url=...)` + `OpenAIChatModel(..., provider=...)`).
-- **Archive as Tool:** Memory recall is granted as a late-bound tool (`query_archive`/`recall_past_karma`) only when the required embedding path is available; agent specifications never hardcode memory wiring.
+A local Privacy Agent is a Posture at an explicit Weaver station. It receives bounded raw material
+to produce a sanitized candidate and findings, but no Portal tool or declassification authority;
+its confidence is not permission. Deterministic control comes first, policy can require an
+independent verifier, and Security's trusted Portal Egress Gate makes the exact decision.
 
-!!! note "Cognitive Primitive Selection"
-    The Agent map should route labor through the smallest sufficient primitive. A deterministic, compact action is a Tool. A demand-loaded procedure or policy bundle is a Skill-like instruction surface. An isolated reasoning context with its own typed result is a child Agent. Unsafe or bulk deterministic execution is a Tomb/Worker payload. All four remain subordinate to Dispatcher grants, Graph topology, HitL policy, and typed output contracts.
+## Streaming, history, and limits
 
-    The selection question is also a context-pressure question. Large data dumps belong behind code execution or Worker payloads, not repeated tool returns. "Always do X" guidance belongs in a demand-loaded instruction surface, not every system prompt. A child Agent is justified by isolated context, independent exploration, or a typed handoff; a subagent that only returns one scalar is usually a Tool in disguise.
+`pump_agent_events` streams one hop: text starts and deltas become raw Oculus token events, while
+the final result supplies typed output and Pydantic AI history. The workflow serializes complete
+history and the new suffix separately for settlement or suspension. Bridge derives its input-token
+fence from the selected context window after reserving the grant's output allowance, and asks a
+supporting model to count before the request. That protects this call, not a global recursive
+accounting system.
 
-```python
-# Example of a stateless Specification Class
-# Model and Tools are NOT defined here.
-coder_agent = Agent[LychDDeps, CodeDiff | Explanation](
-    system_prompt="Role: Senior Python Engineer..."
-)
-```
+LychD does not yet share one `UsageLimits` object across a child-Agent tree. Future nested native
+Agents need explicit budgets. Opaque delegates receive serialized limits through their own grant;
+they inherit no `RunContext`, live toolsets, provider objects, or leases.
 
-### 2. Dependency Injection (`RunContext`)
+## Consent suspension
 
-To allow the probabilistic mind to interact with the deterministic body, the system utilizes Pydantic AI’s **`RunContext`**.
+The delivered deferred path allows one model round to return exactly one approval request and no
+external deferred calls. It serializes suffix and call identifiers—not a live
+`DeferredToolRequests` object—ends the lease before parking, re-enters Graph only after committed
+verdict, acquires a fresh grant, supplies `DeferredToolResults`, and bounds chained approvals.
+Multiple approvals and generic `CallDeferred` labor fail truthfully because the record cannot
+represent them. Delegated labor is a separate Graph node with its own job and trust boundary; ADR
+25 owns durable consent ordering and recovery.
 
-- **The Bridge:** Tools and prompts receive a strictly typed `RunContext[LychDDeps]`, providing safe access to the **[Phylactery (06)](06-persistence.md)** and system settings without exposing global mutable state.
-- **State Preservation:** This allows the Agent to query the database, consult internal archives, or trigger background labor while remaining isolated within a validated execution context.
+## Artifacts and multimodality
 
-#### The LychDDeps Covenant
+Agents may return immutable `ArtifactRef` metadata. LychD does not yet materialize authorized
+blobs as Pydantic AI binary content. Image, audio, and other bytes require a Vessel-owned
+materializer enforcing authorization, media constraints, and provenance; metadata is not payload.
 
-`LychDDeps` is the keystone dependency contract carried by every `RunContext[LychDDeps]`. It holds, as typed fields (not code):
+## Correspondence
 
-- the active **Sigil** and its permission scopes;
-- the **`CapabilityGrant`** in force for the step (**[Dispatcher (ADR 22)](./22-dispatcher.md)**);
-- a **Dispatcher handle** for Modality-Zip and deferred sensory tools;
-- a scoped **Phylactery session**, Archive-gated per **[IAM (ADR 38)](./38-iam.md)**;
-- the **Context Orchestrator** handle (**[Context (ADR 21)](./21-context.md)**);
-- the run and step **correlation IDs** (**[Observability (ADR 29)](./29-observability.md)** Trace Correlation Contract).
-
-`LychDDeps` carries **no raw secrets**. Provider and API credentials remain in the control plane and are resolved outside the cognitive context (**[Security (ADR 09)](./09-security.md)**); a Sigil grants authority, it does not ferry the secret itself.
-
-### 3. Intelligence Tuning (`ModelSettings`)
-
-Every resolution provides a dynamic **`ModelSettings`** object. This allows the system to enforce strict constraints (e.g., `temperature`, `max_tokens`, `top_p`) at the moment of invocation, ensuring the Agent adheres to the "Physics" defined in the **[Codex (12)](12-configuration.md)**.
-
-### 4. Advanced Tool Artifacts (`ToolReturn`)
-
-Tools in LychD provide rich feedback beyond simple strings.
-
-- **Metadata (Artifacts):** Tools can return **`ToolReturn`** objects, separating the `return_value` (sent to the LLM) from the `metadata` (persisted as a permanent artifact for the user).
-- **Action Rejection Evidence:** When a tool rejects a call, the validator owns the local truth of why. Rejections should carry a compact failure class such as `precondition_miss`, `invalid_arguments`, `policy_block`, or `dependency_unavailable`, plus relevant `required_state`, `observed_state`, and retryability metadata. The Agent may receive a concise repair hint, but the persistent artifact records the boundary fact so later diagnosis does not confuse model blindness with an ambiguous or incomplete state surface.
-- **Multi-Modal Content (planned):** Pydantic AI **`BinaryContent`** can provide visual context to a
-  compatible model, but LychD currently carries only immutable `ArtifactRef` metadata. The
-  authorization-aware blob materializer and Bridge/graph conversion into model content must land
-  before an Observation ritual can consume those bytes.
-
-### 5. Deferred Execution (The Long Sleep)
-
-The architecture adopts Pydantic AI's native **Deferred Tools** mechanism to handle high-latency or high-risk operations:
-
-- **`ApprovalRequired`:** Tools marked with `requires_approval=True` (or raising the exception) trigger a "Stasis" event. The Agent run ends with a **`DeferredToolRequests`** object containing a **`ToolCallPart`** for human review.
-- **`CallDeferred`:** Used by tools that delegate heavy labor to background workers. The mind hibernates by committing a deferred request/result boundary into the **[Phylactery (06)](06-persistence.md)**.
-- **Rehydration:** Once approvals or results are received as **`DeferredToolResults`**, the mind is re-entered from the persisted boundary. Volatile frames may be gone; committed message history, typed state, and deferred tool markers provide the replay surface.
-
-### 6. Autonomous Error Correction (`ModelRetry`)
-
-The system leverages built-in **`ModelRetry`** mechanisms. If a tool execution fails due to a
-logical error or Pydantic validation failure, the exception is fed back into the context as a
-system message. This gives the Agent a bounded opportunity to repair the invalid call before the
-failure is presented to the Magus.
-
-`ModelRetry` establishes neither truth nor permission. It can repair an invalid call or produce an
-output that satisfies the declared schema. The repaired result remains a candidate whose factual
-claims, identity congruence, authority, and consequences must pass their owning evidence and policy
-boundaries before presentation or action.
-
-`ModelRetry` is bounded correction, not punitive recursion. When repeated retries expose a missing premise, contradictory instruction, or impossible schema, the run should converge to a typed bottleneck state and hand that state to Graph, Shadow, or HitL. A loop that keeps demanding a completed artifact after the task has become structurally false is treated as Viparyaya pressure, not perseverance.
-
-Tool-boundary rejection classes guide this convergence. A repeated `precondition_miss` indicates that the visible state, hidden validator state, or action affordance contract is misaligned; the repair target may be the state schema rather than the model prompt. A repeated `invalid_arguments` may justify `ModelRetry`; a repeated `policy_block` should usually become a typed bottleneck instead of another attempt.
-
-### 7. Multi-Agent Delegation & Usage Limits
-
-Complex behaviors are achieved by composing Agents in a hierarchy:
-
-- **Agent Delegation:** A parent Agent calls a child Agent as a tool. The parent passes `ctx.usage` to the child, ensuring token limits and **`UsageLimits`** are enforced globally across the entire chain.
-- **Programmatic Hand-off:** One agent completes a task and returns a structured object, which the application logic then passes to a different specialized agent for the next step of the ritual.
-- **Deep Agents:** For self-directed system evolution, agents are granted specialized toolsets for file operations and sandboxed code execution, managed via isolated speculative environments.
-
-These are native LychD relationships: the parent and child are Pydantic AI Agents whose usage
-ledger and admitted tools are visible to the trusted runtime. A
-[`DelegatedAgentNode`](./24-graph.md#3-delegated-agent-macro-nodes) is categorically different. It
-hands one typed task to an opaque foreign agent runtime inside a Coffin and receives an untrusted
-typed result. The foreign runtime is neither inserted into the native Agent registry nor permitted
-to inherit `RunContext`, the parent's tools, provider object, Sigil, or `UsageLimits` object.
-Equivalent hard budgets are serialized into the `AgentJob` grant and independently enforced by
-the Provider Gate.
-
-### 8. Semantic Senses (Embedders as Infrastructure)
-
-Embedding is a LychD-owned capability port, not a currently delivered Pydantic AI Agent feature.
-The installed Pydantic AI `1.25.1` baseline does not expose an `Embedder` module. A future
-dependency version may supply one adapter only after its contract is verified; a native adapter
-remains equally valid. Unlike text generation, local embedding may be treated as a specialized
-hardware-consuming provider route.
-
-- **Provider Dependency:** A local embedder may require its own container body defined as a
-  Quadlet within a specific operational state; remote and CPU providers need different declared
-  resources and egress policy.
-- **Orchestrated Admission:** When a workflow requests embedding, the Dispatcher and Orchestrator
-  admit a compatible provider under ordinary capability, privacy, and resource law. A conflicting
-  local request may wait, select a feasible alternative, or fail honestly; no universal GPU swap
-  is implied.
+The Agent is where **the Call** becomes bounded labor and **the Blade** gives its answer form. A
+model opens possibilities and a schema cuts a result; neither crowns itself true. [The Lich's First
+Invocation](../sepulcher/lich/index.md#the-first-invocation) owns the mythic correspondence.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Hardware Resonance:** The Agent's provider routes intelligently adapt to the current form of the machine, maximizing the utility of limited local VRAM.
-    - **Mathematical Precision:** Application logic never interacts with "hallucinated strings"; it receives only validated, typed objects.
-    - **Contextual Continuity:** By integrating with persistence protocols, committed agentic progress can span days and survive system reboots.
+    Definitions survive model and hardware change; outputs, dependencies, retries, and tools stay
+    inspectable; the same Agent can use a deterministic offline model.
 
 !!! failure "Negative"
-    - **Cognitive Latency:** Swapping toolsets based on hardware availability can introduce delays (30-60s) during state transitions.
-    - **Prompt Pressure:** As dynamic arsenals grow, the system prompt consumes a larger portion of the context window, requiring aggressive optimization of the working memory.
+    Schemas and tools need deliberate maintenance, adapter compliance is required, and suspension,
+    recursive budgets, artifacts, and foreign delegation need explicit LychD machinery.
+
+## Verification
+
+`tests/agents/test_factory.py`, `test_the_first_one.py`, `test_bridge_chat_graph.py`,
+`test_consent_resume.py`, and `test_state_serializable.py` exercise construction, cache identity,
+tool absence, typed output, grants, streaming, settlement, continuation, and the durable Graph
+boundary. Dependency, message-schema, deferred-API, or stream changes require those tests and
+State to move before this law claims new behavior.

@@ -5,135 +5,93 @@ icon: material/eye-settings-outline
 
 # :material-eye-settings-outline: 36. Vision
 
-!!! abstract "Context and Problem Statement"
-    Interpreting terminal output, structural diagrams, and graphical user interfaces depends on the ingestion and analysis of pixel data. Vision Language Models (VLMs) impose significant VRAM demands, creating a physical resource conflict with high-tier reasoning models on consumer-grade hardware. A static infrastructure model results in either systemic OOM failures or permanent "blindness." Additionally, visual services operate in a dual capacity: providing model-backed Animator capabilities and specialized tool capabilities. This duality necessitates an orchestration strategy that manages sight as a stateful, dynamically dispatched capability without destabilizing the machine’s primary cognitive loop.
+!!! abstract "Context"
+    An image is a source with a history, not an oversized prompt. Seeing it needs custody,
+    authorization, hostile-media handling, declared transformation, and an observation that can
+    still name what was seen.
 
-## Requirements
+## Status
 
-- **Independent Manifestation:** OCR, a dedicated VLM, multimodal chat, deterministic transforms,
-  generation, and editing remain independently selectable capabilities. A named Coven may group
-  compatible local services for operator convenience but is not the unit of semantic dispatch.
-- **Provider-Tool Segmentation:** Provision of a mechanism to distinguish between model-backed **Animator** capabilities and tool-style **Animator** capabilities during the discovery phase.
-- **The Stasis Trigger:** Mandatory integration with the **[Dispatcher (22)](22-dispatcher.md)**. When a vision tool is invoked while the hardware is "Cold," it must raise the `HardwareTransitionRequired` signal to freeze the cognitive thread via the **[Stasis Protocol (22)](22-dispatcher.md)**.
-- **Multimodal Context Integration:** Authorized artifact materialization followed by
-  provider-native conversion. Pydantic AI **`BinaryContent`** is one adapter representation, not
-  the storage or universal interchange format.
-- **Dynamic VRAM Budgeting:** Support for model tiering and declared coexistence so a small visual
-  provider may remain beside a reasoning provider when the measured resource envelope permits it.
-- **Declared Transformation:** Decode, orientation, resize, crop, and normalization steps must be
-  explicit, reproducible where possible, and record provenance plus information loss.
-- **Sovereign Optic Wall:** Classification and Ward policy determine provider eligibility.
-  Summarization never launders restricted pixels into automatically safe egress.
+Vision admission is **Partial**. The current core carries immutable `ArtifactRef` metadata in an
+`Intent`, projects image media types to the `image` modality, distinguishes the dedicated
+`vision` family from image-capable `chat`, and filters declarations by required input modality.
 
-## Considered Options
+It does **not** upload, store, authorize, materialize, decode, normalize, or transport image
+bytes. Bridge does not forward artifact modalities into dispatch. No Prism package, Reliquary
+backend, OCR tool, or managed visual provider ships. [State of
+Work](../state-of-the-work.md#vision-admission) owns that boundary.
 
-!!! failure "Option 1: Specialized Vision Sidecars"
-    Running a separate, permanent vision container alongside the primary reasoning model.
+## Decision
 
-    -   **Cons:** **Catastrophic VRAM Contention.** Running two massive models (e.g., a 70B Reasoner and a 13B VLM) simultaneously is impossible on consumer-grade hardware. It violates the **[Law of Exclusivity (08)](08-containers.md)**.
+**Prism** is the visual-grounding and transformation Domain. It turns an admitted source artifact
+into bounded derivatives and observations while retaining source identity, classification,
+provenance, and declared information loss.
 
-!!! failure "Option 2: Pure Cloud Vision (GPT-4o / Claude 3.5)"
-    Offloading all visual processing to external Portals.
+| Faculty | Contract |
+| --- | --- |
+| **Eye** | Dedicated analysis through the `vision` family. |
+| **Multimodal Mind** | A `chat` capability with `image` in `modalities_in`; it remains chat. |
+| **Scribe** | OCR with text regions and source coordinates. |
+| **Lens** | Deterministic decode, orientation, crop, resize, or normalization. |
+| **Maker/editor** | Image generation or mutation through a separate effect contract. |
 
-    -   **Cons:** **The Breach of Privacy.** Sending screenshots of private code or internal infrastructure to the cloud is a violation of the **[Iron Pact (00)](00-license.md)**.
+A Coven may group compatible local services for operation. It is not a dispatch unit: manifesting
+one visual faculty does not manifest the rest.
 
-!!! success "Option 3: Independent Optic Capabilities"
-    Treating visual work as a family/modality contract whose selected provider and declared
-    dependencies are dynamically readied by the existing control plane.
+## Custody before sight
 
-    -   **Pros:**
-        -   **Hardware Safety:** The Orchestrator ensures the selected heavy Eye is only resident when needed.
-        -   **Logical Parallelism:** Utilizes the **Stasis Protocol** to allow the mind to "pause" while the eyes open, preserving thought continuity across hardware swaps.
-        -   **Composability:** OCR, chat-with-image, generation, and a dedicated Eye can evolve and
-            be admitted independently.
+The Reliquary owns source bytes before Prism acts. Its durable reference binds artifact identity
+and SHA-256 digest, media type and byte size, classification and owning Principal, plus custody
+and retention policy. The future materializer rechecks authority on every read. `ArtifactRef` is
+neither byte custody nor a bearer token; a provider URL is neither durable custody nor permission.
 
-## Decision Outcome
+Decoders receive hostile input. Admission bounds supported formats, dimensions, frames, pages,
+decompression, metadata, and parser resources. Media-type labels are claims to verify. Embedded
+links, profiles, scripts, and metadata receive no network or execution authority.
 
-**The Prism** is adopted as the visual-lifecycle Extension Domain. It governs artifact admission,
-declared transformation, provider binding, grounded observation, and visual provenance. It does
-not require a future atomic `vision.coven`.
+## One optic path
 
-!!! warning "Current multimodal floor is schema and admission, not execution"
-    The implemented core has immutable `ArtifactRef`/`ArtifactContent` intent parts, MIME-to-modality
-    projection, declared `modalities_in`/`modalities_out`, and Dispatcher subset filtering. It does
-    not yet have an artifact blob store/materializer, Bridge upload surface, graph-state artifact
-    propagation, `BinaryContent` conversion, image normalization/resize pipeline, Prism
-    manifestation, OCR tool, or managed visual provider. The current Bridge workflow persists the
-    intent shape but
-    passes only its text `prompt` into the agent and requests no image modality. Sections below are
-    target design; artifact references must not be mistaken for available bytes.
+```text
+admit source → authorize materialization → inspect and decode → apply declared Lens transforms
+→ dispatch eligible provider → retain grounded observation or derivative
+```
 
-!!! note "The Two-Axis Law: Family vs Modality"
-    A **family** names a routable service kind; **modalities** name what a capability admits. The
-    `vision` family is reserved for the **dedicated** vision-analysis provider—the Eye. A general
-    chat model that merely accepts images is not a member of this family: it is a
-    **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying
-    `image ∈ modalities_in`. Intent resolution matches `(family, required_modalities)`; a
-    multimodal chat model satisfies image work in place without being renamed or conscripting
-    unrelated visual providers.
+Each Lens transformation records its exact parent, operation and implementation revision,
+parameters, result artifact and digest, and loss from crop, resize, compression, frame selection,
+or color conversion. The source remains available according to retention policy; a thumbnail,
+OCR result, or caption cannot silently replace it.
 
-### 1. Planned Visual Manifestations
+Provider adapters may use Pydantic AI `BinaryContent`, Base64, a tensor, or a provider handle.
+Those are request representations, never the universal artifact format.
 
-Prism may manifest through independently registered capabilities. Local providers may be rendered
-as **[Quadlet services (08)](08-containers.md)** and may share an operator-facing Coven only when
-their declared coexistence and resource profile permit it.
+## Dispatch, egress, and result
 
-- **The Eye (`vlm.container`):** The primary model-backed Soulstone providing the VLM (e.g., LLaVA, Yi-VL), tagged with the `vision` capability.
-- **The Scribe (`ocr.container`):** An optional, lightweight service for pure text extraction (e.g., Tesseract).
-- **The Lens:** Deterministic decode, orientation, resize, crop, and normalization transforms.
-- **Functional Overlap:** One service may declare both `vision` and `ocr` capabilities, but each
-  declaration retains its own contract and support evidence.
+A Pattern asks for exact capability and material: analysis is `vision` plus `image`; general
+reasoning can be `chat` plus `image`; OCR and deterministic transforms require their own declared
+service or tool contracts. The [Dispatcher](22-dispatcher.md) admits only an eligible capability.
+An unwarm managed provider follows ordinary Graph Stasis and [Orchestrator](23-orchestrator.md)
+readiness through `HardwareTransitionRequired`; a live pause need not become a Reanimation
+boundary. Prism cannot evict a provider, revoke a lease, raise priority, or infer remote fallback.
+Declared coexistence and measured operator evidence, not a universal VRAM formula, decide whether
+visual and reasoning providers can remain resident together.
 
-### 2. Optic Dispatching & The Stasis Protocol
+A Portal additionally needs source-and-derivative classification eligibility, explicit egress
+policy, consent where required, and a cost bound. A caption cannot launder restricted pixels;
+[Security](09-security.md#portal-privatization-and-egress) evaluates every source and derivative.
 
-The Prism utilizes the **[Dispatcher (22)](22-dispatcher.md)** to manage the physical reality of sight:
+A grounded observation names the source and derivative chain; relevant page, frame, time, or
+region; task; producing provider or deterministic revision; output; and suitable uncertainty. It
+also says whether it is extraction, geometrical measurement, or inference. OCR is attributed
+extraction, a caption interpretation, and generated or edited imagery a new artifact with effect
+provenance. Fluent output never becomes source truth.
 
-- **The Animator (Provider):** When an Agent requires a Vision Model, the Dispatcher resolves the `vision` capability to a model-backed Animator.
-- **The Handshake:**
-    1. The Dispatcher queries the **Orchestrator**.
-    2. If the selected managed capability is non-`WARM`, the Dispatcher raises
-       `HardwareTransitionRequired`.
-    3. **The Freeze:** The run enters **Live Stasis** and may take an opportunistic
-       **[Phylactery (06)](06-persistence.md)** checkpoint. Serialization is not mandatory for this
-       resident pause and does not create a Reanimation boundary.
-    4. **The Swap:** The Orchestrator converges the selected provider and only its declared
-       dependencies, draining actual conflicts.
-    5. **The Thaw:** Once the selected service is warm, the same leased step proceeds.
-- **The Tool (Capability):** Specialized tasks (e.g., `extract_text_from_image`) follow the exact same Stasis logic through their own Animator capability declarations, ensuring the Agent never attempts to use a tool that does not physically exist.
+## Consequences and acceptance
 
-### 3. The Planned Pixel Pipeline
+Prism keeps vision, multimodal chat, OCR, transforms, and generation composable while preserving
+the path from result to source. It also makes custody, safe decoding, derivative storage,
+retention, and provider loss first-class costs.
 
-The extension will implement a pre-inference pipeline for high-fidelity observations:
-
-1. **Admit:** The system creates an immutable artifact reference; the Reliquary validates media
-   type, size, digest, classification, custody, and retention.
-2. **Materialize:** Prism reads bytes only through an authorized port and rejects malformed or
-   ineligible content.
-3. **Transmute:** A selected Lens performs declared transforms, preserving the source and recording
-   provenance plus loss.
-4. **Bind:** The provider adapter encodes the admitted artifact as `BinaryContent`, Base64,
-   tensor input, or a provider handle according to its native contract.
-5. **Observe:** Output carries source attribution and uncertainty appropriate to OCR, detection,
-   captioning, or generative transformation.
-
-### 4. Orchestration of Sight
-
-Visual intent has no automatic priority class. The admitting Pattern and operator policy declare
-urgency; the **[Orchestrator (23)](23-orchestrator.md)** applies physical readiness law.
-
-- **Tiered Sight:** If policy and measured capability claims permit it, Dispatcher may select a
-  lower-tier Eye whose resource envelope can coexist with the active reasoning provider.
-- **The Transition:** If a high-tier visual ritual is required, the Orchestrator executes the **Drain** protocol on the Reasoning Titan before manifesting the Vision Eye.
-
-## Consequences
-
-!!! success "Positive"
-    - **Structural Awareness:** The Lich can interpret terminal output, UI errors, and diagrams as if it possessed a biological optic nerve.
-    - **Resource Purity:** Independent capability declarations let the Dispatcher choose the
-      smallest eligible provider for a specific task.
-    - **Thought Continuity:** The Stasis Protocol ensures that "opening the eyes" does not kill the thought process, even if it takes 30 seconds to load the model.
-
-!!! failure "Negative"
-    - **State Swap Latency:** Activating a heavy dedicated Eye may introduce friction into
-      interactive visual-inspection rituals.
-    - **Context Pressure:** Visual tokens are expensive. Ingesting multiple artifacts can rapidly saturate the context window.
+It cannot move beyond the current schema seam until focused evidence proves upload and custody,
+principal-bound materialization, hostile-media limits, transform lineage, modality forwarding,
+local and Portal policy, provider conversion, grounded results, retention/deletion, and failure
+recovery.

@@ -8,21 +8,22 @@ icon: material/list-status
 LychD is **pre-alpha**. This page is the canonical account of what repository evidence supports,
 what still needs a named operator receipt, and what remains design.
 
-The proved foundation is local, loopback-oriented, single-user, and one LychD control process in
-the repository-test profile. Real systemd, rootless Podman, GPU, model, and inference-engine
-combinations still need named operator receipts. Remote or multi-tenant operation, native
-observability, general resource-aware scheduling, semantic evolution, and federation are
-horizons—not current product claims.
-
-LychD names the software body under construction. The Lich names the recurrent whole the Work is
-meant to sustain—not any one model.
-
-Inside the current repository-test envelope, evidence covers typed configuration, core CLI
-behavior, deployment planning, local runs and bounded chained single-approval consent, the current agent and dispatch
-paths, safe runtime-transition protocols, and structured logging configuration. The records below
-bind every part of that foundation to its exact proof and limit.
+The proved envelope is local, loopback-oriented, single-user, and one control process in the
+repository-test profile. Real systemd, rootless Podman, PostgreSQL production wiring, GPU, model,
+and inference-engine combinations still need the receipts named below. Remote and multi-tenant
+operation are not current claims.
 
 [Prophecy](./index.md) names the destination; this page names what can answer now.
+
+## Outcome matrix
+
+| Scenario | Answer now | Decisive limit |
+| --- | --- | --- |
+| CLI bootstrap | **Partial.** The CLI grammar, dry-run planning, transactional `init`/`bind`, bounded `status`/`logs`, and guarded deletion have repository evidence. | No maintained real-host startup, shutdown, deletion, or full systemd/Podman receipt. See [Core CLI rites](#core-cli-rites) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
+| Local text chat | **Partial.** The exact Pydantic AI adapter, local run engine, and Bridge contracts work in the repository-test envelope. | No complete production-factory + PostgreSQL + named inference-engine + browser acceptance receipt. See [Bridge](#bridge-surface), [first-light persistence](#phylactery-first-light), and the engine records under [Animation](#animation-and-orchestration). |
+| Browser safety | **Loopback only; hostile-browser safety fails.** Generated deployment binds IPv4 loopback and CSRF is present. | Wildcard CORS, unconstrained Host authority, fixed bootstrap Sigil, and mutable CDN assets block untrusted-browser, proxy, tunnel, or remote use. See [Local browser and bind boundary](#local-browser-bind-boundary). |
+| PostgreSQL and runtime proof | **Receipts missing.** Memory-profile tests and software protocol tests are not host proof. | The real `create_app()` + PostgreSQL lifecycle test is a skipped skeleton; systemd/Podman/GPU/model engines require named receipts. See [Phylactery](#phylactery-first-light) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
+| Major blockers | Durable PostgreSQL/outbox parity, authenticated browser/remote authority, privacy-safe Portal egress, real runtime receipts, native Oculus, and resource-aware scheduling. | Delegated providers, artifacts, vision/audio bytes, evolution, and federation remain Partial or Designed in their records below. |
 
 Go directly to:
 
@@ -51,12 +52,8 @@ Go directly to:
 **Pre-alpha** is the project maturity and support envelope, not a seventh delivery state. An
 accepted ADR records a decision; it does not prove delivery.
 
-Classification starts with the exact subject. Upstream products are External. A LychD-owned
-integration receives its own delivery label. Among LychD subjects, no useful runnable slice means
-Designed; an intentionally unstable runnable slice means Experimental; an incomplete useful slice
-means Partial; a complete software contract missing one named environment receipt means Operator
-validation; and Available is reserved for the whole boundary claimed by that record. No current
-LychD subject on this page qualifies as Experimental.
+Classify the exact subject, not its upstream dependency or neighboring design. No current record is
+Experimental.
 
 ## Current evidence envelope
 
@@ -94,118 +91,19 @@ or running service.
 **State:** Partial
 
 **Proved now:** Public help exposes the closed `init`, `bind`, `start`, `stop`, `status`, `logs`,
-`run`, and `del` grammar; `st` resolves to `status` without becoming a ninth root. `init` and
-`bind` have planners that perform no LychD-managed mutation. Their bounded external observations
-may still let Podman or another inspected tool maintain its own runtime metadata. A real `init`
-rejects effective UID 0 before loading Settings, probing the host, or acquiring effect authority;
-its dry run remains available for read-only diagnosis. `init` revalidates and consumes its exact
-plan, rejects
-unplanned creations, journals partial progress, proves convergence before its terminal seal, and
-records device/inode plus parent-mount authority for the dedicated roots. Its default projection
-collapses the exact plan beneath Codex/config, Crypt/share, and Forge/cache XDG tiers, with Binding
-inside Codex and the Phylactery inside Crypt; `--verbose` restores routine host anchors and
-source-owned path descriptions without changing the plan. Shared host anchors have a distinct role
-color and explicit planned/present state,
-so their materialization is not presented as recursive LychD ownership. Initialization also
-concurrently awaits one typed host-foundation inspection for systemd user-manager reachability,
-Podman/Quadlet/cgroup-v2 compatibility, SELinux, Btrfs, both Binding sites, and observed PostgreSQL
-No-COW directory policy. The report retains the exact trusted executable discoveries behind it:
-resolved files and their complete ancestor chains must remain owned by UID 0 or on a
-kernel-reported read-only mount and
-unwritable by the invoking user, while effective user-generator discovery honors systemd priority
-and masks. Those volatile facts remain outside lifecycle equality; after apply, Binding sites and
-storage are reinspected. Shared anchors say `will create`/`present`, verified sites say
-`prepared`, and only the aggregate next phase says `ready`. Missing Binding-site path components
-are created with mode `0700`; an existing site must be a non-symlink current-UID directory with
-owner and effective read/write/search access, no group/other writes, and no unsafe writable
-ancestor. SELinux `enforcing` remains a mode observation rather than proof that a particular `:Z`
-relabel succeeds, and `+C` proves policy for new extents rather than conversion of existing files.
-The first line of each static path's adjacent attribute
-docstring—and each dynamic Rune class docstring—owns the concise description shown beside its node
-in the verbose projection; generic existence prose remains internal. Binding refines the same inspection into one typed
-foundation carrying the resolved path plus device/inode identity of systemctl, Podman, the user
-generator, and both Binding sites. Preview injects those values into the secret, Scribe, and
-user-manager ports; apply rechecks the whole foundation plus binding and secret generations under
-the lifecycle lock before any effect. Settings, extensions, and the Rune filesystem are loaded once
-per bind command into one immutable session; Animator hydration consumes that same registry
-snapshot instead of reopening the Codex. One declaration compiler merges the Settings-owned core
-ports with every `PortReserver` Rune before hydration; bind, status, the Host Reactor, and the web
-runtime all consume that policy, and the live `AnimatorRegistry` receives compiled declarations
-rather than reparsing TOML. Web preauthorization synchronization also consumes the existing process
-Rune snapshot, so one startup cannot split Animator and consent truth across two filesystem reads.
-Transmutation receives the session `Settings` explicitly instead of
-reading the process cache. The retained bind session stores Settings as an immutable serialized
-generation and materializes a freshly validated tree for preview and locked revalidation, so
-between-phase mutation cannot bypass section validators. Each extension contributor sees an isolated deep copy of settings
-and declarations behind tuple collections. Contributor-returned containers are copied
-before admission, so the typed additive seam cannot mutate core output or later contributors.
-The Scribe requires initialization-prepared Quadlet and plain-user-unit sites during planning and
-immediately before commit rather than silently creating them. Bind supplies the approved
-`AttestedBindingSites`, and Scribe compares each newly pinned site descriptor with that exact
-device/inode before staging and re-attests both sites before a no-op return. Every planned write set carries a
-mandatory base compare-and-swap over the exact authority bytes and every source recorded by that
-receipt, including missing sources at an intentionally absent site; the caller's observed token and
-the exact desired-byte generation are additional guards. Stable no-follow observations derive those
-tokens, settled reconciliation preserves inode/mtime identity, and a failed later bind phase reports
-any confirmed secret creation or committed binding generation plus rejected, cleanly rolled-back,
-or indeterminate commit state. Terminal cancellation is logged with that progress and then
-re-raised as `KeyboardInterrupt` or `SystemExit`, including through Scribe's rollback wrapper.
-Scribe-managed generations are replaced, removed, and rolled back
-through descriptor-relative atomic exchange/quarantine operations pinned to the prepared site and
-workspace identities. Staged inode/content is re-attested before installation, final-gap writers are
-restored or preserved, and binding-site or workspace pathname substitution cannot redirect a
-transition. Indeterminate recovery workspaces remain on disk—including after rollback interruption
-by `KeyboardInterrupt` or `SystemExit`—and successful flat cleanup refuses a replaced workspace
-pathname. Empty Scribe authority deletion is part of the same generation-guarded transaction, so
-post-inspection manifest drift cannot enlarge destructive authority. Workspace cleanup settles
-every peer before re-raising a native terminal signal, with a typed cause
-that preserves whether the public generation committed, rolled back exactly, or remains
-indeterminate. Existing and newly created layout paths use no-follow directory descriptors;
-rollback authority remains
-pinned to exact parent/device/inode creations through receipt persistence. Missing directories
-are attested under private staging names and installed with atomic no-replace semantics. Their
-creation identities pass directly into the receipt; rollback quarantines before comparison,
-restores replacements, and never pathname-deletes a published quarantine because Linux cannot
-condition `rmdir` on the attested inode. The typed failure names that recovery location. A shared
-journal-bound creation session now also owns Codex files, Rune anchors and samples, and configured
-Reactor directories. It never infers ownership from precomputed absence: directory race losers are
-excluded, text-file parents must already exist, and complete file candidates are file-`fsync`ed,
-no-clobber published, descriptor-relative re-attested, and parent-`fsync`ed before the receipt
-callback. Clean interruption rollback preserves native terminal signals, concurrent replacements
-are never unlinked, and Codex returns the exact committed ledger rather than reconstructing it from
-public names. The just-created Btrfs target is created and inspected as
-`/proc/self/fd/<inherited-parent>/<leaf>`
-after the parent matches the transaction's earlier device/inode observation. The child remains
-pinned while No-COW is applied through its descriptor and re-attested before journaling. Its
-canonical substrate ancestry is retained after identity drift, exceptional preparation, or
-receipt failure, with creation identity logged for an attested recovery handoff rather than unsafe
-pathname deletion. Failed, timed-out, and terminally interrupted creation commands first classify
-the pinned leaf as absent, present-but-unattested, or indeterminate. Only proven absence after a
-nonterminal command failure permits directory fallback; residue is retained without adopting a
-post-failure UUID/ID that could belong to a racer. Bootstrap-safe `status`/`st` can
-render exact local ownership, unit, declaration,
-and mount inventory as human output or JSON, degrading split or corrupt authority instead of
-guessing. `logs` reads a bounded journal tail over exact owned units. The direct dead-Vessel
-`start` path refuses a split runtime, while direct `stop` covers every exact owned unit. The
-callback-free `run` registry carries typed
-execution, mutation, consent, progress, result, input, scope, and provider metadata. `del` renders
-one fingerprinted staged plan, confirms it, retires exact owned units, pauses with retained evidence
-for a live-attested mounted Btrfs handoff or, more narrowly, an init-created unmounted PostgreSQL
-subvolume whose version-2 lifecycle receipt device/inode and UUID/ID still match live evidence. The
-unmounted path also requires a canonical covering-filesystem UUID/device and safe mounted top-level
-anchor before it emits an ID-based privileged command; a missing receipt or any drift blocks
-globally. Deletion removes exact bindings and receipt-verified dedicated roots through
-descriptor-relative, mount-ID-checked traversal. Root, child, and file retirement uses an atomic
-random-name quarantine beneath the pinned parent, descriptor re-attestation, no-clobber restoration
-of mismatches, and typed retained-quarantine recovery on a blocked restore. Observable/accidental
-namespace races are contained; malicious mutation by the same host UID is explicitly outside this
-boundary because that UID already has equivalent deletion authority. Codex ordinary entries retire
-while the privileged-handoff checkpoint and lifecycle receipt remain protected. The Codex root is
-then detached; both authorities move to private sibling backups and are finalized only after root
-retirement is confirmed. Failure or cancellation restores them with the root when possible, and
-typed sibling recovery markers block later plans instead of disappearing from inventory.
-Execution replans between irreversible stages. The installed entrypoint initializes the shared
-Structlog pipeline before dispatching any verb.
+`run`, and `del` grammar; `st` aliases `status`. Dry-run planners do not perform LychD-managed
+mutation. Real `init` refuses UID 0, inspects the systemd/Podman/Quadlet/cgroup, filesystem,
+Binding-site, and PostgreSQL substrate, then applies one journaled, revalidated layout plan. Real
+`bind` uses one immutable Settings/extension/Rune snapshot, compiles core and contributed
+declarations, revalidates tools, sites, secrets, and generations under the lifecycle lock, and
+reconciles only the exact Scribe-owned unit set. Layout, binding, and deletion operations use
+descriptor-pinned no-follow identity checks, compare-and-swap generations, atomic
+exchange/quarantine, durable receipts, and explicit cleanly-rolled-back versus indeterminate
+outcomes; native terminal signals retain progress and recovery evidence. `status` renders bounded
+local ownership, unit, declaration, and mount inventory; `logs` reads an owned-unit journal tail;
+direct `start` rejects split runtime state; `stop` covers owned units; `run` exposes typed
+operation metadata; and `del` is fingerprinted, confirmed, receipt-gated, and limited to attested
+LychD authority. The installed entrypoint initializes shared structured logging before dispatch.
 
 **Boundary — Not yet:** `status` does not probe HTTP or database readiness, migration result, queue
 health, durable runs, or model warmth; extension-contributed status sections are not delivered.
@@ -257,26 +155,17 @@ claimed by repository tests.
 
 **State:** Designed
 
-**Proved now:** The source tree declares a Hatch-built Python distribution, a Containerfile, and a
-non-publishing candidate workflow. Repository tests bind version preparation to reviewed file
-changes without an automatic commit or tag, deny the workflow PyPI and container-registry
-authority, require one clean full Git object ID, constrain exact-source Altar generation to its
-tracked public tree, inspect real wheel and source archives, compare license and notice bytes,
-perform an isolated install and dependency check, exercise public and internal process entrypoints,
-and emit SHA-256 receipts. The Containerfile now forbids `psycopg-binary`, uses system `libpq5`,
-and generates a fail-closed Python dependency notice inventory.
+**Proved now:** **Design recorded:** the source tree declares a Hatch distribution, Containerfile,
+and non-publishing candidate workflow. Tests inspect real wheel/source archives, license and notice
+bytes, an isolated install, dependency integrity, process entrypoints, exact source identity, and
+SHA-256 receipts without granting publish authority.
 
 **Do not expect yet:** No maintained receipt pairs this revision as an anonymously installable
-PyPI package and pullable GHCR image from one tag and commit. The public `lychd==0.0.1` placeholder
-from 1 December 2025 carried no license declaration or license text in its wheel or source archive;
-it is not evidence for the current MPL-2.0 package. No workflow in this repository can publish to
-PyPI or GHCR. A 2026-07-22 audit found anonymous pulling of the configured
-`ghcr.io/hexanomicon/lychd:latest` denied, with no immutable tag or digest paired to a source wheel.
-Earlier local archive builds and isolated installs are one-time checks, not a maintained candidate
-receipt. The new gate itself still needs a clean committed hosted-workflow receipt. Image promotion
-additionally needs a loaded-image runtime, dependency-notice, base-image, exact-revision, and SBOM
-audit plus an explicit human publication decision. Public promotion then needs matching artifacts
-and a named clean-host install/start/reply/stop receipt.
+PyPI package and pullable immutable GHCR image from one tag and commit. The public `0.0.1`
+placeholder is not evidence for this MPL-2.0 package; the configured `latest` image was not
+anonymously pullable in the recorded audit. Publication still needs a clean hosted gate,
+artifact/image/SBOM audit, explicit human promotion, and a named clean-host
+install/start/reply/stop receipt.
 
 **Evidence**
 
@@ -319,29 +208,17 @@ this compilation record does not pre-claim them.
 
 **State:** Available
 
-**Proved now:** The software protocol covers durable inbox claim, validation, Scribe-owned loaded
-graph attestation, one compound Animator-target transaction, exact target-and-service world
-observation, cancellation-safe settlement, exact-prior-world compensation, crash recovery,
-readiness inversion, bounded `systemctl` clients, and host-owned outcome journaling. A client
-timeout terminates and reaps the local process; before submission it is a typed no-effect decline,
-while after submission the actuator still settles and classifies the systemd-owned job before
-acceptance, compensation, or containment. Fresh intents carry the exact target capability as well
-as its Animator; legacy records without that field are accepted only when the Animator has one
-unambiguous configured capability. Host consumption shares the interprocess lifecycle lock with
-the other mutating rites and invokes only an injected, root-controlled absolute `systemctl`
-discovery. The explicit uncaged Systemd composition holds that lock across attestation,
-observation, effects, and compensation; contention surfaces as a typed, verified no-effect
-precondition.
+**Proved now:** The mediated protocol covers durable claim, intent validation, loaded Scribe graph
+attestation, one compound Animator-target transaction, bounded and reaped `systemctl` clients,
+settled-world observation, cancellation, exact-prior-world compensation, crash recovery, and
+host-owned outcome journals. Host mutation shares the interprocess lifecycle lock and uses the
+attested absolute `systemctl`; fresh intents name the exact Animator and capability.
 
-**Boundary:** Repository protocol tests and an isolated private systemd user-manager receipt prove
-the generated relation surface and a conflicting target switch with real systemd job ordering.
-That hermetic receipt uses inert services; it is not the operator's live
-Quadlet/Podman/GPU-host receipt. A `.declined` record proves no new effect, `.restored` proves the
-exact prior world, `.contained` preserves a fresh physically uncertain outcome across application
-restart, and an uncertain crash-reclaimed record remains `.processing`; `.rejected` is reserved
-for an invalid delivery rather than physical classification. Startup remains fenced on
-`.processing` or `.contained`. General repair of an arbitrary physical world remains outside the
-contract.
+**Boundary:** Protocol tests and an isolated private-systemd receipt prove real job ordering only
+with inert services, not the operator's Quadlet/Podman/GPU host. `.declined` means no effect,
+`.restored` proves the prior world, `.contained` fences a fresh uncertain outcome,
+`.processing` retains uncertain reclaimed work, and `.rejected` marks invalid delivery. General
+repair remains an operator responsibility.
 
 **Evidence**
 
@@ -388,8 +265,8 @@ GPU and model validation remain separate receipts.
 
 **State:** Designed
 
-**Proved now:** Filesystem services prepare the Btrfs subvolume and no-copy-on-write substrate on
-which the snapshot design can be built.
+**Proved now:** **Design recorded:** filesystem services prepare the Btrfs subvolume and
+no-copy-on-write substrate on which ADR 07's snapshot ritual could operate.
 
 **Do not expect yet:** LychD does not coordinate freeze, database and code snapshot, restore, or
 post-restore reconciliation as one whole-body ritual.
@@ -405,7 +282,7 @@ post-restore reconciliation as one whole-body ritual.
 
 **State:** Designed
 
-**Proved now:** The security law separates future untrusted execution from LychD's trusted,
+**Proved now:** **Law in place:** ADR 09 separates future untrusted execution from LychD's trusted,
 rootless core.
 
 **Do not expect yet:** There is no Tomb queue, executor, credential, policy, Landlock, or `nono`
@@ -444,11 +321,8 @@ transactional outbox or full memory/Postgres adapter parity.
 **State:** Available
 
 **Proved now:** One Vessel process can admit, claim, execute, cancel, settle, and project live run
-events with replay fencing inside the repository-test envelope. Each admitted run pins the
-validated immutable Pattern manifest it began with. Runtime node evidence carries a stable
-occurrence identity for the entered/settled/waiting/failed phases of one attempt; Dispatcher grant
-evidence carries that occurrence plus the issued grant/lease identity; Orchestrator transition
-evidence carries the same run/occurrence correlation through its observed phase.
+events with bounded replay fencing. Each run pins its validated immutable Pattern manifest;
+node, grant/lease, and transition evidence share stable run and occurrence correlation.
 
 **Boundary:** This does not claim a transactional event outbox, separate-worker truth, replayable
 multi-process streaming, or federation. Replay retention is bounded, but live per-subscriber queues
@@ -496,8 +370,8 @@ automatic usage propagation.
 
 **State:** Designed
 
-**Proved now:** The architectural direction accepts a migration while the repository records the
-exact v1 baseline from which compatibility must be measured.
+**Proved now:** **Design recorded:** ADRs 20 and 24 accept a v2 migration while the dependency
+declaration and lock preserve the exact v1 compatibility baseline.
 
 **Do not expect yet:** v2 messages, toolsets, deferred events, durability capabilities, and graph
 contracts are not installed LychD behavior.
@@ -534,50 +408,19 @@ web and CLI suppress the live retry, leaving startup reconciliation as the autom
 
 **State:** Partial
 
-**Proved now:** Typed repository contracts cover secret-free delegated requests, artifact
-references, idempotent in-memory `AgentJob` submission and terminal adoption, cancellation,
-runtime-adapter ports, Graph parking with `AWAITING_DELEGATE`, and bounded run re-admission after a
-matching result is adopted. The Run row binds the current delegated `job_id`, and resume admission
-requires that exact wait owner so a terminal job from an earlier station cannot wake a later one.
-Separate pure policy modules validate fixed Coffin filesystem,
-network, resource, environment, command, Provider Gate, and provider-capacity decisions. Focused
-tests exercise replay conflicts, stale or forged results, cancelled and terminal-lost jobs, restart-shaped
-re-admission against the current run ledger, path and environment rejection, exact Gate
-capabilities, quota postures, and generated `nono` invocation/profile shape. The selectable
-built-in `delegation` extension, when selected, publishes a typed runtime catalogue: its
-deterministic process-local `reference` adapter completes and cancels jobs through the
-coordinator without filesystem, subprocess, model, or network work, while Codex CLI, Claude Code,
-OpenCode Go, and OpenRouter entries remain explicitly declared-only and fail closed. The source
-also defines delegated-job/event tables, migration `0003`, and a PostgreSQL job-store adapter
-wired into the PostgreSQL Altar service profile. Initial Altar projections correlate a delegated
-wait in Bridge, render the declared delegate station in Loom, list selected runtime delivery
-boundaries in Nexus, and summarize bounded AgentJob lifecycle evidence in the Orb.
+**Proved now:** Typed contracts cover secret-free delegated requests, artifact references,
+idempotent process-local `AgentJob` submission/adoption/cancellation, exact wait ownership, Graph
+parking with `AWAITING_DELEGATE`, and bounded re-admission. Pure policy modules validate Coffin
+filesystem, network, resource, environment, command, Provider Gate, and capacity decisions. The
+selectable extension supplies a deterministic no-effect `reference` adapter, delegated database
+shapes and migration, a PostgreSQL adapter, and initial Bridge/Loom/Nexus/Orb projections.
 
-**Boundary — Not yet:** The PostgreSQL job ledger has no focused real-PostgreSQL or migration
-receipt, and its existence does not prove transactional runtime submission/outbox,
-cross-process claim/recovery, or restart settlement of a live foreign job. The memory profile
-still uses an in-memory store. No Codex CLI, Claude Code, OpenCode Go, OpenRouter, or other
-provider-backed adapter launches; catalogue metadata and locally observed command help are not
-execution receipts. The Coffin and Provider Gate modules compile and validate policy only: there
-is no generated lower-trust container, effectful supervisor, actual `nono` child, process-tree
-cancellation, credential-injecting Gate service, upstream provider call, egress enforcement
-receipt, or proof that secrets are absent from the child. Raw provider trace normalization,
-durable artifact custody, measured usage, reservation ledger, and a provider observation loop are
-also absent. Focused Bridge, Orb, and Nexus web-contract tests now cover the initial delegated
-projections, and the generated client compiles against those contracts. There is still no live
-browser or accessibility receipt for the complete crossing; the pages must not imply live Gate
-health, quota observation, or an effectful provider execution.
-
-**First proving slice:** Promotion beyond this Partial seam requires one documented,
-provider-backed headless adapter; durable idempotent `AgentJob` recovery and cancellation;
-effectful `read` and
-`candidate` Coffin profiles in disposable workspaces; a Provider Gate that keeps the real
-credential out of child environment, arguments, files, output, errors, and trace; hard
-time/resource/request/token/spend ceilings; normalized LychD-observed versus provider-reported
-events; and the four existing Altar projections. Adversarial receipts must cover filesystem and
-network escape, malicious or oversized JSONL, Gate replay and budget denial, crash/reclaim,
-process-tree kill and revocation, and candidate-patch containment. The feature remains disabled
-for real delegated execution until those boundaries agree.
+**Boundary — Not yet:** The memory profile remains process-local and the PostgreSQL job ledger has
+no real PostgreSQL or migration receipt. Codex CLI, Claude Code, OpenCode Go, OpenRouter, and other
+provider entries are declared-only: none launches. Coffin and Gate are policy-only; there is no
+lower-trust container, effectful `nono` child/supervisor, credential isolation, provider call,
+egress enforcement, process-tree cancellation, durable artifact custody, measured budget ledger,
+cross-process recovery, or live browser receipt.
 
 **Evidence**
 
@@ -609,7 +452,8 @@ for real delegated execution until those boundaries agree.
 
 **State:** Designed
 
-**Proved now:** Bridge can project pending consent cards and counts from consent records.
+**Proved now:** **Design recorded:** Bridge already projects consent cards and counts that a future
+Attention inbox can consume.
 
 **Do not expect yet:** There is no owned Attention inbox, acknowledgement contract, live retry,
 expiry or escalation policy, redacted notification delivery, or external channel.
@@ -654,21 +498,26 @@ temporal leases.
 **State:** Partial
 
 **Proved now:** Explicit built-in selection and current concrete Rune, portal, runtime, and Quadlet
-contributions can be assembled and tested.
+contributions can be assembled and tested. Delegated-runtime and Run-operation stores retain their
+contributor identity and reject attributed collisions.
 
-**Boundary — Not yet:** Registration brackets an extension identifier but contributed records do
-not retain that owner. Collision attribution, full lifecycle ownership, and a stable public SDK
-remain absent.
+**Boundary — Not yet:** Legacy Rune, Portal, Soulstone/runtime, and transmutation contribution
+stores do not retain the registering owner on every admitted record. Their collision attribution,
+full lifecycle ownership, and a stable public SDK remain absent.
 
 **Evidence**
 
 - **Source:** [Extension manager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/manager.py),
   [contribution context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py),
+  [delegated-runtime contributions](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/delegation.py),
+  [Run-operation contributions](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/operations.py),
   and [built-in catalog](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/catalog.py)
 - **Verification:** [Built-in catalog tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_catalog.py),
   [portal contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_portals.py),
   [registry contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py),
-  and [Quadlet contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_contributor.py)
+  [Quadlet contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_transmute_contributor.py),
+  [delegation attribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py),
+  and [operation attribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_operations.py)
 - **Law:** [ADR 05 — Extensions](./adr/05-extensions.md)
 
 ### llama.cpp integration {#llamacpp-integration}
@@ -749,27 +598,16 @@ quantization, cache mode, GPU split, runtime flags, load/inference/unload result
 
 **State:** Available
 
-**Proved now:** Soulstone `conflict_domains` validate into an undirected incompatibility graph.
-Omission on a dedicated non-resident becomes the conservative `default-exclusive` wildcard;
-explicit `[]` alone declares coexistence. Bind compiles one target per Animator plus inspectable
-conflict edges, rejects internally conflicting Covens, and aggregates compatible Animator targets.
-Bind and live registry load also reject any Soulstone whose registered adapter synthesizes no
-capability, because phase-one planner activity truth is capability-derived while host attestation
-is unit-derived.
-The switch policy selects only the target's exact active neighbors from that same graph. Before one
-compound target request, the actuator validates the intent closure, exact Scribe ownership and
-source paths, installed/loaded LychD target namespace, target/service/Coven relations, unit-file
-state, and current target-and-service world. Every `systemctl` client has a configurable positive
-timeout and is terminated, killed if necessary, and reaped when that budget expires. Failure
-handling still waits for relevant systemd jobs and classifies the settled whole world before
-accepting success or exact restoration; timing out the client never impersonates cancellation of a
-systemd-owned job.
+**Proved now:** Soulstone `conflict_domains` compile into one undirected incompatibility graph:
+omission on a dedicated non-resident means `default-exclusive`, while explicit `[]` declares
+coexistence. Bind rejects unadvertised Soulstones and conflicting Covens, emits one target per
+Animator, and aggregates only compatible targets. Switching selects the target's exact active
+neighbors, attests the Scribe-owned loaded unit graph and current world, issues one bounded compound
+target request, waits for settled systemd jobs, and classifies success or exact restoration.
 
-**Boundary:** Repository evidence proves compilation, attestation, request shape, and recovery
-semantics. A hermetic private user-manager receipt additionally proves the generated relation
-surface and real systemd ordering during a conflicting target switch with inert services; it does
-not prove the operator's live Quadlet/Podman/GPU host. An explicit empty conflict set remains an
-operator assertion of safe coexistence, not measured capacity admission. The separate
+**Boundary:** Repository evidence plus a private user-manager receipt proves real systemd ordering
+with inert services, not the operator's Quadlet/Podman/GPU host. Explicit coexistence is an
+operator assertion, not measured capacity admission. The separate
 [systemd and Podman embodiment](#systemd-podman-embodiment) record owns that live-host receipt.
 
 **Evidence**
@@ -793,21 +631,21 @@ operator assertion of safe coexistence, not measured capacity admission. The sep
 
 ### Safe runtime transitions {#safe-runtime-transitions}
 
-**State:** Available
+**State:** Partial
 
-**Proved now:** Admission closure, lease drain, serialized transition plans, readiness convergence,
-loaded-graph attestation, one compound per-Animator target transaction, settled-world
-classification, exact-prior-world compensation, typed cancellation restoration, and fail-closed
-containment have focused software-protocol tests. A proved restoration reopens the manager barrier;
-in mediated mode, an uncertain fresh host effect becomes a durable `.contained` startup fence,
-while uncertain crash recovery remains `.processing`. The Host Reactor refuses all new work when
-containment already exists and stops the current batch before claiming another intent as soon as
-fresh containment or unresolved recovery appears.
+**Proved now:** Focused protocol tests cover admission closure, lease drain, serialized plans for
+the tested dedicated-runtime paths,
+readiness convergence, loaded-graph attestation, one compound target transaction, settled-world
+classification, exact-prior-world compensation, cancellation restoration, and fail-closed
+containment. A proved restoration reopens admission; `.contained` and unresolved `.processing`
+fence startup and later Reactor work.
 
-**Boundary:** This proves the bounded software protocol, not a swap on a real GPU or
-capacity-optimal model selection. A failed soft in-runtime model load has no trustworthy rollback
-and requires contained operator recovery. General repair of an arbitrary host world remains an
-operator responsibility.
+**Boundary — Not yet:** Direct Orchestrator and Nexus activation call the manager without
+Dispatcher admission. Because the manager checks `runtime_started` before shared ownership, an
+already-running shared dynamic Animator can receive `SOFT_SWAP` despite the Dispatcher's
+shared/non-WARM refusal. This proves neither that guard nor a swap on a real GPU. A failed soft
+in-runtime model load has no trustworthy rollback and requires contained operator recovery.
+General repair of an arbitrary host world remains an operator responsibility.
 
 **Evidence**
 
@@ -829,8 +667,8 @@ operator responsibility.
 
 **State:** Designed
 
-**Proved now:** ADR 23 provides a policy seam, and the current `EvictIdlePolicy` has deterministic
-tests for its deliberately simple behavior.
+**Proved now:** **Design recorded:** ADR 23 provides the scheduling seam; deterministic tests
+record the current simple `EvictIdlePolicy` baseline.
 
 **Do not expect yet:** The current declared-conflict policy selects exact active graph neighbors
 and prices only their count. This is an incompatibility graph, not a capacity solver: it does not
@@ -850,56 +688,30 @@ admission.
 ## Altar and observability {#altar-and-observability}
 
 !!! success "Canonical client foundation"
-    ADR 15's client architecture is present: a Svelte 5 runes-only source tree, SvelteKit static
-    SPA build, Node/npm lock and commands, native CSS system, generated Litestar OpenAPI types,
-    runtime-validated semantic JSON SSE, and a versioned `/api/v1` surface. Litestar serves the
-    compiled fallback and assets; Granian remains the only production server. Tailwind,
-    project-owned PostCSS, Jinja Altar templates, HTMX markup and client behavior, Alpine,
-    `litestar-vite`, and LychD's direct `litestar-htmx` dependency are absent from this surface.
-    Litestar 2.24 still resolves `litestar-htmx` as an unused transitive framework dependency;
-    removing that installed helper requires the future Litestar 3 migration, not a second LychD
-    frontend.
-
-    Focused Python and Svelte tests prove the contract and static shell, not a complete
-    operator-browser acceptance pass. There is not yet a Playwright receipt over the production
-    factory, durable cross-process browser events, Android client, or useful implementation behind
-    every named instrument.
+    ADR 15's client foundation is present: Svelte 5 runes, a SvelteKit static SPA, native CSS,
+    generated Litestar OpenAPI types, runtime-validated semantic JSON SSE, and versioned `/api/v1`.
+    Litestar serves the compiled client; Granian remains the production server. Focused Python and
+    Svelte tests prove contracts and shell, not a production-factory Playwright receipt, durable
+    cross-process browser events, Android, or every named instrument.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 
 **State:** Partial
 
-**Proved now:** The Svelte Bridge consumes generated `/api/v1` contracts for local sessions,
-message submission, pending consent cards and decisions, and inspection. Per-run events arrive as
-versioned semantic JSON SSE and closed GenUI descriptors. Status, node occurrence, Dispatcher grant,
-and Orchestrator transition are distinct event classes rather than one overloaded activity label.
-A successful admission response carries the server-minted Run, exact Pattern, Loom, Orb, and
-evidence-capture identities; the client does not guess them. Completed turns append their visible
-agent reply and Pydantic AI `new_messages()` suffix together, normalizing every provider hop to
-the owning LychD run so one completed turn remains indivisible. The next turn reads only that
-completed session model history, applies whole-turn and character governors, rebinds Context after
-the actual capability grant, and passes the validated bounded messages to Pydantic AI with a
-resolved context-window usage fence. A parked consent chain is reserved whole and prior settled
-history is re-bounded under the capability acquired on resume. Display turns never become model history.
-A Bridge admission retains the user turn under the server-minted run identity before publishing
-the queue hop, so a fast worker cannot settle a reply ahead of its prompt.
-A cursor-bound run snapshot replaces live text, status, and descriptors after an explicit resync or
-detected numeric gap; duplicate and gapped events are not projected speculatively. The
-selected-session snapshot also exposes active Run identities, exact Pattern/Orb links, and
-current process-local projections. Snapshot reconstruction preserves separate current-node,
-dispatch, and transition occurrence identities, so a Bridge route remount or hard browser reload
-neither hides an acknowledged body crossing nor falsely joins evidence from two occurrences. Focused Python and
-component tests cover admission, consent ordering, terminal replay, descriptor safety, snapshot
-replacement, reload reconstruction, delayed-admission navigation ownership, and
-terminal-refresh navigation races.
+**Proved now:** The Svelte Bridge uses generated `/api/v1` contracts for sessions, text submission,
+consent, inspection, versioned semantic SSE, and closed GenUI descriptors. Server-minted run,
+Pattern, Loom, Orb, and evidence identities remain authoritative. Completed turns retain one
+bounded Pydantic AI history unit; consent resume re-bounds it after the actual grant. Admission
+stores the user turn before queue publication. Cursor-bound snapshots replace speculative client
+state on gaps or resync and reconstruct distinct node, grant, and transition occurrence identities
+after remount or reload.
 
-**Boundary — Not yet:** There is no complete production-factory receipt, durable cross-process
-event or token delivery, general multi-approval round, Attention contract, or external
-notification channel. Active-run reconstruction is process-local and does not recover token bytes
-lost with a process. Run admission uses ordered user-turn retention before broker publication plus
-failure compensation, rather than one database transaction/outbox spanning the session, run, and
-broker. Text is the implemented command modality; the designed record-then-send voice
-path and continuous voice mode are not delivered.
+**Boundary — Not yet:** There is no production-factory/browser receipt, durable cross-process
+event or token delivery, transactional admission outbox, general multi-approval round, Attention,
+or notification channel. The Bridge also omits a changing grant epoch when caching the Environment
+block, so the same session/capability binding can retain an earlier warm-Coven snapshot and the
+process-lifetime snapshot cache has no release path. Reconstruction is process-local; text is the
+only command modality.
 
 **Evidence**
 
@@ -930,23 +742,15 @@ path and continuous voice mode are not delivered.
 
 **State:** Partial
 
-**Proved now:** The Svelte Nexus consumes typed Coven state and transition plans from `/api/v1`,
-labels preview as non-binding, submits explicit swap intents, and follows process-local tickets to
-settled or failed outcomes over semantic JSON SSE. A separate bounded process-local transition
-journal projects the latest observed phase for both run-origin and operator-origin requests,
-including run, occurrence, physical-transition, and compensation correlation where those records
-exist, orders updates by latest observation, and exposes each capability probe's own `checked_at`
-rather than presenting response-construction time as fresh hardware truth. Direct transition URLs
-resolve and refresh the same latest observation. The ticket store retains
-terminal endpoint and SSE reconnect truth for a 60-second process-local window, retires it only
-after expiry, and refuses capacity rather than evicting active or fresh-terminal tickets.
+**Proved now:** The Svelte Nexus consumes typed Coven state and plans, labels preview as
+non-binding, submits explicit transitions, and follows process-local tickets over semantic SSE.
+Its bounded journal correlates run, occurrence, physical transition, and compensation, preserves
+each probe's `checked_at`, supports direct transition URLs, and retains terminal reconnect truth
+for 60 seconds without evicting active or fresh-terminal tickets.
 
-**Boundary — Not yet:** It has no general resource truth. Tickets and transition observations have
-no durable owner, complete history, cross-process retention, or restart recovery; the production
-lifespan also lacks an operator-browser receipt. It is not a general resource, queue, GPU, VRAM,
-topology, thermal, or hardware-pressure dashboard. Nexus has no broad binding inventory,
-configuration mutation, proposal workflow, or separate Bindings instrument; Configuration remains
-the owning authority.
+**Boundary — Not yet:** Tickets and observations have no durable owner, complete history,
+cross-process retention, restart recovery, or production-browser receipt. Nexus is not a general
+resource/GPU/topology dashboard or configuration surface.
 
 **Evidence**
 
@@ -985,12 +789,10 @@ workflow mutation surface, Svelte Flow drafting canvas, or production-browser re
 
 **State:** Partial
 
-**Proved now:** `/orb/{run_id}` returns and renders one selected Run as an ordered,
-bounded evidence list. The snapshot identifies its exact Pattern revision when the pinned manifest
-still validates, labels process-local versus durable-best-effort capture, exposes the ledger head
-and current page boundary separately, interleaves explicit gaps, and links recorded transition
-requests to Nexus. Safe events have URL-stable selection, bounded pagination, a narrow-screen
-detail sheet, and an explicit failure-presence notice without exposing private diagnostics.
+**Proved now:** `/orb/{run_id}` renders one Run as ordered bounded evidence with its validated
+Pattern revision, capture durability label, separate ledger head/page boundary, explicit gaps,
+Nexus transition links, stable event selection, pagination, narrow-screen detail, and a
+non-diagnostic failure notice.
 
 **Boundary — Not yet:** There is no authorized run-list query, live Orb tail, graph-shaped
 evidence view, durable native Oculus ingestion/read model, cross-process completeness, health
@@ -1013,14 +815,10 @@ from retained structural evidence. The focused Altar does not expose a separate 
 
 **State:** Available
 
-**Proved now:** The shared logging builder produces tested human-readable and JSON
-stdlib/Structlog output. The installed CLI entrypoint invokes the same bootstrap before Click
-dispatch, with a settings-independent fallback that keeps help and recovery verbs available when
-operator configuration is malformed; Litestar composition consumes its injected Settings through
-the same builder. Direct and stdlib diagnostics share level policy and remain on stderr, preserving
-stdout for stable command results. Human rendering retains the event as the primary line, JSON
-renames it to `message`, and unexpected `init`/`bind` failures emit one semantic command-failure
-event. Granian server/access and SQLAlchemy engine/pool logger families are explicitly covered.
+**Proved now:** One tested builder configures human and JSON stdlib/Structlog output for CLI and
+Litestar. A settings-independent fallback preserves help and recovery verbs; diagnostics stay on
+stderr, command results on stdout, JSON maps event to `message`, unexpected `init`/`bind` failures
+emit one semantic event, and Granian/SQLAlchemy logger families follow the same policy.
 
 **Boundary:** Shared configuration does not prove that every lifecycle effect emits a complete
 semantic audit event. This record also does not prove trace storage, OpenTelemetry export,
@@ -1037,9 +835,8 @@ capture-class redaction, retention, resource correlation, or Oculus.
 
 **State:** Designed
 
-**Proved now:** The observability law makes LychD's own evidence model and Altar surface canonical.
-A dormant Phoenix-specific export adapter has a narrow direct unit test; it is external-Eye
-compatibility evidence, not native Oculus delivery.
+**Proved now:** **Law in place:** ADR 29 makes LychD's evidence model canonical. A dormant,
+narrowly tested Phoenix export adapter is compatibility evidence, not Oculus delivery.
 
 **Do not expect yet:** The telemetry class is not installed by current application or extension
 composition. There is no native ingestion, durable query/read model, retention path, or
@@ -1075,6 +872,31 @@ application trace export to it. The sample `latest` image is not a reproducible 
 
 ## Authority and artifacts {#authority-and-artifacts}
 
+### Context privatization and Portal egress {#context-privatization-and-portal-egress}
+
+**State:** Designed
+
+**Proved now:** **Law in place:** Context, Security, Dispatcher, and Workflow define
+lineage-carrying Privatization Labels, a local Privacy Cut, separate transformation and
+declassification authority, exact pre-transmission decisions, retry and delegation handling, and
+quarantined returns. Current source only recursively censors values whose dictionary keys look
+secret-shaped before storing a consent projection.
+
+**Do not expect yet:** Blocks, SQL and tool results do not carry general labels or influence
+lineage. There is no deterministic identifier scanner, Privacy Agent, `TransformationReceipt`,
+sanitized Context branch, Portal Egress Gate, admission/transmission check, pseudonym map,
+or deletion propagation. A routable Portal may still receive any matching run.
+
+**Evidence**
+
+- **Source:** [Consent projection censor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/schemas.py)
+- **Verification:** [Secret-shaped consent projection test](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
+- **Law:** [ADR 09 — Security](./adr/09-security.md),
+  [ADR 21 — Context](./adr/21-context.md),
+  [ADR 22 — Dispatcher](./adr/22-dispatcher.md), and
+  [ADR 28 — Workflow](./adr/28-workflow.md)
+- **Topic:** [Anonymization, taint, and egress](./sepulcher/extensions/weaver/anonymization.md)
+
 ### Local Sigil and scope authority {#local-sigil-authority}
 
 **State:** Partial
@@ -1085,7 +907,11 @@ implemented and exercised on the current loopback bootstrap surface.
 **Boundary — Not yet:** The default Sigil is fixed `magus:*`; there is no caller authentication,
 object authorization, delegation, revocation, tenant isolation, or remote exposure. Naive expiry
 is accepted and then fails against aware UTC in memory, and expiring preauthorization is not
-rechecked immediately before a protected effect after waiting.
+rechecked immediately before a protected effect after waiting. Startup synchronization does not
+disable an enabled database rule when its Rune disappears and logs synchronization failure while
+continuing; a removed or tightened file can therefore leave stale authority. Use-budget consumption
+and consent-row insertion are separate commits, so failure between them can consume a use without
+its audit row. Current preauthorization tests are memory-backed and prove neither boundary.
 
 **Evidence**
 
@@ -1093,7 +919,10 @@ rechecked immediately before a protected effect after waiting.
   [scope grammar](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/scopes.py),
   [scope middleware](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/middleware.py),
   [guards](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/guards.py),
-  and [preauthorization Runes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/runes.py)
+  [preauthorization Runes](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/runes.py),
+  [preauthorization service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/services.py),
+  [consent ledger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/ledger.py),
+  and [startup synchronization](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/lifespan.py)
 - **Verification:** [Web guard tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sigil_guards.py),
   [scope grammar tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_scopes.py),
   and [preauthorization tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
@@ -1141,10 +970,8 @@ contracts pass.
 
 **State:** Designed
 
-**Proved now:** ADR 30 separates search, fetch, extraction, crawl, rendering, interaction,
-credential use, session custody, screenshots, downloads, and artifact admission into distinct
-authority contracts. It selects one bounded static public-page fetch and network-free extraction
-as the first passage.
+**Proved now:** **Law in place:** ADR 30 separates acquisition effects into distinct authority
+contracts and selects bounded public-page fetch plus network-free extraction as the first passage.
 
 **Do not expect yet:** There is no Scout provider, browser service, web endpoint, Agent tool,
 destination-pinning implementation, acquisition receipt, download quarantine, authenticated
@@ -1215,8 +1042,8 @@ provider fetch audit, or Reliquary backend.
 
 **State:** Designed
 
-**Proved now:** A narrow Karma database row and ADR 27 reserve an architectural home for future
-memory work.
+**Proved now:** **Design recorded:** a narrow Karma row and ADR 27 reserve the architectural home
+for semantic memory.
 
 **Do not expect yet:** There is no semantic ingestion, embedding pipeline, retrieval tool,
 consecration policy, curator loop, memory evolution, or production vector store.
@@ -1231,8 +1058,8 @@ consecration policy, curator loop, memory evolution, or production vector store.
 
 **State:** Designed
 
-**Proved now:** ADR 32 and the Mirror doctrine define identity as a filtered, revisable binding
-rather than a second cognitive runtime.
+**Proved now:** **Law in place:** ADR 32 defines identity as a filtered, revisable binding rather
+than a second cognitive runtime.
 
 **Do not expect yet:** There is no identity store, synthesis loop, hydration adapter, versioned
 persona, feedback calibration, or promoted persistent identity.
@@ -1246,8 +1073,8 @@ persona, feedback calibration, or promoted persistent identity.
 
 **State:** Designed
 
-**Proved now:** ADR 31 defines branch expansion, scoring, pruning, authority, and collapse as a
-future simulation organ.
+**Proved now:** **Law in place:** ADR 31 records branch expansion, scoring, pruning, authority, and
+collapse for a future simulation organ.
 
 **Do not expect yet:** There is no runnable branch graph, MCTS engine, branch store, budgeted
 simulation, verified collapse, or branch-reaper implementation.
@@ -1261,37 +1088,38 @@ simulation, verified collapse, or branch-reaper implementation.
 
 **State:** Designed
 
-**Proved now:** ADR 34 defines the evaluation jurisdiction, including adversarial cases, execution
-evidence, capability comparison, and calibration.
+**Proved now:** **Law in place:** ADR 34 records the evaluation jurisdiction, adversarial evidence,
+capability comparison, and calibration.
 
 **Do not expect yet:** There is no runnable evaluation harness, maintained case suite, scorer
 contract, benchmark history, pass-at-k experiment, or routing update from evaluations.
 
 **Evidence**
 
-- **Topic:** [Riddle](./sepulcher/extensions/riddle.md)
+- **Topic:** [Riddle](./sepulcher/extensions/riddle/index.md)
 - **Law:** [ADR 34 — Evaluation](./adr/34-evaluation.md)
 
 ### Soulforge training {#soulforge-training}
 
 **State:** Designed
 
-**Proved now:** ADR 33 defines how consecrated examples could enter a governed training pipeline.
+**Proved now:** **Law in place:** ADR 33 records how consecrated examples could enter governed
+training.
 
 **Do not expect yet:** There is no dataset harvest, training job, isolated trainer, checkpoint
 evaluation, model registration, rollback, or production promotion.
 
 **Evidence**
 
-- **Topic:** [Soulforge](./sepulcher/extensions/soulforge.md)
+- **Topic:** [Soulforge](./sepulcher/extensions/soulforge/index.md)
 - **Law:** [ADR 33 — Training](./adr/33-training.md)
 
 ### Smith and Forge promotion {#smith-forge-promotion}
 
 **State:** Designed
 
-**Proved now:** The creation, packaging, evolution, and assimilation laws define a future verified
-path from candidate code to an attributable extension.
+**Proved now:** **Design recorded:** the creation, packaging, evolution, and assimilation laws
+define a future attributable promotion path.
 
 **Do not expect yet:** There is no safe code forge, autonomous repair loop, verified package
 promotion, compatibility gate, rollback controller, or self-extension runtime.
@@ -1309,8 +1137,8 @@ promotion, compatibility gate, rollback controller, or self-extension runtime.
 
 **State:** Designed
 
-**Proved now:** ADR 38 assigns future remote identity and authorization to the Ward rather than
-stretching the loopback Sigil into a network credential.
+**Proved now:** **Law in place:** ADR 38 assigns future remote identity and authorization to Ward,
+not the loopback Sigil.
 
 **Do not expect yet:** There is no credential-backed principal, remote session, object
 authorization, delegation, revocation, tenant isolation, or audit contract.
@@ -1324,7 +1152,7 @@ authorization, delegation, revocation, tenant isolation, or audit contract.
 
 **State:** Designed
 
-**Proved now:** ADR 26 reserves a typed peer protocol boundary for future agent-to-agent labor.
+**Proved now:** **Law in place:** ADR 26 reserves a typed peer-protocol boundary.
 
 **Do not expect yet:** There is no authenticated durable inbox/outbox, peer identity, message
 ordering, deduplication, cancellation, delegation, effect receipt, or interoperability profile.
@@ -1337,8 +1165,8 @@ ordering, deduplication, cancellation, delegation, effect receipt, or interopera
 
 **State:** Designed
 
-**Proved now:** ADR 41 assigns payment negotiation and settlement to a future Toll extension and
-makes price discovery an input to future economic dispatch.
+**Proved now:** **Law in place:** ADR 41 assigns payment negotiation and settlement to Toll and
+price discovery to future dispatch.
 
 **Do not expect yet:** There is no quote, reservation, authorization, signer, payment, settlement,
 reconciliation, budget enforcement, or safe response to an HTTP 402 challenge.
@@ -1352,8 +1180,8 @@ reconciliation, budget enforcement, or safe response to an HTTP 402 challenge.
 
 **State:** Designed
 
-**Proved now:** ADR 42 names the multi-node jurisdiction, separates cognitive Master authority
-from node-local physical authority, and rejects shared databases and universal credentials.
+**Proved now:** **Law in place:** ADR 42 separates cognitive Master authority from node-local
+physical authority and rejects shared databases and universal credentials.
 
 **Do not expect yet:** There is no node enrollment, expiring advertisement, local resource
 reservation, fencing, artifact transfer, durable spool, cancellation, or settlement. ADR 42's
@@ -1368,7 +1196,7 @@ accepted Node Agent protocol remains architecture rather than an implemented fle
 
 **State:** Designed
 
-**Proved now:** ADR 39 assigns private network transport to a separate Tether jurisdiction.
+**Proved now:** **Law in place:** ADR 39 assigns private network transport to Tether.
 
 **Do not expect yet:** There is no VPN provider, enrollment, key rotation, route policy, network
 health, revocation, or proof that network reachability establishes identity.
@@ -1382,7 +1210,7 @@ health, revocation, or proof that network reachability establishes identity.
 
 **State:** Designed
 
-**Proved now:** ADR 40 assigns edge proxy and TLS composition to a distinct Veil jurisdiction.
+**Proved now:** **Law in place:** ADR 40 assigns edge proxy and TLS composition to Veil.
 
 **Do not expect yet:** There is no proxy provider, certificate lifecycle, generated edge policy,
 remote ingress hardening, or proof that a proxy substitutes for application authorization.

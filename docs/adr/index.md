@@ -5,167 +5,113 @@ icon: material/pillar
 
 # :material-pillar: Architecture Decision Records (Covenants)
 
-!!! abstract "Context and Problem Statement"
-    The LychD project is an opinionated, complex system with a unique philosophy ("summoning" over "building"). As the system evolves, the reasoning behind key architectural decisions—such as choosing one system over another—can become lost.
+> _Prophecy names the destination. A Covenant decides what may be built._
 
-    This lack of historical context can lead to inconsistent design choices, repeated debates, and difficulty in maintaining the project's core architectural principles.
+The Covenants are LychD's technical law. Each one owns a decision, the forces that shaped it, and
+the invariants that later work must preserve. They are living contracts: the current text states
+the current architecture, while version history records how that law changed.
 
-!!! info "Decision is not delivery"
-    An accepted Covenant records current architectural law; it does not prove that the capability is
-    implemented or validated on a real host. [State of Work](../state-of-the-work.md) owns the
-    public delivery boundary. Source, focused tests, lockfiles, and maintained operator receipts own
-    executable evidence. ADR pages do not carry copied status chips.
+Use this page to find the smallest decision that owns a question. Follow related Covenants only
+where the boundary crosses more than one office.
 
-## Requirements
+[State of Work](../state-of-the-work.md) answers a different question: what current evidence
+supports. An accepted Covenant can govern an organ that has not yet entered matter.
 
-- **Methodology:** A lightweight, effective method is required to document critical decisions in a way that is version-controlled and accessible alongside the source code.
-- **Clarity:** The reasoning for architectural choices must be clear and explicit.
-- **Longevity:** Decisions must be recorded in a format that survives team changes and the passage of time.
-- **Asynchronicity:** The process must support asynchronous review and contribution, fitting a distributed or solo development model.
-- **Discoverability:** The records must be easy for developers to find and consult within the repository.
-- **Governance Stability:** Once a decision is recorded, it becomes the current architectural contract and must not drift casually. Changes must be deliberate, traceable, and justified in the record itself or by a later ADR when the decision is truly reversed.
+## The Return from Myth to Law
 
-## Considered Options
+The Great Work supplies constitutional pressure, never technical proof. Its images return through
+engineering invariants that can be implemented, tested, refused, and repaired:
 
-!!! failure "Option 1: Wiki Pages"
-    Store architectural decisions in a project wiki (e.g., GitHub Wiki).
+| Constitutional pressure | Engineering return | Owning Covenants |
+| --- | --- | --- |
+| A boundary creates perspective without claiming the whole | explicit scope, isolation, and least authority | [Security](09-security.md), [Layout](13-layout.md), [IAM](38-iam.md) |
+| A name makes an act answerable | stable identity, attribution, and consequence | [Graph](24-graph.md), [Identity](32-identity.md) |
+| Memory must remain corrigible | provenance, retention, correction, and recovery | [Persistence](06-persistence.md), [Memory](27-memory.md) |
+| Imagination cannot write reality by itself | isolated simulation and an explicit promotion gate | [HitL](25-hitl.md), [Simulation](31-simulation.md) |
+| Another center remains real | consent, refusal, revocation, and bounded delegation | [HitL](25-hitl.md), [IAM](38-iam.md), [A2A](26-a2a.md) |
+| Coherence must not require one planetary throne | operator-controlled runtimes, node-local refusal, and bounded federation | [Containers](08-containers.md), [Orchestrator](23-orchestrator.md), [A2A](26-a2a.md), [Legion](42-legion.md) |
+| A changed form does not erase its source | privacy lineage, local transformation, and exact declassification | [Security](09-security.md), [Persistence](06-persistence.md), [Context](21-context.md) |
+| Power must meet consequence | correlated evidence and adversarial evaluation | [Observability](29-observability.md), [Evaluation](34-evaluation.md) |
+| Repair may change the vessel | versioned creation, rollback, evolution, and promotion | [Creation](16-creation.md), [Evolution](18-evolution.md), [Assimilation](35-assimilation.md) |
 
-    - **Pros:** Easy to edit, good for collaborative brainstorming.
-    - **Cons:** Not directly version-controlled with the source code, can become outdated or fragmented, lacks a formal status tracking process.
+The full cosmology lives in [Transcendence](../divination/transcendence/index.md). A Covenant may
+name the telos it serves, but its decision must stand on technical requirements and consequences.
 
-!!! failure "Option 2: Long-Form Design Documents"
-    Write detailed design documents in a format like Google Docs or Confluence.
+## Foundation and Governance
 
-    - **Pros:** Can be extremely detailed and comprehensive.
-    - **Cons:** Heavyweight, lives outside the repository, often becomes "write-once, never-read," poor for capturing specific, atomic decisions.
+| Question | Covenant |
+| --- | --- |
+| Which reciprocal boundary and contribution terms govern covered code and separate work? | [00 — License](00-license.md) |
+| How do lore, evidence, code, and the current documentation topology govern one another? | [01 — Philosophy](01-doctrine.md) |
+| Which historical stack and register discipline formed the Hexanomicon? | [02 — Documentation](02-documentation.md) |
+| Which tools and gates define repository quality? | [03 — Quality](03-quality.md) |
+| Which tests prove which kinds of behavior? | [04 — Testing](04-testing.md) |
+| How may native and external organs extend the body? | [05 — Extensions](05-extensions.md) |
 
-!!! success "Option 3: Architecture Decision Records (ADRs)"
-    Use lightweight Markdown files stored in the project repository (`docs/adr/`) to document individual architectural decisions.
+## Body, Host, and Runtime
 
-    - **Pros:** Version-controlled with the code, follows a simple template, encourages atomic and focused decisions, supports asynchronous review via pull requests.
-    - **Cons:** Can proliferate if not managed; requires discipline to maintain.
+| Question | Covenant |
+| --- | --- |
+| Where does committed state live? | [06 — Persistence](06-persistence.md) |
+| What must a recoverable snapshot bind together? | [07 — Snapshots](07-snapshots.md) |
+| How are rootless service bodies manifested? | [08 — Containers](08-containers.md) |
+| Which trust boundaries protect the host, data, and network? | [09 — Security](09-security.md) |
+| How are privileged effects proposed, authorized, and recovered? | [10 — Privilege](10-privilege.md) |
+| Which application architecture governs the Vessel? | [11 — Backend](11-backend.md) |
+| How are Settings and Runes loaded, composed, and validated? | [12 — Configuration](12-configuration.md) |
+| Which paths does LychD own, preserve, or refuse to delete? | [13 — Layout](13-layout.md) |
+| How are durable jobs executed and recovered? | [14 — Workers](14-workers.md) |
+| Which browser architecture and transport boundary govern the Altar? | [15 — Frontend](15-frontend.md) |
+| How does a candidate organ move from Lab to promoted matter? | [16 — Creation](16-creation.md) |
+| How are source, packages, images, and receipts bound into a release? | [17 — Packaging](17-packaging.md) |
+| How may the body alter itself without severing recovery? | [18 — Evolution](18-evolution.md) |
+| Which command grammar and destructive safeguards govern the Pulse? | [19 — CLI](19-cli.md) |
 
-## Decision Outcome
+## Agency, Memory, and Consequence
 
-**Architecture Decision Records (ADRs)**, as popularized by Michael Nygard, are adopted as the primary mechanism of architectural rigour. All significant decisions for the LychD project are documented in Markdown files within the `docs/adr/` directory.
+| Question | Covenant |
+| --- | --- |
+| What is an Agent and how is its capability assembled? | [20 — Agents](20-agents.md) |
+| How is bounded Context assembled and governed? | [21 — Context](21-context.md) |
+| How are capability demand, state, and grants resolved? | [22 — Dispatcher](22-dispatcher.md) |
+| How are physical readiness and scarce resources converged? | [23 — Orchestrator](23-orchestrator.md) |
+| How do graphs checkpoint, pause, resume, and delegate? | [24 — Graph](24-graph.md) |
+| How does human consent survive pause and re-admission? | [25 — HitL](25-hitl.md) |
+| How may sovereign Liches address one another? | [26 — A2A](26-a2a.md) |
+| How are Seeds admitted, retrieved, corrected, and reanimated? | [27 — Memory](27-memory.md) |
+| How do Patterns become attributable Invocations and Suites? | [28 — Workflow](28-workflow.md) |
+| Which evidence makes an execution legible without granting authority? | [29 — Observability](29-observability.md) |
+| How are search, fetch, render, and extraction effects contained? | [30 — Webcrawler](30-webcrawler.md) |
+| How are speculative worlds isolated, judged, and promoted? | [31 — Simulation](31-simulation.md) |
+| How are Persona, Sigil, attribution, and revision bound? | [32 — Identity](32-identity.md) |
+| How are training corpora admitted and resulting weights promoted? | [33 — Training](33-training.md) |
+| How are capabilities tried, calibrated, and compared? | [34 — Evaluation](34-evaluation.md) |
+| How does foreign craft pass through Lab, test, and promotion? | [35 — Assimilation](35-assimilation.md) |
 
-These ADRs function as "Covenants of Architecture" (living technical contracts) rather than sealed time capsules. The current text describes the current law. Git history preserves the evolution of that law, while later ADRs remain the mechanism for genuine reversals, competing patterns, or major architectural branch points.
+## Senses, Network, and Federation
 
-### ADR Template
+| Question | Covenant |
+| --- | --- |
+| How are visual artifacts transformed with provenance intact? | [36 — Vision](36-vision.md) |
+| How are speech and audio transported, retained, and interrupted? | [37 — Audio](37-audio.md) |
+| How do Sigils, roles, grants, and revocation enforce identity? | [38 — IAM](38-iam.md) |
+| How does the Tether admit remote peers and routes? | [39 — VPN](39-vpn.md) |
+| How does the Veil terminate transport without becoming application authority? | [40 — Proxy](40-proxy.md) |
+| How are paid effects reserved, signed, committed, and reconciled? | [41 — X402](41-x402.md) |
+| How may many physical nodes serve one sovereign control plane? | [42 — Legion](42-legion.md) |
 
-- **Format:** Each ADR is a Markdown file named `NN-kebab-case-title.md`.
-- **Content Structure:**
-    - **Docs Metadata:** Must include a one word `title` (with the number, e.g., "10. Extensions") and a thematic `icon`.
-    - **Heading:** The H1 must include the corresponding icon and the full descriptive title.
-    - **Context:** Must use `!!! abstract "Context and Problem Statement"`.
-        - *Why:* This provides a visual "Flavor Text" box that separates the problem definition from the analysis.
-    - **Requirements:** Standard bullet points.
-    - **Considered Options:** Must use `!!! failure "Option X"` and `!!! success "Option Y"`.
-        - *Why:* This allows readers to instantly scan the document and see which option was chosen without reading the text.
-    - **Outcome/Implementation:** Text detailing how the decision is applied.
+## Changing a Covenant
 
-    - **Consequences:** (Optional) Use only if there are significant side effects not covered in the Pros/Cons. Use `!!! failure "Negative"` and `!!! success "Positive"` when more than one consequence is present; otherwise explain the consequence in the considered options section. Each pro and con starts with a bolded label and a short explanation. Use a `###` header.
+The numbered Covenant register is closed at **42**. New architecture amends or rewrites the
+smallest existing Covenant that owns the decision; it does not add another Covenant number.
+Version history keeps displaced law legible when a decision is reversed.
 
-### ADR Authoring Patterns (Zensical / Material)
+Every change preserves three seams:
 
-The documentation stack already enables these authoring features in `zensical.toml`:
+1. **Law:** the Covenant states the decision and its invariants.
+2. **Operation:** the owning Sepulcher, Altar, or Composition page shows how that law is used.
+3. **Evidence:** State and its linked source, tests, lockfiles, or receipts show what has entered
+   matter.
 
-- `admonition`
-- `pymdownx.details`
-- `pymdownx.snippets`
-- `pymdownx.superfences`
-
-Use them deliberately. ADRs are technical source, not prose dumps.
-
-#### 1. Admonitions (Decision Scanning)
-
-Use admonitions to make the decision shape legible at a glance:
-
-- `!!! abstract "Context and Problem Statement"` for the problem statement
-- `!!! failure "Option X"` for rejected alternatives
-- `!!! success "Option Y"` for the selected option
-- `!!! success "Positive"` / `!!! failure "Negative"` for consequences when needed
-
-This keeps long ADRs skimmable without removing rigor.
-
-#### 2. Live Snippets (No Duplicated Code Blocks)
-
-Prefer live includes from source files over hand-copied code blocks.
-
-Whole-file include (rare; use only for short files):
-
-````md
-```python
-;--8<-- "src/lychd/config/runes/protocols.py"
-```
-````
-
-Exact line-slice include (preferred):
-
-````md
-```python
-;--8<-- "src/lychd/config/runes/base.py:14:71"
-```
-````
-
-Named section includes are optional and should be used only when source files carry explicit snippet markers. Otherwise, prefer exact line slices.
-
-Guidelines:
-
-- Use repo-root paths only.
-- Prefer exact slices for implementation proof.
-- Keep snippets short and local to the claim they support.
-- Keep conceptual explanation in ADR prose; snippets provide evidence, not substitute architecture reasoning.
-
-#### 3. Collapsed Snippet Blocks (Default)
-
-Wrap snippet-backed proofs in collapsed details blocks so the ADR remains readable by default:
-
-````md
-??? example "Live snippet: `src/lychd/config/runes/base.py:14`"
-    ```python
-;--8<-- "src/lychd/config/runes/base.py:14:71"
-    ```
-````
-
-Behavior:
-
-- `???` = collapsed by default
-- `???+` = expanded by default
-
-Use collapsed blocks for most implementation references. Expand by default only when the snippet is central to understanding the ADR.
-
-#### 4. Wording Discipline (Technical Source Style)
-
-ADR prose should be direct and durable:
-
-- Prefer present-tense descriptions of current architecture and contracts.
-- Use future tense only for explicit follow-on work or deferred ADRs.
-- **Indirect Third Person:** First-person pronouns (we, our, us) are forbidden. All prose must be in the indirect third person (e.g., "The system provides..." instead of "We provide...").
-- Prefer direct claims over contrast formulas where possible.
-- Preserve lore vocabulary when it improves precision, but keep ADRs developer-heavy and operationally explicit.
-
-#### 5. Inter-ADR Referencing (Covenant Overlap)
-
-- Earlier ADRs may foreshadow or subtly reference later concepts to establish the shape of the architecture.
-- Later ADRs should expand upon and specify the details foreshadowed by earlier ADRs (e.g., the Extensions ADR provides the summary of what is being extended, while specific extension ADRs detail the "how").
-- Explicit linking is permitted and encouraged to bind the covenants together.
-
-#### 6. Cross-Cutting Ownership
-
-An architectural feature that crosses existing offices does not earn a new Covenant merely by
-being large. It extends the smallest current owners unless it establishes a genuinely new
-authority. Delegated-agent execution follows this rule:
-
-- [Graph (24)](24-graph.md#3-delegated-agent-macro-nodes) owns the macro-node and durable
-  `AgentJob` handshake;
-- [Security (09)](09-security.md#the-coffin-delegated-agent-profile) owns Coffin containment and
-  the Provider Gate;
-- [Extensions (05)](05-extensions.md#delegated-agent-runtime-adapters) owns foreign runtime
-  adapters;
-- [Dispatcher (22)](22-dispatcher.md#delegated-agent-capability-grants) and
-  [Orchestrator (23)](23-orchestrator.md#3-delegated-provider-capacity) own selection and capacity
-  admission; and
-- [Oculus (29)](29-observability.md#4-delegated-agent-evidence) owns evidence projection.
-
-This routing intentionally leaves the Forty-Third Covenant unwritten.
+Authoring mechanics and verification commands belong in
+[CONTRIBUTING](https://github.com/hexanomicon/lychd/blob/main/CONTRIBUTING.md#implementation-conventions).

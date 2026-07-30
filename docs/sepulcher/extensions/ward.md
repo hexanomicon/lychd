@@ -3,106 +3,63 @@ title: Ward
 icon: material/shield-account-outline
 ---
 
-# :material-shield-account-outline: The Ward: Extension of Authority
+# :material-shield-account-outline: The Ward
 
-**Purpose:** The Ward is LychD's remote identity and authorization jurisdiction. It is the circle
-of salt that decides who is speaking, which thing they may touch, and which effect they may cause.
+> _The Ward lets a voice reach the Lich without mistaking that voice for the Will of the Magus._
 
-**Current boundary:** LychD has a frozen `Sigil` carrying a name and scopes, scope-matching guards,
-and a middleware seam. On the present local surface, that middleware reads no credential and stamps
-ordinary requests with the fixed `magus:*` Sigil. It does not distinguish callers. The `iam`
-package contains no working organ, and there is no principal or credential registry, authenticated
-session, object policy, delegation, revocation, or IAM audit path. [State records the local Sigil
-floor](../../state-of-the-work.md#local-sigil-authority) and the [remote IAM
-boundary](../../state-of-the-work.md#remote-iam).
+Recognizing a speaker draws only the first mark of a salt circle. Current policy and revocation
+must close it around this exact effect. **Ward** is LychD's singular Core-coupled authority for
+caller authentication and authorization.
 
-**Law:** [ADR 38 — IAM](../../adr/38-iam.md), under the defense-in-depth law of
-[ADR 09 — Security](../../adr/09-security.md).
+Remote Ward is **Designed**, with its boundary owned by [State of
+Work](../../state-of-the-work.md#remote-iam). The implemented [local Sigil and scope
+floor](../../state-of-the-work.md#local-sigil-authority) is **Partial**: ordinary contained requests
+receive the fixed, secret-free `magus:*` Sigil; middleware reads no credential and distinguishes no
+caller. Scope guards and consent preauthorization exist. No Ward provider, credential-backed
+Principal, remote session, object authorization, delegation, revocation, tenant isolation,
+recovery protocol, or IAM audit ships.
 
-**Extension form:** Ward is a Core-coupled backend authority Domain. Its enforcement floor is not
-an optional or replaceable IAM plugin: Core must always fail closed at protected request, object,
-and effect boundaries. Credential verifiers, directory synchronizers, and bounded policy
-contributions may extend the Ward, but no provider may mint a Sigil or become a rival authority.
+## The marks inside the circle
 
-> _"A sovereign mind must have boundaries. The Ward is the circle of salt that lets a voice reach
-> the Lich without mistaking that voice for the will of the Magus."_
+A Credential is revocable evidence of possession; a Principal names the immutable human,
+service, peer, or owned node to whom acts and objects belong. After verification, Core would issue
+a secret-free Sigil carrying that Principal and bounded claims through one request or Run. An
+Authority Grant is the current decision over Principal, action, object, audience, lifetime, policy
+generation, and delegation chain. Historical scopes are evidence, not live policy. An
+authentication session remains distinct from all four and from a Bridge conversation.
 
-The Ward preserves one sovereign continuity while allowing many lawful faces: family, work,
-services, foreign peers, and owned nodes need different authority, not different souls. That promise
-begins by keeping four marks distinct.
+In the designed Ward, provider adapters verify evidence without minting Sigils or becoming policy
+authorities. Admission validates protocol, issuer, audience, expiry, replay, revocation, and
+assurance; resolves one enrolled Principal; then authorizes the route and named object in an
+ownership-aware query. The decision records credential, policy, and revocation generations. Unknown
+credentials, unresolved Principals, and caller-supplied identity or scope headers receive zero
+authority. No Extension may remove Ward from a protected surface.
 
-| Mark | Office |
-| --- | --- |
-| **Principal** | The stable human, service, peer, or owned-node subject to whom actions and objects are attributed. |
-| **Credential** | Revocable proof presented by that subject. A key or certificate is evidence of possession, not policy. |
-| **Sigil** | The secret-free authority context LychD carries through one admitted request or run. |
-| **Authority Grant** | A current, bounded authorization decision over an action, object, audience, lifetime, and delegation chain. |
+## Authority at the moment of consequence
 
-## I. The Circle of Salt
+Sessions, Runs, consents, streams, artifacts, memories, tasks, leases, and administrative records
+carry an owner or explicit sharing policy in the persistence query. Filtering after an unrestricted
+read is too late.
 
-The mature Ward must authenticate before it authorizes, then authorize again where power is
-actually exercised.
+Immediately before a protected tool or effect, its handler rechecks the current Principal, action,
+object, assurance, delegation, consent or preauthorization, policy generation, and revocation
+epoch. It checks again after queueing, worker claim, Stasis, consent, resume, or another wait.
+Narrowing the tools visible to an Agent helps; the handler remains the lock.
 
-- **Resolution:** validate one supported credential protocol and resolve it to an enrolled,
-  immutable principal. Unknown keys receive no authority.
-- **Object policy:** bind sessions, runs, consents, streams, artifacts, memories, tasks, leases, and
-  administrative reads to an owner or an explicit shared policy in the same persistence query.
-- **Effect policy:** evaluate the current principal, action, object, assurance, delegation,
-  revocation epoch, and policy generation before each protected tool or side effect.
-- **Capability discipline:** reduce what an Agent can see, then enforce the decision again inside
-  the effect handler. Hiding a tool from a model is defense in depth, not the only lock.
-- **Revocation and witness:** expire credentials and sessions, invalidate cached grants, constrain
-  queued or sleeping work, and emit redacted, immutable security events under the future
-  [Oculus](./oculus.md) evidence contract.
+The current preauthorization floor does not safely recheck expiry before a delayed effect, startup
+synchronization may retain a removed rule, and budget consumption is not atomic with the consent
+record. Revocation must invalidate Credentials, sessions, cached grants, and affected pending or
+sleeping work. Recovery begins at zero authority: no universal remote Master token or ambient
+fallback exists.
 
-Authentication sessions remain distinct from Bridge conversations. Historical Sigils and scopes
-may explain why an old act was admitted; they may not keep that authority alive after revocation.
+## No borrowed authority
 
-## II. The Three Thresholds
+[Veil](veil.md) terminates TLS and canonicalizes hostile traffic; [Tether](tether.md) narrows
+reachability. Their headers, addresses, certificates, signatures, or Tether arrival may
+contribute evidence, but never mint a Sigil or application authority. [Mirror](mirror.md) preserves
+operative identity and attribution; Ward authenticates and authorizes the initiating or approving
+Principal. [Intercom](../../adr/26-a2a.md) peer scopes likewise cannot enter a local Sigil unchanged.
 
-The Ward, [Veil](./veil.md), and [Tether](./tether.md) form one threshold without becoming one organ.
-
-- The **Veil** may terminate TLS, canonicalize hostile ingress, and reject traffic outside a typed
-  route and resource policy.
-- The **Tether** may establish an encrypted path from an enrolled device and narrow which services
-  that path can reach.
-- The **Ward** still authenticates and authorizes every HTTP, SSE, WebSocket, callback, A2A, and
-  administrative action that crosses either path.
-
-Neither a tunnel address nor a proxy header may mint a Sigil, widen an Authority Grant, skip object
-policy, or turn the current bootstrap identity into remote authentication. mTLS and Nostr signatures
-may later be credential adapters; neither auto-enrolls an empowered principal.
-
-!!! danger "The Counterfeit Master"
-    The current `magus:*` Sigil belongs only to the contained local bootstrap profile. There is no
-    remote Master token and no safe universal credential to share. Forwarding the current Vessel
-    through a proxy or VPN would bless every reachable request with that local authority label.
-
-## III. Gates Before the Intercom Opens
-
-Remote authority remains sealed until all of these gates agree:
-
-1. Stable principal, credential, authentication-session, role or permission, delegation,
-   revocation, recovery, and audit contracts exist with a zero-authority default.
-2. One credential protocol is implemented end to end; issuer, audience, expiry, replay, rotation,
-   compromise, and one-time bootstrap behavior fail closed.
-3. Every session, run, consent, stream, artifact, memory, peer task, and administrative effect has
-   owner-aware query and negative cross-principal tests.
-4. Worker claim, Stasis resume, consent, capability acquisition, and effect execution re-authorize
-   against current policy instead of trusting a stored scope bag.
-5. The host inventories every route, stream, callback, plugin, and extension contribution; every
-   non-public surface carries explicit backend policy that extension code cannot remove.
-6. The hostile-browser and hostile-HTTP contract passes with exact Host and Origin admission,
-   secure sessions, request limits, trusted-proxy handling, revocation races, and two-principal
-   noninterference.
-7. The future Intercom binds task, context, artifact, callback or pull channel, resource lease, and
-   result receipt to the authenticated peer principal. Peer-declared scopes never enter a local
-   Sigil unchanged.
-8. A peer cannot supply an arbitrary callback URL. Prefer a durable principal-bound pull channel;
-   any later callback destination is pre-enrolled to that principal and revalidated for scheme,
-   host, port, DNS/IP resolution, redirects, and forbidden local or metadata networks both when
-   admitted and when connected.
-
-**Safe next act:** keep LychD inside the same-host boundary and follow
-[The Awakening](../../summoning.md#the-awakening). Do not proxy, tunnel, port-forward, or remotely
-publish the current Vessel.
+Keep the Vessel and Altar on same-host loopback. Do not proxy, tunnel, port-forward, or remotely
+publish them. [ADR 38](../../adr/38-iam.md) owns Ward law; [Security](../../adr/09-security.md)
+owns the wider boundary.

@@ -5,219 +5,85 @@ icon: material/star-shooting-outline
 
 # :material-star-shooting-outline: 11. Backend
 
-!!! abstract "Context and Problem Statement"
-    The LychD architecture requires a modern, async-first Python web framework—referred to as **The Vessel**—to serve as the system's backbone. Python is retained as the foundational substrate due to its unmatched AI ecosystem and agility, delegating concurrency to the architectural level (async routing + background workers) rather than switching to Go, Rust, or Elixir. Traditional frameworks often enforce patterns that lead to code duplication or structural rigidity, such as circular imports caused by bound decorators. To achieve a truly modular and federated system, a solution is required that inherently reduces boilerplate, facilitates a decoupled "Plugin" architecture, and scales cleanly from a lightweight management tool to a high-concurrency server capable of handling massive cognitive state dumps without CPU bottlenecking.
+!!! abstract "Context and decision"
+    The Vessel is one explicitly composed Litestar application. Its HTTP, persistence, extension,
+    and worker collaborators are assembled once, published only when whole, and retired in reverse
+    dependency order.
 
-## Requirements
+## Decision
 
-- **Architectural Scalability:** The framework must support an unbound router system, allowing routes to be defined in isolation and "registered" without circular dependency issues.
-- **Federated Logic Assimilation:** The system requires a formal **Extension Context** registration surface to allow disparate organs to graft runtime-facing logic onto the Vessel without coupling themselves to a global `app` object.
-- **Persistence Efficiency (DRY):** Mandatory minimization of code duplication between database models and API schemas through automated Data Transfer Object (DTO) generation.
-- **High-Throughput Serialization:** The backend must natively support high-performance binary serialization (e.g., `msgspec`) to integrate with the **[Phylactery's (06)](06-persistence.md)** binary transmutation hooks.
-- **Extensible Initialization:** The framework must support a formal plugin protocol for the injection of configuration and lifecycle hooks at boot time.
-- **Dual-Mode Bootstrapping:** The architecture must handle two distinct operational realities—a heavy **Server Mode** for asynchronous rituals and a lightweight **CLI Mode** for system management—within a unified entry point.
+`src/lychd/app.py:create_app()` is the Vessel composition root. It creates one Litestar
+application with `AppInit`; imports and route declarations do not mutate a pre-existing app.
+Core controllers and the compiled Altar fallback are collected there. Extensions are selected
+explicitly, receive a host-created context, and contribute shaped records rather than arbitrary
+route or middleware mutation. There is no delivered extension route bundle.
 
-## Considered Options
+The native Click CLI remains useful without an application graph. `serve` and `database` delegate
+lazily to Litestar; help, `init`, `bind`, lifecycle commands, and ordinary operator commands do
+not construct the ASGI application.
 
-!!! failure "Option 1: Django"
-    A mature, monolithic framework.
+The runtime is one Granian/Litestar process and one event loop. `GRANIAN_WORKERS` other than one,
+multiple worker requests, and reload supervision are refused because the run-event bus,
+cancellation coordinator, services, and SAQ workers are process-local. This is a correctness
+boundary, not a scalability claim.
 
-    -   **Cons:** **Historical Heaviness.** Its synchronous origins require complex adapters for modern async workflows. The monolithic nature is ill-suited for the project's lean, service-oriented requirements and makes extension isolation difficult.
+## Lifespan and ownership
 
-!!! failure "Option 2: FastAPI"
-    A popular micro-framework.
+Application initialization creates the typed Settings generation, selected extension assembly, and
+validated Rune registry; installs routes, middleware, framework plugins, and dependency providers;
+then enters its lifespan. Lifespan waits for the Host Reactor fence, connects both queues, builds
+durable dependencies and services, loads runtime registry material off the event loop, publishes
+the shared run substrate, and attempts preauthorization and orphan/consent reconciliation.
+`app.state.services` is published only after required construction succeeds. Reconciliation may
+log a failure and continue; required setup cannot.
 
-    -   **Cons:** **Structural Friction.** Bound decorators tie routes directly to the application instance, complicating modular organization. The lack of deep integration with the persistence layer requires manual re-definition of every field for every API endpoint, violating the DRY principle.
+Any failed startup follows the same reverse order as shutdown: stop in-process workers, withdraw
+the run substrate, close services, then disconnect queues. A collaborator therefore cannot outlive
+what it reads. There is no hot-reload contract.
 
-!!! success "Option 3: Litestar"
-    A modern framework prioritized around architectural patterns and developer ergonomics.
+The application layer owns HTTP admission and dependency wiring. Domain code speaks ports,
+repositories, and services; persistence adapters own SQLAlchemy sessions and explicit statements
+needed for locking or aggregate transitions. Controllers never issue database queries directly.
+The system layer owns host adapters and lifecycle effects. [Persistence (06)](06-persistence.md),
+[Configuration (12)](12-configuration.md), and [Security (09)](09-security.md) retain their
+respective transaction, configuration, and trust laws.
 
-    -   **Pros:**
-        -   **Unbound Decorators:** Enables a composable Router system where logic is collected by the application factory.
-        -   **Automated DTOs:** Native support for generating API schemas directly from persistence models, ensuring the Database remains the single source of truth without writing Pydantic schemas multiple times.
-        -   **Advanced Alchemy Repository Pattern:** Out-of-the-box async Repository patterns (`SQLAlchemyAsyncRepository`) provide robust, type-safe CRUD operations, pagination, and UUID handling without writing raw SQL or repetitive session logic.
-        -   **Typed OpenAPI & Telemetry:** First-class OpenAPI generation from typed route
-            contracts (aligning with the **[Frontend (15)](15-frontend.md)** Altar strategy) and an
-            OpenTelemetry integration surface for optional bounded external exports. Native
-            **[Oculus (29)](29-observability.md)** remains a LychD evidence office, not a framework
-            plugin.
-        -   **Plugin Protocols:** First-party support for `InitPluginProtocol` and `CLIPluginProtocol` allows for elegant, context-aware bootstrapping.
-        -   **Native msgspec Integration:** Offers the high-performance serialization required for the system's binary transmutation strategy.
+## Interfaces rather than rows
 
-## Decision Outcome
+Public endpoints use versioned Pydantic or dataclass DTOs and named operations. An explicitly
+bounded `SQLAlchemyDTO` is permitted for a true CRUD projection, but ORM shape never becomes the
+public API by accident. Includes, exclusions, aliases, nested depth, input rules, SSE envelopes,
+and compatibility are interface contracts with tests.
 
-**Litestar** is adopted as the foundational web framework for the Vessel. It provides the structure required for a federated system where logic is treated as a set of pluggable organs.
+Litestar owns typed HTTP/OpenAPI and JSON serialization; the static server delivers compiled
+Svelte assets, not browser state or templates. Mermaid is sent as inert source for client-side
+rendering. Structlog is present instrumentation; an uninstalled OpenTelemetry exporter does not
+establish external tracing.
 
-### 1. The Modular Registry (The Extension Context)
+The process owns one async SQLAlchemy engine/session factory. Connection and signing secrets are
+resolved only by their consuming component; Settings retain references, never secret contents.
+The current asyncpg binary codec is valid for JSONB. It also frames plain `json` as JSONB, which is
+a known defect until separate codecs are proved against PostgreSQL. This ADR requires correctness
+tests, not a throughput claim.
 
-The application rejects the use of a global `app` object. Instead, logic is assimilated via a registration protocol:
+## Trust boundary and evidence
 
-- **The Context:** During boot, the system initializes an `ExtensionContext`. It is the host-provided registration surface for selected organs, not the whole Extension Protocol defined in **[ADR 05](./05-extensions.md)**.
-- **Assembly:** The current source exposes `context.vessel` only as a reserved store. Route, middleware, auth, and event bundles must be shaped there before the application factory may collect them. This preserves the no-global-`app` rule without flattening Vessel concerns onto `ExtensionContext`.
+The Vessel is the trusted control plane: HTTP admission, orchestration, persistence access,
+runtime projection, and its static client. Hostile-browser controls and queue/execution isolation
+belong to [Security (09)](09-security.md). Tomb is a designed, not delivered, execution plane;
+there is no Tomb queue, executor, credential, mount, sandbox, or promotion authority here. Its
+delivery boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted-execution).
 
-### 2. The Initialization Protocol (Duality)
+Focused tests cover memory-profile composition and web contracts. The real application-factory
+plus PostgreSQL lifecycle test is still skipped, and asyncpg codec installation lacks direct
+integration coverage. [State of Work](../state-of-the-work.md#current-evidence-envelope) owns the
+evidence envelope.
 
-Application logic is encapsulated within custom initialization plugins that implement the framework's native protocols:
+## Consequences
 
-- **Server Context (Deep Awakening):** When executed by an ASGI server, the plugin initializes heavy infrastructure, including background **[Ghouls (14)](14-workers.md)**, observability exporters, and the full connection pool to the Phylactery.
-- **CLI Context (Lightweight Manifestation):** When executed as a management tool, the plugin skips web-related infrastructure and injects custom management commands directly into the command group, ensuring near-instantaneous response times.
-
-### 3. High-Performance Transmutation
-
-To ensure the Vessel can handle the massive execution history and cognitive state dumps stored in the **[Phylactery (06)](06-persistence.md)**, the backend is configured for binary efficiency.
-
-- **msgspec Integration:** The framework utilizes `msgspec` as its primary serialization engine.
-- **Binary Hooks:** The Vessel leverages the custom codec hooks defined in the persistence layer. This allows the backend to receive raw binary JSONB from the database and pass it directly to the interface without intermediate string encoding, bypassing the "Double Encoding" CPU tax.
-- **The Tomb** config is a generated runtime envelope with only task-safe fields.
-- **The Tomb** config is derived data, never an alternate source of truth.
-- **The Tomb** schema forbids secret fields and infrastructure authority fields.
-- Provider/API keys are never serialized into **Tomb** payloads.
-- **The Tomb** cannot override queue, network, or authority policy.
-
-### 4. Automated Data Integrity
-
-To ensure the persistence layer remains the single source of truth, the Vessel utilizes `SQLAlchemyDTO` factories from Litestar's native DTO system. When the **[Phylactery (06)](06-persistence.md)** schema changes, the API schema auto-projects it. There are no manually maintained Pydantic "shadow schemas" for ORM models in the Vessel codebase.
-
-### 5. Dual-Plane Trust Delta
-
-Backend scope is explicitly control-plane only. The current foundation implements the Vessel side;
-the Tomb job schema, queue/profile, credential, unit, and executor below are target boundaries and
-must land together before untrusted execution is enabled.
-
-- Vessel owns API, orchestration, control-plane queue policy, persistence access, and promotion authority.
-- Vessel agents can plan, score, route, validate, and gate HitL.
-- When a Vessel-side agent needs unsafe execution, it serializes only the hand-work into a Tomb job; the agent itself does not migrate into the Tomb.
-- **The Tomb** mounts only task/workspace/artifact regions with minimal write scope.
-- Suggested **Tomb** regions:
-    - `~/.local/share/lychd/tomb/jobs/` — one subdirectory per SAQ job to prevent file collisions between concurrent Ghouls
-    - `~/.local/share/lychd/tomb/workspaces/`
-    - `~/.local/share/lychd/tomb/artifacts/`
-    - `~/.local/share/lychd/tomb/cache/`
-- **The Tomb** must not mount writable Codex, provider secrets, or host trigger/signaling paths. If a job profile needs configuration-shaped facts, the profile receives no Codex mount by default or a read-only/sanitized projection.
-- **The Tomb** may receive a narrow queue-only SAQ/Postgres execution credential for execution-plane job claiming, acknowledgement, and retry bookkeeping, but no control-plane database authority.
-- **The Tomb** runs no agent logic, graph runners, or LLM calls. It is a brainless executor. See **[Workers (14)](14-workers.md)** for the full doctrine.
-
-### 6. The Four Covenants of the Vessel
-
-These are non-negotiable implementation laws for all code written against the Vessel. They are the direct consequence of choosing Litestar to support the federated, decoupled extension architecture. Agents and human contributors must adhere to them without exception.
-
-#### I. The Unbound Routing Law
-
-!!! warning "Forbidden"
-    `@app.get(...)`, `@app.post(...)`, or any decorator that binds a route directly to the application instance. This couples the route to a specific `app` object at import time and blocks later `context.vessel` collection.
-
-**Mandate:** All routes must be defined in standalone `Controller` classes or unbound `Router` instances. Once `VesselStore` grows route bundles, the application factory can collect those unbound objects at boot; they must have zero knowledge of the application object at definition time.
-
-```python
-# ✅ Correct — unbound, collectable
-from litestar import Controller, get, Router
-
-class RuneController(Controller):
-    path = "/runes"
-
-    @get("/")
-    async def list_runes(self) -> list[RuneDTO]: ...
-
-router = Router(path="/api", route_handlers=[RuneController])
-
-# Future VesselStore shape, once route bundles are active:
-# context.vessel.http.add_router(router)
-```
-
-#### II. The DTO Mandate (Death to Boilerplate)
-
-!!! warning "Forbidden"
-    Writing a standalone `class RuneRead(BaseModel): ...` that mirrors fields already defined on a SQLAlchemy ORM model. This creates maintenance drift: every schema change in the **[Phylactery (06)](06-persistence.md)** must be manually replicated.
-
-**Mandate:** Use Litestar's `SQLAlchemyDTO` factories to derive read/write/patch schemas directly from ORM models. The database model is the single source of truth; the DTO is a projection of it.
-
-```python
-# ✅ Correct — schema derived from ORM, no duplication
-from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
-from litestar.dto import DTOConfig
-
-class RuneReadDTO(SQLAlchemyDTO[RuneModel]):
-    config = DTOConfig(exclude={"secret_field"})
-
-class RuneWriteDTO(SQLAlchemyDTO[RuneModel]):
-    config = DTOConfig(include={"name", "runic", "config"})
-```
-
-#### III. The Repository Law (Advanced Alchemy)
-
-!!! warning "Forbidden"
-    Raw `session.execute(select(RuneModel).where(...))` calls inside route handlers or agent tools. This tightly couples data access to the HTTP request lifecycle and makes the same queries unavailable to background **[Ghouls (14)](14-workers.md)** and reasoning graphs that operate outside the web context.
-
-**Mandate:** All CRUD operations must use `SQLAlchemyAsyncRepository` from `advanced_alchemy`. The repository is injected via Litestar's dependency system, keeping the data access layer reusable across the HTTP layer, the SAQ worker layer, and the agent graph layer.
-
-```python
-# ✅ Correct — repository injected, decoupled from HTTP cycle
-from advanced_alchemy.repository import SQLAlchemyAsyncRepository
-from litestar import get
-from litestar.di import Provide
-
-class RuneRepository(SQLAlchemyAsyncRepository[RuneModel]):
-    model_type = RuneModel
-
-async def provide_rune_repo(db_session: AsyncSession) -> RuneRepository:
-    return RuneRepository(session=db_session)
-
-@get("/runes", dependencies={"repo": Provide(provide_rune_repo)})
-async def list_runes(repo: RuneRepository) -> list[RuneReadDTO]:
-    return await repo.list()
-```
-
-#### IV. The Native Protocol Law
-
-!!! warning "Forbidden"
-    Handwriting frontend mirror types for a Litestar API contract, or installing a third-party
-    OpenTelemetry integration library when Litestar provides the owning schema or instrumentation
-    surface. These shims create drift and can conflict with Litestar's plugin lifecycle.
-
-**Mandate:**
-- **Altar (OpenAPI):** Define typed request, response, error, and event payloads on unbound
-  Litestar controllers. OpenAPI is the source for the generated Svelte TypeScript types, runtime
-  schemas, route helpers, and Fetch SDK. The browser may add a small EventSource transport, but it
-  must consume the same named event schemas.
-- **External Eye export:** If ADR 29 admits an OpenTelemetry export, use Litestar's supported
-  `OpenTelemetryPlugin` behind the shaped allowlist and privacy boundary. Installing the plugin
-  does not implement Oculus or authorize prompt, completion, body, header, or secret capture.
-  Do not introduce `opentelemetry-instrumentation-fastapi` or equivalent shims.
-- **Graph projection (Mermaid):** Graph visualizations render client-side from the `stateDiagram-v2` source produced by `graph.mermaid_code()` (see **[Graph (24)](24-graph.md)**). The Vessel ships diagram source as text; there is no server-side image-rendering API.
-
-```python
-# Optional bounded external export adapter; not native Oculus.
-from litestar.plugins.opentelemetry import OpenTelemetryConfig, OpenTelemetryPlugin
-from litestar import Litestar
-
-app = Litestar(
-    plugins=[
-        OpenTelemetryPlugin(config=OpenTelemetryConfig(tracer_provider=...)),
-    ],
-)
-```
-
-The current Altar follows this boundary: Litestar exposes the versioned contract and serves one
-compiled static Svelte fallback; no template or JavaScript server owns application truth.
-[State of Work](../state-of-the-work.md#altar-and-observability) owns the delivered extent.
-
-### Policy Table
-
-| Dimension | Vessel (Trusted Control Plane) | The Tomb (Untrusted Execution Plane) |
-| :--- | :--- | :--- |
-| Secrets | Uses secrets for control-plane operations with redaction discipline. | Narrow queue-only SAQ/Postgres execution credential for execution-plane claim/ack/retry bookkeeping; no provider keys, Codex secrets, or control-plane credentials. |
-| Mounts | Control-plane mount set. | Workspace-scoped mounts; optional read-only/sanitized Codex projection only. |
-| Network | Internal services and allow-listed provider routes. | Tomb loop may use controlled queue/proxy connectivity; sandboxed `nono` execution has zero network. |
-| Queue Ownership | Owns control-plane enqueue policy, durable rehydration, and promotion decisions. | Claims, acks, and retries execution-plane SAQ jobs only; no authority over control-plane queues. |
-| Authority Boundaries | Decides dispatch and promotion. | Returns artifacts only; cannot commit durable state. |
-
-### Consequences
-
-!!! success "Positive"
-    - **Extension Assimilation:** The unbound routing system allows coupled organs to be cleanly assimilated at runtime without a global `app` object.
-    - **Physical Performance:** The integration of `msgspec` and binary transmutation hooks ensures the system remains responsive even when processing megabytes of cognitive trace data.
-    - **Startup Velocity:** Lazy-loading heavy plugins ensures the CLI remains usable for rapid infrastructure tasks.
-
-!!! failure "Negative"
-    - **Learning Curve:** The focus on class-based controllers and DTOs represents a paradigm shift for developers accustomed to simpler micro-frameworks.
-    - **Ecosystem Scale:** While growing, the community is smaller than its competitors, requiring more reliance on the framework's internal plugin suite.
+- Framework upgrades must reprove initialization, dependency injection, serialization, OpenAPI,
+  and ordered shutdown.
+- Current streaming and cancellation semantics require one process. A multi-process Vessel needs
+  durable event and ownership protocols, not a changed worker count.
+- Explicit DTOs may deliberately duplicate stable storage facts; migrations do not thereby set
+  the HTTP compatibility contract.

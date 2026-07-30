@@ -5,110 +5,70 @@ icon: material/grave-stone
 
 # :material-grave-stone: Crypt
 
-> _"The Codex writes the laws, but the Crypt holds the memories. It is the cold earth in which the Lich rests."_
+> _The Codex writes the law. The Crypt keeps what must survive it._
 
-The **Crypt** is the persistent data volume of the LychD system. While the [Codex](./codex.md) is immutable configuration, the Crypt is living tissue.
+The **Crypt** is LychD's durable data and workspace root. By default it lives at
+`~/.local/share/lychd/`; `XDG_DATA_HOME` may move the root. It is not mounted wholesale into the
+Vessel.
 
-It is physically located at **`~/.local/share/lychd`** (respecting `XDG_DATA_HOME`).
-
-## The Physical Foundation (Persistence)
-
-The Crypt employs a **Decoupled Strategy** for persistence. The architecture treats **Code** (Files) and **Data** (Database) as separate organs with different preservation needs.
-
-### 1. Code Persistence (The Body)
-
-**Mechanism:** **Jujutsu-managed repository federation.**
-
-The Code (Extensions and Core Source) is managed as a collection of repositories whose local working state is governed through Jujutsu while Git remains the exchange substrate.
-
-- **Safety:** Every modification is a recorded change. Local intent is visible through `jj log`; distributed exchange still moves through Git remotes.
-- **Universality:** This works on any filesystem (Ext4, Btrfs, XFS).
-
-### 2. Data Persistence (The Soul)
-
-**Mechanism:** **Hybrid Snapshots.**
-The Database (Postgres) is binary and fragile. It requires atomic backups. Ideally, it lives on a **Btrfs Subvolume** for fast rollback of whole body/soul state, but it can function on standard filesystems via `pg_dump`.
-
-- **Immortal Mode (Btrfs):** Fast subvolume snapshots for body/soul rollback.
-- **Mortal Mode (Ext4):** Slow SQL dumps. Functional, but heavy.
-
-!!! tip "Ascension"
-    Mortal users can ascend to stronger rollback support without reformatting their drive by using the **Loopback Method** (mounting a Btrfs image file at `~/.local/share/lychd`).
-
-## The Cartography of the Crypt
-
-The Crypt is a flat, federated structure. It is not nested inside a single "active" folder.
-
-```mermaid
-graph TD
-    Crypt[~/.local/share/lychd/]
-
-    Crypt --> Core[core/]
-    Crypt --> Lab[lab/]
-    Crypt --> Ext[extensions/]
-    Crypt --> PG[postgres/]
-    Crypt --> Snap[snapshots/]
-    Crypt --> Lock[lychd.lock]
-
-    subgraph "Sphere 0: The Self"
-        Core -- JJ/Git Repo --> Source[src/]
-    end
-
-    subgraph "Sphere I: Workspace"
-        Lab -- Scratchpad --> Projects
-    end
-
-    subgraph "Sphere III: The Federation"
-        Ext -- JJ/Git Repo --> PluginA
-        Ext -- JJ/Git Repo --> PluginB
-    end
-
-    subgraph "The Phylactery"
-        PG --> Data[data/]
-    end
-
-    style Crypt fill:#2a2a2a,stroke:#7c4dff,stroke-width:2px
-    style PG fill:#1a1a1a,stroke:#ff5252
-    style Core fill:#1a1a1a,stroke:#40c4ff
-    style Ext fill:#1a1a1a,stroke:#00e5ff
+```text
+~/.local/share/lychd/
+├── triggers/
+│   ├── inbox/
+│   └── journal/
+├── postgres/
+│   ├── init_db.sh
+│   └── data/
+├── snapshots/
+├── lab/
+├── extensions/
+└── core/
 ```
 
-## The Spheres of Creation
+Each chamber has one owner:
 
-To prevent the Lich from destroying itself or the Magus's data, it operates within a **Hermetic Seal**. The Agent interacts with the world via specific **Spheres**.
+| Chamber | Purpose | Runtime boundary |
+| --- | --- | --- |
+| `triggers/inbox/` | Host Reactor transition intents | Vessel read-write when the Host Reactor is selected |
+| `triggers/journal/` | Terminal Reactor receipts | Vessel read-only when the Host Reactor is selected |
+| `postgres/data/` | Phylactery storage | PostgreSQL unit only |
+| `snapshots/` | Reserved recovery-snapshot shelf | No whole-body snapshot rite is delivered yet |
+| `lab/` | Operator workspace | Read-write only when explicitly admitted |
+| `extensions/` | Private Extension source | Runtime read-only |
+| `core/` | Reserved Core source | Runtime read-only |
 
-### Sphere I: The Lab (Internal / Read-Write)
+The Crypt itself grants no execution or deletion authority. **Geography is not authority:**
+lifecycle receipts and live identity checks decide what LychD may replace or remove. Symlink,
+mount, receipt, or identity ambiguity is witnessed, never guessed; it fails closed, preserves the
+object, and returns typed recovery or blocking evidence. External projects, model shelves, foreign
+mounts, and operator data do not become LychD-owned because they are near the Crypt.
 
-**Host Path:** `~/.local/share/lychd/lab` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/lab`
+## The Phylactery
 
-The **Genesis Sphere**. This is the Agent's private scratchpad.
+PostgreSQL owns `postgres/data/`. On a suitable Btrfs host, initialization may create that exact
+target as a verified subvolume and apply No-COW inheritance for new database files. On other
+filesystems it remains an ordinary directory. Existing files are never retrofitted, and neither
+case proves that coordinated snapshot and restore exists.
 
-- **Usage:** Cloning new repos, drafting extensions, running tests.
-- **Safety:** Managed by Jujutsu/Git inside the project folders. Not system-backed.
+[State of Work](../state-of-the-work.md#whole-body-snapshot-restore) records that the
+whole-body rite is still designed. [Snapshots](../adr/07-snapshots.md) defines the future
+checkpoint protocol; [Layout](../adr/13-layout.md) owns present creation and deletion safety.
 
-### Sphere II: The Outlands (External / Read-Write)
+## The Spheres
 
-**Host Path:** _(User Projects)_ $\leftrightarrow$ **Container Path:** `~/work/...`
+The **Lab** is LychD's internal workbench. The **Outlands** are operator-selected external
+workspaces mounted beneath `~/work/` inside the Vessel. A read-only Outland may serve as a
+reference library; that does not make it a new trust domain.
 
-The **Labor Sphere**.
+The Vessel receives only declared mounts:
 
-- **Mounts:** The Magus defines external paths (e.g., `~/Projects/MyStartup`) to let the Agent work on local code.
-- **Safety:** **The VCS Ward.** The Agent refuses to touch this sphere unless a recognized repository is present and clean.
-- **Execution Boundary:** Outlands is a workspace geography, not an execution authority. Vessel controls policy and promotion; Tomb receives only task-scoped Outland access when unsafe execution must touch those files.
+- the Lab when the active task needs it;
+- selected Outlands with explicit read-only or read-write policy;
+- private Extensions and reserved Core source read-only; and
+- no blanket mount of the Crypt, Codex, PostgreSQL data, binding sites, or model shelves.
 
-### Sphere III: The Extensions (Internal / Read-Only)
+Unsafe hand-work does not become safe because its files are in the Lab. Trusted orchestration
+remains in the Vessel; the future Tomb must receive only task-scoped workspace and artifact paths.
 
-**Host Path:** `~/.local/share/lychd/extensions` $\leftrightarrow$ **Container Path:** `~/.local/share/lychd/extensions`
-
-The **Living Tissue Sphere**.
-
-- **Federation:** A collection of Jujutsu/Git repositories tracked by `lychd.lock`.
-- **Promotion:** To install a new extension, the Agent builds it in the **Lab**, then triggers a **Promotion Ritual** to move it here and commit the change.
-
-### Sphere IV: The Library (External / Read-Only)
-
-**Host Path:** _(External)_ $\leftrightarrow$ **Container Path:** `~/work/library/...`
-
-The **Reference Sphere**.
-
-- **Purpose:** The Agent can read the Magus's books/docs (RAG), but it is physically barred from modifying them. The Library is a read-only Outland mount, not a separate trusted domain.
+The exact map, ownership receipts, Btrfs identity rules, and mount contract live in
+[Layout](../adr/13-layout.md).

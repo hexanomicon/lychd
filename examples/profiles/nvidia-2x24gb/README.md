@@ -1,8 +1,8 @@
 # NVIDIA 2x24 GB Profile
 
-Dual 24 GB machines can support either one larger static vLLM resident or a
-llama.cpp router that swaps between multiple GGUF models. Treat this as a
-starting profile for a dual RTX 3090 class workstation.
+Two 24 GB cards can run one larger static vLLM resident or a llama.cpp router
+that swaps among GGUF models. This is a starting profile for a dual-RTX-3090
+class workstation, not a capacity guarantee.
 
 ## Contents
 
@@ -15,28 +15,25 @@ starting profile for a dual RTX 3090 class workstation.
 
 ## Copy Flow
 
-1. Copy this profile's `runes/` subtree into `~/.config/lychd/runes/`.
-2. Put model files under `~/models`, or override
-   `LYCHD_DEFAULT_SOULSTONE_MOUNTS` if your model library lives elsewhere.
+1. Copy `runes/` into `~/.config/lychd/runes/`.
+2. Put models in `~/models`, or set `LYCHD_DEFAULT_SOULSTONE_MOUNTS` for a
+   different library.
 3. Copy `llamacpp/router-models.ini` to `~/.config/lychd/llamacpp/`, or edit
    `models_preset` and the `/presets` volume together.
-4. Edit `/models/...` model paths to match the container-visible paths.
-4. Pick either the vLLM resident or the llama.cpp router first. Running both on
-   the same two cards is a scheduling decision for the orchestrator, not a good
-   default.
+4. Edit `/models/...` paths to match container-visible paths.
+5. Start with either vLLM or the llama.cpp router. Running both on the same
+   cards is an Orchestrator scheduling decision, not a safe default.
 
 ## Wiring Walkthrough
 
-The vLLM Rune is a static Soulstone. `AnimatorLoader` reads the TOML,
-`RuntimeAdapterRegistry` builds a `VllmStone` with an `OpenAICompatibleConnector`,
-and `Dispatcher` later binds the selected capability into a Pydantic AI model.
+The vLLM Rune is static: `AnimatorLoader` reads TOML,
+`RuntimeAdapterRegistry` makes a `VllmStone` with an `OpenAICompatibleConnector`,
+then `Dispatcher` binds its capability into a Pydantic AI model.
 
-The llama.cpp Rune is router-mode. The adapter reads `router-models.ini`,
-synthesizes one capability per model section, and marks those capabilities as
-`dynamic_soft`. When a requested router model is not warm, the dispatcher raises
-a transition signal and the orchestrator asks llama.cpp to load that model
-without restarting the container.
+The llama.cpp Rune is router-mode: its adapter reads `router-models.ini`, makes
+one `dynamic_soft` capability per model, and, when a requested model is cold,
+the dispatcher signals a transition for the Orchestrator to load it without a
+container restart.
 
-Do the vLLM path first when proving that agents can call a local model. Add the
-router path once capability selection and soft activation are the thing you are
-debugging.
+Prove a local agent call with vLLM first. Add the router when capability
+selection and soft activation are what you need to debug.

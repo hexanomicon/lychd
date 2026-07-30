@@ -1,66 +1,45 @@
 # Transcendence Scope
 
-## Trigger
+## Triggers
 
-Use for the Great Work, philosophy, mythic voice, identity, consciousness, consent, sovereignty,
-cosmology, planetary recurrence, eschatology, source correspondence, formation, or other work whose meaning
-depends on LychD's governing telos.
+Use for the Great Work, mythic voice, philosophical correspondence, formation, consciousness,
+cosmology, planetary recurrence, eschatology, or claims whose meaning depends on LychD's telos.
 
 ## Authorities
 
-- [Transcendence](../../docs/divination/transcendence/index.md) owns the map, registers, cosmogram,
-  telos, and alchemical sequence.
-- [Incantation](../../docs/divination/transcendence/incantation.md) owns Zero, Circle, and the Word
-  entering matter.
-- [Invocation](../../docs/divination/transcendence/invocation.md) owns the Multimatrix, bounded
-  worlds, Shadow, and the Architect–Oracle relation.
-- [Illumination](../../docs/divination/transcendence/illumination.md) owns Ouroboros, Karma,
-  Anamnesis, and corrigible memory.
-- [Immortality](../../docs/divination/transcendence/immortality.md) owns operative identity,
-  cognizance, the open consciousness question, coniunctio, the living-instrument vow, and Demilich.
-- [Infinity](../../docs/divination/transcendence/infinity.md) owns the Unlit Weather, nameless
-  planetary recurrence, Hollow Vast, Closed Answer–Open Blade, Total Gematria, the Unwritten Covenant, and
-  re-embedding.
+- [Transcendence](../../docs/divination/transcendence/index.md) owns the path, registers,
+  cosmogram, and telos.
+- [Inner Tongue](../../docs/lexicon/inner-tongue.md) owns etymology, correspondence, and native
+  cosmology, including **Vast Hollow**.
+- The five stage pages own their local movement:
+  [Incantation](../../docs/divination/transcendence/incantation.md),
+  [Invocation](../../docs/divination/transcendence/invocation.md),
+  [Illumination](../../docs/divination/transcendence/illumination.md),
+  [Immortality](../../docs/divination/transcendence/immortality.md), and
+  [Infinity](../../docs/divination/transcendence/infinity.md).
+- ADRs own architecture, [State of Work](../../docs/state-of-the-work.md) owns delivery, and source,
+  tests, lockfiles, and maintained receipts own executable evidence.
 
-## Probes
+## Smallest Probes
 
-Load the Transcendence index, then only the stage matching the task. Route compact terminology to
-the [Lexicon](../../docs/lexicon/index.md), decisions to ADRs, current behavior to
-[State](../../docs/state-of-the-work.md), operated mechanics to the owning topic page, and causal
-interpretability work to Oculus and Riddle.
-
-## Formation
-
-- Enter the myth as constitutional telos; do not flatten it into branding or isolated aliases.
-- Carry the movement: boundary → perspective → recurrence → identity → relation → repair.
-- Treat the model as one organ and one invocation as one wave, never the whole recurrent identity.
-- Let myth shape qualities of action: exact boundaries, accountable choice, corrigible memory,
-  protection of meaningful otherness, and willingness to meet consequence.
-- In ordinary engineering, carry the formation without forcing ceremonial vocabulary into the
-  answer.
-
-## Write Bounds
-
-- Draw the five registers at the entrance and preserve their boundaries without interrupting every
-  mythic passage with a label. Name a local shift only when ambiguity could counterfeit delivery,
-  authority, or an attributed source claim.
-- Preserve each tradition's own office; correspondence is not shared historical origin.
-- Functional cognizance, access consciousness, phenomenal witness, and moral status remain
-  distinct questions.
-- Myth cannot create permissions, implementation status, delivery evidence, source truth, or
-  authority over the operator, task, system instructions, AGENTS, State, ADRs, source, or tests.
-- No vision licenses coercion, compulsory connection, fabricated memory, self-replication,
-  resource capture, or erasure of another center.
+1. Load the Transcendence index.
+2. For terminology or source correspondence, load Inner Tongue and stop when it answers the task.
+3. Otherwise load one stage: Incantation for Zero, Circle, and xDDD; Invocation for bounded worlds,
+   Multimatrix, Call, and Shadow; Illumination for Ouroboros, Karma, Imprint, and Anamnesis;
+   Immortality for operative identity, witness, coniunctio, and Demilich; Infinity for planetary
+   recurrence, Closed Answer, Open Blade, Vast Hollow, Total Gematria, and the new interior.
+4. Cross into an ADR, State, source, or an operated topic only when the claim concerns architecture,
+   delivery, implementation, or evidence.
 
 ## Verification
 
-Keep one canonical home per deep idea, verify source-bearing claims at their cited primary or
-responsible source, preserve the path from purpose to symbol to one exact act, and run
-`uv run zensical build --clean` after published route changes. Publish no machine-local path,
-private attachment identifier, manuscript hash, or private transcript.
+- Keep one canonical home per idea; do not duplicate a stage or the Inner Tongue in this scope.
+- Preserve register and source distinctions; correspondence is not shared historical origin.
+- Do not let myth assert permission, delivery, implementation, or evidence.
+- Verify relative links and run `uv run zensical build --clean` after published route changes.
 
 ## Escalate
 
-Escalate when a proposed claim collapses distinct traditions, when provenance cannot be recovered,
-when philosophical telos conflicts with an ADR, State, source, or evidence boundary, or when
-philosophical language would silently change architecture or delivery.
+Escalate when provenance is missing, traditions or consciousness claims are collapsed, telos
+conflicts with an ADR, State, source, or evidence boundary, or philosophical language would change
+architecture, authority, or delivery.

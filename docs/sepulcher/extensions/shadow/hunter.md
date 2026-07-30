@@ -5,47 +5,62 @@ icon: material/crosshairs
 
 # :material-crosshairs: Hunter
 
-_Status: designed Posture — no runtime role, prompt, schema, lane, or control ships._
-
 > _“The beautiful path still owes the map its missing ground.”_
 
-**Hunter** is Shadow's adversarial review office. It decomposes a named candidate and attempts to
-falsify the attractive path by hunting unsupported premises, biased framing, evidence corruption,
-missing counterexamples, boundary violations, overconfidence, and explanations that outran
-observation.
+An attractive candidate promises a clean result, yet one claimed predicate rests on an
+unsupported assumption. **Hunter** holds that candidate still, points to the exact gap, and names
+the observation that could settle it.
 
-Hunter is cold by function, not cruel by identity. It protects the field from premature closure;
-it does not seek destruction for its own sake.
+Hunter is **Designed**. The built-in `simulation` Rune is its only present substrate; no Hunter
+path runs. [State of Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while
+[ADR 31](../../../adr/31-simulation.md) owns the design.
 
-## Contract
+## Hold one candidate still
 
-One Hunter invocation returns typed challenge material:
+A Hunter Invocation receives one attributed, named candidate: a [Dancer](./dancer.md) alternative
+or another candidate presented for review. Its envelope carries candidate identity and lineage,
+source Intent, assumptions, required state, claimed predicates, observations, evidence, artifacts,
+and the owning policy or contract.
 
-- `challenges` tied to an exact candidate, assumption, or claimed predicate;
-- `evidence_requests` that could resolve each challenge;
+The owning [Weaver Pattern](../../../adr/28-workflow.md) declares the Lens, permitted evidence and
+tool access, review rounds, budget, and stop conditions. A fresh Invocation receives no private
+Dancer generation context and cannot rewrite sibling history. Hunter is not Scout's web-acquisition
+office; any bounded inquiry proceeds only through Pattern-granted access.
+
+The candidate remains **Vikalpa**, a possibility awaiting measurement. Hunter's attention does not
+change its standing.
+
+## Return challenges, not conclusions
+
+Hunter returns five typed records, with provenance:
+
+- `challenges` tied to the candidate and a named assumption or predicate;
+- `evidence_requests` naming the observation needed;
 - `boundary_findings` tied to the owning policy or contract;
-- `withhold_recommendations` for further Shadow spend; and
-- unresolved uncertainty that the available evidence cannot settle.
+- `withhold_recommendations` identifying where further spend lacks present support; and
+- unresolved uncertainty the evidence cannot settle.
 
-A withhold recommendation is input to the owning Pattern's budget decision. Hunter cannot
-withhold or redefine the original Intent, declare truth, determine identity, grant a capability,
-authorize promotion, manufacture consent, or turn suspicion into proof.
+No private reasoning trace or verdict travels with them. The inquiry may expose an unsupported
+premise, biased framing, missing counterexample, absent evidence, boundary violation, or conclusion
+extending beyond observation. It may decompose a claim and challenge each dependency. Suspicion
+alone proves nothing.
 
-## Separation Law
+Hunter invents no replacement, rewrites no Intent, and supplies no score, rank, certification,
+promotion, capability grant, or consent. Each `withhold_recommendations` item is only input to the
+Pattern's spend decision; it cannot cancel work or deny spending by itself.
 
-Hunter is a [Posture](../../../adr/20-agents.md#mechanical-cognitive-postures), not a durable
-Persona and not Scout's web-acquisition role. It reviews attributed Dancer output or another named
-candidate in a fresh invocation. It may request a separate repair or expansion pass, but it may not
-invent replacement branches inside the review context and then grade its own invention.
+## End at the evidence boundary
 
-The owning [Shadow Pattern](./index.md) declares candidate count, review rounds, token budget,
-wall time, tools, evidence access, and stop conditions. Exhausted bounds yield an honest incomplete
-review rather than an automatic additional round.
+Missing evidence remains unknown, and bounded inquiry cannot widen its own access. Exhausted rounds,
+budget, tool access, or a stop condition return an incomplete review with uncertainty preserved.
+No extra round appears automatically, and Hunter declares neither rejection nor safety.
 
-## Handoff
+Passing Hunter does not certify a candidate; failing Hunter does not erase its identity,
+provenance, artifacts, or failure evidence.
 
-Hunter hands challenges and evidence requests to the Pattern, deterministic checks, Riddle, or the
-Magus. Passing Hunter does not certify a candidate. Failing Hunter does not erase it before the
-required provenance and autopsy evidence are retained.
+Findings may return to Weaver and its Pattern, enter deterministic checks, become a
+[Riddle](../riddle/trials.md) trial subject, or reach the Magus for an owned decision. Repair or
+renewed expansion requires Dancer or another separate Invocation.
 
-[:material-arrow-left: Return to Shadow](./index.md)
+The parent [Shadow](./index.md) page places this review passage within the possibility-lineage
+Domain.

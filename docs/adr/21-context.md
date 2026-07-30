@@ -5,167 +5,146 @@ icon: material/text-box-multiple-outline
 
 # :material-text-box-multiple-outline: 21. Context
 
-!!! abstract "Context and Problem Statement"
-    In the era of large-scale context windows (128k+ tokens), reliance on fragmented retrieval creates a reasoning bottleneck by destroying the semantic relationships between disconnected data chunks. While retrieval facilitates discovery, it fails to provide the systemic understanding required for complex, interconnected datasets. Full-context ingestion offers superior comprehension but introduces prohibitive latency and computational costs regarding KV cache management and re-processing overhead. A fundamental gap exists in balancing the depth of total context with the physical constraints of local hardware and inference efficiency.
+!!! abstract "Context"
+    An Agent cannot receive all LychD knows. It receives a bounded, ordered field in which stable
+    law, present environment, completed history, required continuation, and query survive changing
+    model limits. If its non-negotiable material does not fit, assembly fails before inference; it
+    never hides truncation in an attractive answer.
 
 ## Requirements
 
-- **Typed State Persistence:** Mandatory utilization of a Pydantic-based `RunContext` to ensure all metadata (identity, environment, and history) is strictly validated before entering the cognitive loop.
-- **Deep Contextual Ingestion:** Provision of a mechanism to ingest entire datasets into the "Working Memory" (Context Window) to maintain systemic coherence.
-- **Prefix Stability:** Mandatory enforcement of a deterministic prompt structure to enable inference engine prefix caching (KV Cache reuse).
-- **Dynamic Artifact Injection:** Support for loading massive codebase trees or documentation scrolls into an Agent's dependencies via the `RunContext`.
-- **Environmental Grounding:** Inclusion of real-time hardware state data (e.g., VRAM pressure, connectivity status, low-power modes) within the context to inform reasoning.
-- **Identity Scopes:** Mandatory inclusion of the active **Sigil** and its associated permission scopes to facilitate secure tool filtering.
-- **Karma Integration:** Prioritization of verified interaction traces and feedback as hot context for subsequent reasoning rituals.
-- **Heuristic Arbitration:** Implementation of logic to autonomously switch between Retrieval-Augmented Generation (RAG) and Context Aware Generation (CAG) based on token volume and model limits.
-- **Governance Limits:** Mandatory enforcement of hard boundary limits (the context governor) to prevent VRAM spikes and substrate instability.
-- **Prompt Density Optimization:** Support for Meta-Reasoning rituals to condense instructional prompts without loss of logical density.
+- Context is typed, ordered, bounded, and attributable rather than a hidden mutable prompt bag.
+- Stable material has a reproducible digest, while history and query remain explicitly volatile.
+- The Dispatcher-selected capability must rebind context before inference; a Privacy Cut must not
+  reuse raw history, provider cache identity, or declassification authority.
 
 ## Considered Options
 
-!!! failure "Option 1: Pure Vector-Based RAG"
-    Relying exclusively on small-chunk retrieval for all reasoning tasks.
-    -   **Cons:** **Semantic Blindness.** The Agent loses the ability to perceive the "Big Picture," such as cross-file dependencies in a codebase or the overarching narrative of a document. Reasoning becomes fragmented and shallow.
+| Option | Decision | Why |
+| --- | --- | --- |
+| One mutable accumulated prompt | Rejected | It hides order, limits, lineage, and authority behind incidental text. |
+| Static global context limit | Rejected | The executing grant, not a guess, determines the usable window. |
+| Layered assembly with conservative governors | Selected | It makes floor, history, continuation, and query independently inspectable and bounded. |
 
-!!! failure "Option 2: Naive Full Context Ingestion"
-    Passing entire datasets (100k+ tokens) into the prompt for every request.
-    -   **Cons:** **Attention Dilution and Exhaustion.** Processing 100k+ tokens from scratch is not only slow, but massive contexts overwhelm the LLM's attention mechanism. The model struggles to extract precise details from a massive wall of text, leading to degraded reasoning and hallucination, even if it mathematically fits in the context window.
+## Decision
 
-!!! success "Option 3: Hybrid CAG with Prefix Caching and Iterative Aggregation"
-    Utilizing a strictly ordered prompt structure to maximize KV Cache capabilities, and iterating over large datasets in focused chunks (chapter-by-chapter).
-    -   **Pros:**
-        -   **Near-Instant Response:** Once the static "floor" (Identity/Codex/Base Prompt) is processed, subsequent queries and snippet loops are served in milliseconds via cache reuse.
-        -   **Attention Exactness:** By looping chapter-by-chapter against a cached base prompt, the attention mechanism remains highly focused, yielding superior extraction, comparison, and synthesis.
-        -   **Sovereign Safety:** Permissions and hardware reality are baked into the context, ensuring the mind is grounded in the laws of the machine.
+`ContextOrchestrator` owns the active field as typed, hashed `Block`s:
 
-## Decision Outcome
+| Layer | Name | Current content |
+| ---: | --- | --- |
+| 1 | Identity | The First One's fixed instructions. |
+| 2 | Codex | Reserved and empty. |
+| 3 | Environment | Granted capability and observed warm Coven. |
+| 4 | Karma | Session-keyed, reserved and empty. |
+| 5 | State | Governed complete Pydantic AI message groups. |
+| 6 | Query | Current request. |
 
-**Context Aware Generation (CAG)** is adopted as the target strategy for deep reasoning, enabled by
-a strict **Prompt Caching** discipline and a heuristic **Context Manager**. LychD's typed
-`ContextOrchestrator` owns assembly. Pydantic AI's `RunContext` is an invocation-local dependency
-and instruction seam; it is not LychD's universal or persisted context primitive.
+Layers 1–4 make the **Stable Floor**. Its `prefix_digest` witnesses ordered content known to
+LychD; it neither proves provider KV-cache reuse nor attention or latency improvement.
 
-!!! warning "Implementation state"
-    The delivered floor is a six-layer keyed skeleton. Identity, Environment, State, and Query
-    (layers 1, 3, 5, and 6) are populated; Codex and Karma (layers 2 and 4) are empty reserved
-    blocks. Environment currently names only the active capability and observed warm Coven—not
-    VRAM, power, connectivity, low-power mode, or Sigil scopes.
+## Blocks and assembly
 
-    Current governors retain newest whole completed turns under turn and character limits, reserve
-    the required consent continuation whole, reassemble after the actual grant, read
-    `max_context`/`max_tokens` from the grant's resolved generation profile, and apply Pydantic AI
-    `UsageLimits`. The keyed prefix digest proves deterministic bytes for the represented blocks;
-    it does not prove provider KV-cache reuse.
+Every Block has layer, key, text, and SHA-256 content hash. The orchestrator sorts stable blocks
+by `(layer, key)`, hashes ordered hashes into `prefix_digest`, then adds State and Query. The First
+One binds layer 1 as static instructions and its dynamic hook renders non-empty layers 2–4. State
+becomes model history and Query the user prompt, so the six-layer account does not duplicate them
+as instructions.
 
-    Tokenizer-driven CAG/RAG arbitration, dataset ingestion, Codex/path hydration, Karma recall,
-    formatter registration, VRAM-aware condensation, measured cache reuse, quality-drift blocks,
-    and metacognitive pressure valves remain designed work. The sections below define that target
-    unless they explicitly name the delivered floor.
+`AssembledContext` exposes all blocks, digest, bounded settled history, an indivisible continuation
+when present, query, and known active context window. The run-id assembly cache lasts only for the
+process and releases after settlement. Layer 3's separate environment snapshot cache lasts for the
+process with no current eviction. Durable conversation belongs to the session ledger and durable
+suspension to [Graph](./24-graph.md).
 
-Context is the temporary active surface of **the Spirit**—LychD's correspondence for Citta. It
-functions as the **Aisthēsis** (Gk. Αἴσθησις — integrated experience; the perceived simulacrum):
-the bounded surface where the Answer binds signs, identity, world-model artifacts, prior outcomes,
-and the current request into one attributable field for a reasoning cycle.
+## Privatization and the Privacy Cut
 
-### 1. The Cache Protocol (The Stable Floor)
+Designed `PrivatizationLabel` and immutable source lineage attach to every Block. A label carries
+class (`public`, `internal`, `private`, `restricted`), policy weight, categories, known subject or
+namespace, material parents, and handling constraints; it does not substitute for factual trust,
+instruction authority, Sigil scope, consent, or quarantine.
 
-To exploit KV Cache capabilities, a deterministic ordering of message blocks is enforced. The Working Memory is structured to ensure the most static data remains at the beginning of the prompt. This ordering is not only a caching optimization; it also defines the epistemic layering of the active field:
+`AssembledContext` joins labels for exact blocks, history groups, continuation, query, tool
+material, and artifact projections entering one model call. It preserves highest class and weight
+plus the union of categories, subjects, and material parents. Copying, summary, aggregation,
+embedding, captioning, transcription, and model transformation do not lower influence. A producer
+may identify exact contributors to avoid unrelated overtaint; unknown lineage is `restricted` at
+egress.
 
-1. **The Identity (Immutable):** The System Prompt defining the Persona and its core constraints. This establishes structural bias.
-2. **The Codex (Static):** The specific codebase, technical manual, or dataset being analyzed. This establishes the active world model.
-3. **The Environment (Grounding):** Real-time hardware constraints (VRAM, Power) and the user's active Sigil scopes.
-4. **The Karma (Prioritized):** High-quality interaction outcomes and semantic results retrieved from the **[Archive (ADR 27)](./27-memory.md)**. This activates high-salience impressions.
-5. **The State (Dynamic):** The current reasoning history or multi-turn conversation thread.
-6. **The Query (Volatile):** The specific user request. This is the transient perturbation.
+A **Privacy Cut** forms a new sanitized branch without mutating raw material or reusing
+continuation, serialized history, tool bodies, attachment projections, or provider prefix-cache
+identity. Its pseudonym map is restricted, local to one Run and attempt, and never enters prompt,
+log, checkpoint, receipt, or provider request. Its `TransformationReceipt` binds source and
+candidate digests, transformer/policy revisions, operations, removed categories, residual label,
+uncertainty, utility loss, and expiry without raw spans. A Cut that destroys the identifiers,
+dependency relations, or diagnostics needed for its declared task must refuse remote formation
+rather than call privacy alone a success. Transformations provide evidence; only Security's egress
+decision admits that exact branch to a Portal. Current `Block` and `AssembledContext` carry neither
+labels nor lineage, so this is law rather than delivered behavior.
 
-**The intended result:** a supporting inference engine may reuse an unchanged prefix. LychD does
-not yet measure or guarantee that provider behavior or a time-to-first-token reduction.
+## Grant-aware rebinding
 
-Prefix stability is the fundamental law of **not fucking up the KV cache**. In the cognitive map of
-the **[Lich](../sepulcher/lich/index.md)**, Context is the active surface of **the Spirit**. The
-static prefix layers—Identity, Codex, Karma—plant selected **Seeds**. The volatile layers—State
-and Query—shape **the Flux**. Keeping the inherited floor stable while present movement changes is
-both the KV-cache strategy and the cognitive architecture of clear perception.
+Bridge first assembles enough field to enter its workflow, then assembles again inside `Converse`
+after [Dispatcher](./22-dispatcher.md) grants the actual capability. Consent continuation also
+reassembles after grant acquisition. The resolved generation profile's `max_context` takes priority
+over the capability specification's discovered maximum.
 
-!!! note "The Cache Meridian"
-    The reuse-stable prefix is layers 1–3. Layer 4 (**Karma**) is **session-pinned by default**: recall is performed once at session open and mutates only at declared boundaries, so intra-session cache reuse is preserved across the whole floor. A **[Codex (ADR 12)](./12-configuration.md)** flag MAY demote Karma to per-turn recall, at the cost of moving the Meridian to after layer 3 — everything from layer 4 down then re-prefills each turn. The point is that the Meridian's position is a stated policy, never an accident: whichever default the Magus prefers, the boundary is declared.
+Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
+Its key is `(session, capability binding, grant epoch)`, but the Bridge presently supplies neither
+grant id nor changing epoch: both paths use `0`. A later grant to the same binding can reuse an
+older warm-Coven snapshot, and snapshots accumulate for the process lifetime. Fresh-grant rebinding
+and cleanup remain gaps. VRAM, power, connectivity, and Sigil scope are absent; the Sigil belongs
+in [`LychDDeps`](./20-agents.md#run-dependencies), where tools can enforce it rather than prompt
+prose.
 
-### 2. The Context Manager (The Heuristic Switch)
+## Governors
 
-Prior to ritual initiation, a Context Manager evaluates the intended payload against the current hardware state:
+The present governors are twenty complete message groups by default and a 96,000-character cap.
+With a grant window, the effective cap is the smaller configured cap or three characters per model
+token: deliberately conservative, not tokenizer accounting. Assembly reserves layers 1–4, query,
+and complete continuation before history. If they overflow, `ContextBudgetExceededError` stops the
+run. Continuation never splits; remaining space retains newest complete groups, up to the turn
+window, never cutting a request from response to keep an older fragment.
 
-- **Evaluation:** The system tokenizes the target data.
-- **Logic:**
-    - If `tokens < (context_window * 0.7)`: **Use CAG.** The entire dataset is injected into the prompt as a static block.
-    - Else: **Use RAG.** The Agent is granted a tool to search the **[Archive (ADR 27)](./27-memory.md)**.
-- **Tuning:** Thresholds are configurable in the **[Codex (ADR 12)](./12-configuration.md)**.
+Bridge separately derives Pydantic AI's input-token fence from the actual window after reserving
+output. Character and request-time token limits are two fences, not exact cross-provider token
+equivalence.
 
-### 3. The Context Orchestrator
+## Stable history
 
-To bridge the gap between deterministic state and probabilistic reasoning, a **Context Orchestrator** service is employed:
+Completed messages group by LychD `run_id`; legacy messages fall back to request boundaries. A
+consent pause holds the current logical-turn suffix apart from settled history. Resume re-bounds
+settled history under the new grant and provides its required continuation unchanged. Thus an old
+provider's live objects and assumptions do not cross the park. ADR 25 owns consent record and
+verdict order; this ADR owns only field shape and budget after re-entry.
 
-- **Deterministic Assembly:** The Orchestrator intercepts Agent requests to assemble the prompt block-by-block according to the Cache Protocol.
-- **Cache Shielding:** By ensuring the most static blocks lead the sequence, the Orchestrator enables the maximized reuse of KV caches.
-- **Dynamic Gating:** The Orchestrator monitors token pressure and autonomously switches from full-context injection to RAG when model limits are approached.
+## Designed extensions
 
-!!! note "Cache Shielding as a Testable Invariant"
-    Every block enters assembly as a `(layer, key, content-hash)` triple. Assembly is deterministic given the key set, and an identical key set SHALL produce a byte-identical prefix. Volatile data may enter only layers 5–6. This is the testable invariant behind **Quality Drift Injection** and CAG evaluation: an evaluation may toggle a single keyed block and attribute the resulting quality delta to it, which is what makes the CAG measurable rather than merely asserted.
+Codex may later hydrate path-selected law/task material; Karma may admit governed Archive results;
+exact tokenization may replace character estimation; measured policy may select corpus, retrieval,
+or iterative aggregation; richer Environment may record admitted hardware; and typed bounded
+formatters may gain explicit layer placement. No automatic CAG/RAG threshold, dataset ingestion,
+repository-path inference, quality-drift injector, prompt compressor, VRAM estimator, or formatter
+extension surface currently exists.
 
-### 4. The CTC (Context Truncation & Compression) Governor
+## Correspondence
 
-To ensure substrate stability and prevent VRAM spikes, the manager enforces hard boundary limits:
-
-- **Character Cap:** Maximum raw character count for the total prompt.
-- **Message Depth:** A rolling window of the last $N$ turns to prevent context drift.
-- **Verbatim Priority:** Aggressive pruning of filler while preserving **[Verbatim (ADR 06)](./06-persistence.md)** facts and consecrated entries.
-- **VRAM Safety:** If the calculated cache size exceeds the available buffer in the active container, the governor triggers a condensation ritual to prune non-essential traces before inference begins.
-- **Dynamic Window Source:** The Governor reads `context_window` from the active **`CapabilityGrant`**'s `ModelInfo`, never from static configuration. Under dynamic capability switching the window varies per granted capability (**[Dispatcher (ADR 22)](./22-dispatcher.md)**).
-
-### 5. Pluggable Context Formatters
-
-The architecture supports a registry of **Formatters** to prepare the working memory. Extensions can register new `PromptTemplates` or `ArtifactInjectors` to inject unique behavioral constraints or memory summaries into the prefix without modifying the core kernel.
-
-#### Path-Aware Context Hydration
-
-To strictly adhere to the Minimum Context Principle and prevent VRAM exhaustion from irrelevant documentation, the Orchestrator implements dynamic, semantic hydration:
-
-- **Intent:** Inject specialized chapters of the Hexanomicon or technical manuals *only* when the agent's work semantically intersects with them.
-- **Inputs:** The Orchestrator inspects the active `jj` commit intent and the physical file paths being modified (e.g., changes targeting `src/lychd/db/`).
-- **Execution:** It dynamically retrieves and maps only the relevant architectural rules (e.g., `docs/adr/06-persistence.md`) into the Codex layer, leaving unrelated documentation (like UI or networking rules) out of the prompt.
-- **Placement:** Injected into the static Codex layer of the prefix cache. This limits context bloat, focusing the machine's Aisthēsis purely on the domain at hand.
-
-#### Quality Drift Injection (LLM Output Correction)
-
-A formatter/injector may provide a compact "quality drift" block containing recent, high-frequency local failure patterns (for example: Ruff lint faults, BasedPyright typing faults, Markdown formatting mistakes) to reduce repeated agent errors during coding rituals.
-
-- **Intent:** Pre-correct common local mistakes before code is produced.
-- **Inputs:** Local lint/type outputs and curated fault indexes (for example an agent drift ledger).
-- **Constraints:** Must be bounded by recency, frequency, and token budget to avoid polluting the stable floor.
-- **Placement:** Inject after Identity/Codex and before volatile query content when used, so project conventions remain visible during generation.
-
-This is a correction aid, not a replacement for Ruff/BasedPyright enforcement; the quality stack remains the authoritative judge after generation.
-
-#### Metacognitive Pressure Valve
-
-A formatter may also inject a compact pressure valve for tasks with ambiguous premises, adversarial constraints, or repeated failed retries.
-
-- **Intent:** Preserve the Agent's ability to report contradiction, missing inputs, or structural impossibility before pressure turns uncertainty into hallucinated completion.
-- **Shape:** Short, operational instructions such as "name the blocked premise," "declare the unresolvable constraint," or "return the typed bottleneck after bounded retries."
-- **Boundary:** This does not relax typed outputs, verification, or policy gates. It only prevents the volatile query from forcing false certainty into the generation field.
-- **Placement:** Inject near other quality drift rules, after stable project law and before the volatile task request, so epistemic humility remains subordinate to system contracts.
-
-The valve is not a friendliness layer or a substitute for proof. It is a small epistemic exit installed before the volatile query: if the three Pramāṇa sources are unavailable, the Agent must be allowed to stop with a named missing measurement. A generic "I don't know" is only valuable when it carries the blocked premise, failed retrieval, missing tool result, or contradiction that made completion structurally false.
+Context is the present surface of **the Spirit**: Identity, Codex, Environment, and Karma form the
+floor; State carries movement; Query disturbs it. Selected memory is **Seed** and changing field
+is **Flux**. The image explains shape; hashes, budgets, groups, and focused tests establish law.
 
 ## Consequences
 
 !!! success "Positive"
-    - **Deterministic Floor:** Current keyed assembly can prove the represented stable prefix is
-      byte-identical for the same keys.
-    - **Bounded Continuity:** Current whole-turn and character governors preserve completed session
-      history without splitting a required consent continuation.
-    - **Future Measurement Seam:** Provider cache reuse, CAG/RAG quality, and hardware pressure can
-      be measured without changing Context ownership.
+    Stable material has one ordered receipt, history keeps whole logical groups, continuation stays
+    intact, and capability can change the budget before inference.
 
 !!! failure "Negative"
-    - **Cache Fragility:** A single character change in a static file invalidates the entire cached prefix, forcing a full re-computation.
-    - **VRAM Competition:** Maintaining large KV caches for multiple concurrent Personas can starve the GPU, requiring strict limits and preemptive evacuation by the system's physical controller.
+    Character estimates can underuse a window; caches vanish on restart, snapshot epochs can go
+    stale, and a stable prefix helps only when the provider actually supports it.
+
+## Verification
+
+`tests/unit/domain/cortex/test_context.py` covers newest complete groups, grant-bound environment
+replacement, generation-window precedence, floor overflow, and continuation. Bridge graph and
+consent-resume tests cover two-stage assembly and re-entry. [State](../state-of-the-work.md) owns
+the public delivery boundary.

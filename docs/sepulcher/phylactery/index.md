@@ -8,39 +8,48 @@ icon: fontawesome/solid/flask
 > _“The Vessel passes. The Phylactery keeps only what was committed.”_
 
 The Phylactery is LychD's durable-data jurisdiction. It owns committed run and continuity records
-that must survive a Vessel process boundary. It does not turn every trace into memory, and
-durability alone does not make a record true, formative, or part of an identity.
+that must survive a [Vessel](../vessel/index.md) process boundary.
 
-The first-light implementation uses **PostgreSQL** inside the [Crypt](../crypt.md). The repository
-includes `pgvector`, but semantic retrieval, curated Karma, and the full
-[Soulforge](../extensions/soulforge.md) formation path remain separate delivery boundaries.
+The first-light implementation uses **PostgreSQL** inside the [Crypt](../crypt.md). The Phylactery
+owns engine construction, codecs, transactions, migrations, and schema admission; each domain owns
+the meaning and lifecycle of its records.
+
+[First-light persistence](../../state-of-the-work.md#phylactery-first-light) is **Partial**:
+repository shapes and memory-profile behavior exist, but no production-factory PostgreSQL
+lifecycle, full adapter parity, or transactional outbox is proved.
 
 ## The Anatomy of Memory
 
-The first-light Phylactery uses the configured database's default schema/search path. Its mature
-anatomy reserves sacred chambers, but only the first item and SAQ's default `saq_*` tables exist
-today:
+The current Phylactery uses the configured database's default schema and search path:
 
-1. **`public` (The State):** The current reality. Migration `0001_phylactery_first_light` raises `session`, `run`, `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and `codex_preauthorization`. The `run`/`step` tables are the run truth written by the **[RunLedger](../vessel/ghouls.md)**; `run_checkpoint` owns one complete durable graph history per run.
-2. **`vectors` (The Karma, planned):** The high-dimensional embedding space where verified outcomes may be stored.
-3. **`traces` (The Mind's Eye, planned):** The dedicated chamber for durable cognitive traces.
-4. **`queue` (The Ghouls, planned isolation):** The future queue schema/role boundary. V1 SAQ
-   creates its `saq_*` tables on the default search path and run-row/enqueue is not one transaction.
+1. **`public` (The State):** Migration `0001_phylactery_first_light` raises `session`, `run`,
+   `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and
+   `codex_preauthorization`. `run` is authoritative lifecycle truth; ordered `step` rows are a
+   best-effort evidence projection.
+2. **`run_checkpoint`:** one replaceable JSONB document per Run, holding the complete validated
+   Graph snapshot history. It is distinct from the Run/Step ledger, contains no runtime
+   dependencies or event stream, and cascades with its Run.
+3. **SAQ's `saq_*` tables:** durable broker records created on the default search path through a
+   separate autocommit pool. Run-row commit and queue publication are not one transaction.
+4. **Planned chambers:** `vectors` for governed Karma, `traces` for durable cognitive traces, and
+   isolated `queue` storage and roles. Their names reserve architecture, not delivery.
 
 !!! abstract "The Anchor"
-    The primary and most sacred function of the Phylactery is to house the **continuity pattern**.
+    Continuity begins at a declared commit boundary: SAQ jobs, Run and Step rows, consent records,
+    and one run-owned checkpoint. Live subscribers, leases, dependencies, and uncommitted frames
+    do not survive merely because a related row exists.
 
-    A model-backed **[Soulstone](../../sepulcher/animator/soulstone.md)** is a processor with no memory of its own: kill the container and nothing of the Lich is lost, because nothing of the Lich lived there. Continuity lives here.
-
-    The Phylactery survives reboots, crashes, and migrations at each store's declared committed
-    boundary. In the current foundation that means SAQ jobs, Postgres run/step rows, and one
-    run-owned JSONB graph checkpoint document. Memory/persona/trace stores and a transactional
-    graph/queue outbox remain later work. Volatile frames may be reconstructed or
-    abandoned according to Graph, Worker, and policy law.
+Terminal Run status precedes context release and best-effort checkpoint cleanup. On cleanup
+failure, status remains authoritative and [Reanimation](./reanimation.md) judges the retained
+checkpoint; its presence never authorizes arbitrary replay.
 
 !!! info "The Accumulator of Karma"
-    A narrow Karma row exists today. The larger path—consecrated consequence becoming curated,
-    attributable memory and later eligible formation data—is Designed. [HitL
-    (25)](../../adr/25-hitl.md) owns authorization, [Memory
-    (27)](../../adr/27-memory.md) owns retention and retrieval, and
-    [State](../../state-of-the-work.md#karma-semantic-memory) owns the delivery boundary.
+    A narrow Karma row exists today. The larger path from consecrated consequence to curated,
+    attributable memory and eligible formation data belongs to [HitL
+    (25)](../../adr/25-hitl.md), [Memory (27)](../../adr/27-memory.md), and the
+    [Karma record in State](../../state-of-the-work.md#karma-semantic-memory).
+
+[ADR 06](../../adr/06-persistence.md) owns persistence and checkpoint storage. [ADR
+24](../../adr/24-graph.md) owns checkpoint semantics and terminal order; [Ghouls](../vessel/ghouls.md)
+own the worker lifecycle that writes them. Next, enter [Reanimation](./reanimation.md) to follow
+committed continuity across process death.

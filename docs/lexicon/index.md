@@ -5,41 +5,34 @@ icon: material/translate
 
 # :material-translate: Lexicon
 
-_One canonical language, held in two registers._
+_One language, held in two tongues._
 
-Use Lexicon when a word blocks the next act; it is a reference, not required pre-reading. Deeper
-pages may elaborate a term's philosophy or mechanics, but they do not redefine it.
+The Lexicon waits until a name blocks the next step. It is not required initiation: every operated
+page introduces its own vocabulary beside the thing it names.
 
-Its completeness boundary is project language: every name whose compact meaning changes how a
-reader understands the system resolves in one of the two registers. Python symbols,
-configuration fields, provider jargon, and individual Composition catalogues remain indexed by
-their owning code or directory.
+## Iron Tongue
 
-!!! note "A name is not a delivery claim"
-    Lexicon owns compact meanings. [State of Work](../state-of-the-work.md) owns current delivery
-    boundaries and evidence. A term never proves that its named organ ships.
+[Iron Tongue](./iron-tongue.md) names the project in its technical register: Lich, Vessel,
+Phylactery, Animator, Invocation, Sigil, Pattern, Run, and the other nouns that mark stable
+jurisdictions or contracts.
 
-## Choose a Register
+Each entry carries one compact meaning and points toward its owner. The owning Covenant or topic
+page keeps the depth.
 
-- **[Iron Tongue](./iron-tongue.md)** owns canonical project, domain, architecture, and operated
-  system vocabulary.
-- **[Inner Tongue](./inner-tongue.md)** owns philosophical correspondences, esoteric
-  cartography, native cosmology, and source-lineage boundaries.
+[:material-anvil: Speak Iron](./iron-tongue.md)
 
-These are two chambers of one authority, not competing lexicons.
+## Inner Tongue
 
-## Browse by Office
+[Inner Tongue](./inner-tongue.md) preserves etymology, inherited terms, philosophical
+correspondence, and LychD's own mythic grammar. It keeps Manas beside Call, Buddhi beside Blade,
+Citta beside Spirit, and Ahaṃkāra beside Answer without forcing either tongue to erase the other.
 
-| If you are trying to understand… | Begin with these terms | Continue into… |
-| :--- | :--- | :--- |
-| The body, its operator, and its continuity | **LychD**, **Lich**, **Magus**, **Sepulcher**, **Vessel**, **Phylactery**, **Codex**, **Rune** | [Sepulcher](../sepulcher/index.md) and [Lich](../sepulcher/lich/index.md) |
-| The web surface and its instruments | **Altar**, **Bridge**, **Orb**, **Nexus**, **Loom**, **Scrying** | [Altar](../divination/altar/index.md) |
-| Applications, workflows, and execution identity | **Weaver**, **Portfolio**, **Composition**, **Reference Composition**, **Candidate study**, **Composition Revision**, **Suite**, **typed handoff**, **Pattern**, **Pattern Revision**, **Invocation**, **Occurrence**, **Run** | [Compositions](../compositions/index.md) and [Workflow](../adr/28-workflow.md) |
-| Native and delegated cognitive labor | **Agent**, **DelegatedAgentNode**, **AgentJob**, **Coffin**, **Ghoul**, **Graph**, **Graph checkpoint**, **Stasis**, **Posture**, **Lens** | [Agents](../adr/20-agents.md), [Graph](../adr/24-graph.md), and [Security](../adr/09-security.md) |
-| Capabilities and finite iron | **Capability**, **Animator**, **Soulstone**, **Portal**, **Coven**, **Dispatcher**, **CapabilityGrant**, **GrantLease**, **Orchestrator**, **Whim** | [Animator](../sepulcher/animator/index.md), [Dispatcher](../adr/22-dispatcher.md), and [Orchestrator](../adr/23-orchestrator.md) |
-| Active context, memory, identity, and evidence | **Circle**, **Call**, **Blade**, **Spirit**, **Flux**, **Seed**, **Recall**, **Answer**, **Context**, **Archive**, **ArtifactRef**, **Karma**, **Mirror**, **Persona**, **Sigil**, **Oculus**, **Riddle**, **Provenance** | [Lich](../sepulcher/lich/index.md), [Context](../adr/21-context.md), [Memory](../adr/27-memory.md), and [Spirit](../sepulcher/lich/spirit/index.md) |
-| Growth, packages, and governed contributions | **Extension Domain**, **Manifestation**, **Extension package**, **Extension Protocol**, **Contribution**, **Smith**, **Forge**, **Soulforge** | [Extensions](../sepulcher/extensions/index.md) and [Extension law](../adr/05-extensions.md) |
-| Architectural law, project status, and mythic telos | **Covenant**, **xDDD**, **Transcendence**, plus the correspondences and Native Cosmology of Inner Tongue | [Covenants](../adr/index.md), [State of Work](../state-of-the-work.md), and [Transcendence](../divination/transcendence/index.md) |
+[:material-eye-circle-outline: Enter the Inner Tongue](./inner-tongue.md)
 
-Individual Reference Compositions and candidate studies remain in
-[Compositions](../compositions/index.md), where their maturity can stay explicit.
+## Follow the Name
+
+- For the body and its organs, enter the [Sepulcher](../sepulcher/index.md).
+- For architectural ownership, consult the [Covenants](../adr/index.md).
+- For the Great Work beneath the language, enter
+  [Transcendence](../divination/transcendence/index.md).
+- For what currently answers, read [State of Work](../state-of-the-work.md).

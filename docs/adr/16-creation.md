@@ -6,132 +6,116 @@ icon: material/creation
 # :material-creation: 16. Creation
 
 !!! abstract "Context and Problem Statement"
-    The LychD architecture is designed for Autopoiesis (self-creation)—the capability for the system to autonomously expand its own logic and manifest new capabilities. However, allowing a probabilistic process to modify its own live source code presents a fundamental stability dilemma. A single syntax error or logical loop introduced during self-modification results in an immediate system lobotomy, causing a crash that prevents self-recovery and violates the doctrine of immutability. A formal ritual is required to govern the transition from "Idea" to "Reality."
+    Autopoiesis may eventually let LychD extend itself, but a candidate is not part of the body
+    because a model wrote it or a check passed. Creation needs a route from proposal to a
+    target-owned effect that keeps the active body, attribution, and recovery legible.
 
 ## Requirements
 
-- **Hermetic Isolation:** Physical prevention of live system file modification during the experimental phase.
-- **Speculative Sandbox:** A protected environment (The Shadow Realm) that mirrors the relevant
-  production substrate without receiving promotion or host authority. Shared-resource and
-  external effects must still be declared, bounded, and reconciled.
-- **The Verification Ritual:** Mandatory success of a formal verification suite (e.g., Unit Testing, Linting, Type Checking) before logic transitions from experiment to reality.
-- **Controlled Promotion:** Code and lock state move only through an attributable, verified
-  promotion coordinate. Database, package, and external effects retain their own transaction and
-  recovery boundaries; the composition does not pretend they are one atomic write.
-- **History Preservation:** Jujutsu-backed VCS tracks candidate source and reviewable change
-  history according to retention policy. VCS is artifact provenance, not a record of hidden model
-  reasoning.
-- **Promotion Authorization:** Integration with the **Human-in-the-Loop** protocol and Codex autonomy policy so structural promotion requires live Magus consent unless an explicitly bounded preauthorization class applies.
+- Candidate writes must not alter the active source tree or running package.
+- A candidate must bind its base revision, patch or artifact digest, principal, tools and
+  dependency inputs, declared effects, and resource budget.
+- A workspace is not a sandbox: processes, network, credentials, databases, and host effects need
+  separately admitted boundaries.
+- Commands, versions, environment, result, and error class must be retained as verification
+  receipts.
+- The eventual target owner—not the creator—must recheck current state, authority, evidence, and
+  recovery at promotion time.
+- Lineage and terminal disposition must remain attributable, so interrupted work can resume or be
+  discarded without touching the live body.
 
 ## Considered Options
 
-!!! failure "Option 1: Live Hot-Reloading"
-    Allowing the Agent to modify the `.py` files currently being executed by the Vessel.
-    - **Cons:** **Systemic Lobotomy Risk.** A syntax error or logical failure can crash the active
-      process before the candidate is reviewed and may leave recovery to an external operator.
-
-!!! failure "Option 2: Manual Pull-Request Workflow"
-    Forcing the Agent to submit a VCS PR/Change that a human must manually merge on the host.
-    - **Cons:** **Operational Stagnation.** It destroys the "Autonomous" nature of the Daemon. The Lich becomes a glorified "Code Assistant" rather than a sovereign entity capable of self-directed growth.
-
-!!! success "Option 3: The Shadow Realm (Lab -> Test -> Promote)"
-    Modifying code in an isolated `lab/` directory, verifying it with Ghouls, and only promoting it to the Crypt upon success.
-    - **Pros:** **Contained Candidate Failure.** The active Crypt stays outside the candidate-write
-      path. Lab failures remain attributable and reviewable before promotion, while shared
-      resources and later lifecycle effects still require explicit controls.
+| Option | Decision | Why |
+| --- | --- | --- |
+| Live hot-reload | Rejected | A candidate can damage the active process before review and has no promotion or rollback boundary. |
+| Ordinary pull request | Safe current route | Human review and merge remain a fallback, but do not encode admission, budgets, execution isolation, or receipts. |
+| Shadow candidate and owned promotion | Selected design | It makes candidate failure external to the body and keeps the final effect with its proper owner. |
 
 ## Decision Outcome
 
-A formal **Creation Workflow** is adopted as the target governing how new intents are manifested
-into the system's body.
+Creation is a designed chain, not an autonomous capability:
 
-!!! warning "Doctrine ahead of execution"
-    The current foundation does not implement the Shadow/Smith creation graph, Tomb executor,
-    Jujutsu lock manifest, automated verification database, promotion transaction, or Rebirth
-    command. The Vessel has a bounded Lab mount for trusted control-plane work, but no safe surface
-    for autonomous arbitrary-code execution or self-promotion. Until the complete Tomb/nono and
-    consent/promotion path exists, this ADR is workflow law—not an enabled autopoiesis feature.
+`Creation Request → Candidate → Verification → Promotion Request → target-owner effect`
 
-### 1. Invocation (Genesis)
+Verification makes a candidate eligible to ask; it never performs the live effect. The current
+`PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation, while the image's
+`/app` is read-only. They are neither a code Forge nor a sandbox. There is no autonomous repair
+loop, Tomb executor, verified package promotion, compatibility gate, rollback controller, or
+self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns that
+delivery boundary.
 
-When a Magus or an authorized process initiates a change, the system creates a new coordinate in the **Lab** region of the **[Crypt (13)](13-layout.md)**.
+### Admission and candidate identity
 
-- **Freedom:** This directory is the site of conception. The process can generate and revise files
-  without directly mutating the active Crypt. Dependency installation, subprocesses, ports,
-  databases, and network effects remain separately sandboxed or declared; a directory boundary
-  alone does not contain them.
-- **Context:** The process is provided with the current state of the Core and the **[Crypt lockfile (13)](13-layout.md)** to ensure the new creation is compliant with the system's existing laws.
+An immutable **Creation Request** names the principal and intent; exact base revision and allowed
+paths; tools, effect classes, credentials, network policy, and budgets; required verification and
+retention; and the promotion owner and authorization class. It then receives a candidate identity
+and workspace. Lab's writable directory conveys no subprocess or network containment.
 
-### 2. Speculation (The Shadow Realm / The Call)
+Each Shadow branch retains the request and exact parent state, but has its own lineage, budget,
+outputs, and disposition. Branches do not share a mutable workspace. The
+[Shadow contract](31-simulation.md) owns branch records and collapse. A VCS revision—including a
+Jujutsu change—proves comparison and provenance, not hidden model reasoning or execution
+containment. [The Call](../sepulcher/lich/call.md) gives this opening its correspondence, not its
+storage or authority rules.
 
-The initial labor is performed using a divergent VCS revision. This state of "Speculative
-Execution" allows the exploration of multiple branching paths for a given problem. It is the domain
-of **the Call** (Manas correspondence), where the machine may open movements within **the Flux**
-to navigate the **Possibility Space**. The fruits of this speculation are presented to the Magus
-as "Visions" at the **[Altar (15)](15-frontend.md)**.
+### Candidate work and proof
 
-Using **Jujutsu (jj)**, this speculative state is even more natural: every modification in the working copy is automatically a "change" (revision) in the graph, providing implicit checkpointing without the friction of manual commits.
+Candidate work may write only its allocated workspace. Any command with process, package,
+credential, port, database, or network effect needs its own admitted executor and policy; path
+restriction alone is insufficient. Independent work may run in independent workspaces, with an
+explicit merge boundary. Its output is an immutable patch or artifact reference with structured
+observations and declared effects. [The Blade](../sepulcher/lich/blade.md) names discrimination
+among possibilities; it is not an acceptance rule.
 
-The agent graph orchestrating the future speculation flow belongs in the **Vessel**. Safe
-control-plane creation work may remain there: planning, graph routing, policy checks, structured
-diff preparation, review packaging, and promotion decisions. Once the Tomb plane is implemented,
-raw execution payloads (code edits, test suites, linter invocations, arbitrary scripts, or risky
-tool calls) must be dispatched to it through a dedicated queue for sandboxed execution. The Tomb
-will return bounded, untrusted results only; it must not run agent logic or LLM calls.
+The request pins its verification plan: commands, tool versions, environment inputs, timeouts,
+expected artifacts, and pass criteria. Lint, types, unit tests, build, and migration probes remain
+separate from heuristic review such as [Riddle](34-evaluation.md). A qualitative verdict cannot
+override a failed deterministic gate. A failure can consume a bounded repair attempt; exhausted
+budgets or missing premises settle as noncompletion with retained evidence. Candidate-declared
+database, package, install, and recovery checks use disposable state where appropriate and prove
+the recorded execution, not production fitness.
 
-### 3. Creation (The Sequential Deep-Dive / The Blade)
+Today those checks are operated through development and CI. Workers or Tomb may dispatch admitted
+work only after their execution boundaries exist; this ADR does not claim that
+[Ghouls](14-workers.md) verify generated code today.
 
-Once a valid path is found in the Shadow Realm, the machine must transition from exploration to
-execution. This is the domain of **the Blade** (Buddhi correspondence), the convergent
-intelligence.
+### Promotion is an owned effect
 
-For tightly coupled core edits, the workflow favors a bounded sequential critical path with focused
-checks after each causal change. Independent discovery, static analysis, and isolated candidate
-experiments may still run in parallel when their merge boundary is explicit. **Stillness**
-(Metabolic Discipline) means limiting concurrent mutation and context pressure; it reduces
-coordination risk but cannot prevent logical error.
+A **Promotion Request** carries candidate identity, current-base preconditions, receipts, declared
+effects, compatibility evidence, and rollback or compensation instructions. It neither moves Lab
+into Crypt nor assumes a federated lockfile. At effect time the target owner must:
 
-### 4. Verification (The Rite of Speculation)
+1. revalidate the live base and candidate identity;
+2. evaluate [Consent](25-hitl.md), or a narrowly bounded preauthorization;
+3. confirm that the evidence is current for this effect;
+4. use its own transaction and recovery boundary; and
+5. verify the resulting state or invoke rollback or compensation.
 
-Before leaving the Lab, every creation must undergo the **Verification Ritual**.
+Source, package, and extension movement belongs to [Packaging](17-packaging.md),
+[Evolution](18-evolution.md), and [Assimilation](35-assimilation.md). Database, credential,
+host-lifecycle, and external-service effects remain separately owned; a VCS merge cannot make
+them atomic.
 
-- **The Strike:** The system enqueues a job for the **[Ghouls (14)](14-workers.md)**.
-- **The Test:** The Ghouls execute the verification suite (e.g., `ruff`, `pytest`) against the new code in isolation.
-- **The Verdict:** If checks fail, policy may grant a bounded correction budget in the Lab. When
-  that budget or a required premise is exhausted, the workflow returns truthful noncompletion and
-  evidence instead of demanding unlimited self-repair.
-- **Migration Isolation:** Verification uses disposable databases to exercise empty bootstrap and
-  every supported upgrade path relevant to the candidate, including declared forward/rollback or
-  recovery behavior. Those receipts prove the tested paths only; production promotion still
-  requires the owning **[Phylactery](../sepulcher/phylactery/index.md)** lifecycle gate.
+### Drift, conflict, and recovery
 
-### 5. Promotion (The Rite of Passage)
+Base drift or an unresolved conflict fails closed. The candidate and its evidence remain for
+diagnosis; they are neither silently discarded nor applied over operator work. Continuing means a
+new base, resolved conflict, renewed invalidated checks, and fresh authorization when the effect
+changed. An external effect already produced must be reconciled by its owner rather than hidden by
+VCS cleanup.
 
-Once a creation is deemed "Stable" (passes all verification) and is authorized through **[Consent](25-hitl.md)** or a Codex-defined preauthorization class, it undergoes **[Assimilation](./35-assimilation.md)**. High-stakes creation, schema changes, secrets, host lifecycle authority, and destructive actions still require live Magus consent.
+An implementation must demonstrate candidate identity and workspace containment, refusal of
+active-tree mutation, receipt capture, crash recovery, drift refusal, effect-time authorization,
+target-owner promotion, and rollback or compensation. Untrusted execution additionally needs the
+Tomb controls owned by Security.
 
-1. **The Lock:** The new logic is formally added to the system's federated lockfile.
-2. **The Move:** The directory is moved from the **Lab** (Read-Write) to the **Crypt** (Read-Only).
-3. **The Rebirth:** The system signals a **[Packaging (17)](17-packaging.md)** ritual to forge the new physical body.
-
-### 6. Conflict Sovereignty (The Magus Always Wins)
-
-In the event of a "Temporal Collision"—where a file in Primary Reality has been modified by the Magus while an Agent was speculating on a change in the **Shadow Realm**:
-
-- **Banishment of the Dream:** The system enforces a "Fail-Fast" merge policy. If a VCS merge conflict is detected during the **Promotion Ritual**, the Shadow Timeline is immediately banished.
-- **Sovereign Authority:** The machine possesses no authority to overwrite manual changes made by the Magus.
-- **Resynchronization:** The Agent must be re-awakened to the new reality, internalizing the Magus's changes before it is permitted to initiate a new cycle of creation.
-
-### Consequences
+## Consequences
 
 !!! success "Positive"
-    - **Reduced Active-Body Risk:** Syntax and focused verification failures can be caught before
-      promotion. Shared resources, migrations, packaging, and restart still carry residual risk.
-    - **Auditability:** Retained VCS changes, candidate artifacts, and verification receipts let the
-      Magus trace what changed and why it was proposed without claiming access to hidden
-      chain-of-thought.
-    - **Disciplined Autonomy:** The system handles bounded debugging and testing labor, presenting
-      the Magus with the surviving candidate, its evidence, and any unresolved limits.
+    Candidate failure stays outside the active body, while identity, evidence, authorization, and
+    disposition remain attributable.
 
 !!! failure "Negative"
-    - **Operational Latency:** Creating even a simple script requires the full ceremony of "Create -> Test -> Promote."
-    - **Storage Accumulation:** The Lab may accumulate abandoned experiments if not pruned by a maintenance ritual.
+    Isolation, retained proof, revalidation, and owner-specific recovery cost time and storage;
+    external effects still require compensation rather than one universal transaction.

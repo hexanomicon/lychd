@@ -4,31 +4,37 @@
 
 Load this scope for architecture, ADR, doctrine, package-boundary, tracked agent-routing, or
 documentation changes that define system truth.
+Also load [Build](build.md) when the task implements that truth under `src/**` or `tests/**`.
 
 ## Authorities
 
-- [AGENTS.md](../../AGENTS.md) defines repository-wide agent behavior.
-- [ADR 01](../../docs/adr/01-doctrine.md) owns architectural doctrine and xDDD.
-- [ADR 01 §Documentation Topology](../../docs/adr/01-doctrine.md#documentation-topology) owns
-  documentation topology; ADR 02 records the historical documentation decision.
-- The [ADR index](../../docs/adr/index.md) routes to the decision that owns a particular invariant.
-- [ADR 28](../../docs/adr/28-workflow.md) owns Weaver and Pattern law; the
-  [Composition index](../../docs/compositions/index.md) routes to accepted application designs
-  and visibly marked candidate studies.
-- [State of Work](../../docs/state-of-the-work.md) owns granular public delivery boundaries;
-  it derives claims from evidence and does not replace ADR law.
-- Tracked source and tests establish current implementation evidence. Ignored `.agents/work/**`
-  material is review evidence only and cannot override tracked canon.
+1. [AGENTS.md](../../AGENTS.md) governs repository agents.
+2. [ADR 01](../../docs/adr/01-doctrine.md) owns architecture and xDDD;
+   [Documentation Topology](../../docs/adr/01-doctrine.md#documentation-topology) owns document
+   placement. ADR 02 is the historical record, not current topology law.
+3. The [ADR index](../../docs/adr/index.md) routes each invariant to its accepted decision.
+   For every Covenant task, read that index before opening or editing a numbered ADR; its closed
+   register and ownership map determine which existing Covenant must be amended or rewritten.
+   [ADR 28](../../docs/adr/28-workflow.md) owns Weaver and Pattern law; the
+   [Composition index](../../docs/compositions/index.md) routes accepted designs and candidate
+   studies according to each page's declared maturity.
+4. [State of Work](../../docs/state-of-the-work.md) owns evidence-backed delivery status; it does
+   not replace ADR law.
+5. Tracked source and tests establish implementation evidence. Ignored `.agents/work/**` material
+   may support review but cannot override tracked canon.
+6. Tracked [workflow playbooks](../workflows/index.md) own repeatable procedure only and load after
+   this scope; they cannot settle architecture, delivery, or implementation truth.
 
 ## Probes
 
+- Covenants: `docs/adr/index.md` first, then the smallest existing owning ADR. Never infer a new
+  Covenant number from the directory or bypass the index's closed-register law.
 - Doctrine and quality: `docs/adr/01-doctrine.md`, `docs/adr/03-quality.md`,
   `docs/adr/04-testing.md`
 - Extension law: `docs/adr/05-extensions.md`, `docs/sepulcher/extensions/`
-- Application designs and Pattern catalogues: `docs/compositions/index.md`,
-  `docs/adr/28-workflow.md`
-- Candidate Patterns, extensions, workloads, and tutorial arcs: `docs/compositions/index.md`;
-  page-local maturity controls whether a document is proposal or accepted architecture
+- Application designs, Pattern catalogues, candidate extensions, workloads, and tutorial arcs:
+  `docs/compositions/index.md`, `docs/adr/28-workflow.md`; page-local maturity decides whether a
+  document is a proposal or accepted architecture
 - Containers and workers: `docs/adr/08-containers.md`, `docs/adr/14-workers.md`
 - Security and configuration: `docs/adr/09-security.md`, `docs/adr/12-configuration.md`
 - Agents and execution: `docs/adr/20-agents.md`, `docs/adr/22-dispatcher.md`,
@@ -43,34 +49,22 @@ documentation changes that define system truth.
 
 ## Optional Reference Probes
 
-After canonical owners and current source are clear, the
-[local references scope](references.md) routes bounded comparisons:
-
-- [agent systems and cognition](references.md#agent-systems-and-cognition) for Agent, graph,
-  memory, A2A/AVP, evaluation, or multi-agent proposals;
-- [backend and workers](references.md#backend-workers-and-application-structure) for Litestar,
-  SAQ, and application-structure comparisons;
-- [local inference and packaging](references.md#local-inference-hardware-and-packaging) for
-  Animator, serving, hardware, quantization, or container proposals;
-- [vision and ingestion](references.md#vision-and-document-ingestion) for OCR or document-parsing
-  proposals.
-
-Read one matching reference only when it improves the decision. No reference can prove acceptance,
-delivery, compatibility, performance, or architectural authority.
-
-## Typical Change Surface
-
-This is routing guidance, not authorization. Architecture work commonly touches `docs/adr/**`,
-`docs/sepulcher/**`, `AGENTS.md`, `.agents/scopes/**`, and the smallest source/test slice needed to
-keep implementation and doctrine synchronized.
+After canon and source are clear, [references.md](references.md) may route one bounded comparison
+for [agent systems](references.md#agent-systems-and-cognition),
+[backend/workers](references.md#backend-workers-and-application-structure),
+[local inference](references.md#local-inference-hardware-and-packaging), or
+[vision/ingestion](references.md#vision-and-document-ingestion). It cannot establish authority,
+acceptance, delivery, compatibility, or performance.
 
 ## Verification
 
 - Resolve every changed invariant to one owning ADR and one current source boundary.
-- When delivery prose changes, run
-  `uv run pytest -q tests/architecture/test_state_of_work.py` and verify the cited focused evidence.
+- For delivery prose, run
+  `make test PYTEST_TARGETS=tests/architecture/test_state_of_work.py N=0` and verify its cited
+  focused evidence.
 - Check links and source hooks with targeted `rg` queries.
-- For Markdown-only work, run `git diff --check -- AGENTS.md docs .agents/scopes`.
+- For Markdown-only work, run
+  `git diff --check -- AGENTS.md docs .agents/scopes .agents/workflows`.
 - For published documentation or navigation changes, run `uv run zensical build --clean`.
 - For source-backed decisions, run the targeted and repository gates defined in
   [CONTRIBUTING.md](../../CONTRIBUTING.md).

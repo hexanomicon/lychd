@@ -6,143 +6,97 @@ icon: material/spider-thread
 # :material-spider-thread: 30. Webcrawler
 
 !!! abstract "Context and Problem Statement"
-    LychD needs a path to material on the living web, but “web access” is not one capability.
-    Search, fetch, extraction, crawling, rendering hostile code, interaction, credential use,
-    session custody, screenshots, downloads, and durable admission carry different authority,
-    risk, cost, and evidence. Treating them as one magic browser would let a failed read silently
-    acquire greater power and would confuse contact with truth.
+    Web acquisition crosses an untrusted network and returns untrusted bytes. Search, fetch,
+    extraction, crawling, rendering, interaction, credentials, sessions, and storage are distinct
+    effects; failure may never authorize a stronger one. **Scout** may bring a voice from beyond
+    the Circle. It may not grant that voice the throne.
 
-## Requirements
+## Decision
 
-- **Separated effects:** Search, Fetch, Extract, Crawl, Render, Interact, Session, credential use,
-  Screenshot, download, and durable artifact admission remain distinct contracts.
-- **Host-minted authority:** Agents may propose a locator or effect. Identity, origin grant,
-  policy, consent, and reserved budget come from trusted host state.
-- **No implicit escalation:** A redirect, JavaScript requirement, CAPTCHA, authentication
-  challenge, payment challenge, provider failure, or quota response cannot authorize another
-  effect, identity, credential, retry, or provider.
-- **Pinned destinations:** Network providers must defend against SSRF, DNS rebinding, ambient
-  proxy and credential use, unbounded redirects, decompression bombs, and private or metadata
-  destinations.
-- **Hostile-content fencing:** Returned material remains attributed external data. Extraction,
-  Markdown conversion, OCR, or screenshotting does not make it true or executable.
-- **Truthful custody:** An effect receipt records an attempted effect; a durable `ArtifactRef`
-  requires real Reliquary admission and retrieval.
-- **Bounded operation:** Every provider must enforce request, byte, time, concurrency, depth, and
-  spend budgets with explicit cancellation and crash ambiguity.
-- **Optionality:** A profile with no web acquisition is valid.
+Scout is the acquisition Extension Domain, not a crawler service or a Composition. A provider
+supplies mechanism only; the host binds an Agent's proposed locator to principal, Run, effect,
+destination scope, consent, provider, and budget. Scout owns acquisition, attribution, freshness,
+and source policy—not interpretation, truth, autonomy, or consequence.
 
-## Considered Options
+Each of **Search, Fetch, Extract, Crawl, Render, Interact, Credential Use, Session Custody,
+Screenshot, Download,** and **Artifact Admission** needs its own host-owned grant and ceiling.
+Authentication, CAPTCHA, payment, quota, robots denial, provider failure, cancellation, or a
+challenge is a terminal typed result: no identity rotation, provider switch, retry, spend, or
+effect escalation follows. No-web profiles are valid and confer no ambient egress.
 
-!!! failure "Option 1: One automatic Scout"
-    A single provider tries lightweight HTTP first and silently escalates to a browser, session,
-    credential, paid service, or retry when the first attempt fails.
+## The first passage
 
-    This collapses distinct grants, makes refusal an obstacle to overcome, hides disclosure and
-    cost, and gives provider behavior authority over policy.
+The first designed passage is one unauthenticated static HTTPS GET and network-free extraction:
 
-!!! failure "Option 2: One privileged browser service"
-    A headless browser handles every web operation from one broadly trusted container.
+1. An Agent proposes one exact URL. The host validates its principal and Run, mints a one-effect
+   destination grant, selects an eligible static provider, reserves worst-case budget, and
+   durably records `prepared` before I/O.
+2. The provider pins and performs one GET: no subresources, JavaScript, cookies, cache, URL
+   credentials, `.netrc`, ambient proxy, custom headers, automatic retry, or rendering.
+3. A network-free extractor accepts only allowed HTML, XHTML, or plain text; it records raw and
+   output digests, extractor identity, and loss, then returns fenced attributed text.
+4. Settlement records disposition and usage. A prepared attempt after a crash is
+   `unknown_after_crash`; without an independent terminal record there is no blind retry.
 
-    Browser isolation reduces reach but never makes blast radius zero. It also pays the resource
-    and hostile-code cost for observations that need only a bounded static read.
+Wire bytes, decoded bytes, expansion ratio, parse work, output, headers, time, redirects, rate,
+concurrency, depth, requests, and spend are separately bounded. `Content-Length` and
+`Content-Type` are hints. Mismatch, truncation, unsupported media, or any limit failure refuses.
+Crawl, when admitted, adds a finite deduplicated frontier, page/depth budget, per-origin
+scheduler, identifying agent, and fail-closed robots evaluation; robots is neither authentication,
+site terms, nor legal permission.
 
-!!! failure "Option 3: Provider SDKs as policy"
-    Firecrawl, SearXNG, provider-native model tools, or another SDK decides fallback, credentials,
-    persistence, and routing.
+## Destination and data boundary
 
-    Such systems may later implement a bounded adapter, but none may own LychD identity,
-    destinations, consent, provenance, budget, or artifact admission.
+Every initial URL, redirect, and new connection is independently authorized: canonical HTTPS
+scheme, hostname, port, and origin only; no userinfo or unsupported scheme. Resolution runs
+without ambient proxy or credentials and rejects mixed or forbidden addresses (loopback, private,
+link-local, multicast, unspecified, and metadata). The approved address is pinned through the
+connection; connected peer, TLS certificate, SNI, and `Host` must match. Redirects are manual,
+bounded, loop-checked, and re-gated. An HTTP client or crawler SDK alone cannot establish this
+SSRF/DNS-rebinding boundary.
 
-!!! success "Option 4: Separated acquisition effects"
-    Scout is a Domain whose independently authorized providers are assembled by Weaver Patterns.
-    The first implementation proves one static public-page passage; rendering and interaction
-    arrive only after inheriting the common authority and evidence floor.
-
-## Decision Outcome
-
-**The Scout Domain is adopted as a composition of separately authorized acquisition effects.**
-There is no sovereign `Scout` package and no provider may upgrade its own grant.
-
-Scout is the common external-observation boundary, not an operator-facing application catalogue.
-Bazoš, Google Maps or another geo provider, a merchant catalogue, a shop, and a public menu source
-are source/provider adapters beneath Scout even when they expose different APIs, feeds, pages, or
-browser surfaces. A consuming Composition owns why the observation matters and what consequence
-may follow; the adapter owns only lawful acquisition, normalization, provenance, freshness,
-budgets, and source-specific policy.
-
-### 1. The First Passage
-
-The first supported path will be one bounded, unauthenticated HTTPS GET followed by network-free
-extraction:
-
-1. An Agent proposes one exact public URL.
-2. The host mints Acquisition Authority from a verified principal, canonical Run, operator origin
-   grant, fixed policy, consent reference where required, and a worst-case budget reservation.
-3. A prepared attempt is committed before the network effect.
-4. A static adapter performs a destination-pinned GET without subresources, ambient proxy,
-   credentials, cookies, cache, custom headers, link following, or automatic retry.
-5. A network-free extractor accepts only bounded HTML, XHTML, or plain text and emits fenced
-   external material tied to raw and output digests.
-6. A terminal transaction settles budget and disposition. An ambiguous crash becomes
-   `unknown_after_crash` until independent evidence reconciles it.
-
-Raw bytes are released after extraction unless a separate Reliquary contract admits them.
-Search, Crawl, Render, Interact, Session, credential use, Screenshot, download, paid providers,
-caching, and Smith ingestion remain closed until each has its own contract and adversarial
-receipt.
-
-### 2. Authority and Provider Selection
-
-The Agent-visible proposal and host-minted Acquisition Authority are different types. A future
-provider-selection seam may choose only among providers already eligible for the exact authorized
-effect. The Orchestrator participates only when an admitted provider is a managed runtime; it does
-not own destination policy, credentials, truth, or artifact admission.
-
-Every redirect is a new destination decision. URL credentials and unapproved schemes fail closed.
-Resolution rejects forbidden or mixed address sets, pins the approved destination through
-connection, and verifies that the connected peer, TLS identity, `Host`, and SNI agree.
-
-### 3. Evidence Is Not Truth
-
-The authoritative record is the effect receipt: the acting office's account of one attempted
-effect and its disposition. The response is a bounded observation. Extraction is a derivation
-whose parents and method remain visible. Interpretation or verdict belongs to
-**[Riddle (34)](34-evaluation.md)** under declared criteria.
+An acquisition receipt names the effect, principal/Run, provider/version, policy, locator and
+redirects, destination evidence, time, disposition, media/size, usage, and raw digest. It proves
+an attempted effect, not a correct response. Responses and derivations remain attributed data:
 
 ```text
-search result != fetched response != extracted statement != trusted fact
-fetch != render != interact != credential use
-acquired != admitted != understood != trusted != promoted
+locator != response != derived statement != trusted fact
+acquired != admitted != understood != promoted
 ```
 
-### 4. Active Browsing and Custody
+They are never instructions, code, policy, or truth. Interpretation belongs to
+[Riddle (34)](34-evaluation.md) or the consuming Composition.
 
-A future renderer must be a dedicated, unprivileged, disposable runtime with an independent
-network boundary, Chromium's own sandbox, and no core Pod peers, host mounts, database access,
-container-control socket, wallet key, or ambient provider secret. A CAPTCHA or access-control
-challenge returns a typed human-required outcome rather than triggering evasion.
+## Custody and stronger tracks
 
-Credentials remain opaque, origin-scoped references outside prompts and ordinary telemetry.
-Browser profiles belong to one principal, purpose, origin set, and finite lifetime. Downloads
-enter quarantine and require media sniffing, digest, provenance, classification, retention,
-retrieval authority, and explicit Reliquary admission.
+A digest or receipt is not an artifact. Bytes stay ephemeral unless custody verifies digest,
+media type, size, classification, retention, retrieval authority, and storage, then returns a
+retrievable `ArtifactRef`. Download arrival creates neither a workspace nor an artifact; it enters
+bounded quarantine. Render, Interact, Credential Use, Session Custody, Screenshot, and Download
+remain Designed. JavaScript or a challenge returns refusal or `human_required`, never a browser.
+
+Any future renderer needs a finite destination/egress grant and isolation from Core peers, host
+paths, databases, control sockets, wallets, and unrelated secrets. Credentials are opaque,
+principal- and origin-scoped references outside prompts and telemetry.
 
 ## Delivery Boundary
 
-This ADR accepts architecture, not implementation. LychD currently has no Scout provider,
-browser service, acquisition endpoint, Agent tool, custody path, or automatic Toll. The exact
-public boundary remains on the **[Scout page](../sepulcher/extensions/scout.md)** and its maintained
-**[State of Work subject](../state-of-the-work.md#scout-web-acquisition)**.
+**State: Designed. Scout has no delivered acquisition capability.** There is no Scout built-in,
+configuration, provider, route, Agent tool, fetcher, extractor, robots/rate policy, SSRF pinning,
+receipt, browser, quarantine, or Reliquary. Installed `httpx` serves other control-plane calls;
+`selectolax` is test-only. Generic-runtime “crawler” tests prove only that no capability is
+invented. `ArtifactRef` proves metadata, not custody. Source, configuration, adversarial
+network/parser tests, and an updated [State of Work](../state-of-the-work.md#scout-web-acquisition)
+record are required before delivery. The [Scout topic](../sepulcher/extensions/scout.md) orients
+the reader.
 
 ## Consequences
 
 !!! success "Positive"
-    - Lightweight reads do not inherit browser, credential, session, or payment authority.
-    - Provider implementations can evolve behind one explicit acquisition law.
-    - Provenance, crash ambiguity, hostile content, and custody remain visible.
+    Static reads do not inherit browser, credential, payment, storage, or interpretation authority.
+    Redirect, provenance, hostile-content, and custody failures stay visible and recover only by a
+    newly admitted effect.
 
 !!! failure "Negative"
-    - The design needs more contracts and tests than a single crawler wrapper.
-    - Dynamic sites, authenticated sessions, downloads, and paid providers arrive later.
-    - Destination pinning and browser isolation require maintained security work.
+    Safe acquisition requires more than HTTP and HTML libraries. Dynamic, authenticated, paid, and
+    durable material remains unavailable until its separate adversarial boundaries pass.

@@ -5,81 +5,77 @@ icon: material/account-check-outline
 
 # :material-account-check-outline: 38. IAM
 
-!!! abstract "Context and Problem Statement"
-    LychD is a sovereign daemon, but it must be capable of interacting with multiple external entities—human "Apprentices" (Family) or automated "Peers" (API/SaaS)—without compromising the Master's total control. A mechanism is required to authenticate diverse identities and enforce granular access boundaries (**Wards**) over routes and capabilities, ensuring that the machine's "Inner Sanctum" remains air-gapped from restricted users.
+## Context
 
-## Requirements
+The contained loopback surface carries one fixed `magus:*` Sigil. It exercises scope grammar and
+guards; it does not authenticate callers and cannot serve remote people, services, peers, or
+owned nodes. Remote use needs one authority that can identify a presenter, validate its evidence,
+decide its requested object and action, and remain current when an effect occurs.
 
-- **Identity Plurality:** Support for multiple concurrent identities (Sigils) within the system's trust model.
-- **Granular Scoping:** The ability to bind specific identities to limited functional scopes (e.g., `chat-only`, `api-only`, `system-admin`).
-- **Symmetric Authentication:** Enforcement of identity checks at the **[Proxy (ADR 40)](./40-proxy.md)** and the **[Backend (ADR 11)](./11-backend.md)**.
-- **Least Privilege:** By default, any new identity is granted zero access until explicitly endowed with a "Ward" by the Master.
-- **Local Persistence:** Identity and permission records must reside within the **[Phylactery (ADR 06)](./06-persistence.md)**, rejecting external third-party auth providers.
-- **Memory Namespace Discipline:** Identity must bound semantic recall/write paths using Sigil-derived `entity_id` unless an explicit shared-memory policy is granted.
+## Decision
 
-## Considered Options
+LychD adopts the **Ward** as its singular Core-coupled IAM and authorization authority. New
+Principals start with zero power; network arrival, proxy headers, mTLS, and tunnel membership may
+be evidence but never application authority.
 
-!!! failure "Option 1: Physical Data Isolation (Postgres Schemas)"
-    Giving every user a separate database schema.
-    - **Pros:** Maximum security; impossible for users to see each other's data.
-    - **Cons:** **Architectural Bloat.** Unnecessarily complex for a system where users are sharing a single "Mind" (Agent). It complicates cross-user collaboration and system-wide memory retrieval.
+| Record | Office |
+| --- | --- |
+| **Principal** | Immutable identity of a human, service, peer, or owned node. |
+| **Credential** | Revocable proof bound to one Principal, issuer, protocol, audience, and lifecycle. |
+| **Session** | Authentication continuity, distinct from a Principal, Sigil, Grant, or Bridge conversation. |
+| **Sigil** | Secret-free request/Run context carrying Principal identity and bounded claims. |
+| **Role** | Named policy bundle that may help evaluate authority; never an ambient object grant. |
+| **Authority Grant** | Current decision over Principal, action, object, audience, lifetime, policy generation, and delegation chain. |
 
-!!! failure "Option 2: Single-User Sovereignty (No IAM)"
-    Hardcoding the system to only accept one Master identity.
-    - **Pros:** Absolute simplicity; zero overhead.
-    - **Cons:** **Functional Rigidity.** Prevents the Magus from safely sharing the Lich's capabilities with family or integrating it with external webhooks (e.g., FB/SaaS) without exposing the entire system.
+A Sigil propagates attribution and bounded claims. It is not a bearer secret, and its historical
+scope bag is not current authorization. Roles cannot turn route access into ownership of every
+object served there.
 
-!!! success "Option 3: Scoped Sovereignty (RBAC + Sigils)"
-    Using a Role-Based Access Control (RBAC) model where identities (Sigils) are assigned functional "Scopes."
-    - **Pros:**
-        - **Flexibility:** Allows the Master to hand one "Sigil" (Key) to a family member and another to an API, with different permissions for each.
-        - **Efficiency:** Uses standard Litestar `Guards` to check scopes at the route level with near-zero latency.
-        - **Centralized Mind:** All users interact with the same "Soul," but their perception of the system is filtered by their scope.
+## Admission and effect-time authority
 
-## Decision Outcome
+For every protected request, Ward validates credential protocol, issuer, audience, expiry, replay
+defence, revocation, and assurance; resolves one enrolled Principal; mints a secret-free Sigil
+from trusted local state; authorizes route and named object in one ownership-aware query; then
+records credential, policy, and revocation generations. Unknown credentials, unresolved
+Principals, and caller-supplied identity or scope headers receive no authority.
 
-**The Scoped Ward** is adopted as the IAM extension. It functions as a filter that determines which parts of the machine are visible to which identity.
+Before a tool or side effect runs, its owning handler checks current Principal, action, object,
+assurance, delegation, consent or preauthorization, policy generation, and revocation epoch
+again. Agent-visible tools can be narrower than the Grant; their handler remains authoritative.
+Worker claim, Stasis resume, consent resume, queued work, and deferred peer work may not reuse a
+stale scope snapshot.
 
-This makes IAM the bridge between sovereign individuals and organizational surfaces. A company-facing API, an employee-facing tool surface, and a client-facing portal may all be projections of policy over the same coordination graph without implying that the organization owns the underlying personal Phylacteries or private priors.
+## Objects, delegation, and revocation
 
-The intended shape is one sovereign continuity substrate expressing many lawful faces. Work, family, clients, and peers need different surfaces and different wards, not different souls.
+Sessions, Runs, consents, streams, artifacts, memories, tasks, leases, and administrative records
+carry an owner or explicit sharing policy enforced by the persistence query. Filtering a completed
+result after unrestricted read is too late. Shared memory is an explicit relation with purpose,
+audience, retention, and revocation; a common model or database grants nothing.
 
-### 1. The Sigil Registry
+Delegation records issuer, delegate, audience, scope, object, expiry, depth, and revocation.
+Revocation invalidates credentials, sessions, cached grants, and affected sleeping or pending work;
+recovery starts at zero authority. Neither a universal remote Master token nor ambient fallback is
+permitted.
 
-Identities are stored in a `cabal.identities` table.
+Typed credential adapters may verify passkeys, API credentials, signed peer envelopes, client
+certificates, or later protocols. They do not mint local Sigils or compete as policy authority.
+Extensions cannot remove Ward from a protected route, create a universal Sigil, or turn
+peer-declared scope directly into local power. Audit retains the admitted evidence and decision
+generations without exposing credential secrets.
 
-- **Master Sigil:** The primary key created at Initialization via **[(CLI ADR 19)](./19-cli.md)**. Possesses the `*` (Universal) scope. Can be bound to a **Nostr Keypair** for global identity.
-- **Guest Sigils:** Created by the Master for external entities. Each is bound to a specific list of **Scopes** (e.g., `echo.read`, `altar.interact`, `a2a.execute`). Can be represented by a **Nostr npub**.
-- **Role Surfaces:** A sovereign stack may expose different wards for personal, work, client, or peer contexts while still preserving one underlying continuity substrate. Separation is achieved through Sigils and policy, not by pretending every role requires a different soul.
-- **SaaS As Surface:** External systems may remain necessary, but they are treated as bounded interfaces traversed by the Lich, not as places where the Magus's durable memory or whole professional identity must be permanently rehomed.
+## Thresholds and delivery
 
-### 1.1 The Nostr Identity Graft
+[Veil](40-proxy.md) owns hostile ingress and trusted-proxy canonicalization; [Tether](39-vpn.md)
+owns private reachability. Ward authenticates and authorizes traffic arriving through either.
+Bootstrap `magus:*` remains confined to the same-host profile and is never a remote credential.
 
-The Ward integrates with the Nostr network to provide sovereign, decentralized identity verification:
-
-- **Cryptographic Auth:** The Proxy and Backend support Nostr-signed authentication, allowing the Magus to prove identity through a keypair rather than a password — no external auth provider required.
-- **Global Peerage:** A Sigil can be bound to a public key. When a remote Lich contacts the machine via Nostr, the machine automatically maps the key to a Guest Sigil and applies the configured Wards.
-
-### 2. Scoped Enforcement (The Ward)
-
-The Ward is implemented as a set of **Litestar Guards** and **Middleware**:
-
-- **Authentication:** Validates the incoming credential (JWT, API Key, or Passkey) and identifies the associated Sigil.
-- **The Ward Check:** Before a route is executed, the Guard compares the route's required scope against the Sigil's granted scopes.
-- **Capability Gating:** The **[Dispatcher (ADR 22)](./22-dispatcher.md)** can utilize the Sigil's scope to determine which tools are "visible" to the Agent during that specific user's session.
-- **Skill Gating:** Maps A2A skills to internal Scopes. For example, an incoming A2A request for the code-gen skill is only permitted if the peer's Sigil possesses the skill.code-gen scope
-- **Archive Gating:** Memory tools must query only the active Sigil namespace by default; this is the primary barrier against cross-soul contamination.
-
-### 3. Proxy-Level Symmetry
-
-The **[Veil (ADR 40)](./40-proxy.md)** acts as the first Ward. It can be configured to require a valid Sigil for any traffic originating from the public network, while allowing open access for traffic originating from the **[Tether (ADR 39)](./39-vpn.md)** (The Inner Circle).
+This Covenant records **Designed** law. No credential-backed Principal, remote session, object
+authorization, delegation, revocation, tenant isolation, or IAM audit service ships.
+[State of Work](../state-of-the-work.md#remote-iam) owns the exact boundary.
 
 ## Consequences
 
-!!! success "Positive"
-    - **Safe Sharing:** The Magus can safely expose parts of the system to the public internet or family members without risking the core substrate.
-    - **Operational Leaness:** Avoids the complexity of multi-database or multi-schema management.
-    - **Sovereign Control:** The Master remains the sole arbiter of who can speak to the Lich and what they can say.
-
-!!! failure "Negative"
-    - **Internal Data Leakage:** Because data is not physically partitioned, the developer must be disciplined in ensuring that sensitive "Master-only" memories are not tagged with scopes that make them visible to "Guest" agents.
+Remote surfaces can share a runtime without sharing records or power. The cost is
+Principal-aware repository and effect-handler tests, plus revocation and deferred-work
+reconciliation as first-class lifecycle work. Tunnels, proxies, and provider SDKs never substitute
+for application authority.

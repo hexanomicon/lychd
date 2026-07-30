@@ -5,139 +5,96 @@ icon: material/headphones
 
 # :material-headphones: 37. Audio
 
-!!! abstract "Context and Problem Statement"
-    A text-only Daemon cannot participate in spoken interaction. Speech-to-Text (STT),
-    Text-to-Speech (TTS), and audio-capable chat introduce artifact custody, privacy, latency,
-    interruption, and hardware concerns that plain text does not. A record-and-send exchange is a
-    valid baseline; streaming is an optional latency profile whose additional session semantics
-    must be explicit.
+!!! abstract "Context"
+    Speech has a timeline. Capture may precede a word, synthesis may succeed while delivery fails,
+    and interruption may race with both. Treating audio as text with an attachment erases consent,
+    privacy, and reception.
 
-## Requirements
+## Status
 
-- **Independent Manifestation:** STT, TTS, audio-capable chat, VAD, codec, and reasoning providers
-  remain independently selectable. A Coven may group compatible local services but is not the
-  unit of semantic dispatch.
-- **Policy-Owned Priority:** Incoming audio has no intrinsic preemption authority. The admitting
-  Pattern and operator policy declare priority; the **[Orchestrator (23)](23-orchestrator.md)**
-  applies physical readiness law.
-- **The Stasis Trigger:** Integration with the **[Dispatcher (22)](22-dispatcher.md)**. If an Agent proactively invokes an audio tool (e.g., `speak_text`) while the hardware is "Cold," it must raise the `HardwareTransitionRequired` signal to freeze the graph via the **[Stasis Protocol (22)](22-dispatcher.md)**.
-- **Artifact Custody:** Captured and synthesized audio bytes remain immutable Reliquary artifacts;
-  graph checkpoints and run rows carry references and timeline state, not media blobs.
-- **Profiled Transport:** Record-and-send is the minimum profile. Half-duplex response streaming
-  and later full-duplex conversation require a bounded Resonance Session, speech timeline,
-  interruption law, and delivery receipts; WebSocket is one transport option.
-- **Portal/Soulstone Duality:** Local and remote providers share semantic family contracts, while
-  Ward policy, classification, consent, economics, and readiness remain provider-specific.
+Audio admission is **Partial**. The core can carry immutable audio `ArtifactRef` metadata, project
+audio media types to the `audio` modality, and declare `stt` and `tts` capability families.
 
-## Considered Options
+It cannot capture, upload, store, authorize, materialize, transcode, or play audio bytes. Bridge
+does not forward audio modality into dispatch. No speech timeline, streaming transport, working
+STT/TTS adapter, Echo package, or Audio Coven ships. [State of
+Work](../state-of-the-work.md#audio-admission) owns this boundary.
 
-!!! failure "Option 1: Frontend-Only Processing (Browser APIs)"
-    Utilizing the browser's native Web Speech APIs.
+## Decision
 
-    - **Cons:** **Privacy Ceiling.** Browser-based STT often routes data through corporate clouds, violating the **[Iron Pact (00)](00-license.md)**.
+**Echo** is the speech-lifecycle Domain. Its first profile is **record and send**: one explicit,
+bounded utterance becomes an immutable artifact, then an admitted provider returns text or another
+audio artifact.
 
-!!! success "Option 2: Record and Send"
-    Treating a bounded utterance as an immutable artifact, then returning text or synthesized audio.
+| Role | Contract |
+| --- | --- |
+| **Ear** | An `stt` capability transcribes bounded audio. |
+| **Voice** | A `tts` capability synthesizes bounded speech. |
+| **Audio-capable Mind** | A `chat` capability declaring audio input/output; it remains chat. |
+| **Listener** | Device capture, codecs, and optional voice-activity detection. |
+| **Mind** | Ordinary reasoning; speech creates no separate reasoning identity. |
 
-    - **Pros:** Small transport surface, explicit capture boundary, simple retries, and a viable
-      first Android/Web client.
-    - **Cons:** Turn-taking is less fluid than a mature streaming session.
+There is no `audio` capability family. Audio is a modality; `stt`, `tts`, and `chat` name
+different service kinds.
 
-!!! success "Option 3: Profiled Resonance"
-    Extending the baseline with independent speech providers and optional half/full-duplex
-    transports managed through the ordinary Dispatcher, Stasis, and Orchestrator laws.
+## Capture and custody
 
-    - **Pros:**
-        - **Telepresence:** Collapses the perception-cognition-action loop to sub-second latencies.
-        - **Hardware Safety:** The Orchestrator readies only the selected managed providers and
-          declared dependencies.
-        - **Delivery Honesty:** Artifact receipts and timeline state distinguish generated,
-          delivered, played, interrupted, and expired audio.
+Capture authority is explicit, visible, time-bounded, and revocable. Consent to one utterance is
+not permanent microphone access; device indicators and server state must agree whether capture is
+armed, active, stopped, or failed.
 
-## Decision Outcome
+Reliquary custody binds recording or synthesis identity, digest, media type, byte size, validated
+duration/codec facts, classification, Principal, retention, and derivation from recording,
+transcript, or request. Bytes never enter a Graph checkpoint, queue payload, event envelope, or
+log—only references and bounded timeline state do. Decoders and transcoders treat them as hostile:
+format, duration, channels, sample rate, decompression, parser resources, and metadata are bounded
+before provider use.
 
-**The Echo** is adopted as the temporal speech-lifecycle Extension Domain. Dedicated providers use
-`stt` and `tts` families; `audio` remains an input/output modality, not a capability family. Echo
-does not require an atomic Audio Coven or one mandatory transport.
+## Record, send, account
 
-!!! warning "Current audio floor is schema and admission, not a stream"
-    The implemented core can declare and filter `audio` modality metadata on capabilities and can
-    carry an immutable audio `ArtifactRef` in an `Intent`. It does not yet materialize artifact
-    bytes into Pydantic AI input, propagate them through the Bridge graph, expose an audio
-    transport, persist a speech timeline, or register working STT/TTS adapters. No concrete Echo
-    package exists. Sections below specify the Domain that may consume the current schema seam;
-    they are not an available voice interface.
+```text
+explicit capture → immutable source artifact → eligible Ear or audio-capable Mind
+→ attributed transcript or native observation → ordinary Agent step → optional Voice
+→ delivery receipt
+```
 
-!!! note "The Two-Axis Law: No Audio Family"
-    A **family** names a routable service kind; **modalities** name what a capability admits. There
-    is **no `audio` family**. A chat model that hears is not a distinct family member: it is a
-    **[Dispatcher (22)](22-dispatcher.md)** `chat` capability carrying
-    `audio ∈ modalities_in`, satisfying spoken input in place. The dedicated audio families remain
-    `stt` (the Ear) and `tts` (the Voice)—routable service kinds for transcription and synthesis
-    that can be selected independently.
+A transcript retains source, available time regions, provider and revision, language assumptions,
+and uncertainty; it interprets a recording rather than replacing it. Synthesized audio is a new
+artifact. “Generated” says bytes were produced, not that a client received, buffered, played, or
+completed them.
 
-### 1. Planned Resonance Manifestations
+The Pattern supplies family, modality, classification, priority, and authority. The
+[Dispatcher](22-dispatcher.md) chooses exact `stt`, `tts`, or `chat`; an unwarm managed provider
+uses ordinary Graph Stasis and [Orchestrator](23-orchestrator.md) readiness. Echo may not preempt,
+revoke another grant, make its own continuing session, or silently select a remote provider. A
+Portal needs egress eligibility, consent where required, and a cost bound. Local execution does
+not remove capture, retention, or tool authority; source influence persists under [Context
+privatization](21-context.md#privatization-and-the-privacy-cut).
 
-Echo may manifest through independently registered capabilities. Local providers may be rendered
-as **[Quadlet services (08)](08-containers.md)**:
+## Streaming without pretending a socket is a protocol
 
-- **The Ear (`stt.container`):** A high-performance Speech-to-Text service (e.g., Faster-Whisper).
-- **The Voice (`tts.container`):** A streaming Text-to-Speech service (e.g., Piper).
-- **Audio-capable chat:** A `chat` provider declaring `audio` input or output.
-- **The Listener:** Client/server VAD, codec, and capture controls.
-- **The Mind:** The ordinary selected reasoning provider; Echo requires no special voice mind.
+Record-and-send is the minimum. Half-duplex may stream one response after capture closes.
+Full-duplex additionally owes simultaneous capture/playback, VAD, barge-in, echo cancellation,
+and contested turn ownership.
 
-### 2. The Planned Resonance Pipeline
+A **Resonance Session** keeps one monotonic timeline for segments and attempts: capture
+armed/active/stopped/failed; transcription and synthesis in progress/settled/generated; delivery
+offered/accepted/failed; playback started/completed/interrupted/unknown; and cancellation, expiry,
+or retry. WebSocket, WebRTC, or another transport can carry these records but supplies none of
+their semantics. Reconnect resumes by acknowledged sequence and artifact identity, never by
+guessing from a live socket.
 
-The minimum profile establishes a bounded, recoverable exchange:
+Cancellation names its scope: stopping playback need not erase an artifact, revoking capture stops
+new input, and cancelling an Invocation settles every admitted provider and transport attempt.
+A future mobile Emissary can own physical capture, playback, route selection, and low-level state;
+a private Tether still supplies transport, not application authority, classification, or consent.
 
-- **Capture and admit:** A client records one bounded utterance and places it under immutable
-  artifact custody with digest, media type, duration, classification, and retention.
-- **Perceive and think:** One eligible Ear or audio-capable chat provider produces attributed input
-  for an ordinary Agent step.
-- **Respond:** Text may be returned directly or granted to one Voice provider.
-- **Deliver:** A Resonance Session records generated, delivered, played, interrupted, expired, and
-  retryable states. Media bytes remain artifact references.
-- **Stream later:** Half-duplex output streaming may reduce time-to-first-audio. Full duplex adds
-  VAD, barge-in, echo cancellation, and explicit turn/interruption semantics.
+## Consequences and acceptance
 
-### 3. Orchestration Without Privilege Inflation
+Echo distinguishes generation, delivery, and playback and lets independent Ears, Voices, Minds,
+and Listeners compose. The cost is sensitive custody, storage/retention pressure, and timing,
+cancellation, and egress races.
 
-User-initiated and Agent-initiated speech use the same law:
-
-1. The Pattern admits a bounded speech operation with authority, priority, modality, and
-   classification.
-2. The **[Dispatcher (22)](22-dispatcher.md)** selects the exact `stt`, `tts`, or `chat`
-   capability.
-3. If a selected managed provider is non-`WARM`, the ordinary Stasis handshake asks the
-   Orchestrator to converge it. Echo cannot preempt work or revoke leases.
-4. A grant is scoped to one step or Resonance Session. It does not imply continued microphone
-   access.
-
-### 4. Sensory Dispatching (Portals & Soulstones)
-
-The Echo utilizes the **[Dispatcher (22)](22-dispatcher.md)** to resolve capabilities:
-
-- **Soulstones:** Local services may reduce egress but still require explicit artifact and capture
-  policy.
-- **Portals:** Remote services require classification eligibility, Ward egress policy, consent
-  where required, and an economic budget.
-- **Abstraction:** Semantic request/response contracts are stable; privacy, latency, readiness,
-  cost, and support claims remain provider-specific.
-
-## Consequences
-
-!!! success "Positive"
-    - **Progressive Immersion:** The record-and-send floor can grow into streaming without
-      replacing the semantic contract.
-    - **Delivery Evidence:** Session receipts state what was generated and delivered without
-      promising that a human heard it.
-    - **Truthful Readiness:** The Stasis Protocol represents a non-ready managed provider without
-      pretending that the speech operation already completed.
-
-!!! failure "Negative"
-    - **VRAM Hunger:** Some combinations of STT, TTS, and reasoning providers can challenge
-      mid-range GPUs.
-    - **Storage Pressure:** Retained audio artifacts require explicit expiry and quota policy.
-    - **Session Complexity:** Full-duplex speech adds interruption and timing races absent from
-      record-and-send.
+It cannot move beyond its schema seam until evidence proves visible capture consent, custody,
+hostile-audio limits, modality forwarding, local and Portal policy, STT/TTS conversion, transcript
+provenance, delivery/playback receipts, interruption, retention/deletion, and disconnect recovery.
