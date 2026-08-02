@@ -50,6 +50,6 @@ def register(context):
 
     registration = context.run_operations.get("hunt-cache")
     assert registration is not None
-    assert registration.provider_id == "cache-hunter"
+    assert registration.provider_id == "crypt:cache-hunter"
     assert registration.spec.execution.name == "cache-hunter.inspect"
     assert registration.spec.inputs[0].name == "target"

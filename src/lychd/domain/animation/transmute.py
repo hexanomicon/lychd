@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import shlex
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
@@ -137,21 +138,52 @@ class QuadletContributor(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class RegisteredQuadletContributor:
+    """One contributor with host-assigned extension provenance."""
+
+    provider_id: str
+    contributor: QuadletContributor
+
+
 class TransmutationStore(ExtensionStore):
     """Store for Quadlet contributions from extensions."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, current_provider: Callable[[], str] | None = None) -> None:
         """Create an empty contributor store."""
-        self._contributors: list[QuadletContributor] = []
+        super().__init__()
+        self._current_provider = current_provider or (lambda: "direct")
+        self._registrations: list[RegisteredQuadletContributor] = []
+
+    @property
+    def registrations(self) -> tuple[RegisteredQuadletContributor, ...]:
+        """Contributors in registration order with exact provider ownership."""
+        return tuple(self._registrations)
 
     def add_contributor(self, contributor: QuadletContributor) -> None:
         """Register one Quadlet contributor."""
-        self._contributors.append(contributor)
+        self._require_mutable()
+        provider_id = self._current_provider()
+        for registration in self._registrations:
+            if registration.contributor is contributor or registration.contributor == contributor:
+                if registration.provider_id == provider_id:
+                    return
+                msg = (
+                    f"Quadlet contributor from {provider_id!r} duplicates the contributor "
+                    f"owned by {registration.provider_id!r}."
+                )
+                raise ValueError(msg)
+        self._registrations.append(
+            RegisteredQuadletContributor(
+                provider_id=provider_id,
+                contributor=contributor,
+            )
+        )
 
     @property
     def contributors(self) -> tuple[QuadletContributor, ...]:
         """Registered Quadlet contributors, in registration order."""
-        return tuple(self._contributors)
+        return tuple(registration.contributor for registration in self._registrations)
 
 
 class Transmuter:

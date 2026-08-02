@@ -51,7 +51,7 @@ from lychd.domain.cortex.runs import ConsentPending
 if TYPE_CHECKING:
     from lychd.agents.router import Intent
     from lychd.agents.services import TurnLedgerPort
-    from lychd.domain.web.fragments import ValidatedFragment
+    from lychd.domain.web.fragments import FragmentRegistry, ValidatedFragment
 
 # Re-exported for backward-compatible imports (domain/web/fragments,
 # interface/web/bridge) without re-introducing the old import cycle.
@@ -159,6 +159,7 @@ async def settle_turn(
     *,
     turns: TurnLedgerPort,
     context: Any,
+    fragments: FragmentRegistry,
 ) -> None:
     """Atomically settle visible reply + completed model history, then release context."""
     from lychd.domain.web.schemas import BridgeTurn
@@ -178,7 +179,7 @@ async def settle_turn(
             content=reply.answer,
             run_id=state.run_id,
             state="settled",
-            fragments=tuple(fragment.key for fragment in validated),
+            fragments=tuple(fragments.descriptor(fragment) for fragment in validated),
         ),
         new_messages=new_messages,
     )
@@ -411,7 +412,14 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
         validated = ctx.deps.fragments.validate_calls(reply.fragments)
         for fragment in validated:
             emit.fragment(fragment.key, fragment.params.model_dump(mode="json"))
-        await settle_turn(ctx.state, reply, validated, turns=ctx.deps.turns, context=ctx.deps.context)
+        await settle_turn(
+            ctx.state,
+            reply,
+            validated,
+            turns=ctx.deps.turns,
+            context=ctx.deps.context,
+            fragments=ctx.deps.fragments,
+        )
         return End(reply)
 
 
@@ -449,7 +457,9 @@ BRIDGE_CHAT = Workflow(
     manifest=PatternManifest(
         key="bridge_chat",
         revision="1",
+        implementation_revision="py.1",
         checkpoint_schema="bridge-chat-state-v1",
+        entry_node="weave_context",
         nodes=(
             PatternNode(key="weave_context", label="Weave context", implementation=WeaveContext),
             PatternNode(key="converse", label="Converse", implementation=Converse),

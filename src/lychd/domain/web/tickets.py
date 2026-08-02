@@ -67,6 +67,7 @@ class TicketStore:
             message = "Ticket terminal retention must be positive."
             raise ValueError(message)
         self._tickets: dict[str, TicketRecord] = {}
+        self._reservations: set[str] = set()
         self._capacity = capacity
         self._terminal_retention_s = terminal_retention_s
         self._clock = clock
@@ -74,9 +75,21 @@ class TicketStore:
     def ensure_capacity(self) -> None:
         """Retire expired terminals or refuse launch without evicting live truth."""
         self._retire_expired()
-        if len(self._tickets) >= self._capacity:
+        if len(self._tickets) + len(self._reservations) >= self._capacity:
             message = "The process-local transition ticket store is at capacity."
             raise TicketCapacityError(message)
+
+    def reserve_capacity(self, request_id: str) -> None:
+        """Reserve one launch slot synchronously across an asynchronous durable claim."""
+        if request_id in self._reservations:
+            message = f"Transition request {request_id!r} already has a pending ticket reservation."
+            raise TicketCapacityError(message)
+        self.ensure_capacity()
+        self._reservations.add(request_id)
+
+    def release_capacity(self, request_id: str) -> None:
+        """Release an unused launch reservation."""
+        self._reservations.discard(request_id)
 
     def open(
         self,
@@ -86,13 +99,21 @@ class TicketStore:
         total_metabolic_cost: float,
         trace: TransitionTrace | None = None,
         task: asyncio.Task[Any],
+        reservation: str | None = None,
     ) -> TicketRecord:
         """Register a launched transition task and return its ticket record."""
-        try:
-            self.ensure_capacity()
-        except TicketCapacityError:
+        if reservation is None:
+            try:
+                self.ensure_capacity()
+            except TicketCapacityError:
+                task.cancel()
+                raise
+        elif reservation not in self._reservations:
             task.cancel()
-            raise
+            message = f"Transition request {reservation!r} has no ticket capacity reservation."
+            raise TicketCapacityError(message)
+        else:
+            self._reservations.remove(reservation)
         from lychd.domain.orchestration.schema import TransitionTrace
 
         now = self._clock()
@@ -151,6 +172,7 @@ class TicketStore:
             else:
                 self._observe_terminal(record.task)
         self._tickets.clear()
+        self._reservations.clear()
 
     def _task_done(self, ticket_id: str, task: asyncio.Task[Any]) -> None:
         """Stamp terminal time without removing truth needed by GET/SSE reconnect."""

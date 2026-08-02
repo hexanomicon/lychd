@@ -16,6 +16,7 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
     SourceKind,
 )
+from lychd.domain.animation.errors import ActivationTimeout
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -307,6 +308,52 @@ async def test_calculate_transition_plan_returns_soft_swap_for_warm_dynamic_runt
     assert plan.action_type == "SOFT_SWAP"
     assert plan.evict_coven_ids == []
     assert plan.launch_coven_ids == []
+
+
+@pytest.mark.parametrize("phase", [CapabilityPhase.ACTIVATABLE, CapabilityPhase.WARMING])
+@pytest.mark.asyncio
+async def test_calculate_transition_plan_rejects_started_shared_dynamic_capability(
+    phase: CapabilityPhase,
+) -> None:
+    target = _spec(
+        key="router:chat:router-main",
+        animator_name="router",
+        lifecycle_mode="dynamic_soft",
+        dedicated=False,
+    )
+    state = _state(target, is_static=False)
+    state.phase = phase
+    registry = StubRegistry([target], [state], {"router": _runtime("router", up=True)})
+
+    with pytest.raises(RuntimeError, match="provided by shared animator 'router'.*cannot be lifecycle-managed"):
+        await _make_manager(AsyncMock(), registry).calculate_transition_plan(target.key)
+
+
+@pytest.mark.asyncio
+async def test_request_transition_does_not_activate_started_shared_dynamic_capability() -> None:
+    target = _spec(
+        key="router:chat:router-main",
+        animator_name="router",
+        lifecycle_mode="dynamic_soft",
+        dedicated=False,
+    )
+    state = _state(target, is_static=False)
+    state.phase = CapabilityPhase.ACTIVATABLE
+    registry = StubRegistry([target], [state], {"router": _runtime("router", up=True)})
+    broker = AsyncMock()
+    manager = _make_manager(broker, registry)
+
+    with (
+        patch("asyncio.create_subprocess_exec") as subprocess,
+        pytest.raises(RuntimeError, match="provided by shared animator 'router'.*cannot be lifecycle-managed"),
+    ):
+        await manager.request_transition(target.key, priority=100)
+
+    broker.pause_queues.assert_not_called()
+    broker.broadcast_soft_stop.assert_not_called()
+    subprocess.assert_not_called()
+    assert registry.activate_calls == []
+    assert registry.await_warm_calls == []
 
 
 @pytest.mark.asyncio
@@ -902,6 +949,134 @@ async def test_hard_swap_readiness_failure_runs_typed_compensation() -> None:
     assert titan_runtime.connector.link.up is True
     assert vision_runtime is not None
     assert vision_runtime.connector.link.up is False
+    assert broker.paused is False
+    assert leases.admission("titan") is AnimatorAdmission.OPEN
+    assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_hard_swap_bounds_the_initial_target_convergence_probe() -> None:
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker,
+        leases=leases,
+        switching=SwitchingSettings(drain_timeout_s=5.0, warmup_timeout_s=0.01),
+    )
+    original_refresh = manager.registry.refresh_capability_state
+    calls = 0
+
+    async def block_convergence_probe(key: str) -> CapabilityState | None:
+        nonlocal calls
+        calls += 1
+        if calls >= 3:
+            await asyncio.Event().wait()
+        return await original_refresh(key)
+
+    with (
+        patch.object(manager.registry, "refresh_capability_state", side_effect=block_convergence_probe),
+        pytest.raises(ActivationTimeout, match="target convergence exceeded"),
+    ):
+        await manager.request_transition(target.key, 100)
+
+    actuator = manager._actuator
+    assert isinstance(actuator, _StateTrackingActuator)
+    assert [intent.operation for intent in actuator.calls] == ["forward", "compensation"]
+    assert broker.paused is False
+    assert leases.admission("titan") is AnimatorAdmission.OPEN
+    assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_hard_swap_bounds_evictee_cold_probe_and_compensates() -> None:
+    """A hung post-stop probe cannot hold both admission gates forever."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker,
+        leases=leases,
+        switching=SwitchingSettings(drain_timeout_s=5.0, warmup_timeout_s=0.01),
+    )
+
+    original_refresh = manager.registry.refresh_capability_states_for_animator
+
+    async def hang_after_evict(animator_name: str) -> list[CapabilityState]:
+        runtime = manager.registry.get_runtime(animator_name)
+        if animator_name == "titan" and runtime is not None and not runtime.connector.link.up:
+            await asyncio.Event().wait()
+        return await original_refresh(animator_name)
+
+    with (
+        patch.object(manager.registry, "refresh_capability_states_for_animator", side_effect=hang_after_evict),
+        pytest.raises(RuntimeError, match="Timed out proving evicted animator runtimes cold"),
+    ):
+        await manager.request_transition(target.key, 100)
+
+    actuator = manager._actuator
+    assert isinstance(actuator, _StateTrackingActuator)
+    assert [intent.operation for intent in actuator.calls] == ["forward", "compensation"]
+    assert broker.paused is False
+    assert leases.admission("titan") is AnimatorAdmission.OPEN
+    assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_cancelled_hard_swap_finishes_compensation_before_reopening() -> None:
+    """Repeated caller cancellation cannot abandon the inverse in flight."""
+    leases = LeaseLedger()
+    broker = _RecordingBroker()
+    manager, target = _swap_manager_with_broker(
+        broker,
+        leases=leases,
+        switching=SwitchingSettings(drain_timeout_s=5.0),
+    )
+    base_actuator = manager._actuator
+    assert isinstance(base_actuator, _StateTrackingActuator)
+    compensation_entered = asyncio.Event()
+    release_compensation = asyncio.Event()
+    warm_entered = asyncio.Event()
+
+    class _BlockingCompensation:
+        async def apply(self, intent: TransitionIntent) -> None:
+            if intent.operation == "compensation":
+                compensation_entered.set()
+                await release_compensation.wait()
+            await base_actuator.apply(intent)
+
+    async def block_warm(
+        key: str,
+        *,
+        timeout_s: float = 120.0,
+        interval_s: float = 0.75,
+    ) -> CapabilityState:
+        _ = (key, timeout_s, interval_s)
+        warm_entered.set()
+        await asyncio.Event().wait()
+        message = "unreachable"
+        raise AssertionError(message)
+
+    manager._actuator = _BlockingCompensation()
+    with patch.object(manager.registry, "await_warm", side_effect=block_warm):
+        task = asyncio.create_task(manager.request_transition(target.key, 100))
+        try:
+            await asyncio.wait_for(warm_entered.wait(), timeout=1.0)
+            task.cancel()
+            await asyncio.wait_for(compensation_entered.wait(), timeout=1.0)
+            task.cancel()
+            await asyncio.sleep(0)
+            assert not task.done()
+            assert broker.paused is True
+            release_compensation.set()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+        finally:
+            release_compensation.set()
+            if not task.done():
+                task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    assert [intent.operation for intent in base_actuator.calls] == ["forward", "compensation"]
     assert broker.paused is False
     assert leases.admission("titan") is AnimatorAdmission.OPEN
     assert leases.admission("vision") is AnimatorAdmission.OPEN

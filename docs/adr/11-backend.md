@@ -48,6 +48,9 @@ what it reads. There is no hot-reload contract.
 The application layer owns HTTP admission and dependency wiring. Domain code speaks ports,
 repositories, and services; persistence adapters own SQLAlchemy sessions and explicit statements
 needed for locking or aggregate transitions. Controllers never issue database queries directly.
+The Nexus controller uses a profile-bound request-admission port before it creates a physical
+transition task; PostgreSQL owns the cross-process uniqueness transaction while the controller
+retains only short-lived ticket projection.
 The system layer owns host adapters and lifecycle effects. [Persistence (06)](06-persistence.md),
 [Configuration (12)](12-configuration.md), and [Security (09)](09-security.md) retain their
 respective transaction, configuration, and trust laws.
@@ -84,10 +87,11 @@ Sigil. Wider browser controls and queue/execution isolation belong to
 Tomb queue, executor, credential, mount, sandbox, or promotion authority here. Its delivery
 boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted-execution).
 
-Focused tests cover memory-profile composition and web contracts. The real application-factory
-plus PostgreSQL lifecycle test is still skipped, and asyncpg codec installation lacks direct
-integration coverage. [State of Work](../state-of-the-work.md#current-evidence-envelope) owns the
-evidence envelope.
+Focused tests cover memory-profile composition and web contracts. A disposable two-boot receipt
+exercises the real application factory, PostgreSQL, in-process SAQ, and asyncpg installation with an
+offline model and HTTP test client. It does not directly prove the known plain-`json` codec defect,
+a real browser, inference engine, or deployed host. [State of
+Work](../state-of-the-work.md#current-evidence-envelope) owns the evidence envelope.
 
 ## Consequences
 

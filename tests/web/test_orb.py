@@ -6,6 +6,7 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from lychd.agents.router import Intent
+from lychd.agents.workflows import DELEGATED_RITE, BuiltinWorkflowRegistry
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
@@ -79,6 +80,42 @@ def test_selected_run_projects_exact_pattern_and_honest_gap(
     assert body["evidence"][1]["subject_key"] == "converse"
     assert "raw secret" not in response.text
     assert "Token deltas" in body["known_omissions"][0]
+
+
+def test_selected_run_uses_boot_catalogue_for_exactness(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    _seed(fake_services, "run-registry-mismatch")
+    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(DELEGATED_RITE,))
+
+    body = altar_client.get("/api/v1/orb/runs/run-registry-mismatch").json()
+
+    assert body["pattern"]["exact"] is True
+    assert body["pattern"]["loom_path"] is None
+
+
+def test_selected_run_requires_full_pattern_equality_for_loom_link(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    manifest = {**BRIDGE_CHAT.manifest.snapshot(), "unregistered_field": "drift"}
+
+    async def seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id="session-1", run_id="run-full-pattern-mismatch", prompt="raise", source="bridge"),
+            workflow_name=BRIDGE_CHAT.name,
+            pattern_manifest=manifest,
+            queue_name="runs",
+            priority=70,
+        )
+
+    asyncio.run(seed())
+
+    body = altar_client.get("/api/v1/orb/runs/run-full-pattern-mismatch").json()
+
+    assert body["pattern"]["exact"] is True
+    assert body["pattern"]["loom_path"] is None
 
 
 def test_selected_run_is_bounded_and_unknown_is_404(

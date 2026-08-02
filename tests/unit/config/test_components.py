@@ -68,3 +68,11 @@ def test_rites_queue_can_claim_perform_run(monkeypatch: pytest.MonkeyPatch) -> N
     queues = _queues(monkeypatch)
     assert perform_run in list(queues["rites"].tasks)  # type: ignore[attr-defined]
     assert perform_run in list(queues["runs"].tasks)  # type: ignore[attr-defined]
+
+
+def test_reconciliation_is_not_broker_callable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only lifespan startup may invoke reconciliation with its captured boot cutoff."""
+    from lychd.ghouls.runs import reconcile_runs
+
+    queues = _queues(monkeypatch)
+    assert all(reconcile_runs not in list(queue.tasks) for queue in queues.values())  # type: ignore[attr-defined]

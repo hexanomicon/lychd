@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from datetime import UTC, datetime
 from inspect import Parameter, signature
 from typing import TYPE_CHECKING, Literal
@@ -26,6 +26,7 @@ from lychd.domain.animation.connectors import ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
+from lychd.lib.asyncio import complete_under_cancellation
 from lychd.lib.http import run_sync
 
 if TYPE_CHECKING:
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
     from lychd.domain.animation.services.adapters.contracts import (
-        PortalRuntimeFactory,
+        PortalDefinition,
         RuntimePlan,
         SoulstoneRuntimeAdapter,
     )
@@ -52,6 +53,80 @@ _RUNTIME_FACTORY_WITH_QUADLET_ARITY = 2
 _ACTIVATION_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
+class _ProbeContractError(ValueError):
+    """Malformed adapter result plus the capability observations it invalidates."""
+
+    def __init__(self, message: str, *, requested_keys: set[str]) -> None:
+        super().__init__(message)
+        self.requested_keys = frozenset(requested_keys)
+
+
+def _declaration_provenance(declaration: AnimatorConfigDeclaration) -> str:
+    source_file = str(declaration.source_file) if declaration.source_file is not None else None
+    return f"{type(declaration).__name__}(name={declaration.name!r}, source_file={source_file!r})"
+
+
+def _runtime_provenance(runtime: RuntimeAnimator) -> str:
+    return f"{type(runtime).__name__} from {_declaration_provenance(runtime.rune)}"
+
+
+def _capability_provenance(spec: CapabilitySpec, runtime: RuntimeAnimator) -> str:
+    return (
+        f"{type(spec).__name__}(animator_name={spec.animator_name!r}, runtime={spec.runtime!r}, "
+        f"source_kind={spec.source_kind.value!r}, family={spec.family.value!r}, model_id={spec.model_id!r}) "
+        f"from {_runtime_provenance(runtime)}"
+    )
+
+
+def _canonical_capability_owner(
+    declaration: AnimatorConfigDeclaration,
+) -> tuple[str, SourceKind]:
+    if isinstance(declaration, SoulstoneConfig):
+        return declaration.runtime_name, SourceKind.SOULSTONE
+    return f"portal:{declaration.provider_name.strip().lower()}", SourceKind.PORTAL
+
+
+def _require_runtime_identity(
+    declaration: AnimatorConfigDeclaration,
+    runtime: RuntimeAnimator,
+) -> None:
+    """Reject a factory result that does not preserve its exact Rune and identity."""
+    if runtime.rune is not declaration:
+        msg = (
+            f"Runtime factory for {_declaration_provenance(declaration)} returned "
+            f"{_runtime_provenance(runtime)}, which does not retain the exact input Rune."
+        )
+        raise ValueError(msg)
+    if runtime.name != declaration.name or runtime.id != declaration.name:
+        msg = (
+            f"Runtime for {_declaration_provenance(declaration)} must use canonical name/id "
+            f"{declaration.name!r}; received name={runtime.name!r}, id={runtime.id!r}."
+        )
+        raise ValueError(msg)
+
+
+def _require_capability_identity(
+    declaration: AnimatorConfigDeclaration,
+    runtime: RuntimeAnimator,
+    spec: CapabilitySpec,
+) -> None:
+    """Reject a capability that claims identity outside its exact runtime owner."""
+    expected_runtime, expected_source = _canonical_capability_owner(declaration)
+    expected_key = f"{runtime.id}:{spec.family.value}:{spec.model_id}"
+    mismatches: list[str] = []
+    if spec.animator_name != runtime.id:
+        mismatches.append(f"animator_name={spec.animator_name!r}, expected {runtime.id!r}")
+    if spec.runtime != expected_runtime:
+        mismatches.append(f"runtime={spec.runtime!r}, expected {expected_runtime!r}")
+    if spec.source_kind is not expected_source:
+        mismatches.append(f"source_kind={spec.source_kind.value!r}, expected {expected_source.value!r}")
+    if spec.key != expected_key:
+        mismatches.append(f"key={spec.key!r}, expected {expected_key!r}")
+    if mismatches:
+        msg = f"Capability ownership mismatch for {_capability_provenance(spec, runtime)}: {'; '.join(mismatches)}."
+        raise ValueError(msg)
+
+
 class AnimatorRegistry:
     """Runtime registry over one injected Animator declaration snapshot.
 
@@ -59,9 +134,10 @@ class AnimatorRegistry:
     - hydrated declarations (``SoulstoneConfig`` / ``PortalConfig``)
     - resolved runtime animators (``Animator`` handles with connectors/links)
 
-    Rune discovery and collision policy belong to the declaration compiler.
-    Runtime creation is delegated to factories; the built-in adapter registry
-    supplies the default Soulstone and Portal factory.
+    Rune discovery and declaration collision policy belong to the declaration
+    compiler. Hydration rejects duplicate runtime and capability keys. Runtime
+    creation is delegated to factories; the built-in adapter registry supplies
+    the default Soulstone and Portal factory.
     """
 
     def __init__(
@@ -72,7 +148,7 @@ class AnimatorRegistry:
         runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
         binder: AnimatorBinder | None = None,
         runtime_factories: Sequence[AnimatorFactory] | None = None,
-        portal_factories: Sequence[PortalRuntimeFactory] = (),
+        portal_definitions: Sequence[PortalDefinition] = (),
     ) -> None:
         """Initialize from one compiled declaration and Settings snapshot.
 
@@ -89,7 +165,7 @@ class AnimatorRegistry:
         self._binder = binder or AnimatorBinder()
         self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(
             adapters=list(runtime_adapters),
-            portal_factories=list(portal_factories),
+            portal_definitions=list(portal_definitions),
             settings=settings,
         )
         self._runtime_factories: list[AnimatorFactory] = (
@@ -102,15 +178,8 @@ class AnimatorRegistry:
         self._animators: dict[str, RuntimeAnimator] = {}
         self._capabilities: dict[str, CapabilitySpec] = {}
         self._capability_states: dict[str, CapabilityState] = {}
+        self._probe_lock = asyncio.Lock()
         self._loaded = False
-
-    def register_runtime_factory(self, factory: AnimatorFactory) -> None:
-        """Register a runtime animator factory used during `load()`."""
-        self._runtime_factories.append(factory)
-
-    def register_runtime(self, animator: RuntimeAnimator) -> None:
-        """Register/replace a runtime animator handle directly by id."""
-        self._animators[animator.id] = animator
 
     def load(self) -> None:
         """Build runtime animators from the injected declaration snapshot."""
@@ -127,6 +196,7 @@ class AnimatorRegistry:
         quadlets = self._transmute_soulstone_quadlets(raw_soulstones, raw_portals)
         new_animators: dict[str, RuntimeAnimator] = {}
         new_capabilities: dict[str, CapabilitySpec] = {}
+        new_capability_runtimes: dict[str, RuntimeAnimator] = {}
         for rune in [*raw_soulstones, *raw_portals]:
             resolved = False
             for factory in self._runtime_factories:
@@ -137,9 +207,29 @@ class AnimatorRegistry:
                 )
                 if runtime is None:
                     continue
+                _require_runtime_identity(rune, runtime)
+                existing_runtime = new_animators.get(runtime.id)
+                if existing_runtime is not None:
+                    msg = (
+                        f"Duplicate runtime key {runtime.id!r}: existing contributor "
+                        f"{_runtime_provenance(existing_runtime)} conflicts with "
+                        f"{_runtime_provenance(runtime)}."
+                    )
+                    raise ValueError(msg)
                 new_animators[runtime.id] = runtime
                 for spec in self._runtime_adapters.build_capability_specs(rune, runtime):
-                    new_capabilities[spec.key] = spec
+                    _require_capability_identity(rune, runtime, spec)
+                    canonical_spec = spec.model_copy(deep=True)
+                    existing_spec = new_capabilities.get(canonical_spec.key)
+                    if existing_spec is not None:
+                        msg = (
+                            f"Duplicate capability key {canonical_spec.key!r}: existing contributor "
+                            f"{_capability_provenance(existing_spec, new_capability_runtimes[canonical_spec.key])} "
+                            f"conflicts with {_capability_provenance(canonical_spec, runtime)}."
+                        )
+                        raise ValueError(msg)
+                    new_capabilities[canonical_spec.key] = canonical_spec
+                    new_capability_runtimes[canonical_spec.key] = runtime
                 resolved = True
                 break
             if not resolved:
@@ -155,32 +245,18 @@ class AnimatorRegistry:
                 spec.animator_name for spec in new_capabilities.values() if spec.source_kind is SourceKind.SOULSTONE
             ),
         )
+
+        # Probe the detached snapshot before publishing any new runtime or state.
+        # A failed first load therefore leaves ``_loaded`` false and is retryable.
+        new_capability_states = self._probe_staged_snapshot(new_animators, new_capabilities)
+
         self._soulstones = new_soulstones
         self._portals = new_portals
         self._groups = new_groups
         self._animators = new_animators
         self._capabilities = new_capabilities
-        self._capability_states = {}
+        self._capability_states = new_capability_states
         self._loaded = True
-
-        # Transmutation + spec synthesis is CPU-bound and stays sync; the
-        # initial capability probe is async and bridged here so the state cache is warm
-        # after load. This is the ONLY sanctioned ``run_sync`` in this module — every
-        # other probe/activate surface is async. Composition roots that want an explicit
-        # off-loop probe can call ``await probe_all()``.
-        #
-        # FOOTGUN (finding 7, ACKNOWLEDGED, not fixed here): if a SYNC accessor triggers
-        # this lazy ``load()`` while an event loop is running (an on-loop registry touch
-        # before the startup warm), ``run_sync`` offloads the probe to a worker thread and
-        # BLOCKS the loop thread on ``.result()`` for the probe's network IO. In practice
-        # this is guarded: the composition root warms the registry off-loop
-        # (``await asyncio.to_thread(registry.ensure_loaded)``) before the app serves, so
-        # ``_loaded`` is True before any on-loop access and this branch never runs on the
-        # loop. The clean removal is architectural — the sync state-dependent read paths
-        # (``_resolve_spec``, ``resolve_intent``, Nexus status) must first learn to drive
-        # cold specs warm through an async resolve path (the platform-contract follow-up);
-        # skipping the eager probe alone strands resolution with no probed states.
-        run_sync(self._probe_all_async())
 
         logger.info(
             "registry_loaded",
@@ -190,6 +266,23 @@ class AnimatorRegistry:
             runtime_animators=len(self._animators),
             capabilities=len(self._capabilities),
         )
+
+    def _probe_staged_snapshot(
+        self,
+        animators: dict[str, RuntimeAnimator],
+        capabilities: dict[str, CapabilitySpec],
+    ) -> dict[str, CapabilityState]:
+        """Probe staged hydration and invalidate stale observations on contract failure."""
+        try:
+            return run_sync(
+                self._probe_snapshot(
+                    animators=animators,
+                    capabilities=capabilities,
+                )
+            )
+        except _ProbeContractError as exc:
+            self._invalidate_capability_states(exc.requested_keys)
+            raise
 
     def _transmute_soulstone_quadlets(
         self,
@@ -254,20 +347,22 @@ class AnimatorRegistry:
 
     def get_soulstone_rune(self, name: str) -> SoulstoneConfig | None:
         self.ensure_loaded()
-        return self._soulstones.get(name)
+        rune = self._soulstones.get(name)
+        return rune.model_copy(deep=True) if rune is not None else None
 
     def list_soulstone_runes(self) -> list[SoulstoneConfig]:
         """Return every local runtime declaration, including capability-empty stones."""
         self.ensure_loaded()
-        return list(self._soulstones.values())
+        return [rune.model_copy(deep=True) for rune in self._soulstones.values()]
 
     def get_portal_rune(self, name: str) -> PortalConfig | None:
         self.ensure_loaded()
-        return self._portals.get(name)
+        rune = self._portals.get(name)
+        return rune.model_copy(deep=True) if rune is not None else None
 
     def get_group(self, group_name: str) -> Sequence[SoulstoneConfig]:
         self.ensure_loaded()
-        return self._groups.get(group_name, [])
+        return tuple(rune.model_copy(deep=True) for rune in self._groups.get(group_name, ()))
 
     def list_runtime_animators(self) -> list[RuntimeAnimator]:
         self.ensure_loaded()
@@ -275,7 +370,10 @@ class AnimatorRegistry:
 
     def list_runes(self) -> list[AnimatorConfigDeclaration]:
         self.ensure_loaded()
-        return [*self._soulstones.values(), *self._portals.values()]
+        return [
+            *(rune.model_copy(deep=True) for rune in self._soulstones.values()),
+            *(rune.model_copy(deep=True) for rune in self._portals.values()),
+        ]
 
     def list_models(self, name: str) -> Sequence[ModelInfo]:
         animator = self.get_runtime(name)
@@ -284,7 +382,7 @@ class AnimatorRegistry:
         connector = animator.connector
         if not isinstance(connector, ModelConnector):
             return ()
-        return tuple(connector.list_models())
+        return tuple(model.model_copy(deep=True) for model in connector.list_models())
 
     def is_ready(self, name: str) -> bool:
         animator = self.get_runtime(name)
@@ -301,49 +399,66 @@ class AnimatorRegistry:
     def list_capabilities(self) -> list[CapabilitySpec]:
         """List synthesized capabilities across all loaded animators."""
         self.ensure_loaded()
-        return list(self._capabilities.values())
+        return [spec.model_copy(deep=True) for spec in self._capabilities.values()]
 
     def list_capabilities_for_animator(self, name: str) -> list[CapabilitySpec]:
         """List synthesized capabilities for a specific animator."""
         self.ensure_loaded()
-        return [spec for spec in self._capabilities.values() if spec.animator_name == name]
+        return [spec.model_copy(deep=True) for spec in self._capabilities.values() if spec.animator_name == name]
 
     def get_capability(self, key: str) -> CapabilitySpec | None:
         """Return a capability spec by stable capability key."""
         self.ensure_loaded()
-        return self._capabilities.get(key)
+        spec = self._capabilities.get(key)
+        return spec.model_copy(deep=True) if spec is not None else None
 
     def get_capability_state(self, key: str) -> CapabilityState | None:
         """Return the last observed capability state by stable capability key."""
         self.ensure_loaded()
-        return self._capability_states.get(key)
+        state = self._capability_states.get(key)
+        return state.model_copy(deep=True) if state is not None else None
 
     def list_capability_states(self) -> list[CapabilityState]:
         """List the last observed capability states across all loaded animators."""
         self.ensure_loaded()
-        return list(self._capability_states.values())
+        return [state.model_copy(deep=True) for state in self._capability_states.values()]
 
     def list_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
         """List the last observed capability states for a specific animator."""
         self.ensure_loaded()
         keys = {spec.key for spec in self.list_capabilities_for_animator(name)}
-        return [state for state in self._capability_states.values() if state.capability_key in keys]
+        return [
+            state.model_copy(deep=True) for state in self._capability_states.values() if state.capability_key in keys
+        ]
 
     async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
-        """Probe and cache capability states for one resolved runtime animator."""
+        """Probe and atomically replace exact capability states for one Animator."""
         self.ensure_loaded()
-        animator = self._animators.get(name)
-        if animator is None:
-            return []
+        async with self._probe_lock:
+            animator = self._animators.get(name)
+            if animator is None:
+                return []
 
-        specs = self.list_capabilities_for_animator(name)
-        if not specs:
-            return []
+            specs = [spec for spec in self._capabilities.values() if spec.animator_name == name]
+            if not specs:
+                return []
 
-        states = await self._runtime_adapters.probe_capability_states(animator, specs)
-        for state in states:
-            self._capability_states[state.capability_key] = state
-        return states
+            try:
+                states_by_key = await self._probe_animator(animator=animator, specs=specs)
+            except _ProbeContractError as exc:
+                self._invalidate_capability_states(exc.requested_keys)
+                raise
+            except asyncio.CancelledError:
+                self._invalidate_capability_states({spec.key for spec in specs})
+                raise
+            except Exception:
+                self._invalidate_capability_states({spec.key for spec in specs})
+                raise
+            requested_keys = set(states_by_key)
+            replacement = {key: state for key, state in self._capability_states.items() if key not in requested_keys}
+            replacement.update(states_by_key)
+            self._capability_states = replacement
+            return [states_by_key[spec.key].model_copy(deep=True) for spec in specs]
 
     async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         """Re-probe and return the latest cached state for one capability key."""
@@ -352,12 +467,89 @@ class AnimatorRegistry:
         if spec is None:
             return None
         await self.refresh_capability_states_for_animator(spec.animator_name)
-        return self._capability_states.get(key)
+        state = self._capability_states.get(key)
+        return state.model_copy(deep=True) if state is not None else None
+
+    async def _probe_animator(
+        self,
+        *,
+        animator: RuntimeAnimator,
+        specs: Sequence[CapabilitySpec],
+    ) -> dict[str, CapabilityState]:
+        """Validate one adapter's probe as an exact, duplicate-free key set."""
+        specs_by_key = {spec.key: spec for spec in specs}
+        requested_keys = set(specs_by_key)
+        states = await self._runtime_adapters.probe_capability_states(
+            animator,
+            [spec.model_copy(deep=True) for spec in specs],
+        )
+        states_by_key: dict[str, CapabilityState] = {}
+        duplicate_keys: set[str] = set()
+        inconsistent_keys: set[str] = set()
+        for observed in states:
+            state = observed.model_copy(deep=True)
+            if state.capability_key in states_by_key:
+                duplicate_keys.add(state.capability_key)
+            states_by_key[state.capability_key] = state
+            spec = specs_by_key.get(state.capability_key)
+            if spec is not None and state.is_dynamic != spec.is_dynamic:
+                inconsistent_keys.add(state.capability_key)
+
+        returned_keys = set(states_by_key)
+        missing_keys = requested_keys - returned_keys
+        foreign_keys = returned_keys - requested_keys
+        if duplicate_keys or missing_keys or foreign_keys or inconsistent_keys:
+            details: list[str] = []
+            if duplicate_keys:
+                details.append(f"duplicate={sorted(duplicate_keys)!r}")
+            if missing_keys:
+                details.append(f"missing={sorted(missing_keys)!r}")
+            if foreign_keys:
+                details.append(f"foreign={sorted(foreign_keys)!r}")
+            if inconsistent_keys:
+                details.append(f"inconsistent={sorted(inconsistent_keys)!r}")
+            msg = f"Probe contract violation for Animator {animator.id!r}: {', '.join(details)}."
+            raise _ProbeContractError(msg, requested_keys=requested_keys)
+        return states_by_key
+
+    def _invalidate_capability_states(self, keys: Collection[str]) -> None:
+        """Atomically remove observations invalidated by a malformed probe."""
+        invalid = set(keys)
+        self._capability_states = {key: state for key, state in self._capability_states.items() if key not in invalid}
+
+    async def _probe_snapshot(
+        self,
+        *,
+        animators: dict[str, RuntimeAnimator],
+        capabilities: dict[str, CapabilitySpec],
+    ) -> dict[str, CapabilityState]:
+        """Probe a detached registry snapshot without publishing partial results."""
+        states: dict[str, CapabilityState] = {}
+        for name, animator in animators.items():
+            specs = [spec for spec in capabilities.values() if spec.animator_name == name]
+            if not specs:
+                continue
+            states.update(await self._probe_animator(animator=animator, specs=specs))
+        return states
 
     async def _probe_all_async(self) -> None:
-        """Async core: refresh capability states for every resolved animator."""
-        for name in list(self._animators):
-            await self.refresh_capability_states_for_animator(name)
+        """Probe every Animator and replace the complete state cache atomically."""
+        async with self._probe_lock:
+            try:
+                states = await self._probe_snapshot(
+                    animators=self._animators,
+                    capabilities=self._capabilities,
+                )
+            except _ProbeContractError as exc:
+                self._invalidate_capability_states(exc.requested_keys)
+                raise
+            except asyncio.CancelledError:
+                self._invalidate_capability_states(self._capabilities)
+                raise
+            except Exception:
+                self._invalidate_capability_states(self._capabilities)
+                raise
+            self._capability_states = states
 
     async def probe_all(self) -> None:
         """Refresh capability states for every animator (startup async probe)."""
@@ -367,8 +559,8 @@ class AnimatorRegistry:
     async def activate_capability(self, key: str) -> ActivationResult:
         """Request runtime-specific activation for a single capability key.
 
-        Returns an ``ActivationResult`` (A3-U4); on acceptance the animator's
-        states are re-probed so the phase reflects the activation in flight.
+        On acceptance, the Animator's states are re-probed so the phase reflects the
+        activation in flight.
         """
         self.ensure_loaded()
         spec = self._capabilities.get(key)
@@ -379,10 +571,18 @@ class AnimatorRegistry:
         if animator is None:
             return ActivationResult(accepted=False, phase=CapabilityPhase.UNKNOWN, reason="animator not registered")
 
-        result = await self._runtime_adapters.activate_capability(animator, spec)
-        if result.accepted:
-            await self.refresh_capability_states_for_animator(spec.animator_name)
-        return result
+        try:
+            result = await self._runtime_adapters.activate_capability(animator, spec.model_copy(deep=True))
+            if result.accepted:
+                await self.refresh_capability_states_for_animator(spec.animator_name)
+        except asyncio.CancelledError:
+            await self._abandon_activation(animator, spec)
+            raise
+        except Exception:
+            await self._abandon_activation(animator, spec)
+            raise
+        else:
+            return result
 
     async def issue_grant(
         self,
@@ -402,37 +602,38 @@ class AnimatorRegistry:
         if spec is None:
             raise CapabilityUnavailable(key, "unknown capability")
 
-        state = self._capability_states.get(key)
-        if state is None:
-            state = await self.refresh_capability_state(key)
-        if state is None or state.phase is not CapabilityPhase.WARM:
-            reason = f"phase={state.phase.value}" if state else "capability state unavailable"
-            raise CapabilityUnavailable(key, reason)
+        if self._capability_states.get(key) is None:
+            await self.refresh_capability_state(key)
+        async with self._probe_lock:
+            state = self._capability_states.get(key)
+            if state is None or state.phase is not CapabilityPhase.WARM:
+                reason = f"phase={state.phase.value}" if state else "capability state unavailable"
+                raise CapabilityUnavailable(key, reason)
 
-        animator = self._animators.get(spec.animator_name)
-        if animator is None:
-            raise CapabilityUnavailable(key, "animator not registered")
+            animator = self._animators.get(spec.animator_name)
+            if animator is None:
+                raise CapabilityUnavailable(key, "animator not registered")
 
-        model = None
-        if spec.family.requires_model:
-            try:
-                model = self._binder.bind_model(animator, model_id=spec.model_id)
-            except AnimatorBindingError as exc:
-                # A model-bearing family that cannot hydrate is UNAVAILABLE — not a
-                # silently model-less grant that explodes far downstream in agent hydration.
-                raise CapabilityUnavailable(key, f"model hydration failed: {exc}") from exc
-        toolsets = tuple(self._binder.bind_toolsets(animator))
+            model = None
+            if spec.family.requires_model:
+                try:
+                    model = self._binder.bind_model(animator, model_id=spec.model_id)
+                except AnimatorBindingError as exc:
+                    raise CapabilityUnavailable(key, f"model hydration failed: {exc}") from exc
+            toolsets = tuple(self._binder.bind_toolsets(animator))
 
-        lease = GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC), scope=scope)
-        return CapabilityGrant(
-            spec=spec,
-            state=state,
-            lease=lease,
-            generation=spec.generation_profile,
-            animator=animator,
-            model=model,
-            toolsets=toolsets,
-        )
+            canonical_spec = spec.model_copy(deep=True)
+            canonical_state = state.model_copy(deep=True)
+            lease = GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC), scope=scope)
+            return CapabilityGrant(
+                spec=canonical_spec,
+                state=canonical_state,
+                lease=lease,
+                generation=canonical_spec.generation_profile,
+                animator=animator,
+                model=model,
+                toolsets=toolsets,
+            )
 
     async def await_warm(
         self,
@@ -503,20 +704,32 @@ class AnimatorRegistry:
         """Release adapter-owned observers without losing the canonical failure."""
         if animator is None:
             return
-        with anyio.move_on_after(_ACTIVATION_CLEANUP_TIMEOUT_SECONDS, shield=True):
-            try:
-                await self._runtime_adapters.abandon_activation(animator, spec)
-            except Exception:  # noqa: BLE001 - cleanup must never mask the canonical activation failure
+
+        async def abandon() -> None:
+            with anyio.move_on_after(_ACTIVATION_CLEANUP_TIMEOUT_SECONDS, shield=True) as cleanup_scope:
+                try:
+                    await self._runtime_adapters.abandon_activation(animator, spec.model_copy(deep=True))
+                except Exception:  # noqa: BLE001 - cleanup must never mask the canonical activation failure
+                    logger.warning(
+                        "activation_observer_cleanup_failed",
+                        capability_key=spec.key,
+                        exc_info=True,
+                    )
+            if cleanup_scope.cancel_called:
                 logger.warning(
-                    "activation_observer_cleanup_failed",
+                    "activation_observer_cleanup_timed_out",
                     capability_key=spec.key,
-                    exc_info=True,
+                    timeout_s=_ACTIVATION_CLEANUP_TIMEOUT_SECONDS,
                 )
+
+        await complete_under_cancellation(abandon())
 
     def list_persistent_residents(self) -> list[CapabilitySpec]:
         """List capabilities declared on persistent-resident animators."""
         self.ensure_loaded()
-        return [spec for spec in self._capabilities.values() if spec.concurrency.persistent_resident]
+        return [
+            spec.model_copy(deep=True) for spec in self._capabilities.values() if spec.concurrency.persistent_resident
+        ]
 
     def bind_toolsets(self, name: str) -> Sequence[AbstractToolset]:
         animator = self.get_runtime(name)

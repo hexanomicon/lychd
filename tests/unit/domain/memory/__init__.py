@@ -1,0 +1,1 @@
+"""Candidate Archive domain tests."""

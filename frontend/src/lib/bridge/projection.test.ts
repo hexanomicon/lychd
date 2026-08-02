@@ -37,6 +37,8 @@ function live(sessionId: string, runId: string): LiveTurn {
   return {
     sessionId,
     runId,
+    cursor: 17,
+    authorityGeneration: 0,
     content: "",
     runStatus: "running",
     activity: "thinking",
@@ -133,6 +135,7 @@ describe("Bridge snapshot/live merge", () => {
 
     expect(replaceLiveTurnFromSnapshot(current, projection)).toMatchObject({
       ...current,
+      authorityGeneration: 1,
       content: "authoritative",
       runStatus: "running",
       activity: "weaving",
@@ -140,6 +143,36 @@ describe("Bridge snapshot/live merge", () => {
       fragments: [{ kind: "genui.plan_checklist" }]
     });
     expect(current.content).toBe("partial");
+  });
+
+  it("rejects a delayed snapshot behind the current run cursor", () => {
+    const current = live("session-a", "run-a");
+    current.cursor = 24;
+    current.content = "newer projection";
+
+    const replaced = replaceLiveTurnFromSnapshot(
+      current,
+      runProjection({ cursor: 18, content: "delayed recovery" })
+    );
+
+    expect(replaced).toBe(current);
+    expect(replaced.content).toBe("newer projection");
+    expect(replaced.cursor).toBe(24);
+  });
+
+  it("rejects a higher-cursor response from an older authority generation", () => {
+    const current = live("session-a", "run-a");
+    current.authorityGeneration = 4;
+    current.content = "newer equal-cursor projection";
+
+    const replaced = replaceLiveTurnFromSnapshot(
+      current,
+      runProjection({ cursor: 20, content: "older request" }),
+      3
+    );
+
+    expect(replaced).toBe(current);
+    expect(replaced.content).toBe("newer equal-cursor projection");
   });
 
   it("keeps terminal projection visible until the session ledger contains it", () => {
@@ -160,6 +193,18 @@ describe("Bridge snapshot/live merge", () => {
     expect(merge.retiredRunIds).toEqual([]);
   });
 
+  it("presents cancellation as cancellation rather than successful completion", () => {
+    const terminal = runProjection({
+      run_status: "cancelled",
+      activity: "cancelled",
+      terminal: true
+    });
+
+    expect(replaceLiveTurnFromSnapshot(live("session-a", "run-a"), terminal).state).toBe(
+      "cancelled"
+    );
+  });
+
   it("reconstructs a process-local active run missing after a remount", () => {
     const projection = runProjection({
       content: "authoritative partial",
@@ -172,6 +217,8 @@ describe("Bridge snapshot/live merge", () => {
       {
         sessionId: "session-a",
         runId: "run-a",
+        cursor: 17,
+        authorityGeneration: 0,
         content: "authoritative partial",
         runStatus: "running",
         activity: "weaving",

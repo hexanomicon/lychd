@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lychd.extensions.context import ExtensionContext
+from lychd.extensions.context import ExtensionRegistrationContext
 from lychd.extensions.delegation import (
     DelegatedRuntimeCommand,
     DelegatedRuntimeDefinition,
@@ -12,7 +12,7 @@ from lychd.extensions.delegation import (
 )
 
 
-def register(context: ExtensionContext) -> None:
+def register(context: ExtensionRegistrationContext) -> None:
     """Register one runnable reference and four fail-closed future adapters."""
     from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
 

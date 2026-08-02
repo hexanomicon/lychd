@@ -30,6 +30,7 @@ _CONSENT_STATE: dict[str, str] = {
     "granted": "consented",
     "denied": "refused",
     "expired": "refused",
+    "cancelled": "cancelled",
 }
 EventKind = Literal[
     "token",

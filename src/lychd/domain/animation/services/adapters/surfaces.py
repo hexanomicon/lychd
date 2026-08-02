@@ -73,7 +73,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._kind = kind
         self._link = link
         self._base_url = base_url
-        self._model_infos = tuple(model_infos)
+        self._model_infos = tuple(model.model_copy(deep=True) for model in model_infos)
         self._default_model_id = default_model_id
         self._api_key_secret_name = api_key_secret_name
         self._default_surface = default_surface
@@ -102,7 +102,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         return dict(self._metadata)
 
     def list_models(self) -> Sequence[ModelInfo]:
-        return self._model_infos
+        return tuple(model.model_copy(deep=True) for model in self._model_infos)
 
     def get_model(self, *, model_id: str | None = None) -> Model:
         selected_model = self._select_model_id(model_id)
@@ -265,9 +265,9 @@ def local_link_default(*, runtime: str) -> Link:
 
 
 def portal_link_default(*, base_url: str) -> Link:
-    """Build a passive readiness link for portal providers."""
+    """Build an unverified passive link; a configured URL is not reachability proof."""
     if base_url:
-        return Link(up=True, activatable=False)
+        return Link(up=False, activatable=False, reason="portal reachability not probed")
     return Link(up=False, activatable=False, reason="portal base_url missing")
 
 

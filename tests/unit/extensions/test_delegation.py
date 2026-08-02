@@ -34,7 +34,9 @@ def test_delegation_builtin_registers_full_catalog_but_only_reference_is_runnabl
     ]
     assert set(context.delegated_runtimes.runtime_adapters) == {"reference"}
     assert isinstance(context.delegated_runtimes.runtime_adapters["reference"], DelegatedAgentRuntime)
-    assert all(registration.provider_id == "delegation" for registration in context.delegated_runtimes.registrations)
+    assert all(
+        registration.provider_id == "builtin:delegation" for registration in context.delegated_runtimes.registrations
+    )
 
 
 def test_cli_catalogue_records_only_locally_verified_command_semantics() -> None:

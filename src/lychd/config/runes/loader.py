@@ -41,18 +41,25 @@ class ConfigLoader:
 
         """
         loaded: list[RuneConfig] = []
+        branch_schemas = {
+            schema
+            for schema in schemas
+            if any(candidate is not schema and issubclass(candidate, schema) for candidate in schemas)
+        }
 
         for cls in schemas:
-            loaded.extend(self._load_class_instances(cls))
+            loaded.extend(self._load_class_instances(cls, is_branch=cls in branch_schemas))
 
         logger.debug("runes_loaded", count=len(loaded), classes=[c.__name__ for c in schemas])
         return loaded
 
-    def _load_class_instances(self, cls: type[RuneConfig]) -> list[RuneConfig]:
+    def _load_class_instances(self, cls: type[RuneConfig], *, is_branch: bool) -> list[RuneConfig]:
         """Load every TOML instance owned by one rune class.
 
         Args:
             cls: Rune class whose anchor should be scanned.
+            is_branch: Whether another schema in this admitted generation derives
+                from ``cls``.
 
         Returns:
             Validated instances for ``cls``.
@@ -63,7 +70,7 @@ class ConfigLoader:
 
         """
         files = self._candidate_files(cls)
-        if cls.__subclasses__():
+        if is_branch:
             if files:
                 msg = (
                     f"Branch rune class '{cls.__name__}' cannot own TOML files in '{cls.anchor_dir(self._runes_dir)}'."

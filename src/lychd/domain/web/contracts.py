@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from lychd.domain.web.schemas import ConsentCard, NexusBoard, SwapTicket
 
@@ -16,6 +17,14 @@ class ClientContract(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class FrameworkError(ClientContract):
+    """Litestar's stable JSON exception body as exposed to typed clients."""
+
+    status_code: int
+    detail: str
+    extra: dict[str, Any] | list[Any] | None = None
+
+
 class BridgeTurnView(ClientContract):
     """One serializable turn projected into a Bridge session."""
 
@@ -23,7 +32,7 @@ class BridgeTurnView(ClientContract):
     content: str
     run_id: str | None = None
     state: str = "settled"
-    fragments: list[str] = Field(default_factory=list)
+    fragments: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -90,6 +99,7 @@ class SessionCreated(ClientContract):
 class MessageIntent(ClientContract):
     """Complete text command admitted through the Bridge."""
 
+    request_id: UUID
     prompt: str = Field(min_length=1, max_length=100_000)
 
 
@@ -195,9 +205,20 @@ class NexusSnapshot(ClientContract):
     delegated_runtimes: list[DelegatedRuntimeObservation]
 
 
+SwapRequestId = Annotated[
+    str,
+    StringConstraints(
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+    ),
+]
+
+
 class SwapIntent(ClientContract):
     """One requested capability transition."""
 
+    request_id: SwapRequestId
     target: str = Field(min_length=1)
 
 
@@ -216,15 +237,20 @@ class TransitionEventEnvelope(ClientContract):
 
 
 class LoomSummary(ClientContract):
-    """Compact current Pattern catalogue entry."""
+    """Compact exact Pattern revision with explicit admission metadata."""
 
     pattern_id: str
     revision: str
+    implementation_revision: str
+    entry_node: str
     digest: str
     title: str
     description: str
     trigger_hint: str
     detail_path: str
+    active: bool
+    default: bool
+    route_rank: int | None
 
 
 class PatternReference(ClientContract):

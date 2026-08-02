@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,16 @@ class DelegatedAgentJobRecord(UUIDAuditBase):
     """Durable LychD-owned identity and state for one delegated-agent job."""
 
     __tablename__ = "delegated_agent_job"
+    __table_args__ = (
+        CheckConstraint(
+            "status NOT IN ('succeeded', 'failed', 'cancelled', 'timed_out', 'lost') OR "
+            "(result IS NOT NULL "
+            "AND jsonb_typeof(result) = 'object' "
+            "AND COALESCE(result ->> 'job_id' = job_id, FALSE) "
+            "AND COALESCE(result ->> 'status' = status, FALSE))",
+            name="terminal_result",
+        ),
+    )
 
     job_id: Mapped[str] = mapped_column(String(128), unique=True)
     request_id: Mapped[str] = mapped_column(String(128), unique=True)

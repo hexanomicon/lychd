@@ -311,7 +311,7 @@ async def _consume_reactor_intents() -> None:
             runes=runes,
         ),
         runtime_adapters=extensions.runtime_adapters,
-        portal_factories=extensions.portal_factories,
+        portal_definitions=extensions.portal_definitions,
     )
     await asyncio.to_thread(registry.ensure_loaded)
     switching = settings.orchestration.switching

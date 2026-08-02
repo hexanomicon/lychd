@@ -11,7 +11,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -25,11 +25,14 @@ if TYPE_CHECKING:
 HIGHLIGHT_CSS = "fill:#39ff8a33,stroke:#39ff8a,stroke-width:2px"
 _ROUTE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _SHA256_HEX_LENGTH = 64
+_PATTERN_SCHEMA_VERSION = 2
 _PATTERN_SNAPSHOT_FIELDS = (
     "schema_version",
     "key",
     "revision",
+    "implementation_revision",
     "checkpoint_schema",
+    "entry_node",
     "nodes",
     "edges",
 )
@@ -38,19 +41,35 @@ _PATTERN_SNAPSHOT_FIELDS = (
 def pattern_snapshot_is_valid(snapshot: dict[str, Any]) -> bool:
     """Validate a persisted declarative score fingerprint and its checksum."""
     digest = snapshot.get("digest")
-    if not isinstance(digest, str) or len(digest) != _SHA256_HEX_LENGTH:
-        return False
-    if any(field not in snapshot for field in _PATTERN_SNAPSHOT_FIELDS):
+    if (
+        not isinstance(digest, str)
+        or len(digest) != _SHA256_HEX_LENGTH
+        or any(field not in snapshot for field in _PATTERN_SNAPSHOT_FIELDS)
+    ):
         return False
     key = snapshot.get("key")
     revision = snapshot.get("revision")
-    if not isinstance(key, str) or not isinstance(revision, str):
+    implementation_revision = snapshot.get("implementation_revision")
+    checkpoint_schema = snapshot.get("checkpoint_schema")
+    entry_node = snapshot.get("entry_node")
+    if snapshot.get("schema_version") != _PATTERN_SCHEMA_VERSION or not all(
+        isinstance(value, str) for value in (key, revision, implementation_revision, checkpoint_schema, entry_node)
+    ):
         return False
-    if not _ROUTE_IDENTIFIER.fullmatch(key) or not _ROUTE_IDENTIFIER.fullmatch(revision):
+    identifiers = (key, revision, implementation_revision, checkpoint_schema, entry_node)
+    if any(not value or not _ROUTE_IDENTIFIER.fullmatch(value) for value in identifiers):
         return False
     nodes = snapshot.get("nodes")
     edges = snapshot.get("edges")
     if not isinstance(nodes, list) or not isinstance(edges, list):
+        return False
+    entry_nodes: list[dict[str, object]] = []
+    for candidate in cast("list[object]", nodes):
+        if isinstance(candidate, dict):
+            node = cast("dict[str, object]", candidate)
+            if node.get("key") == entry_node:
+                entry_nodes.append(node)
+    if len(entry_nodes) != 1 or entry_nodes[0].get("kind") == "terminal":
         return False
     unsigned = {field: snapshot[field] for field in _PATTERN_SNAPSHOT_FIELDS}
     encoded = json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()
@@ -103,6 +122,12 @@ class PatternNode:
         ):
             msg = f"DelegatedAgentNode implementation '{self.key}' must declare kind='delegate'."
             raise ValueError(msg)
+        if self.kind == "gate" and (self.implementation is None or not issubclass(self.implementation, Gate)):
+            msg = f"Gate Pattern node '{self.key}' must use a Gate implementation."
+            raise ValueError(msg)
+        if self.implementation is not None and issubclass(self.implementation, Gate) and self.kind != "gate":
+            msg = f"Gate implementation '{self.key}' must declare kind='gate'."
+            raise ValueError(msg)
 
     def snapshot(self) -> dict[str, str]:
         """Return the safe, renderer-neutral persisted projection."""
@@ -138,26 +163,43 @@ class PatternManifest:
 
     key: str
     revision: str
+    implementation_revision: str
     checkpoint_schema: str
+    entry_node: str
     nodes: tuple[PatternNode, ...]
     edges: tuple[PatternEdge, ...]
-    schema_version: int = 1
+    schema_version: int = _PATTERN_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
         """Validate stable uniqueness and closed edge references."""
-        if not self.key or not self.revision or not self.checkpoint_schema:
-            msg = "Pattern key, revision, and checkpoint schema must be non-empty."
+        if self.schema_version != _PATTERN_SCHEMA_VERSION:
+            msg = f"Pattern schema version must be {_PATTERN_SCHEMA_VERSION}."
             raise ValueError(msg)
-        if not _ROUTE_IDENTIFIER.fullmatch(self.key) or not _ROUTE_IDENTIFIER.fullmatch(self.revision):
-            msg = "Pattern key and revision must be URL-safe identifiers."
+        identifiers = (
+            self.key,
+            self.revision,
+            self.implementation_revision,
+            self.checkpoint_schema,
+            self.entry_node,
+        )
+        if any(not value or not _ROUTE_IDENTIFIER.fullmatch(value) for value in identifiers):
+            msg = "Pattern identity fields and entry node must be URL-safe identifiers."
             raise ValueError(msg)
         node_keys = [node.key for node in self.nodes]
         if len(node_keys) != len(set(node_keys)):
             msg = f"Pattern '{self.key}@{self.revision}' has duplicate node keys."
             raise ValueError(msg)
+        entry_nodes = [node for node in self.nodes if node.key == self.entry_node]
+        if len(entry_nodes) != 1 or entry_nodes[0].kind == "terminal":
+            msg = f"Pattern '{self.key}@{self.revision}' entry node must name one executable station."
+            raise ValueError(msg)
         edge_keys = [edge.key for edge in self.edges]
         if len(edge_keys) != len(set(edge_keys)):
             msg = f"Pattern '{self.key}@{self.revision}' has duplicate edge keys."
+            raise ValueError(msg)
+        edge_pairs = [(edge.source, edge.target) for edge in self.edges]
+        if len(edge_pairs) != len(set(edge_pairs)):
+            msg = f"Pattern '{self.key}@{self.revision}' has duplicate semantic edges."
             raise ValueError(msg)
         unknown = {
             endpoint for edge in self.edges for endpoint in (edge.source, edge.target) if endpoint not in node_keys
@@ -192,7 +234,9 @@ class PatternManifest:
             "schema_version": self.schema_version,
             "key": self.key,
             "revision": self.revision,
+            "implementation_revision": self.implementation_revision,
             "checkpoint_schema": self.checkpoint_schema,
+            "entry_node": self.entry_node,
             "nodes": [node.snapshot() for node in self.nodes],
             "edges": [edge.snapshot() for edge in self.edges],
         }
@@ -231,6 +275,12 @@ class Workflow:
             raise ValueError(msg)
         executable = {node.implementation for node in self.manifest.nodes if node.implementation is not None}
         graph_nodes = set(self.graph.get_nodes())
+        if self.start_node not in graph_nodes:
+            msg = f"Workflow '{self.name}' start node must belong to its graph."
+            raise ValueError(msg)
+        if self.manifest.node_key(self.start_node) != self.manifest.entry_node:
+            msg = f"Workflow '{self.name}' start node must match Pattern entry node '{self.manifest.entry_node}'."
+            raise ValueError(msg)
         if executable != graph_nodes:
             msg = (
                 f"Pattern '{self.manifest.key}@{self.manifest.revision}' executable nodes must exactly match its graph."
@@ -242,11 +292,52 @@ class Workflow:
             except KeyError as exc:
                 msg = f"Pattern '{self.manifest.key}@{self.manifest.revision}' must bind every graph node exactly once."
                 raise ValueError(msg) from exc
+        self._validate_manifest_topology()
         object.__setattr__(
             self,
             "durable",
             any(issubclass(node, (Gate, DelegatedAgentNode)) for node in self.graph.get_nodes()),
         )
+
+    def _validate_manifest_topology(self) -> None:
+        """Require the semantic score to match executable and durable re-entry edges."""
+        terminal_nodes = [node for node in self.manifest.nodes if node.kind == "terminal"]
+        if len(terminal_nodes) != 1:
+            msg = f"Pattern '{self.manifest.key}@{self.manifest.revision}' must declare exactly one terminal node."
+            raise ValueError(msg)
+        terminal_key = terminal_nodes[0].key
+        keys_by_implementation = {
+            node.implementation: node.key for node in self.manifest.nodes if node.implementation is not None
+        }
+        executable_edges: set[tuple[str, str]] = set()
+        for node_def in self.graph.node_defs.values():
+            if node_def.returns_base_node:
+                msg = (
+                    f"Pattern '{self.manifest.key}@{self.manifest.revision}' cannot prove topology for "
+                    f"dynamic BaseNode return from {node_def.node.__name__}."
+                )
+                raise ValueError(msg)
+            source = keys_by_implementation[node_def.node]
+            for target_id in node_def.next_node_edges:
+                target = keys_by_implementation[self.graph.node_defs[target_id].node]
+                executable_edges.add((source, target))
+            if node_def.end_edge is not None:
+                executable_edges.add((source, terminal_key))
+
+        # A delegated station exits the in-process graph while parked and is later
+        # re-entered at the same station. That lifecycle edge is executable policy
+        # even when the Python return annotation only names the forward node. Gate
+        # loops, by contrast, are ordinary graph return edges and remain explicit.
+        executable_edges.update((node.key, node.key) for node in self.manifest.nodes if node.kind == "delegate")
+        manifest_edges = {(edge.source, edge.target) for edge in self.manifest.edges}
+        if manifest_edges != executable_edges:
+            missing = sorted(executable_edges - manifest_edges)
+            extra = sorted(manifest_edges - executable_edges)
+            msg = (
+                f"Pattern '{self.manifest.key}@{self.manifest.revision}' topology differs from its graph; "
+                f"missing={missing}, extra={extra}."
+            )
+            raise ValueError(msg)
 
     def mermaid(self, *, highlight: type[BaseNode[Any, Any, Any]] | None = None) -> str:
         """Return the stateDiagram-v2 source, optionally highlighting one node."""

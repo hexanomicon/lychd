@@ -147,6 +147,10 @@ class FakeEvents:
         if channel is not None:
             channel.mark_closed()
 
+    async def wait_persisted(self, run_id: str) -> None:
+        """The recording fake persists synchronously in ``_record``."""
+        _ = run_id
+
     def _record(self, event: RunEvent) -> None:
         self.events.append((event.run_id, str(event.kind), event.data))
 

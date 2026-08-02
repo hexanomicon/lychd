@@ -7,9 +7,8 @@ channel). Single-writer discipline (A4 §2): `RunEngine` owns QUEUED/CANCELLED a
 the consent re-enqueue; the ghoul task (`perform_run`) owns RUNNING + terminal
 states; stasis states are written from inside the run.
 
-Consent stays a Wave-1 placeholder this wave — the AWAITING_CONSENT state and the
-`AWAITING_CONSENT → QUEUED` edge exist as the seam for honest HitL (Wave 4). A4's
-`ConsentPark`/`ResumePayload`/`resume_run` are NOT built (deleted per C2/C3).
+Consent and delegated waits are durable states. Their exact verdict/job owners
+re-admit through a new sequence-fenced delivery; no resume payload carries authority.
 """
 
 from __future__ import annotations
@@ -28,6 +27,8 @@ __all__ = [
     "TERMINAL_STATUSES",
     "ConsentPending",
     "IllegalRunTransitionError",
+    "RunDeliveryRecord",
+    "RunDeliveryState",
     "RunHandle",
     "RunParked",
     "RunRecord",
@@ -39,11 +40,12 @@ __all__ = [
 class RunStatus(StrEnum):
     """The run lifecycle state machine (A4 §2, spec-00-FINAL C2)."""
 
-    QUEUED = "queued"  # Run row exists; SAQ job enqueued; not yet claimed
+    QUEUED = "queued"  # Run + delivery intent exist; the broker hop is not yet claimed
     RUNNING = "running"  # ghoul claimed; graph iterating
     AWAITING_HARDWARE = "awaiting_hardware"  # parked in stasis; orchestrator transitioning
     AWAITING_CONSENT = "awaiting_consent"  # parked on HitL; durable checkpoint written
     AWAITING_DELEGATE = "awaiting_delegate"  # parked on isolated delegated-agent labor
+    CANCELLING = "cancelling"  # containment elected; terminal truth waits for acknowledgement
     DONE = "done"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -53,12 +55,23 @@ TERMINAL_STATUSES: frozenset[RunStatus] = frozenset(
     {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED},
 )
 
+
+class RunDeliveryState(StrEnum):
+    """Durable publication lifecycle for one exact ``(run_id, enqueue_seq)`` hop."""
+
+    HELD = "held"
+    PENDING = "pending"
+    PUBLISHED = "published"
+    CLAIMED = "claimed"
+    SETTLED = "settled"
+
+
 # Legal transitions (A4 §2). Anything else is a bug and must raise in the ledger.
 LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
-    # QUEUED→FAILED is the uncompensated-enqueue escape (F3/H2): if `_enqueue`
-    # raises, `engine.submit` fails the QUEUED row instead of black-holing it, and
-    # `reconcile_runs` sweeps QUEUED rows whose enqueue was lost across a restart.
-    RunStatus.QUEUED: frozenset({RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLED}),
+    # QUEUED→FAILED covers admission-context failure and explicit reconciliation
+    # refusal. Broker publication loss remains QUEUED because its delivery intent is
+    # durable and can be republished under the same exact key.
+    RunStatus.QUEUED: frozenset({RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLING}),
     RunStatus.RUNNING: frozenset(
         {
             RunStatus.AWAITING_HARDWARE,
@@ -66,18 +79,19 @@ LEGAL_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
             RunStatus.AWAITING_DELEGATE,
             RunStatus.DONE,
             RunStatus.FAILED,
-            RunStatus.CANCELLED,
+            RunStatus.CANCELLING,
         }
     ),
     RunStatus.AWAITING_HARDWARE: frozenset(
-        {RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLED},
+        {RunStatus.RUNNING, RunStatus.FAILED, RunStatus.CANCELLING},
     ),
-    # AWAITING_CONSENT → QUEUED on approve OR refuse (both re-enqueue, C3); → CANCELLED only via engine.cancel.
-    RunStatus.AWAITING_CONSENT: frozenset({RunStatus.QUEUED, RunStatus.CANCELLED}),
+    # AWAITING_CONSENT → QUEUED on approve OR refuse (both re-enqueue, C3).
+    RunStatus.AWAITING_CONSENT: frozenset({RunStatus.QUEUED, RunStatus.CANCELLING}),
     # Result adoption re-enqueues one durable resume hop; cancellation remains terminal.
-    RunStatus.AWAITING_DELEGATE: frozenset({RunStatus.QUEUED, RunStatus.CANCELLED}),
+    RunStatus.AWAITING_DELEGATE: frozenset({RunStatus.QUEUED, RunStatus.CANCELLING}),
+    RunStatus.CANCELLING: frozenset({RunStatus.CANCELLED}),
     RunStatus.DONE: frozenset(),
-    RunStatus.FAILED: frozenset({RunStatus.QUEUED}),  # explicit retry (bumps attempt)
+    RunStatus.FAILED: frozenset(),
     RunStatus.CANCELLED: frozenset(),
 }
 
@@ -141,12 +155,14 @@ class RunRecord:
     sigil_name: str = "magus"
     sigil_scopes: frozenset[str] = field(default_factory=frozenset)
     content: tuple[ContentPart, ...] = ()
+    requested_priority: int | None = None
     attempt: int = 0
     enqueue_seq: int = 0
     error: str | None = None
     consent_id: str | None = None
     delegated_job_id: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     finished_at: datetime | None = None
 
@@ -164,6 +180,23 @@ class RunRecord:
             sigil_scopes=self.sigil_scopes,
             priority=self.priority,
         )
+
+
+@dataclass(frozen=True, kw_only=True)
+class RunDeliveryRecord:
+    """Storage-agnostic truth for one durable broker-publication hop."""
+
+    run_id: str
+    enqueue_seq: int
+    queue_name: str
+    priority: int
+    resume: bool
+    state: RunDeliveryState
+    publish_attempts: int = 0
+    last_error: str | None = None
+    published_at: datetime | None = None
+    claimed_at: datetime | None = None
+    settled_at: datetime | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

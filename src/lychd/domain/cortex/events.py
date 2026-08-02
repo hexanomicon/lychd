@@ -135,6 +135,10 @@ class RunEventBus(Protocol):
         """Drop a run's channel after it is done and its subscribers have drained."""
         ...
 
+    async def wait_persisted(self, run_id: str) -> None:
+        """Wait until the run's emitted durable evidence has reached its ledger."""
+        ...
+
 
 @dataclass
 class RunChannel:
@@ -415,6 +419,7 @@ class InProcessEventBus:
         self._ledger = ledger
         self._pending: set[asyncio.Task[None]] = set()
         self._writer_tails: dict[str, asyncio.Task[None]] = {}  # run_id -> chain tail
+        self._persist_errors: dict[str, Exception] = {}
 
     def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
         """Return the run's channel, creating it on first access.
@@ -492,6 +497,22 @@ class InProcessEventBus:
             with suppress(Exception):
                 await task
 
+    async def wait_persisted(self, run_id: str) -> None:
+        """Drain one run's ordered writer chain and surface a failed ledger append.
+
+        Terminal settlement and restart reconciliation use this as a durability
+        barrier before reporting success. Streaming remains synchronous; only the
+        callers that need durable evidence wait for the asynchronous ledger tee.
+        """
+        while (tail := self._writer_tails.get(run_id)) is not None:
+            await asyncio.shield(tail)
+            if self._writer_tails.get(run_id) is tail:
+                self._writer_tails.pop(run_id, None)
+                break
+        error = self._persist_errors.pop(run_id, None)
+        if error is not None:
+            raise error
+
     async def _drop_after_drain(self, run_id: str, channel: RunChannel) -> None:
         """Wait for subscribers to detach (bounded by the grace), then drop the channel."""
         with suppress(TimeoutError):
@@ -512,8 +533,6 @@ class InProcessEventBus:
         self._writer_tails[event.run_id] = task
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
-        if event.kind is RunEventKind.DONE:
-            self._writer_tails.pop(event.run_id, None)  # chain ends at the terminal
 
     async def _append_chained(self, prev: asyncio.Task[None] | None, event: RunEvent) -> None:
         """Await the prior same-run append (ordering), then persist this one."""
@@ -524,7 +543,8 @@ class InProcessEventBus:
             return
         try:
             await self._ledger.append_event(event)
-        except Exception:
+        except Exception as exc:
+            self._persist_errors.setdefault(event.run_id, exc)
             logger.exception("run_event_persist_failed", run_id=event.run_id, kind=str(event.kind), seq=event.seq)
 
 

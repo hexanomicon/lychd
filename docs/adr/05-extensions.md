@@ -57,7 +57,15 @@ crypt = ["my-private-organ"]
 `lychd init` may show commented choices, but the default is inert. A selected package is
 imported and calls `register(context)`. Enabling it permits schemas, hydrators, and store
 registration; it does not start an instance. Codex receives the resulting schema list, not a
-package scan.
+package scan. Built-in dependencies are explicit catalogue edges: selecting a concrete Animator
+runtime assembles the shared `animator` base once, under its own provenance, before the runtime.
+Crypt activation resolves only that exact `register.py`; it performs no package or entry-point
+discovery. The shim is loaded in an injectively named synthetic package so ordinary relative
+sibling imports work without making neighboring Crypt packages active.
+If import or `register()` fails, the manager removes that synthetic package namespace before
+surfacing the error, so a repaired retry cannot inherit half-imported module state.
+Activation ids must already be canonical POSIX-relative paths: aliases, traversal, absolute paths,
+empty segments, and control characters are refused before import.
 
 ### 2. The Registration Surface (The Extension Context)
 
@@ -70,13 +78,48 @@ are not implied merely because a package registers. A minimal contribution is ex
 context.runes.add_schema(RuneConfig)
 ```
 
+The manager owns the root context and passes each registrant a provider-bound
+`ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
+audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activation-id>`, and
+`crypt:<activation-id>`. Its shaped store facades capture one fixed provider identity and do
+not expose the root provenance mutator; even a retained facade cannot inherit a later registrant's
+identity. Stores retain that provenance, reject another provider's replay even when the Python
+value is equal, and seal membership after the one assembly pass. `AssembledExtensions` therefore
+exposes projections without registration mutators, not a live registry that arbitrary runtime code
+may extend. This seal does not recursively freeze trusted contributed Python objects; each
+contribution contract must provide its own immutability or defensive-copy boundary.
+
 ### 3. Contributions as Organs
 
 Runes, Soulstones, Portals, and Transmutation admit active schemas and definitions. A
 `SoulstoneDefinition` couples its schema to an Animator-owned runtime adapter and registers that
 schema into the shared rune store. Runtime schema discovery imports only the selected package; a
 loader is the singular TOML parser and validator, not a ledger. `__subclasses__` may audit an
-already-loaded process but cannot establish registration.
+already-loaded process but cannot establish registration or change whether an admitted schema is a
+file-owning leaf. Branch ownership is computed from the exact admitted schema generation. Exact
+repeat registration is idempotent
+only for the same provider. Rune schema admission also reserves its exact filesystem anchor; a
+different schema cannot claim the same `relative_path`. Soulstone registration identity is the
+runtime name, Rune schema, and adapter type. The same runtime or schema with another owner fails
+closed instead of silently preserving first registration. Portal schemas likewise have one exact
+factory owner. Composition passes the definitions, not an ordered list of anonymous callables;
+runtime dispatch looks up the Portal's exact Rune schema. A broad factory cannot claim another
+package's declaration, and a factory is total for every value its schema admits. Each definition
+also owns its optional typed probe strategy. A Portal that requests a live probe without that exact
+strategy fails closed; connector shape or a coincidental method name never selects an egress
+protocol. The factory protocol is total: schema validation must refuse values its exact owner
+cannot construct.
+
+The Rune registry deep-copies admitted schema metadata and every returned snapshot, including
+nested mutable values. Membership sealing and snapshot isolation are separate laws: trusted
+contributors may still own mutable runtime objects, but callers cannot mutate canonical Rune
+metadata through a value returned by the registry.
+
+Every selected `register(context)` shim is a synchronous boot hook and must return `None`.
+Awaitables and other return values fail assembly; an async function is never silently admitted as
+an unexecuted registration. Crypt failure clears that activation's synthetic import generation.
+Live Animator Rune, group, and capability projections add their own defensive-copy boundary before
+values cross into orchestration, policy, or adapter code.
 
 Run operations live beneath `lychd run`, carry typed metadata and shared authority traceability,
 and do not create a root command or callback. The built-in `delegation` extension has one

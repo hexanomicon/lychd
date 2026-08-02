@@ -35,6 +35,7 @@ law; [State of Work](../state-of-the-work.md) alone says what is running.
 | Accepted | [Walking Communion](walking-communion.md) | Carry a voice turn between the road and the Altar | mobile ingress, interruption, audio custody, routed intent |
 | Accepted | [Tech Scavenger](tech-scavenger.md) | Run an evidence-bound compatible-equipment search | sources, seller evidence, privacy, messaging, economic limits |
 | Accepted | [Lifestyle Steward](lifestyle-steward.md) | Make household evidence into editable daily-life choices | OCR provenance, uncertain identity, local routing, checkout gates |
+| Candidate study | [LychD Source Maintenance](source-maintenance.md) | Can one admitted correction become a verified quarantined patch? | candidate lineage, bounded feedback, restart, and inert promotion |
 | Candidate study | [Building in Public](building-in-public.md) | Can an evidenced vertical slice become a truthful tutorial? | evidence without manufactured progress |
 | Candidate study | [Bazaar Haggler](bazaar-haggler.md) | Can bounded negotiation be reused without transferring judgment? | mandate, credentials, and commitment boundaries |
 | Candidate study | [Home Seeker](home-seeker.md) | Can private location-aware search rank evidence honestly? | location privacy and no counterfeit diligence |

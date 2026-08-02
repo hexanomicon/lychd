@@ -124,8 +124,8 @@ class RuneConfig(BaseModel, ABC):
         """Bind filesystem provenance after TOML validation.
 
         Source binding turns a validated schema instance into a concrete
-        file-backed rune. Branch classes are rejected here because subclass
-        topology is only complete after schema modules have been imported.
+        file-backed rune. Branch ownership belongs to the loader's exact admitted
+        schema generation; unrelated imported subclasses cannot alter this record.
 
         Args:
             source_file: Absolute TOML file path that produced this instance.
@@ -134,13 +134,9 @@ class RuneConfig(BaseModel, ABC):
             This rune instance, with source provenance bound.
 
         Raises:
-            TypeError: If this instance belongs to a branch rune class.
             ValueError: If this instance is already bound to another source.
 
         """
-        if type(self).__subclasses__():
-            msg = f"Branch rune class '{type(self).__name__}' cannot bind source_file."
-            raise TypeError(msg)
         if self._source_file is not None and self._source_file != source_file:
             msg = f"Rune source_file already bound to '{self._source_file}'."
             raise ValueError(msg)

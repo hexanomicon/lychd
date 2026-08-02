@@ -39,20 +39,23 @@ from lychd.domain.orchestration.policies import resolve_switch_policy
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.tickets import TicketStore
+from lychd.system.services.queues import protect_run_queues
 from lychd.system.services.runtime import build_runtime_actuator
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from lychd.agents.workflows import WorkflowRegistry
     from lychd.config.runes.registry import RuneRegistry
     from lychd.config.settings.root import Settings
-    from lychd.domain.animation.services.adapters.contracts import PortalRuntimeFactory, SoulstoneRuntimeAdapter
+    from lychd.domain.animation.services.adapters.contracts import PortalDefinition, SoulstoneRuntimeAdapter
     from lychd.domain.codex.ledger import ConsentLedger
     from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
     from lychd.domain.web.fragments import FragmentRegistry
     from lychd.domain.web.sessions import SessionStorePort
+    from lychd.domain.web.swap_requests import SwapRequestLedger
     from lychd.extensions.delegation import RegisteredDelegatedRuntime
 
 
@@ -69,6 +72,8 @@ class AltarServices:
     bridge_sessions: SessionStorePort
     consents: ConsentLedger
     tickets: TicketStore
+    swap_requests: SwapRequestLedger
+    workflows: WorkflowRegistry
     run_engine: RunEngine
     projector: EventProjector
     ledger: RunLedger
@@ -150,6 +155,18 @@ def _build_consent_ledger(profile: str) -> ConsentLedger:
     return CodexConsentLedger(session_factory=get_session_factory())
 
 
+def _build_swap_request_ledger(profile: str) -> SwapRequestLedger:
+    """Select the admission fence from the same persistence profile."""
+    from lychd.domain.web.swap_requests import InMemorySwapRequestLedger
+
+    if profile == "memory":
+        return InMemorySwapRequestLedger()
+    from lychd.db.engine import get_session_factory
+    from lychd.db.nexus import DbSwapRequestLedger
+
+    return DbSwapRequestLedger(get_session_factory())
+
+
 def _build_delegation_coordinator(
     profile: str,
     runtimes: Sequence[DelegatedAgentRuntime],
@@ -175,9 +192,10 @@ def build_altar_services(
     queues: Mapping[str, RunQueue],
     runes: RuneRegistry,
     runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
-    portal_factories: Sequence[PortalRuntimeFactory] = (),
+    portal_definitions: Sequence[PortalDefinition] = (),
     delegated_runtime_adapters: Sequence[DelegatedAgentRuntime] = (),
     delegated_runtime_catalog: Sequence[RegisteredDelegatedRuntime] = (),
+    workflows: WorkflowRegistry | None = None,
     profile: str | None = None,
     settings: Settings | None = None,
     systemctl_bin: str | None = None,
@@ -193,6 +211,7 @@ def build_altar_services(
         settings = get_settings()
     if profile is None:
         profile = settings.server.database.profile
+    queues = protect_run_queues(queues)
     routing = _routing_from_settings(settings)
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
@@ -203,7 +222,7 @@ def build_altar_services(
             runes=runes,
         ),
         runtime_adapters=runtime_adapters,
-        portal_factories=portal_factories,
+        portal_definitions=portal_definitions,
     )
     leases = LeaseLedger()
     ledger = _build_run_ledger(profile)
@@ -229,8 +248,10 @@ def build_altar_services(
     bridge_sessions = _build_session_store(profile, sigil_name=default_sigil().name)
     consents = _build_consent_ledger(profile)
     tickets = TicketStore()
+    swap_requests = _build_swap_request_ledger(profile)
     projector = EventProjector(fragments=fragments, sessions=bridge_sessions, consents=consents)
-    workflows = builtin_workflow_registry()
+    if workflows is None:
+        workflows = builtin_workflow_registry()
     delegates = _build_delegation_coordinator(profile, delegated_runtime_adapters)
     cancellations = RunCancellationCoordinator()
     if profile == "postgres":
@@ -269,6 +290,7 @@ def build_altar_services(
         cancellations=cancellations,
         stasis_store=stasis_store,
         delegates=delegates,
+        consents=consents,
     )
     return AltarServices(
         registry=registry,
@@ -280,6 +302,8 @@ def build_altar_services(
         bridge_sessions=bridge_sessions,
         consents=consents,
         tickets=tickets,
+        swap_requests=swap_requests,
+        workflows=workflows,
         run_engine=run_engine,
         projector=projector,
         ledger=ledger,

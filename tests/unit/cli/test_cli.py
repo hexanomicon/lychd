@@ -165,7 +165,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
     )
     extensions = SimpleNamespace(
         runtime_adapters=(),
-        portal_factories=(),
+        portal_definitions=(),
     )
     runes = RuneRegistry(())
     declarations = _animator_declarations()
@@ -216,7 +216,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         settings=settings,
         declarations=declarations,
         runtime_adapters=extensions.runtime_adapters,
-        portal_factories=extensions.portal_factories,
+        portal_definitions=extensions.portal_definitions,
     )
     resolve_policy.assert_called_once_with(switching.policy)
     reactor_type.assert_called_once_with(

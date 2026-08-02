@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { onDestroy } from "svelte";
 
   import { getLoomCatalogue, getLoomPatternRevision, getOrbRun } from "$lib/api/client";
   import type {
@@ -31,6 +32,10 @@
     void load(patternId, revision, sourceRunId);
   });
 
+  onDestroy(() => {
+    loadVersion++;
+  });
+
   async function load(
     requestedPattern?: string,
     requestedRevision?: string,
@@ -53,13 +58,16 @@
       const selected =
         requestedPattern && requestedRevision
           ? { pattern_id: requestedPattern, revision: requestedRevision }
-          : patterns[0];
+          : patterns.find((pattern) => pattern.default) ??
+            patterns.find((pattern) => pattern.active) ??
+            patterns[0];
       if (!selected) return;
       const next = await getLoomPatternRevision(selected.pattern_id, selected.revision);
       if (version !== loadVersion) return;
       view = next;
       const originMatches =
         origin?.pattern.exact === true &&
+        origin.pattern.loom_path !== null &&
         origin.pattern.pattern_id === next.pattern_id &&
         origin.pattern.revision === next.revision;
       sourceRun = originMatches ? origin : null;
@@ -101,7 +109,14 @@
           href={pattern.detail_path}
         >
           <span class="t">{pattern.title}</span>
-          <span class="m">{pattern.pattern_id}@{pattern.revision}</span>
+          <span class="m">
+            {pattern.pattern_id}@{pattern.revision}
+            · {pattern.default
+              ? "default"
+              : pattern.route_rank != null
+                ? `route ${pattern.route_rank}`
+                : "retained"}
+          </span>
         </a>
       {/each}
     </nav>
@@ -164,11 +179,13 @@
           <div class="panel-head"><h3 class="rune-head">Immutable identity</h3></div>
           <dl class="kv">
             <dt>checkpoint</dt><dd>{view.checkpoint_schema}</dd>
+            <dt>entry</dt><dd>{view.entry_node}</dd>
+            <dt>implementation</dt><dd>{view.implementation_revision}</dd>
             <dt>digest</dt><dd class="glyph digest">{view.digest}</dd>
             <dt>trigger</dt><dd>{view.trigger_hint}</dd>
             <dt>source</dt>
             <dd>
-              <a href="/api/v1/loom/{view.pattern_id}/{view.revision}/source">Mermaid source →</a>
+              <a href="/api/v1/loom/source/patterns/{view.pattern_id}/{view.revision}">Mermaid source →</a>
             </dd>
           </dl>
         </section>

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
+from lychd.domain.codex.schemas import ConsentView
 from lychd.domain.codex.sigil import Sigil
 
 if TYPE_CHECKING:
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
 
     from litestar import Litestar
     from litestar.testing import TestClient
+
+    from lychd.domain.web.projection import EventProjector
 
 
 def _park(fake_services: SimpleNamespace, run_id: str = "run_x") -> str:
@@ -61,7 +64,7 @@ def test_consent_verdict_commits_before_resume(
     assert approvals[0][2] is True
 
 
-def test_consent_decision_is_idempotent(
+def test_consent_retry_replays_the_authoritative_first_verdict(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
 ) -> None:
@@ -78,4 +81,20 @@ def test_consent_decision_is_idempotent(
     assert again.status_code == 200
     assert again.json()["consent"]["state"] == "refused"
     assert _verdict(fake_services, consent_id) is False
-    assert len(fake_services.run_engine.approvals) == 1
+    assert fake_services.run_engine.approvals == [
+        (consent_id, False, False),
+        (consent_id, False, False),
+    ]
+
+
+def test_cancelled_consent_remains_distinct_from_human_refusal(projector: EventProjector) -> None:
+    card = projector.consent_card_view(
+        ConsentView(
+            id="consent-cancelled",
+            run_id="run-cancelled",
+            tool_name="request_coven_swap",
+            status="cancelled",
+        )
+    )
+
+    assert card.state == "cancelled"

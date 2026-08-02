@@ -3,10 +3,12 @@ import type { BridgeSnapshot, RunProjectionSnapshot } from "$lib/api/models";
 export type LiveTurn = {
   sessionId: string;
   runId: string;
+  cursor: number;
+  authorityGeneration: number;
   content: string;
   runStatus: string;
   activity: string;
-  state: "streaming" | "stale" | "done" | "failed";
+  state: "streaming" | "stale" | "done" | "failed" | "cancelled";
   fragments: Array<Record<string, unknown>>;
   patternId: string;
   patternRevision: string;
@@ -31,17 +33,24 @@ export type LiveTurnMerge = {
   retiredRunIds: string[];
 };
 
-export function liveTurnFromSnapshot(snapshot: RunProjectionSnapshot): LiveTurn {
+export function liveTurnFromSnapshot(
+  snapshot: RunProjectionSnapshot,
+  authorityGeneration = 0
+): LiveTurn {
   return {
     sessionId: snapshot.session_id,
     runId: snapshot.run_id,
+    cursor: snapshot.cursor,
+    authorityGeneration,
     content: snapshot.content,
     runStatus: snapshot.run_status,
     activity: snapshot.activity,
     state: snapshot.terminal
-      ? snapshot.run_status.includes("fail")
-        ? "failed"
-        : "done"
+      ? snapshot.run_status === "cancelled"
+        ? "cancelled"
+        : snapshot.run_status.includes("fail")
+          ? "failed"
+          : "done"
       : "streaming",
     fragments: snapshot.fragments.map((fragment) => ({ ...fragment })),
     patternId: snapshot.pattern_id,
@@ -65,12 +74,23 @@ export function liveTurnFromSnapshot(snapshot: RunProjectionSnapshot): LiveTurn 
 
 export function replaceLiveTurnFromSnapshot(
   current: LiveTurn,
-  snapshot: RunProjectionSnapshot
+  snapshot: RunProjectionSnapshot,
+  expectedGeneration?: number
 ): LiveTurn {
   if (current.runId !== snapshot.run_id) {
     throw new Error("A run snapshot cannot replace a different live turn.");
   }
-  return liveTurnFromSnapshot(snapshot);
+  if (current.sessionId !== snapshot.session_id) {
+    throw new Error("A run snapshot cannot replace a turn from another session.");
+  }
+  if (
+    expectedGeneration !== undefined &&
+    expectedGeneration !== current.authorityGeneration
+  ) {
+    return current;
+  }
+  if (snapshot.cursor < current.cursor) return current;
+  return liveTurnFromSnapshot(snapshot, current.authorityGeneration + 1);
 }
 
 /**

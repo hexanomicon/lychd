@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC
+from enum import StrEnum
 from pathlib import Path
 from typing import ClassVar, Final
 
@@ -15,6 +16,18 @@ from lychd.domain.animation.schemas.shared import ModelFormat
 from lychd.system.secret_names import is_valid_podman_secret_name
 
 _ENV_NAME: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+class OpenAICompatibleProvider(StrEnum):
+    """Provider aliases implemented by the built-in OpenAI-compatible Portal factory."""
+
+    OPENAI = "openai"
+    OPENAI_COMPATIBLE = "openai-compatible"
+    OPENAI_COMPATIBLE_UNDERSCORE = "openai_compatible"
+    GOOGLE_GEMINI = "google-gemini"
+    OPENROUTER = "openrouter"
+    OLLAMA = "ollama"
+    LITELLM = "litellm"
 
 
 class AnimatorConfig(RuneConfig, ABC):
@@ -212,11 +225,23 @@ class OpenAIPortalConfig(PortalConfig):
 
     path_fragment: ClassVar[Path] = Path("openai")
 
-    provider_name: str = Field(default="openai", description="OpenAI provider alias.")
+    provider_name: str = Field(
+        default=OpenAICompatibleProvider.OPENAI.value,
+        description="OpenAI-compatible provider alias implemented by the exact Portal factory.",
+    )
     base_url: AnyHttpUrl | None = Field(
         default=AnyHttpUrl("https://api.openai.com/v1"),
         description="OpenAI API base URL.",
     )
+
+    @field_validator("provider_name")
+    @classmethod
+    def _validate_provider_name(cls, value: str) -> str:
+        try:
+            return OpenAICompatibleProvider(value.strip().lower()).value
+        except ValueError as exc:
+            message = f"Unsupported OpenAI-compatible provider alias: {value!r}."
+            raise ValueError(message) from exc
 
 
 class GoogleGeminiPortalConfig(PortalConfig):
@@ -224,8 +249,20 @@ class GoogleGeminiPortalConfig(PortalConfig):
 
     path_fragment: ClassVar[Path] = Path("google-gemini")
 
-    provider_name: str = Field(default="google-gemini", description="Google Gemini provider alias.")
+    provider_name: str = Field(
+        default="google-gemini",
+        description="Google Gemini provider alias.",
+    )
     base_url: AnyHttpUrl | None = Field(
         default=AnyHttpUrl("https://generativelanguage.googleapis.com/v1beta/openai/"),
         description="Google Gemini OpenAI-compatible API base URL.",
     )
+
+    @field_validator("provider_name")
+    @classmethod
+    def _validate_provider_name(cls, value: str) -> str:
+        provider = value.strip().lower()
+        if provider != OpenAICompatibleProvider.GOOGLE_GEMINI.value:
+            message = "GoogleGeminiPortalConfig only accepts provider_name='google-gemini'."
+            raise ValueError(message)
+        return provider

@@ -12,17 +12,18 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from lychd.config.settings.root import get_settings
+from lychd.extensions.builtin.catalog import builtin_registration_order
 from lychd.extensions.manager import ExtensionManager
 
 if TYPE_CHECKING:
     from lychd.config.runes.base import RuneConfig
     from lychd.config.settings.root import Settings
     from lychd.domain.animation.services.adapters.contracts import (
-        PortalRuntimeFactory,
+        PortalDefinition,
         SoulstoneDefinition,
         SoulstoneRuntimeAdapter,
     )
-    from lychd.domain.animation.transmute import QuadletContributor
+    from lychd.domain.animation.transmute import QuadletContributor, RegisteredQuadletContributor
     from lychd.domain.cortex.operations import RunOperationCatalog
     from lychd.domain.delegation.ports import DelegatedAgentRuntime
     from lychd.extensions.context import ExtensionContext
@@ -35,6 +36,10 @@ class AssembledExtensions:
 
     context: ExtensionContext
     active_ids: tuple[str, ...]  # builtins + crypt, in activation order
+
+    def __post_init__(self) -> None:
+        """Seal even test/bootstrap assemblies constructed outside the manager."""
+        self.context.freeze()
 
     @property
     def rune_schemas(self) -> tuple[type[RuneConfig], ...]:
@@ -49,12 +54,16 @@ class AssembledExtensions:
         return self.context.soulstones.definitions
 
     @property
-    def portal_factories(self) -> tuple[PortalRuntimeFactory, ...]:
-        return self.context.portals.factories
+    def portal_definitions(self) -> tuple[PortalDefinition, ...]:
+        return self.context.portals.definitions
 
     @property
     def quadlet_contributors(self) -> tuple[QuadletContributor, ...]:
         return self.context.transmutation.contributors
+
+    @property
+    def quadlet_contributor_registrations(self) -> tuple[RegisteredQuadletContributor, ...]:
+        return self.context.transmutation.registrations
 
     @property
     def run_operation_catalog(self) -> RunOperationCatalog:
@@ -76,7 +85,10 @@ def assemble_extensions(settings: Settings | None = None) -> AssembledExtensions
     """Pure assembly — importable and testable without app or memo."""
     active = (settings or get_settings()).extensions
     context = ExtensionManager(builtins=active.builtins, crypt=active.crypt).assemble()
-    return AssembledExtensions(context=context, active_ids=(*active.builtins, *active.crypt))
+    return AssembledExtensions(
+        context=context,
+        active_ids=(*builtin_registration_order(active.builtins), *active.crypt),
+    )
 
 
 # --- process memo (the ONLY sanctioned global) ---

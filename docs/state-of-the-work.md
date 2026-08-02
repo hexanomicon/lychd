@@ -9,9 +9,10 @@ LychD is **pre-alpha**. This page is the canonical account of what repository ev
 what still needs a named operator receipt, and what remains design.
 
 The proved envelope is local, loopback-oriented, single-user, and one control process in the
-repository-test profile. Real systemd, rootless Podman, PostgreSQL production wiring, GPU, model,
-and inference-engine combinations still need the receipts named below. Remote and multi-tenant
-operation are not current claims.
+repository-test profile. A disposable PostgreSQL receipt now exercises the real application
+factory, in-process SAQ, one completed Bridge Run, shutdown, and a second boot. Real systemd,
+rootless Podman, GPU, model, inference-engine, and browser combinations still need the receipts
+named below. Remote and multi-tenant operation are not current claims.
 
 [Prophecy](./index.md) names the destination; this page names what can answer now.
 
@@ -20,10 +21,10 @@ operation are not current claims.
 | Scenario | Answer now | Decisive limit |
 | --- | --- | --- |
 | CLI bootstrap | **Partial.** The CLI grammar, dry-run planning, transactional `init`/`bind`, bounded `status`/`logs`, and guarded deletion have repository evidence. | No maintained real-host startup, shutdown, deletion, or full systemd/Podman receipt. See [Core CLI rites](#core-cli-rites) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
-| Local text chat | **Partial.** The exact Pydantic AI adapter, local run engine, and Bridge contracts work in the repository-test envelope. | No complete production-factory + PostgreSQL + named inference-engine + browser acceptance receipt. See [Bridge](#bridge-surface), [first-light persistence](#phylactery-first-light), and the engine records under [Animation](#animation-and-orchestration). |
+| Local text chat | **Partial.** The exact Pydantic AI adapter, local run engine, and Bridge contracts work in the repository-test envelope. | The PostgreSQL application-factory path replaces live dispatch, orchestration, and context collaborators with offline doubles after startup; no named inference-engine + real browser acceptance receipt exists. See [Bridge](#bridge-surface), [first-light persistence](#phylactery-first-light), and the engine records under [Animation](#animation-and-orchestration). |
 | Browser safety | **Loopback only.** Generated deployment binds IPv4 loopback; the app constrains Host and CORS, keeps schema assets local, and applies CSRF. | The fixed bootstrap Sigil is not caller authentication, direct-launch visibility is finite, and no production-browser security receipt exists. Proxy, tunnel, remote, and untrusted-browser use remain unsupported. See [Local browser and bind boundary](#local-browser-bind-boundary). |
-| PostgreSQL and runtime proof | **Receipts missing.** Memory-profile tests and software protocol tests are not host proof. | The real `create_app()` + PostgreSQL lifecycle test is a skipped skeleton; systemd/Podman/GPU/model engines require named receipts. See [Phylactery](#phylactery-first-light) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
-| Major blockers | Durable PostgreSQL/outbox parity, authenticated browser/remote authority, privacy-safe Portal egress, real runtime receipts, native Oculus, and resource-aware scheduling. | Delegated providers, artifacts, vision/audio bytes, evolution, and federation remain Partial or Designed in their records below. |
+| PostgreSQL and runtime proof | **Repository lifecycle receipt.** Disposable PostgreSQL tests cover run-ledger races, consent atomicity, migrations, and real `create_app()` + SAQ startup/run/shutdown/second-boot recovery. | After real startup the lifecycle receipt substitutes offline dispatch, orchestration, and context collaborators and uses an HTTP test client. It proves factory, PostgreSQL, SAQ, HTTP, shutdown, and recovery wiring, not composed runtime behavior or a systemd/Podman/GPU/model/browser receipt. See [Phylactery](#phylactery-first-light) and [systemd/Podman embodiment](#systemd-podman-embodiment). |
+| Major blockers | Authenticated browser/remote authority, privacy-safe Portal egress, real host/model/runtime receipts, native Oculus, and resource-aware scheduling. | Delegated providers, artifact custody, durable memory/recall, vision/audio bytes, executable evolution, and federation remain Partial or Designed in their records below. |
 
 Go directly to:
 
@@ -57,15 +58,19 @@ Experimental.
 
 ## Current evidence envelope
 
-Repository tests cover the local memory-profile composition and important unit, integration, and
-web contracts. The real `create_app()` plus Postgres startup, run, and shutdown test is still an
-unconditional skipped skeleton. Test evidence therefore proves only the boundary named by each
-record; it is not a production deployment receipt.
+Repository tests cover the local memory-profile composition, important unit/integration/web
+contracts, focused disposable-PostgreSQL concurrency and migration paths, and one real
+`create_app()` + SAQ + PostgreSQL lifecycle across shutdown and a second boot. After real startup,
+that lifecycle replaces live dispatch, orchestration, and context collaborators with offline
+structural doubles and uses Litestar's HTTP test client. It proves application-factory,
+PostgreSQL, SAQ, HTTP, shutdown, and durable-projection recovery wiring; it does not prove the
+replaced collaborators' composed behavior or a production deployment, inference-engine, or browser
+receipt.
 
 - **Source:** [Application factory](https://github.com/hexanomicon/lychd/blob/main/src/lychd/app.py),
   [web lifespan](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/lifespan.py),
   and [Altar service assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/altar_services.py)
-- **Verification:** [Memory-profile composition and explicit Postgres receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+- **Verification:** [Memory-profile composition and two-boot PostgreSQL lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
 - **Law:** [ADR 03 — Quality](./adr/03-quality.md) and [ADR 04 — Testing](./adr/04-testing.md)
 
 ## Inscription and embodiment {#inscription-and-embodiment}
@@ -298,22 +303,50 @@ integration. The trusted core is not Tomb evidence.
 
 **State:** Partial
 
-**Proved now:** Run, step, session, consent, and checkpoint persistence shapes exist, and focused
-memory-profile tests prove important run-ledger behavior.
+**Proved now:** Run, delivery, step, session, consent, and checkpoint persistence shapes exist.
+Run admission and every resume hop atomically create one exact delivery record; claim and terminal
+settlement are sequence-fenced. Process-owned, restart-supervised relays repair publication and
+re-fire decided consent or delegated waits under exact ownership. One shared scheduler retains every
+degraded, caller-held, or clean-but-still-active external-wait keyset page while still scanning
+forward. Run jobs carry a refreshed SAQ heartbeat, and startup terminally fences a proven pre-boot
+active delivery before sequence rotation instead of preserving an abandoned pre-claim job. Consent
+crash-window recovery requires the first resumable checkpoint to bind the exact latest non-cancelled
+Consent, then persists that owner on `Run.consent_id`; ordinary reconciliation reads that exact
+pointer rather than inferring ownership from newest-row order. Re-admission requires the same-run
+Consent to carry a terminal verdict, decision principal, and decision time. The same rule covers a delegated
+pre-park owner, whose same-run job must carry shape-valid terminal result evidence. Generic status mutation cannot bypass either
+owner-specific resume gate. Unrecoverable correlated effects are
+contained before parent failure. PostgreSQL startup refuses degraded durable recovery. Disposable PostgreSQL tests cover
+CAS races, exact terminal evidence, pending-versus-decided consent admission, running-versus-terminal
+delegated admission, consent atomicity, and migration 0004's live-work refusal in
+both upgrade and downgrade directions plus a drained upgrade/downgrade cycle. Migration 0007
+locks its table while refusing to erase retained Nexus request identities. Migration 0008 refuses
+ownerless live consent waits and evidence-free settled Consent or delegated rows on upgrade, and
+refuses downgrade while a consent wait remains. The first successful Run
+claim owns `started_at`; later resume claims do not rewrite boot ownership. A real
+application-factory receipt boots PostgreSQL and in-process
+SAQ, completes a Bridge Run, shuts down, boots a second application against the same database, and
+recovers the terminal Bridge and gapless Orb projections.
 
-**Boundary — Not yet:** The conditional PostgreSQL run-ledger module is skipped in the standard
-suite, and the real production-factory lifecycle test is an unconditional skeleton. There is no
-transactional outbox or full memory/Postgres adapter parity.
+**Boundary — Not yet:** PostgreSQL and SAQ are not one distributed transaction, Step events have no
+transactional outbox, and full memory/PostgreSQL adapter parity is absent. Persistent worker-side
+effect-containment failure has no same-boot `FAILING` custody state or watchdog; it remains
+nonterminal until restart orphan recovery. The lifecycle receipt
+replaces live dispatch, orchestration, and context collaborators after real startup and uses an
+HTTP test client; it is not proof of their composed behavior or a real-host, inference-engine,
+browser, or checkpoint-plus-consent restart receipt.
 
 **Evidence**
 
 - **Source:** [First-light migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0001_phylactery_first_light.py),
   [pinned Pattern-manifest migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0002_pin_pattern_manifest.py),
+  [Run delivery migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0004_run_delivery_outbox.py),
   [checkpoint adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/checkpoints.py),
   and [run ledger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/ledger.py)
 - **Verification:** [Run-ledger contracts](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_ledger.py),
-  [skipped PostgreSQL run-ledger receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py),
-  and [production-factory receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+  [PostgreSQL run-ledger receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py),
+  [PostgreSQL migration cycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_migrations_pg.py),
+  and [two-boot production-factory lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
 - **Law:** [ADR 06 — Persistence](./adr/06-persistence.md)
 
 ### Topology-A local run execution {#topology-a-local-runs}
@@ -321,12 +354,36 @@ transactional outbox or full memory/Postgres adapter parity.
 **State:** Available
 
 **Proved now:** One Vessel process can admit, claim, execute, cancel, settle, and project live run
-events with bounded replay fencing. Each run pins its validated immutable Pattern manifest;
-node, grant/lease, and transition evidence share stable run and occurrence correlation.
+events with bounded replay fencing. Each run pins its validated immutable Pattern manifest,
+including a reviewed implementation-compatibility revision;
+node, grant/lease, and transition evidence share stable run and occurrence correlation. One
+boot-composed catalogue feeds execution and web projections. Multiple source-registered exact
+revisions can coexist: new admission selects only declared active revisions while retired-but-
+registered revisions remain executable for older pinned Runs and visible as retained in Loom.
+Construction rejects manifest/Graph node or transition drift, dynamic unprovable returns,
+Gate/delegate kind drift, duplicate semantic edges, and missing or multiple terminals. Initial and
+resume admission retain exact durable publication intent, including requested priority; admission refusal is fenced to the exact
+delivery generation still in `HELD`, so a release that committed before raising cannot be failed;
+bounded refusal retry surfaces unresolved custody rather than silently stranding it. An idempotent
+replay inspects existing delivery truth and repairs a stranded `HELD` caller-context gate before it
+can return a handle, and republishes an exact `PENDING` hop before returning. Startup plus the runtime relay repair missing broker jobs without rerouting the
+Pattern or guessing fresh versus resume mode, fairly revisit every caller-held, degraded, or live
+external-wait page while scanning forward, and retry exact abort of a broker job accepted after
+cancellation fenced canonical truth; caller cancellation cannot interrupt that containment probe.
+Every terminal status is final; retry requires a new Run identity. Terminal paths
+drain their ordered Step writer before closing, and startup repairs missing terminal evidence from
+canonical Run truth. Worker failure retries transient child-containment faults before settlement;
+persistent uncertainty remains nonterminal rather than claiming false `FAILED` truth. Shutdown owns
+SAQ launcher tasks as well as worker stop coroutines under one deadline, proves observed tasks ended,
+then attempts every queue disconnect while retaining grouped failures and deferring cancellation
+until each in-progress teardown and the reverse sweep complete. The queue facade is active before connect and closes a managed
+PostgreSQL pool opened before failed SAQ schema initialization.
 
-**Boundary:** This does not claim a transactional event outbox, separate-worker truth, replayable
-multi-process streaming, or federation. Replay retention is bounded, but live per-subscriber queues
-are currently unbounded; slow-subscriber overflow and backpressure are not governed.
+**Boundary:** The implementation revision is an explicit reviewed declaration, not automatic
+source-drift or semantic compatibility proof. This does not claim a transactional event outbox, separate-worker truth, replayable
+multi-process streaming, or federation. The delivery relay is process-local and broker probes can
+still make required startup fail closed. Replay retention is bounded, but live per-subscriber
+queues are currently unbounded; slow-subscriber overflow and backpressure are not governed.
 
 **Evidence**
 
@@ -397,13 +454,18 @@ contracts are not installed LychD behavior.
 memory-profile simulated restart, reconciliation, idempotent settlement, graph re-admission, and
 fail-closed capability/tool/effect/schema substitution on resume. Unversioned approval effects do
 not park. Each model round may request one supported approval; a resumed run may enter another
-bounded round.
+bounded round. Re-admission atomically creates an exact pending delivery; transient publication
+failure is repaired by the same startup/runtime relay as initial work. Resume admission is fenced
+to the exact Consent that owns the current wait, so a historical card cannot admit a later approval
+round. Run cancellation settles every still-pending owned card as `cancelled` before terminal Run
+truth. It abort-fences the parent before its final child/Consent sweep; uncertain or timed-out
+containment keeps the Run honestly `CANCELLING`, and a terminal retry repairs escaped cards. A
+post-park probe failure or worker-task cancellation preserves `AWAITING_CONSENT`; the runtime consent
+relay later re-fires any committed decision and fairly retains all degraded pages.
 
 **Boundary — Not yet:** This is not a Postgres Consent-plus-Checkpoint restart receipt. Multiple
-approval calls in one model response are rejected; after verdict commit plus enqueue failure,
-web and CLI suppress the live retry, leaving startup reconciliation as the automatic repair path.
-No tracked production toolset currently originates approval; focused tests inject the only
-approval-required tool.
+approval calls in one model response are rejected. No tracked production toolset currently
+originates approval; focused tests inject the only approval-required tool.
 
 **Evidence**
 
@@ -424,14 +486,17 @@ idempotent process-local `AgentJob` submission/adoption/cancellation, exact wait
 parking with `AWAITING_DELEGATE`, and bounded re-admission. Pure policy modules validate Coffin
 filesystem, network, resource, environment, command, Provider Gate, and capacity decisions. The
 selectable extension supplies a deterministic no-effect `reference` adapter, delegated database
-shapes and migration, a PostgreSQL adapter, and initial Bridge/Loom/Nexus/Orb projections.
+shapes and migration, a PostgreSQL adapter, exact pre-park startup recovery/containment tests, and
+initial Bridge/Loom/Nexus/Orb projections. Post-park probe failure or worker-task cancellation
+preserves `AWAITING_DELEGATE`; the runtime relay polls exact owners and fairly retains every
+degraded page while continuing forward.
 
 **Boundary — Not yet:** The memory profile remains process-local and the PostgreSQL job ledger has
 no real PostgreSQL or migration receipt. Codex CLI, Claude Code, OpenCode Go, OpenRouter, and other
 provider entries are declared-only: none launches. Coffin and Gate are policy-only; there is no
 lower-trust container, effectful `nono` child/supervisor, credential isolation, provider call,
 egress enforcement, process-tree cancellation, durable artifact custody, measured budget ledger,
-cross-process recovery, or live browser receipt.
+real provider recovery, or live browser receipt.
 
 **Evidence**
 
@@ -463,8 +528,13 @@ cross-process recovery, or live browser receipt.
 
 **State:** Designed
 
-**Proved now:** **Design recorded:** Bridge already projects consent cards and counts that a future
-Attention inbox can consume.
+**Proved now:** **Design recorded:** Bridge projects consent cards and a shared count that a future
+Attention inbox can consume. Snapshot generations fence delayed decision responses, Run
+cancellation removes the corresponding local card authority, and shell-wide attention treats local
+events only as invalidation signals before re-reading cross-session status. Overlapping status reads
+are request-version fenced, so a stale arriving zero is never accepted directly as "clear" truth.
+The selected Bridge revokes cards before its cancellation refetch, so a failed refresh cannot leave
+an actionable stale consent visible.
 
 **Do not expect yet:** There is no owned Attention inbox, acknowledgement contract, live retry,
 expiry or escalation policy, redacted notification delivery, or external channel.
@@ -486,7 +556,15 @@ expiry or escalation policy, redacted notification delivery, or external channel
 **State:** Available
 
 **Proved now:** The current catalog, matching, grant issue and settlement, and lease-aware dispatch
-behavior are covered by focused repository tests.
+behavior are covered by focused repository tests. Registry hydration rejects duplicate runtime and
+capability keys before publishing state and reports both conflicting declaration paths and runtime or
+capability provenance. Probe publication is serialized, requires an exact key set and matching
+dynamic/static shape, and invalidates affected cached observations after exceptions or malformed
+results; cancellation during a probe also invalidates the interrupted observations. Capability,
+persistent-resident, Animator Rune, and group projections return detached values, adapter activation
+and abandonment receive deep specification snapshots, connector model inventories are copied on
+admission and projection, and issued grants retain defensive copies of
+nested specification and state values while keeping explicitly named runtime handles live.
 
 **Boundary:** `AnimatorRegistry` still combines several ownership roles. `GrantLease.expires_at`
 exists, but the ledger does not enforce it; current leases are context-managed, not renewable
@@ -508,13 +586,26 @@ temporal leases.
 
 **State:** Partial
 
-**Proved now:** Explicit built-in selection and current concrete Rune, portal, runtime, and Quadlet
-contributions can be assembled and tested. Delegated-runtime and Run-operation stores retain their
-contributor identity and reject attributed collisions.
+**Proved now:** Explicit built-in selection and dependency-first assembly produce current concrete
+Rune, Portal, runtime, and Quadlet contributions. Rune, Soulstone, Portal, Transmutation,
+delegated-runtime, and Run-operation stores retain registration ownership and reject cross-provider
+replay. The manager retains the root provenance mutator and gives each extension a fixed
+provider-bound registration facade, so retained registrant state cannot borrow another extension's
+identity. Portal runtime composition preserves the schema/factory definition and dispatches by exact
+concrete Rune schema, so activation order cannot let a broad factory claim another provider. Every
+normal or bootstrap-installed store seals membership after the single registration pass, preventing
+service snapshots and discovery from diverging later. Crypt ids are canonical path selectors and
+Rune branch ownership derives only from the admitted schema generation. Rune registry admission and
+reads deep-copy nested metadata, and a failed Crypt import or registration clears its synthetic
+package namespace before retry. Registration is a synchronous `register(context) -> None` hook;
+awaitable or value-returning hooks fail assembly instead of silently freezing an incomplete context.
+The seal does not claim recursive immutability for arbitrary trusted
+contributor objects outside those explicit snapshot boundaries.
 
-**Boundary — Not yet:** Legacy Rune, Portal, Soulstone/runtime, and transmutation contribution
-stores do not retain the registering owner on every admitted record. Their collision attribution,
-full lifecycle ownership, and a stable public SDK remain absent.
+**Boundary — Not yet:** Runtime hydration does not project extension ownership into every live
+capability view. Vessel contributions remain reserved. Package installation, dependency locks,
+upgrade/uninstall, migration ownership, effectful lifecycle ownership, Forge admission, and a stable
+public SDK remain absent.
 
 **Evidence**
 
@@ -649,14 +740,18 @@ the tested dedicated-runtime paths,
 readiness convergence, loaded-graph attestation, one compound target transaction, settled-world
 classification, exact-prior-world compensation, cancellation restoration, and fail-closed
 containment. A proved restoration reopens admission; `.contained` and unresolved `.processing`
-fence startup and later Reactor work.
+fence startup and later Reactor work. Direct Orchestrator admission refuses a non-warm shared
+dynamic Animator before soft activation or host effects, matching Dispatcher ownership law. The
+absolute warm-up deadline covers target refresh, optional activation, accepted-activation refresh,
+and WARM polling. Activation or accepted-refresh interruption performs bounded adapter abandonment
+despite repeated caller cancellation before propagating failure. The deadline also bounds post-stop cold probes for evictees, so an
+unresponsive observation enters typed compensation or containment rather than holding the gates
+forever.
 
-**Boundary — Not yet:** Direct Orchestrator and Nexus activation call the manager without
-Dispatcher admission. Because the manager checks `runtime_started` before shared ownership, an
-already-running shared dynamic Animator can receive `SOFT_SWAP` despite the Dispatcher's
-shared/non-WARM refusal. This proves neither that guard nor a swap on a real GPU. A failed soft
-in-runtime model load has no trustworthy rollback and requires contained operator recovery.
-General repair of an arbitrary host world remains an operator responsibility.
+**Boundary — Not yet:** The shared-dynamic guard and dedicated transition protocols are repository
+tests, not a swap on a real GPU. A failed soft in-runtime model load has no trustworthy rollback and
+requires contained operator recovery. General repair of an arbitrary host world remains an operator
+responsibility.
 
 **Evidence**
 
@@ -712,15 +807,35 @@ admission.
 **Proved now:** The Svelte Bridge uses generated `/api/v1` contracts for sessions, text submission,
 consent, inspection, versioned semantic SSE, and closed GenUI descriptors. Server-minted run,
 Pattern, Loom, Orb, and evidence identities remain authoritative. Completed turns retain one
-bounded Pydantic AI history unit; consent resume re-bounds it after the actual grant. Admission
-stores the user turn before queue publication. Cursor-bound snapshots replace speculative client
+bounded Pydantic AI history unit and complete validated GenUI descriptors; old key-only fragment rows
+normalize to inert empty-props descriptors that cannot enter current renderers instead of breaking session reconstruction. Consent resume
+re-bounds history after the actual grant. Admission stores the user turn before queue publication. A
+client request UUID survives ambiguous responses and durably converges on one canonical Run and one
+retained turn; a replay repairs an unresolved held retention gate and different work cannot reuse the
+identity. Cursor-bound snapshots replace speculative client
 state on gaps or resync and reconstruct distinct node, grant, and transition occurrence identities
 after remount or reload. Events are bound to the requested Run; a permanently closed stream becomes
 visibly stale and receives one bounded authoritative recovery attempt rather than remaining live.
+Per-Run cursor and generation fences prevent that delayed recovery from replacing a newer session
+projection. Durable terminal status overrides lagging process-local channel state, while a user turn
+alone never hides a failed or cancelled Run outcome.
+The shared consent indicator reports an unknown state after refresh failure instead of presenting a
+stale zero as "clear"; instrument events only trigger a new cross-session status read. An ambiguous verdict request disables the contradictory action while keeping
+an exact same-verdict retry available, then refreshes authoritative server truth. Newer consent
+snapshot authority fences delayed mutation counts, and Run cancellation immediately settles its
+durable cards then refetches selected-session consent authority instead of decrementing a stale
+browser count. Root-route cancellation derives that authority from the selected snapshot session,
+not a possibly stale route prop. Component destruction fences late submissions, stream callbacks,
+state writes, and timers. Malformed PostgreSQL-backed session, Run, and consent read identities resolve through
+the declared not-found contract. Route identity is fenced before a replacement Bridge snapshot can render or admit
+another message. A same-session root refresh preserves the unsent draft; a canonical selected-session
+change clears it. Generated contracts explicitly include shared JSON `404` errors for every Bridge,
+Nexus, Loom, and Orb operation that can actually miss.
 
-**Boundary — Not yet:** There is no production-factory/browser receipt, durable cross-process
-event or token delivery, transactional admission outbox, general multi-approval round, Attention,
-or notification channel. The Bridge also omits a changing grant epoch when caching the Environment
+**Boundary — Not yet:** There is no real-browser receipt, durable cross-process event or token
+delivery, general multi-approval round, Attention, or notification channel. The
+database delivery outbox protects run admission but does not make SSE/token projection durable.
+The Bridge also omits a changing grant epoch when caching the Environment
 block, so the same session/capability binding can retain an earlier warm-Coven snapshot and the
 process-lifetime snapshot cache has no release path. Reconstruction is process-local; text is the
 only command modality.
@@ -761,19 +876,35 @@ Its bounded journal correlates run, occurrence, physical transition, and compens
 each probe's `checked_at`, supports direct transition URLs, and retains terminal reconnect truth
 for 60 seconds without evicting active or fresh-terminal tickets. Polling is completion-driven and
 single-flight; ticket events are identity-bound and permanent closure becomes explicit stale state
-with one bounded authoritative recovery.
+with one bounded authoritative recovery. A failed board refresh marks the snapshot stale and fences
+lifecycle mutation until authoritative state loads again. The client allocates a request id before
+transition submission and retains ambiguous identities per target, so inspecting a second target
+does not discard the first target's only safe retry. A definitive client rejection clears only its
+target; a lost-ticket conflict retains the fenced identity instead of enabling a fresh physical
+launch. A refreshed terminal transition rebinds inspector selection by exact request id. A refresh
+requested during an in-flight read schedules one dirty trailing refresh, and component destruction
+prevents late stream attachment or mutation. The profile-bound admission
+ledger reserves the first target before launch: PostgreSQL preserves that identity across process
+restart, an exact retry reuses a still-live ticket, and a retry after ticket loss refuses without
+relaunch. Reuse for a different target is rejected. The process-local ticket store reserves its
+bounded capacity before any awaited durable claim, preventing concurrent requests from both
+passing the capacity check; overload and closure have explicit API responses.
 
-**Boundary — Not yet:** Tickets and observations have no durable owner, complete history,
-cross-process retention, restart recovery, or production-browser receipt. Nexus is not a general
+**Boundary — Not yet:** Only request admission is durable. Ticket state and transition observations
+have no durable owner, complete history, cross-process projection, restart recovery, or
+production-browser receipt. A retained admission prevents duplicate physical work but cannot prove
+whether a lost transition settled or safely resume it. Nexus is not a general
 resource/GPU/topology dashboard or configuration surface.
 
 **Evidence**
 
 - **Source:** [Nexus controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/nexus.py),
   [client Nexus](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.svelte),
-  and [process-local ticket store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/tickets.py)
+  [process-local ticket store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/tickets.py),
+  and [request-admission port](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/web/swap_requests.py)
 - **Verification:** [Nexus board and endpoint tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_nexus.py),
   [ticket-retention tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_tickets.py),
+  [PostgreSQL admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_nexus_pg.py),
   [client stream-contract tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/api/client.test.ts),
   and [Nexus component tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/NexusView.test.ts)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
@@ -784,11 +915,18 @@ resource/GPU/topology dashboard or configuration surface.
 **State:** Partial
 
 **Proved now:** The Svelte Loom browses exact immutable Pattern revisions, presents their semantic
-station/permission outline as the primary score, and exposes the pinned checkpoint schema and
-manifest digest. Optional Mermaid source is a secondary local diagram lens. The same typed Pattern
+station/permission outline as the primary score, and exposes the pinned checkpoint schema,
+declared entry station, reviewed implementation revision, and manifest digest. Optional Mermaid source is a secondary local diagram lens. The same typed Pattern
 manifest and source are available through `/api/v1`, and ambiguous unversioned browser deep links
-fail rather than selecting a revision silently. The unversioned catalogue API remains an
-intentional current-revision lookup.
+fail rather than selecting a revision silently. Loom labels the active default, route precedence,
+and retired-but-registered revisions. The catalogue API returns every registered revision with
+active/default metadata; `/{workflow}` is the active-revision convenience lookup, while exact
+revision lookup preserves old pinned execution without reopening admission. Plain-text source uses
+the longer `/source/workflows/...` and `/source/patterns/...` namespaces, preserving every legal
+two-segment exact revision identity. Orb exposes a Loom link only when the valid persisted manifest
+equals the complete registered snapshot used by worker replay.
+Late catalogue or manifest responses are generation-fenced, and component destruction advances that
+generation before teardown so no completed load can navigate afterward.
 
 **Boundary — Not yet:** It is a view over the fixed workflow registry, not a general Weaver editor,
 workflow mutation surface, Svelte Flow drafting canvas, or production-browser receipt.
@@ -799,6 +937,7 @@ workflow mutation surface, Svelte Flow drafting canvas, or production-browser re
   [client Loom](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/LoomView.svelte),
   and [workflow registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py)
 - **Verification:** [Loom rendering tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py)
+  and [Loom component lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/LoomView.test.ts)
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 28 — Workflow](./adr/28-workflow.md)
 
@@ -809,7 +948,8 @@ workflow mutation surface, Svelte Flow drafting canvas, or production-browser re
 **Proved now:** `/orb/{run_id}` renders one Run as ordered bounded evidence with its validated
 Pattern revision, capture durability label, separate ledger head/page boundary, explicit gaps,
 Nexus transition links, stable event selection, pagination, narrow-screen detail, and a
-non-diagnostic failure notice.
+non-diagnostic failure notice. A failed pagination request retains the already loaded evidence and
+offers an explicit bounded retry instead of replacing the whole view with an error.
 
 **Boundary — Not yet:** There is no authorized run-list query, live Orb tail, graph-shaped
 evidence view, durable native Oculus ingestion/read model, cross-process completeness, health
@@ -897,17 +1037,20 @@ application trace export to it. The sample `latest` image is not a reproducible 
 lineage-carrying Privatization Labels, a local Privacy Cut, separate transformation and
 declassification authority, exact pre-transmission decisions, retry and delegation handling, and
 quarantined returns. Current source only recursively censors values whose dictionary keys look
-secret-shaped before storing a consent projection.
+secret-shaped before storing a consent projection. Dispatcher also fails closed for every Portal
+source, including direct capability-key dispatch, until a typed egress path exists.
 
 **Do not expect yet:** Blocks, SQL and tool results do not carry general labels or influence
 lineage. There is no deterministic identifier scanner, Privacy Agent, `TransformationReceipt`,
 sanitized Context branch, Portal Egress Gate, admission/transmission check, pseudonym map,
-or deletion propagation. A routable Portal may still receive any matching run.
+or deletion propagation. Portal declarations and probes remain visible but cannot receive a Run.
 
 **Evidence**
 
 - **Source:** [Consent projection censor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/schemas.py)
+  and [Dispatcher quarantine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py)
 - **Verification:** [Secret-shaped consent projection test](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
+  and [Portal quarantine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_portals.py)
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 21 — Context](./adr/21-context.md),
   [ADR 22 — Dispatcher](./adr/22-dispatcher.md), and
@@ -923,12 +1066,14 @@ implemented and exercised on the current loopback bootstrap surface.
 
 **Boundary — Not yet:** The default Sigil is fixed `magus:*`; there is no caller authentication,
 object authorization, delegation, revocation, tenant isolation, or remote exposure. Naive expiry
-is accepted and then fails against aware UTC in memory, and expiring preauthorization is not
-rechecked immediately before a protected effect after waiting. Startup synchronization does not
-disable an enabled database rule when its Rune disappears and logs synchronization failure while
-continuing; a removed or tightened file can therefore leave stale authority. Use-budget consumption
-and consent-row insertion are separate commits, so failure between them can consume a use without
-its audit row. Current preauthorization tests are memory-backed and prove neither boundary.
+is accepted and then fails against aware UTC in memory. PostgreSQL use-budget consumption and
+consent insertion share one transaction; contradictory decisions retain the first commit. Startup
+atomically synchronizes the complete Rune-owned policy set, marks absent rows source-inactive
+without changing usage or operator `enabled` state, and blocks PostgreSQL admission on failure.
+Auto-grants retain a policy
+digest and revalidate enabled state, database-time expiry, and digest equality before Graph accepts
+the verdict. These checks do not replace generic effect-time IAM/object/authority reauthorization
+after arbitrary intervening work.
 
 **Evidence**
 
@@ -942,7 +1087,9 @@ its audit row. Current preauthorization tests are memory-backed and prove neithe
   and [startup synchronization](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/lifespan.py)
 - **Verification:** [Web guard tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_sigil_guards.py),
   [scope grammar tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_scopes.py),
-  and [preauthorization tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
+  [preauthorization tests](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py),
+  [preauthorization policy integrity tests](https://github.com/hexanomicon/lychd/tree/main/tests/unit/domain/codex),
+  and [PostgreSQL consent atomicity tests](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_consent_pg.py)
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 25 — Human in the Loop](./adr/25-hitl.md), and [ADR 38 — IAM](./adr/38-iam.md)
 
@@ -985,7 +1132,7 @@ direct-image-public, foreground non-loopback, and untrusted-browser use remain u
   [Host/Origin boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_http_boundary.py),
   [Altar route and asset tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_pages.py),
   [error-contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_error_contract.py),
-  and [explicit production-wiring receipt gap](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+  and [application-factory lifecycle receipt](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 11 — Backend](./adr/11-backend.md), and
   [ADR 15 — Frontend](./adr/15-frontend.md)
@@ -1062,19 +1209,33 @@ provider fetch audit, or Reliquary backend.
 
 ## Evolution and federation {#evolution-and-federation}
 
-### Karma semantic memory {#karma-semantic-memory}
+### Candidate Archive intake seam {#karma-semantic-memory}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** **Design recorded:** a narrow Karma row and ADR 27 reserve the architectural home
-for semantic memory.
+**Proved now:** ADR 27 reserves the architectural home for semantic memory. A LychD-owned,
+DB-free `CandidateArchivePort` and loop-local adapter explicitly admit bounded attributed raw
+candidates and separately identified derivatives, reject semantic identity collisions, preserve
+source lineage and anti-reingestion keys, and expose a finite processing lifecycle. Retry attempts
+are monotonic; a derivative cannot predate its source observation, stale terminal writes and
+derivatives from an older attempt fail closed, and ordinary reads hide derivatives once their exact
+source attempt is no longer current and processing or processed. Focused tracked
+tests prove those local contracts. A new current attempt can replace an older attempt's stale
+derivation key only for the same raw source, without exposing the old derivative; that key cannot
+migrate to another source lineage. No external memory framework is a dependency or authority.
 
-**Do not expect yet:** There is no semantic ingestion, embedding pipeline, retrieval tool,
-consecration policy, curator loop, memory evolution, or production vector store.
+**Boundary — Not yet:** The adapter is volatile process memory and has no runtime wiring, namespace
+authorization, PostgreSQL implementation, semantic ingestion, embedding pipeline, retrieval tool,
+consecration policy, curator loop, memory evolution, or production vector store. There is no
+automatic capture, recall injection, RAG, promotion, or training loop. Full Karma semantic memory
+remains Designed; this Partial record applies only to the bounded Candidate Archive contract.
 
 **Evidence**
 
-- **Source:** [Narrow Karma model](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/karma.py)
+- **Source:** [Candidate Archive contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/memory/ports.py),
+  [loop-local adapter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/memory/in_memory.py),
+  and [narrow Karma model](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/models/karma.py)
+- **Verification:** [Candidate Archive contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/memory/test_archive.py)
 - **Journey:** [Illumination](./divination/transcendence/illumination.md)
 - **Law:** [ADR 27 — Memory](./adr/27-memory.md)
 
@@ -1138,18 +1299,35 @@ evaluation, model registration, rollback, or production promotion.
 - **Topic:** [Soulforge](./sepulcher/extensions/soulforge/index.md)
 - **Law:** [ADR 33 — Training](./adr/33-training.md)
 
-### Smith and Forge promotion {#smith-forge-promotion}
+### Inert Creation promotion envelope {#smith-forge-promotion}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** **Design recorded:** the creation, packaging, evolution, and assimilation laws
-define a future attributable promotion path.
+**Proved now:** The creation, packaging, evolution, and assimilation laws define an attributable
+promotion path. A process-local, effect-free Creation state machine now binds exact source revision
+and source-tree digest,
+allowed paths, budgets, tools, network declaration, artifact custody, deterministic verification,
+compatibility evidence, and explicit human review. Its only terminal output is an idempotent
+`PromotionRequest(inert=True)` for a named target owner. Candidate and promotion admission reject
+tree drift, and evidence chronology cannot run backward. Set-like packet inputs are canonicalized
+before digesting. Review evidence and promotion each bind the full `CandidateArtifact` record digest,
+including changed paths and declared effects, rather than only its artifact-byte identity. Candidate
+records share the same semantic record-id collision domain as custody, verification, compatibility,
+review, and promotion evidence.
 
-**Do not expect yet:** There is no safe code forge, autonomous repair loop, verified package
-promotion, compatibility gate, rollback controller, or self-extension runtime.
+**Boundary — Not yet:** There is no workspace allocator, filesystem or command executor, database
+adapter, crash recovery, safe code forge, autonomous repair loop, target-owner promotion effect,
+rollback controller, or self-extension runtime. The schema records compatibility evidence and a
+recovery-plan digest; it does not execute or validate those effects. Smith, Forge, and autonomous
+promotion remain Designed; this Partial record applies only to the inert Creation evidence and
+request envelope.
 
 **Evidence**
 
+- **Source:** [Inert Creation contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/creation/contracts.py)
+  and [process-local state machine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/creation/machine.py)
+- **Verification:** [Creation contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/creation/test_contracts.py)
+  and [Creation state-machine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/creation/test_machine.py)
 - **Topic:** [Smith](./sepulcher/extensions/smith.md) and
   [Immortality](./divination/transcendence/immortality.md)
 - **Law:** [ADR 16 — Creation](./adr/16-creation.md),
@@ -1243,6 +1421,63 @@ remote ingress hardening, or proof that a proxy substitutes for application auth
 
 - **Topic:** [Veil](./sepulcher/extensions/veil.md)
 - **Law:** [ADR 40 — Proxy](./adr/40-proxy.md)
+
+## Human ruling queue
+
+These are constitutional or operational choices, not ordinary missing-feature tickets. Agents may
+produce traces, failure probes, or small option spikes around them, but must not choose the policy or
+grow a framework until the operator records a ruling in the owning ADR.
+
+1. **Change-set custody.** Review and land the cathedral as bounded vertical slices. Runtime and
+   persistence, animation and extensions, Altar, and Creation/Memory must remain separately
+   understandable; merging one undifferentiated change set would make later archaeology and rollback
+   needlessly dangerous.
+2. **One-Vessel ownership and shutdown.** Choose whether deployment guarantees one process or
+   startup must hold a PostgreSQL process lease. Independently choose whether a permanently hung
+   queue disconnect may hold custody forever or a bounded deadline delegates final termination to
+   the service manager. Agents must not silently invent either policy.
+3. **Run authority and persistence.** Decide whether generic `RunLedger.set_status` is trusted to
+   enter owner-bearing wait states or only `park_consent` and `park_delegate` may do so. Before
+   separate workers or multi-process streaming, rule on a Step-event outbox, same-boot containment
+   watchdog, subscriber backpressure, and process epoch fencing.
+4. **Core Python ownership.** `domain/cortex/ledger.py`, `ghouls/runs.py`, `domain/cortex/engine.py`,
+   web lifespan, Animator registry, and Orchestrator manager each retain multiple roles. Human review
+   must name stable ports and transaction owners before role splitting; a mechanical file-splitting
+   campaign would be churn, not architecture.
+5. **Identity and effect-time authority.** The fixed local `magus:*` Sigil is not authentication.
+   Remote use, autonomous promotion, and consequential external effects remain held until caller
+   identity, object authority, delegation/revocation, trusted decision time, and effect-time
+   reauthorization have an explicit owner.
+6. **Extension trust.** Decide whether runtime/Rune/connector handles are trusted-live and whether an
+   ownerless Portal may intentionally receive the passive `GenericPortal` fallback. Package trust,
+   dependency locking, install/upgrade/uninstall, migrations, lifecycle effects, and SDK stability
+   remain outside the synchronous registration seam. A generalized proxy or recursive-immutability
+   framework is not authorized.
+7. **Creation and autopoiesis.** The current Creation result is inert. Before promotion effects,
+   design artifact-byte custody, workspace allocation, effect derivation from observed bytes,
+   database recovery, target-owner capability, compatibility proof, rollback execution, and durable
+   receipts. Claimant-provided changed paths and recovery digests are evidence inputs, not proof.
+8. **Memory, RAG, and training.** Define the canonical derivation specification before persistence:
+   which producer, revision, transform configuration, kind, and source fields a derivation key binds.
+   Namespace authorization, purpose, privacy, correction, retention/deletion, sharing, license, and
+   training eligibility must precede automatic capture, recall injection, RAG, or training.
+9. **Delegated external effects.** A real agent runtime needs durable start/cancel operation identity,
+   leases, process-tree containment, artifact custody, measured budgets, and terminal receipts.
+   Process-local idempotency is not authority over a remote or long-lived external job.
+10. **Egress and anonymization.** Secret-shaped key censoring plus Portal quarantine is a safe stop,
+    not anonymization. Do not enable Portal dispatch until labels/lineage, deterministic transforms,
+    declassification authority, exact pre-transmission decisions, retry semantics, and deletion
+    propagation are ruled and tested.
+11. **Nexus and browser intent.** Decide how a retained lost-ticket `409` identity is explicitly
+    abandoned when the operator later intends genuinely new work for the same target. Durable ticket
+    observations, cross-process event delivery, bounded subscriber queues, browser receipts, and
+    grant-epoch cache invalidation remain separate follow-on work.
+12. **Platform floor.** Exact no-replace filesystem publication currently requires Linux
+    `renameat2`; macOS is not an equivalent test host. Keep a Linux CI receipt before merge and rule
+    on the support matrix rather than adding a weaker fallback.
+
+A2A, proxy, VPN, federation, autonomous training execution, and other remote expansion remain
+deliberately deferred. They are not prerequisites for reviewing and stabilizing this local core.
 
 ## Operator receipt requirements
 

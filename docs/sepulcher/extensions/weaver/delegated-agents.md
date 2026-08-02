@@ -47,13 +47,19 @@ mismatched job id is rejected, and an older job cannot resume a newer wait. Only
 the delegated rite project optional text; every other terminal status fails it.
 
 Reference cancellation is idempotent; no effectful process-tree cancellation is delivered.
-`lost` records indeterminate external truth: it is terminal, neither polled nor retried, and not
-permission to repeat. Cancellation during runtime start settles `lost`; another start exception
-settles `failed`.
+`lost` records indeterminate external truth: it is terminal for result adoption, neither polled nor
+restarted, and not permission to repeat. It is also not containment proof. Explicit parent
+cancellation still calls the owning runtime's cancellation operation and records
+`lost → cancelled` only after that call returns. Cancellation during runtime start settles `lost`;
+another start exception settles `failed`.
 
-Resume-publication failure restores the exact wait under a fresh monotonic key. No startup
-recovery exists for `AWAITING_DELEGATE`. A repeated callback may retry that restored wait; after
-the admission CAS wins it is inert. [Stasis and return](stasis-and-return.md) owns re-admission.
+Resume admission atomically creates the fresh monotonic delivery key. Publication failure leaves
+that exact queued delivery for relay. Startup recognizes the pre-park crash window only when the
+first resumable checkpoint binds the same Run and delegated job; otherwise it contains correlated
+jobs before parent failure. It refreshes durable delegated waits and re-admits only the terminal job
+that owns each wait; missing coordination or owner identity fails required PostgreSQL startup.
+After the admission CAS wins, repeated callbacks are inert.
+[Stasis and return](stasis-and-return.md) owns re-admission.
 
 ## Keep the keys outside
 
@@ -90,8 +96,8 @@ network work.
 Codex CLI (`codex-cli`), Claude Code (`claude-code`), and OpenCode Go (`opencode-go`) are
 declared-only examples; none launches. No effectful
 Coffin supervisor or CLI/provider process, credential isolation, or durable artifact custody is
-delivered. Database shapes and a PostgreSQL store exist without a real PostgreSQL or migration
-receipt or cross-process recovery.
+delivered. Database shapes and a PostgreSQL store exist without a real provider or two-process
+PostgreSQL recovery receipt; exact pre-park recovery is proved only with focused in-memory tests.
 
 The [tracked delegated-coding
 playbook](https://github.com/hexanomicon/lychd/blob/main/.agents/workflows/delegated-coding.md)

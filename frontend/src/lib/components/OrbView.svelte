@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { tick } from "svelte";
 
@@ -24,8 +25,10 @@
   let loading = $state(false);
   let loadingMore = $state(false);
   let error = $state("");
+  let loadMoreError = $state("");
   let selectionNote = $state("");
   let loadVersion = 0;
+  let activeRunId: string | undefined;
   let selectedInspector: HTMLElement | undefined;
   let selectionReturnFocus: HTMLElement | undefined;
   let requestedEventId = $derived(page.url.searchParams.get("event"));
@@ -56,9 +59,12 @@
   $effect(() => {
     if (runId) void load(runId);
     else {
+      activeRunId = undefined;
       snapshot = null;
       selected = null;
       loading = false;
+      loadingMore = false;
+      loadMoreError = "";
     }
   });
 
@@ -93,12 +99,24 @@
 
   async function load(id: string) {
     const version = ++loadVersion;
+    const identityChanged = activeRunId !== id;
+    activeRunId = id;
     loading = true;
+    loadingMore = false;
     error = "";
-    snapshot = null;
+    loadMoreError = "";
+    if (identityChanged) {
+      snapshot = null;
+      selected = null;
+      selectionNote = "";
+      selectionReturnFocus = undefined;
+    }
     try {
       const next = await getOrbRun(id, { limit: 100 });
       if (version !== loadVersion) return;
+      if (next.run.run_id !== id) {
+        throw new Error("The Orb returned evidence for another Run.");
+      }
       snapshot = next;
     } catch (cause) {
       if (version === loadVersion) {
@@ -115,9 +133,13 @@
     if (!runId || !current?.has_more || afterSeq == null || loadingMore) return;
     const version = loadVersion;
     loadingMore = true;
+    loadMoreError = "";
     try {
       const next = await getOrbRun(runId, { afterSeq, limit: 100 });
       if (version !== loadVersion || snapshot !== current) return;
+      if (next.run.run_id !== runId || next.run.run_id !== current.run.run_id) {
+        throw new Error("The Orb returned evidence for another Run.");
+      }
       snapshot = {
         ...next,
         evidence: [...current.evidence, ...next.evidence],
@@ -125,7 +147,7 @@
       };
     } catch (cause) {
       if (version === loadVersion) {
-        error = cause instanceof Error ? cause.message : "More evidence could not be read.";
+        loadMoreError = cause instanceof Error ? cause.message : "More evidence could not be read.";
       }
     } finally {
       if (version === loadVersion) loadingMore = false;
@@ -140,12 +162,14 @@
   }
 
   async function selectEvidence(evidence: Evidence, opener: HTMLElement) {
+    if (!runId) return;
     selectionReturnFocus = opener;
     selected = evidence;
     selectionNote = "";
     const url = new URL(page.url);
     url.searchParams.set("event", evidence.event_id);
-    await goto(`${url.pathname}${url.search}`, {
+    const orbPath = `/orb/${encodeURIComponent(runId)}${url.search}` as `/orb/${string}`;
+    await goto(resolve(orbPath), {
       replaceState: true,
       keepFocus: true,
       noScroll: true
@@ -157,11 +181,13 @@
   }
 
   async function clearSelection() {
+    if (!runId) return;
     const target = selectionReturnFocus;
     selectionReturnFocus = undefined;
     const url = new URL(page.url);
     url.searchParams.delete("event");
-    await goto(`${url.pathname}${url.search}`, {
+    const orbPath = `/orb/${encodeURIComponent(runId)}${url.search}` as `/orb/${string}`;
+    await goto(resolve(orbPath), {
       replaceState: true,
       keepFocus: target !== undefined,
       noScroll: true
@@ -177,25 +203,26 @@
     <span class="glyph-big">◉</span>
     <h1 id="orb-empty-title" class="rune-head">Orb</h1>
     <p>Look into the Orb from a Bridge run to scry its retained structural evidence.</p>
-    <a class="rune-btn" href="/bridge">Open Bridge</a>
+    <a class="rune-btn" href={resolve("/bridge")}>Open Bridge</a>
   </section>
 {:else}
   <div class="instrument-deck instrument-deck--orb">
     <section class="orb-main" aria-label="Selected run evidence">
-      {#if loading}
+      {#if loading && !snapshot}
         <div class="mist"></div><div class="mist"></div>
-      {:else if error}
+      {:else if error && !snapshot}
         <div class="turn__fault" role="alert">{error}</div>
       {:else if snapshot}
+        {#if error}<div class="turn__fault" role="alert">{error}</div>{/if}
         <header class="run-identity">
           <div>
             <span class="eyebrow">Selected Run</span>
             <h1>Run {snapshot.run.run_id}</h1>
             <nav class="context-links" aria-label="Related instruments">
-              <a href={snapshot.run.bridge_path}>Bridge</a>
+              <a href={resolve(snapshot.run.bridge_path as `/bridge/${string}`)}>Bridge</a>
               <span>{snapshot.pattern.pattern_id}@{snapshot.pattern.revision}</span>
               {#if snapshot.pattern.loom_path}
-                <a href={snapshot.pattern.loom_path}>Exact Pattern →</a>
+                <a href={resolve(snapshot.pattern.loom_path as `/loom/${string}/${string}`)}>Exact Pattern →</a>
               {:else}
                 <span class="context-unavailable">
                   Exact Pattern unavailable — the pinned manifest could not be validated against
@@ -315,8 +342,21 @@
           </ol>
           {#if snapshot.has_more}
             <div class="evidence-more">
-              <button class="rune-btn" disabled={loadingMore} type="button" onclick={loadMore}>
-                {loadingMore ? "Reading…" : "Load more retained evidence"}
+              {#if loadMoreError}
+                <div id="orb-load-more-error" class="turn__fault" role="alert">{loadMoreError}</div>
+              {/if}
+              <button
+                class="rune-btn"
+                disabled={loadingMore}
+                type="button"
+                onclick={loadMore}
+                aria-describedby={loadMoreError ? "orb-load-more-error" : undefined}
+              >
+                {loadingMore
+                  ? "Reading…"
+                  : loadMoreError
+                    ? "Retry loading retained evidence"
+                    : "Load more retained evidence"}
               </button>
             </div>
           {/if}
@@ -360,7 +400,9 @@
           {#if selected.nexus_path}
             <a
               class="inspector-link"
-              href={`${selected.nexus_path}&event=${encodeURIComponent(selected.event_id)}`}
+              href={resolve(
+                `${selected.nexus_path}&event=${encodeURIComponent(selected.event_id)}` as `/nexus?${string}`
+              )}
             >
               Open transition in Nexus →
             </a>

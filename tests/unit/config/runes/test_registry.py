@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import ClassVar
+
 import pytest
 
+from lychd.config.runes import RuneConfig
 from lychd.config.runes.protocols import PortReserver
 from lychd.config.runes.registry import RuneRegistry
 from lychd.extensions.builtin.observability.phoenix.config import PhoenixSettings
@@ -30,6 +34,12 @@ class _Bystander:
     name = "bystander"
 
 
+class _NestedRune(RuneConfig):
+    path_fragment: ClassVar[Path] = Path("nested-rune")
+
+    payload: list[dict[str, str]]
+
+
 def test_phoenix_is_a_port_reserver() -> None:
     assert isinstance(PhoenixSettings(), PortReserver)
     assert not isinstance(_Bystander(), PortReserver)
@@ -44,6 +54,18 @@ def test_reserved_ports_collects_phoenix_claims() -> None:
     registry = RuneRegistry([PhoenixSettings()])
     ports = registry.reserved_ports()
     assert ports == {"Phoenix Eye UI": 6006, "Phoenix Eye OTLP": 4317}
+
+
+def test_registry_detaches_nested_mutable_rune_values_at_every_read_boundary() -> None:
+    original = _NestedRune(payload=[{"owner": "canonical"}])
+    registry = RuneRegistry([original])
+
+    original.payload[0]["owner"] = "constructor-alias"
+    first = registry.one(_NestedRune)
+    assert first.payload == [{"owner": "canonical"}]
+
+    first.payload[0]["owner"] = "reader-alias"
+    assert registry.one(_NestedRune).payload == [{"owner": "canonical"}]
 
 
 def test_reserved_ports_ignores_non_reservers() -> None:

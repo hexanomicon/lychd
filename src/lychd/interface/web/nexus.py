@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Any
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
 from litestar.di import NamedDependency
-from litestar.exceptions import NotFoundException, ServiceUnavailableException
+from litestar.exceptions import ClientException, NotFoundException, ServiceUnavailableException, ValidationException
 from litestar.openapi.datastructures import ResponseSpec
 from litestar.params import FromPath, FromQuery
 from litestar.response import ServerSentEvent, ServerSentEventMessage
-from litestar.status_codes import HTTP_202_ACCEPTED
+from litestar.status_codes import HTTP_202_ACCEPTED, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT, HTTP_503_SERVICE_UNAVAILABLE
 
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.guards import requires_scopes
@@ -24,6 +24,7 @@ from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
 from lychd.domain.web.contracts import (
     DelegatedRuntimeObservation,
+    FrameworkError,
     NexusSnapshot,
     SwapAccepted,
     SwapIntent,
@@ -32,6 +33,7 @@ from lychd.domain.web.contracts import (
 )
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.schemas import SwapTicket, build_nexus_board
+from lychd.domain.web.swap_requests import SwapRequestLedger
 from lychd.domain.web.tickets import TicketCapacityError, TicketRecord, TicketStore
 
 if TYPE_CHECKING:
@@ -96,7 +98,13 @@ class NexusController(Controller):
             delegated_runtimes=delegated_runtimes,
         )
 
-    @get("/plan", name="nexus:plan", operation_id="getNexusPlan", guards=[requires_scopes("altar:read")])
+    @get(
+        "/plan",
+        name="nexus:plan",
+        operation_id="getNexusPlan",
+        guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
+    )
     async def plan(
         self,
         orchestrator: NamedDependency[OrchestratorManager],
@@ -114,45 +122,109 @@ class NexusController(Controller):
         name="nexus:swap",
         operation_id="createNexusSwap",
         guards=[requires_scopes("orchestrator:transition")],
+        responses={
+            HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False),
+            HTTP_409_CONFLICT: ResponseSpec(
+                FrameworkError,
+                generate_examples=False,
+                description="The durable request was already admitted but its process-local ticket is unavailable.",
+            ),
+            HTTP_503_SERVICE_UNAVAILABLE: ResponseSpec(
+                FrameworkError,
+                generate_examples=False,
+                description="Process-local transition ticket capacity is temporarily exhausted.",
+            ),
+        },
     )
     async def swap(
         self,
         data: SwapIntent,
         orchestrator: NamedDependency[OrchestratorManager],
         tickets: NamedDependency[TicketStore],
+        swap_requests: NamedDependency[SwapRequestLedger],
         projector: NamedDependency[EventProjector],
     ) -> SwapAccepted:
-        """Launch one transition and return a process-local ticket."""
+        """Launch one caller-identified transition and return its process-local ticket."""
+        existing = tickets.get_by_request_id(data.request_id)
+        if existing is not None:
+            return self._repeat_swap(existing, target=data.target, projector=projector)
         try:
             plan = await orchestrator.calculate_transition_plan(data.target)
         except ValueError as exc:
             raise NotFoundException(detail=f"Unknown capability target: {data.target}") from exc
+        # The planner is asynchronous. Recheck after it yields so two concurrent
+        # retries cannot both cross the launch boundary for one request identity.
+        existing = tickets.get_by_request_id(data.request_id)
+        if existing is not None:
+            return self._repeat_swap(existing, target=data.target, projector=projector)
         try:
-            tickets.ensure_capacity()
+            tickets.reserve_capacity(data.request_id)
         except TicketCapacityError as exc:
             raise ServiceUnavailableException(detail=str(exc)) from exc
-        trace = TransitionTrace(target_capability_key=data.target, priority=float(PRIORITY_MAX))
-        task = asyncio.create_task(
-            orchestrator.request_transition(data.target, priority=PRIORITY_MAX, trace=trace),
-            name=f"swap:{data.target}",
-        )
         try:
-            record = tickets.open(
-                target=data.target,
-                action_type=plan.action_type,
-                total_metabolic_cost=plan.total_metabolic_cost,
-                trace=trace,
-                task=task,
+            claim = await swap_requests.claim(request_id=data.request_id, target=data.target)
+            if claim.target != data.target:
+                raise ValidationException(
+                    detail=(f"Transition request {data.request_id!r} already names target {claim.target!r}.")
+                )
+            if not claim.created:
+                # The durable admission may outlive its process-local ticket. Never
+                # translate missing projection state into a second physical mutation.
+                existing = tickets.get_by_request_id(data.request_id)
+                if existing is not None:
+                    return self._repeat_swap(existing, target=data.target, projector=projector)
+                raise ClientException(
+                    detail=(
+                        f"Transition request {data.request_id!r} was already admitted; "
+                        "its process-local ticket is no longer available and no transition was relaunched."
+                    ),
+                    status_code=HTTP_409_CONFLICT,
+                )
+            trace = TransitionTrace(
+                target_capability_key=data.target,
+                priority=float(PRIORITY_MAX),
+                request_id=data.request_id,
             )
-        except TicketCapacityError as exc:  # defensive if the store implementation changes
-            raise ServiceUnavailableException(detail=str(exc)) from exc
-        return SwapAccepted(ticket=projector.ticket_view(record))
+            task = asyncio.create_task(
+                orchestrator.request_transition(data.target, priority=PRIORITY_MAX, trace=trace),
+                name=f"swap:{data.target}",
+            )
+            try:
+                record = tickets.open(
+                    target=data.target,
+                    action_type=plan.action_type,
+                    total_metabolic_cost=plan.total_metabolic_cost,
+                    trace=trace,
+                    task=task,
+                    reservation=data.request_id,
+                )
+            except TicketCapacityError as exc:  # reservation invariant guard
+                raise ServiceUnavailableException(detail=str(exc)) from exc
+            return SwapAccepted(ticket=projector.ticket_view(record))
+        finally:
+            tickets.release_capacity(data.request_id)
+
+    @classmethod
+    def _repeat_swap(
+        cls,
+        record: TicketRecord,
+        *,
+        target: str,
+        projector: EventProjector,
+    ) -> SwapAccepted:
+        """Return the first launch or reject semantic reuse of its identity."""
+        if record.target != target:
+            raise ValidationException(
+                detail=(f"Transition request {record.trace.request_id!r} already names target {record.target!r}.")
+            )
+        return SwapAccepted(ticket=cls._ticket(record, projector))
 
     @get(
         "/swaps/{ticket_id:str}",
         name="nexus:ticket",
         operation_id="getNexusSwap",
         guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def swap_status(
         self,
@@ -171,6 +243,7 @@ class NexusController(Controller):
         name="nexus:transition",
         operation_id="getNexusTransition",
         guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def transition_status(
         self,
@@ -195,6 +268,7 @@ class NexusController(Controller):
                 media_type="text/event-stream",
                 description="Versioned semantic transition events.",
             ),
+            HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False),
         },
     )
     async def swap_events(

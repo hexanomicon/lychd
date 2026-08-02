@@ -158,6 +158,7 @@ class DelegatedRuntimeStore(ExtensionStore):
 
     def __init__(self, *, current_provider: Callable[[], str]) -> None:
         """Create an empty store bound to the manager provenance bracket."""
+        super().__init__()
         self._current_provider = current_provider
         self._registrations: dict[str, RegisteredDelegatedRuntime] = {}
 
@@ -183,6 +184,7 @@ class DelegatedRuntimeStore(ExtensionStore):
 
     def add(self, definition: DelegatedRuntimeDefinition) -> None:
         """Register one definition under the active extension provenance bracket."""
+        self._require_mutable()
         provider_id = self._current_provider()
         existing = self._registrations.get(definition.runtime_id)
         if existing is not None:

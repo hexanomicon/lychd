@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING, TypeVar
 
 from lychd.config.runes.base import RuneConfig
@@ -21,16 +22,16 @@ class RuneRegistry:
     """Immutable set of validated rune instances from one ``ConfigLoader`` pass."""
 
     def __init__(self, runes: Sequence[RuneConfig]) -> None:
-        """Store the validated rune instances for typed access."""
-        self._runes: tuple[RuneConfig, ...] = tuple(runes)
+        """Store a detached snapshot of the validated rune instances."""
+        self._runes: tuple[RuneConfig, ...] = tuple(deepcopy(rune) for rune in runes)
 
     def all(self) -> tuple[RuneConfig, ...]:
         """All loaded rune instances."""
-        return self._runes
+        return tuple(deepcopy(rune) for rune in self._runes)
 
     def of(self, schema: type[R]) -> tuple[R, ...]:
         """Instances that are (subclass) instances of ``schema``."""
-        return tuple(rune for rune in self._runes if isinstance(rune, schema))
+        return tuple(deepcopy(rune) for rune in self._runes if isinstance(rune, schema))
 
     def one(self, schema: type[R]) -> R:
         """Return the single instance of ``schema``.

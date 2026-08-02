@@ -45,10 +45,26 @@ loop, Tomb executor, verified package promotion, compatibility gate, rollback co
 self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns that
 delivery boundary.
 
+The first delivered seam is deliberately inert: immutable contracts and a process-local state
+machine bind an exact Git base and source-tree digest, path roots, budgets, tool and network declarations, quarantined
+artifact metadata, custody, deterministic verification receipts, compatibility evidence, and an
+explicit human review. It performs no filesystem, command, network, database, VCS, or promotion
+effect. Its terminal product is only an idempotent `PromotionRequest(inert=True)` addressed to the
+named owner, which must revalidate and implement any future effect through its own boundary.
+Candidate, custody, verification, and review timestamps must form a possible chronology; timestamps
+remain recorded assertions, not trusted-clock or signer proof.
+
+Set-like `WorkPacket` inputs, effects, compatibility evidence, tool pins, and verification checks
+are canonicalized before hashing, so transport order cannot create a second semantic packet. The
+evidence manifest and promotion request each bind a `RecordBinding` to the full immutable
+`CandidateArtifact` digest, including changed paths and declared effects, rather than only to its
+artifact bytes. Candidate, custody, verification, compatibility, review, and promotion record ids
+share one semantic collision domain; an id cannot be replayed as a different record kind.
+
 ### Admission and candidate identity
 
-An immutable **Creation Request** names the principal and intent; exact base revision and allowed
-paths; tools, effect classes, credentials, network policy, and budgets; required verification and
+An immutable **Creation Request** names the principal and intent; exact base revision, admitted
+source-tree digest, and allowed paths; tools, effect classes, credentials, network policy, and budgets; required verification and
 retention; and the promotion owner and authorization class. It then receives a candidate identity
 and workspace. Lab's writable directory conveys no subprocess or network containment.
 
@@ -82,11 +98,11 @@ work only after their execution boundaries exist; this ADR does not claim that
 
 ### Promotion is an owned effect
 
-A **Promotion Request** carries candidate identity, current-base preconditions, receipts, declared
+A **Promotion Request** carries the exact candidate-record binding, current-base and source-tree preconditions, receipts, declared
 effects, compatibility evidence, and rollback or compensation instructions. It neither moves Lab
 into Crypt nor assumes a federated lockfile. At effect time the target owner must:
 
-1. revalidate the live base and candidate identity;
+1. revalidate the live base, source tree, and candidate identity;
 2. evaluate [Consent](25-hitl.md), or a narrowly bounded preauthorization;
 3. confirm that the evidence is current for this effect;
 4. use its own transaction and recovery boundary; and
@@ -99,7 +115,7 @@ them atomic.
 
 ### Drift, conflict, and recovery
 
-Base drift or an unresolved conflict fails closed. The candidate and its evidence remain for
+Base drift, source-tree drift, or an unresolved conflict fails closed. The candidate and its evidence remain for
 diagnosis; they are neither silently discarded nor applied over operator work. Continuing means a
 new base, resolved conflict, renewed invalidated checks, and fresh authorization when the effect
 changed. An external effect already produced must be reconciled by its owner rather than hidden by

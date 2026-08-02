@@ -46,11 +46,15 @@ object, assurance, delegation, consent or preauthorization, policy generation, a
 epoch. It checks again after queueing, worker claim, Stasis, consent, resume, or another wait.
 Narrowing the tools visible to an Agent helps; the handler remains the lock.
 
-The current preauthorization floor does not safely recheck expiry before a delayed effect, startup
-synchronization may retain a removed rule, and budget consumption is not atomic with the consent
-record. Revocation must invalidate Credentials, sessions, cached grants, and affected pending or
-sleeping work. Recovery begins at zero authority: no universal remote Master token or ambient
-fallback exists.
+The current preauthorization floor rechecks enabled state, source presence, database time expiry,
+and remaining use budget in the conditional consumption write immediately before granting the
+effect. Startup synchronization marks removed Rune-owned policies `source_present = false` without
+overwriting operator enable/disable or usage state; a later exact reappearance can restore source
+presence. Budget consumption and its consent record share one PostgreSQL transaction, with rollback
+tested against injected insert failure and removal/expiry races.
+Revocation must invalidate Credentials, sessions, cached grants, and affected pending or sleeping
+work. Recovery begins at zero authority: no universal remote Master token or ambient fallback
+exists.
 
 ## No borrowed authority
 

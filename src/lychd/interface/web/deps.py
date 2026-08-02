@@ -13,6 +13,7 @@ from litestar.di import Provide
 
 # Runtime imports (not TYPE_CHECKING): Litestar evaluates each provider's return
 # annotation at app-init to type the injected dependency.
+from lychd.agents.workflows import WorkflowRegistry
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.dispatcher import Dispatcher
@@ -23,6 +24,7 @@ from lychd.domain.orchestration.manager import OrchestratorManager
 from lychd.domain.web.fragments import FragmentRegistry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import SessionStorePort
+from lychd.domain.web.swap_requests import SwapRequestLedger
 from lychd.domain.web.tickets import TicketStore
 
 
@@ -66,6 +68,16 @@ def provide_tickets(state: State) -> TicketStore:
     return state.services.tickets
 
 
+def provide_swap_requests(state: State) -> SwapRequestLedger:
+    """Return the profile-bound operator transition admission ledger."""
+    return state.services.swap_requests
+
+
+def provide_workflows(state: State) -> WorkflowRegistry:
+    """Return the boot-composed workflow catalogue used by execution."""
+    return state.services.workflows
+
+
 def provide_run_engine(state: State) -> RunEngine:
     """Return the fully queue-bound run engine."""
     return state.services.run_engine
@@ -90,6 +102,8 @@ web_dependencies: dict[str, Provide] = {
     "bridge_sessions": Provide(provide_bridge_sessions, sync_to_thread=False),
     "consents": Provide(provide_consent_ledger, sync_to_thread=False),
     "tickets": Provide(provide_tickets, sync_to_thread=False),
+    "swap_requests": Provide(provide_swap_requests, sync_to_thread=False),
+    "workflows": Provide(provide_workflows, sync_to_thread=False),
     "run_engine": Provide(provide_run_engine, sync_to_thread=False),
     "run_bus": Provide(provide_run_bus, sync_to_thread=False),
     "projector": Provide(provide_projector, sync_to_thread=False),

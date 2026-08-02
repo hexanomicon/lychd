@@ -99,6 +99,8 @@ schema drift; a local command may rewrite tracked output, whose diff still needs
 outside `openapi-fetch`: Zod schemas, constrained to generated types, validate version,
 identifiers, sequence, kind, and envelope. Kind-specific interpretation remains explicit because
 run `payload` is currently a broad string-keyed record, not a generated discriminated schema.
+Operations that raise a real not-found response explicitly publish the shared `FrameworkError`
+schema; generated clients never infer success-only behavior for those paths.
 
 Bridge is text JSON only: no voice upload, file/media admission, audio output, or streaming voice.
 Its named JSON SSE envelope carries `schema_version`, `run_id`, producer-stable `event_id`, `seq`,
@@ -112,27 +114,64 @@ sequence numbers, and refetches on gap or `resync`. Its initial cursor is reduce
 current `EventSource` constructor does not send an explicit cursor. A run or ticket identity
 mismatch, invalid data, or failed authoritative refetch permanently closes that channel. Bridge
 and Nexus immediately mark the projection stale and attempt one bounded authoritative recovery;
-a second failure remains visibly stale rather than animated as live. Ordinary transport errors
-remain transient while `EventSource` reconnects. Token deltas and channels are neither durable nor
-cross-process; retained structural Step evidence is best-effort. Nexus uses its own versioned
-transition envelope with the same retention boundary and completion-driven single-flight polling.
+a second failure remains visibly stale rather than animated as live. Each Bridge Run projection
+retains its applied cursor and a browser-local authority generation; a delayed recovery may replace
+that Run only while both still match the request it began from. Ordinary transport errors remain
+transient while `EventSource` reconnects. Durable terminal Run status overrides a lagging
+process-local channel, and only a retained agent turn retires that terminal projection from the
+selected session. Token deltas and channels are neither durable nor cross-process; retained
+structural Step evidence is best-effort. Nexus uses its own versioned transition envelope with the
+same retention boundary and completion-driven single-flight polling. Closing a channel fences
+already-queued callbacks, so an event from a superseded ticket cannot overwrite the replacement
+identity. Orb pagination likewise merges only when both the requested and current snapshot still
+name the same Run; its Loom link additionally requires the entire valid pinned manifest to equal the
+registered revision, as worker replay does.
+
+Component destruction advances the same local authority boundary. A request that settles after
+teardown cannot attach a stream, mutate component state, schedule another poll, or navigate. Loom
+uses its load generation for this rule; Bridge and Nexus additionally fence stream callbacks and
+timers.
 
 ### Closed rendering, readable form
 
 The Vessel validates `FragmentCall`s through a closed Pydantic registry and emits inert descriptors.
 Svelte maps admitted kinds to compiled renderers and exposes unknown descriptors explicitly.
 `{@html}` is forbidden and statically guarded. Invalid or unknown model fragments are dropped and
-logged before settlement; client fallback merely contains malformed or newer descriptors.
+logged before settlement; client fallback merely contains malformed or newer descriptors. Settled
+turns retain the complete validated descriptor, including props, so terminal refresh reconstructs
+the same compiled component rather than preserving only its key. Legacy rows that predate descriptor
+retention are normalized to inert schema-zero key-only descriptors with empty props; they remain
+readable through an explicit inert fallback and never enter a current-version component renderer.
 
 Consent appears in its Bridge context and the shell count. The client submits one typed
 approve/deny intent with the configured CSRF header; the Vessel rechecks identity, state, scope,
-and idempotency before resume. The fixed visible `Magus` Sigil is local bootstrap context, not an
-authenticated person.
+and idempotency before resume. Snapshot application versions selected-Bridge consent authority, so
+an older decision response cannot overwrite a newer snapshot; after Run cancellation the selected
+Bridge immediately revokes its visible consent cards and count, then refetches its snapshot. Root
+route cancellation uses the selected snapshot session as that authority rather than a route prop. A
+failed refetch cannot restore the revoked local authority. Instrument attention
+events are invalidation hints only: the shell always re-reads the cross-session status endpoint and
+request-version fences overlapping reads, so an arriving local count never becomes global truth.
+Bridge message submission likewise retains one client UUID across an ambiguous response, and durable
+Run admission maps that identity to exactly one canonical Run. A replay repairs an unresolved held
+turn-retention gate before publication. The fixed visible `Magus` Sigil is local bootstrap context,
+not an authenticated person. Applying a refreshed root snapshot for the same canonically selected
+session preserves the unsent draft; only an actual selected-session identity change clears it.
+
+Nexus retains an ambiguous transition request UUID per target, so inspecting another target cannot
+discard the only safe retry identity. A lost-ticket conflict retains that UUID and refuses a fresh
+physical launch; only a definitive non-conflict client rejection clears that target. Authoritative
+refresh rebinds the inspector to the exact request id so a settled ticket cannot leave stale
+pre-refresh transition detail selected. Board
+refresh remains single-flight, but a refresh requested while one is in flight marks a dirty trailing
+pass; the settling read cannot erase a newer invalidation.
 
 Extensions have no UI source, template, script, import, or third-party sandbox surface.
 `@xyflow/svelte` is not installed. Loom's optional locally bundled Mermaid diagram runs in strict
 security mode; its textual station/permission score remains visible and authoritative on rendering
-failure. Mermaid source is not Pattern data. A later renderer must isolate DTO identity from
+failure. Plain-text source lives below `/api/v1/loom/source/workflows/{workflow}` and
+`/api/v1/loom/source/patterns/{pattern_id}/{revision}` so every legal two-segment exact Pattern route
+remains addressable. Mermaid source is not Pattern data. A later renderer must isolate DTO identity from
 renderer coordinates, treat geometry and motion as disposable, deny publication/execution from a
 read-only view, and keep a keyboard-operable outline, list, table, or timeline.
 
@@ -147,7 +186,8 @@ Vite packages in the lockfile are not a styling API.
 
 Development runs Vite on `127.0.0.1:5173`, proxying `/api` and `/schema` to the loopback Vessel.
 Production serves static Bridge, Orb, Nexus, and Loom shells; unknown APIs and retired paths stay
-404. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
+404. Every operation that raises a runtime not-found across those verticals declares the shared JSON
+`FrameworkError` contract. `npm ci`, OpenAPI and notice generation, compilation, and Python build share a release source.
 Audit verifies source identity, compiled `index.html`, and archive notices—not a real browser or
 running image. Only `src/lychd/public/_app` is broadly mounted; the two known root artifacts,
 `/altar-lightning.svg` and `/THIRD_PARTY_NOTICES.txt`, have narrow typed Litestar handlers.

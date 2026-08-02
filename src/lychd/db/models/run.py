@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from advanced_alchemy.base import UUIDAuditBase
-from sqlalchemy import ForeignKey, String, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,12 +18,18 @@ class Run(UUIDAuditBase):
     """One workflow execution. THE durable run substrate (adw-kit Part 2.2/2.4 pattern)."""
 
     __tablename__ = "run"
+    __table_args__ = (
+        CheckConstraint(
+            "status <> 'awaiting_consent' OR consent_id IS NOT NULL",
+            name="waiting_consent_owner",
+        ),
+    )
 
     workflow_name: Mapped[str] = mapped_column(String(100), index=True)
     pattern_manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     source: Mapped[str] = mapped_column(String(20))  # bridge|cli|api|rite
     status: Mapped[str] = mapped_column(String(20), default="queued", server_default=text("'queued'"), index=True)
-    #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|awaiting_delegate|done|failed|cancelled
+    #   RunStatus (A4): queued|running|awaiting_hardware|awaiting_consent|awaiting_delegate|cancelling|done|failed|cancelled
     priority: Mapped[int] = mapped_column(default=50, server_default=text("50"))
     sigil_name: Mapped[str] = mapped_column(String(100))
     intent: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)  # serialized Intent
@@ -39,6 +45,16 @@ class Run(UUIDAuditBase):
     queue_name: Mapped[str] = mapped_column(String(50))
     attempt: Mapped[int] = mapped_column(default=0, server_default=text("0"))
     enqueue_seq: Mapped[int] = mapped_column(default=0, server_default=text("0"))
+    consent_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "consent.id",
+            name="fk_run_consent_id_consent",
+            ondelete="SET NULL",
+            use_alter=True,
+        ),
+        nullable=True,
+        index=True,
+    )
     delegated_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     session: Mapped[Session | None] = relationship(back_populates="runs", lazy="noload")
     steps: Mapped[list[Step]] = relationship(back_populates="run", lazy="noload", cascade="all, delete-orphan")

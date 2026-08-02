@@ -130,6 +130,9 @@ class InMemoryDelegatedAgentJobStore:
         status: DelegatedAgentJobStatus,
     ) -> tuple[DelegatedAgentJob, bool]:
         """Advance one legal lifecycle edge and retain its semantic event."""
+        if status in TERMINAL_DELEGATED_AGENT_STATUSES:
+            msg = f"Terminal delegated-agent status {status.value!r} requires adopt() or cancel() evidence."
+            raise IllegalDelegatedAgentTransitionError(msg)
         async with self._lock:
             row = self._require(job_id)
             if row.status is status:
@@ -162,7 +165,7 @@ class InMemoryDelegatedAgentJobStore:
         """Record terminal cancellation once."""
         async with self._lock:
             row = self._require(job_id)
-            if row.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+            if row.status in TERMINAL_DELEGATED_AGENT_STATUSES and row.status is not DelegatedAgentJobStatus.LOST:
                 return row.view(), False
             if DelegatedAgentJobStatus.CANCELLED not in LEGAL_DELEGATED_AGENT_TRANSITIONS[row.status]:
                 msg = f"Illegal delegated-agent transition for {job_id}: {row.status} → cancelled"
@@ -276,10 +279,10 @@ class DelegatedAgentCoordinator:
             return adopted
 
     async def cancel(self, job_id: str) -> bool:
-        """Cancel an active runtime job and record one terminal cancellation event."""
+        """Contain a possibly live runtime job and record terminal cancellation."""
         async with self._lock_for(f"job:{job_id}"):
             job = await self._require(job_id)
-            if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+            if job.status in TERMINAL_DELEGATED_AGENT_STATUSES and job.status is not DelegatedAgentJobStatus.LOST:
                 return False
             await self._runtime(job.ref.runtime).cancel(job.ref)
             _job, changed = await self._store.cancel(job_id)

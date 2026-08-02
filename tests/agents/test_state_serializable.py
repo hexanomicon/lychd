@@ -22,7 +22,15 @@ from pydantic_graph import BaseNode, End, Graph
 
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
-from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
+from lychd.agents.workflows.base import (
+    Gate,
+    PatternEdge,
+    PatternManifest,
+    PatternNode,
+    Trigger,
+    Workflow,
+    pattern_snapshot_is_valid,
+)
 from lychd.agents.workflows.bridge_chat import BridgeChatState
 from lychd.agents.workflows.nodes import ConsentToolBinding
 from lychd.domain.cortex.runs import RunRecord, RunStatus
@@ -127,7 +135,9 @@ def _workflow_for(node: type[BaseNode[Any, Any, Any]]) -> Workflow:
         manifest=PatternManifest(
             key="t",
             revision="1",
+            implementation_revision="py.test.1",
             checkpoint_schema="test-v1",
+            entry_node="node",
             nodes=(
                 PatternNode(
                     key="node",
@@ -162,7 +172,9 @@ def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
     manifest = PatternManifest(
         key="duplicate",
         revision="1",
+        implementation_revision="py.test.1",
         checkpoint_schema="test-v1",
+        entry_node="start",
         nodes=(
             PatternNode(key="start", label="Start", kind="step", implementation=_PlainNode),
             PatternNode(key="second-a", label="Second A", kind="step", implementation=_SecondPlainNode),
@@ -181,6 +193,140 @@ def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
             start_node=_PlainNode,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=manifest,
+        )
+
+
+def test_pattern_entry_node_is_digested_and_matches_workflow_start() -> None:
+    def manifest(entry_node: str) -> PatternManifest:
+        return PatternManifest(
+            key="entry-bound",
+            revision="1",
+            implementation_revision="py.test.1",
+            checkpoint_schema="test-v1",
+            entry_node=entry_node,
+            nodes=(
+                PatternNode(key="first", label="First", implementation=_PlainNode),
+                PatternNode(key="second", label="Second", implementation=_SecondPlainNode),
+                PatternNode(key="end", label="End", kind="terminal"),
+            ),
+            edges=(
+                PatternEdge(key="first-to-end", source="first", target="end"),
+                PatternEdge(key="second-to-end", source="second", target="end"),
+            ),
+        )
+
+    first = manifest("first")
+    second = manifest("second")
+    assert pattern_snapshot_is_valid(first.snapshot())
+    assert first.digest != second.digest
+
+    with pytest.raises(ValueError, match="start node must match Pattern entry node 'second'"):
+        Workflow(
+            name="entry-bound",
+            title="entry-bound",
+            description="",
+            trigger=Trigger(hint="", match=lambda _intent: True),
+            graph=Graph(nodes=(_PlainNode, _SecondPlainNode), name="entry-bound"),
+            start_node=_PlainNode,
+            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+            manifest=second,
+        )
+
+
+def test_workflow_rejects_start_node_outside_its_graph() -> None:
+    with pytest.raises(ValueError, match="start node must belong to its graph"):
+        Workflow(
+            name="foreign-start",
+            title="foreign-start",
+            description="",
+            trigger=Trigger(hint="", match=lambda _intent: True),
+            graph=Graph(nodes=(_PlainNode,), name="foreign-start"),
+            start_node=_SecondPlainNode,
+            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+            manifest=PatternManifest(
+                key="foreign-start",
+                revision="1",
+                implementation_revision="py.test.1",
+                checkpoint_schema="test-v1",
+                entry_node="node",
+                nodes=(
+                    PatternNode(key="node", label="Node", implementation=_PlainNode),
+                    PatternNode(key="end", label="End", kind="terminal"),
+                ),
+                edges=(PatternEdge(key="node-to-end", source="node", target="end"),),
+            ),
+        )
+
+
+def test_pattern_rejects_edge_missing_from_executable_graph() -> None:
+    with pytest.raises(ValueError, match=r"topology differs.*missing=\[\('node', 'end'\)\]"):
+        Workflow(
+            name="missing-edge",
+            title="missing-edge",
+            description="",
+            trigger=Trigger(hint="", match=lambda _intent: True),
+            graph=Graph(nodes=(_PlainNode,), name="missing-edge"),
+            start_node=_PlainNode,
+            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+            manifest=PatternManifest(
+                key="missing-edge",
+                revision="1",
+                implementation_revision="py.test.1",
+                checkpoint_schema="test-v1",
+                entry_node="node",
+                nodes=(
+                    PatternNode(key="node", label="Node", implementation=_PlainNode),
+                    PatternNode(key="end", label="End", kind="terminal"),
+                ),
+                edges=(),
+            ),
+        )
+
+
+def test_pattern_rejects_edge_invented_by_manifest() -> None:
+    with pytest.raises(ValueError, match=r"topology differs.*extra=\[\('node', 'node'\)\]"):
+        Workflow(
+            name="extra-edge",
+            title="extra-edge",
+            description="",
+            trigger=Trigger(hint="", match=lambda _intent: True),
+            graph=Graph(nodes=(_PlainNode,), name="extra-edge"),
+            start_node=_PlainNode,
+            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
+            manifest=PatternManifest(
+                key="extra-edge",
+                revision="1",
+                implementation_revision="py.test.1",
+                checkpoint_schema="test-v1",
+                entry_node="node",
+                nodes=(
+                    PatternNode(key="node", label="Node", implementation=_PlainNode),
+                    PatternNode(key="end", label="End", kind="terminal"),
+                ),
+                edges=(
+                    PatternEdge(key="node-to-end", source="node", target="end"),
+                    PatternEdge(key="invented-loop", source="node", target="node"),
+                ),
+            ),
+        )
+
+
+def test_pattern_rejects_duplicate_semantic_edges() -> None:
+    with pytest.raises(ValueError, match="duplicate semantic edges"):
+        PatternManifest(
+            key="duplicate-edges",
+            revision="1",
+            implementation_revision="py.test.1",
+            checkpoint_schema="test-v1",
+            entry_node="node",
+            nodes=(
+                PatternNode(key="node", label="Node", implementation=_PlainNode),
+                PatternNode(key="end", label="End", kind="terminal"),
+            ),
+            edges=(
+                PatternEdge(key="first", source="node", target="end"),
+                PatternEdge(key="second", source="node", target="end"),
+            ),
         )
 
 

@@ -16,8 +16,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
+from uuid import UUID, uuid4
 
 from lychd.domain.codex.schemas import ConsentDecision, ConsentStatusValue, ConsentView, censor, constraints_admit
 
@@ -63,12 +63,16 @@ class ConsentLedger(Protocol):
         """Return the number of consents awaiting a verdict (feeds the topbar sigil)."""
         ...
 
-    async def pending_views(self) -> list[ConsentView]:
-        """Return every still-pending consent (feeds the Bridge restart re-render)."""
+    async def pending_views_for_runs(self, run_ids: frozenset[str]) -> list[ConsentView]:
+        """Return pending consent cards owned by the named Runs."""
         ...
 
     async def latest_for_run(self, run_id: str) -> ConsentView | None:
-        """Return the newest consent row for a run (feeds `reconcile_consents`)."""
+        """Return the newest consent row for the narrow pre-park crash-window probe."""
+        ...
+
+    async def cancel_pending_for_run(self, run_id: str, *, decided_by: str = "cortex:run-cancelled") -> int:
+        """Settle every pending consent owned by one terminalizing Run."""
         ...
 
 
@@ -76,7 +80,7 @@ def _verdict_of(status: ConsentStatusValue) -> bool | None:
     """Map a consent status to the graph's tri-state verdict."""
     if status == "granted":
         return True
-    if status in {"denied", "expired"}:
+    if status in {"denied", "expired", "cancelled"}:
         return False
     return None
 
@@ -95,6 +99,7 @@ class _ConsentRow:
     call_ids: tuple[str, ...]
     status: ConsentStatusValue = "pending"
     decided_by: str | None = None
+    decided_at: datetime | None = None
     preauth_slug: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -105,7 +110,10 @@ class InMemoryConsentLedger:
     def __init__(self, *, preauths: list[CodexPreauthRune] | None = None) -> None:
         """Create an empty ledger with an optional in-memory preauthorization source."""
         self._rows: dict[str, _ConsentRow] = {}
-        self._preauths: list[CodexPreauthRune] = list(preauths or [])
+        self._preauths: list[CodexPreauthRune] = sorted(
+            preauths or [],
+            key=lambda rune: (-rune.priority, rune.slug),
+        )
         self._uses: dict[str, int] = {}
 
     def _match_preauth(self, *, sigil: Sigil, tool_name: str, args: dict[str, Any]) -> CodexPreauthRune | None:
@@ -147,6 +155,7 @@ class InMemoryConsentLedger:
             call_ids=call_ids,
             status="granted" if preauth is not None else "pending",
             decided_by="codex:preauth" if preauth is not None else None,
+            decided_at=datetime.now(UTC) if preauth is not None else None,
             preauth_slug=preauth.slug if preauth is not None else None,
         )
         self._rows[consent_id] = row
@@ -156,7 +165,9 @@ class InMemoryConsentLedger:
     async def verdict(self, consent_id: str) -> bool | None:
         """Tri-state verdict for a consent (unknown → None)."""
         row = self._rows.get(consent_id)
-        return _verdict_of(row.status) if row is not None else None
+        if row is None or (row.status != "pending" and (not row.decided_by or row.decided_at is None)):
+            return None
+        return _verdict_of(row.status)
 
     def _view(self, row: _ConsentRow) -> ConsentView:
         return ConsentView(
@@ -182,21 +193,37 @@ class InMemoryConsentLedger:
         if row.status == "pending":
             row.status = "granted" if approved else "denied"
             row.decided_by = decided_by
+            row.decided_at = datetime.now(UTC)
         return self._view(row)
 
     async def pending_count(self) -> int:
         """Return the number of pending consents."""
         return sum(1 for row in self._rows.values() if row.status == "pending")
 
-    async def pending_views(self) -> list[ConsentView]:
-        """Return every pending consent, oldest-first."""
-        rows = sorted((r for r in self._rows.values() if r.status == "pending"), key=lambda r: r.created_at)
+    async def pending_views_for_runs(self, run_ids: frozenset[str]) -> list[ConsentView]:
+        """Return pending consent cards for named Runs, oldest-first."""
+        rows = sorted(
+            (row for row in self._rows.values() if row.status == "pending" and row.run_id in run_ids),
+            key=lambda row: (row.created_at, row.id),
+        )
         return [self._view(row) for row in rows]
 
     async def latest_for_run(self, run_id: str) -> ConsentView | None:
         """Return the newest consent row for a run, or None."""
-        rows = sorted((r for r in self._rows.values() if r.run_id == run_id), key=lambda r: r.created_at)
-        return self._view(rows[-1]) if rows else None
+        rows = (r for r in self._rows.values() if r.run_id == run_id)
+        row = max(rows, key=lambda item: (item.created_at, item.id), default=None)
+        return self._view(row) if row is not None else None
+
+    async def cancel_pending_for_run(self, run_id: str, *, decided_by: str = "cortex:run-cancelled") -> int:
+        """Settle pending cards when their owning Run terminalizes."""
+        settled = 0
+        for row in self._rows.values():
+            if row.run_id == run_id and row.status == "pending":
+                row.status = "cancelled"
+                row.decided_by = decided_by
+                row.decided_at = datetime.now(UTC)
+                settled += 1
+        return settled
 
 
 # ---------------------------------------------------------------------------
@@ -225,12 +252,15 @@ class CodexConsentLedger:
         args: dict[str, Any],
         sigil: Sigil,
     ) -> ConsentDecision:
-        """Consume a matching preauth (atomic) then persist the consent row."""
+        """Atomically consume a matching preauth and persist its consent row."""
         from lychd.domain.codex.services import ConsentService, PreauthService
 
         async with self._session_factory() as session:
             preauth = await PreauthService(session=session).match_and_consume(
-                sigil=sigil, tool_name=tool_name, payload=args
+                sigil=sigil,
+                tool_name=tool_name,
+                payload=args,
+                auto_commit=False,
             )
             row = await ConsentService(session=session).request(
                 run_id=run_id,
@@ -239,14 +269,45 @@ class CodexConsentLedger:
                 call_ids=call_ids,
                 payload=args,
                 preauth=preauth,
+                auto_commit=False,
             )
-        status: Any = row.status
-        return ConsentDecision(status=status, consent_id=str(row.id), preauth_slug=row.preauth_slug)
+            await session.commit()
+            await session.refresh(row)
+            status: Any = row.status
+            return ConsentDecision(status=status, consent_id=str(row.id), preauth_slug=row.preauth_slug)
 
     async def verdict(self, consent_id: str) -> bool | None:
-        """Tri-state verdict from the consent row."""
-        view = await self.get(consent_id)
-        return _verdict_of(view.status) if view is not None else None
+        """Return a verdict, revalidating any standing policy behind a grant."""
+        from sqlalchemy import func, select
+
+        from lychd.db.models import CodexPreauthorization, Consent
+        from lychd.domain.codex.services import PREAUTH_DIGEST_PAYLOAD_KEY, preauth_authorization_digest
+
+        async with self._session_factory() as session:
+            row = await session.get(Consent, UUID(consent_id))
+            if row is None:
+                return None
+            if row.status != "pending" and (not row.decided_by or row.decided_at is None):
+                return None
+            verdict = _verdict_of(cast("ConsentStatusValue", row.status))
+            if verdict is not True or row.decided_by != "codex:preauth":
+                return verdict
+
+            payload = dict(row.payload or {})
+            stored_digest = payload.get(PREAUTH_DIGEST_PAYLOAD_KEY)
+            authorized = False
+            if row.preauth_slug and isinstance(stored_digest, str):
+                preauth = await session.scalar(
+                    select(CodexPreauthorization).where(CodexPreauthorization.slug == row.preauth_slug)
+                )
+                if preauth is not None and preauth.enabled and preauth.source_present:
+                    database_now = await session.scalar(select(func.now()))
+                    authorized = (
+                        database_now is not None
+                        and (preauth.expires_at is None or preauth.expires_at > database_now)
+                        and stored_digest == preauth_authorization_digest(preauth)
+                    )
+            return authorized
 
     async def get(self, consent_id: str) -> ConsentView | None:
         """Read-model for one consent, or None."""
@@ -272,24 +333,61 @@ class CodexConsentLedger:
         async with self._session_factory() as session:
             return await ConsentService(session=session).pending_count()
 
-    async def pending_views(self) -> list[ConsentView]:
-        """Return every pending consent, oldest-first."""
+    async def pending_views_for_runs(self, run_ids: frozenset[str]) -> list[ConsentView]:
+        """Return pending consent cards for named Runs, oldest-first."""
         from lychd.db.models import Consent
         from lychd.domain.codex.services import ConsentService, row_to_view
 
+        run_uuids: list[UUID] = []
+        for run_id in run_ids:
+            try:
+                run_uuids.append(UUID(run_id))
+            except ValueError:
+                continue
+        if not run_uuids:
+            return []
         async with self._session_factory() as session:
             svc = ConsentService(session=session)
-            rows = await svc.list(Consent.status == "pending", order_by=[(Consent.created_at, False)])
+            rows = await svc.list(
+                Consent.status == "pending",
+                Consent.run_id.in_(run_uuids),
+                order_by=[(Consent.created_at, False), (Consent.id, False)],
+            )
             return [row_to_view(row) for row in rows]
 
     async def latest_for_run(self, run_id: str) -> ConsentView | None:
         """Return the newest consent row for a run, or None."""
-        from uuid import UUID
+        from sqlalchemy import select
 
         from lychd.db.models import Consent
-        from lychd.domain.codex.services import ConsentService, row_to_view
+        from lychd.domain.codex.services import row_to_view
 
         async with self._session_factory() as session:
-            svc = ConsentService(session=session)
-            rows = await svc.list(Consent.run_id == UUID(run_id), order_by=[(Consent.created_at, True)])
-            return row_to_view(rows[-1]) if rows else None
+            row = await session.scalar(
+                select(Consent)
+                .where(Consent.run_id == UUID(run_id))
+                .order_by(Consent.created_at.desc(), Consent.id.desc())
+                .limit(1)
+            )
+            return row_to_view(row) if row is not None else None
+
+    async def cancel_pending_for_run(self, run_id: str, *, decided_by: str = "cortex:run-cancelled") -> int:
+        """Atomically settle pending cards when their owning Run terminalizes."""
+        from sqlalchemy import update
+
+        from lychd.db.models import Consent
+
+        async with self._session_factory() as session:
+            result = await session.execute(
+                update(Consent)
+                .where(Consent.run_id == UUID(run_id), Consent.status == "pending")
+                .values(
+                    status="cancelled",
+                    decided_by=decided_by,
+                    decided_at=datetime.now(UTC),
+                )
+                .returning(Consent.id)
+            )
+            settled = len(result.scalars().all())
+            await session.commit()
+            return settled

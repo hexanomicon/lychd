@@ -12,7 +12,7 @@ from lychd.domain.animation.capabilities import (
     CapabilitySpec,
     CapabilityState,
 )
-from lychd.domain.animation.errors import HardwareTransitionRequired
+from lychd.domain.animation.errors import ActivationTimeout, HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.cortex.leases import AnimatorAdmission
 from lychd.domain.orchestration.actuator import (
@@ -26,6 +26,7 @@ from lychd.domain.orchestration.actuator import (
 from lychd.domain.orchestration.arbiter import TransitionArbiter, TransitionDeclined
 from lychd.domain.orchestration.journal import TransitionJournal
 from lychd.domain.orchestration.schema import TransitionPlan, TransitionTrace
+from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -163,6 +164,13 @@ class OrchestratorManager:
                 action_type="NO_OP",
             )
 
+        if not target.concurrency.dedicated:
+            msg = (
+                f"Capability '{target.key}' is provided by shared animator '{target.animator_name}' "
+                "and cannot be lifecycle-managed by the orchestrator."
+            )
+            raise RuntimeError(msg)
+
         if self._is_animator_runtime_started(target.animator_name):
             return TransitionPlan(
                 total_metabolic_cost=0.0,
@@ -170,13 +178,6 @@ class OrchestratorManager:
                 launch_coven_ids=[],
                 action_type="SOFT_SWAP",
             )
-
-        if not target.concurrency.dedicated:
-            msg = (
-                f"Capability '{target.key}' is provided by shared animator '{target.animator_name}' "
-                "and cannot be lifecycle-managed by the orchestrator."
-            )
-            raise RuntimeError(msg)
 
         decision = self._policy.solve(target, self.registry, self._leases)
         return TransitionPlan(
@@ -350,7 +351,7 @@ class OrchestratorManager:
                     self._publish(trace, "compensating")
                     compensation_task = asyncio.create_task(self._actuator.apply(compensation))
                     try:
-                        await asyncio.shield(compensation_task)
+                        await complete_under_cancellation(compensation_task)
                     except BaseException as compensation_error:
                         # A half-restored physical world is unsafe. Deliberately
                         # leave both admission layers closed for operator recovery.
@@ -462,20 +463,36 @@ class OrchestratorManager:
             raise RuntimeError(msg)
 
     async def _converge_warm(self, capability_key: str) -> None:
-        """Perform optional in-runtime activation, then await honest WARM readiness."""
-        spec, current_state = await self._get_capability_record(capability_key)
-        if spec.is_dynamic and current_state.phase not in {CapabilityPhase.WARM, CapabilityPhase.WARMING}:
-            await self._activate_dynamic_capability(spec)
-        # Warm-up gets its own budget (see SwitchingSettings.warmup_timeout_s), not drain's.
-        await self.registry.await_warm(spec.key, timeout_s=self._switching.warmup_timeout_s)
+        """Perform target refresh, activation, and WARM proof under one deadline."""
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self._switching.warmup_timeout_s
+        try:
+            async with asyncio.timeout_at(deadline):
+                spec, current_state = await self._get_capability_record(capability_key)
+                if spec.is_dynamic and current_state.phase not in {CapabilityPhase.WARM, CapabilityPhase.WARMING}:
+                    await self._activate_dynamic_capability(spec)
+                remaining = max(0.0, deadline - loop.time())
+                await self.registry.await_warm(spec.key, timeout_s=remaining)
+        except TimeoutError as exc:
+            raise ActivationTimeout(
+                capability_key,
+                self.registry.get_capability_state(capability_key),
+                reason="target convergence exceeded the warm-up deadline",
+            ) from exc
 
     async def _converge_evicted_cold(self, animator_names: list[str]) -> None:
         """Refresh evictee state and prove no stopped runtime remains active."""
         still_started: list[str] = []
-        for animator_name in animator_names:
-            states = await self.registry.refresh_capability_states_for_animator(animator_name)
-            if any(state.runtime_started for state in states):
-                still_started.append(animator_name)
+        deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
+        try:
+            async with asyncio.timeout_at(deadline):
+                for animator_name in animator_names:
+                    states = await self.registry.refresh_capability_states_for_animator(animator_name)
+                    if any(state.runtime_started for state in states):
+                        still_started.append(animator_name)
+        except TimeoutError as exc:
+            msg = f"Timed out proving evicted animator runtimes cold: {sorted(animator_names)}"
+            raise RuntimeError(msg) from exc
         if still_started:
             msg = f"Evicted animator runtimes remain active after transition: {sorted(still_started)}"
             raise RuntimeError(msg)

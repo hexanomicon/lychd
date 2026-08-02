@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { onDestroy, tick } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
+  import { onDestroy, tick, untrack } from "svelte";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import {
+    ApiError,
+    cancelBridgeRun,
     createBridgeSession,
     getBridgeSnapshot,
     getRunSnapshot,
@@ -25,15 +27,19 @@
   let snapshot = $state<BridgeSnapshot | null>(null);
   let prompt = $state("");
   let loading = $state(true);
-  let sending = $state(false);
   let error = $state("");
   let thread: HTMLDivElement | undefined;
   let loadVersion = 0;
   let renderVersion = $state(0);
+  let consentAuthorityVersion = 0;
   let stickToTail = true;
   let liveTurns = $state<LiveTurn[]>([]);
+  let activeSessionIdentity: string | null = null;
   const streams = new SvelteMap<string, () => void>();
   const refreshTimers = new SvelteMap<string, number>();
+  const cancellingRuns = new SvelteSet<string>();
+  const sendingSessions = new SvelteSet<string>();
+  const pendingSubmissions = new SvelteMap<string, { prompt: string; requestId: string }>();
   const recoveredHardClosures = new Set<string>();
   let destroyed = false;
   const runStatuses = new Set([
@@ -42,6 +48,7 @@
     "awaiting_hardware",
     "awaiting_consent",
     "awaiting_delegate",
+    "cancelling",
     "done",
     "failed",
     "cancelled"
@@ -58,25 +65,45 @@
     liveTurns.filter((turn) => turn.sessionId === selected?.id)
   );
 
+  function turnIsTerminal(turn: LiveTurn): boolean {
+    return turn.state === "done" || turn.state === "failed" || turn.state === "cancelled";
+  }
+
   function omen(text: string, fault = true) {
     window.dispatchEvent(new CustomEvent("altar:omen", { detail: { text, fault } }));
   }
 
   async function load(id?: string) {
     const version = ++loadVersion;
+    const runAuthorityAtRequest = new Map(
+      liveTurns.map((turn) => [turn.runId, turn.authorityGeneration])
+    );
+    const requestedIdentityChanged =
+      id !== undefined && activeSessionIdentity !== null && activeSessionIdentity !== id;
     loading = true;
     error = "";
+    if (requestedIdentityChanged) {
+      snapshot = null;
+      prompt = "";
+    }
     try {
       const next = await getBridgeSnapshot(id);
-      if (version !== loadVersion) return;
+      if (destroyed || version !== loadVersion) return;
+      const nextSessionIdentity = next.session?.id ?? null;
+      if (activeSessionIdentity !== null && activeSessionIdentity !== nextSessionIdentity) {
+        prompt = "";
+      }
+      activeSessionIdentity = nextSessionIdentity;
       const merged = mergeSnapshotLiveTurns(next, $state.snapshot(liveTurns));
       for (const active of next.active_runs) {
         const index = merged.liveTurns.findIndex((turn) => turn.runId === active.run_id);
         const current = merged.liveTurns[index];
-        if (current && !streams.has(active.run_id)) {
+        const expectedGeneration = runAuthorityAtRequest.get(active.run_id);
+        if (current && expectedGeneration !== undefined && !streams.has(active.run_id)) {
           merged.liveTurns[index] = replaceLiveTurnFromSnapshot(
             current,
-            active
+            active,
+            expectedGeneration
           );
         }
       }
@@ -86,12 +113,12 @@
         clearRefreshTimer(runId);
       }
       snapshot = next;
+      consentAuthorityVersion++;
       liveTurns = merged.liveTurns;
       for (const active of next.active_runs) {
         const turn = liveTurns.find((item) => item.runId === active.run_id);
         if (!turn) continue;
-        if (active.terminal) scheduleSettledRefresh(active.run_id, active.session_id);
-        else attachStream(turn, active.cursor);
+        if (!turnIsTerminal(turn)) attachStream(turn, turn.cursor);
       }
       window.dispatchEvent(new CustomEvent("altar:attention", { detail: next.pending_count }));
     } catch (cause) {
@@ -102,7 +129,8 @@
   }
 
   $effect(() => {
-    void load(sessionId);
+    const routeSessionId = sessionId;
+    untrack(() => void load(routeSessionId));
   });
 
   $effect.pre(() => {
@@ -134,9 +162,10 @@
   async function createSession() {
     try {
       const created = await createBridgeSession();
+      if (destroyed) return;
       await goto(`/bridge/${created.session.id}`);
     } catch (cause) {
-      omen(cause instanceof Error ? cause.message : "A séance could not be opened.");
+      if (!destroyed) omen(cause instanceof Error ? cause.message : "A séance could not be opened.");
     }
   }
 
@@ -151,6 +180,7 @@
     const expectedRouteSessionId = sessionId;
     const timer = window.setTimeout(() => {
       refreshTimers.delete(runId);
+      if (destroyed) return;
       if (sessionId !== expectedRouteSessionId) return;
       if (snapshot?.session?.id !== targetSessionId) return;
       void load(sessionId);
@@ -158,8 +188,8 @@
     refreshTimers.set(runId, timer);
   }
 
-  function attachStream(turn: LiveTurn, initialCursor = -1) {
-    if (turn.state !== "streaming" || streams.has(turn.runId)) return;
+  function attachStream(turn: LiveTurn, initialCursor = turn.cursor) {
+    if (destroyed || turn.state !== "streaming" || streams.has(turn.runId)) return;
     const targetRunId = turn.runId;
     const targetSessionId = turn.sessionId;
     let hardClosed = false;
@@ -167,8 +197,12 @@
     close = listenToRun(
       targetRunId,
       (event) => {
+        if (destroyed) return;
         const active = liveTurns.find((item) => item.runId === targetRunId);
         if (!active) return;
+        if (event.seq <= active.cursor) return;
+        active.cursor = event.seq;
+        active.authorityGeneration++;
         const payload = event.payload;
         if (event.kind === "token") active.content += String(payload.text ?? "");
         else if (event.kind === "status") {
@@ -215,8 +249,12 @@
           if (typeof settled === "object" && settled !== null && "content" in settled) {
             active.content = String(settled.content);
           }
-          active.state = String(payload.status).includes("fail") ? "failed" : "done";
           active.runStatus = String(payload.status ?? "done");
+          active.state = active.runStatus === "cancelled"
+            ? "cancelled"
+            : active.runStatus.includes("fail")
+              ? "failed"
+              : "done";
           active.activity = active.runStatus;
           streams.delete(targetRunId);
           if (snapshot?.session?.id === active.sessionId) {
@@ -227,20 +265,28 @@
       },
       (message) => omen(message, false),
       async () => {
+        if (destroyed) return { cursor: initialCursor, terminal: true };
         omen("The run stream lost history; refreshing its authoritative snapshot.", false);
+        const expectedGeneration = liveTurns.find(
+          (item) => item.runId === targetRunId
+        )?.authorityGeneration;
         const projection = await getRunSnapshot(targetRunId);
+        if (destroyed) return { cursor: projection.cursor, terminal: true };
         const index = liveTurns.findIndex((item) => item.runId === targetRunId);
         const active = liveTurns[index];
+        let refreshed = active;
         if (active) {
-          liveTurns[index] = replaceLiveTurnFromSnapshot(
+          refreshed = replaceLiveTurnFromSnapshot(
             $state.snapshot(active),
-            projection
+            projection,
+            expectedGeneration
           );
+          liveTurns[index] = refreshed;
           if (snapshot?.session?.id === targetSessionId) {
             void load(targetSessionId);
           }
         }
-        if (projection.terminal) {
+        if (refreshed && turnIsTerminal(refreshed)) {
           streams.get(targetRunId)?.();
           streams.delete(targetRunId);
           if (snapshot?.session?.id === targetSessionId) {
@@ -248,11 +294,15 @@
           }
         }
         renderVersion++;
-        return { cursor: projection.cursor, terminal: projection.terminal };
+        return {
+          cursor: refreshed?.cursor ?? projection.cursor,
+          terminal: refreshed ? turnIsTerminal(refreshed) : projection.terminal
+        };
       },
       {
         initialCursor,
         onHardClose: () => {
+          if (destroyed) return;
           hardClosed = true;
           if (close === undefined || streams.get(targetRunId) === close) {
             streams.delete(targetRunId);
@@ -261,6 +311,7 @@
           if (active?.state === "streaming") {
             active.state = "stale";
             active.activity = "projection stale";
+            active.authorityGeneration++;
             renderVersion++;
           }
           void recoverHardClosedRun(targetRunId, targetSessionId);
@@ -273,6 +324,9 @@
   async function recoverHardClosedRun(runId: string, targetSessionId: string) {
     if (recoveredHardClosures.has(runId)) return;
     recoveredHardClosures.add(runId);
+    const expectedGeneration = liveTurns.find(
+      (item) => item.runId === runId
+    )?.authorityGeneration;
     try {
       const projection = await getRunSnapshot(runId);
       if (destroyed) return;
@@ -282,15 +336,19 @@
       const index = liveTurns.findIndex((item) => item.runId === runId);
       const active = liveTurns[index];
       if (!active) return;
-      const recovered = replaceLiveTurnFromSnapshot($state.snapshot(active), projection);
+      const recovered = replaceLiveTurnFromSnapshot(
+        $state.snapshot(active),
+        projection,
+        expectedGeneration
+      );
       liveTurns[index] = recovered;
       renderVersion++;
-      if (projection.terminal) {
+      if (turnIsTerminal(recovered)) {
         if (snapshot?.session?.id === targetSessionId) {
           scheduleSettledRefresh(runId, targetSessionId);
         }
       } else {
-        attachStream(recovered, projection.cursor);
+        attachStream(recovered, recovered.cursor);
       }
     } catch {
       if (!destroyed) {
@@ -301,13 +359,20 @@
 
   async function submit() {
     const text = prompt.trim();
-    if (!text || !selected || sending) return;
+    if (!text || !selected || sendingSessions.has(selected.id)) return;
     const targetSessionId = selected.id;
-    sending = true;
+    const prior = pendingSubmissions.get(targetSessionId);
+    const requestId = prior?.prompt === text ? prior.requestId : crypto.randomUUID();
+    pendingSubmissions.set(targetSessionId, { prompt: text, requestId });
+    sendingSessions.add(targetSessionId);
     error = "";
     prompt = "";
     try {
-      const accepted = await sendBridgeMessage(targetSessionId, text);
+      const accepted = await sendBridgeMessage(targetSessionId, text, requestId);
+      if (destroyed) return;
+      if (pendingSubmissions.get(targetSessionId)?.requestId === requestId) {
+        pendingSubmissions.delete(targetSessionId);
+      }
       if (snapshot?.session?.id === targetSessionId) {
         snapshot.session.turns ??= [];
         const alreadyProjected = snapshot.session.turns.some(
@@ -323,6 +388,8 @@
         live = {
           sessionId: targetSessionId,
           runId: accepted.run_id,
+          cursor: -1,
+          authorityGeneration: 0,
           content: "",
           runStatus: "queued",
           activity: "queued",
@@ -350,10 +417,67 @@
       renderVersion++;
       attachStream(live);
     } catch (cause) {
-      if (snapshot?.session?.id === targetSessionId && !prompt) prompt = text;
-      error = cause instanceof Error ? cause.message : "The offering was refused.";
+      if (destroyed) return;
+      const ambiguous = !(cause instanceof ApiError) || cause.status === undefined || cause.status >= 500;
+      if (!ambiguous && pendingSubmissions.get(targetSessionId)?.requestId === requestId) {
+        pendingSubmissions.delete(targetSessionId);
+      }
+      if (snapshot?.session?.id === targetSessionId) {
+        if (!prompt) prompt = text;
+        error = cause instanceof Error ? cause.message : "The offering was refused.";
+      }
     } finally {
-      sending = false;
+      if (!destroyed) sendingSessions.delete(targetSessionId);
+    }
+  }
+
+  function applyRunProjection(
+    runId: string,
+    projection: Awaited<ReturnType<typeof getRunSnapshot>>
+  ): LiveTurn {
+    const index = liveTurns.findIndex((item) => item.runId === runId);
+    const active = liveTurns[index];
+    if (!active || projection.session_id !== active.sessionId) {
+      throw new Error("The authoritative run snapshot changed identity.");
+    }
+    const updated = replaceLiveTurnFromSnapshot($state.snapshot(active), projection);
+    liveTurns[index] = updated;
+    if (turnIsTerminal(updated)) {
+      streams.get(runId)?.();
+      streams.delete(runId);
+      clearRefreshTimer(runId);
+    }
+    renderVersion++;
+    return updated;
+  }
+
+  async function cancelRun(turn: LiveTurn) {
+    if (turn.state === "done" || turn.state === "failed" || turn.state === "cancelled" || cancellingRuns.has(turn.runId)) {
+      return;
+    }
+    cancellingRuns.add(turn.runId);
+    try {
+      const projection = await cancelBridgeRun(turn.runId);
+      if (destroyed) return;
+      const updated = applyRunProjection(turn.runId, projection);
+      if (turnIsTerminal(updated)) {
+        await reconcileConsentAuthority(turn.sessionId);
+      }
+    } catch (cause) {
+      if (destroyed) return;
+      try {
+        const projection = await getRunSnapshot(turn.runId);
+        if (destroyed) return;
+        const updated = applyRunProjection(turn.runId, projection);
+        if (turnIsTerminal(updated)) {
+          await reconcileConsentAuthority(turn.sessionId);
+        }
+        if (!projection.terminal) throw cause;
+      } catch (recheckCause) {
+        omen(recheckCause instanceof Error ? recheckCause.message : "The cancellation outcome is unknown.");
+      }
+    } finally {
+      if (!destroyed) cancellingRuns.delete(turn.runId);
     }
   }
 
@@ -364,12 +488,44 @@
     }
   }
 
-  function consentDecided(consent: ConsentCardModel, pending: number) {
+  function beginConsentDecision() {
+    return consentAuthorityVersion;
+  }
+
+  function consentDecided(
+    consent: ConsentCardModel,
+    pending: number,
+    authorityVersion: number
+  ) {
     if (!snapshot) return;
+    if (authorityVersion !== consentAuthorityVersion) {
+      refreshConsentAuthority();
+      return;
+    }
+    consentAuthorityVersion++;
     const index = snapshot.pending_consents.findIndex((item) => item.id === consent.id);
     if (index >= 0) snapshot.pending_consents[index] = consent;
     snapshot.pending_count = pending;
     window.dispatchEvent(new CustomEvent("altar:attention", { detail: pending }));
+  }
+
+  async function reconcileConsentAuthority(targetSessionId: string) {
+    if (destroyed) return;
+    if (snapshot?.session?.id === targetSessionId) {
+      // Cancellation revokes this session's visible consent authority immediately.
+      // The refetch may fail, but stale action cards must never survive it.
+      consentAuthorityVersion++;
+      snapshot.pending_consents = [];
+      snapshot.pending_count = 0;
+      window.dispatchEvent(new CustomEvent("altar:attention"));
+      await load(targetSessionId);
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("altar:attention"));
+  }
+
+  function refreshConsentAuthority() {
+    if (selected) void load(selected.id);
   }
 
   function trackScroll() {
@@ -423,6 +579,11 @@
           >
             {#if turn.role === "agent"}<div class="turn__meta"><span class="who">LychD</span></div>{/if}
             <div class="turn__body">{turn.content}</div>
+            {#if turn.role === "agent" && (turn.fragments?.length ?? 0) > 0}
+              <div class="turn__extras">
+                {#each turn.fragments ?? [] as fragment (fragment)}<GenUI descriptor={fragment} />{/each}
+              </div>
+            {/if}
             {#if turn.role === "agent" && turn.run_id}
               <a class="settled-evidence" href="/orb/{turn.run_id}">Look into the Orb →</a>
             {/if}
@@ -471,6 +632,16 @@
               <a href={turn.delegatedJobId ? `${turn.orbPath}?job=${encodeURIComponent(turn.delegatedJobId)}` : turn.orbPath}>
                 Look into the Orb →
               </a>
+              {#if turn.state !== "done" && turn.state !== "failed" && turn.state !== "cancelled"}
+                <button
+                  class="run-stop"
+                  type="button"
+                  disabled={cancellingRuns.has(turn.runId)}
+                  aria-label={`Cancel run ${turn.runId}`}
+                  title="Cancel Run"
+                  onclick={() => void cancelRun(turn)}
+                >■</button>
+              {/if}
             </nav>
             <div class="turn__extras">
               {#each turn.fragments as fragment (fragment)}<GenUI descriptor={fragment} />{/each}
@@ -478,7 +649,12 @@
           </article>
         {/each}
         {#each snapshot?.pending_consents ?? [] as consent (consent.id)}
-          <ConsentCard {consent} ondecided={consentDecided} />
+          <ConsentCard
+            {consent}
+            onauthority={beginConsentDecision}
+            ondecided={consentDecided}
+            onrefresh={refreshConsentAuthority}
+          />
         {/each}
       {/if}
     </div>
@@ -493,8 +669,13 @@
           onkeydown={keydown}
           aria-label="Message"
         ></textarea>
-        <button class="rune-btn" disabled={sending || !prompt.trim()} type="button" onclick={submit}>
-          Offer {#if sending}<span class="thinking-rune">⬢</span>{/if}
+        <button
+          class="rune-btn"
+          disabled={sendingSessions.has(selected.id) || !prompt.trim()}
+          type="button"
+          onclick={submit}
+        >
+          Offer {#if sendingSessions.has(selected.id)}<span class="thinking-rune">⬢</span>{/if}
         </button>
       </div>
       {#if error}<div class="turn__fault">{error}</div>{/if}

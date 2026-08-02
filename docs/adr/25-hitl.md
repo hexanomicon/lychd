@@ -44,6 +44,9 @@ executable semantics change without changing the prepared definition. Bridge acc
 request per model round and rejects multiple or external deferred calls: Pydantic AI demands every
 deferred result, so one card cannot counterfeit consent for hidden calls.
 
+`pending`, `granted`, and `denied` describe judgment; `cancelled` is a terminal audit settlement
+used when Run cancellation withdraws the pending call without manufacturing a human verdict.
+
 Changed security-relevant argument, object, effect class, destination, amount, or authority creates
 a new call. A safe projection can redact; executor remains bound to validated call. Consent may
 authorize eligible disclosure but cannot declassify, repair missing lineage, approve different
@@ -84,14 +87,23 @@ The permitted park order is:
 A page snapshot can see the row sooner, so worker re-reads verdict after park; this and API use the
 same atomic admission gate.
 
+If the process dies between steps 3 and 4, startup accepts the park only when the first resumable
+node snapshot names both this Run and the exact latest non-cancelled consent id. A verdict already
+committed in that window is parked and then re-fired; an older approval round cannot lend its
+checkpoint to a newer Consent row.
+
 ### One resume hop
 
-First successful AWAITING_CONSENT → QUEUED compare-and-set receives a new monotonic enqueue_seq
-and publishes one SAQ job keyed by run/enqueue sequence. Repeat clicks, concurrent clients,
-post-park race closer, and startup reconciliation lose that CAS. Verdict and publication are not
-one transaction: failed/cancelled publication restores exact AWAITING_CONSENT but retains advanced
-enqueue_seq; a possibly existing broker key is never reused. Reconciliation re-fires decided
-parked rows. Missing checkpoint fails as stasis lost, never a restarted Pattern.
+First successful AWAITING_CONSENT → QUEUED compare-and-set for the exact current `consent_id`
+receives a new monotonic enqueue_seq and creates one `PENDING` RunDelivery in the same transaction.
+The gate re-reads that same-run Consent and requires a terminal verdict plus its decision principal
+and timestamp. Newest-row ordering cannot substitute another Consent for the persisted owner.
+Repeat clicks, historical cards, concurrent clients, post-park race closer, and startup
+reconciliation lose that CAS. The external SAQ publication is not in that transaction: failure
+leaves the admitted `QUEUED` hop and exact key for startup or the lifespan relay to publish. The
+wait state is not recreated and a possibly existing broker key is never reused. Reconciliation
+re-fires decided parked rows only for their current owner. Missing checkpoint fails as stasis lost,
+never a restarted Pattern.
 
 ## Live judgment at the Altar
 
@@ -108,27 +120,30 @@ at documented same-host scope, not remote-consent evidence.
 ## Codex preauthorization
 
 A Rune under runes/codex/preauth matches Sigil/tool patterns, supported argument allowlists or
-string prefixes, optional expiry, and optional max uses; unknown constraints fail closed. Postgres
-uses guarded UPDATE RETURNING for budget consumption, but match/use and consent insert are separate
-commits: crash can burn a use without its row. ZTE requires non-empty constraints, expiry, and
-max_uses; standard may still be broader. Expiry is not rechecked immediately before a long-waited
-effect.
+string prefixes, optional expiry, and optional max uses; unknown constraints fail closed. PostgreSQL
+uses guarded UPDATE RETURNING for budget consumption and commits a consumed use with its consent
+row in one transaction. ZTE requires non-empty constraints, expiry, and max_uses; standard may still
+be broader.
 
-Preauthorization is Magus policy, never model confidence. Same-slug startup refresh retains usage;
-it only upserts present Runes, does not disable removed/tightened enabled rows, and logs sync
-failure while continuing. Until complete-set reconciliation with fail-closed startup, removing a
-file does not prove standing authority dead.
+Preauthorization is Magus policy, never model confidence. Startup reconciles the complete Rune-owned
+set in one transaction: same-slug rows retain usage and a manual disable, changed policy fields are
+replaced, and absent Rune-owned rows are disabled. PostgreSQL startup fails closed when this sync
+fails. An auto-granted Consent stores a digest of the policy that authorized it; before Graph accepts
+that verdict, PostgreSQL rechecks the row is enabled, unexpired by database time, and digest-equal.
+This is standing-policy revalidation, not the still-required generic effect-time IAM/object/authority
+check after arbitrary intervening work.
 
 ## Failure and recovery
 
 | Failure | Result |
 | --- | --- |
 | Worker/Vessel dies pending | Consent and checkpoint persist; lease does not. |
-| Verdict before queue publication | Restore wait or startup reconciliation re-fires it. |
+| Verdict before queue publication | Exact pending delivery survives; startup/relay publishes it. |
 | Duplicate/contradictory verdict | First settled verdict is authoritative. |
 | Multiple deferred calls | Policy bottleneck; no shared verdict. |
 | Missing checkpoint | Honest stasis-lost failure. |
 | Old hop races newer | Hop ownership/enqueue_seq bars old settlement. |
+| Run cancelled while pending | Consent settles as `cancelled`; no later verdict can re-admit it. |
 | Altar disconnects | Durable state remains; browser is not record. |
 
 Memory-profile simulated restart proves this path; no maintained real PostgreSQL
@@ -163,6 +178,9 @@ They remain distinct offices: consent does not promote Karma, assign credit, or 
 ## Verification
 
 Focused suites cover parks/resumes, chained single approvals, missing stasis, idempotency,
-verdict-before-resume, reconciliation, publication compensation, memory-backed preauthorization,
-Sigil guards, and terminal cleanup. PostgreSQL guarded update exists but has no use-and-audit
-atomicity or stale-rule-revocation receipt. State owns graph-stasis and local-Sigil delivery claims.
+verdict-before-resume, delivery reconciliation, memory-backed preauthorization,
+Sigil guards, terminal cleanup, PostgreSQL first-verdict concurrency, and preauthorization rollback.
+Disposable PostgreSQL receipts cover use-and-consent atomicity, complete-set Rune sync, DB-time
+expiry, policy-digest invalidation, and startup failure propagation. Generic effect-time
+reauthorization and a full Consent-plus-Checkpoint process-restart receipt remain absent. State owns
+graph-stasis and local-Sigil delivery claims.

@@ -54,8 +54,8 @@ execution](../../../state-of-the-work.md#delegated-agent-execution), [extension
 activation](../../../state-of-the-work.md#extension-activation-contributions), and
 [Loom](../../../state-of-the-work.md#loom-workflow-views) remain **Partial**.
 
-Pattern contribution, scheduling, durable parallelism, multi-revision storage, and editing remain
-undelivered. Architectural treatment is not operational evidence.
+Pattern contribution and durable publication, scheduling, durable parallelism, compatibility and
+migration, and editing remain undelivered. Architectural treatment is not operational evidence.
 
 ## Follow the score
 

@@ -56,6 +56,14 @@ Choose **Preview** on a managed capability. The **Non-binding preview** drawer s
 operator priority. The server recalculates the plan before acting, so preview is neither a
 reservation nor a promise of the same evict set. Policy cost is not VRAM, time, energy, or topology.
 
+The browser allocates one request id before submission. If the response is uncertain, retry reuses
+that id and target. The selected persistence profile reserves the first target before task launch:
+PostgreSQL keeps that admission across Vessel restarts, while the memory profile keeps it for one
+process. A retry returns the live ticket when available. If the ticket has expired or its process
+has ended, the same request id is refused without relaunch because physical outcome is no longer
+known from ticket state. The client retains that refused id instead of minting a fresh physical
+request. Reusing the id for another target is rejected.
+
 ## What a swap ticket proves
 
 The accepted request returns HTTP 202 with a process-local ticket:
@@ -67,7 +75,8 @@ The accepted request returns HTTP 202 with a process-local ticket:
 The ticket strip shows target, current transition phase, and request id. Terminal ticket truth is
 retained for a 60-second reconnect window by default. The bounded store refuses a new request
 before launch rather than evicting active or fresh-terminal tickets. Tickets have no cancel action,
-durable history, or restart recovery.
+durable history, or restart recovery. The durable request admission is only a duplicate-effect
+fence; it does not claim that a lost ticket settled, failed, or can be resumed.
 
 **Latest transition observations** shows up to 24 newest retained requests from both Run and
 operator sources. Select one, or open `/nexus?transition={request_id}`, to inspect:

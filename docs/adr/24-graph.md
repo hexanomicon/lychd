@@ -67,7 +67,9 @@ occurrence correlation. Events observe; they neither recover work nor establish 
 
 Capability nodes ask [Dispatcher](22-dispatcher.md), never bind runtimes directly. On
 HardwareTransitionRequired GraphRunner finds the signal even through a task group, snapshots state
-and current node, marks waiting, sets AWAITING_HARDWARE, asks [Orchestrator](23-orchestrator.md) to
+only when the exception tree resolves unambiguously to that signal; mixed signal/failure groups fail
+closed rather than swallowing a sibling. It snapshots state and current node, marks waiting, sets
+AWAITING_HARDWARE, asks [Orchestrator](23-orchestrator.md) to
 converge, returns RUNNING, resumes persistence, and dispatches again. Default limits are eight
 hardware resumes per Run and three consecutive requests for one capability; exceeding either fails.
 The waiting run holds no lease and does not know whether convergence was a load, systemd swap, or no effect.

@@ -1,7 +1,10 @@
 """BridgeSessionStore semantics: run index + settled-turn lookup (async, consent-free)."""
 
+# This module explicitly verifies the database adapter's legacy-row normalizer.
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any, Self, cast
 from uuid import uuid4
@@ -57,6 +60,74 @@ async def test_settle_agent_turn_appends_visible_reply_and_model_suffix_together
 
     assert [turn.content for turn in session.turns] == ["first", "second"]
     assert session.message_history == [*first_suffix, *second_suffix]
+
+
+@pytest.mark.asyncio
+async def test_settle_agent_turn_replay_is_idempotent_and_conflicts_fail_closed() -> None:
+    store = BridgeSessionStore()
+    session = await store.create_session()
+    turn = BridgeTurn(role="agent", content="risen", run_id="run-1", fragments=({"kind": "text"},))
+    suffix = [{"kind": "response"}]
+
+    await store.settle_agent_turn(session.id, turn, new_messages=suffix)
+    await store.settle_agent_turn(session.id, turn, new_messages=suffix)
+
+    assert session.turns == [turn]
+    assert session.message_history == suffix
+
+    with pytest.raises(ValueError, match="conflicting Bridge turns"):
+        await store.settle_agent_turn(
+            session.id,
+            BridgeTurn(role="agent", content="changed", run_id="run-1"),
+            new_messages=[{"kind": "different"}],
+        )
+
+    assert session.turns == [turn]
+    assert session.message_history == suffix
+
+
+def test_db_record_normalizes_legacy_fragment_keys_into_inert_descriptors() -> None:
+    store = DbBridgeSessionStore(cast("Any", lambda: None), sigil_name="magus")
+    row = SimpleNamespace(
+        id=uuid4(),
+        title="Old communion",
+        created_at=datetime.now(UTC),
+        message_history=[],
+        meta={
+            "turns": [
+                {
+                    "role": "agent",
+                    "content": "retained",
+                    "run_id": "run-old",
+                    "fragments": ["genui.plan_checklist"],
+                }
+            ]
+        },
+    )
+
+    record = store._record(row)
+
+    assert record.turns[0].fragments == (
+        {
+            "kind": "genui.plan_checklist",
+            "schema_version": 0,
+            "props": {},
+            "actions": [],
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_db_read_boundaries_treat_malformed_ids_as_absent() -> None:
+    def forbidden_factory() -> None:
+        message = "Malformed identifiers must not reach PostgreSQL."
+        raise AssertionError(message)
+
+    store = DbBridgeSessionStore(cast("Any", forbidden_factory), sigil_name="magus")
+
+    assert await store.get_session("not-a-uuid") is None
+    assert await store.session_for_run("not-a-uuid") is None
+    assert await store.settled_turn_for_run("not-a-uuid") is None
 
 
 @pytest.mark.asyncio
@@ -130,11 +201,22 @@ async def test_db_settlement_updates_turn_and_message_history_under_one_lock() -
     factory = lambda: session  # noqa: E731 - structural async-sessionmaker fake
     store = DbBridgeSessionStore(cast("Any", factory), sigil_name="magus")
 
-    await store.settle_agent_turn(
-        str(uuid4()),
-        BridgeTurn(role="agent", content="risen", run_id="run-1"),
-        new_messages=[{"kind": "response"}],
-    )
+    session_id = str(uuid4())
+    turn = BridgeTurn(role="agent", content="risen", run_id="run-1")
+    suffix = [{"kind": "response"}]
+
+    await store.settle_agent_turn(session_id, turn, new_messages=suffix)
+    await store.settle_agent_turn(session_id, turn, new_messages=suffix)
 
     assert [turn["content"] for turn in session.row.meta["turns"]] == ["risen"]
+    assert session.row.message_history == [{"kind": "request"}, {"kind": "response"}]
+
+    with pytest.raises(ValueError, match="conflicting Bridge turns"):
+        await store.settle_agent_turn(
+            session_id,
+            BridgeTurn(role="agent", content="changed", run_id="run-1"),
+            new_messages=[{"kind": "different"}],
+        )
+
+    assert [item["content"] for item in session.row.meta["turns"]] == ["risen"]
     assert session.row.message_history == [{"kind": "request"}, {"kind": "response"}]

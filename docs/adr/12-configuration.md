@@ -39,8 +39,9 @@ arbitrated before any unit is written.
 A Rune is one validated top-level TOML instance in the Codex `runes/` tree, not a runtime object
 or generated unit. Each concrete `RuneConfig` supplies one safe `path_fragment`; direct Python
 subclassing forms one anchor ancestry, and `relative_path` is computed from it. A fragment is one
-segment matching `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`. Anchors cannot overlap. Branch
-classes are namespaces and cannot own TOML files; only leaf schemas may have one or more
+segment matching `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`. Distinct registered schemas cannot
+own the same exact anchor; nested anchors remain distinct and express declared class ancestry.
+Branch classes are namespaces and cannot own TOML files; only leaf schemas may have one or more
 instances. A file's path supplies its identity and `source_file` provenance. Duplicate identity,
 files in branch anchors, arrays-of-tables instance encoding, unsafe fragments, and schema
 violations abort discovery.
@@ -74,6 +75,12 @@ schema through this contract, then separately registers any runtime definition o
 own domain store. Importing a package does not register it; registering a schema does not create a
 service. Extensions cannot introduce custom loaders, source precedence, parsers, or `type=`
 dispatch. [Extensions (05)](05-extensions.md) owns compatibility tiers.
+
+The complete preauthorization Rune generation is validated before durable reconciliation.
+Duplicate slugs fail deterministically, and an incoming Rune cannot replace a row whose durable
+owner is not `codex:rune`. Only after those checks may one transaction refresh Rune-owned rows,
+retain their usage and operator-enabled state, mark absent Rune-owned policies unavailable, and
+publish newly admitted policies.
 
 ## Realization and the writable Codex
 

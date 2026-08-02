@@ -1,12 +1,16 @@
 <script lang="ts">
   type Descriptor = {
     kind?: unknown;
+    schema_version?: unknown;
     props?: unknown;
   };
 
   let { descriptor } = $props<{ descriptor: Descriptor }>();
 
   let kind = $derived(typeof descriptor.kind === "string" ? descriptor.kind : "genui.unknown");
+  let schemaVersion = $derived(
+    typeof descriptor.schema_version === "number" ? descriptor.schema_version : null
+  );
   let descriptorProps = $derived(
     typeof descriptor.props === "object" && descriptor.props !== null
       ? (descriptor.props as Record<string, unknown>)
@@ -26,14 +30,22 @@
   );
 </script>
 
-{#if kind === "genui.plan_checklist"}
+{#if schemaVersion !== 1}
+  <div class="genui" data-fragment={kind} data-state="fault" data-schema-version={schemaVersion ?? "unknown"}>
+    <div class="genui-head">
+      <span>Unsupported projection</span>
+      <span class="glyph">schema {schemaVersion ?? "unknown"}</span>
+    </div>
+    <div class="genui-body">Retained inertly.</div>
+  </div>
+{:else if kind === "genui.plan_checklist"}
   <div class="genui" data-fragment={kind}>
     <div class="genui-head">
       <span>{String(descriptorProps.title ?? "Plan")}</span>
       <span class="glyph">descriptor · client-projected</span>
     </div>
     <ol class="genui-body checklist">
-      {#each steps as step}<li>{step}</li>{/each}
+      {#each steps as step, index (index)}<li>{step}</li>{/each}
     </ol>
   </div>
 {:else if kind === "genui.capability_table"}
@@ -45,7 +57,7 @@
     <table>
       <thead><tr><th>Capability key</th><th>Family</th><th>State</th></tr></thead>
       <tbody>
-        {#each rows as row}
+        {#each rows as row, index (index)}
           <tr>
             <td class="glyph">{String(row.capability_key ?? "")}</td>
             <td>{String(row.family ?? "")}</td>

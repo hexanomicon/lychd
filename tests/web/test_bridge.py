@@ -7,15 +7,20 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from lychd.agents.router import Intent
+from lychd.agents.workflows import DELEGATED_RITE, BuiltinWorkflowRegistry
+from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.delegation.models import DelegatedAgentProfile, DelegatedAgentRequest
+from lychd.domain.web.schemas import BridgeTurn
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
 
     from litestar import Litestar
     from litestar.testing import TestClient
+
+_REQUEST_ID = "31d80d31-92ef-4e9c-a1e7-e8b755eed888"
 
 
 def _session(fake_services: SimpleNamespace) -> Any:
@@ -41,7 +46,7 @@ def test_snapshot_lists_created_session(altar_client: TestClient[Litestar]) -> N
     assert snapshot.json()["sessions"][0]["id"] == created["id"]
 
 
-def test_snapshot_reconstructs_selected_process_local_active_runs(
+def test_snapshot_reconstructs_selected_ledger_runs_without_requiring_a_live_channel(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
 ) -> None:
@@ -120,7 +125,171 @@ def test_snapshot_reconstructs_selected_process_local_active_runs(
             "delegated_status": None,
             "terminal": False,
         },
+        {
+            "schema_version": 1,
+            "session_id": selected.id,
+            "run_id": "run_without_process_channel",
+            "cursor": -1,
+            "content": "",
+            "run_status": "running",
+            "activity": "running",
+            "pattern_id": "bridge_chat",
+            "pattern_revision": "legacy-unversioned",
+            "loom_path": None,
+            "orb_path": "/orb/run_without_process_channel",
+            "evidence_capture": "process_local",
+            "fragments": [],
+            "occurrence_id": None,
+            "dispatch_occurrence_id": None,
+            "grant_id": None,
+            "capability_key": None,
+            "transition_occurrence_id": None,
+            "transition_request_id": None,
+            "transition_phase": None,
+            "delegated_job_id": None,
+            "delegated_runtime": None,
+            "delegated_profile": None,
+            "delegated_status": None,
+            "terminal": False,
+        },
     ]
+
+
+def test_cancel_run_is_idempotent_and_remains_visible_without_a_settled_turn(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(
+                session_id=session.id,
+                run_id="run_cancelled",
+                prompt="stop",
+                source="bridge",
+            ),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+
+    asyncio.run(_seed())
+
+    first = altar_client.post("/api/v1/bridge/runs/run_cancelled/cancel")
+    second = altar_client.post("/api/v1/bridge/runs/run_cancelled/cancel")
+    restored = altar_client.get(f"/api/v1/bridge/sessions/{session.id}")
+
+    assert first.status_code == 200
+    assert first.json()["run_status"] == "cancelled"
+    assert first.json()["terminal"] is True
+    assert second.status_code == 200
+    assert second.json()["run_status"] == "cancelled"
+    assert [run["run_id"] for run in restored.json()["active_runs"]] == ["run_cancelled"]
+    assert restored.json()["active_runs"][0]["run_status"] == "cancelled"
+
+
+def test_terminal_run_with_only_a_user_turn_remains_visible(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(
+                session_id=session.id,
+                run_id="run_failed_before_reply",
+                prompt="fail visibly",
+                source="bridge",
+            ),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.bridge_sessions.add_turn(
+            session.id,
+            BridgeTurn(role="user", content="fail visibly", run_id="run_failed_before_reply"),
+        )
+        await fake_services.ledger.set_status("run_failed_before_reply", RunStatus.RUNNING)
+        await fake_services.ledger.set_status("run_failed_before_reply", RunStatus.FAILED)
+
+    asyncio.run(_seed())
+
+    restored = altar_client.get(f"/api/v1/bridge/sessions/{session.id}")
+
+    assert restored.status_code == 200
+    assert [run["run_id"] for run in restored.json()["active_runs"]] == ["run_failed_before_reply"]
+    assert restored.json()["active_runs"][0]["terminal"] is True
+
+
+def test_durable_terminal_status_overrides_a_lagging_live_channel(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id="run_terminal_live", prompt="fail", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status("run_terminal_live", RunStatus.RUNNING)
+
+    asyncio.run(_seed())
+    fake_services.bus.emitter("run_terminal_live").emit(RunEventKind.STATUS, "weaving")
+    asyncio.run(fake_services.ledger.set_status("run_terminal_live", RunStatus.FAILED))
+
+    response = altar_client.get("/api/v1/bridge/runs/run_terminal_live")
+
+    assert response.status_code == 200
+    assert response.json()["run_status"] == "failed"
+    assert response.json()["activity"] == "failed"
+    assert response.json()["terminal"] is True
+
+
+def test_terminal_refresh_reconstructs_settled_genui_descriptors(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+    descriptor: dict[str, Any] = {
+        "kind": "genui.plan_checklist",
+        "schema_version": 1,
+        "props": {"title": "Retained plan", "steps": ["inspect"]},
+        "actions": [],
+    }
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id="run_genui", prompt="plan", source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        await fake_services.ledger.set_status("run_genui", RunStatus.RUNNING)
+        await fake_services.ledger.set_status("run_genui", RunStatus.DONE)
+        await fake_services.bridge_sessions.add_turn(
+            session.id,
+            BridgeTurn(
+                role="agent",
+                content="The plan remains visible.",
+                run_id="run_genui",
+                fragments=(descriptor,),
+            ),
+        )
+
+    asyncio.run(_seed())
+
+    run = altar_client.get("/api/v1/bridge/runs/run_genui")
+    restored = altar_client.get(f"/api/v1/bridge/sessions/{session.id}")
+
+    assert run.status_code == 200
+    assert run.json()["fragments"] == [descriptor]
+    assert restored.status_code == 200
+    assert restored.json()["session"]["turns"][0]["fragments"] == [descriptor]
 
 
 def test_run_snapshot_reconstructs_latest_dispatch_and_transition_from_ledger(
@@ -180,6 +349,54 @@ def test_run_snapshot_reconstructs_latest_dispatch_and_transition_from_ledger(
     assert body["transition_occurrence_id"] == "occ-1"
     assert body["transition_request_id"] == "request-1"
     assert body["transition_phase"] == "verifying"
+
+
+def test_run_snapshot_uses_boot_catalogue_for_loom_link(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id="run-registry-mismatch", prompt="raise", source="bridge"),
+            workflow_name=BRIDGE_CHAT.name,
+            pattern_manifest=BRIDGE_CHAT.manifest.snapshot(),
+            queue_name="runs",
+            priority=70,
+        )
+
+    asyncio.run(_seed())
+    fake_services.workflows = BuiltinWorkflowRegistry(workflows=(DELEGATED_RITE,))
+
+    response = altar_client.get("/api/v1/bridge/runs/run-registry-mismatch")
+
+    assert response.status_code == 200
+    assert response.json()["loom_path"] is None
+
+
+def test_run_snapshot_requires_full_pattern_equality_for_loom_link(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+    manifest = {**BRIDGE_CHAT.manifest.snapshot(), "unregistered_field": "drift"}
+
+    async def _seed() -> None:
+        await fake_services.ledger.create(
+            Intent(session_id=session.id, run_id="run-full-pattern-mismatch", prompt="raise", source="bridge"),
+            workflow_name=BRIDGE_CHAT.name,
+            pattern_manifest=manifest,
+            queue_name="runs",
+            priority=70,
+        )
+
+    asyncio.run(_seed())
+
+    response = altar_client.get("/api/v1/bridge/runs/run-full-pattern-mismatch")
+
+    assert response.status_code == 200
+    assert response.json()["loom_path"] is None
 
 
 def test_run_snapshot_reconstructs_delegated_crossing(
@@ -295,7 +512,7 @@ def test_run_snapshot_preserves_cross_occurrence_correlations(
 def test_send_unknown_session_404(altar_client: TestClient[Litestar]) -> None:
     response = altar_client.post(
         "/api/v1/bridge/sessions/nope/messages",
-        json={"prompt": "hi"},
+        json={"prompt": "hi", "request_id": _REQUEST_ID},
     )
     assert response.status_code == 404
 
@@ -307,7 +524,7 @@ def test_send_empty_prompt_400(
     session = _session(fake_services)
     response = altar_client.post(
         f"/api/v1/bridge/sessions/{session.id}/messages",
-        json={"prompt": "   "},
+        json={"prompt": "   ", "request_id": _REQUEST_ID},
     )
     assert response.status_code == 400
 
@@ -319,7 +536,7 @@ def test_send_happy_path(
     session = _session(fake_services)
     response = altar_client.post(
         f"/api/v1/bridge/sessions/{session.id}/messages",
-        json={"prompt": "raise the dead"},
+        json={"prompt": "raise the dead", "request_id": _REQUEST_ID},
     )
 
     assert response.status_code == 200
@@ -336,6 +553,27 @@ def test_send_happy_path(
     assert fake_services.run_engine.submitted[0].prompt == "raise the dead"
     assert fake_services.run_engine.submitted[0].sigil_name
     assert fake_services.run_engine.submitted[0].sigil_scopes
+
+
+def test_send_replay_returns_one_run_and_one_retained_turn(
+    altar_client: TestClient[Litestar],
+    fake_services: SimpleNamespace,
+) -> None:
+    session = _session(fake_services)
+    path = f"/api/v1/bridge/sessions/{session.id}/messages"
+    payload = {"prompt": "raise exactly once", "request_id": _REQUEST_ID}
+
+    first = altar_client.post(path, json=payload)
+    replay = altar_client.post(path, json=payload)
+    restored = altar_client.get(f"/api/v1/bridge/sessions/{session.id}")
+
+    assert first.status_code == 200
+    assert replay.status_code == 200
+    assert replay.json()["run_id"] == first.json()["run_id"]
+    assert replay.json()["turn"] == first.json()["turn"]
+    assert len(fake_services.run_engine.submitted) == 1
+    user_turns = [turn for turn in restored.json()["session"]["turns"] if turn["role"] == "user"]
+    assert len(user_turns) == 1
 
 
 def test_inspector_returns_context(

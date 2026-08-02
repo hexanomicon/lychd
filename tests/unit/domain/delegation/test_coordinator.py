@@ -16,6 +16,7 @@ from lychd.domain.delegation import (
     DelegatedAgentRequest,
     DelegatedAgentResult,
     DelegatedAgentRuntime,
+    IllegalDelegatedAgentTransitionError,
     InMemoryDelegatedAgentJobStore,
 )
 from lychd.domain.delegation.services import DelegatedAgentIdempotencyConflictError
@@ -85,6 +86,23 @@ def test_typed_contracts_round_trip_with_artifact_refs() -> None:
 
     assert restored == request
     assert restored.input_artifacts[0].modality == "binary"
+
+
+@pytest.mark.asyncio
+async def test_terminal_store_transition_requires_result_adoption() -> None:
+    store = InMemoryDelegatedAgentJobStore()
+    request = _request()
+    ref = DelegatedAgentJobRef(
+        job_id="job-terminal-evidence",
+        request_id=request.request_id,
+        run_id=request.run_id,
+        runtime=request.runtime,
+        profile=request.profile,
+    )
+    await store.create(request, ref)
+
+    with pytest.raises(IllegalDelegatedAgentTransitionError, match="requires adopt"):
+        await store.transition(ref.job_id, DelegatedAgentJobStatus.SUCCEEDED)
 
 
 @pytest.mark.asyncio
@@ -271,3 +289,25 @@ async def test_lost_is_terminal_and_never_polled_or_retried() -> None:
     assert settled.status is DelegatedAgentJobStatus.LOST
     assert runtime.polls == []
     assert await coordinator.adopt(ref.job_id, lost) is False
+
+
+@pytest.mark.asyncio
+async def test_cancel_contains_lost_job_before_recording_cancellation() -> None:
+    coordinator, runtime = _coordinator()
+    ref = await coordinator.submit(_request())
+    lost = DelegatedAgentResult(
+        job_id=ref.job_id,
+        status=DelegatedAgentJobStatus.LOST,
+        error="submission outcome was indeterminate",
+    )
+    assert await coordinator.adopt(ref.job_id, lost) is True
+
+    assert await coordinator.cancel(ref.job_id) is True
+    assert await coordinator.cancel(ref.job_id) is False
+
+    settled = await coordinator.get(ref.job_id)
+    assert settled is not None
+    assert settled.status is DelegatedAgentJobStatus.CANCELLED
+    assert settled.result is not None
+    assert settled.result.status is DelegatedAgentJobStatus.CANCELLED
+    assert runtime.cancellations == [ref.job_id]

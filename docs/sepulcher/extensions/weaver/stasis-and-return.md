@@ -44,9 +44,9 @@ Either verdict may win `AWAITING_CONSENT → QUEUED`; the resumed hop reads stor
 enqueue payload. Delegate return accepts only the terminal `AgentJob` owning the current wait.
 
 The winner allocates a fresh monotonic enqueue sequence; its queue key derives from Run and
-sequence. Publication failure or cancellation restores the exact wait while retaining the
-advanced sequence; a possibly escaped key is never reused. Duplicate verdicts and callbacks are
-inert.
+sequence. The status change and its pending delivery commit together. Publication failure leaves
+that exact queued hop for the startup/runtime relay; it does not recreate the wait or reuse a
+possibly escaped key. Duplicate verdicts and callbacks are inert.
 
 Bridge admits one approval call per model round. Resumed rounds may chain, bounded to three.
 Multiple approvals in one response create no consent row; they settle `DONE` with an honest
@@ -56,17 +56,21 @@ A missing checkpoint fails exactly as `stasis lost`. An invalid document fails t
 with validator text, not a stable public code. Pinned-manifest mismatch, including
 checkpoint-schema identifier drift, fails as `pinned Pattern unavailable`; [Pattern
 lifecycle](pattern-lifecycle.md) owns compatibility, migration, and refusal. Process death during
-`RUNNING` or `AWAITING_HARDWARE` fails rather than replays.
+`RUNNING` or `AWAITING_HARDWARE` never guesses a replay: startup recovers only an exact first-node
+Consent or delegate park, otherwise contains correlated effects before failing the Run.
 
-Pending consent survives startup; decided-but-unenqueued consent is re-fired. No startup recovery
-exists for `AWAITING_DELEGATE`; [Delegated agents](delegated-agents.md) owns that boundary.
+An exact pending or already-decided Consent survives the pre-park startup window; decided parked
+consent is re-fired. The equivalent exact delegated checkpoint is parked, and startup also refreshes
+each durable delegated wait and re-admits it only when its exact owning job is terminal.
+[Delegated agents](delegated-agents.md) owns that boundary.
 
 ## Truth closes first
 
 For a worker terminal hop: commit the ledger, release context, attempt checkpoint deletion, then
 publish one terminal `DONE` from committed status and close. Failed deletion leaves
-terminal truth intact as manual cleanup debt; no automatic checkpoint sweep exists. API
-cancellation orders its writer as abort, commit `CANCELLED`, publish and close, then delete stasis.
+terminal truth intact as cleanup debt; startup retries terminal checkpoint deletion in bounded
+keyset pages. API cancellation orders its writer as parent abort, final child/Consent sweep, commit
+`CANCELLED`, publish and close, then delete stasis.
 Competing writers converge on one terminal event. A retained checkpoint cannot make a terminal
 Run resumable. [Checkpoint
 ownership](../../../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) owns the worker path.
@@ -78,6 +82,6 @@ external effect.
 [Topology-A local runs](../../../state-of-the-work.md#topology-a-local-runs) are **Available**.
 [Graph Stasis and consent re-admission](../../../state-of-the-work.md#graph-stasis-consent) and
 [delegated execution](../../../state-of-the-work.md#delegated-agent-execution) are **Partial**.
-Postgres restart proof, schema migration, outbox, distributed fencing, periodic recovery, and
-automatic checkpoint cleanup remain absent. [Workers](../../../adr/14-workers.md) owns custody;
+Real checkpoint-plus-Consent/delegate restart proof, distributed fencing, and general periodic
+workflow recovery remain absent. [Workers](../../../adr/14-workers.md) owns custody;
 [Weaver](index.md) routes the subsystem.
