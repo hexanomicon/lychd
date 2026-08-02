@@ -123,6 +123,9 @@ class DbDelegatedAgentJobStore:
         job_id: str,
         status: DelegatedAgentJobStatus,
     ) -> tuple[DelegatedAgentJob, bool]:
+        if status in TERMINAL_DELEGATED_AGENT_STATUSES:
+            msg = f"Terminal delegated-agent status {status.value!r} requires adopt() or cancel() evidence."
+            raise IllegalDelegatedAgentTransitionError(msg)
         async with self._session_factory() as session, session.begin():
             row = await self._require_locked(session, job_id)
             current = DelegatedAgentJobStatus(row.status)
@@ -157,8 +160,25 @@ class DbDelegatedAgentJobStore:
             return await self._view(session, row), True
 
     async def cancel(self, job_id: str) -> tuple[DelegatedAgentJob, bool]:
-        result = DelegatedAgentResult(job_id=job_id, status=DelegatedAgentJobStatus.CANCELLED)
-        return await self.adopt(job_id, result)
+        """Settle cancellation, including a LOST job with uncertain liveness."""
+        async with self._session_factory() as session, session.begin():
+            row = await self._require_locked(session, job_id)
+            current = DelegatedAgentJobStatus(row.status)
+            if current in TERMINAL_DELEGATED_AGENT_STATUSES and current is not DelegatedAgentJobStatus.LOST:
+                return await self._view(session, row), False
+            if DelegatedAgentJobStatus.CANCELLED not in LEGAL_DELEGATED_AGENT_TRANSITIONS[current]:
+                msg = f"Illegal delegated-agent transition for {job_id}: {current} → cancelled"
+                raise IllegalDelegatedAgentTransitionError(msg)
+            result = DelegatedAgentResult(job_id=job_id, status=DelegatedAgentJobStatus.CANCELLED)
+            row.status = result.status.value
+            row.result = result.model_dump(mode="json")
+            await self._append(
+                session,
+                row,
+                DelegatedAgentEventKind.STATUS_CHANGED,
+                result.status,
+            )
+            return await self._view(session, row), True
 
     async def events(self, job_id: str, *, after_seq: int = -1) -> tuple[DelegatedAgentEvent, ...]:
         from lychd.db.models import DelegatedAgentEventRecord, DelegatedAgentJobRecord

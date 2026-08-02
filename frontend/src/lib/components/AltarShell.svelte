@@ -1,13 +1,15 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { asset, resolve } from "$app/paths";
   import { onMount } from "svelte";
 
   import { getAltarStatus } from "$lib/api/client";
 
   let { children } = $props();
-  let pending = $state(0);
+  let pending = $state<number | null>(null);
   let omens = $state<Array<{ id: number; text: string; fault: boolean }>>([]);
   let nextOmen = 0;
+  let attentionVersion = 0;
 
   const instruments = [
     { slug: "bridge", label: "Bridge", plain: "Talk" },
@@ -16,10 +18,10 @@
     { slug: "loom", label: "Loom", plain: "Patterns" }
   ] as const;
 
-  function attention(event: Event) {
-    const value = (event as CustomEvent<number>).detail;
-    if (Number.isInteger(value)) pending = value;
-    else void refreshAttention();
+  function attention(_event: Event) {
+    // Instrument events are invalidation hints; only the shell status endpoint
+    // owns the cross-session count.
+    void refreshAttention();
   }
 
   function receiveOmen(event: Event) {
@@ -38,9 +40,13 @@
   }
 
   async function refreshAttention() {
+    const version = ++attentionVersion;
     try {
-      pending = (await getAltarStatus()).pending_consents;
+      const next = (await getAltarStatus()).pending_consents;
+      if (version === attentionVersion) pending = next;
     } catch (error) {
+      if (version !== attentionVersion) return;
+      pending = null;
       raiseOmen(error instanceof Error ? error.message : "The Altar cannot be reached.");
     }
   }
@@ -50,6 +56,7 @@
     window.addEventListener("altar:attention", attention);
     window.addEventListener("altar:omen", receiveOmen);
     return () => {
+      attentionVersion++;
       window.removeEventListener("altar:attention", attention);
       window.removeEventListener("altar:omen", receiveOmen);
     };
@@ -67,7 +74,7 @@
   <nav class="instruments" aria-label="Instruments">
     {#each instruments as instrument (instrument.slug)}
       <a
-        href="/{instrument.slug}"
+        href={resolve(`/${instrument.slug}`)}
         aria-current={page.url.pathname.startsWith(`/${instrument.slug}`) ? "page" : undefined}
       >
         <span>{instrument.label}</span>
@@ -77,8 +84,12 @@
   </nav>
 
   <div class="spacer"></div>
-  <a class="sigil" data-state={pending > 0 ? "lit" : "dormant"} href="/bridge">
-    ⬡ {pending > 0 ? `${pending} awaiting` : "Consent clear"}
+  <a
+    class="sigil"
+    data-state={pending === null ? "unknown" : pending > 0 ? "lit" : "dormant"}
+    href={resolve("/bridge")}
+  >
+    ⬡ {pending === null ? "Consent status unknown" : pending > 0 ? `${pending} awaiting` : "Consent clear"}
   </a>
   <span class="sigil-identity" title="Fixed local authority context; not authentication">
     Local Sigil · <b>Magus</b>
@@ -92,7 +103,7 @@
 <footer class="legal-links">
   <span>Altar {__LYCHD_ALTAR_VERSION__.slice(0, 12)}</span>
   <a href={__LYCHD_SOURCE_URL__} rel="noreferrer">{__LYCHD_SOURCE_LABEL__}</a>
-  <a href="/THIRD_PARTY_NOTICES.txt">Third-party notices</a>
+  <a href={asset("/THIRD_PARTY_NOTICES.txt")}>Third-party notices</a>
 </footer>
 
 <div class="omen-stack" role="status" aria-live="polite">

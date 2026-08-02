@@ -15,8 +15,9 @@ owns engine construction, codecs, transactions, migrations, and schema admission
 the meaning and lifecycle of its records.
 
 [First-light persistence](../../state-of-the-work.md#phylactery-first-light) is **Partial**:
-repository shapes and memory-profile behavior exist, but no production-factory PostgreSQL
-lifecycle, full adapter parity, or transactional outbox is proved.
+repository shapes, memory-profile behavior, a transactional Run-delivery outbox, and a disposable
+two-boot PostgreSQL application-factory lifecycle are proved. Full adapter parity, a transactional
+Step-event outbox, and real host/model/browser receipts are not.
 
 ## The Anatomy of Memory
 
@@ -24,8 +25,11 @@ The current Phylactery uses the configured database's default schema and search 
 
 1. **`public` (The State):** Migration `0001_phylactery_first_light` raises `session`, `run`,
    `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and
-   `codex_preauthorization`. `run` is authoritative lifecycle truth; ordered `step` rows are a
-   best-effort evidence projection.
+   `codex_preauthorization`; migration `0004_run_delivery_outbox` adds the exact publication intent
+   for each Run hop, migrations `0005` and `0006` refine preauthorization order and Rune presence,
+   and migration `0007_nexus_swap_admission` adds the operator transition duplicate-effect fence.
+   `run` is authoritative lifecycle truth; ordered `step` rows are a best-effort evidence
+   projection.
 2. **`run_checkpoint`:** one replaceable JSONB document per Run, holding the complete validated
    Graph snapshot history. It is distinct from the Run/Step ledger, contains no runtime
    dependencies or event stream, and cascades with its Run.

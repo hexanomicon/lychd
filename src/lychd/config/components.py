@@ -78,12 +78,13 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
 
     ``runs`` carries interactive graph runs; ``rites`` carries background rites.
     Both register `perform_run` so rite-routed intents (`source="rite"` → ``rites``)
-    are claimable. ``extra_tasks`` still extends the rite task list (Wave-1 contract).
+    are claimable. Startup owns reconciliation because it supplies the boot cutoff;
+    it is deliberately not a broker-callable task. ``extra_tasks`` still extends
+    the rite task list (Wave-1 contract).
     """
     rite_tasks = [
         "lychd.ghouls.runs.perform_run",
         "lychd.ghouls.rites.perform_rite",
-        "lychd.ghouls.runs.reconcile_runs",
         *extra_tasks,
     ]
     return SAQConfig(
@@ -94,7 +95,7 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
             QueueConfig(
                 name="runs",
                 dsn=database_saq_dsn(settings.server.database),
-                tasks=["lychd.ghouls.runs.perform_run", "lychd.ghouls.runs.reconcile_runs"],
+                tasks=["lychd.ghouls.runs.perform_run"],
                 concurrency=settings.server.jobs.interactive_concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
                 startup=worker_startup,

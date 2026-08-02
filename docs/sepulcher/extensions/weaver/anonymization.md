@@ -16,7 +16,8 @@ and refusal; this page owns the journey through the score.
 !!! warning "Designed, not delivered"
     Current LychD censors secret-shaped values only in stored consent projections. It has no
     general Privatization Label, Privacy Agent, Privacy Cut, `TransformationReceipt`, or Portal
-    Egress Gate. Declaring a Portal still makes it an ordinary dispatch candidate.
+    Egress Gate. Portal declarations and probes remain observable, but Dispatcher quarantines both
+    family and direct-key Portal dispatch until that typed path exists.
 
 ## The leverage of a local boundary
 

@@ -77,5 +77,6 @@ async def test_graph_runner_checkpoints_and_parks_delegated_agent_signal() -> No
 def test_delegated_wait_has_only_resume_or_cancel_edges() -> None:
     assert can_transition(RunStatus.RUNNING, RunStatus.AWAITING_DELEGATE)
     assert can_transition(RunStatus.AWAITING_DELEGATE, RunStatus.QUEUED)
-    assert can_transition(RunStatus.AWAITING_DELEGATE, RunStatus.CANCELLED)
+    assert can_transition(RunStatus.AWAITING_DELEGATE, RunStatus.CANCELLING)
+    assert can_transition(RunStatus.CANCELLING, RunStatus.CANCELLED)
     assert not can_transition(RunStatus.AWAITING_DELEGATE, RunStatus.DONE)

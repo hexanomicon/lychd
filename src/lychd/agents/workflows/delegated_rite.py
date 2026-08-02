@@ -169,7 +169,9 @@ DELEGATED_RITE = Workflow(
     manifest=PatternManifest(
         key="delegated_rite",
         revision="1",
+        implementation_revision="py.1",
         checkpoint_schema="delegated-rite-state-v1",
+        entry_node="dispatch_delegate",
         nodes=(
             PatternNode(
                 key="dispatch_delegate",

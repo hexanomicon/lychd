@@ -11,6 +11,7 @@ import pytest
 from litestar import Litestar
 from litestar.datastructures import State
 
+from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.codex.middleware import sigil_auth_middleware
@@ -18,6 +19,7 @@ from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.delegation.services import DelegatedAgentCoordinator, InMemoryDelegatedAgentJobStore
 from lychd.domain.orchestration.journal import TransitionJournal
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -26,6 +28,7 @@ from lychd.domain.web.contracts import CsrfClientContract
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.projection import EventProjector
 from lychd.domain.web.sessions import BridgeSessionStore, RunHandle
+from lychd.domain.web.swap_requests import InMemorySwapRequestLedger
 from lychd.domain.web.tickets import TicketStore
 from lychd.extensions.manager import ExtensionManager
 from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController, OrbController
@@ -77,10 +80,13 @@ class FakeRunEngine(RunEngine):
     (isinstance-based) accepts it; the dataclass initializer is intentionally bypassed.
     """
 
-    def __init__(self, bus: InProcessEventBus, consents: Any = None) -> None:
+    def __init__(self, bus: InProcessEventBus, consents: Any = None, ledger: InMemoryRunLedger | None = None) -> None:
         self.bus = bus
         self.submitted: list[Any] = []
         self.consents = consents
+        self.ledger = ledger
+        self.admitted_keys: dict[str, str] = {}
+        self.cancelled_runs: list[str] = []
         # (consent_id, approved, verdict_seen_at_approve_time) — verdict-order proof.
         self.approvals: list[tuple[str, bool, bool | None]] = []
 
@@ -89,7 +95,26 @@ class FakeRunEngine(RunEngine):
         seen = await self.consents.verdict(consent_id) if self.consents is not None else None
         self.approvals.append((consent_id, approved, seen))
 
-    async def submit(self, intent: Any, *, retain_before_publish: Any = None) -> RunHandle:
+    async def cancel(self, run_id: str, *, orphaned: bool = False) -> None:
+        """Mirror idempotent terminal truth for Bridge controller tests."""
+        _ = orphaned
+        self.cancelled_runs.append(run_id)
+        if self.ledger is None:
+            return
+        run = await self.ledger.get(run_id)
+        if run is None or run.status in {RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED}:
+            return
+        elected = await self.ledger.begin_cancel(run_id)
+        if elected is not None:
+            await self.ledger.finish_cancel(run_id, enqueue_seq=elected.enqueue_seq)
+
+    async def submit(
+        self,
+        intent: Any,
+        *,
+        retain_before_publish: Any = None,
+        idempotency_key: str | None = None,
+    ) -> RunHandle:
         """Record the intent and open a run channel on the bus for the stream to tail.
 
         S3: mirror the real engine — the run id is minted here (the ledger's job),
@@ -97,9 +122,13 @@ class FakeRunEngine(RunEngine):
         """
         import uuid
 
-        self.submitted.append(intent)
-        run_id = intent.run_id or f"run_{uuid.uuid4().hex[:12]}"
-        if retain_before_publish is not None:
+        existing_run_id = self.admitted_keys.get(idempotency_key) if idempotency_key is not None else None
+        run_id = existing_run_id or intent.run_id or f"run_{uuid.uuid4().hex[:12]}"
+        if existing_run_id is None:
+            self.submitted.append(intent)
+        if idempotency_key is not None:
+            self.admitted_keys[idempotency_key] = run_id
+        if existing_run_id is None and retain_before_publish is not None:
             await retain_before_publish(run_id)
         return RunHandle(
             run_id=run_id,
@@ -227,6 +256,7 @@ def fake_services() -> SimpleNamespace:
     consents = InMemoryConsentLedger()
     fragments = build_fragment_registry()
     tickets = TicketStore()
+    swap_requests = InMemorySwapRequestLedger()
     # honor_intent_run_id: test-only seam so SSE tests can seed runs keyed by a stable
     # id (R4: production always mints; identity is the ledger's, not the advisory field).
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
@@ -237,6 +267,7 @@ def fake_services() -> SimpleNamespace:
         runtimes=dict(extension_context.delegated_runtimes.runtime_adapters),
         store=InMemoryDelegatedAgentJobStore(),
     )
+    workflows = builtin_workflow_registry()
     return SimpleNamespace(
         registry=FakeRegistry(),
         dispatcher=None,
@@ -247,7 +278,9 @@ def fake_services() -> SimpleNamespace:
         bridge_sessions=sessions,
         consents=consents,
         tickets=tickets,
-        run_engine=FakeRunEngine(bus, consents),
+        swap_requests=swap_requests,
+        workflows=workflows,
+        run_engine=FakeRunEngine(bus, consents, ledger),
         projector=projector,
         ledger=ledger,
         bus=bus,

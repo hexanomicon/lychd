@@ -7,7 +7,8 @@ import pytest
 
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
-from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelSurface
+from lychd.domain.animation.links import Link
+from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelInfo, ModelSurface
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.runtimes.shared import transmute_single_soulstone_quadlet
@@ -31,6 +32,27 @@ def _runtime_registry() -> RuntimeAdapterRegistry:
         settings=get_settings(),
         adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
     )
+
+
+def test_runtime_adapter_selection_uses_exact_declared_owner() -> None:
+    class BroadAdapter(VllmRuntimeAdapter):
+        runtime = "broad"
+
+        def supports(self, runtime: str) -> bool:
+            _ = runtime
+            return True
+
+    broad = BroadAdapter()
+    exact = VllmRuntimeAdapter()
+    registry = RuntimeAdapterRegistry(adapters=[broad, exact])
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "exact-vllm",
+            "model_path": "/models/exact.gguf",
+        }
+    )
+
+    assert registry.adapter_for(soulstone) is exact
 
 
 def _build_llamacpp_connector(soulstone: LlamaCppSoulstoneConfig) -> tuple[LlamacppConnector, RuntimePlan]:
@@ -58,6 +80,32 @@ def _build_sglang_connector(soulstone: SglangSoulstoneConfig) -> tuple[OpenAICom
     connector = runtime.connector
     assert isinstance(connector, OpenAICompatibleConnector)
     return connector, registry.plan(soulstone)
+
+
+def test_openai_compatible_model_inventory_is_detached_on_admission_and_read() -> None:
+    supplied = ModelInfo(
+        id="canonical",
+        modalities_in=["text"],
+        metadata={"provider": {"revision": "one"}},
+    )
+    connector = OpenAICompatibleConnector(
+        kind="portal:test",
+        link=Link(up=True),
+        base_url="http://127.0.0.1:8000/v1",
+        model_infos=(supplied,),
+    )
+
+    supplied.id = "forged-at-admission"
+    supplied.modalities_in.append("image")
+    first = connector.list_models()[0]
+    first.id = "forged-at-read"
+    first.modalities_in.append("audio")
+    first.metadata["provider"]["revision"] = "forged"
+
+    retained = connector.list_models()[0]
+    assert retained.id == "canonical"
+    assert retained.modalities_in == ["text"]
+    assert retained.metadata == {"provider": {"revision": "one"}}
 
 
 def test_llamacpp_single_mode_plan() -> None:

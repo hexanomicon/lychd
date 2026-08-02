@@ -59,9 +59,27 @@ def test_constraints_args_allowlist() -> None:
 
 
 def test_constraints_path_prefixes() -> None:
-    constraints = {"path_prefixes": ["/home/lych/work"]}
+    constraints = {"path_prefixes": {"path": ["/home/lych/work"]}}
     assert constraints_admit(constraints, {"path": "/home/lych/work/x"}) is True
     assert constraints_admit(constraints, {"path": "/etc/passwd"}) is False
+    assert constraints_admit(constraints, {"path": "/home/lych/work-evil/x"}) is False
+    assert constraints_admit(constraints, {"path": "/home/lych/work/../secrets"}) is False
+    assert constraints_admit(constraints, {"nested": {"path": "/home/lych/work/x"}}) is False
+    assert constraints_admit(constraints, {}) is False
+
+
+@pytest.mark.parametrize(
+    "constraint",
+    [
+        {"path_prefixes": []},
+        {"path_prefixes": {}},
+        {"path_prefixes": {"path": []}},
+        {"path_prefixes": {"path": ["relative/root"]}},
+        {"path_prefixes": {"path": ["/home/lych/../root"]}},
+    ],
+)
+def test_constraints_path_prefixes_reject_malformed_authority(constraint: dict[str, object]) -> None:
+    assert constraints_admit(constraint, {"path": "/home/lych/work/x"}) is False
 
 
 # -- ZTE bounded invariant --------------------------------------------------
@@ -107,6 +125,28 @@ async def test_preauth_auto_grants() -> None:
     assert decision.status == "granted"
     assert decision.preauth_slug == "p"
     assert await ledger.verdict(decision.consent_id) is True
+
+
+@pytest.mark.asyncio
+async def test_overlapping_preauths_use_priority_then_slug_not_input_order() -> None:
+    ledger = InMemoryConsentLedger(
+        preauths=[
+            _preauth(slug="z-low", priority=10),
+            _preauth(slug="z-tie", priority=80),
+            _preauth(slug="a-tie", priority=80),
+        ]
+    )
+
+    decision = await ledger.park(
+        run_id="r-priority",
+        tool_name="request_coven_swap",
+        tool_call_id="c-priority",
+        call_ids=("c-priority",),
+        args={},
+        sigil=_sigil(),
+    )
+
+    assert decision.preauth_slug == "a-tie"
 
 
 @pytest.mark.asyncio
@@ -156,3 +196,30 @@ async def test_park_pending_then_decide() -> None:
     again = await ledger.decide(decision.consent_id, approved=False, decided_by="other")
     assert again is not None
     assert again.status == "granted"
+
+
+@pytest.mark.asyncio
+async def test_pending_views_are_scoped_to_named_runs() -> None:
+    ledger = InMemoryConsentLedger()
+    sigil = Sigil(name="magus", scopes=frozenset({"*"}))
+    visible = await ledger.park(
+        run_id="run-visible",
+        tool_name="visible",
+        tool_call_id="call-visible",
+        call_ids=("call-visible",),
+        args={},
+        sigil=sigil,
+    )
+    await ledger.park(
+        run_id="run-hidden",
+        tool_name="hidden",
+        tool_call_id="call-hidden",
+        call_ids=("call-hidden",),
+        args={},
+        sigil=sigil,
+    )
+
+    views = await ledger.pending_views_for_runs(frozenset({"run-visible"}))
+
+    assert [view.id for view in views] == [visible.consent_id]
+    assert await ledger.pending_count() == 2

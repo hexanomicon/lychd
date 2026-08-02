@@ -49,8 +49,8 @@ evict-idle) only counts selected evictees in total_metabolic_cost. It measures n
 context rebuild, thermal state, topology, bandwidth, transition peak, or tier substitution.
 
 After refreshing every managed Animator, the current policy gives NO_OP to a warm/open target,
-SOFT_SWAP to a started but non-warm runtime, HARD_SWAP to a down dedicated runtime, and refuses a
-down shared/non-managed runtime. A hard plan selects active exact neighbours of the undirected
+SOFT_SWAP to a started but non-warm dedicated runtime, HARD_SWAP to a down dedicated runtime, and
+refuses every non-warm shared/non-managed runtime. A hard plan selects active exact neighbours of the undirected
 conflict_domains graph. Omitted conflict on dedicated non-resident means conservative
 default-exclusive; only explicit [] claims coexistence. Coven membership aggregates metadata: it
 never creates or relaxes conflicts. Bind rejects unadvertised Soulstones, conflicting Covens, and
@@ -87,12 +87,18 @@ Animator drains because a dynamic load can unload another model behind a lease. 
 non-WARM/non-WARMING capability asks its canonical adapter to activate; WARMING and static
 started routes merely await honest warmth.
 
-Dispatcher never asks this of a shared non-warm route. Direct surfaces retain a narrower gap:
-they test runtime_started before dedicated, so an explicit already-started shared dynamic Animator
-can enter SOFT_SWAP; that violates the ownership law and is not support evidence.
+Dispatcher never asks this of a shared non-warm route. Direct surfaces enforce the same ownership
+boundary before considering runtime-started convergence, so an already-started shared dynamic
+Animator cannot enter SOFT_SWAP.
 
 llama.cpp router and ExLlamaV3/TabbyAPI prove the seam in repository tests, not live model/GPU
-operation; State records their Operator-validation receipts. One warm-up deadline bounds observation.
+operation; State records their Operator-validation receipts. One absolute warm-up deadline bounds
+the complete target convergence operation: initial refresh, optional adapter activation, accepted-
+activation refresh, and final WARM polling. That same deadline bounds post-stop cold observation of every evictee. A hung probe therefore enters
+typed compensation or containment instead of holding closed admission and claim gates forever.
+Cancellation or failure during adapter activation or its accepted-state refresh invokes bounded
+adapter abandonment before the canonical error is propagated; repeated caller cancellation cannot
+interrupt that cleanup.
 Soft activation has no sufficient prior model state for a trustworthy inverse: failure leaves its
 claim and admission gates closed for operator recovery.
 
@@ -120,7 +126,9 @@ not a signed remote protocol.
 Unclaimed publication may be retracted after claim deadline. Claimed cancellation/timeout does not
 prove systemd stopped; wait for terminal classification. Exact desired state wins even after a bad
 client return; exact prior state is restored; otherwise one typed compensation must prove exact
-restoration. Rejected/contained or unresolved compensation fails closed. Direct containment latches
+restoration. Once compensation starts, repeated caller cancellation cannot abandon it; the inverse
+finishes before cancellation is propagated and admission can reopen. Rejected/contained or
+unresolved compensation fails closed. Direct containment latches
 only process lifetime; Reactor .processing/.contained survive and fence startup/effects until
 operator recovery. Inert private-systemd tests prove ordering, not Quadlet/Podman/GPU embodiment.
 
@@ -152,8 +160,7 @@ failure seeks one exact inverse; post-submission cancellation waits for settleme
 failure contains; unknown worlds are operator-owned. Conflict topology is Available in focused
 tests; transition protocol and Nexus tickets are Partial; Host Reactor protocol has inert
 private-systemd evidence; real host/model runtimes need Operator validation; resource-aware Whim,
-tiering, swarm preemption, watchdog, and repair are Designed. The direct shared-dynamic admission
-gap remains open.
+tiering, swarm preemption, watchdog, and repair are Designed.
 
 ## Consequences
 

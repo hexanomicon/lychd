@@ -85,3 +85,26 @@ async def test_capacity_refusal_cancels_unadmitted_task_without_evicting_active_
     release.set()
     await active
     await store.aclose()
+
+
+@pytest.mark.asyncio
+async def test_capacity_reservation_fences_the_durable_admission_await() -> None:
+    store = TicketStore(capacity=1)
+    store.reserve_capacity("request-first")
+
+    with pytest.raises(TicketCapacityError):
+        store.reserve_capacity("request-second")
+
+    task = asyncio.create_task(asyncio.sleep(0))
+    record = store.open(
+        target="chat:first",
+        action_type="SOFT_SWAP",
+        total_metabolic_cost=1.0,
+        task=task,
+        reservation="request-first",
+    )
+    await task
+
+    assert store.get(record.id) is record
+    store.release_capacity("request-first")  # idempotent after consumption
+    await store.aclose()

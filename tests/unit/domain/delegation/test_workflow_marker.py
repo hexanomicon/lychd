@@ -40,7 +40,9 @@ def _workflow() -> Workflow:
         manifest=PatternManifest(
             key="delegated",
             revision="1",
+            implementation_revision="py.test.1",
             checkpoint_schema="delegated-v1",
+            entry_node="delegate",
             nodes=(
                 PatternNode(
                     key="delegate",
@@ -50,7 +52,10 @@ def _workflow() -> Workflow:
                 ),
                 PatternNode(key="end", label="End", kind="terminal"),
             ),
-            edges=(PatternEdge(key="delegate-to-end", source="delegate", target="end"),),
+            edges=(
+                PatternEdge(key="delegate-reentry", source="delegate", target="delegate"),
+                PatternEdge(key="delegate-to-end", source="delegate", target="end"),
+            ),
         ),
     )
 

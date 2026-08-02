@@ -28,6 +28,7 @@ delivery evidence, a dependency, or permission to copy upstream design.
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
 | `pydantic-ai` | `README.md`, then `docs/agents.md`, `docs/graph/`, `docs/durable_execution/`, `docs/evals/`, or `docs/ui/` | Pydantic AI Agent, graph, durable execution, evaluation, MCP/A2A, approval, or event-stream behavior matters |
+| `deepfabric` | `README.md`, then `docs/`, `src/`, or one focused evaluation path | Comparing synthetic-data admission, real tool execution, training preparation, or evaluation without treating generated traces as truth |
 | `fasta2a` | `README.md`, then `fasta2a/` and focused tests | A2A task, storage, broker, worker, artifact, or ASGI behavior matters |
 | `avp-spec` | `README.md`, `SPECIFICATION.md`, then `protocol/` or `schemas/` | Evaluating the experimental Agent Vector Protocol, latent/KV transfer, transport, or security contract |
 | `avp-python` | `README.md`, then `docs/`, `src/avp/`, `tests/`, or `benchmarks/` | Inspecting an AVP implementation, connector, codec, context store, transport, or benchmark |
@@ -53,10 +54,23 @@ authorization, semantics, and retained evidence.
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
 | `litestar` | `README.md`, then `docs/`, `litestar/`, or focused tests at the installed tag | Exact Litestar application, middleware, OpenAPI, dependency, exception, or lifecycle behavior matters |
+| `advanced-alchemy` | `README.md`, then `docs/`, `advanced_alchemy/`, or focused tests | Exact async repository, service, transaction, migration-plugin, or Litestar integration behavior matters |
+| `litestar-saq` | `README.md`, then `docs/`, `litestar_saq/`, or focused tests | Exact Litestar worker startup, shutdown, queue, process, or lifespan behavior matters |
 | `awesome-litestar` | `README.md` and its exact category | Discovering current Litestar ecosystem projects before verifying them at their primary source |
 | `litestar-fullstack` | `README.md`, then `docs/usage/`, `src/app/`, or focused tests | Comparing Litestar, SQLAlchemy, SAQ, Structlog, Granian, CLI, auth, or deployment patterns; its React/Jinja frontend is not Altar guidance |
 | `saq` | `README.md`, then `docs/`, `saq/queue/`, or tests | SAQ queue, worker, scheduling, Postgres/Redis, job status, retry, or web-monitor behavior matters |
+| `sqlalchemy` | `README.rst`, then `doc/`, `lib/sqlalchemy/`, or focused tests | Exact async transaction, row-lock, session, engine, pool, dialect, or ORM behavior matters |
+| `alembic` | `README.rst`, then `docs/`, `alembic/`, or focused tests | Migration ordering, online/offline execution, revision graphs, or transactional DDL behavior matters |
+| `testcontainers-python` | `README.md`, then `docs/`, `core/`, or the Postgres module | A real disposable PostgreSQL acceptance harness is being designed or diagnosed |
 | `pydantic-ai` | Select the matching public docs/source area above | Implementing the installed agent/graph runtime after checking `.venv` and the lockfile first |
+
+## Containment and Host Runtime
+
+| Reference | Cheapest edge | Useful when |
+|---|---|---|
+| `nono` | `README.md`, then `docs/`, `crates/`, or focused tests | Designing or verifying Coffin filesystem, network, credential, process-tree, audit, or rollback containment |
+| `podman` | `README.md`, then `docs/`, `cmd/podman/`, or focused tests | Exact rootless Podman, Quadlet, container lifecycle, socket, or systemd integration behavior matters |
+| `playwright` | `README.md`, then `docs/src/`, `packages/playwright-test/`, or focused tests | Real-browser acceptance, accessibility, routing, focus, screenshots, or cross-engine behavior matters |
 
 ## Local Inference, Hardware, and Packaging
 
@@ -64,6 +78,10 @@ authorization, semantics, and retained evidence.
 |---|---|---|
 | `club-3090` | `README.md`, then the matching `docs/`, `docs/engines/`, or `models/<name>/` page | Comparing RTX 3090 serving, vLLM, llama.cpp, SGLang, long-context, VRAM, or benchmark recipes |
 | `ramalama` | `README.md`, then one matching `docs/*.md`, source, or test | Comparing Podman-based model serving, image/model handling, CLI, Quadlet, or container behavior |
+| `llama.cpp` | `README.md`, then `docs/`, `examples/`, or focused server tests | Exact llama.cpp build, server API, model loading, multimodal, cancellation, or runtime behavior matters |
+| `vllm` | `README.md`, then `docs/`, `vllm/`, or focused tests | Exact vLLM serving, scheduling, OpenAI-compatible API, resource, or model behavior matters |
+| `sglang` | `README.md`, then `docs/`, `python/sglang/`, or focused tests | Exact SGLang serving, scheduling, API, resource, or model behavior matters |
+| `exllamav3` | `README.md`, then `docs/`, source, or focused tests | Exact ExLlamaV3 model, quantization, cache, server, or runtime behavior matters |
 | `llm-compressor` | `pyproject.toml`, `quantize.py`, and `sparse_logs/` | Inspecting a local uncommitted GPTQ/llmcompressor experiment only; it has no upstream remote or committed history |
 | `localllama-insights` | `README.md`, then one named article | Finding community leads about inference, quantization, or hardware; every claim is unverified Reddit-derived material |
 
@@ -78,15 +96,13 @@ number, patch, or compatibility claim.
 
 ## Frontend and Graph Rendering
 
-Route the seven Svelte directories through
+Route the five current Svelte directories through
 [`svelte-stack.md`](../references/svelte-stack.md):
 
 - `svelte`
 - `sveltekit`
-- `svelte-ai`
 - `svelte-ai-tools`
 - `svelte-docs`
-- `svelte-flow-docs`
 - `xyflow`
 
 Load [`svelte.md`](svelte.md) first for the official MCP/autofixer workflow and LychD drift gates.

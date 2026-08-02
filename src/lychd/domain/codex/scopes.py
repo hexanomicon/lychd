@@ -1,7 +1,7 @@
 """Scope grammar (wave4-design §3.2): `scopes_satisfied` + `_scope_match`.
 
 Case-sensitive `fnmatch` over `resource:action` tokens. Core vocabulary:
-`altar:read`, `runs:submit`, `runs:approve`, `orchestrator:transition`,
+`altar:read`, `runs:submit`, `runs:approve`, `runs:cancel`, `orchestrator:transition`,
 `codex:administer`, `privilege:escalate`; extension scopes read `ext/{id}:{action}`.
 A held `"*"` grants everything; a held `"runs:*"` grants any `runs` action only.
 """

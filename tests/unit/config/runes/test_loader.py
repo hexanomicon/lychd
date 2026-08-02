@@ -94,12 +94,12 @@ def test_source_file_binding_rejects_rebinding(tmp_path: Path) -> None:
         instance.bind_source_file(tmp_path / "beta.toml")
 
 
-def test_source_file_binding_rejects_branch_classes(tmp_path: Path) -> None:
-    """Only leaf rune classes become file-backed runes."""
+def test_source_file_binding_does_not_consult_global_subclasses(tmp_path: Path) -> None:
+    """Mechanical provenance binding is independent of imported subclasses."""
+    target = tmp_path / "parent.toml"
     instance = ParentConfig()
 
-    with pytest.raises(TypeError, match="Branch rune class"):
-        instance.bind_source_file(tmp_path / "parent.toml")
+    assert instance.bind_source_file(target).source_file == target
 
 
 def test_loaded_runes_are_frozen(tmp_path: Path) -> None:
@@ -167,8 +167,8 @@ def test_loader_rejects_legacy_model_envelope(tmp_path: Path) -> None:
         loader.load_all([LeafConfig])
 
 
-def test_loader_rejects_branch_rune_files(tmp_path: Path) -> None:
-    """Branch rune classes are namespaces, not TOML owners."""
+def test_loader_rejects_files_owned_by_an_admitted_branch(tmp_path: Path) -> None:
+    """A schema admitted with its child is a namespace, not a TOML owner."""
     a = tmp_path / "test" / "tree" / "a.toml"
     a.parent.mkdir(parents=True, exist_ok=True)
     a.write_text('title = "one"\n', encoding="utf-8")
@@ -176,7 +176,20 @@ def test_loader_rejects_branch_rune_files(tmp_path: Path) -> None:
     loader = ConfigLoader(runes_dir=tmp_path)
 
     with pytest.raises(ValueError, match="cannot own TOML files"):
-        loader.load_all([ParentConfig])
+        loader.load_all([ParentConfig, ChildConfig])
+
+
+def test_unadmitted_subclass_does_not_change_leaf_ownership(tmp_path: Path) -> None:
+    """An unrelated imported child cannot alter an admitted schema generation."""
+    target = tmp_path / "test" / "tree" / "parent.toml"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text('title = "one"\n', encoding="utf-8")
+
+    loaded = ConfigLoader(runes_dir=tmp_path).load_all([ParentConfig])
+
+    assert len(loaded) == 1
+    assert type(loaded[0]) is ParentConfig
+    assert loaded[0].source_file == target
 
 
 def test_path_fragment_rejects_string_values() -> None:

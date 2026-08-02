@@ -194,6 +194,19 @@
   }
   .run-sigil__id { color: var(--color-bone); }
   .run-sigil a { color: var(--color-rune); text-decoration: none; }
+  .run-stop {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin-left: auto;
+    border: 1px solid var(--color-engraving);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--color-ember);
+    cursor: pointer;
+  }
+  .run-stop:disabled { opacity: .45; cursor: wait; }
   .body-crossing {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1015,6 +1028,11 @@
   .turn--agent[data-state="failed"] .turn__meta .who { color: var(--color-ember); }
   .turn--agent[data-state="failed"] .turn__body {
     border-color: color-mix(in srgb, var(--color-ember) 30%, var(--color-engraving));
+  }
+  .turn--agent[data-state="cancelled"] { opacity: .8; }
+  .turn--agent[data-state="cancelled"] .turn__body {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--color-ash) 45%, var(--color-engraving));
   }
   /* the failed-turn fault line: machine truth in glyph, ember, matte (law §1.5) */
   .turn__fault {

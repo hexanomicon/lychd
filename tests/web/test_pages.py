@@ -63,6 +63,29 @@ def test_altar_status_publishes_the_vessel_csrf_names(
 
 
 @pytest.mark.parametrize(
+    ("path", "method"),
+    [
+        ("/api/v1/bridge/consents/{consent_id}/decision", "post"),
+        ("/api/v1/nexus/plan", "get"),
+        ("/api/v1/nexus/swaps", "post"),
+        ("/api/v1/nexus/swaps/{ticket_id}", "get"),
+        ("/api/v1/nexus/swaps/{ticket_id}/events", "get"),
+        ("/api/v1/nexus/transitions/{request_id}", "get"),
+        ("/api/v1/loom/{workflow}", "get"),
+        ("/api/v1/loom/source/workflows/{workflow}", "get"),
+        ("/api/v1/loom/{pattern_id}/{revision}", "get"),
+        ("/api/v1/loom/source/patterns/{pattern_id}/{revision}", "get"),
+        ("/api/v1/orb/runs/{run_id}", "get"),
+    ],
+)
+def test_not_found_operations_publish_the_framework_error_contract(path: str, method: str) -> None:
+    exported = json.loads(_EXPORTED_OPENAPI.read_text(encoding="utf-8"))
+    schema = exported["paths"][path][method]["responses"]["404"]["content"]["application/json"]["schema"]
+
+    assert schema == {"$ref": "#/components/schemas/FrameworkError"}
+
+
+@pytest.mark.parametrize(
     "path",
     ["/bridge/session-x", "/loom/pattern-x/revision-1", "/orb/run-x"],
 )

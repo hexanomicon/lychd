@@ -1,14 +1,8 @@
-"""The `Intent` shape and the deterministic router (A5 §9).
+"""Cross-surface Intent and content contracts.
 
-Every surface (Bridge now; CLI and A2A later) enters through `RunEngine.submit`.
-The engine routes an `Intent` to a `Workflow` ONCE via the `WorkflowRegistry`
-(first-match `Trigger`), persists the choice on the run row, and enqueues the run
-onto SAQ — the graph executes only inside the `perform_run` ghoul.
-
-Wave 2 keystone: the old `submit()` (`asyncio.create_task`) is gone — its logic
-moved into `domain/cortex/engine.py` (`RunEngine`) and `ghouls/runs.py`
-(`perform_run`). Routing itself lives on `WORKFLOW_REGISTRY.route`; this module
-now owns only the cross-surface `Intent` shape.
+Every surface enters through ``RunEngine.submit``. The engine resolves an Intent once
+against its injected ``WorkflowRegistry``, persists the exact Pattern revision, and
+admits a durable delivery. Graph execution occurs only inside ``perform_run``.
 """
 
 from __future__ import annotations
@@ -56,7 +50,7 @@ class Intent(BaseModel):
     source: str = "bridge"
     sigil_name: str = Field(default="magus", min_length=1)
     sigil_scopes: frozenset[str] = Field(default_factory=frozenset)
-    priority: int | None = None  # None → the [orchestration.routing] per-source default
+    priority: int | None = Field(default=None, ge=0, le=100)  # None → the per-source default
 
     @model_validator(mode="after")
     def _default_text_content(self) -> Intent:

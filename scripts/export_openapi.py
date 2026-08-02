@@ -15,7 +15,7 @@ from lychd.interface.web import (
     OrbController,
 )
 from lychd.interface.web.deps import web_dependencies
-from lychd.interface.web.openapi import build_openapi_config
+from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "frontend" / "openapi.json"
@@ -32,6 +32,7 @@ def main() -> None:
             OrbController,
         ],
         dependencies=web_dependencies,
+        plugins=[StrictPydanticSchemaPlugin()],
         openapi_config=build_openapi_config(
             title="LychD Altar API",
             version="1",

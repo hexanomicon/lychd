@@ -1,4 +1,4 @@
-"""The run substrate ghoul (A4-U4): `perform_run` + `reconcile_runs`.
+"""Run execution, durable delivery repair, and restart reconciliation.
 
 `perform_run` is the SAQ task and the ONLY place a workflow graph executes: claim →
 RUNNING → build `WorkflowServices` + `GraphRunner` → iterate → events on the shared
@@ -6,26 +6,39 @@ RUNNING → build `WorkflowServices` + `GraphRunner` → iterate → events on t
 status). Topology A: it runs in-process on the web loop (`separate_process=False`),
 so the SSE handler and this task share one `RunEventBus`.
 
-`reconcile_runs` is a startup/periodic rite: a process that dies mid-run leaves a
-RUNNING row with no live task, so orphaned RUNNING rows are marked FAILED and their
-terminal `DONE` emitted — no run stays stuck in RUNNING across a restart.
-
-Consent is a Wave-1 placeholder: a run that parks a consent (via the ConsentLedger)
-ends AWAITING_CONSENT and emits NO `DONE`, so the live consent card survives in the
-open SSE stream. Honest park-and-resume is Wave 4 (spec-00-FINAL C3).
+`reconcile_runs` settles pre-boot active work and repairs exact durable deliveries.
+The lifespan runs it before admission and owns a bounded publication relay afterward.
+Consent and delegated waits exit without terminal `DONE`; a decided exact owner
+re-enters through a newly committed delivery hop and durable checkpoint.
 """
 
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Protocol
+from collections import deque
+from contextlib import suppress
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import structlog
 
-from lychd.domain.cortex.engine import admit_consent_resume, admit_delegate_resume, run_job_key
+from lychd.domain.cortex.engine import (
+    RUN_JOB_HEARTBEAT_S,
+    admit_consent_resume,
+    admit_delegate_resume,
+    contain_run_effects,
+    enqueue_run,
+    run_job_key,
+)
 from lychd.domain.cortex.graph_runner import GraphRunner, NodeOccurrenceEvent, TransitionTraceEvent
-from lychd.domain.cortex.runs import TERMINAL_STATUSES, IllegalRunTransitionError, RunParked, RunStatus
+from lychd.domain.cortex.runs import (
+    TERMINAL_STATUSES,
+    IllegalRunTransitionError,
+    RunDeliveryState,
+    RunParked,
+    RunStatus,
+)
 from lychd.domain.cortex.stasis import DurableStasisPhylactery, LiveStasisPhylactery
 from lychd.domain.cortex.substrate import get_run_substrate
 from lychd.domain.delegation.signals import DelegatedAgentParked
@@ -33,22 +46,31 @@ from lychd.lib.asyncio import complete_under_cancellation
 
 if TYPE_CHECKING:
     from lychd.agents.workflows.base import Workflow
+    from lychd.domain.cortex.engine import RunQueue
     from lychd.domain.cortex.events import RunEmitter
     from lychd.domain.cortex.ledger import RunLedger
-    from lychd.domain.cortex.runs import RunRecord
+    from lychd.domain.cortex.runs import RunDeliveryRecord, RunRecord
     from lychd.domain.cortex.substrate import RunSubstrate
     from lychd.extensions.protocols import PhylacteryProtocol
 
 logger = structlog.get_logger()
 
+DELIVERY_RELAY_INTERVAL_S = 1.0
+DELIVERY_RELAY_BATCH_SIZE = 32
+DELIVERY_BROKER_PROBE_TIMEOUT_S = 5.0
+DELEGATE_RELAY_INTERVAL_S = 2.0
+DELEGATE_RELAY_BATCH_SIZE = 32
+DELEGATE_PROBE_TIMEOUT_S = 10.0
+CONSENT_RELAY_INTERVAL_S = 2.0
+FAILURE_CONTAINMENT_ATTEMPTS = 3
+FAILURE_CONTAINMENT_RETRY_S = 0.05
+STARTUP_RECONCILIATION_BATCH_SIZE = 128
+RECONCILIATION_LOG_ID_LIMIT = 32
+RUN_JOB_HEARTBEAT_INTERVAL_S = RUN_JOB_HEARTBEAT_S / 4
+
 _FAILURE_MESSAGE = (
     "The summoning faltered — no capability answered. Ensure a chat Soulstone is bound and warm, then speak again."
 )
-
-# A QUEUED row older than this at reconcile time lost its enqueue (F3/F9/H2): the
-# `_enqueue` compensation should have failed it, but a crash between `create` and
-# `_enqueue` can strand it QUEUED with no live job. Sweep it to FAILED.
-RECONCILE_QUEUED_AFTER_S = 900
 
 
 def _substrate(ctx: dict[str, Any]) -> RunSubstrate:
@@ -87,19 +109,82 @@ async def _await_claim_gate(substrate: RunSubstrate) -> None:
         await gate.wait()
 
 
-async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/resume/park/fail path
+def _require_claimed_delivery(
+    delivery: RunDeliveryRecord | None,
+    *,
+    run_id: str,
+    enqueue_seq: int,
+) -> RunDeliveryRecord:
+    """Return exact claimed delivery authority or raise an invariant failure."""
+    if delivery is None or delivery.state is not RunDeliveryState.CLAIMED:
+        msg = f"claimed Run {run_id!r} has no authoritative delivery {enqueue_seq}"
+        raise RuntimeError(msg)
+    return delivery
+
+
+async def _refresh_run_job_heartbeat(job: Any, *, run_id: str) -> None:
+    """Keep SAQ's ACTIVE generation fresh while its graph hop is genuinely live."""
+    while True:
+        await asyncio.sleep(RUN_JOB_HEARTBEAT_INTERVAL_S)
+        try:
+            await job.update()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - broker uncertainty must expire fail-closed
+            logger.warning(
+                "run_job_heartbeat_failed",
+                run_id=run_id,
+                error=str(exc),
+            )
+
+
+async def perform_run(
     ctx: dict[str, Any],
     *,
     run_id: str,
-    resume: bool = False,
+    resume: bool | None = None,
     enqueue_seq: int | None = None,
 ) -> dict[str, Any]:
     """Execute one run's workflow graph. The ONLY graph-execution site.
 
-    A fresh hop iterates from the start node; a ``resume`` hop (a re-enqueued
-    consent verdict) resumes the durable checkpoint. The verdict is read from the
-    ConsentLedger inside `AwaitConsent` — never carried in a payload (C3).
+    A fresh hop iterates from the start node; a durable delivery marked ``resume``
+    resumes the checkpoint. The broker's legacy ``resume`` argument is accepted but
+    never trusted: mode authority lives in ``RunDelivery``. The consent verdict is
+    read from the ConsentLedger inside `AwaitConsent` — never carried in a payload.
+
+    Production SAQ contexts carry the active Job. Its heartbeat updater is owned by
+    this invocation and stops before the worker writes terminal broker truth. Test
+    contexts without a Job retain the same execution contract without broker effects.
     """
+    heartbeat_task: asyncio.Task[None] | None = None
+    job = ctx.get("job")
+    if callable(getattr(job, "update", None)):
+        heartbeat_task = asyncio.create_task(
+            _refresh_run_job_heartbeat(job, run_id=run_id),
+            name=f"run-heartbeat:{run_id}",
+        )
+    try:
+        return await _perform_run(
+            ctx,
+            run_id=run_id,
+            resume=resume,
+            enqueue_seq=enqueue_seq,
+        )
+    finally:
+        if heartbeat_task is not None:
+            heartbeat_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await heartbeat_task
+
+
+async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/resume/park/fail path
+    ctx: dict[str, Any],
+    *,
+    run_id: str,
+    resume: bool | None = None,
+    enqueue_seq: int | None = None,
+) -> dict[str, Any]:
+    """Execute one ledger hop after heartbeat ownership has been established."""
     substrate = _substrate(ctx)
     await _await_claim_gate(substrate)
     ledger = substrate.ledger
@@ -136,7 +221,15 @@ async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/r
     async def settle_terminal(status: RunStatus, *, error: str | None = None) -> None:
         """Commit terminal truth despite cancellation and preserve emit ownership."""
         nonlocal terminal_owned
-        settle_task = asyncio.ensure_future(_settle_terminal(ledger, run_id, status, error=error))
+        settle_task = asyncio.ensure_future(
+            _settle_terminal(
+                ledger,
+                run_id,
+                claim_enqueue_seq,
+                status,
+                error=error,
+            )
+        )
         try:
             terminal_owned = await asyncio.shield(settle_task)
         except asyncio.CancelledError:
@@ -146,35 +239,33 @@ async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/r
             raise
 
     try:
-        workflow = substrate.workflows.get(run.workflow_name)
+        claimed_delivery = _require_claimed_delivery(
+            await ledger.get_delivery(run_id, enqueue_seq=claim_enqueue_seq),
+            run_id=run_id,
+            enqueue_seq=claim_enqueue_seq,
+        )
+        # Compatibility payloads may lie or be stale; durable delivery truth wins.
+        resume = claimed_delivery.resume
         if resume:
             # R1-safe channel seeding: a durable resume after restart mints a fresh channel
             # that MUST continue the persisted seq, never restart at 0 (else re-collided,
             # silently-shed Step rows). Seed BEFORE any emitter opens the channel.
             substrate.bus.open(run_id, from_seq=await ledger.next_seq(run_id))
         emitter = substrate.bus.emitter(run_id)
-        if workflow is None:
-            # F2: settle the terminal INSIDE the try so the finally emits the single DONE
-            # and CLOSES the channel — an early return here leaked the open channel,
-            # tailing keepalives forever.
-            await settle_terminal(
-                RunStatus.FAILED,
-                error=f"unknown workflow: {run.workflow_name}",
-            )
-            await _cleanup_claim_resources(
-                substrate,
-                run,
-                persistence=None,
-            )
-            return {"status": "failed", "run_id": run_id}
-
         from lychd.agents.workflows.base import pattern_snapshot_is_valid
 
+        pinned_key = str(run.pattern_manifest.get("key", ""))
         pinned_revision = str(run.pattern_manifest.get("revision", ""))
-        if not pattern_snapshot_is_valid(run.pattern_manifest) or run.pattern_manifest != workflow.manifest.snapshot():
+        workflow = substrate.workflows.get_revision(pinned_key, pinned_revision)
+        if (
+            not pattern_snapshot_is_valid(run.pattern_manifest)
+            or pinned_key != run.workflow_name
+            or workflow is None
+            or run.pattern_manifest != workflow.manifest.snapshot()
+        ):
             await settle_terminal(
                 RunStatus.FAILED,
-                error=(f"pinned Pattern unavailable: {workflow.manifest.key}@{pinned_revision or 'unknown'}"),
+                error=(f"pinned Pattern unavailable: {pinned_key or run.workflow_name}@{pinned_revision or 'unknown'}"),
             )
             await _cleanup_claim_resources(substrate, run, persistence=None)
             return {"status": "failed", "run_id": run_id}
@@ -312,14 +403,10 @@ async def perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/r
     finally:
         # The never-hang guarantee, one place: emit the single terminal DONE from the
         # AUTHORITATIVE row status (cancel may have won the race), then close the
-        # channel (F5/H4). A non-terminal park/resume leaves the channel open on purpose.
+        # channel. A nonterminal park/resume leaves the channel open on purpose.
         terminal = await complete_under_cancellation(ledger.get(run_id))
         if terminal_owned and terminal is not None and terminal.status in TERMINAL_STATUSES:
-            if emitter is None:
-                await complete_under_cancellation(_emit_terminal(substrate, run_id))
-            else:
-                emitter.done(terminal.status.value)
-                substrate.bus.close(run_id)
+            await complete_under_cancellation(_emit_terminal(substrate, run_id, emitter=emitter))
 
 
 async def _settle_interrupted_claim(
@@ -333,19 +420,31 @@ async def _settle_interrupted_claim(
     """Let an API cancellation settle first, else fail this exact claimed hop.
 
     SAQ marks an active job aborting before its worker task receives cancellation.
-    Under Topology A the API and worker share ``cancellations``: the worker waits for
-    the API's durable ``CANCELLED`` write instead of racing it with ``FAILED``.  If
-    abort/status settlement failed, the row remains active and this delivery falls
-    back to its exact-sequence failure CAS.
+    Once the Run is ``CANCELLING``, the worker releases its resources immediately so
+    SAQ can acknowledge containment; the API commits ``CANCELLED`` only after that
+    acknowledgement. Outside that elected state, the worker waits for an in-process
+    cancellation leader before falling back to its exact-sequence failure CAS.
 
     Returns ``True`` only when this worker owns the terminal write and must emit the
     terminal event.  A terminal written elsewhere owns its own event publication.
     """
-    if substrate.cancellations.active(run.run_id):
-        await substrate.cancellations.wait(run.run_id)
     current = await substrate.ledger.get(run.run_id)
     if current is None:
         return False
+    if current.status is RunStatus.CANCELLING and current.enqueue_seq == enqueue_seq:
+        # The API is waiting for SAQ to observe this task's cancellation. Release
+        # graph resources now; waiting on the API coordinator here would deadlock
+        # the containment acknowledgement.
+        await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
+        return False
+    if substrate.cancellations.active(run.run_id):
+        await substrate.cancellations.wait(run.run_id)
+        current = await substrate.ledger.get(run.run_id)
+        if current is None:
+            return False
+        if current.status is RunStatus.CANCELLING and current.enqueue_seq == enqueue_seq:
+            await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
+            return False
     if current.status in TERMINAL_STATUSES:
         if current.status is RunStatus.CANCELLED and current.enqueue_seq == enqueue_seq:
             await _cleanup_cancelled_claim(substrate, run, persistence=persistence)
@@ -382,6 +481,17 @@ async def _fail_claimed_run(
     persistence: PhylacteryProtocol | None,
 ) -> bool:
     """Settle and clean only the active hop this delivery actually claimed."""
+    containment_errors = await _contain_failed_run_effects(substrate, run.run_id)
+    if containment_errors:
+        for exc in containment_errors:
+            logger.error(
+                "failed_run_containment_failed",
+                run_id=run.run_id,
+                enqueue_seq=enqueue_seq,
+                error=str(exc),
+            )
+        msg = f"Failure containment failed for Run {run.run_id!r}."
+        raise RuntimeError(msg) from containment_errors[0]
     settled = await complete_under_cancellation(
         substrate.ledger.try_fail_claimed(
             run.run_id,
@@ -397,6 +507,29 @@ async def _fail_claimed_run(
         persistence=persistence,
     )
     return True
+
+
+async def _contain_failed_run_effects(substrate: RunSubstrate, run_id: str) -> list[BaseException]:
+    """Retry transient child-authority failures before leaving nonterminal truth."""
+    errors: list[BaseException] = []
+    for attempt in range(FAILURE_CONTAINMENT_ATTEMPTS):
+        errors = await contain_run_effects(
+            run_id,
+            delegates=substrate.delegates,
+            consents=substrate.consents,
+            decided_by="cortex:worker-failure-containment",
+        )
+        if not errors:
+            return []
+        if attempt + 1 < FAILURE_CONTAINMENT_ATTEMPTS:
+            logger.warning(
+                "failed_run_containment_retry",
+                run_id=run_id,
+                attempt=attempt + 1,
+                errors=len(errors),
+            )
+            await asyncio.sleep(FAILURE_CONTAINMENT_RETRY_S * (attempt + 1))
+    return errors
 
 
 async def _cleanup_claim_resources(
@@ -439,14 +572,34 @@ async def _commit_consent_park(
     SAME atomic admission CAS and enqueue the resume ourselves. Exactly one of {this,
     `engine.approve`} wins the CAS — no double-enqueue (F4).
     """
-    await ledger.set_consent(run_id, parked.consent_id)
-    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+    await ledger.park_consent(run_id, parked.consent_id)
     emitter.consent(parked.consent_id, tool_name=parked.tool_name)
 
-    verdict = await substrate.consents.verdict(parked.consent_id) if substrate.consents is not None else None
+    try:
+        verdict = await substrate.consents.verdict(parked.consent_id) if substrate.consents is not None else None
+    except asyncio.CancelledError:
+        logger.warning(
+            "consent_post_park_probe_cancelled",
+            run_id=run_id,
+            consent_id=parked.consent_id,
+        )
+        return {"status": "awaiting_consent", "run_id": run_id}
+    except Exception as exc:  # noqa: BLE001 - parked truth is durable; relay retries
+        logger.warning(
+            "consent_post_park_probe_failed",
+            run_id=run_id,
+            consent_id=parked.consent_id,
+            error=str(exc),
+        )
+        verdict = None
     if verdict is not None:
         run = await ledger.get(run_id)
-        if run is not None and await admit_consent_resume(substrate.queues, ledger, run):
+        if run is not None and await admit_consent_resume(
+            substrate.queues,
+            ledger,
+            run,
+            consent_id=parked.consent_id,
+        ):
             return {"status": "queued", "run_id": run_id}
     return {"status": "awaiting_consent", "run_id": run_id}
 
@@ -461,11 +614,34 @@ async def _commit_delegate_park(
     """Commit a delegated wait, then close the pre-status terminal-result race."""
     from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
 
+    if parked.job.run_id != run_id:
+        msg = f"Delegated job {parked.job.job_id!r} belongs to Run {parked.job.run_id!r}, not {run_id!r}."
+        raise ValueError(msg)
     await ledger.park_delegate(run_id, parked.job.job_id)
     emitter.status(RunStatus.AWAITING_DELEGATE.value)
     if substrate.delegates is not None:
-        job = await substrate.delegates.refresh(parked.job.job_id)
-        if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
+        try:
+            job = await substrate.delegates.refresh(parked.job.job_id)
+        except asyncio.CancelledError:
+            logger.warning(
+                "delegate_post_park_probe_cancelled",
+                run_id=run_id,
+                delegated_job_id=parked.job.job_id,
+            )
+            return {
+                "status": RunStatus.AWAITING_DELEGATE.value,
+                "run_id": run_id,
+                "job_id": parked.job.job_id,
+            }
+        except Exception as exc:  # noqa: BLE001 - parked truth is durable; relay retries
+            logger.warning(
+                "delegate_post_park_probe_failed",
+                run_id=run_id,
+                delegated_job_id=parked.job.job_id,
+                error=str(exc),
+            )
+            job = None
+        if job is not None and job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
             run = await ledger.get(run_id)
             if run is not None and await admit_delegate_resume(
                 substrate.queues,
@@ -494,108 +670,713 @@ async def _cleanup_stasis(substrate: RunSubstrate, run_id: str, _persistence: Ph
 async def _settle_terminal(
     ledger: RunLedger,
     run_id: str,
+    enqueue_seq: int,
     status: RunStatus,
     *,
     error: str | None = None,
 ) -> bool:
-    """Write a terminal status race-tolerantly (F2/H3: one terminal writer in practice).
+    """Write terminal status under the exact claimed generation.
 
-    If a competing writer (`engine.cancel`) already drove the row terminal, the write
-    raises `IllegalRunTransitionError`; re-read, and if the row is now terminal treat
-    it as benign (the other writer won) rather than exploding — the finally emits the
-    single terminal from the settled truth.
+    A failed conditional settlement triggers one re-read. Existing terminal truth is
+    benign; any nonterminal generation or status mismatch is an illegal transition.
     """
-    try:
-        await ledger.set_status(run_id, status, error=error)
-    except IllegalRunTransitionError:
-        fresh = await ledger.get(run_id)
-        if fresh is not None and fresh.status in TERMINAL_STATUSES:
-            logger.info("terminal_write_lost_race", run_id=run_id, attempted=status.value, settled=fresh.status.value)
-            return False
-        raise
-    else:
+    if await ledger.try_settle_claim(
+        run_id,
+        enqueue_seq=enqueue_seq,
+        status=status,
+        error=error,
+    ):
         return True
+    fresh = await ledger.get(run_id)
+    if fresh is not None and fresh.status in TERMINAL_STATUSES:
+        logger.info(
+            "terminal_write_lost_race",
+            run_id=run_id,
+            attempted=status.value,
+            settled=fresh.status.value,
+        )
+        return False
+    current = fresh.status if fresh is not None else RunStatus.CANCELLED
+    raise IllegalRunTransitionError(run_id, current, status)
+
+
+def _job_is_terminal(job: object) -> bool:
+    """Return whether a probed SAQ job can no longer execute this delivery."""
+    status = getattr(job, "status", None)
+    value = getattr(status, "value", status)
+    return value in {"aborted", "complete", "failed"}
+
+
+def _active_job_predates_boot(job: object, boot_cutoff: datetime) -> bool | None:
+    """Classify SAQ ACTIVE ownership by its millisecond start timestamp.
+
+    ``None`` means the broker row claims to be active but lacks the timestamp needed
+    to prove which process owns it; startup must degrade instead of aborting blindly.
+    """
+    status = getattr(job, "status", None)
+    value = getattr(status, "value", status)
+    if value not in {"active", "aborting"}:
+        return False
+    started = getattr(job, "started", None)
+    if isinstance(started, bool) or not isinstance(started, (int, float)) or started <= 0:
+        return None
+    return started < int(boot_cutoff.timestamp() * 1000)
+
+
+async def _abort_orphaned_job(queue: RunQueue, job: object, *, error: str) -> None:
+    """Terminally fence a broker generation known to belong to a dead process."""
+    abort_orphan = getattr(queue, "abort_orphan", None)
+    if abort_orphan is not None:
+        await abort_orphan(job, error)
+        return
+    await queue.abort(job, error)
+
+
+async def _fence_preboot_active_delivery(
+    queue: RunQueue,
+    job: object,
+    *,
+    run: RunRecord,
+    delivery: RunDeliveryRecord,
+    job_key: str,
+    boot_cutoff: datetime,
+) -> bool | None:
+    """Fence a proven pre-boot ACTIVE job.
+
+    ``False`` retains a current/non-active generation. ``None`` represents broker
+    uncertainty and requires degraded startup; ``True`` permits delivery rotation.
+    """
+    predates_boot = _active_job_predates_boot(job, boot_cutoff)
+    if predates_boot is None:
+        logger.error(
+            "reconcile_active_job_timestamp_missing",
+            run_id=run.run_id,
+            queue_name=delivery.queue_name,
+            job_key=job_key,
+        )
+        return None
+    if not predates_boot:
+        return False
+    try:
+        await _abort_orphaned_job(
+            queue,
+            job,
+            error="pre-claim delivery orphaned by a prior LychD process",
+        )
+        async with asyncio.timeout(DELIVERY_BROKER_PROBE_TIMEOUT_S):
+            fenced = await queue.job(job_key)
+    except Exception as exc:
+        logger.exception(
+            "reconcile_preclaim_fence_failed",
+            run_id=run.run_id,
+            queue_name=delivery.queue_name,
+            job_key=job_key,
+            error=str(exc),
+        )
+        return None
+    if fenced is not None and not _job_is_terminal(fenced):
+        logger.error(
+            "reconcile_preclaim_fence_unacknowledged",
+            run_id=run.run_id,
+            queue_name=delivery.queue_name,
+            job_key=job_key,
+        )
+        return None
+    return True
+
+
+@dataclass(frozen=True)
+class _DeliveryFlushOutcome:
+    repaired: int = 0
+    errors: int = 0
+    revisit: bool = False
+
+
+async def _delivery_target(  # noqa: PLR0911 - each rejected invariant has distinct recovery truth
+    substrate: RunSubstrate,
+    run: RunRecord,
+    *,
+    refuse_held: bool,
+) -> tuple[RunDeliveryRecord, RunQueue] | _DeliveryFlushOutcome:
+    """Validate one Run/delivery projection and resolve its physical queue."""
+    ledger = substrate.ledger
+    delivery = await ledger.get_delivery(run.run_id, enqueue_seq=run.enqueue_seq)
+    if delivery is None:
+        logger.error("reconcile_delivery_missing", run_id=run.run_id, enqueue_seq=run.enqueue_seq)
+        return _DeliveryFlushOutcome(errors=1)
+    if delivery.state is RunDeliveryState.HELD:
+        if not refuse_held:
+            return _DeliveryFlushOutcome(revisit=True)
+        refused = await ledger.try_fail_held(
+            run.run_id,
+            enqueue_seq=run.enqueue_seq,
+            error="admission context unresolved",
+        )
+        if not refused:
+            return _DeliveryFlushOutcome()
+        await substrate.stasis_store.delete(run.run_id)
+        await _emit_terminal(substrate, run.run_id)
+        return _DeliveryFlushOutcome(repaired=1)
+    if delivery.state not in {RunDeliveryState.PENDING, RunDeliveryState.PUBLISHED}:
+        logger.error(
+            "reconcile_delivery_state_invalid",
+            run_id=run.run_id,
+            enqueue_seq=run.enqueue_seq,
+            delivery_state=delivery.state.value,
+        )
+        return _DeliveryFlushOutcome(errors=1)
+    if delivery.queue_name != run.queue_name or delivery.priority != run.priority:
+        logger.error(
+            "reconcile_delivery_projection_mismatch",
+            run_id=run.run_id,
+            enqueue_seq=run.enqueue_seq,
+        )
+        return _DeliveryFlushOutcome(errors=1)
+    queue = substrate.queues.get(delivery.queue_name)
+    if queue is None:
+        logger.error("reconcile_queue_missing", run_id=run.run_id, queue_name=delivery.queue_name)
+        return _DeliveryFlushOutcome(errors=1)
+    return delivery, queue
+
+
+async def _publish_delivery(  # noqa: PLR0911 - every broker truth has a distinct recovery result
+    substrate: RunSubstrate,
+    run: RunRecord,
+    delivery: RunDeliveryRecord,
+    queue: RunQueue,
+    *,
+    boot_cutoff: datetime | None = None,
+) -> _DeliveryFlushOutcome:
+    """Probe, rotate when necessary, and publish one validated delivery."""
+    ledger = substrate.ledger
+    job_key = run_job_key(run.run_id, delivery.enqueue_seq)
+    try:
+        async with asyncio.timeout(DELIVERY_BROKER_PROBE_TIMEOUT_S):
+            job = await queue.job(job_key)
+    except Exception as exc:
+        logger.exception(
+            "reconcile_queue_probe_failed",
+            run_id=run.run_id,
+            queue_name=delivery.queue_name,
+            job_key=job_key,
+            error=str(exc),
+        )
+        return _DeliveryFlushOutcome(errors=1)
+    rotate_delivery = job is not None and _job_is_terminal(job)
+    if job is not None and not rotate_delivery:
+        fenced = (
+            await _fence_preboot_active_delivery(
+                queue,
+                job,
+                run=run,
+                delivery=delivery,
+                job_key=job_key,
+                boot_cutoff=boot_cutoff,
+            )
+            if boot_cutoff is not None
+            else False
+        )
+        if fenced is None:
+            return _DeliveryFlushOutcome(errors=1)
+        if not fenced:
+            if delivery.state is RunDeliveryState.PENDING:
+                await ledger.mark_delivery_published(run.run_id, enqueue_seq=delivery.enqueue_seq)
+            return _DeliveryFlushOutcome(revisit=True)
+        rotate_delivery = True
+
+    repaired = 0
+    if rotate_delivery:
+        next_seq = await ledger.rotate_delivery(run.run_id, enqueue_seq=delivery.enqueue_seq)
+        if next_seq is None:
+            return _DeliveryFlushOutcome()
+        refreshed_run = await ledger.get(run.run_id)
+        refreshed_delivery = await ledger.get_delivery(run.run_id, enqueue_seq=next_seq)
+        if refreshed_run is None or refreshed_delivery is None:
+            logger.error("reconcile_delivery_rotation_incomplete", run_id=run.run_id, enqueue_seq=next_seq)
+            return _DeliveryFlushOutcome(errors=1)
+        run = refreshed_run
+        delivery = refreshed_delivery
+        repaired = 1
+    try:
+        await enqueue_run(
+            substrate.queues,
+            ledger,
+            run,
+            enqueue_seq=delivery.enqueue_seq,
+        )
+    except Exception as exc:
+        logger.exception(
+            "reconcile_delivery_publish_failed",
+            run_id=run.run_id,
+            queue_name=delivery.queue_name,
+            job_key=run_job_key(run.run_id, delivery.enqueue_seq),
+            error=str(exc),
+        )
+        return _DeliveryFlushOutcome(repaired=repaired, errors=1)
+    return _DeliveryFlushOutcome(repaired=repaired)
+
+
+async def flush_run_deliveries(
+    ctx: dict[str, Any],
+    *,
+    refuse_held: bool = False,
+    boot_cutoff: datetime | None = None,
+) -> dict[str, Any]:
+    """Complete a keyset-paged recovery sweep of every relayable delivery."""
+    substrate = _substrate(ctx)
+    cursor: tuple[datetime, str] | None = None
+    repaired_total = 0
+    error_total = 0
+    while True:
+        result, next_cursor = await _flush_run_delivery_page(
+            substrate,
+            after=cursor,
+            refuse_held=refuse_held,
+            boot_cutoff=boot_cutoff,
+        )
+        repaired_total += int(result["count"])
+        error_total += int(result["probe_errors"])
+        if next_cursor is None:
+            break
+        cursor = next_cursor
+
+    return {
+        "status": "degraded" if error_total else "reconciled",
+        "count": repaired_total,
+        "probe_errors": error_total,
+    }
+
+
+async def _flush_run_delivery_page(
+    substrate: RunSubstrate,
+    *,
+    after: tuple[datetime, str] | None,
+    refuse_held: bool,
+    boot_cutoff: datetime | None = None,
+    limit: int = DELIVERY_RELAY_BATCH_SIZE,
+) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
+    """Process one bounded keyset page and return the next-page cursor."""
+    repaired = 0
+    errors = 0
+    revisit = False
+    runs = await substrate.ledger.list_delivery_candidates(after=after, limit=limit)
+    for run in runs:
+        try:
+            target = await _delivery_target(substrate, run, refuse_held=refuse_held)
+            if isinstance(target, _DeliveryFlushOutcome):
+                outcome = target
+            else:
+                outcome = await _publish_delivery(
+                    substrate,
+                    run,
+                    *target,
+                    boot_cutoff=boot_cutoff,
+                )
+        except Exception as exc:
+            logger.exception(
+                "run_delivery_row_failed",
+                run_id=run.run_id,
+                enqueue_seq=run.enqueue_seq,
+                error=str(exc),
+            )
+            outcome = _DeliveryFlushOutcome(errors=1)
+        repaired += outcome.repaired
+        errors += outcome.errors
+        revisit = revisit or outcome.revisit
+    next_cursor = (runs[-1].updated_at, runs[-1].run_id) if len(runs) == limit else None
+    return (
+        {
+            "status": "degraded" if errors else "reconciled",
+            "count": repaired,
+            "probe_errors": errors,
+            "_revisit": revisit,
+        },
+        next_cursor,
+    )
+
+
+@dataclass
+class _RelayPageScheduler:
+    """Alternate forward keyset progress with exact pages that still need custody."""
+
+    cursor: tuple[datetime, str] | None = None
+    retry_pages: deque[tuple[datetime, str] | None] = field(default_factory=deque)
+    retry_set: set[tuple[datetime, str] | None] = field(default_factory=set)
+    retry_turn: bool = False
+
+    def take(self) -> tuple[tuple[datetime, str] | None, bool]:
+        """Return the next page cursor and whether it came from the revisit queue."""
+        retrying = bool(self.retry_pages) and self.retry_turn
+        if not retrying:
+            return self.cursor, False
+        page_after = self.retry_pages.popleft()
+        self.retry_set.discard(page_after)
+        return page_after, True
+
+    def failed(self, page_after: tuple[datetime, str] | None, *, retrying: bool) -> None:
+        """Retain a failed page and preserve forward/retry alternation."""
+        self._remember(page_after)
+        self.retry_turn = not retrying and bool(self.retry_pages)
+
+    def completed(
+        self,
+        page_after: tuple[datetime, str] | None,
+        *,
+        retrying: bool,
+        next_cursor: tuple[datetime, str] | None,
+        revisit: bool,
+    ) -> None:
+        """Advance forward truth and retain a clean page whose external wait remains live."""
+        if not retrying:
+            self.cursor = next_cursor
+        if revisit:
+            self._remember(page_after)
+        self.retry_turn = not retrying and bool(self.retry_pages)
+
+    def _remember(self, page_after: tuple[datetime, str] | None) -> None:
+        if page_after in self.retry_set:
+            return
+        self.retry_pages.append(page_after)
+        self.retry_set.add(page_after)
+
+
+async def relay_run_deliveries(
+    ctx: dict[str, Any],
+    *,
+    stop: asyncio.Event,
+    interval_s: float = DELIVERY_RELAY_INTERVAL_S,
+) -> None:
+    """Advance the delivery sweep while fairly revisiting every blocked page."""
+    pages = _RelayPageScheduler()
+    while not stop.is_set():
+        with suppress(TimeoutError):
+            await asyncio.wait_for(stop.wait(), timeout=interval_s)
+        if stop.is_set():
+            return
+        page_after, retrying = pages.take()
+        try:
+            result, next_cursor = await _flush_run_delivery_page(
+                _substrate(ctx),
+                after=page_after,
+                refuse_held=False,
+            )
+        except Exception as exc:
+            logger.exception("run_delivery_relay_failed", error=str(exc))
+            pages.failed(page_after, retrying=retrying)
+            continue
+        degraded = result["status"] == "degraded"
+        needs_retry = degraded or bool(result.get("_revisit", False))
+        pages.completed(
+            page_after,
+            retrying=retrying,
+            next_cursor=next_cursor,
+            revisit=needs_retry,
+        )
+        if degraded:
+            logger.warning(
+                "run_delivery_relay_degraded",
+                probe_errors=result["probe_errors"],
+            )
+
+
+async def relay_delegated_runs(
+    *,
+    engine: Any,
+    stop: asyncio.Event,
+    interval_s: float = DELEGATE_RELAY_INTERVAL_S,
+) -> None:
+    """Refresh delegated waits while fairly retrying every degraded page."""
+    pages = _RelayPageScheduler()
+    while not stop.is_set():
+        with suppress(TimeoutError):
+            await asyncio.wait_for(stop.wait(), timeout=interval_s)
+        if stop.is_set():
+            return
+        page_after, retrying = pages.take()
+        try:
+            result, next_cursor = await _reconcile_delegate_page(engine, after=page_after)
+        except Exception as exc:
+            logger.exception("delegate_relay_failed", error=str(exc))
+            pages.failed(page_after, retrying=retrying)
+            continue
+        needs_retry = result["status"] == "degraded" or bool(result.get("_revisit", False))
+        pages.completed(
+            page_after,
+            retrying=retrying,
+            next_cursor=next_cursor,
+            revisit=needs_retry,
+        )
+        if result["status"] == "degraded":
+            logger.warning("delegate_relay_degraded", probe_errors=result["probe_errors"])
+
+
+async def _reconcile_delegate_page(
+    engine: Any,
+    *,
+    after: tuple[datetime, str] | None,
+    limit: int = DELEGATE_RELAY_BATCH_SIZE,
+) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
+    """Poll and adopt one keyset page of AWAITING_DELEGATE runs."""
+    runs = await engine.ledger.list_by_status(
+        RunStatus.AWAITING_DELEGATE,
+        after=after,
+        limit=limit,
+    )
+    resumed = 0
+    errors = 0
+    revisit = False
+    delegates = engine.delegates
+    for run in runs:
+        job_id = run.delegated_job_id
+        if delegates is None or job_id is None:
+            logger.error("delegate_relay_owner_missing", run_id=run.run_id)
+            errors += 1
+            continue
+        try:
+            async with asyncio.timeout(DELEGATE_PROBE_TIMEOUT_S):
+                await delegates.refresh(job_id)
+                did_resume = await engine.resume_delegate(job_id)
+                resumed += int(did_resume)
+                revisit = revisit or not did_resume
+        except Exception as exc:
+            logger.exception(
+                "delegate_relay_probe_failed",
+                run_id=run.run_id,
+                delegated_job_id=job_id,
+                error=str(exc),
+            )
+            errors += 1
+    next_cursor = (runs[-1].created_at, runs[-1].run_id) if len(runs) == limit else None
+    return (
+        {
+            "status": "degraded" if errors else "reconciled",
+            "count": resumed,
+            "probe_errors": errors,
+            "_revisit": revisit,
+        },
+        next_cursor,
+    )
+
+
+async def reconcile_delegated_runs(*, engine: Any) -> dict[str, Any]:
+    """Sweep every delegated wait through the bounded runtime reconciliation path."""
+    cursor: tuple[datetime, str] | None = None
+    resumed = 0
+    errors = 0
+    while True:
+        result, cursor = await _reconcile_delegate_page(engine, after=cursor)
+        resumed += int(result["count"])
+        errors += int(result["probe_errors"])
+        if cursor is None:
+            return {
+                "status": "degraded" if errors else "reconciled",
+                "count": resumed,
+                "probe_errors": errors,
+            }
 
 
 async def reconcile_runs(ctx: dict[str, Any], *, boot_cutoff: datetime | None = None) -> dict[str, Any]:
-    """Fail runs stranded non-terminal by a dead process (F3/F9/H2).
+    """Reconcile work stranded by a previous process.
 
-    Two orphan classes are swept to FAILED (each emitting its terminal `DONE`):
+    Two orphan classes are inspected:
 
     - RUNNING / AWAITING_HARDWARE: a crash mid-run leaves the row non-terminal with
       no live task. A run is an orphan of a PREVIOUS process only — never a run THIS
       process just claimed. Under Topology A a worker cannot claim until the
       composition root publishes the substrate, which happens AFTER `boot_cutoff` is
       stamped, so any run started this boot has ``started_at >= boot_cutoff`` and is
-      left alone (F3). When no cutoff is supplied every non-terminal row is swept
+      left alone. When no cutoff is supplied every nonterminal row is swept
       (the pre-boot-gate behavior). Revisit heartbeats only if a multi-process
       Topology B ever lands.
-    - QUEUED older than `RECONCILE_QUEUED_AFTER_S`: `engine.submit` compensates a
-      failed `_enqueue`, but a crash between `create` and `_enqueue` (or a lost
-      broker job) can strand a QUEUED row with no job. The durable queue is probed
-      by the exact ``(run_id, enqueue_seq)`` key before an aged row is failed. A
-      present job protects the run; an unavailable/misconfigured broker leaves the
-      row untouched and makes this reconcile result explicitly degraded.
+    - QUEUED: the exact durable delivery is inspected. A HELD admission is refused
+      because caller-owned context never became publishable. PENDING/PUBLISHED work
+      is probed and, when absent, republished under the same idempotent key. Missing
+      delivery truth or an unavailable queue makes reconciliation degraded.
     """
     substrate = _substrate(ctx)
     ledger = substrate.ledger
-    reconciled: list[str] = []
+    reconciled_count = 0
+    reconciled_ids: list[str] = []
+    orphan_errors = 0
     for status in (RunStatus.RUNNING, RunStatus.AWAITING_HARDWARE):
-        for run in await ledger.list_by_status(status):
-            if not _predates_boot(run, boot_cutoff):
-                continue  # claimed by THIS process after boot — not an orphan (F3)
-            await ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
-            await substrate.stasis_store.delete(run.run_id)
-            await _emit_terminal(substrate, run.run_id)
-            reconciled.append(run.run_id)
-
-    # This rite currently runs once at web startup (lifespan), though it is also a
-    # registered SAQ task for an operator/cron caller.  A durable SAQ row can outlive
-    # the process that published it, so age alone never proves an enqueue was lost.
-    # Probe the exact monotonic hop key before settling the Run row terminally.
-    now = datetime.now(UTC)
-    probe_errors: list[str] = []
-    for run in await ledger.list_by_status(RunStatus.QUEUED):
-        if (now - run.created_at).total_seconds() < RECONCILE_QUEUED_AFTER_S:
-            continue
-        queue = substrate.queues.get(run.queue_name)
-        if queue is None:
-            logger.error(
-                "reconcile_queue_missing",
-                run_id=run.run_id,
-                queue_name=run.queue_name,
+        cursor: tuple[datetime, str] | None = None
+        while True:
+            runs = await ledger.list_by_status(
+                status,
+                after=cursor,
+                limit=STARTUP_RECONCILIATION_BATCH_SIZE,
             )
-            probe_errors.append(run.run_id)
-            continue
-        job_key = run_job_key(run.run_id, run.enqueue_seq)
-        try:
-            job = await queue.job(job_key)
-        except Exception as exc:
-            # A broker outage is not evidence that the job is absent.  Preserve the
-            # non-terminal row for a later retry and surface the degraded sweep.
-            logger.exception(
-                "reconcile_queue_probe_failed",
-                run_id=run.run_id,
-                queue_name=run.queue_name,
-                job_key=job_key,
-                error=str(exc),
-            )
-            probe_errors.append(run.run_id)
-            continue
-        if job is not None:
-            continue
-        await ledger.set_status(run.run_id, RunStatus.FAILED, error="enqueue lost")
-        await substrate.stasis_store.delete(run.run_id)
-        await _emit_terminal(substrate, run.run_id)
-        reconciled.append(run.run_id)
+            for run in runs:
+                if not _predates_boot(run, boot_cutoff):
+                    continue  # claimed by THIS process after boot — not an orphan (F3)
+                if not await _reconcile_orphaned_run(substrate, run):
+                    orphan_errors += 1
+                    continue
+                reconciled_count += 1
+                if len(reconciled_ids) < RECONCILIATION_LOG_ID_LIMIT:
+                    reconciled_ids.append(run.run_id)
+            if len(runs) < STARTUP_RECONCILIATION_BATCH_SIZE:
+                break
+            cursor = (runs[-1].created_at, runs[-1].run_id)
 
-    if reconciled:
-        logger.warning("reconcile_runs", count=len(reconciled), run_ids=reconciled)
+    delivery_result = await flush_run_deliveries(
+        ctx,
+        refuse_held=True,
+        boot_cutoff=boot_cutoff,
+    )
+    total_count = reconciled_count + int(delivery_result["count"])
+
+    if total_count:
+        logger.warning(
+            "reconcile_runs",
+            count=total_count,
+            run_ids=reconciled_ids,
+            run_ids_truncated=reconciled_count > len(reconciled_ids),
+        )
+    probe_errors = int(delivery_result["probe_errors"]) + orphan_errors
     return {
         "status": "degraded" if probe_errors else "reconciled",
-        "count": len(reconciled),
-        "probe_errors": len(probe_errors),
+        "count": total_count,
+        "probe_errors": probe_errors,
     }
+
+
+async def _reconcile_orphaned_run(substrate: RunSubstrate, run: RunRecord) -> bool:
+    """Fence one pre-boot worker, recover an exact park, or contain before failure."""
+    consent_id = await _recoverable_consent_park(substrate, run)
+    delegated_job_id = await _recoverable_delegate_park(substrate, run)
+    if not await _fence_orphaned_job(substrate, run):
+        return False
+    if consent_id is not None and delegated_job_id is None:
+        await substrate.ledger.park_consent(run.run_id, consent_id)
+        return True
+    if delegated_job_id is not None and consent_id is None:
+        await substrate.ledger.park_delegate(run.run_id, delegated_job_id)
+        return True
+    containment_errors = await contain_run_effects(
+        run.run_id,
+        delegates=substrate.delegates,
+        consents=substrate.consents,
+        decided_by="cortex:orphan-failed",
+    )
+    if containment_errors:
+        for exc in containment_errors:
+            logger.error(
+                "reconcile_orphan_effect_containment_failed",
+                run_id=run.run_id,
+                error=str(exc),
+            )
+        return False
+    await substrate.ledger.set_status(run.run_id, RunStatus.FAILED, error="ghoul lost")
+    await substrate.stasis_store.delete(run.run_id)
+    await _emit_terminal(substrate, run.run_id)
+    return True
+
+
+async def _recoverable_consent_park(substrate: RunSubstrate, run: RunRecord) -> str | None:
+    """Recognize the narrow crash window after checkpoint+Consent, before Run park."""
+    if substrate.consents is None:
+        return None
+    view = await substrate.consents.latest_for_run(run.run_id)
+    if view is None or view.status == "cancelled":
+        return None
+    snapshots = await substrate.stasis_store.load(run.run_id)
+    if snapshots is None or not _checkpoint_binds_consent(
+        snapshots,
+        run_id=run.run_id,
+        consent_id=view.id,
+    ):
+        return None
+    return view.id
+
+
+async def _recoverable_delegate_park(substrate: RunSubstrate, run: RunRecord) -> str | None:
+    """Recognize the crash window after exact delegate checkpoint, before Run park."""
+    if substrate.delegates is None:
+        return None
+    jobs = await substrate.delegates.jobs_for_run(run.run_id)
+    if not jobs:
+        return None
+    snapshots = await substrate.stasis_store.load(run.run_id)
+    if snapshots is None:
+        return None
+    for job in jobs:
+        if _checkpoint_binds_delegate(
+            snapshots,
+            run_id=run.run_id,
+            job_id=job.ref.job_id,
+        ):
+            return job.ref.job_id
+    return None
+
+
+def _checkpoint_binds_consent(
+    snapshots: list[Any],
+    *,
+    run_id: str,
+    consent_id: str,
+) -> bool:
+    """Bind recovery to the exact node snapshot Pydantic Graph will resume first."""
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            return False
+        snapshot_data = cast("dict[str, Any]", snapshot)
+        if snapshot_data.get("kind") != "node" or snapshot_data.get("status") != "created":
+            continue
+        state = snapshot_data.get("state")
+        if not isinstance(state, dict):
+            return False
+        state_data = cast("dict[str, Any]", state)
+        return state_data.get("run_id") == run_id and state_data.get("pending_consent_id") == consent_id
+    return False
+
+
+def _checkpoint_binds_delegate(
+    snapshots: list[Any],
+    *,
+    run_id: str,
+    job_id: str,
+) -> bool:
+    """Bind delegate recovery to the exact next resumable node state."""
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            return False
+        snapshot_data = cast("dict[str, Any]", snapshot)
+        if snapshot_data.get("kind") != "node" or snapshot_data.get("status") != "created":
+            continue
+        state = snapshot_data.get("state")
+        if not isinstance(state, dict):
+            return False
+        state_data = cast("dict[str, Any]", state)
+        return state_data.get("run_id") == run_id and state_data.get("job_id") == job_id
+    return False
+
+
+async def _fence_orphaned_job(substrate: RunSubstrate, run: RunRecord) -> bool:
+    """Prevent a pre-boot SAQ generation from surviving its failed Run truth."""
+    queue = substrate.queues.get(run.queue_name)
+    if queue is None:
+        logger.error("reconcile_orphan_queue_missing", run_id=run.run_id, queue_name=run.queue_name)
+        return False
+    try:
+        async with asyncio.timeout(DELIVERY_BROKER_PROBE_TIMEOUT_S):
+            job = await queue.job(run_job_key(run.run_id, run.enqueue_seq))
+            if job is None:
+                return True
+            await _abort_orphaned_job(
+                queue,
+                job,
+                error="orphaned by a prior LychD process",
+            )
+    except Exception as exc:
+        logger.exception(
+            "reconcile_orphan_fence_failed",
+            run_id=run.run_id,
+            queue_name=run.queue_name,
+            error=str(exc),
+        )
+        return False
+    return True
 
 
 class ConsentApprover(Protocol):
@@ -604,26 +1385,130 @@ class ConsentApprover(Protocol):
     async def approve(self, consent_id: str, *, approved: bool) -> None: ...
 
 
+async def _reconcile_consent_page(
+    substrate: RunSubstrate,
+    engine: ConsentApprover,
+    *,
+    after: tuple[datetime, str] | None,
+    limit: int | None = None,
+) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
+    """Probe one bounded keyset page of parked consent owners."""
+    page_limit = STARTUP_RECONCILIATION_BATCH_SIZE if limit is None else limit
+    runs = await substrate.ledger.list_by_status(
+        RunStatus.AWAITING_CONSENT,
+        after=after,
+        limit=page_limit,
+    )
+    refired = 0
+    errors = 0
+    revisit = False
+    for run in runs:
+        try:
+            if run.consent_id is None:
+                logger.error("reconcile_consent_owner_missing", run_id=run.run_id)
+                errors += 1
+                continue
+            view = await substrate.consents.get(run.consent_id)
+            if view is None or view.run_id != run.run_id:
+                logger.error("reconcile_consent_missing", run_id=run.run_id)
+                errors += 1
+                continue
+            if view.status == "pending":
+                revisit = True
+                continue
+            await engine.approve(view.id, approved=(view.status == "granted"))
+            refired += 1
+        except Exception as exc:
+            logger.exception(
+                "reconcile_consent_probe_failed",
+                run_id=run.run_id,
+                error=str(exc),
+            )
+            errors += 1
+    next_cursor = (runs[-1].created_at, runs[-1].run_id) if len(runs) == page_limit else None
+    return (
+        {
+            "status": "degraded" if errors else "reconciled",
+            "count": refired,
+            "probe_errors": errors,
+            "_revisit": revisit,
+        },
+        next_cursor,
+    )
+
+
 async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentApprover) -> dict[str, Any]:
     """Re-fire verdicts recorded while the process was down (B10, design §1.4).
 
     A crash between `ConsentService.grant/deny` and `engine.approve` leaves a decided
-    consent row with no enqueue. This sweep re-fires those verdicts; still-pending
-    parks (and orphans with no consent row) are LEFT ALONE. Idempotent via `approve`'s
-    AWAITING_CONSENT status guard. `"expired"` counts as decided-denied (refusal-resumes).
-    Lifespan-only this wave (not a SAQ cron).
+    consent row with no enqueue. This sweep re-fires the verdict of each Run's exact
+    persisted Consent owner; still-pending owners are left alone. An AWAITING_CONSENT
+    Run without that exact Consent row is corrupt durable state and degrades startup
+    rather than being silently accepted. Idempotent via `approve`'s
+    AWAITING_CONSENT status guard. `"expired"` counts as
+    decided-denied (refusal-resumes). Startup requires one clean full sweep; the
+    lifespan-owned runtime relay repeats bounded pages afterward.
     """
     substrate = _substrate(ctx)
-    refired: list[str] = []
-    for run in await substrate.ledger.list_by_status(RunStatus.AWAITING_CONSENT):
-        view = await substrate.consents.latest_for_run(run.run_id)
-        if view is None or view.status == "pending":
-            continue  # still parked (or an orphan) — leave it alone
-        await engine.approve(view.id, approved=(view.status == "granted"))
-        refired.append(run.run_id)
-    if refired:
-        logger.warning("reconcile_consents", count=len(refired), run_ids=refired)
-    return {"status": "reconciled", "count": len(refired)}
+    refired_count = 0
+    errors = 0
+    cursor: tuple[datetime, str] | None = None
+    while True:
+        result, cursor = await _reconcile_consent_page(
+            substrate,
+            engine,
+            after=cursor,
+        )
+        refired_count += int(result["count"])
+        errors += int(result["probe_errors"])
+        if cursor is None:
+            break
+    if refired_count:
+        logger.warning(
+            "reconcile_consents",
+            count=refired_count,
+        )
+    return {
+        "status": "degraded" if errors else "reconciled",
+        "count": refired_count,
+        "probe_errors": errors,
+    }
+
+
+async def relay_consents(
+    *,
+    engine: ConsentApprover,
+    substrate: RunSubstrate,
+    stop: asyncio.Event,
+    interval_s: float = CONSENT_RELAY_INTERVAL_S,
+) -> None:
+    """Re-fire decided consent waits while fairly retrying degraded pages."""
+    pages = _RelayPageScheduler()
+    while not stop.is_set():
+        with suppress(TimeoutError):
+            await asyncio.wait_for(stop.wait(), timeout=interval_s)
+        if stop.is_set():
+            return
+        page_after, retrying = pages.take()
+        try:
+            result, next_cursor = await _reconcile_consent_page(
+                substrate,
+                engine,
+                after=page_after,
+            )
+        except Exception as exc:
+            logger.exception("consent_relay_failed", error=str(exc))
+            pages.failed(page_after, retrying=retrying)
+            continue
+        needs_retry = result["status"] == "degraded" or bool(result.get("_revisit", False))
+        pages.completed(
+            page_after,
+            retrying=retrying,
+            next_cursor=next_cursor,
+            revisit=needs_retry,
+        )
+        if result["status"] == "degraded":
+            logger.warning("consent_relay_degraded", probe_errors=result["probe_errors"])
 
 
 def _predates_boot(run: RunRecord, boot_cutoff: datetime | None) -> bool:
@@ -639,7 +1524,12 @@ def _predates_boot(run: RunRecord, boot_cutoff: datetime | None) -> bool:
     return run.started_at < boot_cutoff
 
 
-async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
+async def _emit_terminal(
+    substrate: RunSubstrate,
+    run_id: str,
+    *,
+    emitter: RunEmitter | None = None,
+) -> None:
     """Emit a reconciled run's terminal DONE onto a correctly-seeded, closed channel.
 
     R1: a fresh process restarts channel seqs at 0, but a swept run already has Step
@@ -649,12 +1539,19 @@ async def _emit_terminal(substrate: RunSubstrate, run_id: str) -> None:
     R2: close the channel after the emit — reconcile mints a channel per orphan and
     would otherwise leak one per startup sweep.
     """
-    next_seq = await substrate.ledger.next_seq(run_id)
     settled = await substrate.ledger.get(run_id)
     status = settled.status if settled is not None and settled.status in TERMINAL_STATUSES else RunStatus.FAILED
-    substrate.bus.open(run_id, from_seq=next_seq)
-    substrate.bus.emitter(run_id).done(status.value)
-    substrate.bus.close(run_id)
+    if emitter is None:
+        next_seq = await substrate.ledger.next_seq(run_id)
+        substrate.bus.open(run_id, from_seq=next_seq)
+        emitter = substrate.bus.emitter(run_id)
+    emitter.done(status.value)
+    try:
+        await substrate.bus.wait_persisted(run_id)
+    finally:
+        # A failed append leaves the in-memory channel terminal. Drop it so a
+        # later evidence repair can seed a fresh channel and retry persistence.
+        substrate.bus.close(run_id)
 
 
 async def _write_failed_turn(substrate: RunSubstrate, *, run_id: str, session_id: str) -> None:

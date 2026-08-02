@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-from pathlib import Path, PurePosixPath
+import inspect
+import sys
+from importlib.machinery import ModuleSpec
+from pathlib import Path
 from types import ModuleType
 
-from lychd.config.settings.extensions import ExtensionSettings
+from lychd.config.settings.extensions import ExtensionSettings, extension_id_parts
 from lychd.config.settings.root import get_settings
-from lychd.extensions.builtin.catalog import builtin_register_module
-from lychd.extensions.context import ExtensionContext
+from lychd.extensions.builtin.catalog import builtin_register_module, builtin_registration_order
+from lychd.extensions.context import ExtensionContext, ExtensionRegistrationContext
 from lychd.system.constants import PATH_EXTENSIONS_DIR
+
+_CORE_PROVIDER_ID = "core"
+_BUILTIN_PROVIDER_PREFIX = "builtin:"
+_CRYPT_PROVIDER_PREFIX = "crypt:"
+_CRYPT_PACKAGE_PREFIX = "lychd_crypt_extension_"
 
 
 class ExtensionManager:
@@ -46,39 +54,58 @@ class ExtensionManager:
         # RuneRegistry always carries CodexPreauthRune instances.
         from lychd.domain.codex.runes import CodexPreauthRune
 
-        context.runes.add_schema(CodexPreauthRune)
+        with context.provenance(_CORE_PROVIDER_ID):
+            context.runes.add_schema(CodexPreauthRune)
 
-        for extension_id in self._builtins:
-            with context.provenance(extension_id):
-                self._register_builtin(extension_id, context)
+        for activation_id in builtin_registration_order(self._builtins):
+            provider_id = f"{_BUILTIN_PROVIDER_PREFIX}{activation_id}"
+            self._register_builtin(activation_id, context.registration_view(provider_id))
 
-        for extension_id in self._crypt:
-            with context.provenance(extension_id):
-                self._register_crypt(extension_id, context)
+        for activation_id in self._crypt:
+            provider_id = f"{_CRYPT_PROVIDER_PREFIX}{activation_id}"
+            self._register_crypt(activation_id, context.registration_view(provider_id))
 
+        context.freeze()
         return context
 
-    def _register_builtin(self, extension_id: str, context: ExtensionContext) -> None:
-        module_path = self._builtin_register_module(extension_id)
+    def _register_builtin(self, activation_id: str, context: ExtensionRegistrationContext) -> None:
+        module_path = self._builtin_register_module(activation_id)
         module = importlib.import_module(module_path)
-        self._call_register(module, extension_id, context)
+        self._call_register(module, activation_id, context)
 
     def _builtin_register_module(self, extension_id: str) -> str:
         """Resolve a selected built-in id to its required register module."""
         return builtin_register_module(extension_id)
 
-    def _register_crypt(self, extension_id: str, context: ExtensionContext) -> None:
-        module_path = self._crypt_module_path(extension_id)
-        module = self._load_module(module_path, extension_id)
-        self._call_register(module, extension_id, context)
+    def _register_crypt(self, activation_id: str, context: ExtensionRegistrationContext) -> None:
+        module_path = self._crypt_module_path(activation_id)
+        module = self._load_module(module_path, activation_id)
+        try:
+            self._call_register(module, activation_id, context)
+        except BaseException:
+            self._clear_module_namespace(self._crypt_package_name(activation_id))
+            raise
 
-    def _call_register(self, module: ModuleType, extension_id: str, context: ExtensionContext) -> None:
+    def _call_register(
+        self,
+        module: ModuleType,
+        extension_id: str,
+        context: ExtensionRegistrationContext,
+    ) -> None:
         """Call the selected extension's register(context) shim."""
         register = getattr(module, "register", None)
         if register is None:
             msg = f"Extension '{extension_id}' has no register(context) shim in '{module.__name__}'."
             raise ValueError(msg)
-        register(context)
+        result = register(context)
+        if inspect.isawaitable(result):
+            if inspect.iscoroutine(result):
+                result.close()
+            msg = f"Extension '{extension_id}' register(context) must be synchronous and return None."
+            raise TypeError(msg)
+        if result is not None:
+            msg = f"Extension '{extension_id}' register(context) must return None."
+            raise TypeError(msg)
 
     def _crypt_module_path(self, extension_id: str) -> Path:
         """Resolve the selected Crypt extension register shim path without scanning."""
@@ -91,20 +118,46 @@ class ExtensionManager:
 
     def _extension_id_parts(self, extension_id: str) -> tuple[str, ...]:
         """Return validated extension id path parts."""
-        path = PurePosixPath(extension_id)
-        if path.is_absolute() or not path.parts or any(part in {".", ".."} for part in path.parts):
-            msg = f"Invalid extension id '{extension_id}'."
-            raise ValueError(msg)
-        return path.parts
+        return extension_id_parts(extension_id)
 
-    def _load_module(self, module_path: Path, extension_id: str) -> ModuleType:
-        """Load one explicitly selected extension shim from disk."""
-        module_name = f"lychd_crypt_extension_{extension_id.replace('/', '_').replace('-', '_')}"
+    def _load_module(self, module_path: Path, activation_id: str) -> ModuleType:
+        """Load one selected shim in an isolated package namespace.
+
+        The exact activation id is UTF-8 hex encoded, making the namespace
+        injective for every legal id. The synthetic package exposes only the
+        selected extension directory, so ``register.py`` can use ordinary
+        relative sibling imports without executing package discovery.
+        """
+        package_name = self._crypt_package_name(activation_id)
+        module_name = f"{package_name}.register"
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         if spec is None or spec.loader is None:
-            msg = f"Could not load Crypt extension '{extension_id}' from '{module_path}'."
+            msg = f"Could not load Crypt extension '{activation_id}' from '{module_path}'."
             raise ValueError(msg)
 
+        package_spec = ModuleSpec(package_name, loader=None, is_package=True)
+        package_spec.submodule_search_locations = [str(module_path.parent)]
+        package = importlib.util.module_from_spec(package_spec)
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        self._clear_module_namespace(package_name)
+        sys.modules[package_name] = package
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            self._clear_module_namespace(package_name)
+            raise
         return module
+
+    @staticmethod
+    def _crypt_package_name(activation_id: str) -> str:
+        """Return the injective synthetic package for one canonical activation id."""
+        return f"{_CRYPT_PACKAGE_PREFIX}{activation_id.encode('utf-8').hex()}"
+
+    @staticmethod
+    def _clear_module_namespace(package_name: str) -> None:
+        """Remove one synthetic Crypt package generation after replacement/failure."""
+        prefix = f"{package_name}."
+        for loaded_name in tuple(sys.modules):
+            if loaded_name == package_name or loaded_name.startswith(prefix):
+                del sys.modules[loaded_name]

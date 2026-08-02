@@ -20,6 +20,7 @@ from lychd.domain.animation.transmute import (
     TransmutationStore,
     Transmuter,
 )
+from lychd.extensions.context import ExtensionContext
 from lychd.system.constants import CONTAINER_LYCHD_PORT
 from lychd.system.schemas import QuadletContainer, QuadletPod
 
@@ -210,3 +211,22 @@ def test_transmutation_store_registration_order() -> None:
     store.add_contributor(first)
     store.add_contributor(second)
     assert store.contributors == (first, second)
+
+
+def test_transmutation_store_rejects_cross_provider_replay() -> None:
+    context = ExtensionContext()
+    contributor = _PortOnlyContributor()
+    with context.provenance("one"):
+        context.transmutation.add_contributor(contributor)
+    with context.provenance("two"), pytest.raises(ValueError, match="owned by 'one'"):
+        context.transmutation.add_contributor(contributor)
+
+
+def test_bootstrap_assembly_seals_a_hand_built_context() -> None:
+    from lychd.extensions.host import AssembledExtensions
+
+    context = ExtensionContext()
+    AssembledExtensions(context=context, active_ids=("manual",))
+
+    with pytest.raises(RuntimeError, match="frozen after extension assembly"):
+        context.transmutation.add_contributor(_PortOnlyContributor())

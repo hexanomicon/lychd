@@ -18,7 +18,7 @@ TurnState = Literal["settled", "streaming", "pending_consent", "consented", "ref
 # Capability `data-state` vocabulary (spec-web-design §5). `_coven_state` maps the
 # phase-by-is_dynamic table (S9); "warm" stays reserved vocabulary (Wave 6 W6-a may refine).
 CovenState = Literal["active", "warm", "awaited", "warming", "cold", "fault"]
-ConsentState = Literal["pending_consent", "consented", "refused"]
+ConsentState = Literal["pending_consent", "consented", "refused", "cancelled"]
 # Swap-ticket trio (spec-web-design §5): warming → settled → failed.
 TicketState = Literal["warming", "settled", "failed"]
 
@@ -49,7 +49,7 @@ class BridgeTurn:
     content: str
     run_id: str | None = None
     state: TurnState = "settled"
-    fragments: tuple[str, ...] = ()
+    fragments: tuple[dict[str, Any], ...] = ()
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -134,6 +134,8 @@ class LoomView:
     schema_version: int
     pattern_id: str
     revision: str
+    implementation_revision: str
+    entry_node: str
     digest: str
     checkpoint_schema: str
     publication: Literal["published"]
@@ -209,6 +211,8 @@ def build_loom_view(workflow: Workflow, *, highlight: Any | None = None) -> Loom
         schema_version=manifest.schema_version,
         pattern_id=manifest.key,
         revision=manifest.revision,
+        implementation_revision=manifest.implementation_revision,
+        entry_node=manifest.entry_node,
         digest=manifest.digest,
         checkpoint_schema=manifest.checkpoint_schema,
         publication="published",

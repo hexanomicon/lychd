@@ -6,6 +6,8 @@ can produce around a tool raised mid-stream. These pins guard the transitive sea
 
 from __future__ import annotations
 
+import pytest
+
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.graph_runner import _extract_signal  # pyright: ignore[reportPrivateUsage]
 from lychd.domain.cortex.runs import ConsentPending
@@ -24,13 +26,39 @@ def test_extract_walks_cause_chain() -> None:
     assert _extract_signal(wrapper, ConsentPending) is sig
 
 
-def test_extract_unwraps_exception_group() -> None:
+def test_extract_respects_suppressed_context() -> None:
+    sig = ConsentPending("consent_1", "run_1", "request_coven_swap")
+
+    def replace_signal() -> None:
+        try:
+            raise sig
+        except ConsentPending:
+            message = "replacement"
+            raise RuntimeError(message) from None
+
+    with pytest.raises(RuntimeError) as caught:
+        replace_signal()
+
+    replacement = caught.value
+    assert replacement.__context__ is sig
+    assert replacement.__suppress_context__ is True
+    assert _extract_signal(replacement, ConsentPending) is None
+
+
+def test_extract_unwraps_single_signal_exception_group() -> None:
     sig = HardwareTransitionRequired("chat:local", "local", None)
-    group = BaseExceptionGroup("mid-stream", [ValueError("noise"), sig])
+    group = BaseExceptionGroup("mid-stream", [sig])
     assert _extract_signal(group, HardwareTransitionRequired) is sig
 
 
-def test_extract_finds_nested_delegated_agent_signal() -> None:
+def test_extract_refuses_mixed_exception_group() -> None:
+    sig = HardwareTransitionRequired("chat:local", "local", None)
+    group = BaseExceptionGroup("mid-stream", [ValueError("real failure"), sig])
+
+    assert _extract_signal(group, HardwareTransitionRequired) is None
+
+
+def test_extract_finds_nested_pure_delegated_agent_signal() -> None:
     sig = DelegatedAgentPending(
         DelegatedAgentJobRef(
             job_id="job-1",
@@ -39,8 +67,15 @@ def test_extract_finds_nested_delegated_agent_signal() -> None:
             runtime="fake",
         )
     )
-    group = BaseExceptionGroup("mid-stream", [RuntimeError("noise"), sig])
+    group = BaseExceptionGroup("outer", [BaseExceptionGroup("mid-stream", [sig])])
     assert _extract_signal(group, DelegatedAgentPending) is sig
+
+
+def test_extract_refuses_multiple_distinct_signals() -> None:
+    first = ConsentPending("consent_1", "run_1", "request_coven_swap")
+    second = ConsentPending("consent_2", "run_1", "request_coven_swap")
+
+    assert _extract_signal(BaseExceptionGroup("ambiguous", [first, second]), ConsentPending) is None
 
 
 def test_extract_returns_none_when_absent() -> None:

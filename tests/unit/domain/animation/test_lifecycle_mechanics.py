@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -157,6 +158,105 @@ async def test_activate_unknown_capability(tmp_path: Path) -> None:
     assert result.phase is CapabilityPhase.UNKNOWN
 
 
+@pytest.mark.asyncio
+async def test_activation_adapter_receives_a_detached_capability_spec(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
+
+    async def mutate_spec(_animator: Any, spec: Any) -> ActivationResult:
+        spec.key = "forged:key"
+        spec.metadata["forged"] = True
+        return ActivationResult(accepted=False, phase=CapabilityPhase.WARM)
+
+    monkeypatch.setattr(
+        registry._runtime_adapters,  # pyright: ignore[reportPrivateUsage]
+        "activate_capability",
+        mutate_spec,
+    )
+
+    await registry.activate_capability(key)
+
+    canonical = registry.get_capability(key)
+    assert canonical is not None
+    assert canonical.key == key
+    assert "forged" not in canonical.metadata
+
+
+@pytest.mark.asyncio
+async def test_activation_cancellation_abandons_adapter_observation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
+    activation_started = asyncio.Event()
+    release = asyncio.Event()
+    cleanup_started = asyncio.Event()
+    cleanup_release = asyncio.Event()
+    abandoned: list[str] = []
+
+    async def activate(_animator: Any, _spec: Any) -> ActivationResult:
+        activation_started.set()
+        await release.wait()
+        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+
+    async def abandon(_animator: Any, spec: Any) -> None:
+        cleanup_started.set()
+        await cleanup_release.wait()
+        abandoned.append(spec.key)
+
+    monkeypatch.setattr(registry._runtime_adapters, "activate_capability", activate)  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(registry._runtime_adapters, "abandon_activation", abandon)  # pyright: ignore[reportPrivateUsage]
+    task = asyncio.create_task(registry.activate_capability(key))
+    await activation_started.wait()
+
+    task.cancel()
+    await cleanup_started.wait()
+    task.cancel()
+    await asyncio.sleep(0)
+    assert not task.done()
+
+    cleanup_release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert abandoned == [key]
+
+
+@pytest.mark.asyncio
+async def test_accepted_activation_refresh_cancellation_abandons_adapter_observation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
+    refresh_started = asyncio.Event()
+    release = asyncio.Event()
+    abandoned: list[str] = []
+
+    async def activate(_animator: Any, _spec: Any) -> ActivationResult:
+        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+
+    async def refresh(_animator_name: str) -> None:
+        refresh_started.set()
+        await release.wait()
+
+    async def abandon(_animator: Any, spec: Any) -> None:
+        abandoned.append(spec.key)
+
+    monkeypatch.setattr(registry._runtime_adapters, "activate_capability", activate)  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(registry, "refresh_capability_states_for_animator", refresh)
+    monkeypatch.setattr(registry._runtime_adapters, "abandon_activation", abandon)  # pyright: ignore[reportPrivateUsage]
+    task = asyncio.create_task(registry.activate_capability(key))
+    await refresh_started.wait()
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert abandoned == [key]
+
+
 # --- await_warm -------------------------------------------------------------
 
 
@@ -186,6 +286,8 @@ async def test_await_warm_timeout_abandons_adapter_observation_once(
 
     async def abandon(_animator: Any, spec: Any) -> None:
         abandoned.append(spec.key)
+        spec.key = "forged:key"
+        spec.metadata["forged"] = True
 
     monkeypatch.setattr(registry._runtime_adapters, "abandon_activation", abandon)  # pyright: ignore[reportPrivateUsage]
 
@@ -193,6 +295,10 @@ async def test_await_warm_timeout_abandons_adapter_observation_once(
         await registry.await_warm(key, timeout_s=0.02, interval_s=0.005)
 
     assert abandoned == [key]
+    canonical = registry.get_capability(key)
+    assert canonical is not None
+    assert canonical.key == key
+    assert "forged" not in canonical.metadata
 
 
 @pytest.mark.asyncio

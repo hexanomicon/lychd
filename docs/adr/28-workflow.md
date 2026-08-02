@@ -35,37 +35,51 @@ checkpoints; Riddle evaluation; Soulforge promotion.
 
 Fixed source registry has bridge_chat@1 (Bridge conversation, context, Agent turn, optional consent
 Gate, reply) and delegated_rite@1 (/delegate reference job, Durable Stasis, result/reply). The
-latter proves no external coding-agent/Tomb plane. Registry freezes after construction, rejects
-duplicate workflow and key/revision identity, tests non-default routes in declaration order, then
-falls back first registered. Run commits selected name and manifest; resume never routes Intent again.
+latter proves no external coding-agent/Tomb plane. One boot-composed catalogue is shared by
+admission, workers, Bridge, Loom, and Orb. It freezes after construction, rejects duplicate exact
+revisions, requires an explicit active revision when alternatives exist, permits registered
+revisions or whole names to remain retained but inactive, requires explicit non-default route
+precedence whenever multiple names are active, and has one active default. Run commits selected
+name and manifest; resume never routes Intent again. Loom exposes active/default/route-rank metadata
+without making retained revisions admissible.
 
 This is Core registry, not Extension contribution, Composition registry, Suite executor, scheduler,
-editor, or multi-revision archive. State separately owns v1 adapter, delegation, stasis, and Loom.
+editor, or durable Pattern publication store. State separately owns v1 adapter, delegation, stasis,
+and Loom.
 
 ## Pattern identity
 
-Manifest has schema, URL-safe key/revision, checkpoint schema, unique semantic station
-key/label/kind, permitted declared-endpoint edges, deterministic SHA-256 digest. Executable
-stations map one-to-one with Python nodes; construction rejects missing/duplicate/unknown/mismatch;
-delegate station requires DelegatedAgentNode; Gate/delegate derives Durable Stasis. It fingerprints
-source-adjacent declaration rather than compiling all semantics.
+Manifest has schema, URL-safe key/revision, reviewed implementation revision, checkpoint schema,
+a declared entry station, unique semantic station key/label/kind, permitted declared-endpoint edges, and deterministic
+SHA-256 digest. Executable
+stations map one-to-one with Python nodes; construction rejects missing/duplicate/unknown/mismatch,
+duplicate semantic edges, Gate or delegate marker drift, dynamic `BaseNode` returns whose topology
+cannot be proved, and any semantic transition set that differs from the public Graph node
+definitions. The declared entry must name the actual executable start node and participates in the
+digest. Exactly one terminal is required. Gate loops remain explicit Graph edges; a delegate
+station additionally declares its durable same-station re-entry edge. Gate/delegate derives Durable
+Stasis. The opaque implementation revision is a human-reviewed compatibility closure, not a hash
+of Python bytes: behavior that would invalidate parked state or replay must bump it or the Pattern
+revision. The manifest fingerprints source-adjacent declaration rather than compiling all semantics.
 
 Admission persists snapshot/digest; execution/resume requires exact current registered equality or
-fails pinned Pattern unavailable. Only one revision per current key exists: snapshot cannot execute
-removed code. Historical execution needs multi-revision registry, compatibility, drain, migration.
+fails pinned Pattern unavailable. Multiple exact source-registered revisions may coexist: new
+admission uses only an active revision while an older Run resolves its retained pinned revision
+directly. Removing old executable code still makes that revision unavailable. Compatibility
+Automatic source-code drift detection, durable publication, drain, and migration remain future work.
 
 ## Admission and ownership
 
 Weaver selects once from admitted Intent; Run ledger owns identity/status:
 
 1. validate/select Pattern;
-2. create Run with exact manifest;
-3. retain caller initiating record under Run id;
-4. publish job keyed by Run/enqueue sequence.
+2. atomically create Run with exact manifest and its initial durable delivery;
+3. retain caller initiating record while that delivery is held, then release it;
+4. publish the exact job key; relay it later when the broker is unavailable.
 
-No transactional outbox joins DB/broker, so publication failure compensates/reconciles. Workers
-claim/settle physical jobs; Graph checkpoints; Weaver neither writes directly, operates containers,
-nor becomes scheduler.
+The Run delivery outbox is transactional with Run truth, not with the external broker. Workers and
+the relay publish, claim, and settle physical hops; Graph checkpoints; Weaver neither writes the
+outbox directly, operates containers, nor becomes scheduler.
 
 ## Pattern contribution
 
@@ -129,7 +143,7 @@ cut; reuse requires full input/evaluation closure; unresolved attribution/exhaus
 ## Loom projection and drafting
 
 [Loom](../divination/altar/loom.md) reads fixed immutable manifest: stations, edges, Gate/delegate,
-revision, checkpoint schema, digest. Mermaid/canvas are views. Charcoal remains inert until canonical
+revision, implementation revision, checkpoint schema, digest. Mermaid/canvas are views. Charcoal remains inert until canonical
 declarative Pattern has typed ports/state/effects/authority/termination/continuity. Drawn grouping
 does not nest Pattern or execute Suite. Publication alone makes new immutable revision; Invocations
 stay pinned. Model prose, browser gesture, renderer state are not authority.
@@ -155,8 +169,8 @@ Renderer state cannot state all type, authority, effect, and recovery invariants
     - Ownership stays split and immutable revision prevents substitution.
 
 !!! failure "Cost"
-    - Revision compatibility, multi-revision execution, scheduling, parallel durability, editing, and outbox reconciliation are separate programs.
-    - Source-plus-manifest topology needs parity proof.
+    - Automatic compatibility proof, durable Pattern publication, scheduling, parallel durability, and editing are separate programs.
+    - Construction proves declared Graph topology only; effect, recovery, and compatibility semantics still need their own evidence.
 
 ## Acceptance evidence
 

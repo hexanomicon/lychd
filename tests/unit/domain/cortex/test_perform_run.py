@@ -12,7 +12,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from types import SimpleNamespace
 from typing import Any
 
 import pydantic_ai.models
@@ -21,16 +22,23 @@ from pydantic_ai.models.test import TestModel
 
 from lychd.agents.router import Intent
 from lychd.agents.the_first_one import default_forge
-from lychd.agents.workflows import builtin_workflow_registry
+from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, BuiltinWorkflowRegistry, builtin_workflow_registry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger
-from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
-from lychd.ghouls.runs import perform_run, reconcile_runs
+from lychd.ghouls.runs import (
+    _DeliveryFlushOutcome,
+    _flush_run_delivery_page,
+    flush_run_deliveries,
+    perform_run,
+    reconcile_runs,
+    relay_run_deliveries,
+)
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
@@ -64,9 +72,10 @@ class _ProbeQueue:
     jobs: dict[str, Any] = field(default_factory=dict)
     probe_error: Exception | None = None
     probed: list[str] = field(default_factory=list, init=False)
+    enqueued: list[dict[str, Any]] = field(default_factory=list, init=False)
 
     async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
-        _ = (job_or_func, kwargs)
+        self.enqueued.append({"func": job_or_func, **kwargs})
 
     async def job(self, job_key: str, /) -> Any:
         self.probed.append(job_key)
@@ -76,6 +85,33 @@ class _ProbeQueue:
 
     async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
         _ = (job, error, ttl)
+
+
+@dataclass
+class _RecoveringQueue(_ProbeQueue):
+    """Broker fake that becomes available while the lifespan relay is running."""
+
+    available: bool = False
+    published: asyncio.Event = field(default_factory=asyncio.Event)
+
+    async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
+        if not self.available:
+            msg = "broker unavailable"
+            raise ConnectionError(msg)
+        await super().enqueue(job_or_func, **kwargs)
+        self.published.set()
+
+
+@dataclass
+class _OrphanAwareQueue(_ProbeQueue):
+    """Broker fake that can terminally fence a worker owned by a dead boot."""
+
+    orphan_aborted: list[str] = field(default_factory=list)
+
+    async def abort_orphan(self, job: Any, error: str, /) -> None:
+        _ = error
+        self.orphan_aborted.append(str(job.key))
+        job.status = "aborted"
 
 
 def _substrate(*, dispatcher: Any) -> tuple[RunSubstrate, InMemoryRunLedger, BridgeSessionStore]:
@@ -145,6 +181,7 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
     assert dones[0].data == "done"
+
     node_events = [event for event in channel._replay if event.kind is RunEventKind.NODE]
     assert [(event.data, event.meta["phase"]) for event in node_events] == [
         ("weave_context", "entered"),
@@ -163,6 +200,118 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     settled = [t for t in session_rec.turns if t.state == "settled"]
     assert settled
     assert settled[0].content == "risen"
+
+
+@pytest.mark.asyncio
+async def test_perform_run_refreshes_saq_heartbeat_until_the_hop_settles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A live graph keeps SAQ's heartbeat fresh and leaves no updater after return."""
+    import lychd.ghouls.runs as runs_mod
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "heartbeat")
+    updated = asyncio.Event()
+
+    class _HeartbeatJob:
+        def __init__(self) -> None:
+            self.updates = 0
+
+        async def update(self) -> None:
+            self.updates += 1
+            updated.set()
+
+    class _HeartbeatRunner:
+        def __init__(self, **_kwargs: Any) -> None:
+            pass
+
+        async def run_graph(self, *_args: Any, **_kwargs: Any) -> None:
+            await asyncio.wait_for(updated.wait(), timeout=1)
+
+    job = _HeartbeatJob()
+    monkeypatch.setattr(runs_mod, "RUN_JOB_HEARTBEAT_INTERVAL_S", 0.001)
+    monkeypatch.setattr(runs_mod, "GraphRunner", _HeartbeatRunner)
+
+    result = await perform_run(
+        {"run_substrate": substrate, "job": job},
+        run_id="heartbeat",
+    )
+
+    assert result == {"status": "done", "run_id": "heartbeat"}
+    assert job.updates >= 1
+    settled_updates = job.updates
+    await asyncio.sleep(0.005)
+    assert job.updates == settled_updates
+
+
+@pytest.mark.parametrize("delivery_mode", ["fresh", "resume"])
+@pytest.mark.asyncio
+async def test_durable_delivery_mode_overrides_broker_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    delivery_mode: str,
+) -> None:
+    """A stale broker argument cannot choose fresh execution versus checkpoint resume."""
+    import lychd.ghouls.runs as runs_mod
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "mode-authority")
+    durable_resume = delivery_mode == "resume"
+    enqueue_seq = 0
+    if durable_resume:
+        assert await ledger.try_claim_run("mode-authority", enqueue_seq=0)
+        await ledger.park_consent("mode-authority", "consent-mode-authority")
+        admitted = await ledger.try_admit_consent(
+            "mode-authority",
+            consent_id="consent-mode-authority",
+        )
+        assert admitted == 1
+        enqueue_seq = admitted
+        await substrate.stasis_store.replace("mode-authority", [])
+
+    calls: list[str] = []
+
+    class _ModeRunner:
+        def __init__(self, **_kwargs: Any) -> None:
+            pass
+
+        async def run_graph(self, *_args: Any, **_kwargs: Any) -> None:
+            calls.append("fresh")
+
+        async def resume_graph(self, *_args: Any, **_kwargs: Any) -> None:
+            calls.append("resume")
+
+    monkeypatch.setattr(runs_mod, "GraphRunner", _ModeRunner)
+
+    await perform_run(
+        {"run_substrate": substrate},
+        run_id="mode-authority",
+        enqueue_seq=enqueue_seq,
+        resume=not durable_resume,
+    )
+
+    assert calls == ["resume" if durable_resume else "fresh"]
+
+
+@pytest.mark.asyncio
+async def test_perform_run_executes_pinned_old_revision_after_active_revision_changes() -> None:
+    model = TestModel(custom_output_args={"answer": "risen", "fragments": []}, call_tools=[])
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))
+    bridge_v2 = replace(BRIDGE_CHAT, manifest=replace(BRIDGE_CHAT.manifest, revision="2"))
+    substrate.workflows = BuiltinWorkflowRegistry(
+        workflows=(BRIDGE_CHAT, bridge_v2, DELEGATED_RITE),
+        active_revisions=((BRIDGE_CHAT.name, "2"), (DELEGATED_RITE.name, "1")),
+        route_precedence=(DELEGATED_RITE.name,),
+        default_name=BRIDGE_CHAT.name,
+    )
+    await _seed_run(ledger, sessions, "run-pinned-v1")
+
+    result = await perform_run({"run_substrate": substrate}, run_id="run-pinned-v1")
+
+    assert result == {"status": "done", "run_id": "run-pinned-v1"}
+    run = await ledger.get("run-pinned-v1")
+    assert run is not None
+    assert run.status is RunStatus.DONE
+    assert run.pattern_manifest["revision"] == "1"
 
 
 @pytest.mark.asyncio
@@ -303,7 +452,7 @@ async def test_cancellation_after_terminal_commit_still_emits_done(
     channel = substrate.bus.open("terminal-cancel")
     committed = asyncio.Event()
     release = asyncio.Event()
-    original_set_status = ledger.set_status
+    original_try_settle_claim = ledger.try_settle_claim
 
     class _ImmediateRunner:
         def __init__(self, **_kwargs: Any) -> None:
@@ -314,17 +463,24 @@ async def test_cancellation_after_terminal_commit_still_emits_done(
 
     async def delayed_terminal(
         run_id: str,
-        status: RunStatus,
         *,
+        enqueue_seq: int,
+        status: RunStatus,
         error: str | None = None,
-    ) -> None:
-        await original_set_status(run_id, status, error=error)
-        if status is RunStatus.DONE:
+    ) -> bool:
+        settled = await original_try_settle_claim(
+            run_id,
+            enqueue_seq=enqueue_seq,
+            status=status,
+            error=error,
+        )
+        if settled and status is RunStatus.DONE:
             committed.set()
             await release.wait()
+        return settled
 
     monkeypatch.setattr(runs_mod, "GraphRunner", _ImmediateRunner)
-    monkeypatch.setattr(ledger, "set_status", delayed_terminal)
+    monkeypatch.setattr(ledger, "try_settle_claim", delayed_terminal)
     task = asyncio.create_task(perform_run({"run_substrate": substrate}, run_id="terminal-cancel"))
     await committed.wait()
 
@@ -516,7 +672,7 @@ async def test_old_park_hop_cannot_fail_resume_that_already_claimed(
     class _ClaimThenRaiseQueue:
         async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
             assert job_or_func == "perform_run"
-            assert kwargs["resume"] is True
+            assert "resume" not in kwargs
             assert (
                 await ledger.try_claim_run(
                     str(kwargs["run_id"]),
@@ -538,8 +694,8 @@ async def test_old_park_hop_cannot_fail_resume_that_already_claimed(
     substrate.queues = {"runs": _ClaimThenRaiseQueue()}
     monkeypatch.setattr(runs_mod, "GraphRunner", _ParkingRunner)
 
-    with pytest.raises(RuntimeError, match="broker reply lost after resume claim"):
-        await perform_run({"run_substrate": substrate}, run_id="resume-owner")
+    result = await perform_run({"run_substrate": substrate}, run_id="resume-owner")
+    assert result == {"status": "queued", "run_id": "resume-owner"}
 
     run = await ledger.get("resume-owner")
     assert run is not None
@@ -579,6 +735,38 @@ async def test_perform_run_failure_marks_failed_and_emits_done() -> None:
 
 
 @pytest.mark.asyncio
+async def test_perform_run_retries_transient_failure_containment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import lychd.ghouls.runs as runs_mod
+
+    class _FlakyConsents:
+        calls = 0
+
+        async def cancel_pending_for_run(self, run_id: str, *, decided_by: str) -> int:
+            _ = (run_id, decided_by)
+            self.calls += 1
+            if self.calls == 1:
+                msg = "consent ledger briefly unavailable"
+                raise RuntimeError(msg)
+            return 0
+
+    substrate, ledger, sessions = _substrate(dispatcher=_RaisingDispatcher())
+    consents = _FlakyConsents()
+    substrate.consents = consents
+    await _seed_run(ledger, sessions, "run_containment_retry")
+    monkeypatch.setattr(runs_mod, "FAILURE_CONTAINMENT_RETRY_S", 0)
+
+    with pytest.raises(RuntimeError):
+        await perform_run({"run_substrate": substrate}, run_id="run_containment_retry")
+
+    run = await ledger.get("run_containment_retry")
+    assert run is not None
+    assert run.status is RunStatus.FAILED
+    assert consents.calls == 2
+
+
+@pytest.mark.asyncio
 async def test_perform_run_unknown_workflow_emits_terminal_and_closes() -> None:
     """An unknown workflow settles FAILED, emits ONE terminal DONE, and CLOSES the channel (F2).
 
@@ -598,7 +786,7 @@ async def test_perform_run_unknown_workflow_emits_terminal_and_closes() -> None:
     run = await ledger.get("run_uw")
     assert run is not None
     assert run.status is RunStatus.FAILED
-    assert "unknown workflow" in (run.error or "")
+    assert "pinned Pattern unavailable" in (run.error or "")
     dones = [e for e in list(channel._replay) if e.kind is RunEventKind.DONE]
     assert len(dones) == 1
     assert dones[0].data == "failed"
@@ -608,7 +796,13 @@ async def test_perform_run_unknown_workflow_emits_terminal_and_closes() -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "case",
-    ["invalid_checksum", "drifted_snapshot", "unavailable_revision"],
+    [
+        "invalid_checksum",
+        "drifted_snapshot",
+        "implementation_drift",
+        "unavailable_revision",
+        "mismatched_identity",
+    ],
 )
 async def test_perform_run_fails_honestly_when_pinned_pattern_is_unavailable(
     case: str,
@@ -624,9 +818,14 @@ async def test_perform_run_fails_honestly_when_pinned_pattern_is_unavailable(
     elif case == "drifted_snapshot":
         run.pattern_manifest["nodes"][0]["label"] = "Drifted station"
         _redigest_pattern(run.pattern_manifest)
-    else:
+    elif case == "implementation_drift":
+        run.pattern_manifest["implementation_revision"] = "py.0"
+        _redigest_pattern(run.pattern_manifest)
+    elif case == "unavailable_revision":
         run.pattern_manifest["revision"] = "unavailable"
         _redigest_pattern(run.pattern_manifest)
+    else:
+        run.pattern_manifest = DELEGATED_RITE.manifest.snapshot()
 
     channel = substrate.bus.open(run.run_id)
     result = await perform_run({"run_substrate": substrate}, run_id=run.run_id)
@@ -684,7 +883,7 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
 
     # The ghoul's completion tail loses: the DONE write is caught as benign, and the
     # finally's terminal re-emit is dropped by the closed-guard.
-    await _settle_terminal(ledger, "race", RunStatus.DONE)
+    await _settle_terminal(ledger, "race", 0, RunStatus.DONE)
     terminal = await ledger.get("race")
     assert terminal is not None
     ghoul_emitter.done(terminal.status.value)  # finally's re-emit → dropped by closed-guard
@@ -740,45 +939,48 @@ async def test_perform_run_threads_run_priority_and_parks_ledger_around_transiti
 
 
 @pytest.mark.asyncio
-async def test_reconcile_runs_sweeps_aged_queued() -> None:
-    """reconcile_runs fails a QUEUED row older than the sweep window (F3/F9/H2)."""
-    from datetime import UTC, datetime, timedelta
-
-    from lychd.ghouls.runs import RECONCILE_QUEUED_AFTER_S
-
+async def test_reconcile_runs_publishes_pending_deliveries_without_age_guess() -> None:
+    """Every accepted delivery is republished from truth, regardless of row age."""
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
-    await _seed_run(ledger, sessions, "fresh")  # young QUEUED — must survive
-    await _seed_run(ledger, sessions, "stale")  # aged QUEUED — must be swept
-    stale = await ledger.get("stale")
-    assert stale is not None
-    stale.created_at = datetime.now(UTC) - timedelta(seconds=RECONCILE_QUEUED_AFTER_S + 60)
+    await _seed_run(ledger, sessions, "fresh")
+    await _seed_run(ledger, sessions, "old")
 
     result = await reconcile_runs({"run_substrate": substrate})
-    assert result["count"] == 1
+    assert result == {"status": "reconciled", "count": 0, "probe_errors": 0}
 
-    swept = await ledger.get("stale")
-    assert swept is not None
-    assert swept.status is RunStatus.FAILED
-    assert swept.error == "enqueue lost"
-    fresh = await ledger.get("fresh")
-    assert fresh is not None
-    assert fresh.status is RunStatus.QUEUED  # untouched
+    for run_id in ("fresh", "old"):
+        run = await ledger.get(run_id)
+        delivery = await ledger.get_delivery(run_id, enqueue_seq=0)
+        assert run is not None
+        assert run.status is RunStatus.QUEUED
+        assert delivery is not None
+        assert delivery.state is RunDeliveryState.PUBLISHED
 
 
 @pytest.mark.asyncio
-async def test_reconcile_runs_preserves_aged_queued_with_durable_job() -> None:
-    """An old QUEUED row survives when its exact monotonic-hop SAQ job exists."""
-    from datetime import UTC, datetime, timedelta
+async def test_reconcile_runs_reports_queued_run_with_missing_delivery_truth() -> None:
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "missing-delivery")
+    del ledger._deliveries[("missing-delivery", 0)]
 
+    result = await reconcile_runs({"run_substrate": substrate})
+
+    run = await ledger.get("missing-delivery")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert result == {"status": "degraded", "count": 0, "probe_errors": 1}
+
+
+@pytest.mark.asyncio
+async def test_reconcile_runs_preserves_queued_with_durable_job() -> None:
+    """A QUEUED row survives when its exact monotonic-hop SAQ job exists."""
     from lychd.domain.cortex.engine import run_job_key
-    from lychd.ghouls.runs import RECONCILE_QUEUED_AFTER_S
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "durable")
     enqueue_seq = await ledger.bump_enqueue_seq("durable")
     durable = await ledger.get("durable")
     assert durable is not None
-    durable.created_at = datetime.now(UTC) - timedelta(seconds=RECONCILE_QUEUED_AFTER_S + 60)
 
     queue = substrate.queues["runs"]
     assert isinstance(queue, _ProbeQueue)
@@ -795,19 +997,87 @@ async def test_reconcile_runs_preserves_aged_queued_with_durable_job() -> None:
 
 
 @pytest.mark.asyncio
-async def test_reconcile_runs_preserves_queued_when_broker_probe_fails() -> None:
-    """A broker error is uncertainty, not evidence of an absent durable job."""
+async def test_reconcile_rotates_preboot_active_job_with_heartbeats_disabled() -> None:
+    """A dead worker's pre-claim ACTIVE record cannot strand its QUEUED Run."""
     from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
 
     from lychd.domain.cortex.engine import run_job_key
-    from lychd.ghouls.runs import RECONCILE_QUEUED_AFTER_S
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "preclaim-crash")
+    queue = _OrphanAwareQueue()
+    substrate.queues = {"runs": queue}
+    boot_cutoff = datetime.now(UTC)
+    key = run_job_key("preclaim-crash", 0)
+    queue.jobs[key] = SimpleNamespace(
+        key=key,
+        status="active",
+        started=int((boot_cutoff - timedelta(seconds=1)).timestamp() * 1000),
+        timeout=0,
+        heartbeat=0,
+    )
+
+    result = await reconcile_runs(
+        {"run_substrate": substrate},
+        boot_cutoff=boot_cutoff,
+    )
+
+    run = await ledger.get("preclaim-crash")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert run.enqueue_seq == 1
+    assert queue.orphan_aborted == [key]
+    assert queue.enqueued[-1]["key"] == run_job_key("preclaim-crash", 1)
+    assert result == {"status": "reconciled", "count": 1, "probe_errors": 0}
+
+
+@pytest.mark.asyncio
+async def test_reconcile_preserves_current_boot_active_preclaim_job() -> None:
+    """The boot fence never aborts a worker generation started by this process."""
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from lychd.domain.cortex.engine import run_job_key
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "current-preclaim")
+    queue = _OrphanAwareQueue()
+    substrate.queues = {"runs": queue}
+    boot_cutoff = datetime.now(UTC)
+    key = run_job_key("current-preclaim", 0)
+    queue.jobs[key] = SimpleNamespace(
+        key=key,
+        status="active",
+        started=int((boot_cutoff + timedelta(seconds=1)).timestamp() * 1000),
+        timeout=0,
+        heartbeat=0,
+    )
+
+    result = await reconcile_runs(
+        {"run_substrate": substrate},
+        boot_cutoff=boot_cutoff,
+    )
+
+    run = await ledger.get("current-preclaim")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert run.enqueue_seq == 0
+    assert queue.orphan_aborted == []
+    assert queue.enqueued == []
+    assert result == {"status": "reconciled", "count": 0, "probe_errors": 0}
+
+
+@pytest.mark.asyncio
+async def test_reconcile_runs_preserves_queued_when_broker_probe_fails() -> None:
+    """A broker error is uncertainty, not evidence of an absent durable job."""
+    from lychd.domain.cortex.engine import run_job_key
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "uncertain")
     enqueue_seq = await ledger.bump_enqueue_seq("uncertain")
     uncertain = await ledger.get("uncertain")
     assert uncertain is not None
-    uncertain.created_at = datetime.now(UTC) - timedelta(seconds=RECONCILE_QUEUED_AFTER_S + 60)
 
     queue = substrate.queues["runs"]
     assert isinstance(queue, _ProbeQueue)
@@ -820,6 +1090,302 @@ async def test_reconcile_runs_preserves_queued_when_broker_probe_fails() -> None
     assert kept.status is RunStatus.QUEUED
     assert queue.probed == [run_job_key("uncertain", enqueue_seq)]
     assert result == {"status": "degraded", "count": 0, "probe_errors": 1}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("delivery_mode", ["fresh", "resume"])
+async def test_delivery_flush_rotates_terminal_broker_record_without_changing_mode(
+    delivery_mode: str,
+) -> None:
+    """A dead SAQ key gets a fresh sequence while fresh/resume truth stays exact."""
+    from types import SimpleNamespace
+
+    from lychd.domain.cortex.engine import run_job_key
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "terminal-job")
+    resume = delivery_mode == "resume"
+    enqueue_seq = 0
+    if resume:
+        assert await ledger.try_claim_run("terminal-job", enqueue_seq=0)
+        await ledger.park_consent("terminal-job", "consent-terminal-job")
+        admitted = await ledger.try_admit_consent(
+            "terminal-job",
+            consent_id="consent-terminal-job",
+        )
+        assert admitted == 1
+        enqueue_seq = admitted
+
+    queue = substrate.queues["runs"]
+    assert isinstance(queue, _ProbeQueue)
+    queue.jobs[run_job_key("terminal-job", enqueue_seq)] = SimpleNamespace(status="failed")
+
+    result = await flush_run_deliveries({"run_substrate": substrate})
+
+    run = await ledger.get("terminal-job")
+    assert run is not None
+    assert run.enqueue_seq == enqueue_seq + 1
+    old = await ledger.get_delivery("terminal-job", enqueue_seq=enqueue_seq)
+    current = await ledger.get_delivery("terminal-job", enqueue_seq=enqueue_seq + 1)
+    assert old is not None
+    assert old.state is RunDeliveryState.SETTLED
+    assert current is not None
+    assert current.state is RunDeliveryState.PUBLISHED
+    assert current.resume is resume
+    assert queue.enqueued[-1]["key"] == run_job_key("terminal-job", enqueue_seq + 1)
+    assert "resume" not in queue.enqueued[-1]
+    assert result == {"status": "reconciled", "count": 1, "probe_errors": 0}
+
+
+@pytest.mark.asyncio
+async def test_delivery_relay_recovers_transient_broker_outage() -> None:
+    """Accepted work publishes without requiring a restart after broker recovery."""
+    from lychd.domain.cortex.engine import run_job_key
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "relay")
+    queue = _RecoveringQueue()
+    substrate.queues = {"runs": queue}
+    stop = asyncio.Event()
+    relay = asyncio.create_task(
+        relay_run_deliveries(
+            {"run_substrate": substrate},
+            stop=stop,
+            interval_s=0.001,
+        )
+    )
+    await asyncio.sleep(0.01)
+    queue.available = True
+    await asyncio.wait_for(queue.published.wait(), timeout=1)
+    stop.set()
+    await relay
+
+    delivery = await ledger.get_delivery("relay", enqueue_seq=0)
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.PUBLISHED
+    assert delivery.publish_attempts >= 2
+    assert queue.enqueued[-1]["key"] == run_job_key("relay", 0)
+
+
+@pytest.mark.asyncio
+async def test_delivery_page_revisits_a_clean_active_broker_job() -> None:
+    from lychd.domain.cortex.engine import run_job_key
+
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "active-job")
+    queue = substrate.queues["runs"]
+    assert isinstance(queue, _ProbeQueue)
+    queue.jobs[run_job_key("active-job", 0)] = SimpleNamespace(status="active")
+
+    result, _cursor = await _flush_run_delivery_page(
+        substrate,
+        after=None,
+        refuse_held=False,
+    )
+
+    assert result["status"] == "reconciled"
+    assert result["_revisit"] is True
+    delivery = await ledger.get_delivery("active-job", enqueue_seq=0)
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.PUBLISHED
+
+
+@pytest.mark.asyncio
+async def test_delivery_page_isolates_one_exception_and_advances_later_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    await _seed_run(ledger, sessions, "row-failure-a")
+    await _seed_run(ledger, sessions, "row-failure-b")
+    seen: list[str] = []
+
+    async def fake_target(
+        _substrate: RunSubstrate,
+        run: Any,
+        *,
+        refuse_held: bool,
+    ) -> _DeliveryFlushOutcome:
+        _ = refuse_held
+        seen.append(run.run_id)
+        if run.run_id == "row-failure-a":
+            message = "corrupt delivery row"
+            raise RuntimeError(message)
+        return _DeliveryFlushOutcome(repaired=1)
+
+    monkeypatch.setattr("lychd.ghouls.runs._delivery_target", fake_target)
+
+    result = await flush_run_deliveries({"run_substrate": substrate})
+
+    assert seen == ["row-failure-a", "row-failure-b"]
+    assert result == {"status": "degraded", "count": 1, "probe_errors": 1}
+
+
+@pytest.mark.asyncio
+async def test_delivery_relay_retries_a_degraded_page_without_stalling_the_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    calls: list[tuple[datetime, str] | None] = []
+    stop = asyncio.Event()
+    first_page_end = (datetime.now(UTC), "page-1-end")
+
+    async def fake_page(
+        *_args: Any,
+        after: tuple[datetime, str] | None,
+        **_kwargs: Any,
+    ) -> tuple[dict[str, int | str], tuple[datetime, str]]:
+        calls.append(after)
+        if len(calls) == 3:
+            stop.set()
+        return (
+            {"status": "degraded", "count": 0, "probe_errors": 1},
+            first_page_end,
+        )
+
+    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
+    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+
+    await relay_run_deliveries(
+        {"run_substrate": substrate},
+        stop=stop,
+        interval_s=0.001,
+    )
+
+    assert calls == [None, None, first_page_end]
+
+
+@pytest.mark.asyncio
+async def test_delivery_relay_revisits_a_held_page_after_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    calls: list[tuple[datetime, str] | None] = []
+    stop = asyncio.Event()
+    first_page_end = (datetime.now(UTC), "held-page-end")
+
+    async def fake_page(
+        *_args: Any,
+        after: tuple[datetime, str] | None,
+        **_kwargs: Any,
+    ) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
+        calls.append(after)
+        if len(calls) == 1:
+            return (
+                {
+                    "status": "reconciled",
+                    "count": 0,
+                    "probe_errors": 0,
+                    "_revisit": True,
+                },
+                first_page_end,
+            )
+        if len(calls) == 2:
+            return (
+                {
+                    "status": "reconciled",
+                    "count": 0,
+                    "probe_errors": 0,
+                    "_revisit": False,
+                },
+                first_page_end,
+            )
+        stop.set()
+        return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
+
+    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
+    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+
+    await relay_run_deliveries(
+        {"run_substrate": substrate},
+        stop=stop,
+        interval_s=0.001,
+    )
+
+    assert calls == [None, None, first_page_end]
+
+
+@pytest.mark.asyncio
+async def test_delivery_relay_retry_exception_does_not_stall_the_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    calls: list[tuple[datetime, str] | None] = []
+    stop = asyncio.Event()
+    first_page_end = (datetime.now(UTC), "page-1-end")
+
+    async def fake_page(
+        *_args: Any,
+        after: tuple[datetime, str] | None,
+        **_kwargs: Any,
+    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
+        calls.append(after)
+        if len(calls) == 2:
+            message = "retry page unavailable"
+            raise RuntimeError(message)
+        if len(calls) == 3:
+            stop.set()
+            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
+        return (
+            {"status": "degraded", "count": 0, "probe_errors": 1},
+            first_page_end,
+        )
+
+    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
+    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+
+    await relay_run_deliveries(
+        {"run_substrate": substrate},
+        stop=stop,
+        interval_s=0.001,
+    )
+
+    assert calls == [None, None, first_page_end]
+
+
+@pytest.mark.asyncio
+async def test_delivery_relay_fairly_retries_multiple_blocked_pages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    calls: list[tuple[datetime, str] | None] = []
+    stop = asyncio.Event()
+    first_page_end = (datetime.now(UTC), "page-1-end")
+    second_page_end = (datetime.now(UTC), "page-2-end")
+
+    async def fake_page(
+        *_args: Any,
+        after: tuple[datetime, str] | None,
+        **_kwargs: Any,
+    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
+        calls.append(after)
+        call = len(calls)
+        if call == 1:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 2:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 3:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, second_page_end)
+        if call == 4:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 5:
+            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
+        stop.set()
+        return ({"status": "reconciled", "count": 1, "probe_errors": 0}, second_page_end)
+
+    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
+    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+
+    await relay_run_deliveries(
+        {"run_substrate": substrate},
+        stop=stop,
+        interval_s=0.001,
+    )
+
+    assert calls == [None, None, first_page_end, None, second_page_end, first_page_end]
 
 
 @pytest.mark.asyncio

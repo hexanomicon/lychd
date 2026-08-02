@@ -120,4 +120,4 @@ They are validated and inert. The current graph is not a VRAM capacity solver.
 
 [State of Work](../../state-of-the-work.md#declared-conflict-topology) records the available
 conflict contract; [safe runtime transitions](../../state-of-the-work.md#safe-runtime-transitions)
-remain partial, including the direct shared-dynamic activation guard gap and real-host proof.
+remain partial, including soft-load recovery and real-host proof.

@@ -96,7 +96,9 @@ LEGAL_DELEGATED_AGENT_TRANSITIONS: dict[DelegatedAgentJobStatus, frozenset[Deleg
     DelegatedAgentJobStatus.FAILED: frozenset(),
     DelegatedAgentJobStatus.CANCELLED: frozenset(),
     DelegatedAgentJobStatus.TIMED_OUT: frozenset(),
-    DelegatedAgentJobStatus.LOST: frozenset(),
+    # LOST is terminal for result adoption and polling, but it is not proof that
+    # the external process stopped. Explicit containment may still settle it.
+    DelegatedAgentJobStatus.LOST: frozenset({DelegatedAgentJobStatus.CANCELLED}),
 }
 
 

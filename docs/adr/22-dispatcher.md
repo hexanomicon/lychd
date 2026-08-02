@@ -61,7 +61,24 @@ open runtime facts. An unknown local runtime stays passive unless an explicit ad
 OpenAI-compatible alias gives it semantics. A Portal creates routes only for models declared in
 its Rune; zero declarations mean zero routes. Portal routes are non-dynamic and non-dedicated.
 Their default `probe = false` makes no discovery egress, and a readiness probe never authorizes
-private transmission.
+private transmission. That unprobed route is projected as `UNKNOWN` and unverified, never fabricated
+as `WARM`, so it cannot receive a grant.
+
+Soulstone adapter ownership is the adapter's exact declared runtime key; `supports()` cannot claim
+another adapter's runtime. Registry hydration is staged and rejects a runtime unless it retains the
+exact input Rune and its name and id equal the Rune name. Every synthesized specification must then
+name that Animator, the Rune's canonical runtime and source kind, and the canonical
+`{animator}:{family}:{model_id}` key before any snapshot is published.
+
+A probe is a total observation of the exact requested capability-key set. Duplicate, missing, or
+foreign keys are contract failures; a successful result replaces that Animator's cached states as
+one operation, while an exception, cancellation during the probe, or malformed result invalidates
+the affected prior observations.
+A failed full-registry refresh invalidates the full cached observation set rather than preserving
+stale warmth. Initial
+hydration probes the complete staged snapshot and publishes neither runtime nor state until every
+result validates, so a failed first probe leaves the registry retryable. Portal egress probing is
+selected only by the exact Portal definition's typed strategy.
 
 ## Resolution
 
@@ -71,6 +88,11 @@ open admission, active Animator, warm capability, Animator name, capability key.
 readiness matching, not a judgment of quality, price, privacy, or correctness.
 
 The chosen record is refreshed immediately before issue.
+Capability specifications passed to activation or abandonment adapters and every persistent-
+resident projection are deep snapshots; extension code cannot rewrite the canonical declaration
+through those call surfaces. Animator Rune and group projections are likewise detached, and group
+membership is returned as an immutable sequence. Connector model inventories are deep-copied on
+admission and every registry projection, including inventories supplied by extension connectors.
 
 | Observation | Result |
 | --- | --- |
@@ -91,6 +113,8 @@ Registry issue permits only a `WARM` record. The frozen grant contains its speci
 snapshot, `GrantLease` identity/holder/issue time/scope, resolved generation profile, live
 Animator, required hydrated model, and bound toolsets. `tool_execution` may have no model; every
 other current family must hydrate one, or fails unavailable before later execution.
+Specification and state accessors return defensive copies, including nested mutable values; only
+the explicitly named runtime/model/tool handles remain live process objects.
 
 The registry creates the identity; Dispatcher registers it in the process-local `LeaseLedger`.
 Its context manager releases on ordinary exit, body failure, and observation failure. Duplicate
@@ -113,15 +137,18 @@ authorization, retention, and provider conversion remain separate work.
 
 ## Policy boundary
 
-Selection is a future enforcement seam, not present policy. Sigil visibility, Portal privacy and
-secure mode, Toll arbitration, Censor/Privacy Cut/`TransformationReceipt`/Egress Gate,
-unsupported-modality planning, A2A, and delegated-agent choice are all unwired. They must compose
-one typed, fail-closed path before grant; none may create an alternate route around Dispatcher.
+Selection is mostly a future enforcement seam, not a complete policy engine. One coarse rule is
+delivered now: every `SourceKind.PORTAL` candidate fails closed before grant, including direct-key
+dispatch, because no typed egress admission path exists. This quarantine is not privacy-safe Portal
+operation. Sigil visibility, Portal secure mode, Toll arbitration, Censor/Privacy
+Cut/`TransformationReceipt`/Egress Gate, unsupported-modality planning, A2A, and delegated-agent
+choice are unwired. They must compose one typed, fail-closed path before grant; none may create an
+alternate route around Dispatcher.
 
 [Security](09-security.md#portal-privatization-and-egress) requires both admission before a Portal
 grant and a decision over the exact canonical payload immediately before transmission. Dispatcher
-composes those decisions; it does not transform data or allow retry, fallback, delegated child,
-or consent to reuse an obsolete verdict.
+will compose those decisions; it does not transform data or currently admit any Portal grant. A
+future path must not allow retry, fallback, delegated child, or consent to reuse an obsolete verdict.
 
 ## Correspondence
 
@@ -137,7 +164,7 @@ one warm vessel. Moving the Coven is Orchestrator's work; meaning the act is not
 
 !!! failure "Cost"
     - Registry and lease coordination are process-local.
-    - Order ignores quality, price, privacy, and Sigil visibility; incomplete probes can refuse a viable route.
+    - Order ignores quality, price, privacy, and Sigil visibility; Portal sources are quarantined and incomplete probes can refuse a viable local route.
     - The matcher picks one candidate and does not score or explain alternatives.
 
 ## Verification

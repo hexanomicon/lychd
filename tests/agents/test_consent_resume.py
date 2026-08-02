@@ -12,6 +12,7 @@ the streaming API. Scenario 5 (durable restart) lives beside this in 4C-6.
 # ruff: noqa: PT018 - compound run-state asserts read clearer than split ones here
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pydantic_ai.models
@@ -26,14 +27,15 @@ from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.cortex.context import ContextOrchestrator
+from lychd.domain.cortex.engine import QueueRouter, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import InMemoryRunLedger
-from lychd.domain.cortex.runs import RunStatus
+from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
 from lychd.domain.web.fragments import build_fragment_registry
 from lychd.domain.web.sessions import BridgeSessionStore
-from lychd.ghouls.runs import perform_run
+from lychd.ghouls.runs import flush_run_deliveries, perform_run, relay_consents
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry, approval_test_toolset
 
 if TYPE_CHECKING:
@@ -132,13 +134,13 @@ async def test_scenario1_parks_with_s4_emit_ordering() -> None:
     await _seed(ledger, sessions, "run_1")
 
     order: list[str] = []
-    orig_set = ledger.set_status
+    orig_park = ledger.park_consent
 
-    async def rec_set(rid: str, status: RunStatus, *, error: str | None = None) -> None:
-        await orig_set(rid, status, error=error)
-        order.append(f"status:{status.value}")
+    async def rec_park(rid: str, consent_id: str) -> None:
+        await orig_park(rid, consent_id)
+        order.append("status:awaiting_consent")
 
-    ledger.set_status = rec_set  # type: ignore[method-assign]
+    ledger.park_consent = rec_park  # type: ignore[method-assign]
     orig_emitter = bus.emitter
 
     def rec_emitter(rid: str) -> Any:
@@ -180,7 +182,7 @@ async def _park(substrate: RunSubstrate, run_id: str) -> str:
 
 async def _resume(substrate: RunSubstrate, run_id: str, consent_id: str, *, approved: bool) -> dict[str, Any]:
     await substrate.consents.decide(consent_id, approved=approved, decided_by="magus")  # verdict commits to the ledger
-    await substrate.ledger.set_status(run_id, RunStatus.QUEUED)  # engine.approve edge (re-enqueue)
+    assert await substrate.ledger.try_admit_consent(run_id, consent_id=consent_id) is not None
     return await perform_run({"run_substrate": substrate}, run_id=run_id, resume=True)
 
 
@@ -255,16 +257,27 @@ async def test_scenario2_approve_resumes_and_runs_tool_body() -> None:
     seq_at_park = channel.next_seq
     parked = await ledger.get("run_2")
     assert parked is not None
-    original_set_status = ledger.set_status
+    original_try_settle_claim = ledger.try_settle_claim
     checkpoint_existed_at_done = False
 
-    async def record_terminal_order(run_id: str, status: RunStatus, *, error: str | None = None) -> None:
+    async def record_terminal_order(
+        run_id: str,
+        *,
+        enqueue_seq: int,
+        status: RunStatus,
+        error: str | None = None,
+    ) -> bool:
         nonlocal checkpoint_existed_at_done
         if status is RunStatus.DONE:
             checkpoint_existed_at_done = await substrate.stasis_store.exists("run_2")
-        await original_set_status(run_id, status, error=error)
+        return await original_try_settle_claim(
+            run_id,
+            enqueue_seq=enqueue_seq,
+            status=status,
+            error=error,
+        )
 
-    ledger.set_status = record_terminal_order
+    ledger.try_settle_claim = record_terminal_order
 
     result = await _resume(substrate, "run_2", consent_id, approved=True)
 
@@ -528,7 +541,7 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     sub2 = _mk_substrate(bus2, sessions)
 
     await consents.decide(consent_id, approved=True, decided_by="magus")
-    await ledger.set_status("run_5", RunStatus.QUEUED)
+    assert await ledger.try_admit_consent("run_5", consent_id=consent_id) == 1
     resume_result = await perform_run({"run_substrate": sub2}, run_id="run_5", resume=True)
 
     assert resume_result["status"] == "done"
@@ -617,17 +630,15 @@ async def test_preflip_verdict_is_not_lost() -> None:
     await _seed(ledger, sessions, "run_pf")
 
     # The graph parks with a PENDING verdict (AwaitConsent raises); `perform_run` then
-    # calls `set_consent` (run still RUNNING) BEFORE the AWAITING_CONSENT flip. Hook it to
-    # land the Magus's approve in exactly that pre-flip window — where `engine.approve`
-    # would no-op because the row is not yet AWAITING_CONSENT.
-    orig_set_consent = ledger.set_consent
+    # Hook the atomic park boundary and land the Magus's verdict just before the
+    # Run flips. `engine.approve` would still no-op in this window.
+    orig_park_consent = ledger.park_consent
 
-    async def set_consent_then_preflip_approve(run_id: str, consent_id: str | None) -> None:
-        await orig_set_consent(run_id, consent_id)
-        if consent_id is not None:
-            await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+    async def decide_then_park_consent(run_id: str, consent_id: str) -> None:
+        await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+        await orig_park_consent(run_id, consent_id)
 
-    ledger.set_consent = set_consent_then_preflip_approve
+    ledger.park_consent = decide_then_park_consent
 
     channel = bus.open("run_pf")
     result = await perform_run({"run_substrate": substrate}, run_id="run_pf")
@@ -637,52 +648,227 @@ async def test_preflip_verdict_is_not_lost() -> None:
     assert run is not None
     assert run.status is RunStatus.QUEUED
     assert len(queue.enqueued) == 1
-    assert queue.enqueued[0]["resume"] is True
+    assert "resume" not in queue.enqueued[0]
     assert channel.closed is False  # a re-admitted run keeps its stream open for the resume hop
 
 
 @pytest.mark.asyncio
-async def test_preflip_resume_enqueue_failure_restores_consent_wait() -> None:
-    """The post-park race path compensates a failed enqueue and remains replayable."""
-    from lychd.domain.cortex.engine import QueueRouter, RunEngine
-
-    substrate, ledger, bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+async def test_preflip_resume_enqueue_failure_remains_durable_for_relay() -> None:
+    """The post-park race keeps an admitted delivery retryable across broker failure."""
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
     substrate.queues = {"runs": _FailingResumeQueue()}
     await _seed(ledger, sessions, "run_pf_fail")
 
-    original_set_consent = ledger.set_consent
+    original_park_consent = ledger.park_consent
 
-    async def set_consent_then_preflip_approve(run_id: str, consent_id: str | None) -> None:
-        await original_set_consent(run_id, consent_id)
-        if consent_id is not None:
-            await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+    async def decide_then_park_consent(run_id: str, consent_id: str) -> None:
+        await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+        await original_park_consent(run_id, consent_id)
 
-    ledger.set_consent = set_consent_then_preflip_approve
+    ledger.park_consent = decide_then_park_consent
 
-    with pytest.raises(RuntimeError, match="resume broker down"):
-        await perform_run({"run_substrate": substrate}, run_id="run_pf_fail")
+    result = await perform_run({"run_substrate": substrate}, run_id="run_pf_fail")
 
-    restored = await ledger.get("run_pf_fail")
-    assert restored is not None
-    assert restored.status is RunStatus.AWAITING_CONSENT
-    assert restored.consent_id is not None
-    assert restored.enqueue_seq == 1
+    assert result["status"] == "queued"
+    admitted = await ledger.get("run_pf_fail")
+    assert admitted is not None
+    assert admitted.status is RunStatus.QUEUED
+    assert admitted.consent_id is not None
+    assert admitted.enqueue_seq == 1
+    pending = await ledger.get_delivery("run_pf_fail", enqueue_seq=1)
+    assert pending is not None
+    assert pending.state is RunDeliveryState.PENDING
+    assert pending.last_error == "resume broker down"
 
     retry_queue = _RecordingQueue()
-    engine = RunEngine(
-        ledger=ledger,
-        bus=bus,
-        workflows=substrate.workflows,
-        queue_router=QueueRouter(),
-        queues={"runs": retry_queue},
-    )
-    await engine.approve(restored.consent_id, approved=True)
+    substrate.queues = {"runs": retry_queue}
+    relay = await flush_run_deliveries({"run_substrate": substrate})
 
     retried = await ledger.get("run_pf_fail")
     assert retried is not None
     assert retried.status is RunStatus.QUEUED
+    assert relay == {"status": "reconciled", "count": 0, "probe_errors": 0}
     assert len(retry_queue.enqueued) == 1
-    assert retry_queue.enqueued[0]["resume"] is True
+    assert "resume" not in retry_queue.enqueued[0]
+    published = await ledger.get_delivery("run_pf_fail", enqueue_seq=1)
+    assert published is not None
+    assert published.state is RunDeliveryState.PUBLISHED
+
+
+@pytest.mark.asyncio
+async def test_post_park_verdict_probe_failure_preserves_waiting_authority() -> None:
+    """A read outage after park leaves the parent and card durably pending."""
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(ledger, sessions, "run_probe_failure")
+
+    original_verdict = substrate.consents.verdict
+    verdict_reads = 0
+
+    async def unavailable(consent_id: str) -> bool | None:
+        nonlocal verdict_reads
+        verdict_reads += 1
+        if verdict_reads == 1:
+            return await original_verdict(consent_id)
+        msg = "consent store read unavailable"
+        raise RuntimeError(msg)
+
+    substrate.consents.verdict = unavailable
+
+    result = await perform_run(
+        {"run_substrate": substrate},
+        run_id="run_probe_failure",
+    )
+
+    run = await ledger.get("run_probe_failure")
+    assert run is not None
+    assert run.status is RunStatus.AWAITING_CONSENT
+    assert run.consent_id is not None
+    assert result == {"status": "awaiting_consent", "run_id": "run_probe_failure"}
+    assert await substrate.consents.pending_count() == 1
+
+
+@pytest.mark.asyncio
+async def test_worker_cancellation_during_post_park_probe_preserves_authority() -> None:
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    await _seed(ledger, sessions, "run_probe_cancel")
+    original_verdict = substrate.consents.verdict
+    reads = 0
+    probe_entered = asyncio.Event()
+
+    async def blocked_after_park(consent_id: str) -> bool | None:
+        nonlocal reads
+        reads += 1
+        if reads == 1:
+            return await original_verdict(consent_id)
+        probe_entered.set()
+        await asyncio.Event().wait()
+        return None
+
+    substrate.consents.verdict = blocked_after_park
+    task = asyncio.create_task(
+        perform_run(
+            {"run_substrate": substrate},
+            run_id="run_probe_cancel",
+        )
+    )
+    await probe_entered.wait()
+
+    task.cancel()
+    result = await task
+
+    run = await ledger.get("run_probe_cancel")
+    assert run is not None
+    assert run.status is RunStatus.AWAITING_CONSENT
+    assert result == {"status": "awaiting_consent", "run_id": "run_probe_cancel"}
+    assert await substrate.consents.pending_count() == 1
+
+
+@pytest.mark.asyncio
+async def test_runtime_consent_relay_recovers_failed_post_park_decision_probe() -> None:
+    substrate, ledger, _bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    queue = _RecordingQueue()
+    substrate.queues = {"runs": queue}
+    await _seed(ledger, sessions, "run_decided_probe_failure")
+    original_park = ledger.park_consent
+    original_verdict = substrate.consents.verdict
+    reads = 0
+
+    async def decide_then_park(run_id: str, consent_id: str) -> None:
+        await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
+        await original_park(run_id, consent_id)
+
+    async def fail_post_park_once(consent_id: str) -> bool | None:
+        nonlocal reads
+        reads += 1
+        if reads == 1:
+            return None
+        if reads == 2:
+            msg = "one failed post-park read"
+            raise RuntimeError(msg)
+        return await original_verdict(consent_id)
+
+    ledger.park_consent = decide_then_park
+    substrate.consents.verdict = fail_post_park_once
+    result = await perform_run(
+        {"run_substrate": substrate},
+        run_id="run_decided_probe_failure",
+    )
+    assert result == {
+        "status": "awaiting_consent",
+        "run_id": "run_decided_probe_failure",
+    }
+
+    stop = asyncio.Event()
+    relay = asyncio.create_task(
+        relay_consents(
+            engine=RunEngine(
+                ledger=ledger,
+                bus=substrate.bus,
+                workflows=substrate.workflows,
+                queue_router=QueueRouter(),
+                queues=substrate.queues,
+                consents=substrate.consents,
+            ),
+            substrate=substrate,
+            stop=stop,
+            interval_s=0.001,
+        )
+    )
+    for _ in range(100):
+        if queue.enqueued:
+            break
+        await asyncio.sleep(0.001)
+    stop.set()
+    await relay
+
+    run = await ledger.get("run_decided_probe_failure")
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert len(queue.enqueued) == 1
+
+
+@pytest.mark.asyncio
+async def test_consent_relay_fairly_retries_multiple_degraded_pages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    calls: list[tuple[datetime, str] | None] = []
+    stop = asyncio.Event()
+    first_page_end = (datetime.now(UTC), "consent-page-1")
+    second_page_end = (datetime.now(UTC), "consent-page-2")
+
+    async def fake_page(
+        _substrate: Any,
+        _engine: Any,
+        *,
+        after: tuple[datetime, str] | None,
+    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
+        calls.append(after)
+        call = len(calls)
+        if call == 1:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 2:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 3:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, second_page_end)
+        if call == 4:
+            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+        if call == 5:
+            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
+        stop.set()
+        return ({"status": "reconciled", "count": 1, "probe_errors": 0}, second_page_end)
+
+    monkeypatch.setattr("lychd.ghouls.runs._reconcile_consent_page", fake_page)
+
+    await relay_consents(
+        engine=object(),
+        substrate=object(),
+        stop=stop,
+        interval_s=0.001,
+    )
+
+    assert calls == [None, None, first_page_end, None, second_page_end, first_page_end]
 
 
 # --- stasis lost: resume with the checkpoint gone → honest FAILED, never a silent re-run
@@ -698,7 +884,7 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     await substrate.stasis_store.delete("run_sl")  # the checkpoint vanished
 
     await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
-    await ledger.set_status("run_sl", RunStatus.QUEUED)
+    assert await ledger.try_admit_consent("run_sl", consent_id=consent_id) == 1
     result = await perform_run({"run_substrate": substrate}, run_id="run_sl", resume=True)
 
     assert result["status"] == "failed"

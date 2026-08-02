@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bridge/runs/{run_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** CancelRun */
+        post: operations["cancelBridgeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bridge/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -174,6 +191,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loom/source/patterns/{pattern_id}/{revision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RevisionSource */
+        get: operations["getLoomPatternRevisionSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/loom/source/workflows/{workflow}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source */
+        get: operations["getLoomWorkflowSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/loom/{pattern_id}/{revision}": {
         parameters: {
             query?: never;
@@ -191,23 +242,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/loom/{pattern_id}/{revision}/source": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** RevisionSource */
-        get: operations["getLoomPatternRevisionSource"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/loom/{workflow}": {
         parameters: {
             query?: never;
@@ -217,23 +251,6 @@ export interface paths {
         };
         /** View */
         get: operations["getLoomWorkflow"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/loom/{workflow}/source": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Source */
-        get: operations["getLoomWorkflowSource"];
         put?: never;
         post?: never;
         delete?: never;
@@ -383,7 +400,9 @@ export interface components {
             content: string;
             /** Format: date-time */
             created_at: string;
-            fragments?: string[];
+            fragments?: {
+                [key: string]: unknown;
+            }[];
             /** @enum {string} */
             role: "user" | "agent";
             run_id?: string | null;
@@ -403,7 +422,7 @@ export interface components {
              * @default pending_consent
              * @enum {string}
              */
-            state: "pending_consent" | "consented" | "refused";
+            state: "pending_consent" | "consented" | "refused" | "cancelled";
             tool_name: string;
             vision: string;
         };
@@ -486,6 +505,14 @@ export interface components {
             summary: string;
             transition_request_id?: string | null;
         };
+        /** FrameworkError */
+        FrameworkError: {
+            detail: string;
+            extra?: {
+                [key: string]: unknown;
+            } | unknown[] | null;
+            status_code: number;
+        };
         /** LoomEdgeView */
         LoomEdgeView: {
             key: string;
@@ -501,11 +528,16 @@ export interface components {
         };
         /** LoomSummary */
         LoomSummary: {
+            active: boolean;
+            default: boolean;
             description: string;
             detail_path: string;
             digest: string;
+            entry_node: string;
+            implementation_revision: string;
             pattern_id: string;
             revision: string;
+            route_rank: number | null;
             title: string;
             trigger_hint: string;
         };
@@ -515,6 +547,8 @@ export interface components {
             description: string;
             digest: string;
             edges: components["schemas"]["LoomEdgeView"][];
+            entry_node: string;
+            implementation_revision: string;
             mermaid_source: string;
             nodes: components["schemas"]["LoomNodeView"][];
             pattern_id: string;
@@ -539,6 +573,8 @@ export interface components {
         /** MessageIntent */
         MessageIntent: {
             prompt: string;
+            /** Format: uuid */
+            request_id: string;
         };
         /** NexusBoard */
         NexusBoard: {
@@ -707,6 +743,7 @@ export interface components {
         };
         /** SwapIntent */
         SwapIntent: {
+            request_id: string;
             target: string;
         };
         /** SwapTicket */
@@ -862,6 +899,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     getBridgeRunSnapshot: {
@@ -899,6 +945,61 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    cancelBridgeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunProjectionSnapshot"];
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     streamBridgeRunEvents: {
@@ -934,6 +1035,15 @@ export interface operations {
                         } | unknown[];
                         status_code: number;
                     };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -993,6 +1103,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     getBridgeSessionInspector: {
@@ -1028,6 +1147,15 @@ export interface operations {
                         } | unknown[];
                         status_code: number;
                     };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1071,6 +1199,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     getLoomCatalogue: {
@@ -1089,6 +1226,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoomSummary"][];
+                };
+            };
+        };
+    };
+    getLoomPatternRevisionSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pattern_id: string;
+                revision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+        };
+    };
+    getLoomWorkflowSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workflow: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request fulfilled, document follows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Bad request syntax or unsupported method */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        detail: string;
+                        extra?: null | {
+                            [key: string]: unknown;
+                        } | unknown[];
+                        status_code: number;
+                    };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1129,42 +1359,13 @@ export interface operations {
                     };
                 };
             };
-        };
-    };
-    getLoomPatternRevisionSource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                pattern_id: string;
-                revision: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Request fulfilled, document follows */
-            200: {
+            /** @description Additional response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string;
-                };
-            };
-            /** @description Bad request syntax or unsupported method */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        detail: string;
-                        extra?: null | {
-                            [key: string]: unknown;
-                        } | unknown[];
-                        status_code: number;
-                    };
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1204,41 +1405,13 @@ export interface operations {
                     };
                 };
             };
-        };
-    };
-    getLoomWorkflowSource: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workflow: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Request fulfilled, document follows */
-            200: {
+            /** @description Additional response */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string;
-                };
-            };
-            /** @description Bad request syntax or unsupported method */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        detail: string;
-                        extra?: null | {
-                            [key: string]: unknown;
-                        } | unknown[];
-                        status_code: number;
-                    };
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1298,6 +1471,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     createNexusSwap: {
@@ -1337,6 +1519,33 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description The durable request was already admitted but its process-local ticket is unavailable. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
+            /** @description Process-local transition ticket capacity is temporarily exhausted. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     getNexusSwap: {
@@ -1372,6 +1581,15 @@ export interface operations {
                         } | unknown[];
                         status_code: number;
                     };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1411,6 +1629,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
+                };
+            };
         };
     };
     getNexusTransition: {
@@ -1446,6 +1673,15 @@ export interface operations {
                         } | unknown[];
                         status_code: number;
                     };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };
@@ -1486,6 +1722,15 @@ export interface operations {
                         } | unknown[];
                         status_code: number;
                     };
+                };
+            };
+            /** @description Additional response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameworkError"];
                 };
             };
         };

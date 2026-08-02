@@ -128,6 +128,15 @@ def test_extension_activation_rejects_unknown_builtin_ids() -> None:
         ExtensionSettings(builtins=("animator/not-real",))
 
 
+@pytest.mark.parametrize(
+    "extension_id",
+    ["", "/absolute", "alias//id", "alias/./id", "alias/../id", "trailing/", "control\nchar"],
+)
+def test_crypt_activation_requires_canonical_safe_ids(extension_id: str) -> None:
+    with pytest.raises(ValueError, match="Invalid extension id"):
+        ExtensionSettings(crypt=(extension_id,))
+
+
 def test_bootstrap_server_rejects_public_bind_addresses() -> None:
     with pytest.raises(ValueError, match="127.0.0.1"):
         ServerSettings(host="0.0.0.0")  # noqa: S104  # type: ignore[arg-type]

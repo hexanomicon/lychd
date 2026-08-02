@@ -21,19 +21,17 @@ from lychd.domain.animation.schemas import (
 from lychd.domain.animation.services.adapters.catalog import model_info_from_portal_model, synthesize_families
 from lychd.domain.animation.services.adapters.contracts import (
     ActivationObserver,
-    PortalRuntimeFactory,
+    PortalDefinition,
     RuntimeAnimator,
     RuntimePlan,
     SoulstoneRuntimeAdapter,
 )
 from lychd.domain.animation.services.adapters.runtimes.generic import GenericRuntimeAdapter
 from lychd.domain.animation.services.adapters.runtimes.shared import (
-    probe_openai_compatible_link,
     transmute_single_soulstone_quadlet,
 )
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericPortal,
-    OpenAICompatibleConnector,
     PassiveConnector,
     portal_link_default,
 )
@@ -49,40 +47,52 @@ class RuntimeAdapterRegistry:
     """Runtime switchboard for command planning and runtime-handle construction.
 
     Soulstones are dispatched by runtime name to registered adapters.
-    Portals are dispatched by registered portal factories, in order.
+    Portals are dispatched by the factory that owns their exact Rune schema.
     """
 
     def __init__(
         self,
         adapters: Sequence[SoulstoneRuntimeAdapter] | None = None,
         *,
-        portal_factories: Sequence[PortalRuntimeFactory] | None = None,
+        portal_definitions: Sequence[PortalDefinition] | None = None,
         settings: Settings | None = None,
     ) -> None:
         """Initialize active runtime adapters plus generic fallback.
 
-        Portal factories are injected by the composition root (the OpenAI factory
-        is an extension, no longer a domain-side default); the passive fallback
-        still applies when no factory matches a provider. ``settings`` is needed
+        Portal definitions are injected by the composition root (the OpenAI
+        definition is an extension, no longer a domain-side default); the passive
+        fallback applies only when no extension owns the exact Rune schema. ``settings`` is needed
         only when a standalone caller asks the registry to synthesize a Soulstone
         runtime without supplying its already-approved Quadlet.
         """
         self._fallback: SoulstoneRuntimeAdapter = GenericRuntimeAdapter()
-        self._adapters = list(adapters or [])
-        self._portal_factories: list[PortalRuntimeFactory] = list(portal_factories or [])
+        self._adapters: dict[str, SoulstoneRuntimeAdapter] = {}
+        for adapter in adapters or ():
+            runtime = adapter.runtime
+            existing = self._adapters.get(runtime)
+            if existing is not None:
+                msg = (
+                    f"Soulstone runtime {runtime!r} already has adapter "
+                    f"{type(existing).__name__}; refusing {type(adapter).__name__}."
+                )
+                raise ValueError(msg)
+            self._adapters[runtime] = adapter
+        self._portal_definitions: dict[type[PortalConfig], PortalDefinition] = {}
+        for definition in portal_definitions or ():
+            self.register_portal_definition(definition)
         self._settings = settings
 
-    def register_portal_factory(self, factory: PortalRuntimeFactory) -> None:
-        """Register an additional portal runtime factory."""
-        self._portal_factories.append(factory)
+    def register_portal_definition(self, definition: PortalDefinition) -> None:
+        """Register the sole runtime factory allowed to claim one Rune schema."""
+        existing = self._portal_definitions.get(definition.rune_schema)
+        if existing is not None:
+            msg = f"Portal schema {definition.rune_schema.__name__} already has a runtime definition."
+            raise ValueError(msg)
+        self._portal_definitions[definition.rune_schema] = definition
 
     def adapter_for(self, soulstone: SoulstoneConfig) -> SoulstoneRuntimeAdapter:
-        """Return the first runtime adapter that supports the Soulstone runtime."""
-        runtime = soulstone.runtime_name
-        for adapter in self._adapters:
-            if adapter.supports(runtime):
-                return adapter
-        return self._fallback
+        """Return the adapter that owns the exact declared Soulstone runtime key."""
+        return self._adapters.get(soulstone.runtime_name, self._fallback)
 
     def adapter_for_animator(self, animator: RuntimeAnimator) -> SoulstoneRuntimeAdapter | None:
         """Return the runtime adapter backing a resolved soulstone animator."""
@@ -178,11 +188,10 @@ class RuntimeAdapterRegistry:
             await adapter.abandon_activation(animator, spec)
 
     def _build_portal_runtime(self, portal: PortalConfig) -> RuntimeAnimator:
-        """Resolve portal runtime by custom factories, then passive fallback."""
-        for factory in self._portal_factories:
-            runtime = factory(portal)
-            if runtime is not None:
-                return runtime
+        """Resolve a Portal by exact schema ownership, then passive fallback."""
+        definition = self._portal_definitions.get(type(portal))
+        if definition is not None:
+            return definition.factory(portal)
 
         return self._build_passive_portal(portal)
 
@@ -205,6 +214,7 @@ class RuntimeAdapterRegistry:
         are synthesized under the two-axis law (probe facts are absent at synthesis).
         """
         _ = runtime
+        provider = portal.provider_name.strip().lower()
         specs: list[CapabilitySpec] = []
         for model in portal.models:
             hints = model.capabilities
@@ -214,7 +224,7 @@ class RuntimeAdapterRegistry:
                 CapabilitySpec(
                     key=f"{portal.name}:{family}:{model.id}",
                     animator_name=portal.name,
-                    runtime=f"portal:{portal.provider_name}",
+                    runtime=f"portal:{provider}",
                     source_kind=SourceKind.PORTAL,
                     family=family,
                     model_id=model.id,
@@ -228,7 +238,7 @@ class RuntimeAdapterRegistry:
                     is_dynamic=False,
                     # A Portal is remote: LychD does not own its lifecycle (ADR-22).
                     concurrency=ConcurrencyIntent(dedicated=False),
-                    metadata={"provider_name": portal.provider_name},
+                    metadata={"provider_name": provider},
                 )
                 for family in synthesize_families(info, hints, None)
             )
@@ -239,29 +249,38 @@ class RuntimeAdapterRegistry:
     ) -> list[CapabilityState]:
         """Project portal readiness into phase-canonical states (opt-in live probe).
 
-        With ``rune.probe`` true and an OpenAI-compatible connector, run a live
-        reachability probe and push the refreshed link (a legitimate ``Link``
-        writer). Otherwise the connector's passive/static link is read as-is.
+        With ``rune.probe`` true, only the exact Portal definition's typed probe
+        may perform egress and update readiness. Otherwise the connector's
+        passive/static link is read as-is.
         """
         connector = animator.connector
         rune = animator.rune
-        if isinstance(rune, PortalConfig) and getattr(rune, "probe", False) and hasattr(connector, "set_link"):
-            openai_connector = cast("OpenAICompatibleConnector", connector)
-            link = await probe_openai_compatible_link(openai_connector)
-            openai_connector.set_link(link)
+        if isinstance(rune, PortalConfig) and rune.probe:
+            definition = self._portal_definitions.get(type(rune))
+            if definition is None or definition.probe is None:
+                msg = (
+                    f"Portal {rune.name!r} requests live probing, but schema "
+                    f"{type(rune).__name__} has no exact probe strategy."
+                )
+                raise RuntimeError(msg)
+            await definition.probe(animator)
 
         link = connector.link
+        probed = isinstance(rune, PortalConfig) and rune.probe
         up = link.up
-        health = "ok" if up else "down"
-        checked_at = datetime.now(UTC)
+        phase = CapabilityPhase.WARM if up else CapabilityPhase.COLD
+        if not probed:
+            phase = CapabilityPhase.UNKNOWN
+        health = "ok" if up else ("down" if probed else "unverified")
+        checked_at = datetime.now(UTC) if probed else None
         return [
             CapabilityState(
                 capability_key=spec.key,
                 is_dynamic=False,
-                phase=CapabilityPhase.WARM if up else CapabilityPhase.COLD,
+                phase=phase,
                 health=health,
-                active_model_id=spec.model_id if up else None,
-                loaded_model_ids=[spec.model_id] if up else [],
+                active_model_id=spec.model_id if phase is CapabilityPhase.WARM else None,
+                loaded_model_ids=[spec.model_id] if phase is CapabilityPhase.WARM else [],
                 reason=None if up else link.reason,
                 checked_at=checked_at,
                 metadata=cast("dict[str, object]", getattr(connector, "metadata", {})),

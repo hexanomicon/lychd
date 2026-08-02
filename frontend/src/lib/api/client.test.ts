@@ -166,4 +166,20 @@ describe("transition stream lifecycle", () => {
     );
     expect(source.closeCalls).toBe(1);
   });
+
+  it("ignores queued transition callbacks after the stream reaches terminal truth", () => {
+    const onEvent = vi.fn();
+    listenToSwap("ticket-a", onEvent, vi.fn());
+    const source = FakeEventSource.instances[0];
+    if (!source) throw new Error("The EventSource was not opened.");
+    const settled = transitionEvent("ticket-a");
+    settled.ticket.state = "settled";
+
+    source.emit("transition", JSON.stringify(settled));
+    source.emit("transition", JSON.stringify(transitionEvent("ticket-a")));
+
+    expect(onEvent).toHaveBeenCalledOnce();
+    expect(onEvent).toHaveBeenCalledWith(settled);
+    expect(source.closeCalls).toBe(1);
+  });
 });

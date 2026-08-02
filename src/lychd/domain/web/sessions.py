@@ -93,6 +93,17 @@ class BridgeSessionStore:
         """Append a settled turn to a session, indexing it by run for O(1) lookup."""
         session = self._sessions.get(session_id)
         if session is not None:
+            existing = next(
+                (
+                    item
+                    for item in session.turns
+                    if turn.run_id is not None and item.run_id == turn.run_id and item.role == turn.role
+                ),
+                None,
+            )
+            if existing is not None:
+                _assert_compatible_turn(existing, turn)
+                return
             session.turns.append(turn)
             if turn.run_id:
                 self._run_to_session[turn.run_id] = session_id
@@ -107,6 +118,17 @@ class BridgeSessionStore:
         """Atomically append the visible reply and its Pydantic AI history suffix."""
         session = self._sessions.get(session_id)
         if session is None:
+            return
+        existing = next(
+            (
+                item
+                for item in session.turns
+                if turn.run_id is not None and item.run_id == turn.run_id and item.role == turn.role
+            ),
+            None,
+        )
+        if existing is not None:
+            _assert_compatible_turn(existing, turn)
             return
         session.turns.append(turn)
         session.message_history.extend(new_messages)
@@ -144,8 +166,58 @@ def _turn_from_json(payload: dict[str, Any]) -> BridgeTurn:
         data["created_at"] = datetime.fromisoformat(created)
     fragments = data.get("fragments")
     if isinstance(fragments, list):
-        data["fragments"] = tuple(cast("list[Any]", fragments))
+        normalized: list[dict[str, Any]] = []
+        for fragment in cast("list[Any]", fragments):
+            if isinstance(fragment, dict):
+                normalized.append(cast("dict[str, Any]", fragment))
+            elif isinstance(fragment, str):
+                normalized.append(
+                    {
+                        "kind": fragment,
+                        "schema_version": 0,
+                        "props": {},
+                        "actions": [],
+                    }
+                )
+        data["fragments"] = tuple(normalized)
     return BridgeTurn(**data)
+
+
+def _owned_turn_payload(turns: list[Any], turn: BridgeTurn) -> dict[str, Any] | None:
+    """Find a retained JSON turn with the same Run and role identity."""
+    if turn.run_id is None:
+        return None
+    for item in turns:
+        if not isinstance(item, dict):
+            continue
+        payload = cast("dict[str, Any]", item)
+        if payload.get("run_id") == turn.run_id and payload.get("role") == turn.role:
+            return payload
+    return None
+
+
+def _same_turn_outcome(existing: BridgeTurn, incoming: BridgeTurn) -> bool:
+    """Compare replay-significant turn fields while ignoring write timestamps."""
+    return (
+        existing.role,
+        existing.content,
+        existing.run_id,
+        existing.state,
+        existing.fragments,
+    ) == (
+        incoming.role,
+        incoming.content,
+        incoming.run_id,
+        incoming.state,
+        incoming.fragments,
+    )
+
+
+def _assert_compatible_turn(existing: BridgeTurn, incoming: BridgeTurn) -> None:
+    """Reject reuse of one Run/role identity for a different visible outcome."""
+    if not _same_turn_outcome(existing, incoming):
+        msg = "One Run cannot retain conflicting Bridge turns for the same role."
+        raise ValueError(msg)
 
 
 class DbBridgeSessionStore:
@@ -190,8 +262,12 @@ class DbBridgeSessionStore:
         """Return the session record for a UUID string, or `None`."""
         from lychd.domain.web.services import SessionService
 
+        try:
+            row_id = UUID(session_id)
+        except ValueError:
+            return None
         async with self._session_factory() as session:
-            row = await SessionService(session=session).get_one_or_none(id=UUID(session_id))
+            row = await SessionService(session=session).get_one_or_none(id=row_id)
             return self._record(row) if row is not None else None
 
     async def list_sessions(self) -> list[SessionRecord]:
@@ -226,6 +302,10 @@ class DbBridgeSessionStore:
             meta: dict[str, Any] = dict(row.meta or {})
             raw = meta.get("turns", [])
             turns: list[Any] = list(cast("list[Any]", raw)) if isinstance(raw, list) else []
+            existing = _owned_turn_payload(turns, turn)
+            if existing is not None:
+                _assert_compatible_turn(_turn_from_json(existing), turn)
+                return
             turns.append(_turn_to_json(turn))
             row.meta = {**meta, "turns": turns}
 
@@ -249,6 +329,10 @@ class DbBridgeSessionStore:
             meta: dict[str, Any] = dict(row.meta or {})
             raw = meta.get("turns", [])
             turns: list[Any] = list(cast("list[Any]", raw)) if isinstance(raw, list) else []
+            existing = _owned_turn_payload(turns, turn)
+            if existing is not None:
+                _assert_compatible_turn(_turn_from_json(existing), turn)
+                return
             turns.append(_turn_to_json(turn))
             row.meta = {**meta, "turns": turns}
             row.message_history = [*(row.message_history or []), *new_messages]
@@ -257,8 +341,12 @@ class DbBridgeSessionStore:
         """Return the session that owns a run via the Run.session_id FK, or `None`."""
         from lychd.domain.cortex.services import RunService
 
+        try:
+            row_id = UUID(run_id)
+        except ValueError:
+            return None
         async with self._session_factory() as session:
-            run = await RunService(session=session).get_one_or_none(id=UUID(run_id))
+            run = await RunService(session=session).get_one_or_none(id=row_id)
             if run is None or run.session_id is None:
                 return None
             session_fk = cast("Any", run.session_id)

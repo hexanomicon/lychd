@@ -37,15 +37,21 @@ For the selected Pattern, confirm:
 - header: `title`, `description`, `pattern_id@revision`, and publication `published`;
 - **Semantic score**: station count, permission count, and each node's `label`, `key`, `kind`, and
   permitted next station;
-- **Immutable identity**: `checkpoint`, 64-character `digest`, `trigger`, and the plain-text
-  Mermaid `source`.
+- **Immutable identity**: `checkpoint`, declared `entry` station, reviewed `implementation`
+  revision, 64-character `digest`, `trigger`, and the plain-text Mermaid `source`.
+
+The source links use `/api/v1/loom/source/patterns/{pattern_id}/{revision}`. Current-revision
+convenience source uses `/api/v1/loom/source/workflows/{workflow}`. Keeping source below this longer
+namespace leaves every legal `/api/v1/loom/{pattern_id}/{revision}` identity available, including a
+revision literally named `source`.
 
 Choose **Reveal** or **Hide** under **Diagram lens** for the optional static diagram. The semantic
 score remains primary. The diagram does not highlight a live node or subscribe to execution.
 
 When Orb opens Loom with `?run={run_id}`, Loom keeps **Return to Run in Orb** only if that Run's
-pinned manifest is exact and its Pattern id and revision match the displayed score. Selecting
-another Pattern drops the query. `run` is review context, never part of Pattern identity.
+pinned manifest is valid and equal in full to the registered score. Matching only its digest,
+Pattern id, or revision is insufficient. Selecting another Pattern drops the query. `run` is review
+context, never part of Pattern identity.
 
 ## The Designed Map
 

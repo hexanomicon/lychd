@@ -57,11 +57,11 @@ class TransitionTraceEvent:
 
 
 def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_depth: int = 5) -> T | None:
-    """Find a `kind` signal reachable from `exc` via cause/context or a BaseExceptionGroup.
+    """Find one unambiguous `kind` signal through cause/context or an exception group.
 
     The old walk was depth-1 over ``__cause__`` only — it missed the ``ExceptionGroup``
-    wrapping anyio task groups can produce around a tool raised mid-stream. This is a
-    bounded, cycle-safe transitive search.
+    wrapping anyio task groups can produce around a tool raised mid-stream. A mixed
+    group must remain a failure: parking on one child may not swallow its siblings.
     """
     seen: set[int] = set()
 
@@ -73,10 +73,16 @@ def _extract_signal[T: BaseException](exc: BaseException, kind: type[T], *, max_
             return current
         if isinstance(current, BaseExceptionGroup):
             group = cast("BaseExceptionGroup[BaseException]", current)
-            for sub in group.exceptions:
-                if (found := walk(sub, depth - 1)) is not None:
-                    return found
-        for nxt in (current.__cause__, current.__context__):
+            candidates = [walk(sub, depth - 1) for sub in group.exceptions]
+            if candidates:
+                first = candidates[0]
+                if first is not None and all(candidate is first for candidate in candidates[1:]):
+                    return first
+            return None
+        chained = current.__cause__
+        if chained is None and not current.__suppress_context__:
+            chained = current.__context__
+        for nxt in (chained,):
             if (found := walk(nxt, depth - 1)) is not None:
                 return found
         return None

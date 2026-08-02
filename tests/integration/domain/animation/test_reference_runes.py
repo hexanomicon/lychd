@@ -19,6 +19,7 @@ from lychd.domain.animation.schemas import (
     PortalConfig,
     SoulstoneConfig,
 )
+from lychd.domain.animation.services.adapters.contracts import PortalDefinition
 from lychd.domain.animation.services.declarations import (
     compile_animator_declarations,
 )
@@ -49,6 +50,10 @@ _SCHEMAS: list[type[RuneConfig]] = [
     OpenAIPortalConfig,
     GoogleGeminiPortalConfig,
 ]
+_PORTAL_DEFINITIONS = (
+    PortalDefinition(rune_schema=OpenAIPortalConfig, factory=build_openai_portal),
+    PortalDefinition(rune_schema=GoogleGeminiPortalConfig, factory=build_openai_portal),
+)
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +86,7 @@ def _reference_registry() -> AnimatorRegistry:
             core_reserved_ports={},
         ),
         runtime_adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
-        portal_factories=[build_openai_portal],
+        portal_definitions=_PORTAL_DEFINITIONS,
     )
 
 

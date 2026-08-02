@@ -41,6 +41,12 @@ tool_pattern = "request_coven_swap"
 """
 
     slug: str = Field(min_length=1, description="Stable unique identity for this preauthorization.")
+    priority: int = Field(
+        default=50,
+        ge=0,
+        le=100,
+        description="Selection precedence; higher wins, slug breaks ties.",
+    )
     klass: Literal["standard", "zte"] = Field(default="standard", description="standard | zte (bounded).")
     sigil_pattern: str = Field(default="*", description="fnmatch pattern over the sigil name.")
     tool_pattern: str = Field(description="fnmatch pattern over the tool name.")

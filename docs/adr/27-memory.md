@@ -22,10 +22,35 @@ training eligibility. Run/Step ledgers, traces, checkpoints, Personas, one-call 
 Soulforge corpora stay distinct and cite by stable ref.
 
 !!! warning "Delivery boundary"
-    Current material is only narrow karma row: kind, text content, nullable dimensionless
-    pgvector, JSON metadata, optional Session/Run refs, pgvector migration, generic CRUD. There is
-    no Archive port, namespace owner, provenance/candidate/promotion law, embedding/retrieval/index,
-    Curator, or non-empty Karma context. State owns the boundary.
+    Current material includes a narrow Karma row plus an effect-free `CandidateArchivePort` and
+    loop-local adapter for attributed raw candidates, attempt-bound derivatives,
+    anti-reingestion identities, and finite attempt-fenced processing state. There is no production PostgreSQL adapter, runtime ingestion,
+    namespace authorization, promotion law, embedding/retrieval/index, Curator, or non-empty Karma
+    context. State owns the boundary.
+
+## Framework boundary and Memori
+
+[Memori](https://github.com/MemoriLabs/Memori) is a maintained comparison source, not an installed
+LychD subsystem. Its explicit entity/process/session attribution, raw-conversation versus derived
+augmentation stages, idempotent conversation creation, bounded background writer queue, and drain
+operation are useful implementation patterns. A pinned source checkout may support design review;
+it grants no runtime or schema authority.
+
+LychD does not adopt transparent LLM-client interception, retain every conversation, automatically
+extract claims, or inject recall into every prompt. Those conveniences cross Archive's admission,
+privacy, correction, and Context authority. The delivered first seam is a narrow LychD-owned
+`CandidateArchivePort`: it admits attributed raw candidates and separately identified derivatives,
+preserves source lineage and anti-reingestion identity, and exposes bounded processing state.
+Retry increments a monotonic attempt; stale settlement and derivatives from an older attempt are
+refused. A derivative cannot predate its raw source observation, and ordinary reads expose it only
+while its source is `PROCESSING` or `PROCESSED` at that exact current attempt. Retrying or failing
+the source therefore hides old derivatives and refuses their idempotent replay. A new current
+attempt for the same raw source may replace an older attempt's derivation key with new,
+current-attempt output; the key remains permanently bound to that raw-source lineage and cannot
+migrate after the old output becomes stale. Stale identity therefore does not permanently poison
+the source's semantic retry key. Its
+only adapter is volatile, loop-local memory with no runtime wiring. Embeddings, recall, curation,
+promotion, RAG injection, and training remain later consumers with their own evidence.
 
 ## The Archive record
 
@@ -145,6 +170,7 @@ It expands privacy exposure and feeds error back into context; only explicit ing
 
 ## Acceptance evidence
 
-Partial requires one class proving authorized ingestion, provenance candidate, compatible embedding,
-namespace recall, threshold miss, correction, staged promotion, deletion/index cleanup, restoration,
-and reproducible receipt. State records delivery.
+The current Partial claim covers only the candidate-admission contract and volatile adapter.
+Broader Partial acceptance requires one class proving authorized ingestion, provenance candidate,
+compatible embedding, namespace recall, threshold miss, correction, staged promotion,
+deletion/index cleanup, restoration, and reproducible receipt. State records delivery.

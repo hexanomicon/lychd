@@ -9,6 +9,28 @@ from pydantic import Field, ValidationInfo, field_validator
 from lychd.config.settings.section import SettingsSection
 from lychd.extensions.builtin.catalog import BUILTIN_EXTENSIONS
 
+_C0_CONTROL_LIMIT = 32
+_DELETE_CODEPOINT = 127
+
+
+def extension_id_parts(extension_id: str) -> tuple[str, ...]:
+    """Return canonical safe path segments for one extension activation id."""
+    path = PurePosixPath(extension_id)
+    canonical = path.as_posix()
+    has_control = any(
+        ord(character) < _C0_CONTROL_LIMIT or ord(character) == _DELETE_CODEPOINT for character in extension_id
+    )
+    if (
+        path.is_absolute()
+        or not path.parts
+        or any(part in {".", ".."} for part in path.parts)
+        or canonical != extension_id
+        or has_control
+    ):
+        msg = f"Invalid extension id {extension_id!r}."
+        raise ValueError(msg)
+    return path.parts
+
 
 class ExtensionSettings(SettingsSection):
     """Explicit optional extensions; each extension owns its own Rune schemas."""
@@ -39,10 +61,7 @@ class ExtensionSettings(SettingsSection):
             msg = f"Extension activation list contains duplicate id(s): {', '.join(sorted(duplicates))}."
             raise ValueError(msg)
         for extension_id in value:
-            path = PurePosixPath(extension_id)
-            if path.is_absolute() or not path.parts or any(part in {".", ".."} for part in path.parts):
-                msg = f"Invalid extension id {extension_id!r}."
-                raise ValueError(msg)
+            extension_id_parts(extension_id)
         if info.field_name == "builtins":
             unknown = sorted(set(value).difference(BUILTIN_EXTENSIONS))
             if unknown:

@@ -1,9 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { tick } from "svelte";
 
   import {
+    ApiError,
     createNexusSwap,
     getNexusPlan,
     getNexusSnapshot,
@@ -25,15 +27,18 @@
   let snapshot = $state.raw<NexusSnapshot | null>(null);
   let preview = $state.raw<Preview | null>(null);
   let selectedTransition = $state.raw<TransitionRecordView | null>(null);
+  let selectedTransitionRequestId: string | null = null;
   let ticket = $state.raw<SwapTicket | null>(null);
   let ticketStale = $state(false);
   let loading = $state(true);
+  let snapshotStale = $state(false);
   let busy = $state(false);
   let error = $state("");
   let transitionNote = $state("");
   let previewVersion = 0;
   let transitionVersion = 0;
   let refreshInFlight: Promise<void> | null = null;
+  let refreshQueued = false;
   let closeStream: (() => void) | null = null;
   let planInspector: HTMLElement | undefined;
   let transitionInspector: HTMLElement | undefined;
@@ -41,6 +46,7 @@
   let transitionReturnFocus: HTMLElement | undefined;
   let destroyed = false;
   const recoveredTickets = new Set<string>();
+  const swapAttempts = new Map<string, string>();
 
   let requestedTransitionId = $derived(page.url.searchParams.get("transition"));
   let requestedEventId = $derived(page.url.searchParams.get("event"));
@@ -70,17 +76,27 @@
     if (requestId) void selectTransition(requestId);
     else {
       transitionVersion++;
+      selectedTransitionRequestId = null;
       selectedTransition = null;
       transitionNote = "";
     }
   });
 
   function refresh(showLoading = true): Promise<void> {
-    if (refreshInFlight) return refreshInFlight;
+    if (destroyed) return Promise.resolve();
+    if (refreshInFlight) {
+      refreshQueued = true;
+      return refreshInFlight;
+    }
     const pending = performRefresh(showLoading);
     refreshInFlight = pending;
     void pending.finally(() => {
-      if (refreshInFlight === pending) refreshInFlight = null;
+      if (refreshInFlight !== pending) return;
+      refreshInFlight = null;
+      if (refreshQueued && !destroyed) {
+        refreshQueued = false;
+        void refresh(false);
+      }
     });
     return pending;
   }
@@ -91,12 +107,15 @@
       const next = await getNexusSnapshot();
       if (destroyed) return;
       snapshot = next;
+      snapshotStale = false;
       error = "";
-      if (requestedTransitionId) {
-        await selectTransition(requestedTransitionId, false);
+      const transitionRequestId = requestedTransitionId ?? selectedTransitionRequestId;
+      if (transitionRequestId) {
+        await selectTransition(transitionRequestId, false);
       }
     } catch (cause) {
       if (!destroyed) {
+        snapshotStale = true;
         error = cause instanceof Error ? cause.message : "The Nexus cannot be read.";
       }
     } finally {
@@ -105,7 +124,10 @@
   }
 
   async function selectTransition(requestId: string, focus = true) {
+    if (destroyed) return;
+    selectedTransitionRequestId = requestId;
     const version = ++transitionVersion;
+    previewVersion++;
     preview = null;
     transitionNote = "";
     const retained = snapshot?.transitions.find((item) => item.request_id === requestId);
@@ -116,11 +138,11 @@
     }
     try {
       const exact = await getNexusTransition(requestId);
-      if (version !== transitionVersion) return;
+      if (destroyed || version !== transitionVersion) return;
       selectedTransition = exact;
       if (focus) await focusOnMobile(transitionInspector);
     } catch (cause) {
-      if (version !== transitionVersion) return;
+      if (destroyed || version !== transitionVersion) return;
       selectedTransition = null;
       const message = cause instanceof Error ? cause.message : "The exact request could not be read.";
       transitionNote = message.includes("not retained")
@@ -130,20 +152,22 @@
   }
 
   async function previewTransition(target: string, opener?: HTMLElement) {
+    if (destroyed || busy) return;
     planReturnFocus = opener;
-    await clearTransition(false);
     const version = ++previewVersion;
     preview = null;
     ticket = null;
     error = "";
+    await clearTransition(false);
+    if (destroyed || version !== previewVersion) return;
     try {
       const plan = await getNexusPlan(target);
-      if (version === previewVersion) {
+      if (!destroyed && version === previewVersion) {
         preview = { target, plan };
         await focusOnMobile(planInspector);
       }
     } catch (cause) {
-      if (version === previewVersion) {
+      if (!destroyed && version === previewVersion) {
         error = cause instanceof Error ? cause.message : "The transition cannot be calculated.";
       }
     }
@@ -160,7 +184,7 @@
   async function focusOnMobile(element: HTMLElement | undefined) {
     if (!window.matchMedia("(max-width: 760px)").matches) return;
     await tick();
-    element?.focus();
+    if (!destroyed) element?.focus();
   }
 
   function capturePlanInspector(node: HTMLElement) {
@@ -181,6 +205,7 @@
     const target = restoreFocus ? transitionReturnFocus : undefined;
     transitionReturnFocus = undefined;
     transitionVersion++;
+    selectedTransitionRequestId = null;
     selectedTransition = null;
     transitionNote = "";
     if (!requestedTransitionId) {
@@ -191,7 +216,8 @@
     const url = new URL(page.url);
     url.searchParams.delete("transition");
     url.searchParams.delete("event");
-    await goto(`${url.pathname}${url.search}`, {
+    const nexusPath = `/nexus${url.search}` as "/nexus" | `/nexus?${string}`;
+    await goto(resolve(nexusPath), {
       replaceState: true,
       keepFocus: target !== undefined,
       noScroll: true
@@ -202,28 +228,41 @@
 
   async function swap() {
     const selected = preview;
-    if (!selected || busy || selected.plan.action_type === "NO_OP") return;
+    if (destroyed || !selected || busy || snapshotStale || selected.plan.action_type === "NO_OP") return;
+    const requestId = swapAttempts.get(selected.target) ?? crypto.randomUUID();
+    swapAttempts.set(selected.target, requestId);
     busy = true;
     error = "";
     try {
-      const accepted = await createNexusSwap(selected.target);
+      const accepted = await createNexusSwap(selected.target, requestId);
+      if (destroyed) return;
       ticket = accepted.ticket;
       ticketStale = false;
+      swapAttempts.delete(selected.target);
       followTicket(accepted.ticket.id);
     } catch (cause) {
+      if (destroyed) return;
+      const definitiveRejection =
+        cause instanceof ApiError &&
+        cause.status !== undefined &&
+        cause.status < 500 &&
+        cause.status !== 409;
+      if (definitiveRejection) swapAttempts.delete(selected.target);
       error = cause instanceof Error ? cause.message : "The transition was refused.";
     } finally {
-      busy = false;
+      if (!destroyed) busy = false;
     }
   }
 
   function followTicket(ticketId: string) {
+    if (destroyed) return;
     closeStream?.();
     let hardClosed = false;
     let close: (() => void) | undefined;
     close = listenToSwap(
       ticketId,
       (event) => {
+        if (destroyed) return;
         ticket = event.ticket;
         ticketStale = false;
         if (event.ticket.state !== "warming") {
@@ -233,12 +272,14 @@
         }
       },
       (message) => {
+        if (destroyed) return;
         window.dispatchEvent(
           new CustomEvent("altar:omen", { detail: { text: message, fault: false } })
         );
       },
       {
         onHardClose: () => {
+          if (destroyed) return;
           hardClosed = true;
           if (close === undefined || closeStream === close) closeStream = null;
           if (ticket?.id === ticketId && ticket.state === "warming") {
@@ -307,6 +348,11 @@
         Runtime admission is contained: {snapshot.containment_reason}
       </div>
     {/if}
+    {#if snapshot && snapshotStale}
+      <div class="containment" role="alert">
+        The Nexus board is stale. Lifecycle mutations are unavailable until a fresh snapshot loads.
+      </div>
+    {/if}
     {#if loading}
       <div class="mist"></div><div class="mist"></div>
     {:else if snapshot}
@@ -327,6 +373,7 @@
                 <button
                   class="preview-trigger"
                   type="button"
+                  disabled={busy}
                   onclick={(event) => previewTransition(row.capability_key, event.currentTarget)}
                 >
                   Preview
@@ -404,7 +451,7 @@
               <li>
                 <a
                   class:current={selectedTransition?.request_id === transition.request_id}
-                  href="/nexus?transition={transition.request_id}"
+                  href={resolve(`/nexus?transition=${encodeURIComponent(transition.request_id)}`)}
                   onclick={(event) => (transitionReturnFocus = event.currentTarget)}
                 >
                   <span class="transition-source">{transition.source}</span>
@@ -451,7 +498,7 @@
         <div class="plan-act">
           <button
             class="rune-btn"
-            disabled={busy || preview.plan.action_type === "NO_OP"}
+            disabled={busy || snapshotStale || preview.plan.action_type === "NO_OP"}
             type="button"
             onclick={swap}
           >
@@ -501,11 +548,11 @@
         {#if selectedTransition.orb_path}
           <a
             class="inspector-link"
-            href={
-              requestedEventId
+            href={resolve(
+              (requestedEventId
                 ? `${selectedTransition.orb_path}?event=${encodeURIComponent(requestedEventId)}`
-                : selectedTransition.orb_path
-            }
+                : selectedTransition.orb_path) as `/orb/${string}`
+            )}
           >
             Return to evidence in the Orb →
           </a>

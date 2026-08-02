@@ -14,21 +14,23 @@ from litestar.exceptions import NotFoundException, ValidationException
 from litestar.openapi.datastructures import ResponseSpec
 from litestar.params import FromPath
 from litestar.response import ServerSentEvent, ServerSentEventMessage
-from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
+from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 from lychd.agents.router import Intent
-from lychd.agents.workflows import WORKFLOW_REGISTRY
+from lychd.agents.workflows import WorkflowRegistry
 from lychd.agents.workflows.base import pattern_snapshot_is_valid
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.engine import RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
-from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunRecord, RunStatus
+from lychd.domain.cortex.ledger import RunAdmissionConflictError
+from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunRecord
 from lychd.domain.web.contracts import (
     BridgeSnapshot,
     BridgeTurnView,
     ConsentDecisionIntent,
     ConsentDecisionResult,
+    FrameworkError,
     MessageAccepted,
     MessageIntent,
     RunEventEnvelope,
@@ -45,6 +47,7 @@ from lychd.domain.web.sessions import SessionRecord, SessionStorePort
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from lychd.domain.codex.schemas import ConsentView
     from lychd.domain.codex.sigil import Sigil
     from lychd.domain.cortex.ledger import RunLedger
 
@@ -118,6 +121,7 @@ class BridgeController(Controller):
         consents: NamedDependency[ConsentLedger],
         run_bus: NamedDependency[InProcessEventBus],
         projector: NamedDependency[EventProjector],
+        workflows: NamedDependency[WorkflowRegistry],
         state: State,
     ) -> BridgeSnapshot:
         """Return the newest session or an empty reconstructable Bridge."""
@@ -130,6 +134,7 @@ class BridgeController(Controller):
             consents,
             run_bus,
             projector,
+            workflows,
             state,
         )
 
@@ -138,6 +143,7 @@ class BridgeController(Controller):
         name="bridge:session",
         operation_id="getBridgeSession",
         guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def session_snapshot(
         self,
@@ -146,6 +152,7 @@ class BridgeController(Controller):
         consents: NamedDependency[ConsentLedger],
         run_bus: NamedDependency[InProcessEventBus],
         projector: NamedDependency[EventProjector],
+        workflows: NamedDependency[WorkflowRegistry],
         state: State,
     ) -> BridgeSnapshot:
         """Return one selected session and the full session rail."""
@@ -159,6 +166,7 @@ class BridgeController(Controller):
             consents,
             run_bus,
             projector,
+            workflows,
             state,
         )
 
@@ -182,6 +190,7 @@ class BridgeController(Controller):
         name="bridge:send",
         operation_id="sendBridgeMessage",
         guards=[requires_scopes("runs:submit")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def send(
         self,
@@ -207,19 +216,34 @@ class BridgeController(Controller):
             turn = BridgeTurn(role="user", content=prompt, run_id=run_id)
             await bridge_sessions.add_turn(session_id, turn)
 
-        handle = await run_engine.submit(
-            Intent(
-                session_id=session_id,
-                prompt=prompt,
-                source="bridge",
-                sigil_name=sigil.name,
-                sigil_scopes=frozenset(sigil.scopes),
+        try:
+            handle = await run_engine.submit(
+                Intent(
+                    session_id=session_id,
+                    prompt=prompt,
+                    source="bridge",
+                    sigil_name=sigil.name,
+                    sigil_scopes=frozenset(sigil.scopes),
+                ),
+                retain_before_publish=retain_user_turn,
+                idempotency_key=f"bridge:{session_id}:{data.request_id}",
+            )
+        except RunAdmissionConflictError as exc:
+            raise ValidationException(detail=str(exc)) from exc
+        refreshed = await bridge_sessions.get_session(session_id)
+        authoritative_turn = next(
+            (
+                item
+                for item in reversed(refreshed.turns if refreshed is not None else [])
+                if item.run_id == handle.run_id and item.role == "user"
             ),
-            retain_before_publish=retain_user_turn,
+            None,
         )
-        if turn is None:  # pragma: no cover - RunEngine guarantees callback-before-return
-            msg = "Bridge admission returned before retaining its user turn."
-            raise RuntimeError(msg)
+        turn = authoritative_turn or turn
+        if turn is None:
+            raise ValidationException(
+                detail="The prior admission did not retain its Bridge turn; retry with a new request identity."
+            )
         return MessageAccepted(
             run_id=handle.run_id,
             pattern_id=handle.pattern_id,
@@ -235,6 +259,7 @@ class BridgeController(Controller):
         name="bridge:run-snapshot",
         operation_id="getBridgeRunSnapshot",
         guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def run_snapshot(
         self,
@@ -242,6 +267,7 @@ class BridgeController(Controller):
         bridge_sessions: NamedDependency[SessionStorePort],
         run_bus: NamedDependency[InProcessEventBus],
         projector: NamedDependency[EventProjector],
+        workflows: NamedDependency[WorkflowRegistry],
         state: State,
     ) -> RunProjectionSnapshot:
         """Return one replaceable run projection at an exact stream cursor."""
@@ -254,6 +280,42 @@ class BridgeController(Controller):
             bridge_sessions,
             run_bus,
             projector,
+            workflows,
+            state,
+        )
+
+    @post(
+        "/runs/{run_id:str}/cancel",
+        status_code=HTTP_200_OK,
+        name="bridge:run-cancel",
+        operation_id="cancelBridgeRun",
+        guards=[requires_scopes("runs:cancel")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
+    )
+    async def cancel_run(
+        self,
+        run_id: FromPath[str],
+        bridge_sessions: NamedDependency[SessionStorePort],
+        run_engine: NamedDependency[RunEngine],
+        run_bus: NamedDependency[InProcessEventBus],
+        projector: NamedDependency[EventProjector],
+        workflows: NamedDependency[WorkflowRegistry],
+        state: State,
+    ) -> RunProjectionSnapshot:
+        """Idempotently cancel one Run and return its authoritative settled race."""
+        run = await state.services.ledger.get(run_id)
+        if run is None:
+            raise NotFoundException(detail="Unknown run.")
+        await run_engine.cancel(run_id)
+        settled = await state.services.ledger.get(run_id)
+        if settled is None:  # pragma: no cover - the ledger cannot delete Runs
+            raise NotFoundException(detail="Unknown run.")
+        return await self._run_projection(
+            settled,
+            bridge_sessions,
+            run_bus,
+            projector,
+            workflows,
             state,
         )
 
@@ -263,15 +325,18 @@ class BridgeController(Controller):
         bridge_sessions: SessionStorePort,
         run_bus: InProcessEventBus,
         projector: EventProjector,
+        workflows: WorkflowRegistry,
         state: State,
     ) -> RunProjectionSnapshot:
         manifest = run.pattern_manifest
         pattern_id = str(manifest.get("key") or run.workflow_name)
         revision = str(manifest.get("revision") or "legacy-unversioned")
-        digest = manifest.get("digest")
-        registered = WORKFLOW_REGISTRY.get_revision(pattern_id, revision)
+        registered = workflows.get_revision(pattern_id, revision)
         loom_available = (
-            pattern_snapshot_is_valid(manifest) and registered is not None and registered.manifest.digest == digest
+            pattern_snapshot_is_valid(manifest)
+            and manifest.get("key") == run.workflow_name
+            and registered is not None
+            and manifest == registered.manifest.snapshot()
         )
         loom_path = f"/loom/{pattern_id}/{revision}" if loom_available else None
         orb_path = f"/orb/{run.run_id}"
@@ -324,7 +389,7 @@ class BridgeController(Controller):
                 cursor=live.cursor,
                 content=live.content,
                 run_status=run.status.value,
-                activity=live.activity,
+                activity=run.status.value if run.status in TERMINAL_STATUSES else live.activity,
                 pattern_id=pattern_id,
                 pattern_revision=revision,
                 loom_path=loom_path,
@@ -342,7 +407,7 @@ class BridgeController(Controller):
                 delegated_runtime=live.delegated_runtime or retained_delegated_runtime,
                 delegated_profile=delegated_profile,
                 delegated_status=delegated_status,
-                terminal=live.terminal,
+                terminal=live.terminal or run.status in TERMINAL_STATUSES,
             )
 
         turn = await bridge_sessions.settled_turn_for_run(run.run_id)
@@ -358,7 +423,7 @@ class BridgeController(Controller):
             loom_path=loom_path,
             orb_path=orb_path,
             evidence_capture=evidence_capture,
-            fragments=[],
+            fragments=[dict(fragment) for fragment in turn.fragments] if turn is not None else [],
             occurrence_id=retained_occurrence_id,
             dispatch_occurrence_id=retained_dispatch_occurrence_id,
             grant_id=retained_grant_id,
@@ -385,6 +450,7 @@ class BridgeController(Controller):
                 media_type="text/event-stream",
                 description="Versioned semantic run events.",
             ),
+            HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False),
         },
     )
     async def events(
@@ -450,6 +516,7 @@ class BridgeController(Controller):
         name="bridge:consent",
         operation_id="decideBridgeConsent",
         guards=[requires_scopes("runs:approve")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def consent(
         self,
@@ -467,9 +534,12 @@ class BridgeController(Controller):
         if view.status == "pending":
             approved = data.verdict == "approve"
             sigil = cast("Sigil", request.user)
-            decided = await consents.decide(consent_id, approved=approved, decided_by=sigil.name)
-            await run_engine.approve(consent_id, approved=approved)
-            view = decided or view
+            await consents.decide(consent_id, approved=approved, decided_by=sigil.name)
+            # A concurrent first verdict may differ from this request. Re-read the
+            # authority row; retries must repair admission using that settled truth.
+            view = await consents.get(consent_id) or view
+        if view.status != "pending":
+            await run_engine.approve(consent_id, approved=(view.status == "granted"))
         return ConsentDecisionResult(
             consent=projector.consent_card_view(view),
             pending_count=await consents.pending_count(),
@@ -480,6 +550,7 @@ class BridgeController(Controller):
         name="bridge:inspector",
         operation_id="getBridgeSessionInspector",
         guards=[requires_scopes("altar:read")],
+        responses={HTTP_404_NOT_FOUND: ResponseSpec(FrameworkError, generate_examples=False)},
     )
     async def inspector(
         self,
@@ -506,67 +577,66 @@ class BridgeController(Controller):
         consents: ConsentLedger,
         run_bus: InProcessEventBus,
         projector: EventProjector,
+        workflows: WorkflowRegistry,
         state: State,
     ) -> BridgeSnapshot:
+        ledger = cast("RunLedger", state.services.ledger)
+        session_runs = await ledger.list_for_session(session.id) if session is not None else []
+        session_run_ids = frozenset(run.run_id for run in session_runs)
+        pending_views = await consents.pending_views_for_runs(session_run_ids)
         return BridgeSnapshot(
             sessions=[_session_summary(item) for item in sessions],
             session=_session_view(session) if session is not None else None,
             active_runs=await self._active_run_projections(
                 session,
+                session_runs,
                 bridge_sessions,
                 run_bus,
                 projector,
+                workflows,
                 state,
             ),
-            pending_consents=await self._pending_cards(consents, projector, state, session),
+            pending_consents=self._pending_cards(
+                pending_views,
+                projector,
+            ),
             pending_count=await consents.pending_count(),
         )
 
     async def _active_run_projections(
         self,
         session: SessionRecord | None,
+        session_runs: list[RunRecord],
         bridge_sessions: SessionStorePort,
         run_bus: InProcessEventBus,
         projector: EventProjector,
+        workflows: WorkflowRegistry,
         state: State,
     ) -> list[RunProjectionSnapshot]:
-        """Project the selected session's runs whose event channels live here."""
+        """Project selected-session Runs not already represented by a settled turn."""
         if session is None:
             return []
 
-        active: dict[str, RunRecord] = {}
-        for status in RunStatus:
-            if status not in TERMINAL_STATUSES:
-                for run in await state.services.ledger.list_by_status(status):
-                    active[run.run_id] = run
+        settled_run_ids = {turn.run_id for turn in session.turns if turn.role == "agent" and turn.run_id is not None}
+        visible = [
+            run for run in session_runs if run.status not in TERMINAL_STATUSES or run.run_id not in settled_run_ids
+        ]
 
-        projections: list[RunProjectionSnapshot] = []
-        for run in sorted(active.values(), key=lambda item: item.created_at):
-            if run.session_id != session.id or run_bus.snapshot(run.run_id) is None:
-                continue
-            projections.append(
-                await self._run_projection(
-                    run,
-                    bridge_sessions,
-                    run_bus,
-                    projector,
-                    state,
-                ),
+        return [
+            await self._run_projection(
+                run,
+                bridge_sessions,
+                run_bus,
+                projector,
+                workflows,
+                state,
             )
-        return projections
+            for run in visible
+        ]
 
-    async def _pending_cards(
-        self,
-        consents: ConsentLedger,
+    @staticmethod
+    def _pending_cards(
+        pending_views: list[ConsentView],
         projector: EventProjector,
-        state: State,
-        session: SessionRecord | None,
     ) -> list[ConsentCard]:
-        if session is None:
-            return []
-        cards: list[ConsentCard] = []
-        for view in await consents.pending_views():
-            run = await state.services.ledger.get(view.run_id)
-            if run is not None and run.session_id == session.id:
-                cards.append(projector.consent_card_view(view))
-        return cards
+        return [projector.consent_card_view(view) for view in pending_views]

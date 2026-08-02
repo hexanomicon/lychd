@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
+from pathlib import PurePosixPath
 from typing import Any, Literal, cast
 
 __all__ = [
@@ -21,7 +22,7 @@ __all__ = [
     "constraints_admit",
 ]
 
-ConsentStatusValue = Literal["pending", "granted", "denied", "expired"]
+ConsentStatusValue = Literal["pending", "granted", "denied", "expired", "cancelled"]
 
 # Recursive-key denylist: any dict key matching one of these patterns (case-insensitive)
 # has its value replaced before the payload is ever persisted or rendered.
@@ -89,20 +90,44 @@ def _args_admit(allow: Any, payload: dict[str, Any]) -> bool:
 
 
 def _path_prefixes_admit(prefixes: Any, payload: dict[str, Any]) -> bool:
-    """Every string value in the payload must start with one of the allowed prefixes."""
-    if not isinstance(prefixes, list):
+    """Admit named absolute paths only within their declared lexical roots.
+
+    The constraint shape is ``{payload_field: [allowed_root, ...]}``. Naming the
+    field prevents unrelated strings (or a nested path hidden from a shallow scan)
+    from being treated as filesystem authority. This is a lexical admission check;
+    effect-time code must still resolve symlinks beneath its trusted root.
+    """
+    if not isinstance(prefixes, dict) or not prefixes:
         return False
-    allowed = [str(prefix) for prefix in cast("list[Any]", prefixes)]
-    return all(
-        any(value.startswith(prefix) for prefix in allowed) for value in payload.values() if isinstance(value, str)
-    )
+    for raw_field, raw_roots in cast("dict[Any, Any]", prefixes).items():
+        field_name = str(raw_field)
+        candidate_value = payload.get(field_name)
+        if not field_name or not isinstance(candidate_value, str):
+            return False
+        if not isinstance(raw_roots, list) or not raw_roots:
+            return False
+        candidate = _safe_absolute_path(candidate_value)
+        if candidate is None:
+            return False
+        roots = [_safe_absolute_path(root) if isinstance(root, str) else None for root in cast("list[Any]", raw_roots)]
+        if any(root is None for root in roots) or not any(
+            candidate.is_relative_to(root) for root in roots if root is not None
+        ):
+            return False
+    return True
+
+
+def _safe_absolute_path(value: str) -> PurePosixPath | None:
+    """Parse one traversal-free absolute lexical path."""
+    path = PurePosixPath(value)
+    return path if path.is_absolute() and ".." not in path.parts else None
 
 
 def constraints_admit(constraints: dict[str, Any], payload: dict[str, Any]) -> bool:
     """Whether ``payload`` satisfies a preauthorization's constraint document.
 
-    Supports ``{"args": {name: [allowed]}, "path_prefixes": [...]}``. Empty
-    constraints admit anything. ANY unrecognized constraint key ⇒ ``False``
+    Supports ``{"args": {name: [allowed]}, "path_prefixes": {name: [root]}}``.
+    Empty constraints admit anything. ANY unrecognized constraint key ⇒ ``False``
     (fail-closed — a constraint we do not understand can never be satisfied).
     """
     for key in constraints:

@@ -17,10 +17,11 @@ if TYPE_CHECKING:
     from lychd.config.runes.extension import RuneConfigStore
     from lychd.domain.animation.extension import PortalStore, SoulstoneStore
     from lychd.extensions.base import ExtensionStore
-    from lychd.extensions.context import ExtensionContext, VesselStore
+    from lychd.extensions.context import ExtensionContext, ExtensionRegistrationContext, VesselStore
 
 _LAZY_REEXPORTS: dict[str, str] = {
     "ExtensionContext": "lychd.extensions.context",
+    "ExtensionRegistrationContext": "lychd.extensions.context",
     "ExtensionStore": "lychd.extensions.base",
     "PortalStore": "lychd.domain.animation.extension",
     "RuneConfigStore": "lychd.config.runes.extension",
@@ -48,6 +49,7 @@ def __dir__() -> list[str]:
 
 __all__ = [
     "ExtensionContext",
+    "ExtensionRegistrationContext",
     "ExtensionStore",
     "PortalStore",
     "RuneConfigStore",

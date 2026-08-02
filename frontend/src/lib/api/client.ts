@@ -71,6 +71,15 @@ export async function getRunSnapshot(runId: string): Promise<RunProjectionSnapsh
   ) as RunProjectionSnapshot;
 }
 
+export async function cancelBridgeRun(runId: string): Promise<RunProjectionSnapshot> {
+  return unwrap(
+    await client.POST("/api/v1/bridge/runs/{run_id}/cancel", {
+      params: { path: { run_id: runId } },
+      headers: await csrfHeaders()
+    })
+  ) as RunProjectionSnapshot;
+}
+
 export async function createBridgeSession(): Promise<SessionCreated> {
   return unwrap(
     await client.POST("/api/v1/bridge/sessions", {
@@ -79,11 +88,11 @@ export async function createBridgeSession(): Promise<SessionCreated> {
   );
 }
 
-export async function sendBridgeMessage(sessionId: string, prompt: string) {
+export async function sendBridgeMessage(sessionId: string, prompt: string, requestId: string) {
   return unwrap(
     await client.POST("/api/v1/bridge/sessions/{session_id}/messages", {
       params: { path: { session_id: sessionId } },
-      body: { prompt },
+      body: { prompt, request_id: requestId },
       headers: await csrfHeaders()
     })
   );
@@ -127,10 +136,10 @@ export async function getNexusSwap(ticketId: string): Promise<SwapAccepted> {
   ) as SwapAccepted;
 }
 
-export async function createNexusSwap(target: string): Promise<SwapAccepted> {
+export async function createNexusSwap(target: string, requestId: string): Promise<SwapAccepted> {
   return unwrap(
     await client.POST("/api/v1/nexus/swaps", {
-      body: { target },
+      body: { request_id: requestId, target },
       headers: await csrfHeaders()
     })
   ) as SwapAccepted;
@@ -282,6 +291,7 @@ export function listenToSwap(
   }
 
   source.addEventListener("transition", (raw) => {
+    if (stopped) return;
     try {
       const event = transitionEventSchema.parse(JSON.parse((raw as MessageEvent<string>).data));
       if (event.ticket.id !== ticketId) {

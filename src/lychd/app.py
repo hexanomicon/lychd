@@ -17,7 +17,7 @@ from lychd.interface.server_policy import (
     ServerRuntimePolicyError,
     evaluate_server_runtime_policy,
 )
-from lychd.interface.web.openapi import build_openapi_config
+from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 from lychd.lib.exceptions import exception_to_http_response
 
 if TYPE_CHECKING:
@@ -101,6 +101,7 @@ class AppInit(InitPluginProtocol):
         app_config.plugins.extend(
             [
                 GranianPlugin(),
+                StrictPydanticSchemaPlugin(),
                 SQLAlchemyPlugin(config=build_db_config(settings)),
                 SAQPlugin(config=build_saq_config(settings)),
                 StructlogPlugin(config=build_structlog_config(settings)),

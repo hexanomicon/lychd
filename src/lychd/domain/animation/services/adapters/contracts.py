@@ -35,17 +35,24 @@ class SoulstoneDefinition:
 
 
 class PortalRuntimeFactory(Protocol):
-    """Callable that builds a runtime animator for a Portal rune, or ``None``."""
+    """Total callable that builds a runtime animator for its exact Portal Rune schema."""
 
-    def __call__(self, portal: PortalConfig) -> RuntimeAnimator | None: ...
+    def __call__(self, portal: PortalConfig) -> RuntimeAnimator: ...
+
+
+class PortalProbe(Protocol):
+    """Exact-owner live probe for one Portal runtime family."""
+
+    async def __call__(self, animator: RuntimeAnimator) -> None: ...
 
 
 @dataclass(frozen=True)
 class PortalDefinition:
-    """Registration-time definition of one Portal provider family."""
+    """Registration-time factory and optional probe for one exact Portal schema."""
 
     rune_schema: type[PortalConfig]
     factory: PortalRuntimeFactory
+    probe: PortalProbe | None = None
 
 
 class AnimatorControlPlane(Protocol):
@@ -104,6 +111,7 @@ __all__ = [
     "ActivationObserver",
     "AnimatorControlPlane",
     "PortalDefinition",
+    "PortalProbe",
     "PortalRuntimeFactory",
     "RuntimeAnimator",
     "RuntimePlan",

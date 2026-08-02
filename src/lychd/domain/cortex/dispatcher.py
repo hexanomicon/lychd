@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
-from lychd.domain.animation.capabilities import CapabilityPhase, CapabilitySpec, CapabilityState
+from lychd.domain.animation.capabilities import CapabilityPhase, CapabilitySpec, CapabilityState, SourceKind
 from lychd.domain.animation.errors import CapabilityUnavailable, HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
@@ -109,9 +109,23 @@ class Dispatcher:
         parked run holds no lease (true by construction: ``acquire()`` happens only
         after this returns).
         """
+        self._require_egress_admission(spec)
         if self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING:
             raise self._transition_required(spec)
         return await self._drive_to_grant(spec, holder=holder, allow_refresh=True)
+
+    @staticmethod
+    def _require_egress_admission(spec: CapabilitySpec) -> None:
+        """Quarantine remote execution until a typed egress authority exists.
+
+        Portal declarations and health remain observable through the registry/Nexus,
+        but dispatching prompts or history to them is a deny-by-default boundary.
+        """
+        if spec.source_kind is SourceKind.PORTAL:
+            raise CapabilityUnavailable(
+                spec.key,
+                "portal egress admission is not configured",
+            )
 
     def _acquire_or_park(self, grant: CapabilityGrant, *, priority: int) -> None:
         """Atomically register a grant or convert a concurrent drain into stasis.
@@ -191,6 +205,7 @@ class Dispatcher:
         target = family if isinstance(family, CapabilityFamily) else self._normalize_family(family)
         required = set(require_modalities)
         candidates: list[tuple[CapabilitySpec, CapabilityState]] = []
+        quarantined_portal = False
         for spec in self._registry.list_capabilities():
             if spec.family != target:
                 continue
@@ -200,12 +215,17 @@ class Dispatcher:
                 continue
             if requires_tools and spec.supports_tools is not True:
                 continue
+            if spec.source_kind is SourceKind.PORTAL:
+                quarantined_portal = True
+                continue
             state = self._registry.get_capability_state(spec.key)
             if state is None or not state.is_available:
                 continue
             candidates.append((spec, state))
 
         if not candidates:
+            if quarantined_portal:
+                raise CapabilityUnavailable(str(family), "portal egress admission is not configured")
             raise CapabilityUnavailable(str(family), "no registered capability can fulfill the request")
 
         candidates.sort(key=self._candidate_sort_key)

@@ -24,11 +24,12 @@ dedicated browser profile, and do not proxy, tunnel, or port-forward it. Begin w
 The delivered Bridge supports:
 
 - local sessions and **New Séance**;
-- text submission;
+- text submission with one retry-stable request identity, one canonical Run, and held-turn repair;
 - process-local semantic event streaming;
 - pending consent cards and decisions;
 - session inspection;
-- closed, server-validated GenUI fragments; and
+- closed, server-validated GenUI fragments retained through terminal refresh, with inert key-only
+  compatibility for older rows that never enters a current renderer; and
 - a per-turn run strip linking exact run evidence into the [Orb](orb.md).
 
 The run strip names the Run, Pattern revision, canonical status, and current activity. It does not
@@ -43,12 +44,20 @@ every Agent. Loom owns Pattern projection; Orb owns evidence; Nexus owns physica
 Visible turns and model history are different records. A user turn may appear immediately, but
 only a settled agent turn appends one complete Pydantic AI history unit. Provider hops inside that
 unit are normalized to the owning LychD run, so a consent return cannot survive without its
-originating tool call.
+originating tool call. Replaying the same settled Run outcome is a no-op; reusing its Run/role
+identity for different visible content, state, or fragments fails closed.
 
 A later invocation takes the newest whole turns within configured turn and character budgets,
 validates typed messages, then rebuilds the Stable Floor under the capability actually granted.
 Consent resume keeps the current call chain whole and re-bounds older settled turns under the new
 grant.
+
+An admitted user turn is not a completed answer. Until a matching agent turn settles, a terminal
+failed or cancelled Run remains visible as a Run projection. Its durable status outranks a lagging
+process-local stream, and delayed recovery snapshots cannot replace a newer cursor/generation.
+Cancelling a Run immediately clears the selected session's consent cards and count, then refetches
+authoritative session truth. A failed refetch leaves those actions revoked rather than displaying
+stale authority.
 
 This is bounded conversational continuity. It is not Archive retrieval, full-session replay,
 cross-process event durability, or proof that concurrent turns serialize.
@@ -59,8 +68,9 @@ The server validates the request, descriptor, reference, and decision. A convers
 never carries executable authority. Approval applies to the exact pending request presented; it
 does not widen the Agent's tools, mutate another object, or grant a later effect.
 
-The current boundary supports the existing consent round. General multi-approval flows,
-notifications, durable token/event delivery, and a transactional admission outbox remain absent.
+The current boundary supports the existing consent round. Run admission has a durable database
+delivery outbox, but general multi-approval flows, notifications, and durable token/event delivery
+remain absent.
 [State of Work](../../state-of-the-work.md#bridge-surface) owns the exact boundary.
 
 ## Designed crossings

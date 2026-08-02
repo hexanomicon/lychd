@@ -9,6 +9,9 @@ so two concurrent parks can never overdraw one `max_uses` budget.
 
 from __future__ import annotations
 
+import hashlib
+import json
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any, cast
@@ -24,7 +27,65 @@ if TYPE_CHECKING:
     from lychd.domain.codex.runes import CodexPreauthRune
     from lychd.domain.codex.sigil import Sigil
 
-__all__ = ["ConsentService", "PreauthService", "row_to_view"]
+PREAUTH_DIGEST_PAYLOAD_KEY = "preauth_digest"
+_RUNE_PREAUTH_OWNER = "codex:rune"
+
+__all__ = [
+    "PREAUTH_DIGEST_PAYLOAD_KEY",
+    "ConsentService",
+    "PreauthService",
+    "preauth_authorization_digest",
+    "row_to_view",
+]
+
+
+def _canonical_datetime(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC).isoformat()
+    return value.astimezone(UTC).isoformat()
+
+
+def preauth_authorization_digest(row: CodexPreauthorization) -> str:
+    """Digest the stable fields that gave a preauthorization its authority."""
+    document = {
+        "slug": row.slug,
+        "priority": row.priority,
+        "klass": row.klass,
+        "sigil_pattern": row.sigil_pattern,
+        "tool_pattern": row.tool_pattern,
+        "constraints": dict(row.constraints or {}),
+        "expires_at": _canonical_datetime(row.expires_at),
+        "max_uses": row.max_uses,
+        "granted_by": row.granted_by,
+    }
+    canonical = json.dumps(document, ensure_ascii=True, allow_nan=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _validated_preauth_slugs(runes: list[CodexPreauthRune]) -> set[str]:
+    """Return the generation's unique slugs or reject it deterministically."""
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for rune in runes:
+        if rune.slug in seen:
+            duplicates.add(rune.slug)
+        seen.add(rune.slug)
+    if duplicates:
+        joined = ", ".join(sorted(duplicates))
+        msg = f"Duplicate preauthorization Rune slug(s): {joined}."
+        raise ValueError(msg)
+    return seen
+
+
+def _require_rune_owned_preauthorizations(rows: Iterable[CodexPreauthorization]) -> None:
+    """Refuse durable slug collisions outside the Rune-owned policy domain."""
+    ownership_conflicts = sorted((row.slug, row.granted_by) for row in rows if row.granted_by != _RUNE_PREAUTH_OWNER)
+    if ownership_conflicts:
+        joined = ", ".join(f"{slug} (owned by {owner!r})" for slug, owner in ownership_conflicts)
+        msg = f"Refusing non-Rune-owned preauthorization slug collision(s): {joined}."
+        raise ValueError(msg)
 
 
 def row_to_view(row: Consent) -> ConsentView:
@@ -52,18 +113,30 @@ class PreauthService(SQLAlchemyAsyncRepositoryService[CodexPreauthorization]):
     repository_type = Repository
 
     async def match_and_consume(
-        self, *, sigil: Sigil, tool_name: str, payload: dict[str, Any]
+        self,
+        *,
+        sigil: Sigil,
+        tool_name: str,
+        payload: dict[str, Any],
+        auto_commit: bool = True,
     ) -> CodexPreauthorization | None:
         """Find and atomically consume the first preauthorization admitting this call.
 
         Candidate filtering (fnmatch on sigil/tool, expiry, fail-closed constraints)
         is Python-side; the consume is a single guarded ``UPDATE … WHERE enabled AND
-        (max_uses IS NULL OR uses < max_uses) RETURNING`` so a race can never overdraw.
+        source_present AND (max_uses IS NULL OR uses < max_uses) RETURNING`` so a race
+        can neither consume removed authority nor overdraw.
         """
-        from sqlalchemy import or_, update
+        from sqlalchemy import func, or_, update
 
         now = datetime.now(UTC)
-        rows = await self.list(CodexPreauthorization.enabled.is_(True))
+        rows = sorted(
+            await self.list(
+                CodexPreauthorization.enabled.is_(True),
+                CodexPreauthorization.source_present.is_(True),
+            ),
+            key=lambda row: (-row.priority, row.slug),
+        )
         for row in rows:
             if not fnmatchcase(sigil.name, row.sigil_pattern):
                 continue
@@ -78,6 +151,11 @@ class PreauthService(SQLAlchemyAsyncRepositoryService[CodexPreauthorization]):
                 .where(
                     CodexPreauthorization.id == row.id,
                     CodexPreauthorization.enabled.is_(True),
+                    CodexPreauthorization.source_present.is_(True),
+                    or_(
+                        CodexPreauthorization.expires_at.is_(None),
+                        CodexPreauthorization.expires_at > func.now(),
+                    ),
                     or_(
                         CodexPreauthorization.max_uses.is_(None),
                         CodexPreauthorization.uses < CodexPreauthorization.max_uses,
@@ -86,36 +164,77 @@ class PreauthService(SQLAlchemyAsyncRepositoryService[CodexPreauthorization]):
                 .values(uses=CodexPreauthorization.uses + 1)
                 .returning(CodexPreauthorization.id)
             )
-            await self.repository.session.commit()
+            if auto_commit:
+                await self.repository.session.commit()
             if result.scalar_one_or_none() is not None:
                 return row
         return None
 
     async def sync_from_runes(self, runes: list[CodexPreauthRune]) -> int:
-        """Upsert preauthorizations from loaded runes (never reset `uses`).
+        """Reconcile the complete Rune-owned policy set in one transaction.
 
-        Match by slug: an existing row keeps its `uses`/`enabled` and refreshes its
-        policy fields; a new slug is inserted. `granted_by` is always ``codex:rune``.
+        Present rows retain both usage and operator ``enabled`` state. Rune absence
+        changes only ``source_present``; a later reappearance can reactivate a policy
+        that was operator-enabled without undoing an explicit operator disable.
+        Duplicate source slugs and collisions with non-Rune-owned rows fail before
+        the generation can mutate durable policy. Any failure rolls the whole
+        generation back instead of publishing a mixed set.
         """
-        synced = 0
-        for rune in runes:
-            existing = await self.get_one_or_none(slug=rune.slug)
-            values: dict[str, Any] = {
-                "klass": rune.klass,
-                "sigil_pattern": rune.sigil_pattern,
-                "tool_pattern": rune.tool_pattern,
-                "constraints": dict(rune.constraints),
-                "expires_at": rune.expires_at,
-                "max_uses": rune.max_uses,
-                "granted_by": "codex:rune",
-                "source_file": str(rune.source_file) if rune.source_file is not None else None,
-            }
-            if existing is None:
-                await self.create(CodexPreauthorization(slug=rune.slug, **values), auto_commit=True)
-            else:
-                await self.update(values, item_id=existing.id, auto_commit=True)  # never touches `uses`
-            synced += 1
-        return synced
+        from sqlalchemy import select, update
+
+        session = self.repository.session
+        slugs = _validated_preauth_slugs(runes)
+        try:
+            existing_by_slug: dict[str, CodexPreauthorization] = {}
+            if slugs:
+                result = await session.scalars(
+                    select(CodexPreauthorization).where(CodexPreauthorization.slug.in_(slugs)).with_for_update()
+                )
+                existing_by_slug = {row.slug: row for row in result.all()}
+
+            _require_rune_owned_preauthorizations(existing_by_slug.values())
+
+            for rune in runes:
+                row = existing_by_slug.get(rune.slug)
+                values: dict[str, Any] = {
+                    "priority": rune.priority,
+                    "klass": rune.klass,
+                    "sigil_pattern": rune.sigil_pattern,
+                    "tool_pattern": rune.tool_pattern,
+                    "constraints": dict(rune.constraints),
+                    "expires_at": rune.expires_at,
+                    "max_uses": rune.max_uses,
+                    "source_present": True,
+                    "granted_by": _RUNE_PREAUTH_OWNER,
+                    "source_file": str(rune.source_file) if rune.source_file is not None else None,
+                }
+                if row is None:
+                    row = CodexPreauthorization(
+                        slug=rune.slug,
+                        uses=0,
+                        enabled=True,
+                        **values,
+                    )
+                    session.add(row)
+                    existing_by_slug[rune.slug] = row
+                else:
+                    for field, value in values.items():
+                        setattr(row, field, value)
+
+            absent = [CodexPreauthorization.granted_by == _RUNE_PREAUTH_OWNER]
+            if slugs:
+                absent.append(CodexPreauthorization.slug.not_in(slugs))
+            await session.execute(
+                update(CodexPreauthorization)
+                .where(*absent)
+                .values(source_present=False)
+                .execution_options(synchronize_session=False)
+            )
+            await session.commit()
+        except BaseException:
+            await session.rollback()
+            raise
+        return len(runes)
 
 
 class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
@@ -135,10 +254,13 @@ class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
         call_ids: tuple[str, ...],
         payload: dict[str, Any],
         preauth: CodexPreauthorization | None,
+        auto_commit: bool = True,
     ) -> Consent:
         """Persist a consent row: auto-granted when a preauth consumed it, else pending."""
         stored = {"args": censor(payload), "call_ids": list(call_ids)}
         granted = preauth is not None
+        if preauth is not None:
+            stored[PREAUTH_DIGEST_PAYLOAD_KEY] = preauth_authorization_digest(preauth)
         return await self.create(
             Consent(
                 run_id=UUID(run_id),
@@ -151,20 +273,22 @@ class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
                 preauth_slug=preauth.slug if preauth is not None else None,
                 expires_at=preauth.expires_at if preauth is not None else None,
             ),
-            auto_commit=True,
+            auto_commit=auto_commit,
         )
 
     async def _decide(self, consent_id: str, *, status: str, decided_by: str) -> ConsentView | None:
-        row = await self.get_one_or_none(id=UUID(consent_id))
-        if row is None:
-            return None
-        if row.status == "pending":  # idempotent: a settled verdict is never re-decided
-            await self.update(
-                {"status": status, "decided_by": decided_by, "decided_at": datetime.now(UTC)},
-                item_id=row.id,
-                auto_commit=True,
-            )
-            row = await self.get_one_or_none(id=UUID(consent_id))
+        from sqlalchemy import update
+
+        row_id = UUID(consent_id)
+        await self.repository.session.execute(
+            update(Consent)
+            .where(Consent.id == row_id, Consent.status == "pending")
+            .values(status=status, decided_by=decided_by, decided_at=datetime.now(UTC))
+            .returning(Consent.id)
+            .execution_options(synchronize_session=False)
+        )
+        await self.repository.session.commit()
+        row = await self.get_one_or_none(id=row_id)
         return row_to_view(row) if row is not None else None
 
     async def grant(self, consent_id: str, *, decided_by: str) -> ConsentView | None:
@@ -177,7 +301,11 @@ class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
 
     async def get_view(self, consent_id: str) -> ConsentView | None:
         """Return the read-model for one consent row, or None."""
-        row = await self.get_one_or_none(id=UUID(consent_id))
+        try:
+            row_id = UUID(consent_id)
+        except ValueError:
+            return None
+        row = await self.get_one_or_none(id=row_id)
         return row_to_view(row) if row is not None else None
 
     async def pending_count(self) -> int:

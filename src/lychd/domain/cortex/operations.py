@@ -194,6 +194,7 @@ class RunOperationStore(ExtensionStore):
         core_operations: tuple[RunOperationSpec, ...] = (),
     ) -> None:
         """Create a store bound to provenance and seed host-owned operations."""
+        super().__init__()
         self._current_provider = current_provider
         self._operations: dict[str, RegisteredRunOperation] = {}
         for operation in core_operations:
@@ -210,6 +211,7 @@ class RunOperationStore(ExtensionStore):
 
     def add(self, spec: RunOperationSpec) -> None:
         """Register an extension operation under the active provenance bracket."""
+        self._require_mutable()
         self._add(spec, provider_id=self._current_provider())
 
     def _add(self, spec: RunOperationSpec, *, provider_id: str) -> None:

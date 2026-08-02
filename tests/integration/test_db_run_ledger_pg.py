@@ -21,23 +21,26 @@ concurrency story on a real Postgres:
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest import mock
+from uuid import UUID
 
 import pytest
+import pytest_asyncio
 
 pytest.importorskip("testcontainers", reason="[LINUX] PG runtime pass only")
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from testcontainers.postgres import PostgresContainer
+from testcontainers.community.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
-from lychd.db.models import Run, Session, Step
+from lychd.db.models import Consent, DelegatedAgentJobRecord, Run, RunDelivery, Session, Step
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
-from lychd.domain.cortex.ledger import DbRunLedger
-from lychd.domain.cortex.runs import IllegalRunTransitionError, RunStatus
-from lychd.domain.cortex.services import RunService
+from lychd.domain.cortex.ledger import DbRunLedger, RunAdmissionConflictError
+from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
 from lychd.domain.web.schemas import BridgeTurn
 from lychd.domain.web.sessions import DbBridgeSessionStore
 
@@ -48,27 +51,64 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(scope="module")
-def pg_factory() -> Iterator[async_sessionmaker[AsyncSession]]:
-    """Spin a pgvector Postgres, create the run/step tables, yield a session factory."""
+def pg_url() -> Iterator[str]:
+    """Keep one disposable PostgreSQL container alive for this module."""
     with PostgresContainer("pgvector/pgvector:pg18-trixie", driver="asyncpg") as pg:
-        engine: AsyncEngine = create_async_engine(pg.get_connection_url())
+        yield pg.get_connection_url()
 
-        async def _init() -> None:
-            async with engine.begin() as conn:
-                await conn.run_sync(
-                    Run.metadata.create_all,
-                    tables=[Session.__table__, Run.__table__, Step.__table__],
-                )
 
-        asyncio.run(_init())
-        yield async_sessionmaker(engine, expire_on_commit=False)
-        asyncio.run(engine.dispose())
+@pytest_asyncio.fixture
+async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
+    """Build and dispose the asyncpg pool on the current pytest event loop."""
+    engine: AsyncEngine = create_async_engine(pg_url)
+    tables = [
+        Session.__table__,
+        Run.__table__,
+        RunDelivery.__table__,
+        Step.__table__,
+        Consent.__table__,
+        DelegatedAgentJobRecord.__table__,
+    ]
+    async with engine.begin() as connection:
+        await connection.run_sync(Run.metadata.drop_all, tables=tables)
+        await connection.run_sync(Run.metadata.create_all, tables=tables)
+    yield async_sessionmaker(engine, expire_on_commit=False)
+    await engine.dispose()
 
 
 async def _seed(ledger: DbRunLedger, run_id_hint: str = "") -> str:
     intent = Intent(session_id="s", run_id=run_id_hint or None, prompt="p", source="bridge")
     run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
     return run.run_id
+
+
+async def _park_decided_consent(
+    ledger: DbRunLedger,
+    session_factory: async_sessionmaker[AsyncSession],
+    run_id: str,
+    *,
+    label: str,
+) -> str:
+    """Create and bind one exact decided Consent owner for a ledger-only resume test."""
+    now = datetime.now(UTC)
+    async with session_factory() as session:
+        consent = Consent(
+            run_id=UUID(run_id),
+            tool_name=label,
+            tool_call_id=f"call-{label}",
+            payload={"args": {}},
+            status="granted",
+            decided_by="magus:test",
+            decided_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(consent)
+        await session.commit()
+        await session.refresh(consent)
+    consent_id = str(consent.id)
+    await ledger.park_consent(run_id, consent_id)
+    return consent_id
 
 
 @pytest.mark.asyncio
@@ -85,6 +125,41 @@ async def test_cas_cancelled_cannot_land_over_done(pg_factory: async_sessionmake
     row = await ledger.get(run_id)
     assert row is not None
     assert row.status is RunStatus.DONE
+
+
+@pytest.mark.asyncio
+async def test_idempotent_admission_converges_across_database_sessions(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    first = DbRunLedger(session_factory=pg_factory)
+    second = DbRunLedger(session_factory=pg_factory)
+    intent = Intent(session_id="s", prompt="one durable offering", source="bridge")
+    kwargs = {
+        "idempotency_key": "bridge:s:request-1",
+        "workflow_name": "bridge_chat",
+        "queue_name": "runs",
+        "priority": 70,
+        "hold_delivery": True,
+    }
+
+    admitted = await asyncio.gather(
+        first.create_idempotent(intent, **kwargs),
+        second.create_idempotent(intent, **kwargs),
+    )
+
+    assert admitted[0][0].run_id == admitted[1][0].run_id
+    assert sorted(created for _run, created in admitted) == [False, True]
+    canonical = await first.get(admitted[0][0].run_id)
+    delivery = await first.get_delivery(admitted[0][0].run_id, enqueue_seq=0)
+    assert canonical is not None
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.HELD
+
+    with pytest.raises(RunAdmissionConflictError):
+        await first.create_idempotent(
+            Intent(session_id="s", prompt="different work", source="bridge"),
+            **kwargs,
+        )
 
 
 @pytest.mark.asyncio
@@ -122,6 +197,59 @@ async def test_concurrent_run_claim_has_one_winner(pg_factory: async_sessionmake
 
 
 @pytest.mark.asyncio
+async def test_publication_ack_cannot_move_a_cancelled_delivery_backwards(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """A late broker acknowledgement loses to canonical cancellation truth."""
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    elected = await ledger.begin_cancel(run_id)
+    assert elected is not None
+    assert await ledger.finish_cancel(run_id, enqueue_seq=elected.enqueue_seq)
+
+    assert await ledger.mark_delivery_published(run_id, enqueue_seq=elected.enqueue_seq) is False
+    row = await ledger.get(run_id)
+    delivery = await ledger.get_delivery(run_id, enqueue_seq=elected.enqueue_seq)
+    assert row is not None
+    assert delivery is not None
+    assert row.status is RunStatus.CANCELLED
+    assert delivery.state is RunDeliveryState.SETTLED
+
+
+@pytest.mark.asyncio
+async def test_release_and_held_refusal_have_exactly_one_winner(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Admission compensation cannot fail a delivery whose release already won."""
+    releaser = DbRunLedger(session_factory=pg_factory)
+    refuser = DbRunLedger(session_factory=pg_factory)
+    run = await releaser.create(
+        Intent(session_id="s", prompt="p", source="bridge"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=70,
+        hold_delivery=True,
+    )
+
+    released, refused = await asyncio.gather(
+        releaser.release_delivery(run.run_id, enqueue_seq=0),
+        refuser.try_fail_held(run.run_id, enqueue_seq=0, error="retention failed"),
+    )
+
+    assert sorted((released, refused)) == [False, True]
+    row = await releaser.get(run.run_id)
+    delivery = await releaser.get_delivery(run.run_id, enqueue_seq=0)
+    assert row is not None
+    assert delivery is not None
+    if released:
+        assert row.status is RunStatus.QUEUED
+        assert delivery.state is RunDeliveryState.PENDING
+    else:
+        assert row.status is RunStatus.FAILED
+        assert delivery.state is RunDeliveryState.SETTLED
+
+
+@pytest.mark.asyncio
 async def test_claimed_failure_cannot_overwrite_new_resume_hop(
     pg_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -131,8 +259,13 @@ async def test_claimed_failure_cannot_overwrite_new_resume_hop(
     assert await ledger.bump_enqueue_seq(run_id) == 1
     assert await ledger.try_claim_run(run_id, enqueue_seq=1) is True
 
-    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
-    assert await ledger.try_admit_consent(run_id) == 2
+    consent_id = await _park_decided_consent(
+        ledger,
+        pg_factory,
+        run_id,
+        label="claimed-failure",
+    )
+    assert await ledger.try_admit_consent(run_id, consent_id=consent_id) == 2
     assert await ledger.try_claim_run(run_id, enqueue_seq=2) is True
 
     assert await ledger.try_fail_claimed(run_id, enqueue_seq=1, error="old hop failed") is False
@@ -156,52 +289,308 @@ async def test_stale_consent_delivery_cannot_claim_retried_hop(
     ledger = DbRunLedger(session_factory=pg_factory)
     run_id = await _seed(ledger)
     assert await ledger.try_claim_run(run_id, enqueue_seq=0) is True
-    await ledger.set_status(run_id, RunStatus.AWAITING_CONSENT)
+    first_consent_id = await _park_decided_consent(
+        ledger,
+        pg_factory,
+        run_id,
+        label="first-hop",
+    )
 
-    assert await ledger.try_admit_consent(run_id) == 1
-    assert await ledger.try_restore_consent_wait(run_id, enqueue_seq=1) is True
-    assert await ledger.try_admit_consent(run_id) == 2
+    assert await ledger.try_admit_consent(run_id, consent_id=first_consent_id) == 1
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1) is True
+    second_consent_id = await _park_decided_consent(
+        ledger,
+        pg_factory,
+        run_id,
+        label="second-hop",
+    )
+    assert await ledger.try_admit_consent(run_id, consent_id=second_consent_id) == 2
 
     assert await ledger.try_claim_run(run_id, enqueue_seq=1) is False
     assert await ledger.try_claim_run(run_id, enqueue_seq=2) is True
 
 
 @pytest.mark.asyncio
-async def test_cas_retries_lost_cancel_against_legal_fresh_edge(
+async def test_resumed_claim_preserves_original_started_at(
     pg_factory: async_sessionmaker[AsyncSession],
 ) -> None:
-    """R3: a cancel losing a QUEUED→RUNNING claim retries against the fresh RUNNING and lands CANCELLED.
-
-    We force the CAS window deterministically: a one-shot hook on the ledger's first
-    row read commits a concurrent QUEUED→RUNNING claim, so the cancel's first CAS
-    (`WHERE status='queued'`) matches 0 rows. The re-read sees RUNNING; RUNNING→CANCELLED
-    is legal, so the bounded retry lands it instead of raising.
-    """
     ledger = DbRunLedger(session_factory=pg_factory)
-    claimant = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0) is True
+    first = await ledger.get(run_id)
+    assert first is not None
+    assert first.started_at is not None
+
+    consent_id = await _park_decided_consent(
+        ledger,
+        pg_factory,
+        run_id,
+        label="started-at",
+    )
+    assert await ledger.try_admit_consent(run_id, consent_id=consent_id) == 1
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1) is True
+
+    resumed = await ledger.get(run_id)
+    assert resumed is not None
+    assert resumed.started_at == first.started_at
+
+
+@pytest.mark.asyncio
+async def test_historical_consent_cannot_admit_a_later_postgres_wait(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    now = datetime.now(UTC)
+    async with pg_factory() as session:
+        old = Consent(
+            run_id=UUID(run_id),
+            tool_name="first",
+            tool_call_id="call-first",
+            payload={"args": {}},
+            status="granted",
+            decided_by="magus:first",
+            decided_at=now - timedelta(seconds=1),
+            created_at=now - timedelta(seconds=1),
+            updated_at=now - timedelta(seconds=1),
+        )
+        session.add(old)
+        await session.commit()
+        await session.refresh(old)
+        old_id = str(old.id)
+    await ledger.park_consent(run_id, old_id)
+    assert await ledger.try_admit_consent(run_id, consent_id=old_id) == 1
+    assert await ledger.try_claim_run(run_id, enqueue_seq=1)
+
+    async with pg_factory() as session:
+        current = Consent(
+            run_id=UUID(run_id),
+            tool_name="second",
+            tool_call_id="call-second",
+            payload={"args": {}},
+            status="granted",
+            decided_by="magus:second",
+            decided_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(current)
+        await session.commit()
+        await session.refresh(current)
+        current_id = str(current.id)
+    await ledger.park_consent(run_id, current_id)
+
+    assert await ledger.get_by_consent(old_id) is None
+    assert await ledger.try_admit_consent(run_id, consent_id=old_id) is None
+    waiting = await ledger.get(run_id)
+    assert waiting is not None
+    assert waiting.status is RunStatus.AWAITING_CONSENT
+    assert await ledger.try_admit_consent(run_id, consent_id=current_id) == 2
+
+
+@pytest.mark.asyncio
+async def test_pending_consent_cannot_admit_a_postgres_resume(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    now = datetime.now(UTC)
+    async with pg_factory() as session:
+        consent = Consent(
+            run_id=UUID(run_id),
+            tool_name="pending",
+            tool_call_id="call-pending",
+            payload={"args": {}},
+            status="pending",
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(consent)
+        await session.commit()
+        await session.refresh(consent)
+        consent_id = str(consent.id)
+    await ledger.park_consent(run_id, consent_id)
+
+    assert await ledger.try_admit_consent(run_id, consent_id=consent_id) is None
+    waiting = await ledger.get(run_id)
+    assert waiting is not None
+    assert waiting.status is RunStatus.AWAITING_CONSENT
+
+    async with pg_factory() as session:
+        row = await session.get(Consent, UUID(consent_id))
+        assert row is not None
+        row.status = "granted"
+        with pytest.raises(IntegrityError, match="ck_consent_decision_receipt"):
+            await session.commit()
+        await session.rollback()
+        row = await session.get(Consent, UUID(consent_id))
+        assert row is not None
+        row.status = "granted"
+        row.decided_by = "magus:test"
+        row.decided_at = datetime.now(UTC)
+        await session.commit()
+    assert await ledger.try_admit_consent(run_id, consent_id=consent_id) == 1
+
+
+@pytest.mark.asyncio
+async def test_nonterminal_delegate_cannot_admit_a_postgres_resume(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    job_id = "job-pending-resume"
+    async with pg_factory() as session:
+        session.add(
+            DelegatedAgentJobRecord(
+                job_id=job_id,
+                request_id="request-pending-resume",
+                run_id=UUID(run_id),
+                runtime="test-runtime",
+                profile="test-profile",
+                status="running",
+                request={"task": "test"},
+                result=None,
+            )
+        )
+        await session.commit()
+    await ledger.park_delegate(run_id, job_id)
+
+    assert await ledger.try_admit_delegate(run_id, job_id=job_id) is None
+    waiting = await ledger.get(run_id)
+    assert waiting is not None
+    assert waiting.status is RunStatus.AWAITING_DELEGATE
+
+    async with pg_factory() as session:
+        row = await session.scalar(select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.job_id == job_id))
+        assert row is not None
+        row.status = "succeeded"
+        row.result = {"job_id": job_id, "status": "succeeded", "unexpected": True}
+        await session.commit()
+    assert await ledger.try_admit_delegate(run_id, job_id=job_id) is None
+
+    async with pg_factory() as session:
+        row = await session.scalar(select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.job_id == job_id))
+        assert row is not None
+        row.result = {"job_id": job_id, "status": "succeeded", "output": "done", "artifacts": [], "error": None}
+        await session.commit()
+    assert await ledger.try_admit_delegate(run_id, job_id=job_id) == 1
+
+
+@pytest.mark.asyncio
+async def test_postgres_consent_resume_uses_the_explicit_park_owner(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    assert await ledger.try_claim_run(run_id, enqueue_seq=0)
+    now = datetime.now(UTC)
+    async with pg_factory() as session:
+        explicitly_parked = Consent(
+            run_id=UUID(run_id),
+            tool_name="explicit",
+            tool_call_id="call-explicit",
+            payload={"args": {}},
+            status="granted",
+            decided_by="magus:explicit",
+            decided_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        newer_unrelated = Consent(
+            run_id=UUID(run_id),
+            tool_name="newer",
+            tool_call_id="call-newer",
+            payload={"args": {}},
+            status="granted",
+            decided_by="magus:newer",
+            decided_at=now + timedelta(seconds=1),
+            created_at=now + timedelta(seconds=1),
+            updated_at=now + timedelta(seconds=1),
+        )
+        session.add_all((explicitly_parked, newer_unrelated))
+        await session.commit()
+        await session.refresh(explicitly_parked)
+        await session.refresh(newer_unrelated)
+
+    parked_id = str(explicitly_parked.id)
+    unrelated_id = str(newer_unrelated.id)
+    await ledger.park_consent(run_id, parked_id)
+
+    assert await ledger.get_by_consent(unrelated_id) is None
+    assert await ledger.try_admit_consent(run_id, consent_id=unrelated_id) is None
+    assert await ledger.try_admit_consent(run_id, consent_id=parked_id) == 1
+
+
+@pytest.mark.asyncio
+async def test_delivery_candidates_include_missing_delivery_truth(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    from sqlalchemy import delete
+
+    ledger = DbRunLedger(session_factory=pg_factory)
+    run_id = await _seed(ledger)
+    async with pg_factory() as session:
+        await session.execute(delete(RunDelivery).where(RunDelivery.run_id == UUID(run_id)))
+        await session.commit()
+
+    candidates = await ledger.list_delivery_candidates()
+
+    assert [candidate.run_id for candidate in candidates] == [run_id]
+
+
+@pytest.mark.asyncio
+async def test_delivery_cursor_sees_old_run_newly_admitted_for_resume(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    ledger = DbRunLedger(session_factory=pg_factory)
+    old_id = await _seed(ledger)
+    assert await ledger.try_claim_run(old_id, enqueue_seq=0)
+    consent_id = await _park_decided_consent(ledger, pg_factory, old_id, label="cursor")
+
+    current_id = await _seed(ledger)
+    current = await ledger.get(current_id)
+    assert current is not None
+    cursor = (current.updated_at, current.run_id)
+
+    assert await ledger.try_admit_consent(old_id, consent_id=consent_id) == 1
+    candidates = await ledger.list_delivery_candidates(after=cursor)
+
+    assert [candidate.run_id for candidate in candidates] == [old_id]
+
+
+@pytest.mark.asyncio
+async def test_cancel_election_fences_the_current_delivery_generation(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """A delivery rotation cannot make cancellation settle a stale copied sequence."""
+    ledger = DbRunLedger(session_factory=pg_factory)
     run_id = await _seed(ledger)
 
-    original = RunService.get_one_or_none
-    fired = {"done": False}
-
-    async def racing_read(self: RunService, *args: object, **kwargs: object) -> object:
-        row = await original(self, *args, **kwargs)  # reads the still-QUEUED row
-        if not fired["done"]:
-            fired["done"] = True
-            await claimant.set_status(run_id, RunStatus.RUNNING)  # concurrent claim wins the window
-        return row
-
-    with mock.patch.object(RunService, "get_one_or_none", racing_read):
-        await ledger.set_status(run_id, RunStatus.CANCELLED)  # must NOT raise — legal fresh edge
+    assert await ledger.rotate_delivery(run_id, enqueue_seq=0) == 1
+    elected = await ledger.begin_cancel(run_id)
+    assert elected is not None
+    assert elected.status is RunStatus.CANCELLING
+    assert elected.enqueue_seq == 1
+    assert await ledger.finish_cancel(run_id, enqueue_seq=0) is False
+    assert await ledger.finish_cancel(run_id, enqueue_seq=1) is True
 
     row = await ledger.get(run_id)
     assert row is not None
     assert row.status is RunStatus.CANCELLED
+    old_delivery = await ledger.get_delivery(run_id, enqueue_seq=0)
+    current_delivery = await ledger.get_delivery(run_id, enqueue_seq=1)
+    assert old_delivery is not None
+    assert old_delivery.state is RunDeliveryState.SETTLED
+    assert current_delivery is not None
+    assert current_delivery.state is RunDeliveryState.SETTLED
 
 
 @pytest.mark.asyncio
-async def test_cancel_losing_to_completion_is_benign(pg_factory: async_sessionmaker[AsyncSession]) -> None:
-    """R7: engine.cancel losing to completion (fresh DONE, DONE→CANCELLED illegal) is a benign no-op, not a 500."""
+async def test_cancel_after_completion_is_benign(pg_factory: async_sessionmaker[AsyncSession]) -> None:
+    """A cancel observing settled DONE is a benign no-op, not a 500."""
     from lychd.domain.cortex.engine import QueueRouter
     from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
 
@@ -230,18 +619,8 @@ async def test_cancel_losing_to_completion_is_benign(pg_factory: async_sessionma
         queues={"runs": _Queue()},
     )
 
-    original = RunService.get_one_or_none
-    fired = {"done": False}
-
-    async def racing_read(self: RunService, *args: object, **kwargs: object) -> object:
-        row = await original(self, *args, **kwargs)  # cancel's top read sees RUNNING
-        if not fired["done"]:
-            fired["done"] = True
-            await completer.set_status(run_id, RunStatus.DONE)  # completion wins the race
-        return row
-
-    with mock.patch.object(RunService, "get_one_or_none", racing_read):
-        await engine.cancel(run_id)  # must NOT raise — run already terminal → no-op
+    await completer.set_status(run_id, RunStatus.DONE)
+    await engine.cancel(run_id)
 
     row = await ledger.get(run_id)
     assert row is not None
@@ -264,6 +643,7 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
 
     from sqlalchemy import select
 
+    from lychd.domain.cortex.stasis import InMemoryStasisStore
     from lychd.ghouls.runs import reconcile_runs
 
     ledger = DbRunLedger(session_factory=pg_factory)
@@ -273,13 +653,24 @@ async def test_reconcile_orphaned_running_lands_terminal_step(
 
     # Fresh process: a brand-new bus (channel seqs restart at 0). reconcile only needs
     # the substrate's ledger + bus, so a namespace stand-in is sufficient here.
+    class _NoBrokerJob:
+        async def job(self, job_key: str, /) -> None:
+            _ = job_key
+
+        async def abort(self, job: object, error: str, /, ttl: float = 5) -> None:
+            _ = (job, error, ttl)
+
     bus = InProcessEventBus(ledger=ledger)
-    substrate = SimpleNamespace(ledger=ledger, bus=bus)
+    substrate = SimpleNamespace(
+        ledger=ledger,
+        bus=bus,
+        queues={"runs": _NoBrokerJob()},
+        stasis_store=InMemoryStasisStore(),
+        consents=None,
+        delegates=None,
+    )
     result = await reconcile_runs({"run_substrate": substrate})
     assert result["count"] >= 1
-
-    for _ in range(50):  # drain the per-run ORDERED writer chain (the terminal persist)
-        await asyncio.sleep(0)
 
     async with pg_factory() as session:
         rows = (await session.execute(select(Step.seq).where(Step.run_id == UUID(run_id)).order_by(Step.seq))).scalars()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal
@@ -156,27 +156,76 @@ class GrantLease:
     expires_at: datetime | None = None  # None = until released/superseded
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, init=False)
 class CapabilityGrant:
     """Canonical dispatch handoff for one granted capability (spec-00-FINAL C1).
 
-    Frozen dataclass (not pydantic): carries live runtime handles. The runtime types
-    are imported under ``TYPE_CHECKING`` (``from __future__ import annotations`` keeps
-    the module import-light at zero runtime cost) so the system's central handoff is
-    fully typed instead of ``Any``-erased.
+    Carries live runtime handles while keeping the issued spec/state snapshots private.
+    Accessors return defensive copies, so a consumer cannot rewrite the grant's
+    capability identity or observed issue-time truth through nested mutable fields.
     """
 
-    spec: CapabilitySpec
-    state: CapabilityState  # snapshot at issue time (phase == WARM)
-    lease: GrantLease
-    generation: GenerationProfile  # RESOLVED (runtime < animator < model)
-    animator: RuntimeAnimator  # live handle
-    model: Model | None  # hydrated pydantic-ai Model (None: tool-only)
-    toolsets: tuple[AbstractToolset[Any], ...] = field(default_factory=tuple)
+    _spec: CapabilitySpec
+    _state: CapabilityState
+    _lease: GrantLease
+    _generation: GenerationProfile
+    _animator: RuntimeAnimator
+    _model: Model | None
+    _toolsets: tuple[AbstractToolset[Any], ...]
+
+    def __init__(
+        self,
+        *,
+        spec: CapabilitySpec,
+        state: CapabilityState,
+        lease: GrantLease,
+        generation: GenerationProfile,
+        animator: RuntimeAnimator,
+        model: Model | None,
+        toolsets: tuple[AbstractToolset[Any], ...] = (),
+    ) -> None:
+        """Seal detached value snapshots beside the intentionally live handles."""
+        object.__setattr__(self, "_spec", spec.model_copy(deep=True))
+        object.__setattr__(self, "_state", state.model_copy(deep=True))
+        object.__setattr__(self, "_lease", lease)
+        object.__setattr__(self, "_generation", generation.model_copy(deep=True))
+        object.__setattr__(self, "_animator", animator)
+        object.__setattr__(self, "_model", model)
+        object.__setattr__(self, "_toolsets", tuple(toolsets))
+
+    @property
+    def spec(self) -> CapabilitySpec:
+        """Return a detached copy of the issued capability declaration."""
+        return self._spec.model_copy(deep=True)
+
+    @property
+    def state(self) -> CapabilityState:
+        """Return a detached copy of the issue-time observation."""
+        return self._state.model_copy(deep=True)
+
+    @property
+    def lease(self) -> GrantLease:
+        return self._lease
+
+    @property
+    def generation(self) -> GenerationProfile:
+        return self._generation
+
+    @property
+    def animator(self) -> RuntimeAnimator:
+        return self._animator
+
+    @property
+    def model(self) -> Model | None:
+        return self._model
+
+    @property
+    def toolsets(self) -> tuple[AbstractToolset[Any], ...]:
+        return self._toolsets
 
     @property
     def key(self) -> str:
-        return self.spec.key
+        return self._spec.key
 
     def model_settings(self) -> ModelSettings | None:
         """Bridge the resolved generation profile to pydantic-ai ModelSettings."""
