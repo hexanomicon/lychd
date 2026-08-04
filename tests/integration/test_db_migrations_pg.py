@@ -2,6 +2,8 @@
 
 # pyright: reportMissingImports=false
 # pyright: reportUnknownArgumentType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
 
 from __future__ import annotations
 
@@ -13,7 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-pytest.importorskip("testcontainers", reason="[LINUX] PG runtime pass only")
+pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
 from advanced_alchemy.alembic.commands import AlembicCommandConfig
 from alembic import command
@@ -24,7 +26,7 @@ from testcontainers.community.postgres import PostgresContainer
 
 from lychd.config.constants import DB_MIGRATION_VERSION_TABLE, PATH_MIGRATION_CONFIG
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
 @pytest.fixture(scope="module")

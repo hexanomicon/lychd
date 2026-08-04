@@ -79,7 +79,6 @@ def isolate_reference_runes_from_live_host(
 def _reference_registry() -> AnimatorRegistry:
     settings = get_settings()
     return AnimatorRegistry(
-        settings=settings,
         declarations=compile_animator_declarations(
             settings=settings,
             runes=RuneRegistry(ConfigLoader(_REF_RUNES).load_all(_SCHEMAS)),

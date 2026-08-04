@@ -4,7 +4,6 @@ import asyncio
 import time
 from collections.abc import Callable, Collection, Sequence
 from datetime import UTC, datetime
-from inspect import Parameter, signature
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
@@ -33,23 +32,17 @@ if TYPE_CHECKING:
     from pydantic_ai.models import Model
     from pydantic_ai.toolsets import AbstractToolset
 
-    from lychd.config.settings.root import Settings
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
     from lychd.domain.animation.services.adapters.contracts import (
         PortalDefinition,
-        RuntimePlan,
         SoulstoneRuntimeAdapter,
     )
     from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
     from lychd.domain.animation.services.declarations import AnimatorDeclarations
-    from lychd.system.schemas import QuadletContainer
-
-
 type AnimatorConfigDeclaration = SoulstoneConfig | PortalConfig
-type AnimatorFactory = Callable[..., RuntimeAnimator | None]
+type AnimatorFactory = Callable[[AnimatorConfigDeclaration], RuntimeAnimator | None]
 
 logger = structlog.get_logger()
-_RUNTIME_FACTORY_WITH_QUADLET_ARITY = 2
 _ACTIVATION_CLEANUP_TIMEOUT_SECONDS = 5.0
 
 
@@ -143,14 +136,13 @@ class AnimatorRegistry:
     def __init__(
         self,
         *,
-        settings: Settings,
         declarations: AnimatorDeclarations,
         runtime_adapters: Sequence[SoulstoneRuntimeAdapter],
         binder: AnimatorBinder | None = None,
         runtime_factories: Sequence[AnimatorFactory] | None = None,
         portal_definitions: Sequence[PortalDefinition] = (),
     ) -> None:
-        """Initialize from one compiled declaration and Settings snapshot.
+        """Initialize from one compiled declaration snapshot.
 
         Filesystem discovery, extension assembly, port collision policy, and
         declaration hydration stay outside the live registry. Production
@@ -160,13 +152,11 @@ class AnimatorRegistry:
             RuntimeAdapterRegistry as _RuntimeAdapterRegistry,
         )
 
-        self._settings = settings
         self._declarations = declarations
         self._binder = binder or AnimatorBinder()
         self._runtime_adapters: RuntimeAdapterRegistry = _RuntimeAdapterRegistry(
             adapters=list(runtime_adapters),
             portal_definitions=list(portal_definitions),
-            settings=settings,
         )
         self._runtime_factories: list[AnimatorFactory] = (
             list(runtime_factories) if runtime_factories is not None else [self._runtime_adapters.runtime_factory]
@@ -193,18 +183,13 @@ class AnimatorRegistry:
             for group in stone.groups:
                 new_groups.setdefault(group, []).append(stone)
 
-        quadlets = self._transmute_soulstone_quadlets(raw_soulstones, raw_portals)
         new_animators: dict[str, RuntimeAnimator] = {}
         new_capabilities: dict[str, CapabilitySpec] = {}
         new_capability_runtimes: dict[str, RuntimeAnimator] = {}
         for rune in [*raw_soulstones, *raw_portals]:
             resolved = False
             for factory in self._runtime_factories:
-                runtime = self._call_runtime_factory(
-                    factory,
-                    rune,
-                    quadlets.get(rune.name) if isinstance(rune, SoulstoneConfig) else None,
-                )
+                runtime = factory(rune)
                 if runtime is None:
                     continue
                 _require_runtime_identity(rune, runtime)
@@ -283,52 +268,6 @@ class AnimatorRegistry:
         except _ProbeContractError as exc:
             self._invalidate_capability_states(exc.requested_keys)
             raise
-
-    def _transmute_soulstone_quadlets(
-        self,
-        soulstones: list[SoulstoneConfig],
-        portals: list[PortalConfig],
-    ) -> dict[str, QuadletContainer]:
-        """Transmute loaded Soulstones into generated Quadlet manifests keyed by Soulstone name."""
-        if not soulstones:
-            return {}
-
-        from lychd.domain.animation.transmute import Transmuter
-        from lychd.system.schemas import QuadletContainer
-
-        manifests = Transmuter(
-            settings=self._settings,
-            runtime_planner=self._runtime_adapters,
-        ).transmute_all(soulstones, portals=portals)
-        soulstone_names = {stone.name for stone in soulstones}
-        quadlets: dict[str, QuadletContainer] = {}
-        for manifest in manifests:
-            if not isinstance(manifest, QuadletContainer):
-                continue
-            if not manifest.container_name.startswith("lychd-"):
-                continue
-            soulstone_name = manifest.container_name.removeprefix("lychd-")
-            if soulstone_name in soulstone_names:
-                quadlets[soulstone_name] = manifest
-        return quadlets
-
-    def _call_runtime_factory(
-        self,
-        factory: AnimatorFactory,
-        rune: AnimatorConfigDeclaration,
-        quadlet: QuadletContainer | None,
-    ) -> RuntimeAnimator | None:
-        """Call runtime factories with Quadlet hydration when their signature supports it."""
-        parameters = list(signature(factory).parameters.values())
-        accepts_varargs = any(parameter.kind == Parameter.VAR_POSITIONAL for parameter in parameters)
-        positional_parameters = [
-            parameter
-            for parameter in parameters
-            if parameter.kind in {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
-        ]
-        if accepts_varargs or len(positional_parameters) >= _RUNTIME_FACTORY_WITH_QUADLET_ARITY:
-            return factory(rune, quadlet)
-        return factory(rune)
 
     def ensure_loaded(self) -> None:
         if not self._loaded:
@@ -742,13 +681,6 @@ class AnimatorRegistry:
         if animator is None:
             return None
         return self._binder.bind_toolset(animator)
-
-    def prepare(self, name: str) -> RuntimePlan | None:
-        """Return a container runtime plan for a Soulstone rune, if present."""
-        soulstone = self.get_soulstone_rune(name)
-        if soulstone is None:
-            return None
-        return self._runtime_adapters.plan(soulstone)
 
     async def inspect_lifecycle(self, name: str) -> AnimatorLifecycle | None:
         """Inspect runtime lifecycle for an animator via its adapter control plane.

@@ -13,13 +13,16 @@ from lychd.config.runes.registry import load_rune_registry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.connectors import Connector
 from lychd.domain.animation.schemas import CapabilityFamily, SoulstoneConfig
+from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator
 from lychd.domain.animation.services.declarations import compile_animator_declarations
 from lychd.domain.animation.services.registry import AnimatorRegistry
+from lychd.domain.animation.transmute import Transmuter
 from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.extensions.host import AssembledExtensions
 from lychd.extensions.manager import ExtensionManager
+from lychd.system.schemas import QuadletContainer
 
 _EXTENSION_ID = "adversarial/vertical"
 _MODEL_ID = "crypt-cipher-model"
@@ -85,21 +88,17 @@ _REGISTER_SOURCE = dedent(
     class AdversarialRuntimeAdapter:
         runtime: ClassVar[str] = "crypt-adversarial"
 
-        def supports(self, runtime):
-            return runtime == self.runtime
-
         def plan(self, soulstone):
             return RuntimePlan(
                 exec_args=["crypt-runtime", "--model", soulstone.capability_model_id],
             )
 
-        def build_runtime(self, soulstone, quadlet):
+        def build_runtime(self, soulstone):
             if not isinstance(soulstone, AdversarialCryptRune):
                 return None
             return SoulstoneAnimator(
                 rune=soulstone,
                 connector=AdversarialConnector(soulstone.capability_model_id),
-                quadlet=quadlet,
             )
 
         def build_capability_specs(self, soulstone):
@@ -201,10 +200,25 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
     loaded_rune = runes.one(definition.rune_schema)
     assert loaded_rune.source_file == rune_file
     assert loaded_rune.model_dump()["crypt_seal"] == "registered-outside-core"
+    assert definition.runtime_adapter.plan(loaded_rune).exec_args == [
+        "crypt-runtime",
+        "--model",
+        _MODEL_ID,
+    ]
 
     settings = get_settings()
-    registry = AnimatorRegistry(
+    manifests = Transmuter(
         settings=settings,
+        runtime_planner=RuntimeAdapterRegistry(adapters=extensions.runtime_adapters),
+    ).transmute_all([loaded_rune])
+    physical = next(
+        manifest
+        for manifest in manifests
+        if isinstance(manifest, QuadletContainer) and manifest.container_name == "lychd-crypt-stone"
+    )
+    assert physical.exec == f"crypt-runtime --model {_MODEL_ID}"
+
+    registry = AnimatorRegistry(
         declarations=compile_animator_declarations(
             settings=settings,
             runes=runes,
@@ -235,7 +249,7 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
             assert grant.state.metadata == {"observer": "crypt-conformance"}
             assert animator.rune.source_file == rune_file
             assert animator.connector.kind == "crypt-conformance"
-            assert animator.quadlet.exec == f"crypt-runtime --model {_MODEL_ID}"
+            assert not hasattr(animator, "quadlet")
             assert isinstance(grant.model, TestModel)
             assert [(row.capability_key, row.holder) for row in leases.active()] == [
                 (_CAPABILITY_KEY, "run:crypt-conformance")

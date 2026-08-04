@@ -35,6 +35,9 @@ Registered markers use `pytest.mark` semantics:
 
 - **unit**: isolated contracts.
 - **integration**: layers, filesystems, databases, or substitutes; never an opaque live-host claim.
+- **container**: explicit disposable-container receipts. The ordinary `make test`/`make check`
+  gate excludes them; `make test-containers` selects them with the separate dependency group and
+  requires a Docker-compatible daemon.
 - **slow**: deliberately expensive work, such as heavy model loading.
 
 Strict markers reject typos, but the repository currently selects most cost classes by directory:

@@ -14,6 +14,9 @@ Three passes:
 """
 # Structural offline fakes stand in for GrantPort/registry.
 # pyright: reportArgumentType=false
+# pyright: reportMissingImports=false
+# pyright: reportUnknownArgumentType=false
+# pyright: reportUnknownMemberType=false
 
 from __future__ import annotations
 
@@ -352,12 +355,13 @@ async def test_queues_api_reads_real_substrate_zero_injection(monkeypatch: pytes
 
 
 @pytest.mark.integration
+@pytest.mark.container
 def test_production_wiring_real_factory_over_postgres_survives_second_boot(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """Run the real app + SAQ + PostgreSQL composition and recover it on boot two."""
-    pytest.importorskip("testcontainers", reason="real PostgreSQL lifecycle proof")
+    pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
     from litestar.testing import TestClient
     from testcontainers.community.postgres import PostgresContainer

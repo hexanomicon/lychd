@@ -23,7 +23,8 @@ remote tenancy.
 
 Local placement carries local obligations. A Soulstone names its image, runtime, models, endpoint,
 devices, mounts, secrets, and lifecycle intent. It receives only that explicit substrate. A
-generated Quadlet is its body, not the capability object granted to a caller.
+generated Quadlet is its body, not the capability object granted to a caller. The live Soulstone
+Animator holds the Rune and Connector, not that generated Quadlet document.
 
 Read [Soulstone Rune](./rune.md) to declare the service and its models. Read
 [Resources and Secrets](./resources.md) before granting a device, mount, port, or credential.

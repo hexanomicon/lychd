@@ -10,7 +10,6 @@ from lychd.domain.animation.animators import Portal, Soulstone
 from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import ModelInfo, ModelSurface, PortalConfig, SoulstoneConfig
-from lychd.system.schemas import QuadletContainer
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -194,19 +193,14 @@ class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
     domain types (spec §5).
     """
 
-    def __init__(self, *, rune: R, connector: C, quadlet: QuadletContainer) -> None:
-        """Store immutable rune, connector, and generated Quadlet references."""
+    def __init__(self, *, rune: R, connector: C) -> None:
+        """Store immutable rune and connector references."""
         self._rune = rune
         self._connector = connector
-        self._quadlet = quadlet
 
     @property
     def rune(self) -> R:
         return self._rune
-
-    @property
-    def quadlet(self) -> QuadletContainer:
-        return self._quadlet
 
     @property
     def name(self) -> str:

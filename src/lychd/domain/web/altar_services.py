@@ -216,7 +216,6 @@ def build_altar_services(
     policy = resolve_switch_policy(settings.orchestration.switching.policy)
     _validate_routed_queues(routing, queues)
     registry = AnimatorRegistry(
-        settings=settings,
         declarations=compile_animator_declarations(
             settings=settings,
             runes=runes,

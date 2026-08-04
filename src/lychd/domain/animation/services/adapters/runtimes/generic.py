@@ -22,7 +22,6 @@ from lychd.domain.animation.services.adapters.surfaces import (
     PassiveConnector,
     local_link_default,
 )
-from lychd.system.schemas import QuadletContainer
 
 
 class GenericRuntimeAdapter:
@@ -37,14 +36,11 @@ class GenericRuntimeAdapter:
         }
     )
 
-    def supports(self, runtime: str) -> bool:
-        return runtime == self.runtime
-
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Preserve explicit command passthrough for unknown runtimes."""
         return RuntimePlan(exec_args=list(soulstone.exec), env_overrides={})
 
-    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Create a generic runtime handle without assuming an unknown API grammar."""
         if soulstone.runtime_name in self.openai_compatible_runtimes:
             connector = build_openai_connector(
@@ -52,14 +48,14 @@ class GenericRuntimeAdapter:
                 runtime=soulstone.runtime_name,
                 kind="generic-openai-compatible",
             )
-            return OpenAICompatibleStone(rune=soulstone, connector=connector, quadlet=quadlet)
+            return OpenAICompatibleStone(rune=soulstone, connector=connector)
 
         connector = PassiveConnector(
             kind=f"generic:{soulstone.runtime_name}",
             link=local_link_default(runtime=soulstone.runtime_name),
             base_url=resolved_soulstone_base_url(soulstone),
         )
-        return GenericStone(rune=soulstone, connector=connector, quadlet=quadlet)
+        return GenericStone(rune=soulstone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs only when the generic runtime declares intent."""

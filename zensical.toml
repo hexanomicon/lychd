@@ -63,6 +63,7 @@ nav = [
             { "Weaver" = [
                 "sepulcher/extensions/weaver/index.md",
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
+                "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
                 "sepulcher/extensions/weaver/stasis-and-return.md",
                 "sepulcher/extensions/weaver/anonymization.md",
                 "sepulcher/extensions/weaver/delegated-agents.md"
@@ -124,7 +125,10 @@ nav = [
         "compositions/walking-communion.md",
         "compositions/tech-scavenger.md",
         "compositions/lifestyle-steward.md",
+        "compositions/broker-office.md",
         "compositions/source-maintenance.md",
+        "compositions/capability-and-embodiment-federation.md",
+        "compositions/reach.md",
         "compositions/bazaar-haggler.md",
         "compositions/home-seeker.md",
         "compositions/building-in-public.md"
@@ -136,7 +140,6 @@ nav = [
         { "Iron Tongue" = "lexicon/iron-tongue.md" },
         { "Inner Tongue" = "lexicon/inner-tongue.md" }
     ]},
-    { "Visual Provenance" = "assets/README.md" },
     { "Covenants" = [
         "adr/index.md",
         "adr/00-license.md",

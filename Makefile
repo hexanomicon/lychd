@@ -12,7 +12,8 @@ MAKEFLAGS += --no-print-directory
 # Argument extraction for tests
 # Usage: make test K="animation" M="unit"
 #        make test PYTEST_TARGETS="tests/unit/config/runes"
-# Default parallelism is auto, but can be overridden (e.g., make test N=0)
+# Default parallelism is auto, but can be overridden (e.g., make test N=0).
+# Disposable container receipts are excluded unless ``make test-containers`` is used.
 # Default output is compact for agent context. Use VERBOSE=1 when debugging:
 # it disables RTK filtering and makes pytest stream stdout plus long tracebacks
 # into the caller. Pytest log streaming is already owned by pyproject.toml.
@@ -20,6 +21,11 @@ MAKEFLAGS += --no-print-directory
 N ?= auto
 VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
+CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
+	tests/integration/test_db_migrations_pg.py \
+	tests/integration/test_db_nexus_pg.py \
+	tests/integration/test_db_run_ledger_pg.py \
+	tests/integration/test_production_wiring.py::test_production_wiring_real_factory_over_postgres_survives_second_boot
 PYTEST_BASETEMP ?= .cache/pytest
 RUFF_TARGETS ?= .
 FORMAT_TARGETS ?= .
@@ -59,15 +65,19 @@ endif
 
 # Keep generated fixtures beneath the checkout so strict path-authority tests
 # do not inherit a foreign-owned `/tmp` from containers or coding sandboxes.
-PYTEST_ARGS := -n $(N) --basetemp $(PYTEST_BASETEMP)
+PYTEST_ARGS := -n $(N) --dist loadscope --basetemp $(PYTEST_BASETEMP)
+CONTAINER_PYTEST_ARGS := -n $(N) --dist loadscope --basetemp $(PYTEST_BASETEMP) -m container
 ifeq ($(VERBOSE),1)
 	PYTEST_ARGS += -s --tb=long
+	CONTAINER_PYTEST_ARGS += -s --tb=long
 endif
 ifdef K
 	PYTEST_ARGS += -k "$(K)"
 endif
 ifdef M
 	PYTEST_ARGS += -m "$(M)"
+else
+	PYTEST_ARGS += -m "not container"
 endif
 # Allow arbitrary extra args (e.g. make test ARGS="-s --pdb")
 ifdef ARGS
@@ -201,6 +211,11 @@ type-check: ## Run BasedPyright. Usage: make type-check TYPECHECK_TARGETS="src/l
 test: ## Run tests. Usage: make test K="anim" M="unit"
 	@echo "${INFO} Running tests (Args: $(PYTEST_ARGS) Targets: $(PYTEST_EFFECTIVE_TARGETS))..."
 	@$(PYTEST) $(PYTEST_ARGS) $(PYTEST_EFFECTIVE_TARGETS)
+
+.PHONY: test-containers
+test-containers: ## Run explicit disposable-PostgreSQL receipts; requires a Docker-compatible daemon
+	@echo "${INFO} Running disposable PostgreSQL receipts (Targets: $(CONTAINER_TEST_TARGETS))..."
+	@$(UV_DEV_RUN) --group container-test pytest $(CONTAINER_PYTEST_ARGS) $(CONTAINER_TEST_TARGETS)
 
 .PHONY: test-config
 test-config: ## Run configurable/runes focused tests only

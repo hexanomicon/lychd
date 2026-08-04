@@ -62,7 +62,6 @@ def compile_bind_request(
 
     runtime_planner = RuntimeAdapterRegistry(
         adapters=extensions.runtime_adapters,
-        settings=settings,
     )
     runtime_plans = tuple(runtime_planner.plan(stone) for stone in soulstones)
     capability_specs = tuple(spec for stone in soulstones for spec in runtime_planner.build_capability_specs(stone))

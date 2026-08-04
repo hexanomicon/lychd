@@ -59,9 +59,12 @@ result. Current manifests cannot prove it. Context owns labels; Security owns de
 
 perform_run is the single execution site: it rejects stale/duplicate delivery, claims exact
 enqueue sequence, verifies pinned Pattern, builds run services, then invokes GraphRunner. Each node
-attempt gets an occurrence id and entered, settled, waiting (hardware/consent/delegate), or failed
-event. Dispatch adds its grant event only after lease admission; Orchestrator events retain run and
-occurrence correlation. Events observe; they neither recover work nor establish a global order.
+attempt gets a process-local station-attempt correlation and an entered, settled, waiting
+(hardware/consent/delegate), or failed event. Its delivered field remains the legacy
+`occurrence_id`; canonical Weaver **Occurrence** instead names a schedule or external-trigger firing
+before Invocation admission. Dispatch adds its grant event only after lease admission;
+Orchestrator events retain the station-attempt correlation. Events observe; they neither recover
+work nor establish a global order.
 
 ## Capability handshake
 
@@ -150,7 +153,7 @@ only applies its predicate; consensus, first completion, or a model judge does n
 | Record | Answers |
 | --- | --- |
 | Pinned Pattern manifest | What passage was permitted? |
-| Occurrence events | Which station attempts were observed? |
+| Station-attempt events (legacy `occurrence_id`) | Which station attempts were observed? |
 | Dispatch/transition events | Which grant and hardware change correlated? |
 | Run ledger | What lifecycle truth settled? |
 | Graph checkpoint | Where may execution lawfully resume? |

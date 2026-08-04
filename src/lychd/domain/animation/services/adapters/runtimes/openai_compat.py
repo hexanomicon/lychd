@@ -29,7 +29,6 @@ from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleCo
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilitySpec
     from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
-    from lychd.system.schemas import QuadletContainer
 
 _INFERENCE_SHARED_MEMORY_BYTES = 8 * 1024**3
 
@@ -45,9 +44,6 @@ class OpenAICompatibleRuntimeAdapter:
 
     runtime: ClassVar[str] = "openai_compatible"
     config_type: ClassVar[type[SoulstoneConfig]] = SoulstoneConfig
-
-    def supports(self, runtime: str) -> bool:
-        return runtime == self.runtime
 
     def _narrow(self, soulstone: SoulstoneConfig) -> SoulstoneConfig:
         return require_runtime_soulstone(soulstone, expected_type=self.config_type, runtime=self.runtime)
@@ -73,11 +69,11 @@ class OpenAICompatibleRuntimeAdapter:
             pod_shared_memory_bytes=_INFERENCE_SHARED_MEMORY_BYTES,
         )
 
-    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Build a runtime handle with an OpenAI-compatible connector surface."""
         stone = self._narrow(soulstone)
         connector = build_openai_connector(soulstone=stone, runtime=self.runtime, metadata=self.runtime_metadata())
-        return SoulstoneAnimator(rune=stone, connector=connector, quadlet=quadlet)
+        return SoulstoneAnimator(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize non-dynamic capability specs from runtime-derived model info."""

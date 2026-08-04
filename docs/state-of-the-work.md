@@ -565,10 +565,16 @@ persistent-resident, Animator Rune, and group projections return detached values
 and abandonment receive deep specification snapshots, connector model inventories are copied on
 admission and projection, and issued grants retain defensive copies of
 nested specification and state values while keeping explicitly named runtime handles live.
+Runtime hydration now consumes only declarations plus adapter and Connector contracts: it neither
+imports nor retains `QuadletContainer`, does not invoke `Transmuter`, and no longer recompiles the
+complete physical body merely to construct live handles. Bind-time planning and the rendered
+Quadlet/systemd generation remain covered by their existing parity tests.
 
 **Boundary:** `AnimatorRegistry` still combines several ownership roles. `GrantLease.expires_at`
 exists, but the ledger does not enforce it; current leases are context-managed, not renewable
-temporal leases.
+temporal leases. The current Soulstone/Portal runtime inheritance, Animation-owned `Transmuter`,
+and raw extension Quadlet contribution remain in place. Generic service/body compilation,
+`ServiceBinding`, YAML authoring, and OpenBao integration are not delivered by this cleanup.
 
 **Evidence**
 
@@ -576,6 +582,7 @@ temporal leases.
   [Dispatcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py),
   and [lease ledger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/leases.py)
 - **Verification:** [Registry tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py),
+  [import-law tests](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_import_law.py),
   [Dispatcher tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_dispatcher.py),
   [lease tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_leases.py),
   and [dispatch decision table](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_dispatch_decision_table.py)

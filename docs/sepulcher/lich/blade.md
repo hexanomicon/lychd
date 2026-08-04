@@ -21,6 +21,20 @@ Its three Pramāṇa correspondences are direct perception (an observable result
 check), inspectable inference, and trustworthy testimony. A schema-valid or typed result can still
 be false; form is evidence of form, no more.
 
+Context is itself one of the Blade's cuts. [ADR 21 — Context](../../adr/21-context.md) owns the
+mechanism: an Agent cannot receive all LychD knows, so assembly preserves the non-negotiable floor,
+query, continuation, and newest complete history that fit the granted window, and refuses when the
+floor cannot fit. In this correspondence, Context trimming is Buddhi's progressive clarification:
+not a judgment that omitted material is false, but the selection of a bounded surface on which the
+next judgment may occur.
+
+Giving a model tokens does not tell attention what is true or important; it only makes those signs
+available to its attention mechanism. Reassembling a narrower Context at each bounded handoff can
+therefore act like a zoom: each recipient inherits an attributable field, makes another cut, and
+passes forward a more task-specific view. The zoom remains trustworthy only while provenance,
+constraints, omissions, and uncertainty survive the handoffs. Otherwise compression becomes
+forgetting, and a sharp answer may only be a narrow one.
+
 **Vikalpa** is the whetstone: honest possibilities show where discrimination is blunt. The Magus’s
 **Viveka** supplies more than a winner when it names the distinction by which a later judgment may
 improve. In [the First Invocation](./index.md#the-first-invocation), the Circle’s doors demand one

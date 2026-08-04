@@ -210,9 +210,8 @@ class Transmuter:
 
         INVARIANT (brief §8, property 4): ``QuadletContribution`` can add ONLY
         containers and pod ports; it can never mutate soulstone containers, core
-        manifests, or targets. That is why ``AnimatorRegistry`` may build a
-        Transmuter with NO contributors to extract soulstone containers -- a
-        contribution cannot alter a soulstone container by type.
+        manifests, or targets. Bind supplies the complete admitted contributor set;
+        a contributor cannot alter another manifest by type.
         """
         self._settings = settings
         self._runtime_planner = runtime_planner

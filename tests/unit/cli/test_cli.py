@@ -213,7 +213,6 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
     await _consume_reactor_intents()
 
     registry_type.assert_called_once_with(
-        settings=settings,
         declarations=declarations,
         runtime_adapters=extensions.runtime_adapters,
         portal_definitions=extensions.portal_definitions,

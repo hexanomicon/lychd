@@ -79,7 +79,9 @@ Weaver selects once from admitted Intent; Run ledger owns identity/status:
 
 The Run delivery outbox is transactional with Run truth, not with the external broker. Workers and
 the relay publish, claim, and settle physical hops; Graph checkpoints; Weaver neither writes the
-outbox directly, operates containers, nor becomes scheduler.
+outbox directly nor operates containers. Weaver owns scheduling identity, eligibility, overlap,
+and miss semantics; a separate clock/relay mechanism detects due work and publishes only the
+ordinary delivery that Weaver has admitted. Weaver does not become that timer or broker.
 
 ## Pattern contribution
 
@@ -128,9 +130,35 @@ completion, never merge ownership/secrets/Sigils/HitL/domain judgment. Suite exe
 child identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/compensation/partial
 must be defined first.
 
-Schedule makes unique Occurrence and enters ordinary admission. Weaver owns calendar/event meaning,
-priority/overlap/coalescing/revision; Workers deliver/retry; Orchestrator readiness. Timer never
-calls Graph/model/container. No Occurrence service exists.
+A Schedule makes one durable, deduplicated **Occurrence** for each firing and enters ordinary
+admission. Weaver owns calendar/event meaning, service class, temporal eligibility,
+priority/overlap/coalescing/revision, and the decision to admit or settle a missed firing. Workers
+deliver and retry exact admitted hops; Dispatcher resolves capability; Orchestrator owns readiness.
+A timer never calls a Graph node, model, Animator, or container.
+
+Three semantic service classes govern admission; they are not broker queues:
+
+| Service class | Contract |
+| --- | --- |
+| `foreground` | Eligible now and latency-sensitive. It receives preference, not a promise of immediate start or unsafe preemption. |
+| `deadline_windowed` | Eligible no earlier than `not_before` and governed by `latest_start_at` plus optional `finish_by`; expiry settles explicitly rather than running silently late. |
+| `spare_capacity` | No completion-time promise. Scarce-resource work requires a proved bounded yield/containment contract or an operator-approved quiet window. |
+
+Class is orthogonal to doctrine priority and physical queue. Continuous foreground demand must not
+silently starve a declared deadline; approaching deadline feasibility may outrank ordinary latency
+preference under the pinned policy. `spare_capacity` defaults to already-WARM/NO_OP-compatible
+capability and may not trigger a disruptive hard swap merely to keep iron busy.
+
+Cron is one trigger grammar, not a service class. A calendar Schedule pins its revision, Pattern
+revision, IANA time zone, ambiguous/nonexistent civil-time policy, overlap and misfire policy,
+bounded catch-up, budgets, and authority owner. Jitter changes eligibility, never Occurrence
+identity. An overlap remains live while its prior Invocation is nonterminal, including Stasis;
+coalescing requires a Pattern-owned typed merge and preserves every member Occurrence.
+
+Canonical **Occurrence** means the schedule or external-trigger firing before Invocation admission.
+The delivered Graph runtime's `occurrence_id` field is a legacy name for a station-attempt
+correlation; it is not this durable trigger identity. No Occurrence store, timer, eligibility
+engine, service-class persistence, safe preemption, or periodic workflow scheduler exists.
 
 ## Returning findings
 

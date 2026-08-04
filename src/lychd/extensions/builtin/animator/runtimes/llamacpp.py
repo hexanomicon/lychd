@@ -29,7 +29,6 @@ from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
 
 if TYPE_CHECKING:
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
-    from lychd.system.schemas import QuadletContainer
 
 _REACHABLE_HEALTH = {"ok", "loading"}
 
@@ -50,16 +49,13 @@ class LlamaCppRuntimeAdapter:
         self._planner = planner or LlamaCppRuntimePlanner()
         self._control_plane = control_plane or LlamaCppControlPlane()
 
-    def supports(self, runtime: str) -> bool:
-        return runtime == self.runtime
-
     def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
         """Expose the llama.cpp lifecycle control plane for llama.cpp animators."""
         if getattr(animator.connector, "kind", None) != "llamacpp":
             return None
         return self._control_plane
 
-    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Build llama.cpp runtime handle with control-plane metadata attached."""
         stone = require_runtime_soulstone(
             soulstone,
@@ -77,7 +73,7 @@ class LlamaCppRuntimeAdapter:
             router_query_model_id=descriptor.router_query_model_id,
             metadata=descriptor.metadata,
         )
-        return LlamacppStone(rune=stone, connector=connector, quadlet=quadlet)
+        return LlamacppStone(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for llama.cpp single or router runtimes."""

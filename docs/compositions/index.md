@@ -35,12 +35,23 @@ law; [State of Work](../state-of-the-work.md) alone says what is running.
 | Accepted | [Walking Communion](walking-communion.md) | Carry a voice turn between the road and the Altar | mobile ingress, interruption, audio custody, routed intent |
 | Accepted | [Tech Scavenger](tech-scavenger.md) | Run an evidence-bound compatible-equipment search | sources, seller evidence, privacy, messaging, economic limits |
 | Accepted | [Lifestyle Steward](lifestyle-steward.md) | Make household evidence into editable daily-life choices | OCR provenance, uncertain identity, local routing, checkout gates |
+| Accepted | [Broker Office](broker-office.md) | Carry a client contact into a resolved or honestly blocked insurance case | business identity, regulated records, hostile ingress, public projection, privacy, governed improvement |
 | Candidate study | [LychD Source Maintenance](source-maintenance.md) | Can one admitted correction become a verified quarantined patch? | candidate lineage, bounded feedback, restart, and inert promotion |
+| Candidate study | [Reach](reach.md) | Can one Lich inhabit an external social place without inheriting its authority? | cross-world Persona, Habitat adapters, remote identity, compromise ceilings, and reply recovery |
 | Candidate study | [Building in Public](building-in-public.md) | Can an evidenced vertical slice become a truthful tutorial? | evidence without manufactured progress |
 | Candidate study | [Bazaar Haggler](bazaar-haggler.md) | Can bounded negotiation be reused without transferring judgment? | mandate, credentials, and commitment boundaries |
 | Candidate study | [Home Seeker](home-seeker.md) | Can private location-aware search rank evidence honestly? | location privacy and no counterfeit diligence |
 
 Candidate membership is a question kept open, not architectural promotion.
+
+### Cross-cutting candidate studies
+
+These studies pressure several application and infrastructure boundaries at once. They are not
+Compositions and do not own accepted law.
+
+| Study | Open question | Boundaries under pressure |
+| --- | --- | --- |
+| [Capability and Embodiment Federation](capability-and-embodiment-federation.md) | Can workflow demand, domain capability authority, and physical service embodiment share one contribution language without sharing identity, grants, or lifecycle authority? | Providers, Animators, Extensions, Quadlet/systemd, placement, secrets, Veil, Tether, and OpenBao |
 
 ## A sense is not a purpose
 

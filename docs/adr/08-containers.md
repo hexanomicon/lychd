@@ -22,6 +22,11 @@ lifecycle-managed Soulstone, compatible `lychd-coven-*.target` aggregates, the m
 Phylactery and Vessel, and admitted extension units. A Portal is a logical remote connection; it
 does not summon a local container.
 
+A generated Quadlet manifest is a Bind/Scribe deployment artifact. A live Animator retains its
+Rune identity, Connector, and typed runtime surfaces; it never owns the generated manifest.
+`RuntimePlan` compilation is available through the bind planner, not through the live
+`AnimatorRegistry` surface.
+
 Joined containers set `StartWithPod=false`: creating the shared namespace must not awaken every
 Soulstone. Core ordering starts migration, Phylactery, and Vessel in sequence. Only
 `persistent_resident` Animator targets join normal boot; dedicated non-residents require the

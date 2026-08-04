@@ -28,7 +28,6 @@ from lychd.extensions.builtin.animator.soulstones import (
 
 if TYPE_CHECKING:
     from lychd.domain.animation.lifecycle import AnimatorLifecycle
-    from lychd.system.schemas import QuadletContainer
 
 _REACHABLE_HEALTH = {"ok", "loading"}
 _VESSEL_SERVICE = "lychd-vessel.service"
@@ -43,9 +42,6 @@ class ExLlamaV3RuntimeAdapter:
     def __init__(self, control_plane: TabbyAPIControlPlane | None = None) -> None:
         """Initialize with an injectable control plane for contract tests."""
         self._control_plane = control_plane or TabbyAPIControlPlane()
-
-    def supports(self, runtime: str) -> bool:
-        return runtime == self.runtime
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Build the pinned private-pod TabbyAPI container envelope."""
@@ -76,7 +72,7 @@ class ExLlamaV3RuntimeAdapter:
             pod_shared_memory_bytes=_TABBY_SHARED_MEMORY_BYTES,
         )
 
-    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None:
+    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Build the OpenAI data plane with Tabby model-name metadata."""
         stone = self._narrow(soulstone)
         model_infos = self._model_infos(stone)
@@ -92,7 +88,7 @@ class ExLlamaV3RuntimeAdapter:
             auth_secret_name=stone.auth_secret_name,
             metadata=self._runtime_metadata(),
         )
-        return ExLlamaV3Stone(rune=stone, connector=connector, quadlet=quadlet)
+        return ExLlamaV3Stone(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Publish every declared TabbyAPI model as a dynamic capability."""

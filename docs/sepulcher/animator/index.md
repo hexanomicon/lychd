@@ -7,9 +7,9 @@ icon: fontawesome/solid/heart-pulse
 
 > _“Cold iron offers no capability. An Animator is the address at which power answers.”_
 
-An **Animator** is a live service that LychD can discover, probe, bind through a typed adapter, and
-route by declared capability. Model inference is one family of service, not the definition of this
-office.
+An **Animator** is a live addressable capability/runtime handle through which LychD discovers,
+probes, and invokes a service. It carries no deployment manifest. Model inference is one family of
+service, not the definition of this office.
 
 ## The Holy Contract
 
