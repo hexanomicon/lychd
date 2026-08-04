@@ -27,20 +27,14 @@ from lychd.domain.animation.services.adapters.contracts import (
     SoulstoneRuntimeAdapter,
 )
 from lychd.domain.animation.services.adapters.runtimes.generic import GenericRuntimeAdapter
-from lychd.domain.animation.services.adapters.runtimes.shared import (
-    transmute_single_soulstone_quadlet,
-)
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericPortal,
     PassiveConnector,
     portal_link_default,
 )
-from lychd.system.schemas import QuadletContainer
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-
-    from lychd.config.settings.root import Settings
 
 
 class RuntimeAdapterRegistry:
@@ -55,15 +49,12 @@ class RuntimeAdapterRegistry:
         adapters: Sequence[SoulstoneRuntimeAdapter] | None = None,
         *,
         portal_definitions: Sequence[PortalDefinition] | None = None,
-        settings: Settings | None = None,
     ) -> None:
         """Initialize active runtime adapters plus generic fallback.
 
         Portal definitions are injected by the composition root (the OpenAI
         definition is an extension, no longer a domain-side default); the passive
-        fallback applies only when no extension owns the exact Rune schema. ``settings`` is needed
-        only when a standalone caller asks the registry to synthesize a Soulstone
-        runtime without supplying its already-approved Quadlet.
+        fallback applies only when no extension owns the exact Rune schema.
         """
         self._fallback: SoulstoneRuntimeAdapter = GenericRuntimeAdapter()
         self._adapters: dict[str, SoulstoneRuntimeAdapter] = {}
@@ -80,7 +71,6 @@ class RuntimeAdapterRegistry:
         self._portal_definitions: dict[type[PortalConfig], PortalDefinition] = {}
         for definition in portal_definitions or ():
             self.register_portal_definition(definition)
-        self._settings = settings
 
     def register_portal_definition(self, definition: PortalDefinition) -> None:
         """Register the sole runtime factory allowed to claim one Rune schema."""
@@ -106,38 +96,16 @@ class RuntimeAdapterRegistry:
         adapter = self.adapter_for(soulstone)
         return adapter.plan(soulstone)
 
-    def build_runtime(
-        self,
-        rune: SoulstoneConfig | PortalConfig,
-        quadlet: QuadletContainer | None = None,
-    ) -> RuntimeAnimator | None:
+    def build_runtime(self, rune: SoulstoneConfig | PortalConfig) -> RuntimeAnimator | None:
         """Build runtime handle for Soulstone/Portal rune declarations."""
         if isinstance(rune, PortalConfig):
             return self._build_portal_runtime(rune)
 
-        adapter = self.adapter_for(rune)
-        resolved_quadlet = quadlet
-        if resolved_quadlet is None:
-            if self._settings is None:
-                msg = (
-                    "Soulstone runtime construction requires either an approved "
-                    "Quadlet or an injected Settings snapshot."
-                )
-                raise RuntimeError(msg)
-            resolved_quadlet = transmute_single_soulstone_quadlet(
-                rune,
-                runtime_planner=self,
-                settings=self._settings,
-            )
-        return adapter.build_runtime(rune, resolved_quadlet)
+        return self.adapter_for(rune).build_runtime(rune)
 
-    def runtime_factory(
-        self,
-        rune: SoulstoneConfig | PortalConfig,
-        quadlet: QuadletContainer | None = None,
-    ) -> RuntimeAnimator | None:
+    def runtime_factory(self, rune: SoulstoneConfig | PortalConfig) -> RuntimeAnimator | None:
         """Adapter-compatible callable used by ``AnimatorRegistry`` factories."""
-        return self.build_runtime(rune, quadlet=quadlet)
+        return self.build_runtime(rune)
 
     def build_capability_specs(
         self,

@@ -86,5 +86,6 @@ review may publish an immutable revision through a selected shaped store and fre
 generation. The current `Workflow` type remains internal and pre-v1, not a third-party ABI.
 
 A future scheduler would create an Occurrence and submit it through ordinary revision-pinned
-admission. Its timer never calls a Graph node, model, or container directly; no Occurrence service
-is implemented.
+admission. Its timer never calls a Graph node, model, or container directly. [Scheduling and
+service classes](scheduling-and-service-classes.md) owns the designed temporal contract; no
+Occurrence service is implemented.

@@ -78,6 +78,9 @@ test = [
   "respx",
   "selectolax",
 ]
+container-test = [
+  "testcontainers[postgres]>=4.15.0,<5",
+]
 lint = [
     "ruff>=0.1.0",
     "codespell>=2.4.1",
@@ -156,6 +159,7 @@ log_cli_format = "%(asctime)s %(levelname)s %(message)s"
 markers = [
     "unit: Pure logic tests. Fast. No database/network required.",
     "integration: Tests that hit the DB, Redis, or external APIs. Slower.",
+    "container: Explicit disposable-container receipt excluded from the ordinary test/check gate.",
     "slow: Tests that take a long time (e.g., heavy AI inference).",
 ]
 

@@ -24,6 +24,12 @@ interpreter crash kills the Vessel.
 | `runs` | Bridge and CLI workflows | `perform_run` |
 | `rites` | background workflow intents | `perform_run` plus no-effect `perform_rite` |
 
+These are physical delivery lanes, not Weaver service classes. A future `foreground`,
+`deadline_windowed`, or `spare_capacity` admission may be delivered through either lane or another
+bounded topology; queue name, source, worker concurrency, and scalar priority cannot substitute for
+the persisted temporal contract. Work that is not yet eligible must remain with Weaver's durable
+Occurrence truth rather than occupy a Ghoul while sleeping for its window.
+
 `reconcile_runs` is called directly by lifespan startup with its captured boot cutoff. It is not
 registered as broker-callable work, because an invocation without that process boundary could
 misclassify live current-boot Runs as orphans.

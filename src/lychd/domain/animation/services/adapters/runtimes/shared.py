@@ -7,7 +7,6 @@ centralizing repeated type-guard and connector construction logic.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
 
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
@@ -20,11 +19,6 @@ from lychd.domain.animation.services.adapters.surfaces import (
     local_link_default,
 )
 from lychd.lib.http import HttpJsonError, request_json
-from lychd.system.schemas import QuadletContainer
-
-if TYPE_CHECKING:
-    from lychd.config.settings.root import Settings
-    from lychd.domain.animation.services.adapters.contracts import SoulstoneRuntimePlanner
 
 
 def require_runtime_soulstone[RuntimeSoulstone: SoulstoneConfig](
@@ -74,28 +68,6 @@ def resolved_soulstone_base_url(soulstone: SoulstoneConfig) -> str:
     return f"http://localhost:{resolved_soulstone_port(soulstone)}/v1"
 
 
-def transmute_single_soulstone_quadlet(
-    soulstone: SoulstoneConfig,
-    *,
-    runtime_planner: SoulstoneRuntimePlanner,
-    settings: Settings,
-) -> QuadletContainer:
-    """Build the generated Quadlet manifest for a single Soulstone context."""
-    from lychd.domain.animation.transmute import Transmuter
-
-    manifests = Transmuter(
-        settings=settings,
-        runtime_planner=runtime_planner,
-    ).transmute_all([soulstone])
-    container_name = f"lychd-{soulstone.name}"
-    for manifest in manifests:
-        if isinstance(manifest, QuadletContainer) and manifest.container_name == container_name:
-            return manifest
-
-    msg = f"Transmutation did not produce QuadletContainer for Soulstone '{soulstone.name}'."
-    raise RuntimeError(msg)
-
-
 PROBE_TIMEOUT_SECONDS = 2.0
 
 
@@ -138,5 +110,4 @@ __all__ = [
     "require_runtime_soulstone",
     "resolved_soulstone_base_url",
     "resolved_soulstone_port",
-    "transmute_single_soulstone_quadlet",
 ]

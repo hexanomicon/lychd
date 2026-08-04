@@ -1,8 +1,8 @@
 """[LINUX] DbRunLedger durable-substrate suite (F4/H5): CAS matrix + seq fidelity.
 
-WRITTEN HERE, DEFERRED to the Linux/PG runtime pass. The whole module is skipped
-where `testcontainers` is absent (the Mac dev box). It validates the durable ledger's
-concurrency story on a real Postgres:
+WRITTEN HERE, DEFERRED to the explicit container-test runtime pass. The whole module is skipped
+unless that dependency group is selected. It validates the durable ledger's concurrency story on
+a real Postgres:
 
 - CAS: `set_status` is a compare-and-swap; a CANCELLED write can NOT land over a DONE
   that won the race (0 rows updated → re-read → `IllegalRunTransitionError`), and an
@@ -10,8 +10,8 @@ concurrency story on a real Postgres:
 - Seq fidelity: `append_event` persists `RunEvent.seq` VERBATIM as `Step.seq`
   (no insert-time allocation), so Step order equals emit order (Orb evidence).
 """
-# testcontainers is not installed on the Mac (Linux-only); SQLAlchemy Table vs
-# FromClause noise on create_all. The whole module is importorskip'd at runtime.
+# The ordinary contributor gate omits the optional container-test group; the whole module is
+# importorskip'd there. SQLAlchemy Table vs FromClause noise on create_all remains locally ignored.
 # pyright: reportMissingImports=false
 # pyright: reportUnknownVariableType=false
 # pyright: reportUnknownArgumentType=false
@@ -29,7 +29,7 @@ from uuid import UUID
 import pytest
 import pytest_asyncio
 
-pytest.importorskip("testcontainers", reason="[LINUX] PG runtime pass only")
+pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -47,7 +47,7 @@ from lychd.domain.web.sessions import DbBridgeSessionStore
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
 @pytest.fixture(scope="module")

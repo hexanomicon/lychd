@@ -149,7 +149,6 @@ def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
         portal_definitions=[_OPENAI_PORTAL],
@@ -179,7 +178,6 @@ def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
         portal_definitions=[_OPENAI_PORTAL],
@@ -202,7 +200,6 @@ def test_probe_true_requires_the_exact_portal_probe_strategy(tmp_path: Path) -> 
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
         portal_definitions=[
@@ -246,7 +243,6 @@ def test_failed_initial_probe_leaves_registry_retryable_and_unpublished(tmp_path
         connector.set_link(Link(up=True, activatable=False))
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
         portal_definitions=[
@@ -361,7 +357,6 @@ async def test_portal_hydrates_but_dispatch_remains_quarantined(
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_portal_declarations(runes_dir),
         runtime_adapters=[],
         portal_definitions=[_OPENAI_PORTAL],

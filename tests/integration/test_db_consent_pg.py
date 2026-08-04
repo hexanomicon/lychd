@@ -16,7 +16,7 @@ from uuid import UUID
 import pytest
 import pytest_asyncio
 
-pytest.importorskip("testcontainers", reason="[LINUX] PG runtime pass only")
+pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
 from sqlalchemy import Table, delete, func, select, update
 from sqlalchemy.exc import DBAPIError
@@ -32,7 +32,7 @@ from lychd.domain.codex.sigil import Sigil
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
 @pytest.fixture(scope="module")

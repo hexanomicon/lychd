@@ -21,24 +21,26 @@ provider.
 
 ## Egress Is a Deliberate Boundary
 
-!!! danger "Declaring a Portal grants a path to egress and cost"
-    A matching Portal joins the Dispatcher's ordinary candidate set. Payload privatization,
-    secure-mode, local-before-paid, and x402 gates are not current enforcement. Declare only a
-    credential, data boundary, and spend acceptable for every matching run.
+!!! warning "Declaring a Portal names a possible egress path; it does not authorize one"
+    A matching Portal may enter the registry, but Dispatcher currently refuses every Portal grant
+    because the typed egress-admission path is absent. Payload privatization, secure-mode,
+    local-before-paid, and x402 gates are not current enforcement. Declare only a credential, data
+    boundary, and spend profile that could become eligible after those gates are delivered.
 
 Three limits matter:
 
 1. **No automatic cloud replay.** A failed local call is not replayed through a Portal; no current
    `FallbackModel` path exists.
-2. **No probe egress by default.** `probe = false` prevents only the registry's optional `/models`
-   request. It does not prevent a later selected model call.
+2. **No probe egress by default.** `probe = false` prevents the registry's optional `/models`
+   request. The resulting route remains unverified `UNKNOWN` and cannot receive a grant; the
+   separate Portal quarantine also refuses it before transmission.
 3. **No hidden remote lifecycle.** Binding writes no Portal Quadlet and contacts no provider. It
    validates intent, proves named-secret presence, and mounts the reference into the Vessel.
 
-With probing off, a non-empty `base_url` is projected as passively `WARM`: declared and eligible,
-not provider-tested. With probing on, current source performs a two-second, unauthenticated
-`GET <base_url>/models`; a credentialed provider may reject that probe even when its ordinary
-authenticated model path works.
+With probing off, a declared route is projected as `UNKNOWN`, not fabricated as `WARM`. With
+probing on, current source performs a two-second, unauthenticated `GET <base_url>/models`; a
+credentialed provider may reject that probe even when its ordinary authenticated model path works.
+Successful readiness observation still does not bypass the current all-Portal dispatch quarantine.
 
 [State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns the absent
 egress gate. The documented anonymization Pattern does not authorize transmission.

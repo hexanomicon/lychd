@@ -305,7 +305,6 @@ async def _consume_reactor_intents() -> None:
     extensions = get_extensions()
     runes = load_rune_registry(extensions)
     registry = AnimatorRegistry(
-        settings=settings,
         declarations=compile_animator_declarations(
             settings=settings,
             runes=runes,

@@ -26,6 +26,10 @@ requirements → declared capability → observed state → WARM grant → regis
 A capability-bearing Animator is the route; the delivered path has no provider-pair abstraction.
 Dispatcher emits its authoritative dispatch event only after lease admission.
 
+The live Animator is a capability/runtime handle, not a deployment document. It carries its exact
+Rune identity, Connector, and typed runtime surfaces while
+[Containers](08-containers.md), Bind, and Scribe retain physical compilation authority.
+
 ## Capability Binding Cartography
 
 Three records prevent a declaration from pretending to be an observation, or an observation from
@@ -64,7 +68,7 @@ Their default `probe = false` makes no discovery egress, and a readiness probe n
 private transmission. That unprobed route is projected as `UNKNOWN` and unverified, never fabricated
 as `WARM`, so it cannot receive a grant.
 
-Soulstone adapter ownership is the adapter's exact declared runtime key; `supports()` cannot claim
+Soulstone adapter ownership is the adapter's exact declared runtime key; registration cannot claim
 another adapter's runtime. Registry hydration is staged and rejects a runtime unless it retains the
 exact input Rune and its name and id equal the Rune name. Every synthesized specification must then
 name that Animator, the Rune's canonical runtime and source kind, and the canonical

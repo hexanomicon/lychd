@@ -39,7 +39,7 @@ def test_transmute_all_has_no_extension_runes_param() -> None:
 
 
 def test_no_contributors_reproduces_core_only() -> None:
-    """AnimatorRegistry builds a contributor-free Transmuter by design (identity guarantee)."""
+    """A contributor-free physical compilation retains the exact core body."""
     manifests = _transmuter().transmute_all([], runes=RuneRegistry([]))
     pod = next(m for m in manifests if isinstance(m, QuadletPod))
     assert len(pod.publish_ports) == 2

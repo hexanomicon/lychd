@@ -94,7 +94,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Mirror** | The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution, and declared continuity. | [Mirror](../sepulcher/extensions/mirror.md) + ADR 32 |
 | **Necropolis** | The designed peer-to-peer topology in which sovereign LychD nodes negotiate bounded work over A2A. | [A2A (ADR 26)](../adr/26-a2a.md) |
 | **Nexus** | The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and Orchestrator transitions. | [Altar Nexus](../divination/altar/nexus.md) + Orchestrator |
-| **Occurrence** | One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation admission. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
+| **Occurrence** | One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation admission; distinct from the Graph runtime's legacy station-attempt `occurrence_id`. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
 | **Oculus** | The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and rebuildable read models. | [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md) |
 | **Orb** | The Altar instrument for inspecting one Run's retained evidence, capture boundaries, gaps, and correlations. | [Altar Orb](../divination/altar/orb.md) + Oculus (ADR 29) |
 | **Orchestrator** | The state machine that plans and governs Animator and container lifecycle transitions. | `src/lychd/domain/orchestration/` |

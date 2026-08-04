@@ -1,6 +1,8 @@
 """[LINUX] PostgreSQL Nexus request admission receipts."""
 
 # pyright: reportMissingImports=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
 
 from __future__ import annotations
 
@@ -10,7 +12,7 @@ from typing import TYPE_CHECKING, cast
 import pytest
 import pytest_asyncio
 
-pytest.importorskip("testcontainers", reason="[LINUX] PG runtime pass only")
+pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
 from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -22,7 +24,7 @@ from lychd.db.nexus import DbSwapRequestLedger
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.container]
 
 
 @pytest.fixture(scope="module")

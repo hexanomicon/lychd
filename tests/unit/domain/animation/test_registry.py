@@ -74,7 +74,6 @@ def _declarations(
 def _registry(runes_dir: Path, **kwargs: Any) -> AnimatorRegistry:
     kwargs.setdefault("portal_definitions", [_OPENAI_PORTAL])
     return AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir),
         runtime_adapters=_builtin_adapters(),
         **kwargs,
@@ -118,10 +117,9 @@ def test_registry_binds_model_for_portal(
     assert model.base_url.rstrip("/") == "https://api.openai.com/v1"
     assert registry.bind_toolset("openai-main") is None
     assert toolsets == ()
-    assert registry.prepare("openai-main") is None
 
 
-def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> None:
+def test_soulstone_runtime_does_not_retain_deployment_manifest(tmp_path: Path) -> None:
     runes_dir = tmp_path / "runes"
     _write(
         runes_dir / "animator" / "soulstones" / "llamacpp" / "qwen.toml",
@@ -133,10 +131,10 @@ def test_registry_prepare_returns_runtime_plan_for_soulstone(tmp_path: Path) -> 
     )
 
     registry = _registry(runes_dir)
-    plan = registry.prepare("qwen-local")
+    runtime = registry.get_runtime("qwen-local")
 
-    assert plan is not None
-    assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
+    assert runtime is not None
+    assert not hasattr(runtime, "quadlet")
 
 
 def test_registry_indexes_capabilities(tmp_path: Path) -> None:
@@ -275,18 +273,19 @@ def test_registry_rejects_noncanonical_runtime_identity(tmp_path: Path) -> None:
         def id(self) -> str:
             return "shared-runtime"
 
-    def colliding_factory(portal: PortalConfig) -> CollidingPortal:
+    def colliding_factory(rune: SoulstoneConfig | PortalConfig) -> CollidingPortal | None:
+        if not isinstance(rune, PortalConfig):
+            return None
         return CollidingPortal(
-            rune=portal,
+            rune=rune,
             connector=OpenAICompatibleConnector(
                 kind="adversarial-portal",
                 link=Link(up=True, activatable=False),
-                base_url=str(portal.base_url or ""),
+                base_url=str(rune.base_url or ""),
             ),
         )
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [OpenAIPortalConfig]),
         runtime_adapters=[],
         runtime_factories=[colliding_factory],
@@ -309,18 +308,19 @@ def test_registry_rejects_runtime_that_wraps_another_rune_instance(tmp_path: Pat
         'name = "main-portal"',
     )
 
-    def foreign_rune_factory(portal: PortalConfig) -> OpenAIPortal:
+    def foreign_rune_factory(rune: SoulstoneConfig | PortalConfig) -> OpenAIPortal | None:
+        if not isinstance(rune, PortalConfig):
+            return None
         return OpenAIPortal(
-            rune=portal.model_copy(),
+            rune=rune.model_copy(),
             connector=OpenAICompatibleConnector(
                 kind="foreign-rune",
                 link=Link(up=True, activatable=False),
-                base_url=str(portal.base_url or ""),
+                base_url=str(rune.base_url or ""),
             ),
         )
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [OpenAIPortalConfig]),
         runtime_adapters=[],
         runtime_factories=[foreign_rune_factory],
@@ -360,7 +360,6 @@ def test_registry_rejects_capability_outside_runtime_ownership(
             return [spec.model_copy(update=update) for spec in super().build_capability_specs(soulstone)]
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[ForeignCapabilityAdapter()],
     )
@@ -388,7 +387,6 @@ def test_registry_rejects_duplicate_capability_keys_with_declaration_provenance(
             return [*specs, *specs]
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[DuplicatingCapabilityAdapter()],
     )
@@ -457,7 +455,6 @@ async def test_registry_rejects_malformed_probe_sets_without_partial_cache_updat
 
     adapter = MutableProbeAdapter()
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[adapter],
     )
@@ -508,7 +505,6 @@ async def test_registry_invalidates_prior_observation_when_probe_raises(tmp_path
 
     adapter = FailingProbeAdapter()
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[adapter],
     )
@@ -559,7 +555,6 @@ async def test_registry_invalidates_prior_observation_when_probe_is_cancelled(tm
 
     adapter = BlockingProbeAdapter()
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[adapter],
     )
@@ -616,7 +611,6 @@ async def test_concurrent_probes_cannot_publish_an_older_observation_last(tmp_pa
 
     adapter = SequencedProbeAdapter()
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [VllmSoulstoneConfig]),
         runtime_adapters=[adapter],
     )
@@ -649,7 +643,6 @@ def test_registry_unknown_animator_returns_empty_bindings(tmp_path: Path) -> Non
     assert registry.bind_model("missing") is None
     assert registry.bind_toolset("missing") is None
     assert registry.bind_toolsets("missing") == ()
-    assert registry.prepare("missing") is None
     assert registry.is_ready("missing") is False
     assert registry.list_models("missing") == ()
 
@@ -728,7 +721,6 @@ async def test_registry_inspect_lifecycle_delegates_to_control_plane(tmp_path: P
 
     control = StubControl()
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
     )
@@ -849,7 +841,6 @@ def _warm_registry(runes_dir: Path, *, health: str) -> tuple[AnimatorRegistry, s
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=_HealthControl(health))],
     )
@@ -910,13 +901,12 @@ def test_registry_logs_unresolved_runtime_factory(tmp_path: Path, caplog: pytest
         """,
     )
 
-    def unresolved(_rune: object, _quadlet: object = None) -> None:
+    def unresolved(_rune: object) -> None:
         return None
 
     caplog.set_level("WARNING")
 
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
         runtime_adapters=_builtin_adapters(),
         runtime_factories=[unresolved],

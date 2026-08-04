@@ -68,7 +68,6 @@ def _single_registry(tmp_path: Path, control: LlamaCppControlPlane) -> tuple[Ani
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
     )
@@ -125,7 +124,6 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
         """,
     )
     registry = AnimatorRegistry(
-        settings=get_settings(),
         declarations=_declarations(runes_dir),
         runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=RouterControl())],
     )

@@ -7,7 +7,6 @@ from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
-from lychd.system.schemas import QuadletContainer
 
 LISTEN_HOST = "0.0.0.0"  # noqa: S104
 
@@ -81,11 +80,9 @@ class SoulstoneRuntimeAdapter(Protocol):
 
     runtime: ClassVar[str]
 
-    def supports(self, runtime: str) -> bool: ...
-
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan: ...
 
-    def build_runtime(self, soulstone: SoulstoneConfig, quadlet: QuadletContainer) -> RuntimeAnimator | None: ...
+    def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None: ...
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]: ...
 

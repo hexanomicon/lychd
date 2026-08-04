@@ -63,6 +63,8 @@ Choose the route that matches the question:
 
 - **[Pattern lifecycle](./pattern-lifecycle.md)** covers identity, manifests, admission,
   contribution, and revision continuity.
+- **[Scheduling and service classes](./scheduling-and-service-classes.md)** covers foreground,
+  deadline-windowed, and spare-capacity admission, schedule time law, overlap, and explicit misses.
 - **[Stasis and return](stasis-and-return.md)** covers Live and Durable Stasis, checkpoints,
   re-admission, terminal cleanup, and recovery limits.
 - **[Anonymization, taint, and egress](anonymization.md)** covers the local Privacy Cut,

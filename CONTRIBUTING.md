@@ -57,6 +57,19 @@ name selection, and `VERBOSE=1` for raw output and long tracebacks. Pytest scrat
 `.cache/pytest`; set `PYTEST_BASETEMP` to another current-user-owned directory when isolation
 requires it.
 
+Disposable PostgreSQL receipts are an explicit host-integration profile, not part of ordinary
+`make check`:
+
+```bash
+make test-containers
+```
+
+That target installs the separate `container-test` dependency group, requires a working
+Docker-compatible daemon, and may pull the pinned `pgvector` image. Ryuk remains unprivileged by
+default. A rootless compatibility environment may deliberately opt in with
+`TESTCONTAINERS_RYUK_PRIVILEGED=true make test-containers`; do not export that setting as a normal
+repository default.
+
 For frontend changes, run:
 
 ```bash
