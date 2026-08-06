@@ -1,11 +1,11 @@
 ---
-title: Broadcast Studio
+title: Broadcast
 icon: material/broadcast
 ---
 
-# :material-broadcast: Broadcast Studio
+# :material-broadcast: Broadcast
 
-Broadcast Studio turns an admitted dossier into a publication candidate whose claims, words,
+Broadcast turns an admitted dossier into a publication candidate whose claims, words,
 voice, captions, and cuts can be traced to their source. It gives an editor enough evidence to
 approve, correct, or refuse the work before any platform receives it.
 
@@ -13,7 +13,7 @@ approve, correct, or refuse the work before any platform receives it.
     Broadcast is a Native Reference Composition, not an executable publishing application today.
     No Broadcast Pattern, claim ledger, narration and caption pipeline, deterministic renderer,
     platform adapter, or publication effect is registered. Bridge text and Partial Audio admission
-    do not constitute this Studio.
+    do not constitute this application.
 
 [State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
 
@@ -29,7 +29,7 @@ approve, correct, or refuse the work before any platform receives it.
 
 Broadcast owns dossiers, source snapshots, claims, articles, scripts, storyboards, narration,
 captions, timelines, local renders, publication candidates, corrections, and destination receipts.
-[Voidlight Studio](voidlight-studio.md) retains the lineage of creative source assets. A platform
+[Voidlight](voidlight-studio.md) retains the lineage of creative source assets. A platform
 adapter delivers an approved payload; it has no editorial authority.
 
 ## Dossier to local candidate
@@ -93,5 +93,5 @@ article and script, local narration with back-transcript, captions, an explicit 
 deterministic render, one bounded repair, and final `EditorialPackage@1` plus
 `PublicationCandidate@1`. The proof makes no platform call.
 
-Related: [Voidlight Studio](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
+Related: [Voidlight](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
 [Audio](../adr/37-audio.md) · [Composition portfolio](index.md)

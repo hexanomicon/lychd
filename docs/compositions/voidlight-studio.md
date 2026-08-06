@@ -1,11 +1,11 @@
 ---
-title: Voidlight Studio
+title: Voidlight
 icon: material/camera-timer
 ---
 
-# :material-camera-timer: Voidlight Studio
+# :material-camera-timer: Voidlight
 
-A commission arrives as references, constraints, questions, and taste. Voidlight Studio turns that
+A commission arrives as references, constraints, questions, and taste. Voidlight turns that
 material into a creative package whose assets can be inspected, revised, and handed to another
 craft without losing their origin. The Magus remains the creative director throughout.
 
@@ -28,7 +28,7 @@ craft without losing their origin. The Magus remains the creative director throu
 
 Voidlight owns the commission, creative brief, reference dossier, style and asset specifications,
 candidates, accepted assets, provenance, and package. Providers and tools supply capabilities;
-they do not become the Studio's identity or acquire creative authority.
+they do not become the application's identity or acquire creative authority.
 
 ## Commission to package
 
@@ -63,8 +63,8 @@ The narrower scores remain available for work that should not pretend to be the 
 | Production receipt | provider or tool revision, prompt/control material, seed when available, cost, probes, and result |
 | `CreativeAssetBundle@1` | bundle revision and digest, target profile, asset manifest, constraints, provenance, validators, findings, and approval |
 
-[Game Foundry](game-foundry.md) owns engine imports, playability, builds, and release effects.
-[Broadcast Studio](broadcast-studio.md) owns claims, scripts, timelines, renders, accessibility, and
+[Foundry](game-foundry.md) owns engine imports, playability, builds, and release effects.
+[Broadcast](broadcast-studio.md) owns claims, scripts, timelines, renders, accessibility, and
 publication. Neither consumer may rewrite Voidlight's lineage, and a Studio handoff carries no
 Sigil, secret, provider session, or downstream effect authority.
 

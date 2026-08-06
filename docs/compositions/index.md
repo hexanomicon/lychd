@@ -42,45 +42,21 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 
 ## The Portfolio
 
-### :material-creation: Creative work
-
 | Composition | It finishes with |
 | --- | --- |
-| [Voidlight Studio](voidlight-studio.md) | an attributable, rights-aware creative asset bundle |
+| [Voidlight](voidlight-studio.md) | an attributable, rights-aware creative asset bundle |
 | [Riffmaw](riffmaw.md) | an original musical-work bundle and picture-cue map |
-| [Game Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
-| [Broadcast Studio](broadcast-studio.md) | a source-grounded local publication candidate |
-
-### :material-cart-heart: Personal life and place
-
-| Composition | It finishes with |
-| --- | --- |
-| [Health, Food & Movement](health-food-and-movement.md) | an editable plan or honest infeasibility result, never a medical judgment |
-| [Lifestyle Steward](lifestyle-steward.md) | corrected household evidence, a reviewable trip or cart, or an acknowledged, refused, or unknown checkout outcome |
-| [Home Seeker](home-seeker.md) | an explainable shortlist and due-diligence packet |
+| [Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
+| [Broadcast](broadcast-studio.md) | a source-grounded local publication candidate |
+| [Wellbeing](wellbeing.md) | an editable daily plan, honest infeasibility, corrected provision evidence, or acknowledged, refused, or unknown grocery checkout outcome |
 | [Homestead](homestead.md) | a legible resource plan, bounded work order, or safely refused physical intent |
-
-Walking Communion sits here by human context, but remains a route into applications rather than an
-application of its own.
-
-| Reference route | Its actual office |
-| --- | --- |
-| [Walking Communion](walking-communion.md) | mobile voice ingress and result projection into an admitted Pattern |
-
-### :material-briefcase-account-outline: Research, trade, and professional work
-
-| Composition | It finishes with |
-| --- | --- |
-| [Tech Scavenger](tech-scavenger.md) | a qualified candidate or seller thread, commitment decision, expected parcel, inspection outcome, or closed campaign slot |
-| [Bazaar Haggler](bazaar-haggler.md) | attributable negotiated terms, refusal, or timeout under an exact mandate |
-| [Broker Office](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
-
-### :material-cube-outline: Presence and inhabited worlds
-
-| Composition | It finishes with |
-| --- | --- |
-| [Blockworld Inhabitant](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
+| [Scavenger](scavenger.md) | an evidence-bound hunt, shortlist, negotiated outcome, commitment, parcel result, or diligence packet |
+| [Broker](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
+| [Blockworld](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
 | [Reach](reach.md) | one bounded social turn, summon, or admitted presence effect |
+
+[Communion](walking-communion.md) remains a reference mobile route into these applications, not a
+Composition of its own.
 
 ## Reuse without a universal helper
 
@@ -96,11 +72,11 @@ application of its own.
 Typed requests, observations, artifact references, and receipts may cross those seams. Ambient
 database access, credentials, Sigils, provider sessions, and domain judgment do not.
 
-Some applications deliberately resemble one another. Home Seeker and Tech Scavenger may share
-source snapshots, scheduling, deduplication, and explainable scoring without sharing property or
-hardware judgment. Tech Scavenger may issue an exact `NegotiationMandate@1` to Bazaar Haggler, then
-must revalidate the returned terms before reserving money or a parcel. A shared sender never creates
-a shared right to negotiate.
+Scavenger keeps irregular listing hunts, seller negotiation, major commitments, parcels, and
+property diligence in one application with revisioned subject profiles. Wellbeing keeps daily food,
+movement, household provision, receipts, grocery carts, and private reflections in another. They may
+reuse source snapshots, schedules, offer and money schemas, route observations, and effect receipts;
+neither receives the other's records, credentials, private constraints, or authority by reuse.
 
 ## Suites do not dissolve their members
 
@@ -110,10 +86,10 @@ no member records, secrets, Sigils, provider grants, consent, or effect authorit
 
 ```mermaid
 flowchart LR
-    B["Creative brief"] --> V["Voidlight Studio"]
+    B["Creative brief"] --> V["Voidlight"]
     V --> A["CreativeAssetBundle@1"]
-    A --> G["Game Foundry"]
-    A --> P["Broadcast Studio"]
+    A --> G["Foundry"]
+    A --> P["Broadcast"]
     G --> GB["Playable build"]
     P --> PC["Publication candidate"]
 ```

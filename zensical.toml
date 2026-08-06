@@ -117,30 +117,17 @@ nav = [
     ]},
     { "Compositions" = [
         "compositions/index.md",
-        { "Creative Work" = [
-            "compositions/voidlight-studio.md",
-            "compositions/riffmaw.md",
-            "compositions/game-foundry.md",
-            "compositions/broadcast-studio.md"
-        ]},
-        { "Personal Life and Place" = [
-            "compositions/health-food-and-movement.md",
-            "compositions/lifestyle-steward.md",
-            "compositions/home-seeker.md",
-            "compositions/homestead.md"
-        ]},
-        { "Research, Trade, and Professional Work" = [
-            "compositions/tech-scavenger.md",
-            "compositions/bazaar-haggler.md",
-            "compositions/broker-office.md"
-        ]},
-        { "Presence and Inhabited Worlds" = [
-            "compositions/blockworld-inhabitant.md",
-            "compositions/reach.md"
-        ]},
-        { "Reference Route" = [
-            "compositions/walking-communion.md"
-        ]}
+        "compositions/voidlight-studio.md",
+        "compositions/riffmaw.md",
+        "compositions/game-foundry.md",
+        "compositions/broadcast-studio.md",
+        "compositions/wellbeing.md",
+        "compositions/homestead.md",
+        "compositions/scavenger.md",
+        "compositions/broker-office.md",
+        "compositions/blockworld-inhabitant.md",
+        "compositions/reach.md",
+        "compositions/walking-communion.md"
     ]},
     { "Map" = "map.md" },
     { "State of Work" = "state-of-the-work.md" },

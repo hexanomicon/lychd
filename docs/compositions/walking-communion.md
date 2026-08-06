@@ -1,11 +1,11 @@
 ---
-title: Walking Communion
+title: Communion
 icon: material/account-voice
 ---
 
-# :material-account-voice: Walking Communion
+# :material-account-voice: Communion
 
-Walking Communion is the reference mobile route into an admitted LychD Pattern. It is a Portfolio
+Communion is the reference mobile route into an admitted LychD Pattern. It is a Portfolio
 companion rather than a Composition: speaking on the road is an ingress and result-projection path,
 while the selected application or Core owner keeps the purpose, records, judgment, and effects.
 

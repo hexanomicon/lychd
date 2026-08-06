@@ -83,7 +83,7 @@ caller-owned or explicitly shared committed state; it never replays expired work
 | caller identity and authority | Ward per Principal, object, Pattern, and effect |
 | one admitted turn | Invocation, Run ledger, `ReachTurn@1`, and optional `ReachDelivery@1` |
 
-The same Persona may later appear through [Blockworld Inhabitant](blockworld-inhabitant.md), but
+The same Persona may later appear through [Blockworld](blockworld-inhabitant.md), but
 identity continuity carries no shared Context, authority, or endless session. Every crossing names
 its source world, destination audience, admitting Principal, policy revision, and provenance.
 

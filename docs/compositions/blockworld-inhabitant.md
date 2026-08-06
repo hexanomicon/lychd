@@ -1,9 +1,9 @@
 ---
-title: Blockworld Inhabitant
+title: Blockworld
 icon: material/cube-outline
 ---
 
-# :material-cube-outline: Blockworld Inhabitant
+# :material-cube-outline: Blockworld
 
 The inhabitant wakes for one bounded mission and leaves consequences in a world that persists
 after its Mind goes quiet. A wall may remain, but its purpose, authority, and exact placements must
@@ -11,7 +11,7 @@ remain inspectable too. Each return begins from reconciled world truth rather th
 continuity.
 
 !!! note "Current material"
-    Blockworld Inhabitant is a Native Reference Composition, not an executable embodied Agent
+    Blockworld is a Native Reference Composition, not an executable embodied Agent
     today. No Blockworld Pattern, world adapter, embodiment journal, mission ledger, or server
     fixture is registered. Legion remains Designed and supplies no owned-node or robot path.
 

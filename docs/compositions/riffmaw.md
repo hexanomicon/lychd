@@ -31,8 +31,8 @@ picture-cue package while leaving the Magus in charge of what the music becomes.
 
 Riffmaw owns reference moments, sessions, takes, musical structure, arrangements, stems, mixes,
 masters, and picture cues. A DAW, plug-in, model, decoder, or media index remains replaceable
-machinery. [Voidlight Studio](voidlight-studio.md) owns visual assets; [Broadcast
-Studio](broadcast-studio.md) owns the final timeline and publication effects.
+machinery. [Voidlight](voidlight-studio.md) owns visual assets; [Broadcast](broadcast-studio.md)
+owns the final timeline and publication effects.
 
 ## Mark, play, and forge
 
@@ -91,5 +91,5 @@ editable `FeelProfile`, an original four-section arrangement, stems, a local mix
 cues, restart-safe indexing, and a lineage-complete export. No arbitrary folder, live microphone,
 copyrighted catalogue, Portal, visual generation, paid effect, or platform call enters the proof.
 
-Related: [Voidlight Studio](voidlight-studio.md) · [Broadcast Studio](broadcast-studio.md) ·
+Related: [Voidlight](voidlight-studio.md) · [Broadcast](broadcast-studio.md) ·
 [Audio](../adr/37-audio.md) · [Vision](../adr/36-vision.md) · [Composition portfolio](index.md)
