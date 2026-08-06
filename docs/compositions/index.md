@@ -42,7 +42,7 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 
 ## The Portfolio
 
-### Creative work
+### :material-creation: Creative work
 
 | Composition | It finishes with |
 | --- | --- |
@@ -51,7 +51,7 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Game Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
 | [Broadcast Studio](broadcast-studio.md) | a source-grounded local publication candidate |
 
-### Personal life and place
+### :material-cart-heart: Personal life and place
 
 | Composition | It finishes with |
 | --- | --- |
@@ -60,7 +60,14 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Home Seeker](home-seeker.md) | an explainable shortlist and due-diligence packet |
 | [Homestead](homestead.md) | a legible resource plan, bounded work order, or safely refused physical intent |
 
-### Research, trade, and professional work
+Walking Communion sits here by human context, but remains a route into applications rather than an
+application of its own.
+
+| Reference route | Its actual office |
+| --- | --- |
+| [Walking Communion](walking-communion.md) | mobile voice ingress and result projection into an admitted Pattern |
+
+### :material-briefcase-account-outline: Research, trade, and professional work
 
 | Composition | It finishes with |
 | --- | --- |
@@ -68,24 +75,12 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Bazaar Haggler](bazaar-haggler.md) | attributable negotiated terms, refusal, or timeout under an exact mandate |
 | [Broker Office](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
 
-### Presence and inhabited worlds
+### :material-cube-outline: Presence and inhabited worlds
 
 | Composition | It finishes with |
 | --- | --- |
 | [Blockworld Inhabitant](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
 | [Reach](reach.md) | one bounded social turn, summon, or admitted presence effect |
-
-## Reference route
-
-One application route remains beside the Portfolio because it demonstrates how several Patterns
-can share an ingress without turning that ingress into another application.
-
-| Route | Its actual office |
-| --- | --- |
-| [Walking Communion](walking-communion.md) | mobile voice ingress and result projection into an admitted Pattern |
-
-Keeping the route here preserves the worked example without inventing an application identity,
-Pattern owner, or delivery claim for a channel.
 
 ## Reuse without a universal helper
 
