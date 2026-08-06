@@ -9,13 +9,6 @@ Reach lets one revision-pinned Persona answer in an external social place withou
 place the authority of LychD. A mention, command, or admitted presence event creates one finite
 awakening; the platform account never becomes the Lich.
 
-!!! note "Current material"
-    Reach is a Native Reference Composition, not a live Discord resident today. No Reach Pattern,
-    Discord adapter, Habitat ledger, remote Principal binding, or external delivery effect is
-    registered. Mirror, remote IAM, and the required transport boundaries remain Designed.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |

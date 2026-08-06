@@ -10,13 +10,6 @@ after its Mind goes quiet. A wall may remain, but its purpose, authority, and ex
 remain inspectable too. Each return begins from reconciled world truth rather than imagined
 continuity.
 
-!!! note "Current material"
-    Blockworld is a Native Reference Composition, not an executable embodied Agent
-    today. No Blockworld Pattern, world adapter, embodiment journal, mission ledger, or server
-    fixture is registered. Legion remains Designed and supplies no owned-node or robot path.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |

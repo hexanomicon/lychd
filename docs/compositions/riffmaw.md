@@ -5,34 +5,28 @@ icon: material/music-circle
 
 # :material-music-circle: Riffmaw
 
-A musical idea often arrives sideways: a timestamp, a mouth-made rhythm, a remembered drop, or a
-guitar take worth keeping. Riffmaw turns those moments into an attributable original work and a
-picture-cue package while leaving the Magus in charge of what the music becomes.
+A sound often arrives sideways: a timestamp, a mouth-made rhythm, a remembered drop, a spoken
+line, or a guitar take worth keeping. Riffmaw turns those moments into attributable music, voice,
+effects, and ambience while leaving the Magus in charge of what the work becomes.
 
 > “At `01:32` it drops: _tz, tz, u-do_. Keep the pressure and spacing, change the musical matter,
-> and show me three scenes that could move with it.”
-
-!!! note "Current material"
-    Riffmaw is a Native Reference Composition, not an executable music studio today. No Riffmaw
-    Pattern, media index, instrument or DAW capture path, session ledger, stem renderer, or
-    picture-cue handoff is registered; Audio and Vision admission remain Partial.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
+> and mark the transitions another craft can answer.”
 
 ## Contract
 
 | Field | Reference contract |
 | --- | --- |
-| **Identity** | `riffmaw.music` revision `1` |
-| **Principal Pattern** | `riffmaw.forge_track@1` |
-| **Application begins with** | operator-admitted sources, remembered moments, an optional live take, and a creative brief |
-| **Application can return** | `MusicalWorkBundle@1` and `PictureCueMap@1`, or an exact refusal |
-| **Application stops before** | visual generation, final video editing, rights certification, voice cloning, or publication |
+| **Identity** | `riffmaw.audio` revision `2` |
+| **Principal Pattern** | `riffmaw.forge_sonic_bundle@1` |
+| **Application begins with** | operator-admitted sources, remembered moments, optional live takes or approved words, and a sonic brief |
+| **Application can return** | `SonicAssetBundle@1`, an optional `SyncCueMap@1`, or an exact refusal |
+| **Application stops before** | visual generation, audiovisual assembly, rights certification, performer impersonation, or publication |
 
-Riffmaw owns reference moments, sessions, takes, musical structure, arrangements, stems, mixes,
-masters, and picture cues. A DAW, plug-in, model, decoder, or media index remains replaceable
-machinery. [Voidlight](voidlight-studio.md) owns visual assets; [Broadcast](broadcast-studio.md)
-owns the final timeline and publication effects.
+Riffmaw owns reference moments, sessions, takes, musical structure, arrangements, performances,
+sound effects, ambience, stems, mixes, masters, and synchronization markers. A DAW, plug-in,
+model, decoder, or media index remains replaceable machinery. [Voidlight](voidlight-studio.md) owns
+visual assets; [Broadcast](broadcast-studio.md) owns editorial assembly, the final timeline, and
+publication effects.
 
 ## Mark, play, and forge
 
@@ -44,27 +38,30 @@ owns the final timeline and publication effects.
    monitoring route, plug-in state, and immutable raw audio or MIDI before proposing transcription.
 4. **Describe the feel.** Pocket, density, accents, space, motion, and energy become an editable
    `FeelProfile`; the performer may correct it, play the answer, or reject it.
-5. **Forge the work.** Accepted moments and takes guide an original structure, motif set, sound
-   palette, arrangement, stems, mix, and master. Every generated or transformed artifact keeps its
+5. **Forge the work.** Accepted moments, takes, and words guide original music, performances,
+   effects, ambience, stems, mix, and master. Every generated or transformed artifact keeps its
    tool, provider, control material, cost, and digest.
-6. **Prepare the picture handoff.** Musical events become time windows, intensity, scene intent,
-   continuity, motion, and transition constraints in a `PictureCueMap@1` fitted to the exact work
-   revision.
+6. **Prepare synchronization.** Audible events become time windows, intensity, continuity, and
+   transition markers in a `SyncCueMap@1` fitted to the exact sonic revision. The map describes
+   sound and time; it does not prescribe images.
 
-## Session records and music-video handoff
+## Session records and sonic handoff
 
 | Pattern | Return |
 | --- | --- |
 | `riffmaw.index_sources@1` | a bounded, attributable index of approved media |
 | `riffmaw.mark_moment@1` | a human-selected `ReferenceMoment@1` with source, timebase, features, uncertainty, and rights posture |
 | `riffmaw.capture_take@1` | a `PerformanceTake@1` preserving raw performance and attributed observations |
-| `riffmaw.forge_track@1` | `MusicalWorkBundle@1` with work revision, score/MIDI when present, stems, master, credits, provenance, findings, and checksums |
-| `riffmaw.prepare_picture_cues@1` | `PictureCueMap@1` tied to the accepted musical revision |
+| `riffmaw.forge_track@1` | original musical work, score or MIDI when present, stems, and master |
+| `riffmaw.forge_voice_pack@1` | approved performances tied to exact words, performer authority, and takes |
+| `riffmaw.forge_sound_pack@1` | attributable effects and ambience for declared semantic roles |
+| `riffmaw.forge_sonic_bundle@1` | `SonicAssetBundle@1` with assets, mix relationships, credits, provenance, findings, and checksums |
+| `riffmaw.prepare_sync_map@1` | neutral `SyncCueMap@1` tied to the accepted sonic revision |
 
-The handoff can be followed explicitly: Riffmaw supplies music and cues; Voidlight may answer the
-cues with original visual assets; Broadcast decides how music, assets, captions, and cuts meet on
-a final timeline. The designed `riffmaw.music-video-suite@1` describes that relationship but does
-not execute it or share files, secrets, Sigils, budgets, approvals, or provider authority.
+An audiovisual Suite may give the same brief and `SyncCueMap@1` to Voidlight, then hand the
+resulting `SonicAssetBundle@1` and `VisualAssetBundle@1` to Broadcast. The Suite coordinates exact
+revisions and typed artifacts; it does not merge files, records, secrets, Sigils, budgets,
+approvals, or provider authority.
 
 ## Rights, effects, and return
 
@@ -83,13 +80,14 @@ rejected candidates, accepted works, indexes, stems, masters, and handoffs have 
 rules. Deletion stops capture and indexing, removes permitted derivatives, inventories exported
 copies, and retains only required content-free receipts.
 
-## Proving jam
+## Proving session
 
 Use two local synthetic two-minute references with known events, one thirty-second guitar or MIDI
-take, and a fixture marker at `01:32`. Produce deterministic onset and tempo observations, an
-editable `FeelProfile`, an original four-section arrangement, stems, a local mix, three picture
-cues, restart-safe indexing, and a lineage-complete export. No arbitrary folder, live microphone,
-copyrighted catalogue, Portal, visual generation, paid effect, or platform call enters the proof.
+take, one approved spoken fixture, and a marker at `01:32`. Produce deterministic onset and tempo
+observations, an editable `FeelProfile`, an original four-section arrangement, one voice or effect
+asset, stems, a local mix, three synchronization markers, restart-safe indexing, and a
+lineage-complete `SonicAssetBundle@1`. No arbitrary folder, ambient microphone, copyrighted
+catalogue, Portal, visual generation, paid effect, or platform call enters the proof.
 
 Related: [Voidlight](voidlight-studio.md) · [Broadcast](broadcast-studio.md) ·
-[Audio](../adr/37-audio.md) · [Vision](../adr/36-vision.md) · [Composition portfolio](index.md)
+[Audio](../adr/37-audio.md) · [Composition portfolio](index.md)

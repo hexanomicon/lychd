@@ -32,9 +32,11 @@ A page belongs in the Portfolio when all three answers are concrete:
 | **Suite** | versioned coordination of separate Compositions through typed handoffs |
 | **Extension** | a governed way for implementation to enter LychD; never an application by itself |
 
-Portfolio membership accepts an application contract; it does not claim executable delivery. Every
-leaf summarizes its current material under the canonical
-[State of Work Portfolio boundary](../state-of-the-work.md#composition-portfolio-delivery).
+Portfolio membership accepts an application contract; it does not claim executable delivery. The
+Portfolio is the grand design LychD is approaching; the canonical
+[State of Work Portfolio boundary](../state-of-the-work.md#composition-portfolio-delivery) records
+what has entered matter. A leaf mentions delivery only where that fact changes how its contract
+should be read.
 
 A Composition identity is a URL-safe key plus a separate revision, written here as
 `example.application` revision `1`. Pattern identity remains separately versioned, for example
@@ -44,8 +46,8 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 
 | Composition | It finishes with |
 | --- | --- |
-| [Voidlight](voidlight-studio.md) | an attributable, rights-aware creative asset bundle |
-| [Riffmaw](riffmaw.md) | an original musical-work bundle and picture-cue map |
+| [Voidlight](voidlight-studio.md) | an attributable, rights-aware visual asset bundle |
+| [Riffmaw](riffmaw.md) | an attributable sonic asset bundle and optional synchronization map |
 | [Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
 | [Broadcast](broadcast-studio.md) | a source-grounded local publication candidate |
 | [Wellbeing](wellbeing.md) | an editable food-and-movement plan, honest infeasibility, minimal food need, or confirmed check-in |
@@ -86,10 +88,16 @@ no member records, secrets, Sigils, provider grants, consent, or effect authorit
 
 ```mermaid
 flowchart LR
-    B["Creative brief"] --> V["Voidlight"]
-    V --> A["CreativeAssetBundle@1"]
+    B["Creative brief"] --> V["Voidlight · vision"]
+    B --> R["Riffmaw · sound"]
+    R --> S["SonicAssetBundle@1"]
+    R --> C["SyncCueMap@1"]
+    C --> V
+    V --> A["VisualAssetBundle@1"]
     A --> G["Foundry"]
+    S --> G
     A --> P["Broadcast"]
+    S --> P
     G --> GB["Playable build"]
     P --> PC["Publication candidate"]
 ```
@@ -107,7 +115,7 @@ Every Composition leaf answers the same practical questions without reproducing 
 - one representative journey rather than a catalogue of imagined features;
 - the records and typed handoffs that make the result attributable;
 - the few authority, privacy, effect, and recovery boundaries that shape this application;
-- current material stated against tracked evidence; and
+- a local delivery note only when present implementation materially changes interpretation; and
 - the smallest fixture that could prove the contract.
 
 There is no Crypt `compositions/` loader and no Markdown discovery path. The current source

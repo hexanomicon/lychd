@@ -9,13 +9,6 @@ Wellbeing helps one consenting adult decide what food and ordinary movement fit,
 actually happened without turning either into a verdict about the person. It plans and reflects;
 it neither owns the kitchen stores nor acquires what the household lacks.
 
-!!! note "Current material"
-    No Wellbeing Pattern, consented profile store, meal or movement solver, reflection ledger, or
-    schedule is registered or executable. Local text inference and general persistence do not
-    constitute this sensitive application.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |

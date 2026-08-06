@@ -9,27 +9,20 @@ Broadcast turns an admitted dossier into a publication candidate whose claims, w
 voice, captions, and cuts can be traced to their source. It gives an editor enough evidence to
 approve, correct, or refuse the work before any platform receives it.
 
-!!! note "Current material"
-    Broadcast is a Native Reference Composition, not an executable publishing application today.
-    No Broadcast Pattern, claim ledger, narration and caption pipeline, deterministic renderer,
-    platform adapter, or publication effect is registered. Bridge text and Partial Audio admission
-    do not constitute this application.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |
 | --- | --- |
-| **Identity** | `broadcast.studio` revision `1` |
+| **Identity** | `broadcast.studio` revision `2` |
 | **Principal Pattern** | `broadcast.build_local_package@1` |
-| **Application begins with** | a frozen source dossier, editorial brief, target profile, and admitted creative assets |
+| **Application begins with** | a frozen source dossier, editorial brief, target profile, and admitted visual and sonic assets |
 | **Application can return** | local `EditorialPackage@1` and `PublicationCandidate@1`; `PublicationReceipt@1` only after a separate effect |
 | **Application stops before** | unattended publication, engagement farming, borrowed asset authority, or unreviewed external egress |
 
-Broadcast owns dossiers, source snapshots, claims, articles, scripts, storyboards, narration,
-captions, timelines, local renders, publication candidates, corrections, and destination receipts.
-[Voidlight](voidlight-studio.md) retains the lineage of creative source assets. A platform
+Broadcast owns dossiers, source snapshots, claims, articles, scripts, storyboards, captions,
+timelines, local renders, publication candidates, corrections, and destination receipts.
+[Voidlight](voidlight-studio.md) retains visual lineage; [Riffmaw](riffmaw.md) retains music,
+voice, effects, ambience, and mix lineage. A platform
 adapter delivers an approved payload; it has no editorial authority.
 
 ## Dossier to local candidate
@@ -41,9 +34,10 @@ adapter delivers an approved payload; it has no editorial authority.
    it.
 3. **Approve the words.** Produce the canonical article and formatted scripts before narration,
    captions, or timeline assembly can conceal uncertainty.
-4. **Admit creative assets.** Match each `CreativeAssetBundle@1` digest, semantic role, constraints,
-   provenance, rights, validators, findings, and approval to this exact project.
-5. **Assemble locally.** Create narration and a back-transcript, captions, storyboard, and an
+4. **Admit visual and sonic assets.** Match each `VisualAssetBundle@1` or `SonicAssetBundle@1`
+   digest, semantic role, constraints, provenance, rights, validators, findings, and approval to
+   this exact project.
+5. **Assemble locally.** Place admitted narration and sound with captions, storyboard, and an
    explicit timeline; render with pinned inputs, fonts, codecs, filters, loudness, colour settings,
    command, probes, and checksum.
 6. **Review and package.** One bounded forward repair may answer a finding. The accepted result is
@@ -57,15 +51,16 @@ and stales dependants; it never rewrites the historical claim or receipt.
 
 | Record or Pattern | Office |
 | --- | --- |
-| `CreativeAssetRequest@1` | asks for an editorial role, profile, timing, constraints, rights, likeness requirements, and request digest |
-| Asset-admission receipt | records Broadcast's validation of one immutable `CreativeAssetBundle@1` |
+| `VisualAssetRequest@1` | asks Voidlight for a visual role, profile, timing, constraints, rights, likeness requirements, and request digest |
+| `SonicAssetRequest@1` | asks Riffmaw for music, voice, effects, or ambience under exact words, timing, rights, and request digest |
+| Asset-admission receipt | records Broadcast's validation of one immutable visual or sonic bundle |
 | `broadcast.review_package@1` | returns attributed findings without changing accepted material |
 | `broadcast.revise_from_correction@1` | admits a new forward correction |
 | `broadcast.publish_draft@1` / `broadcast.publish_public@1` | perform separately authorized destination effects |
 | `broadcast.correct_publication@1` / `broadcast.takedown@1` | correct or request removal without erasing prior history |
 
-The handoff shares no Sigil, secret, provider session, approval, or downstream authority. Voidlight
-cannot publish through an asset request, and Broadcast cannot amend Voidlight's provenance after
+The handoff shares no Sigil, secret, provider session, approval, or downstream authority. Neither
+producer can publish through an asset request, and Broadcast cannot amend their provenance after
 admitting a bundle.
 
 ## Publication gates and correction
@@ -89,9 +84,11 @@ published copy.
 ## Proving package
 
 Build a three-to-five-minute local package from a small frozen dossier: source-linked claims, an
-article and script, local narration with back-transcript, captions, an explicit timeline,
+article and script, admitted local narration with back-transcript, captions, an explicit timeline,
 deterministic render, one bounded repair, and final `EditorialPackage@1` plus
 `PublicationCandidate@1`. The proof makes no platform call.
 
-Related: [Voidlight](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
-[Audio](../adr/37-audio.md) · [Composition portfolio](index.md)
+Related: [Voidlight](voidlight-studio.md) · [Riffmaw](riffmaw.md) ·
+[Workflow](../adr/28-workflow.md) ·
+[Vision](../adr/36-vision.md) · [Audio](../adr/37-audio.md) ·
+[Composition portfolio](index.md)
