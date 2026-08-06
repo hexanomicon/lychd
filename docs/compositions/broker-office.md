@@ -13,13 +13,6 @@ The reference vertical is a Slovak non-life insurance intermediary beginning wit
 pressures identity, private records, product evidence, deadlines, human review, and external effects
 without claiming that LychD is itself a broker or adviser.
 
-!!! note "Current material"
-    No Broker Pattern, business or client surface, mail or telephone intake, case ledger,
-    insurer adapter, or regulated effect is registered or executable. The Altar, local Sigil, and
-    Run engine are common substrate, not this application.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |

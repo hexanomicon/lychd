@@ -13,11 +13,6 @@ The route carries one deliberate utterance from an enrolled Android client, retu
 and may then speak that text. It does not turn a phone into the Altar, a tunnel key into identity,
 or a spoken “yes” into authority.
 
-!!! note "Current material"
-    No Android Emissary, audio-byte transport, Tether route, remote Principal enrollment, or mobile
-    voice path is registered or executable. Audio admission and Tether are Partial; remote IAM
-    remains Designed in its owning record.
-
 ## Route contract
 
 | | |

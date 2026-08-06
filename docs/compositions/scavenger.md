@@ -10,13 +10,6 @@ decision. A RAM stick on Bazoš, a used machine, and a home are not the same obj
 one campaign spine: state the need, observe a finite market, keep unknowns visible, compare what the
 evidence supports, negotiate inside a closed envelope, and stop before authority runs out.
 
-!!! note "Current material"
-    No Scavenger Pattern, campaign ledger, Scout source, schedule, ranking projection,
-    seller-message, commitment, parcel, inspection, or property-diligence path is registered or
-    executable. Scout itself has no delivered web-acquisition capability.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |

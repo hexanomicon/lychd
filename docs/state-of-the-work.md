@@ -6,10 +6,10 @@ icon: material/list-status
 # State of Work
 
 LychD is **pre-alpha**. This page is the canonical whole-system account of what repository evidence
-supports, what still needs a named operator receipt, and what remains design. Each
-[Composition](./compositions/index.md) leaf summarizes its application-specific material under the
-canonical [Portfolio delivery boundary](#composition-portfolio-delivery) below; a leaf cannot
-promote delivery independently.
+supports, what still needs a named operator receipt, and what remains design. The
+[Composition Portfolio](./compositions/index.md) describes the applications LychD is approaching;
+the canonical [Portfolio delivery boundary](#composition-portfolio-delivery) below states how much
+of that design has entered matter.
 
 The proved envelope is local, loopback-oriented, single-user, and one control process in the
 repository-test profile. A disposable PostgreSQL receipt now exercises the real application
@@ -980,8 +980,8 @@ Portfolio applications executable.
 
 **Do not expect yet:** There is no Composition contribution or enablement store, application
 selector, Portfolio-owned Pattern registration, Suite executor, application scheduler, or delivered
-domain-record/effect path for any Portfolio member. A leaf's **Current material** block is a local
-summary of this boundary and the relevant substrate records, not a separate delivery authority.
+domain-record/effect path for any Portfolio member. Individual Composition pages may mention a
+local delivery constraint when it changes interpretation, but this record remains authoritative.
 
 **Evidence**
 

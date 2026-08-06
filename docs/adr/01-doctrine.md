@@ -62,7 +62,7 @@ and registers; it does not compete for topology law.
 | `docs/adr/**` | Architectural law. |
 | State of Work | Shared whole-system delivery boundary and evidence envelope. |
 | Lexicon | Canonical meanings. |
-| Compositions | Native reference application contracts, worked examples, and their local current-material statement. |
+| Compositions | Native reference application contracts and worked examples; local delivery notes only where needed for interpretation. |
 | Sepulcher | Anatomy, operation, and recovery. |
 | Divination / Altar | Meeting the running body. |
 | Transcendence | The Great Work and constitutional meaning. |

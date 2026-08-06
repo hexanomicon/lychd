@@ -10,14 +10,6 @@ freezer, recurring supplies, garden harvest, water, energy, network, devices, an
 attributable resource events. The place may be provisioned from Kaufland, Lidl, a local market, or
 its own field; source changes do not change who owns the household stock.
 
-!!! note "Current material"
-    No Homestead Pattern, site/resource or household-stores ledger, receipt/OCR path, shop source,
-    cart, checkout effect, device or sensor adapter, safety controller, camera path, droid profile,
-    or physical effect is registered or executable. Legion, Tether, Scout, Vision, remote IAM, and
-    visual custody remain Designed or Partial common substrate.
-
-[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
-
 ## Contract
 
 | Field | Reference contract |
