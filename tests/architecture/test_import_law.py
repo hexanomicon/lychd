@@ -66,10 +66,10 @@ def test_animation_domain_does_not_import_extensions() -> None:
 
 
 def test_llamacpp_connector_lives_in_extension_not_domain() -> None:
-    from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamacppStone
+    from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamacppSoulstone
 
     assert LlamacppConnector.__module__.startswith("lychd.extensions")
-    assert LlamacppStone.__module__.startswith("lychd.extensions")
+    assert LlamacppSoulstone.__module__.startswith("lychd.extensions")
 
     surfaces = __import__(
         "lychd.domain.animation.services.adapters.surfaces",

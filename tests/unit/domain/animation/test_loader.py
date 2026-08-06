@@ -91,13 +91,15 @@ def _write(path: Path, content: str) -> None:
     path.write_text(f"{content.strip()}\n", encoding="utf-8")
 
 
-def test_load_concrete_soulstone_from_top_level_payload(runes_dir: Path) -> None:
+def test_load_concrete_soulstone_with_embedded_quadlet_payload(runes_dir: Path) -> None:
     _write(
         runes_dir / "animator" / "soulstones" / "generic" / "hermes.toml",
         """
         name = "hermes"
-        image = "custom/local-runtime:latest"
         port = 8080
+
+        [quadlet]
+        image = "custom/local-runtime:latest"
         """,
     )
 

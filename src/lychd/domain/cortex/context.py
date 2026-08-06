@@ -13,6 +13,13 @@ import json
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
 
+from lychd.domain.cortex.privacy import (
+    INTERNAL_PRIVATIZATION_LABEL,
+    PUBLIC_PRIVATIZATION_LABEL,
+    RESTRICTED_UNKNOWN_PRIVATIZATION_LABEL,
+    PrivatizationLabel,
+)
+
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilityGrant
     from lychd.domain.animation.services.registry import AnimatorRegistry
@@ -34,12 +41,13 @@ def _sha256(text: str) -> str:
 
 @dataclass(frozen=True, kw_only=True)
 class Block:
-    """One keyed context block. `content_hash` is the sha256 of `text`."""
+    """One keyed context block with privacy influence metadata."""
 
     layer: int
     key: str
     content_hash: str
     text: str
+    label: PrivatizationLabel
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -55,6 +63,7 @@ class AssembledContext:
     state_window: list[Any]
     continuation: list[Any]
     query: str
+    aggregate_label: PrivatizationLabel
     context_window: int | None = None
 
     def floor_text(self) -> str:
@@ -104,8 +113,11 @@ class ContextOrchestrator:
         continuation: list[Any] | None = None,
         grant: CapabilityGrant | None = None,
         grant_epoch: str | int = 0,
+        query_label: PrivatizationLabel | None = None,
+        history_label: PrivatizationLabel | None = None,
+        continuation_label: PrivatizationLabel | None = None,
     ) -> AssembledContext:
-        """Assemble the six-layer floor, cache it under `run_id`, and return it."""
+        """Assemble the six-layer floor, carrying unknown influences as restricted."""
         stable_blocks: list[Block] = [
             self._identity_block(),
             self._codex_block(),
@@ -135,8 +147,15 @@ class ContextOrchestrator:
             list(history or []),
             budget=effective_char_cap - fixed_chars,
         )
-        state_block = self._state_block([*window, *current_chain])
-        query_block = self._query_block(query)
+        state_label = PrivatizationLabel.join(
+            history_label or self._default_material_label(window),
+            continuation_label or self._default_material_label(current_chain),
+        )
+        state_block = self._state_block([*window, *current_chain], label=state_label)
+        query_block = self._query_block(
+            query,
+            label=query_label or self._default_material_label(query),
+        )
         blocks = (*stable_blocks, state_block, query_block)
 
         assembled = AssembledContext(
@@ -145,6 +164,7 @@ class ContextOrchestrator:
             state_window=window,
             continuation=current_chain,
             query=query,
+            aggregate_label=PrivatizationLabel.join(*(block.label for block in blocks)),
             context_window=context_window,
         )
         self._cache[run_id] = assembled
@@ -169,11 +189,18 @@ class ContextOrchestrator:
             key=IDENTITY_BLOCK_KEY,
             content_hash=_sha256(IDENTITY_BLOCK_TEXT),
             text=IDENTITY_BLOCK_TEXT,
+            label=INTERNAL_PRIVATIZATION_LABEL,
         )
 
     def _codex_block(self) -> Block:
         # Stubbed: key reserved for future path-aware Codex hydration.
-        return Block(layer=2, key="codex:none:v0", content_hash=_sha256(""), text="")
+        return Block(
+            layer=2,
+            key="codex:none:v0",
+            content_hash=_sha256(""),
+            text="",
+            label=PUBLIC_PRIVATIZATION_LABEL,
+        )
 
     def _environment_block(
         self,
@@ -200,7 +227,13 @@ class ContextOrchestrator:
             "warm coven: " + (", ".join(warm) if warm else "none"),
         ]
         text = "\n".join(lines)
-        block = Block(layer=3, key=key, content_hash=_sha256(text), text=text)
+        block = Block(
+            layer=3,
+            key=key,
+            content_hash=_sha256(text),
+            text=text,
+            label=INTERNAL_PRIVATIZATION_LABEL,
+        )
         self._env_snapshots[key] = block
         return block
 
@@ -250,14 +283,25 @@ class ContextOrchestrator:
 
     def _karma_block(self, *, session_id: str) -> Block:
         # Stubbed: Archive/mem0 unbuilt; key session-pinned (Cache Meridian after layer 4).
-        return Block(layer=4, key=f"karma:{session_id}:pinned", content_hash=_sha256(""), text="")
+        return Block(
+            layer=4,
+            key=f"karma:{session_id}:pinned",
+            content_hash=_sha256(""),
+            text="",
+            label=PUBLIC_PRIVATIZATION_LABEL,
+        )
 
-    def _state_block(self, window: list[Any]) -> Block:
+    def _state_block(self, window: list[Any], *, label: PrivatizationLabel) -> Block:
         text = json.dumps(window, sort_keys=True, separators=(",", ":"), default=str)
-        return Block(layer=5, key="state:window", content_hash=_sha256(text), text=text)
+        return Block(layer=5, key="state:window", content_hash=_sha256(text), text=text, label=label)
 
-    def _query_block(self, query: str) -> Block:
-        return Block(layer=6, key="query", content_hash=_sha256(query), text=query)
+    def _query_block(self, query: str, *, label: PrivatizationLabel) -> Block:
+        return Block(layer=6, key="query", content_hash=_sha256(query), text=query, label=label)
+
+    @staticmethod
+    def _default_material_label(material: str | list[Any]) -> PrivatizationLabel:
+        """Treat absent lineage as restricted only when material is present."""
+        return RESTRICTED_UNKNOWN_PRIVATIZATION_LABEL if material else PUBLIC_PRIVATIZATION_LABEL
 
     def _warm_capability_keys(self) -> list[str]:
         return sorted(

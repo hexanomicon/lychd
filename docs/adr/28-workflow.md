@@ -124,8 +124,11 @@ invokes foreign runtime, never embedded CLI/credential/private graph.
 
 ## Compositions, Suites, and schedules
 
-Portfolio membership does not prove acceptance. Suite may coordinate separate Compositions with
-typed ArtifactRef/Intent handoffs, pinned revisions/correlation/ceilings/dependencies/partial
+Portfolio membership marks an accepted **Native Reference Composition**: a first-party supported
+application contract and worked example. It does not prove executable delivery; each Composition
+leaf states its current material against tracked evidence, while [State of Work](../state-of-the-work.md)
+keeps the shared whole-system envelope. Suite may coordinate separate Compositions
+with typed ArtifactRef/Intent handoffs, pinned revisions/correlation/ceilings/dependencies/partial
 completion, never merge ownership/secrets/Sigils/HitL/domain judgment. Suite execution is Designed:
 child identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/compensation/partial
 must be defined first.

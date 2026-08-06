@@ -8,6 +8,7 @@ from typing import ClassVar, Final
 
 from pydantic import AnyHttpUrl, Field, field_validator, model_validator
 
+from lychd.config import QuadletConfig
 from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
@@ -63,7 +64,9 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     path_fragment: ClassVar[Path] = Path("soulstones")
 
-    image: str = Field(..., min_length=1, description="OCI image used for this container.")
+    quadlet: QuadletConfig = Field(
+        description="Typed deployment body compiled into the Soulstone's Quadlet container.",
+    )
     runtime: str = Field(default="generic", min_length=1, description="Local runtime family id for this Soulstone.")
     model_path: str | None = Field(
         default=None,

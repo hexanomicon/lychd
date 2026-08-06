@@ -5,6 +5,7 @@ from typing import ClassVar, Final
 
 from pydantic import Field
 
+from lychd.config import QuadletConfig
 from lychd.config.runes import RuneConfig
 
 PORT_PHOENIX_UI: Final[int] = 6006
@@ -28,10 +29,12 @@ class PhoenixSettings(ObservabilityConfig):
     path_fragment: ClassVar[Path] = Path("phoenix")
     sample_template: ClassVar[str | None] = """
 name = "phoenix"
-image = "docker.io/arize-ai/phoenix:latest"
 host = "localhost"
 ui_port = 6006
 otlp_port = 4317
+
+[quadlet]
+image = "docker.io/arize-ai/phoenix:latest"
 """
 
     name: str = Field(
@@ -41,7 +44,10 @@ otlp_port = 4317
             "may retain the legacy value 'oculus' until deliberately migrated."
         ),
     )
-    image: str = Field(default="docker.io/arize-ai/phoenix:latest", description="OCI image for Arize Phoenix.")
+    quadlet: QuadletConfig = Field(
+        default_factory=lambda: QuadletConfig(image="docker.io/arize-ai/phoenix:latest"),
+        description="Typed deployment body compiled into the Phoenix Quadlet container.",
+    )
     host: str = Field(default="localhost", description="Host used when presenting Phoenix URLs.")
     ui_port: int = Field(default=PORT_PHOENIX_UI, ge=1, le=65535, description="Host port for the Phoenix UI.")
     otlp_port: int = Field(default=PORT_PHOENIX_OTLP, ge=1, le=65535, description="Host port for OTLP ingestion.")

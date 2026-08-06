@@ -13,6 +13,7 @@ import asyncio
 import hashlib
 import json
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -25,7 +26,7 @@ from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, BuiltinWorkflowRegistry, builtin_workflow_registry
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
-from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
@@ -42,6 +43,16 @@ from lychd.ghouls.runs import (
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
+
+
+def _consent_evidence(run_id: str, consent_id: str) -> ConsentAdmissionEvidence:
+    return ConsentAdmissionEvidence(
+        consent_id=consent_id,
+        run_id=run_id,
+        status="granted",
+        decided_by="test:operator",
+        decided_at=datetime.now(UTC),
+    )
 
 
 @dataclass
@@ -263,6 +274,7 @@ async def test_durable_delivery_mode_overrides_broker_payload(
         admitted = await ledger.try_admit_consent(
             "mode-authority",
             consent_id="consent-mode-authority",
+            evidence=_consent_evidence("mode-authority", "consent-mode-authority"),
         )
         assert admitted == 1
         enqueue_seq = admitted
@@ -661,6 +673,19 @@ async def test_old_park_hop_cannot_fail_resume_that_already_claimed(
         async def verdict(self, consent_id: str) -> bool:
             _ = consent_id
             return True
+
+        async def get(self, consent_id: str) -> Any:
+            return SimpleNamespace(
+                id=consent_id,
+                run_id="resume-owner",
+                status="granted",
+                decided_by="test:operator",
+                decided_at=datetime.now(UTC),
+            )
+
+        async def cancel_pending_for_run(self, run_id: str, *, decided_by: str) -> int:
+            _ = (run_id, decided_by)
+            return 0
 
     class _ParkingRunner:
         def __init__(self, **_kwargs: Any) -> None:
@@ -1112,6 +1137,7 @@ async def test_delivery_flush_rotates_terminal_broker_record_without_changing_mo
         admitted = await ledger.try_admit_consent(
             "terminal-job",
             consent_id="consent-terminal-job",
+            evidence=_consent_evidence("terminal-job", "consent-terminal-job"),
         )
         assert admitted == 1
         enqueue_seq = admitted

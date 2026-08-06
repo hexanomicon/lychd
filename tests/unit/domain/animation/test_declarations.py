@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
@@ -23,7 +24,7 @@ def test_extension_port_claims_shape_auto_hydration() -> None:
                 PhoenixSettings(ui_port=20000, otlp_port=20002),
                 GenericSoulstoneConfig(
                     name="local",
-                    image="example/runtime",
+                    quadlet=QuadletConfig(image="example/runtime"),
                 ),
             )
         ),

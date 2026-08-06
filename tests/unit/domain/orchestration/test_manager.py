@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -90,7 +91,7 @@ class StubRegistry:
         self._soulstones = {
             name: GenericSoulstoneConfig(
                 name=name,
-                image=f"example/{name}:test",
+                quadlet=QuadletConfig(image=f"example/{name}:test"),
                 runtime=spec.runtime,
                 concurrency=spec.concurrency,
             )
@@ -1018,6 +1019,31 @@ async def test_hard_swap_bounds_evictee_cold_probe_and_compensates() -> None:
     assert broker.paused is False
     assert leases.admission("titan") is AnimatorAdmission.OPEN
     assert leases.admission("vision") is AnimatorAdmission.OPEN
+
+
+@pytest.mark.asyncio
+async def test_hard_swap_uses_one_absolute_deadline_for_target_and_evictees() -> None:
+    manager, target = _swap_manager_with_broker(
+        _RecordingBroker(),
+        leases=LeaseLedger(),
+        switching=SwitchingSettings(drain_timeout_s=5.0, warmup_timeout_s=30.0),
+    )
+    observed_deadlines: list[float] = []
+
+    async def converge_warm(_key: str, *, deadline: float) -> None:
+        observed_deadlines.append(deadline)
+
+    async def converge_cold(_names: list[str], *, deadline: float) -> None:
+        observed_deadlines.append(deadline)
+
+    with (
+        patch.object(manager, "_converge_warm", side_effect=converge_warm),
+        patch.object(manager, "_converge_evicted_cold", side_effect=converge_cold),
+    ):
+        await manager.request_transition(target.key, 100)
+
+    assert len(observed_deadlines) == 2
+    assert observed_deadlines[0] == observed_deadlines[1]
 
 
 @pytest.mark.asyncio

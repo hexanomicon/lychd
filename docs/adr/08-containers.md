@@ -15,6 +15,17 @@ Every layer entrusted with host authority, isolation, lifecycle, or recovery mus
 operator-inspectable, modifiable, rebuildable, and replaceable. Private extensions and Portals may
 contribute at their boundaries; neither may become a required owner of LychD's continuity.
 
+Code names the reusable mechanism directly. `QuadletConfig` is a frozen non-Rune value object
+embedded as the `quadlet` field of operator intent that an admitted owner compiles into a
+Quadlet-backed service; current Soulstone and Phoenix Runes are its concrete consumers. It owns
+only their common OCI image invariant.
+Lifecycle, mounts, devices, secrets, ports, commands, placement, and policy remain explicit fields
+of the receiving owner rather than generic raw-Quadlet authority. `QuadletContainer` is the later
+physical manifest model. Embedding `quadlet` declares the requested body but does not bypass the
+owner-specific contributor or compiler that admits those policies. There is no `Stone`,
+`ServiceStone`, or `AmbientStone` base type:
+**Soulstone** is the sole accepted service term using that suffix.
+
 ## Decision: the manifested body
 
 The generated topology contains `lychd.pod`, one `lychd-animator-*.target` for each

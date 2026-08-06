@@ -41,6 +41,12 @@ or generated unit. Each concrete `RuneConfig` supplies one safe `path_fragment`;
 subclassing forms one anchor ancestry, and `relative_path` is computed from it. A fragment is one
 segment matching `^[a-z0-9](?:[a-z0-9_-]{0,48}[a-z0-9])?$`. Distinct registered schemas cannot
 own the same exact anchor; nested anchors remain distinct and express declared class ancestry.
+Nested non-Rune Pydantic value objects may contribute shared validated structure without joining
+or branching that anchor ancestry. The delivered `QuadletConfig` is embedded under the `quadlet`
+field of Soulstone and Phoenix Runes and shares only the minimum OCI image invariant; it supplies
+neither a Rune path nor raw unit, lifecycle, mount, network, secret, or command authority.
+Generic sample generation renders required embedded values as typed TOML inline tables; maintained
+hand-authored examples may use the equivalent named table form such as `[quadlet]`.
 Branch classes are namespaces and cannot own TOML files; only leaf schemas may have one or more
 instances. A file's path supplies its identity and `source_file` provenance. Duplicate identity,
 files in branch anchors, arrays-of-tables instance encoding, unsafe fragments, and schema

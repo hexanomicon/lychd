@@ -5,138 +5,144 @@ icon: material/source-branch
 
 # :material-source-branch: Compositions
 
-An Agent may speak. A Composition must finish something—or return the exact reason it could not.
+A Composition is a job the Magus can recognize from beginning to end. It owns the purpose,
+application records, policies, and finish condition; versioned Patterns carry that purpose through
+LychD's common machinery.
 
-A **Composition** is the application a Magus can recognize and operate: an operator-visible purpose
-assembled from versioned Patterns, Agents, capabilities, policy, records, projections, and effects.
-An [Extension](../adr/05-extensions.md) is only a way for code, schemas, tools, or adapters to
-enter LychD.
+This distinction keeps the Portfolio useful. Search, email, audio, a tunnel, a model, and a
+container can all help an application, but none becomes an application merely by being reusable.
 
-| Term | Meaning |
+## The application test
+
+A page belongs in the Portfolio when all three answers are concrete:
+
+1. **What human purpose finishes here?** The result is more specific than “send,” “search,”
+   “generate,” or “run a model.”
+2. **Which truth does it own?** Its records and judgments have a domain home rather than living in
+   chat history or a generic helper.
+3. **How can it stop honestly?** Refusal, partial completion, unknown effects, restart, and recovery
+   are part of the contract.
+
+| Term | Office |
 | --- | --- |
-| Extension | How an implementation enters LychD |
-| Composition | The application the Magus operates |
-| Pattern | One immutable workflow the application can perform |
-| Invocation | One admitted execution of a Pattern |
-| Suite | A versioned graph of Compositions joined by typed handoffs |
+| **Composition** | operator-visible application purpose, records, policies, projections, effects, and Pattern catalogue |
+| **Native Reference Composition** | first-party supported application contract and worked example |
+| **Pattern** | one immutable executable score owned by a Composition |
+| **Invocation** | one admitted performance of an exact Pattern revision |
+| **Suite** | versioned coordination of separate Compositions through typed handoffs |
+| **Extension** | a governed way for implementation to enter LychD; never an application by itself |
+
+Portfolio membership accepts an application contract; it does not claim executable delivery. Every
+leaf summarizes its current material under the canonical
+[State of Work Portfolio boundary](../state-of-the-work.md#composition-portfolio-delivery).
+
+A Composition identity is a URL-safe key plus a separate revision, written here as
+`example.application` revision `1`. Pattern identity remains separately versioned, for example
+`example.perform_work@1`.
 
 ## The Portfolio
 
-These are application designs, not a release list. An accepted reference architecture is accepted
-law; [State of Work](../state-of-the-work.md) alone says what is running.
+### Creative work
 
-| Maturity | Composition | Visible purpose | Pressure it puts on the common law |
-| --- | --- | --- | --- |
-| Accepted | [Voidlight Studio](voidlight-studio.md) | Turn a commission into attributable creative assets | provenance, rights, review, bounded repair, typed export |
-| Accepted | [Game Foundry](game-foundry.md) | Turn a game concept and admitted assets into a playable build | project truth, reproducible builds, evaluation, distribution effects |
-| Accepted | [Broadcast Studio](broadcast-studio.md) | Carry a source dossier into a publication candidate | claim lineage, accessibility, rights, editorial and publication authority |
-| Accepted | [Blockworld Inhabitant](blockworld-inhabitant.md) | Give an Agent a bounded life in a persistent world | embodiment, world truth, finite agency, recoverable effects |
-| Accepted | [Health, Food & Movement](health-food-and-movement.md) | Help one operator plan and reflect without impersonating medicine | sensitive data, deterministic restrictions, schedules, local-first inference |
-| Accepted | [Walking Communion](walking-communion.md) | Carry a voice turn between the road and the Altar | mobile ingress, interruption, audio custody, routed intent |
-| Accepted | [Tech Scavenger](tech-scavenger.md) | Run an evidence-bound compatible-equipment search | sources, seller evidence, privacy, messaging, economic limits |
-| Accepted | [Lifestyle Steward](lifestyle-steward.md) | Make household evidence into editable daily-life choices | OCR provenance, uncertain identity, local routing, checkout gates |
-| Accepted | [Broker Office](broker-office.md) | Carry a client contact into a resolved or honestly blocked insurance case | business identity, regulated records, hostile ingress, public projection, privacy, governed improvement |
-| Candidate study | [LychD Source Maintenance](source-maintenance.md) | Can one admitted correction become a verified quarantined patch? | candidate lineage, bounded feedback, restart, and inert promotion |
-| Candidate study | [Reach](reach.md) | Can one Lich inhabit an external social place without inheriting its authority? | cross-world Persona, Habitat adapters, remote identity, compromise ceilings, and reply recovery |
-| Candidate study | [Building in Public](building-in-public.md) | Can an evidenced vertical slice become a truthful tutorial? | evidence without manufactured progress |
-| Candidate study | [Bazaar Haggler](bazaar-haggler.md) | Can bounded negotiation be reused without transferring judgment? | mandate, credentials, and commitment boundaries |
-| Candidate study | [Home Seeker](home-seeker.md) | Can private location-aware search rank evidence honestly? | location privacy and no counterfeit diligence |
-
-Candidate membership is a question kept open, not architectural promotion.
-
-### Cross-cutting candidate studies
-
-These studies pressure several application and infrastructure boundaries at once. They are not
-Compositions and do not own accepted law.
-
-| Study | Open question | Boundaries under pressure |
-| --- | --- | --- |
-| [Capability and Embodiment Federation](capability-and-embodiment-federation.md) | Can workflow demand, domain capability authority, and physical service embodiment share one contribution language without sharing identity, grants, or lifecycle authority? | Providers, Animators, Extensions, Quadlet/systemd, placement, secrets, Veil, Tether, and OpenBao |
-
-## A sense is not a purpose
-
-A listing, map result, menu, product page, or social post is an external **observation**. The
-adapter that searches, fetches, renders, or normalizes it belongs beneath
-[Scout](../sepulcher/extensions/scout.md) and its provider boundary. It becomes a Composition only
-when attributed observation serves a durable human purpose with its own records, policy, lifecycle,
-and consequences. Thus Tech Scavenger owns compatibility and purchase evidence; Home Seeker owns
-property criteria and ranking; Lifestyle Steward owns inventory, taste, budget, and trip decisions.
-
-The name **Hunter** remains reserved for [Shadow's adversarial
-posture](../sepulcher/extensions/shadow/hunter.md). Source acquisition uses Scout, Search, Watch,
-Source Profile, and Observation.
-
-## Local law, explicit contribution
-
-A Composition keeps its domain records, immutable Pattern revisions, policies, projections,
-fixtures, and tests locally understandable. That is an ownership rule, not a package ABI.
-
-| Concern | Owner |
+| Composition | It finishes with |
 | --- | --- |
-| Code, schemas, migrations, adapters, registration | Core or a selected Extension |
-| Identity, Pattern catalogue, requirements, policy | The Composition contribution |
-| Enabled revisions | Weaver's designed Portfolio store |
-| Campaigns, inventories, observations, approvals, receipts | The Composition's Phylactery records |
-| Model, provider, source, runtime binding | Owning Runes |
-| Secrets and grants | Ward and Sigils |
-| Physical readiness | Orchestrator |
+| [Voidlight Studio](voidlight-studio.md) | an attributable, rights-aware creative asset bundle |
+| [Riffmaw](riffmaw.md) | an original musical-work bundle and picture-cue map |
+| [Game Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
+| [Broadcast Studio](broadcast-studio.md) | a source-grounded local publication candidate |
 
-There is no Crypt `compositions/` loader beside `extensions/`; documentation does not authorize
-one. Selected shaped contributions enter the singular [Weaver](../adr/28-workflow.md), which must
-not discover applications by scanning packages or Markdown. The present Loom can project documented
-Pattern structure and exact material described in [State of Work](../state-of-the-work.md#loom-workflow-views).
-Live Portfolio selection and executable Suite navigation remain designed.
+### Personal life and place
+
+| Composition | It finishes with |
+| --- | --- |
+| [Health, Food & Movement](health-food-and-movement.md) | an editable plan or honest infeasibility result, never a medical judgment |
+| [Lifestyle Steward](lifestyle-steward.md) | corrected household evidence, a reviewable trip or cart, or an acknowledged, refused, or unknown checkout outcome |
+| [Home Seeker](home-seeker.md) | an explainable shortlist and due-diligence packet |
+| [Homestead](homestead.md) | a legible resource plan, bounded work order, or safely refused physical intent |
+
+### Research, trade, and professional work
+
+| Composition | It finishes with |
+| --- | --- |
+| [Tech Scavenger](tech-scavenger.md) | a qualified candidate or seller thread, commitment decision, expected parcel, inspection outcome, or closed campaign slot |
+| [Bazaar Haggler](bazaar-haggler.md) | attributable negotiated terms, refusal, or timeout under an exact mandate |
+| [Broker Office](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
+
+### Presence and inhabited worlds
+
+| Composition | It finishes with |
+| --- | --- |
+| [Blockworld Inhabitant](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
+| [Reach](reach.md) | one bounded social turn, summon, or admitted presence effect |
+
+## Reference route
+
+One application route remains beside the Portfolio because it demonstrates how several Patterns
+can share an ingress without turning that ingress into another application.
+
+| Route | Its actual office |
+| --- | --- |
+| [Walking Communion](walking-communion.md) | mobile voice ingress and result projection into an admitted Pattern |
+
+Keeping the route here preserves the worked example without inventing an application identity,
+Pattern owner, or delivery claim for a channel.
+
+## Reuse without a universal helper
+
+| Mechanism | What remains with the Composition |
+| --- | --- |
+| Scout search, fetch, render, or crawl | source policy, interpretation, ranking, and consequence |
+| mail or platform delivery | recipient purpose, disclosure, approval, reply meaning, and follow-up |
+| audio or vision processing | admitted source, domain interpretation, retention, and creative or operational judgment |
+| Tether or Veil | application identity, object grants, and every consequential effect |
+| Legion node or embedded body | task purpose, while the body keeps fresh safety admission and refusal |
+| model or tool provider | application truth, decision policy, and authority |
+
+Typed requests, observations, artifact references, and receipts may cross those seams. Ambient
+database access, credentials, Sigils, provider sessions, and domain judgment do not.
+
+Some applications deliberately resemble one another. Home Seeker and Tech Scavenger may share
+source snapshots, scheduling, deduplication, and explainable scoring without sharing property or
+hardware judgment. Tech Scavenger may issue an exact `NegotiationMandate@1` to Bazaar Haggler, then
+must revalidate the returned terms before reserving money or a parcel. A shared sender never creates
+a shared right to negotiate.
 
 ## Suites do not dissolve their members
 
-A **Suite** pins eligible Composition and Pattern revisions, declares immutable artifact or Intent
-handoffs, carries correlation and aggregate ceilings, and states completion or partial-completion
-policy. It owns no domain rows, secrets, provider grants, Sigils, or effect authority. One handoff
-does not widen another member's permission.
+A Suite pins eligible Composition and Pattern revisions, declares typed ArtifactRef or Intent
+handoffs, carries correlation and aggregate ceilings, and states partial-completion policy. It owns
+no member records, secrets, Sigils, provider grants, consent, or effect authority.
 
 ```mermaid
 flowchart LR
-    I["Admitted intent"] --> V["Voidlight Studio"]
+    B["Creative brief"] --> V["Voidlight Studio"]
     V --> A["CreativeAssetBundle@1"]
     A --> G["Game Foundry"]
-    A --> B["Broadcast Studio"]
-    G --> P["Playable build"]
-    B --> R["Publication candidate"]
+    A --> P["Broadcast Studio"]
+    G --> GB["Playable build"]
+    P --> PC["Publication candidate"]
 ```
 
-`voidlight.game-suite` and `voidlight.broadcast-suite` are the first designed shapes. Members stay
-useful alone. Until Weaver law settles child identity, revision pinning, input/output closure,
-budget, cancellation, Stasis, retries, effect receipts, compensation, and truthful partial
-completion, a Suite line is never executable: the handoff is an explicit artifact-backed admission.
-Loom may show that graph; it may not run it.
+The diagram is a designed handoff, not an executor. Weaver must still settle child identity,
+revision closure, budgets, cancellation, Stasis, retry, effect receipts, compensation, and honest
+partial completion before a Suite can run.
 
-Evaluation may return attributed findings and correction requests. They are evidence, not reverse
-execution, implied training consent, or authority to mutate an accepted artifact. [Riddle](../adr/34-evaluation.md)
-judges, [Mirror](../adr/32-identity.md) attributes, [Smith](../adr/35-assimilation.md) may propose,
-and only a new forward Invocation performs work.
+## How a leaf should read
 
-## One Weaver, finite iron
+Every Composition leaf answers the same practical questions without reproducing an ADR:
 
-[Weaver](../adr/28-workflow.md) governs application purpose and logical time: selected revisions,
-admission, dependencies, overlap, schedules, budgets, pause, drain, and retirement. It is not the
-physical Orchestrator.
+- identity, representative or default Pattern catalogue, application inputs, possible outcomes,
+  and stopping line;
+- one representative journey rather than a catalogue of imagined features;
+- the records and typed handoffs that make the result attributable;
+- the few authority, privacy, effect, and recovery boundaries that shape this application;
+- current material stated against tracked evidence; and
+- the smallest fixture that could prove the contract.
 
-```mermaid
-flowchart LR
-    M["Magus or schedule"] --> W["Weaver"]
-    X["Extension contributions"] --> W
-    W --> I["Pinned Invocation"]
-    I --> Q["Durable worker hops"]
-    I --> D["Capability demand"]
-    D --> O["Orchestrator"]
-    O --> A["Ready Animators"]
-```
+There is no Crypt `compositions/` loader and no Markdown discovery path. The current source
+registry and Loom prove only the bounded material recorded in
+[State of Work](../state-of-the-work.md#loom-workflow-views); a live Portfolio store, application
+selection, Suite execution, and scheduling remain designed.
 
-Workers deliver and retry; Dispatcher resolves capability demand; Orchestrator handles residency;
-and the relevant domain, Phylactery, Ward, Vessel, and effect boundary retain their authority. A
-Composition asks for capabilities, never fashionable model names. Provider candidates remain dated
-Rune choices with licenses and resource envelopes, not application identity.
-
-Each leaf makes its purpose, Pattern inventory, records/artifacts/projections/effects, authority
-and privacy gates, lifecycle and recovery, local interaction with common law, smallest proving
-slice, and maturity legible. Continue with [Workflow](../adr/28-workflow.md), then choose a leaf.
+Continue with [Workflow](../adr/28-workflow.md), then choose the application whose finish condition
+matches the work.

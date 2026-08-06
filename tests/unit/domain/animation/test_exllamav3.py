@@ -169,7 +169,7 @@ def test_exllamav3_plan_is_dynamic_and_uses_pinned_private_envelope(
     plan = registry.plan(stone)
     specs = registry.build_capability_specs(stone)
 
-    assert stone.image.startswith("ghcr.io/theroyallab/tabbyapi@sha256:")
+    assert stone.quadlet.image.startswith("ghcr.io/theroyallab/tabbyapi@sha256:")
     assert connector.runtime_model_name("daily-driver") == "qwen-exl3"
     assert connector.model_id_for_runtime("qwen-exl3") == "daily-driver"
     assert connector._resolve_api_key() == _API_KEY  # pyright: ignore[reportPrivateUsage]
@@ -214,7 +214,7 @@ def test_exllamav3_control_secret_cannot_be_mounted_by_another_soulstone() -> No
     reader = GenericSoulstoneConfig.model_validate(
         {
             "name": "secret-reader",
-            "image": "example/reader",
+            "quadlet": {"image": "example/reader"},
             "secret_env_files": {"STOLEN": "tabby_exl3_auth"},
         }
     )
@@ -336,7 +336,7 @@ async def test_two_tabby_runtimes_keep_data_and_admin_keys_isolated(
         ({"model_format": "EXL2"}, "EXL3 or RAW"),
         ({"auth_secret_name": "safe,target=/tmp/evil"}, "option-safe Podman secret name"),
         ({"auth_secret_name": "safe\n"}, "option-safe Podman secret name"),
-        ({"image": "ghcr.io/example/unverified:latest"}, "digest-pinned TabbyAPI"),
+        ({"quadlet": {"image": "ghcr.io/example/unverified:latest"}}, "digest-pinned TabbyAPI"),
         (
             {
                 "models": [

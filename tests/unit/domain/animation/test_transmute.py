@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
 from lychd.config.settings.root import Settings, get_settings
 from lychd.domain.animation.schemas import (
@@ -96,7 +97,7 @@ def test_transmute_soulstone_to_manifest(transmuter: Transmuter) -> None:
     """Verify a Soulstone Rune is correctly transmuted."""
     stone = SoulstoneFactory.build(
         name="hermes",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=[],
         env_vars={"CTX_SIZE": "4096"},
     )
@@ -130,7 +131,7 @@ def test_transmute_hydrates_soulstone_secret_env_files(transmuter: Transmuter) -
     """Soulstone secret mappings should become Secret= mounts and env file paths."""
     stone = SoulstoneFactory.build(
         name="vault",
-        image="vllm/vllm-openai:latest",
+        quadlet={"image": "vllm/vllm-openai:latest"},
         groups=[],
         secret_env_files={"HF_TOKEN_FILE": "hf_runtime_token"},
     )
@@ -155,7 +156,7 @@ def test_transmute_merges_runtime_podman_args() -> None:
             return RuntimePlan(exec_args=["serve", "qwen"], podman_args=["--ipc=host"])
 
     transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
-    stone = SoulstoneFactory.build(name="qwen", image="vllm/vllm-openai:latest")
+    stone = SoulstoneFactory.build(name="qwen", quadlet={"image": "vllm/vllm-openai:latest"})
 
     manifests = transmuter.transmute_all([stone])
     manifest = next(
@@ -172,7 +173,7 @@ def test_soulstone_exec_rejects_standalone_systemd_command_separator() -> None:
     with pytest.raises(ValueError, match="standalone systemd command separator"):
         GenericSoulstoneConfig(
             name="separator",
-            image="example/runtime",
+            quadlet=QuadletConfig(image="example/runtime"),
             exec=[";", "/bin/touch", "/tmp/pwned"],  # noqa: S108
         )
 
@@ -183,7 +184,7 @@ def test_runtime_plan_podman_args_reject_standalone_systemd_command_separator() 
             _ = soulstone
             return RuntimePlan(podman_args=["';'"])
 
-    stone = SoulstoneFactory.build(name="separator", image="example/runtime")
+    stone = SoulstoneFactory.build(name="separator", quadlet={"image": "example/runtime"})
     with pytest.raises(ValueError, match="standalone systemd command separator"):
         Transmuter(settings=get_settings(), runtime_planner=UnsafeRuntimePlanner()).transmute_all([stone])
 
@@ -195,8 +196,8 @@ def test_transmute_aggregates_runtime_shared_memory_requirement() -> None:
             return RuntimePlan(pod_shared_memory_bytes=requested)
 
     stones = [
-        SoulstoneFactory.build(name="small", image="example/small"),
-        SoulstoneFactory.build(name="large", image="example/large"),
+        SoulstoneFactory.build(name="small", quadlet={"image": "example/small"}),
+        SoulstoneFactory.build(name="large", quadlet={"image": "example/large"}),
     ]
     manifests = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all(stones)
     pod = next(manifest for manifest in manifests if isinstance(manifest, QuadletPod))
@@ -211,8 +212,8 @@ def test_transmute_rejects_any_negative_shared_memory_requirement() -> None:
             return RuntimePlan(pod_shared_memory_bytes=requested)
 
     stones = [
-        SoulstoneFactory.build(name="large", image="example/large"),
-        SoulstoneFactory.build(name="invalid", image="example/invalid"),
+        SoulstoneFactory.build(name="large", quadlet={"image": "example/large"}),
+        SoulstoneFactory.build(name="invalid", quadlet={"image": "example/invalid"}),
     ]
     with pytest.raises(ValueError, match="negative pod shared-memory"):
         Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all(stones)
@@ -222,7 +223,7 @@ def test_soulstone_cannot_receive_a_core_secret(transmuter: Transmuter) -> None:
     settings = get_settings()
     stone = SoulstoneFactory.build(
         name="leak",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         secret_env_files={"LEAK": settings.server.database.password_secret},
     )
 
@@ -247,7 +248,7 @@ def test_soulstone_secret_env_file_rejects_podman_target_options() -> None:
         GenericSoulstoneConfig.model_validate(
             {
                 "name": "secret-option-injection",
-                "image": "example/runtime",
+                "quadlet": {"image": "example/runtime"},
                 "secret_env_files": {"LEAK": f"{settings.server.database.password_secret},target=/data/stolen"},
             }
         )
@@ -283,7 +284,7 @@ def test_soulstone_mount_sources_cannot_overlap_control_roots(
             return RuntimePlan(volumes=adapter_volumes)
 
     transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
-    stone = SoulstoneFactory.build(name="confined", image="example/runtime", volumes=rune_volumes)
+    stone = SoulstoneFactory.build(name="confined", quadlet={"image": "example/runtime"}, volumes=rune_volumes)
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         transmuter.transmute_all([stone])
@@ -295,7 +296,9 @@ def test_soulstone_mount_check_resolves_host_symlink_aliases(
 ) -> None:
     alias = tmp_path / "codex-alias"
     alias.symlink_to(constants.PATH_CODEX_ROOT, target_is_directory=True)
-    stone = SoulstoneFactory.build(name="alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
+    stone = SoulstoneFactory.build(
+        name="alias", quadlet={"image": "example/runtime"}, volumes=[f"{alias}:/models:ro"]
+    )
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -309,7 +312,9 @@ def test_safe_host_symlink_is_pinned_to_its_canonical_target(
     target.mkdir()
     alias = tmp_path / "model-alias"
     alias.symlink_to(target, target_is_directory=True)
-    stone = SoulstoneFactory.build(name="safe-alias", image="example/runtime", volumes=[f"{alias}:/models:ro"])
+    stone = SoulstoneFactory.build(
+        name="safe-alias", quadlet={"image": "example/runtime"}, volumes=[f"{alias}:/models:ro"]
+    )
 
     manifests = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
     manifest = next(
@@ -335,7 +340,9 @@ def test_soulstone_mounts_respect_configured_control_paths(
     }[control_path]
     safe_host = tmp_path / "models"
     mounts = [f"{selected}:/models:ro"] if side == "host" else [f"{safe_host}:{selected}:ro"]
-    stone = SoulstoneFactory.build(name="configured-control", image="example/runtime", volumes=mounts)
+    stone = SoulstoneFactory.build(
+        name="configured-control", quadlet={"image": "example/runtime"}, volumes=mounts
+    )
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(settings=settings, runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -347,7 +354,7 @@ def test_soulstone_mounts_require_absolute_endpoints(
 ) -> None:
     stone = SoulstoneFactory.build(
         name="relative",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=[f"{tmp_path / 'models'}:relative/models:ro"],
     )
 
@@ -362,7 +369,7 @@ def test_soulstone_container_mount_cannot_use_double_slash_alias(
     doubled_codex = f"/{constants.PATH_CODEX_ROOT}"
     stone = SoulstoneFactory.build(
         name="double-slash",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=[f"{tmp_path / 'models'}:{doubled_codex}:ro"],
     )
 
@@ -376,7 +383,7 @@ def test_soulstone_mounts_reject_systemd_path_specifiers(
 ) -> None:
     stone = SoulstoneFactory.build(
         name="specifier",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=[f"{tmp_path / 'models'}:/%h/.config/lychd:ro"],
     )
 
@@ -387,7 +394,7 @@ def test_soulstone_mounts_reject_systemd_path_specifiers(
 def test_soulstone_mounts_reject_systemd_environment_aliases() -> None:
     stone = SoulstoneFactory.build(
         name="environment-alias",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=["/${HOME}/.config/lychd:/models:ro"],
     )
 
@@ -398,7 +405,7 @@ def test_soulstone_mounts_reject_systemd_environment_aliases() -> None:
 def test_soulstone_rejects_duplicate_container_mount_destinations(tmp_path: Path) -> None:
     stone = SoulstoneFactory.build(
         name="duplicate-target",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=[
             f"{tmp_path / 'first'}:/models:ro",
             f"{tmp_path / 'second'}:/models:rw",
@@ -423,7 +430,7 @@ def test_ordinary_model_and_runtime_mounts_are_preserved(
 
     stone = SoulstoneFactory.build(
         name="ordinary",
-        image="example/runtime",
+        quadlet={"image": "example/runtime"},
         volumes=[f"{rune_host}:/runtime-cache:rw", f"{tmp_path / 'models'}:/models:ro,Z"],
     )
     manifests = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all([stone])

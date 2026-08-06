@@ -1,6 +1,6 @@
 """Builtin llama.cpp runtime helpers."""
 
-from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppStone
+from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppSoulstone
 from lychd.extensions.builtin.animator.llamacpp.control_plane import (
     LlamaCppControlPlane,
     LlamaCppControlPlaneError,
@@ -28,5 +28,5 @@ __all__ = [
     "LlamaCppRuntimeInference",
     "LlamaCppRuntimePlanner",
     "LlamacppConnector",
-    "LlamacppStone",
+    "LlamacppSoulstone",
 ]

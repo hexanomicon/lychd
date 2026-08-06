@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import (
     ConcurrencyIntent,
@@ -58,34 +59,35 @@ def _soulstones() -> list[SoulstoneConfig]:
     - ``gamma``: a solitary stone with no target membership.
     - ``resident``: a persistent resident -> WantedBy=default.target.
     """
-    return [
+    stones: list[SoulstoneConfig] = [
         GenericSoulstoneConfig(
             name="alpha",
-            image="registry.example/alpha:1",
+            quadlet=QuadletConfig(image="registry.example/alpha:1"),
             groups=["logic"],
             concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
             env_vars={"CTX": "4096"},
         ),
         GenericSoulstoneConfig(
             name="beta",
-            image="registry.example/beta:1",
+            quadlet=QuadletConfig(image="registry.example/beta:1"),
             groups=["logic"],
             concurrency=ConcurrencyIntent(conflict_domains=[]),
         ),
         GenericSoulstoneConfig(
             name="gamma",
-            image="registry.example/gamma:1",
+            quadlet=QuadletConfig(image="registry.example/gamma:1"),
             groups=[],
             concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
             secret_env_files={"HF_TOKEN_FILE": "gamma_hf_token"},
         ),
         GenericSoulstoneConfig(
             name="resident",
-            image="registry.example/resident:1",
+            quadlet=QuadletConfig(image="registry.example/resident:1"),
             groups=[],
             concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
         ),
     ]
+    return stones
 
 
 def _portals() -> list[PortalConfig]:

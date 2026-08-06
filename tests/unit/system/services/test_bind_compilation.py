@@ -2,6 +2,7 @@
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings, get_settings
 from lychd.config.settings.server import ServerSettings
@@ -46,7 +47,7 @@ def test_bind_rejects_a_soulstone_without_an_advertised_capability() -> None:
     settings = get_settings()
     stone = GenericSoulstoneConfig(
         name="crawler-sidecar",
-        image="example/crawler:latest",
+        quadlet=QuadletConfig(image="example/crawler:latest"),
         runtime="crawler",
     )
 

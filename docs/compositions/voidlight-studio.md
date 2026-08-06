@@ -5,103 +5,92 @@ icon: material/camera-timer
 
 # :material-camera-timer: Voidlight Studio
 
-A commission enters Voidlight as a pile of references, questions, and taste. It leaves only when
-those things have become a named, inspectable creative lineage that another craft can safely use.
-The Magus remains the creative director; the Studio makes the work legible enough to revise without
-pretending that a prompt was a pedigree.
+A commission arrives as references, constraints, questions, and taste. Voidlight Studio turns that
+material into a creative package whose assets can be inspected, revised, and handed to another
+craft without losing their origin. The Magus remains the creative director throughout.
 
-| Maturity | Accepted Reference Composition — architecture, not delivery; [State of Work](../state-of-the-work.md) owns what runs |
+!!! note "Current material"
+    Voidlight is a Native Reference Composition, not an executable application today. No
+    Voidlight Pattern, Studio record, or `CreativeAssetBundle@1` production path is registered;
+    Vision and Audio admission are Partial, and durable artifact custody remains Designed.
+
+[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
+
+## Contract
+
+| Field | Reference contract |
 | --- | --- |
-| Identity | `voidlight.studio` revision `2` |
-| Principal Pattern | `voidlight.build_asset_package@1` |
-| Result | `CreativeAssetBundle@1`, immutable and rights-aware |
+| **Identity** | `voidlight.studio` revision `2` |
+| **Principal Pattern** | `voidlight.build_asset_package@1` |
+| **Application begins with** | an admitted commission, frozen reference dossier, rights posture, and target profile |
+| **Application can return** | one approved, immutable, rights-aware `CreativeAssetBundle@1`, or an exact non-completion |
+| **Application stops before** | engine-native import, editorial assembly, public release, or rights certification |
 
-Voidlight owns commissions, reference dossiers, style and asset specifications, accepted creative
-artifacts, provenance, and packages. It is neither workflow engine nor model host, game engine,
-editorial publisher, rights-clearing oracle, or infinite repair machine. [Game Foundry](game-foundry.md)
-owns engine-native imports, gameplay, builds, playtests, and releases. [Broadcast Studio](broadcast-studio.md)
-owns claims, articles, scripts, timelines, final renders, and publication.
+Voidlight owns the commission, creative brief, reference dossier, style and asset specifications,
+candidates, accepted assets, provenance, and package. Providers and tools supply capabilities;
+they do not become the Studio's identity or acquire creative authority.
 
-## The commission becomes a package
+## Commission to package
 
-`voidlight.build_asset_package@1` freezes admitted references and dossier; records the brief and
-style revision; plans typed assets; acquires or creates candidates; probes, normalizes, and
-packages deterministically; then permits bounded review and repair before an explicit handoff.
-The normal path is:
+1. **Freeze the dossier.** Admit only named references, record their digests, classification,
+   permitted purpose, and unresolved rights or consent questions.
+2. **Set the brief.** Pin the commission, target profile, style revision, budget, and acceptance
+   criteria before production starts.
+3. **Specify the work.** Give every requested image, model, texture, dialogue, audio, or cutscene
+   source a semantic role and concrete spatial, temporal, and format constraints.
+4. **Produce and normalize.** Acquire or create candidates, then probe and transform them with
+   pinned tools, configurations, input digests, and output digests.
+5. **Review once.** Findings identify the smallest supported correction. One bounded repair may
+   create a new candidate; exhausted repair, denied rights, or an unmet profile ends honestly.
+6. **Accept and hand off.** Seal the manifest, approvals, lineage, validators, and checksums in a
+   `CreativeAssetBundle@1`; the consumer performs its own admission against the exact digest.
 
-```text
-FreezeReferences → SetBriefAndStyle → SpecifyAssets → ProduceOrAcquire
-→ ProbeAndNormalize → Review → RepairOnceOrRefuse → Accept → Package → Handoff
-```
-
-The family remains intentionally separate:
+The narrower scores remain available for work that should not pretend to be the whole package:
 `voidlight.establish_style_bible@1`, `voidlight.forge_concept_set@1`,
 `voidlight.forge_sprite_set@1`, `voidlight.forge_texture_set@1`,
 `voidlight.forge_model_asset@1`, `voidlight.forge_dialogue_pack@1`,
-`voidlight.forge_audio_pack@1`, and `voidlight.forge_cutscene_sources@1` produce their own typed
-work; `voidlight.export_asset_package@1` assembles the contract.
+`voidlight.forge_audio_pack@1`, and `voidlight.forge_cutscene_sources@1`.
+`voidlight.export_asset_package@1` assembles the handoff;
 `voidlight.review_asset_package@1`, `voidlight.revise_from_correction@1`, and
-`voidlight.presenter_calibration@1` remain distinct: a finding is evidence, a repair is a new
-forward attempt, and calibration can alter no accepted history.
+`voidlight.presenter_calibration@1` keep review, forward repair, and calibration distinct.
 
-Each asset keeps immutable ids and revisions, semantic role, target profile, source and derivative
-digests, creator and tool receipts, prompt/seed where applicable, transforms, review and approval,
-rights/consent scope, and invalidation links. A later bad reference, revoked consent, or failed
-finding marks dependent material stale; it never rewrites the earlier record into a nicer past.
+## Lineage and consumer handoff
 
-## Boundaries and custody
-
-| Concern | Owner |
+| Record | What it preserves |
 | --- | --- |
-| Pattern selection, budget, gates, pinned Invocation | Weaver under [Workflow](../adr/28-workflow.md) |
-| Creative judgment and review proposals | bounded Agents; Magus accepts |
-| Capability binding and physical readiness | Dispatcher / Runes and Orchestrator |
-| Bytes, manifests, provenance, and retention | Studio artifact custody and its durable records |
-| Consumer-derived engine or editorial objects | the consuming Composition |
+| Commission and dossier | admitted purpose, references, classifications, rights claims, and retention |
+| Asset revision | immutable id, role, source and derivative digests, creator/tool receipt, transforms, review, and approval |
+| Production receipt | provider or tool revision, prompt/control material, seed when available, cost, probes, and result |
+| `CreativeAssetBundle@1` | bundle revision and digest, target profile, asset manifest, constraints, provenance, validators, findings, and approval |
 
-The Studio asks for image, text, audio, video, transform, probe, and export *capabilities*, never a
-provider as its identity. A model, Portal, or local tool contributes a versioned receipt and cannot
-quietly take authority. Pattern schema, artifact schema, receipt schema, and tool environment each
-version independently.
+[Game Foundry](game-foundry.md) owns engine imports, playability, builds, and release effects.
+[Broadcast Studio](broadcast-studio.md) owns claims, scripts, timelines, renders, accessibility, and
+publication. Neither consumer may rewrite Voidlight's lineage, and a Studio handoff carries no
+Sigil, secret, provider session, or downstream effect authority.
 
-Normalization and packaging pin the transformer/container digest, command or configuration, input
-digests, output digest, probes, and target profile. A stochastic creation may be irreproducible;
-the final transform must still be attributable. A transform with no final answer is reconciled by
-request and output digest before it can be retried.
+## Rights, effects, and return
 
-## The handoff is a two-sided contract
+Reference rights are checked before use. Likeness or voice consent is scoped to identity, purpose,
+territory, duration, and revocation; approval for one asset does not authorize another use. Portal
+egress, paid generation, replacement of accepted material, and final handoff each require their
+own exact gate.
 
-`CreativeAssetBundle@1` carries a bundle id, revision, digest, target profile, immutable asset
-manifest, semantic and spatial/temporal constraints, rights/provenance, validators, findings, and
-approval. Voidlight validates that the package says what it contains; a consumer validates its own
-profile before admission. Neither check writes the other's records or confers Sigils, secrets, or
-effect authority. A Suite may display this typed edge, but its durable graph/run coordination never
-becomes a shared Studio database.
+Paid generation and external handoff are effects bound to an idempotency key and request digest.
+If acknowledgement is lost, the outcome is **unknown** until the provider or consumer result is
+reconciled against that digest. Retrying blindly could buy or send the work twice and is refused.
 
-## Gates, effects, and honest stops
+A later bad reference, revoked consent, or failed finding marks dependent material stale without
+editing accepted history. Restart resumes only with the pinned Pattern, schema, provider, tool,
+receipt, and artifact revisions. Incompatible parked work drains, migrates explicitly, or ends
+non-complete. Deletion inventories derivatives and consumer handoffs; it can request downstream
+removal, but cannot promise that an exported copy vanished.
 
-Reference rights and classification are checked before use. Portal use, plan and budget, likeness
-or voice, licensing, replacement of accepted material, target validation, and final handoff each
-have an exact gate. Consent is scoped to the identity, intended use, territory, duration, and
-revocation rule; an asset approval does not authorize a new use.
+## Proving package
 
-Paid generation and external handoff are effects. They carry an idempotency key and a request
-digest; lost acknowledgement is **unknown**, not permission to buy or send again. Reconciliation
-uses the provider or consumer result plus the exact digest. Exhausted repair, denied rights,
-unmet profile, invalid source, or unresolved effect ends with a stated non-completion.
+Build one local, style-led 2D package from a licensed reference dossier: a style bible, concept and
+sprite or texture assets, deterministic probe and normalization, one bounded repair, and one
+accepted `CreativeAssetBundle@1`. The proof uses no engine import, channel render, Portal call,
+paid generation, or public release.
 
-## Lifecycle and smallest proof
-
-Studio records outlive a Run; a Graph checkpoint is not the asset ledger. Retention is selected per
-reference, candidate, raw media, accepted artifact, and receipt. Export preserves permitted files,
-manifests, approvals, lineage, and checksums. Deletion inventories derivatives and consumer
-handoffs, asks downstream owners to take down what they own, and leaves a content-free record of
-what cannot simply vanish. Parked runs retain pinned Pattern, schema, receipt, and tool revisions;
-they drain, migrate explicitly, or fail honestly.
-
-The proving slice is a local style-led 2D pack: licensed reference dossier, one style bible,
-concept and sprite/texture assets, deterministic probe/normalization, one bounded repair, and an
-accepted `CreativeAssetBundle@1`. It performs no engine import, channel render, Portal call, paid
-effect, or public release.
-
-Continue with [Workflow](../adr/28-workflow.md) and the [Composition portfolio](index.md).
+Related: [Workflow](../adr/28-workflow.md) · [Vision](../adr/36-vision.md) ·
+[Audio](../adr/37-audio.md) · [Composition portfolio](index.md)

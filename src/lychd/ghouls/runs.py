@@ -597,6 +597,7 @@ async def _commit_consent_park(
         if run is not None and await admit_consent_resume(
             substrate.queues,
             ledger,
+            substrate.consents,
             run,
             consent_id=parked.consent_id,
         ):

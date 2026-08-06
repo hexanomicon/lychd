@@ -5,103 +5,90 @@ icon: material/gamepad-variant
 
 # :material-gamepad-variant: Game Foundry
 
-Game Foundry is where a playable thing earns the right to be called one. It keeps the evidence that
-a scene was built from particular source, that a controller did what was observed, and that a build
-can be repeated—not merely a pleasant account of an Agent making a game.
+Game Foundry carries one game idea far enough that a person can play and inspect it. It keeps the
+source, engine recipe, tests, controller observations, and build evidence that make the result
+repeatable. A convincing story about an Agent making a game is not a playable build.
 
-| Maturity | Accepted Reference Composition — architecture, not delivery; [State of Work](../state-of-the-work.md) owns what runs |
+!!! note "Current material"
+    Game Foundry is a Native Reference Composition, not an executable build pipeline today. No
+    Foundry Pattern, engine adapter, project ledger, playtest harness, or
+    `PlayableBuildBundle@1` path is registered; LychD's own packaging evidence proves none of them.
+
+[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
+
+## Contract
+
+| Field | Reference contract |
 | --- | --- |
-| Identity | `game.foundry` revision `1` |
-| Principal Pattern | `game.build_playable_slice@1` |
-| Result | `PlayableBuildBundle@1` |
+| **Identity** | `game.foundry` revision `1` |
+| **Principal Pattern** | `game.build_playable_slice@1` |
+| **Application begins with** | an admitted design contract, pinned source revision, engine profile, tests, and optional `CreativeAssetBundle@1` |
+| **Application can return** | one attributable `PlayableBuildBundle@1`, or an exact non-completion |
+| **Application stops before** | deciding what is fun, autonomous project direction, public multiplayer, signing, upload, or store release |
 
-It owns game design, version-controlled source, scenes/resources, imports, tests, build recipes,
-playtests, balance evidence, releases, and effect receipts. It does not own Voidlight's asset
-lineage or Broadcast's editorial/publication truth, and it is not a game engine, autonomous game
-director, store account, or second workflow engine.
+Foundry owns design, version-controlled source, scenes, resources, imports, tests, build recipes,
+playtests, balance evidence, release candidates, and distribution receipts. It does not own
+Voidlight's asset lineage, a game engine, a store account, or another workflow jurisdiction.
 
-## Project truth and the Studio boundary
+## Project to playable slice
 
-| Class | Custody |
+1. **Freeze the project.** Pin the design, repository revision, dependencies, engine and adapter
+   versions, environment, build recipe, declared scenario, and acceptance checks.
+2. **Admit assets.** Validate an exact `CreativeAssetBundle@1` against the project target, rights,
+   semantic role, and spatial or temporal limits; return findings instead of editing the bundle.
+3. **Change one slice.** Modify only the bounded feature named by the Invocation and preserve the
+   source diff that produced it.
+4. **Build locally.** Run static and engine tests, perform deterministic imports, and create a
+   content-addressed candidate with source, command, environment, probe, and checksum evidence.
+5. **Play the declared scenario.** A constrained controller acts within time, action, observation,
+   and cost budgets. Structured engine observations take precedence over screenshots.
+6. **Review and package.** Human judgment accepts the evidence or requests a new forward repair;
+   an accepted slice becomes `PlayableBuildBundle@1` without implying release authority.
+
+The remaining scores keep distinct work distinct: `game.bootstrap_project@1`,
+`game.import_creative_bundle@1`, `game.build_candidate@1`,
+`game.playtest_candidate@1`, `game.balance_from_evidence@1`,
+`game.prepare_release@1`, and `game.publish_build@1`. Each has its own inputs, outputs, gates,
+receipts, and terminal non-completion.
+
+## Project custody and Studio handoff
+
+| Record | Custody and use |
 | --- | --- |
-| Design, source, scenes, resources, settings, tests, build recipe | Foundry durable project records and VCS |
-| Admitted source asset | immutable `CreativeAssetBundle@1` manifest held by Voidlight |
-| Engine-native import and derived cache | Foundry; reproducible from source plus pinned adapter |
-| Candidate build and external release | Foundry artifact records and effect receipts |
-| Invocation, Graph, and queue work | run/execution truth, never the project ledger |
+| Project truth | Foundry design, source, scenes, resources, settings, tests, and build recipe |
+| Source asset | Voidlight's immutable bundle manifest, admitted by exact digest |
+| `AssetImportReceipt@1` / `AssetFindingSet@1` | Foundry's import result and any correction evidence returned to the producer |
+| Build and playtest evidence | source lock, dependencies, engine, adapter, environment, tests, scenario, observations, and findings |
+| `PlayableBuildBundle@1` | immutable candidate plus build, test, playtest, and checksum receipts |
 
-Foundry admits a bundle by digest and validates its target contract, rights, semantic role, and
-spatial/temporal limits. It returns `AssetImportReceipt@1` and `AssetFindingSet@1`; it never writes
-Voidlight's database or silently amends an asset. A Suite is a durable graph of such typed,
-immutable handoffs. It does not share member Sigils, provider sessions, secrets, approvals, or
-effect authority.
+Engine-native imports and rebuildable caches remain Foundry records. A Suite may retain the typed
+bundle handoff and run correlation, but never merges member databases, Sigils, secrets, provider
+sessions, approval, budget judgment, or release authority.
 
-## The Pattern set
+## Playtest, release, and recovery
 
-The immutable Pattern revisions are **bootstrap**, **import**, **playable slice**, **build
-candidate**, **playtest candidate**, **balance from evidence**, **prepare release**, and
-**publish**:
+An `EngineAdapter` exposes project, import, test, build, and observation operations. A separate
+`ControllerAdapter` exposes only bounded game inputs. Neither supplies a generic shell, debug
+console, anti-cheat bypass, public-server access, or authority to deceive players. The scenario
+author, controller, and player remain different roles; humans decide whether the evidence is fun.
 
-| Pattern | Purpose |
-| --- | --- |
-| `game.bootstrap_project@1` | admit a design contract, pinned engine profile, repository, and acceptance tests |
-| `game.import_creative_bundle@1` | validate a `CreativeAssetBundle@1`, derive imports, return receipt/findings |
-| `game.build_playable_slice@1` | make one bounded feature demonstrable and yield `PlayableBuildBundle@1` |
-| `game.build_candidate@1` | produce a content-addressed candidate from pinned source and recipe |
-| `game.playtest_candidate@1` | execute declared scenarios and collect evidence |
-| `game.balance_from_evidence@1` | propose a reviewable balance revision from attributed observations |
-| `game.prepare_release@1` | assemble a release candidate and checklists |
-| `game.publish_build@1` | perform a separately gated distribution effect |
+License acceptance, destructive source changes, build, signing, upload, staged release, and public
+release are independent gates. Upload and publication use exact effect identities, request
+digests, remote lookup material, and receipts. Lost acknowledgement leaves an **unknown** effect
+that must be reconciled before any retry.
 
-`game.build_playable_slice@1` follows a narrow score:
+Restart resolves the pinned Pattern, source, engine, adapter, environment, receipt, and artifact
+formats. Incompatible parked work drains, migrates through an explicit adapter, or ends honestly.
+Deletion inventories local builds, derivatives, and remote copies; it may request removal, but it
+cannot promise that a published binary disappeared.
 
-```text
-FreezeDesignAndSource → AdmitAssets → ChangeOneSlice → StaticAndEngineTests
-→ BuildLocally → PlayDeclaredScenario → ReviewEvidence → PackageBuild → End
-```
+## Proving build
 
-Every Pattern has its own immutable id/revision, input and output contracts, gates, receipts, and
-terminal non-completion. A repair is a new forward invocation; evidence may invalidate a candidate
-but cannot repaint its previous source or playtest.
+Use a synthetic local 2D project with networking disabled. Bootstrap one repository, admit one
+small creative bundle, import it through a test adapter, build one playable scene, run one declared
+controller scenario, and emit exactly one `PlayableBuildBundle@1` with source, build, test, and
+playtest receipts. Signing, upload, store accounts, telemetry export, public players, and release
+remain outside the proof.
 
-## Engine, controller, and playtest discipline
-
-An `EngineAdapter` describes project, import, test, build, and observation mechanisms. A separate
-`ControllerAdapter` describes isolated movement and inputs. This separation makes controller
-observations and effects inspectable, keeps the engine's debug surfaces out of the Agent's hands,
-and permits conformance tests without naming a provider as Foundry identity.
-
-Scenario author, controller, and player are different roles. Agentic sessions are bounded by a
-declared scenario, time, action, observation, and cost budget. Structured engine observations
-outrank screenshots; screenshots are supporting evidence, not hidden game truth. A session cannot
-deceive people, join public multiplayer, bypass anti-cheat, use unrestricted shells, or decide
-what is fun. Humans judge that from the recordings, telemetry, findings, and their own play.
-
-## Effects, promotion, and recovery
-
-Builds preserve source revision, dependency lock, engine and adapter versions, build recipe,
-environment/container digest, input/output hashes, test results, and probe facts. Promotion,
-license acceptance, destructive repository change, build, signing, upload, staged release, and
-public release are distinct gates. Signing has an explicit digest boundary; upload and publication
-are effects with idempotency keys, remote lookup material, receipts, and unknown-state
-reconciliation. A lost acknowledgement never permits a duplicate upload or public release.
-
-The Foundry keeps explicit project, import, source-lock, build, test, playtest, observation,
-finding, balance, approval, release, and effect-receipt records. Pattern, schema, engine,
-adapter, build environment, receipt, and artifact formats migrate independently. Retention can
-discard rebuildable caches while preserving admissible source and receipts; export includes design,
-source pointers, manifests, recipes, evidence, and checksums. Deletion inventories builds,
-derivatives, and remote copies, then requests downstream removal rather than promising to erase a
-published binary. Parked runs pin their revisions and drain, migrate through an explicit adapter,
-or end honestly.
-
-## Smallest proving slice
-
-Use a synthetic local 2D project with network disabled: bootstrap one repository, admit one small
-bundle, import it through a test adapter, build a single playable scene, run a declared controller
-scenario, and emit exactly one `PlayableBuildBundle@1` with source/build/test/playtest receipts.
-No signing, upload, store account, telemetry export, public player, or release belongs in this
-proof.
-
-Continue with [Voidlight Studio](voidlight-studio.md), [Workflow](../adr/28-workflow.md), and the
-[Composition portfolio](index.md).
+Related: [Voidlight Studio](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
+[Composition portfolio](index.md)

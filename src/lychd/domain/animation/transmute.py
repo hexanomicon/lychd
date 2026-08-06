@@ -606,7 +606,7 @@ class Transmuter:
 
         return QuadletContainer(
             description=stone.description or f"LychD Soulstone: {stone.name}",
-            image=stone.image,
+            image=stone.quadlet.image,
             container_name=animator_service_stem(stone.name),
             pod=LYCHD_POD_QUADLET,
             user="%U",

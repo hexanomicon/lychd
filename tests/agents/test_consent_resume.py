@@ -29,7 +29,7 @@ from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.cortex.context import ContextOrchestrator
 from lychd.domain.cortex.engine import QueueRouter, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
-from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 from lychd.domain.cortex.stasis import InMemoryStasisStore
 from lychd.domain.cortex.substrate import RunSubstrate
@@ -182,8 +182,37 @@ async def _park(substrate: RunSubstrate, run_id: str) -> str:
 
 async def _resume(substrate: RunSubstrate, run_id: str, consent_id: str, *, approved: bool) -> dict[str, Any]:
     await substrate.consents.decide(consent_id, approved=approved, decided_by="magus")  # verdict commits to the ledger
-    assert await substrate.ledger.try_admit_consent(run_id, consent_id=consent_id) is not None
+    evidence = await _consent_evidence(substrate.consents, run_id=run_id, consent_id=consent_id)
+    assert (
+        await substrate.ledger.try_admit_consent(
+            run_id,
+            consent_id=consent_id,
+            evidence=evidence,
+        )
+        is not None
+    )
     return await perform_run({"run_substrate": substrate}, run_id=run_id, resume=True)
+
+
+async def _consent_evidence(
+    consents: InMemoryConsentLedger,
+    *,
+    run_id: str,
+    consent_id: str,
+) -> ConsentAdmissionEvidence:
+    consent = await consents.get(consent_id)
+    assert consent is not None
+    assert consent.run_id == run_id
+    assert consent.status in {"granted", "denied", "expired"}
+    assert consent.decided_by is not None
+    assert consent.decided_at is not None
+    return ConsentAdmissionEvidence(
+        consent_id=consent.id,
+        run_id=consent.run_id,
+        status=consent.status,
+        decided_by=consent.decided_by,
+        decided_at=consent.decided_at,
+    )
 
 
 def _replacement_toolset(
@@ -541,7 +570,8 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     sub2 = _mk_substrate(bus2, sessions)
 
     await consents.decide(consent_id, approved=True, decided_by="magus")
-    assert await ledger.try_admit_consent("run_5", consent_id=consent_id) == 1
+    evidence = await _consent_evidence(consents, run_id="run_5", consent_id=consent_id)
+    assert await ledger.try_admit_consent("run_5", consent_id=consent_id, evidence=evidence) == 1
     resume_result = await perform_run({"run_substrate": sub2}, run_id="run_5", resume=True)
 
     assert resume_result["status"] == "done"
@@ -884,7 +914,8 @@ async def test_stasis_lost_resume_fails_honestly() -> None:
     await substrate.stasis_store.delete("run_sl")  # the checkpoint vanished
 
     await substrate.consents.decide(consent_id, approved=True, decided_by="magus")
-    assert await ledger.try_admit_consent("run_sl", consent_id=consent_id) == 1
+    evidence = await _consent_evidence(substrate.consents, run_id="run_sl", consent_id=consent_id)
+    assert await ledger.try_admit_consent("run_sl", consent_id=consent_id, evidence=evidence) == 1
     result = await perform_run({"run_substrate": substrate}, run_id="run_sl", resume=True)
 
     assert result["status"] == "failed"

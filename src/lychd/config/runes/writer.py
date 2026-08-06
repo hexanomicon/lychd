@@ -7,6 +7,7 @@ from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 import structlog
+from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 
 from lychd.config.runes.base import RuneConfig
@@ -303,6 +304,10 @@ class ConfigWriter:
         if collection_sample is not None:
             return collection_sample
 
+        model_sample = self._model_placeholder(sample_annotation)
+        if model_sample is not None:
+            return model_sample
+
         # Primitive scalars get concrete TOML literals. Unknown complex types
         # fall through to a generic string placeholder below.
         scalar_sample = self._scalar_placeholder(annotation=sample_annotation, required=required)
@@ -310,6 +315,17 @@ class ConfigWriter:
             return scalar_sample
 
         return '"<value>"'
+
+    def _model_placeholder(self, annotation: Any) -> str | None:
+        """Render required fields of an embedded Pydantic value as a TOML inline table."""
+        if not isinstance(annotation, type) or not issubclass(annotation, BaseModel):
+            return None
+        assignments = [
+            f"{field_name} = {self._sample_value(field_info.annotation, required=True)}"
+            for field_name, field_info in annotation.model_fields.items()
+            if field_info.is_required()
+        ]
+        return "{ " + ", ".join(assignments) + " }" if assignments else "{}"
 
     def _sample_annotation(self, annotation: Any) -> Any:
         """Return the annotation that should drive sample literal selection.

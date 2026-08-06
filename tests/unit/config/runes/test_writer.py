@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+import tomllib
 from pathlib import Path
 from typing import ClassVar
 
 import pytest
 from pydantic import Field
 
+from lychd.config import QuadletConfig
 from lychd.config.runes import ConfigWriter, RuneConfig
 from lychd.system.services.lifecycle import CreatedResources
 from lychd.system.services.publication import JournaledCreation
@@ -42,6 +44,13 @@ class WriterCustomTemplateConfig(WriterRootConfig):
 
     name: str
     required_value: str
+
+
+class WriterEmbeddedConfig(WriterRootConfig):
+    path_fragment: ClassVar[Path] = Path("embedded")
+
+    name: str
+    quadlet: QuadletConfig
 
 
 class WriterParentConfig(WriterRootConfig):
@@ -112,6 +121,19 @@ def test_writer_prefers_custom_sample_template(tmp_path: Path) -> None:
         '# lychd: sample-rune\n# Edit this file, then remove this marker to activate it.\n\nname = "custom"\n'
     )
     assert "required_value" not in content
+
+
+def test_writer_renders_embedded_config_as_a_valid_toml_inline_table(tmp_path: Path) -> None:
+    writer = ConfigWriter(runes_dir=tmp_path)
+
+    writer.initialize_anchors([WriterEmbeddedConfig])
+    created = writer.inscribe_samples([WriterEmbeddedConfig])
+
+    content = created[0].read_text(encoding="utf-8")
+    assert 'quadlet = { image = "<required:str>" }' in content
+    parsed = tomllib.loads(content)
+    rune = WriterEmbeddedConfig.model_validate(parsed)
+    assert rune.quadlet.image == "<required:str>"
 
 
 def test_writer_legacy_callbacks_run_at_the_creation_commit_boundary(tmp_path: Path) -> None:

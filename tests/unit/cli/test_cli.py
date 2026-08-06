@@ -17,6 +17,7 @@ from lychd.cli.commands import (
     bind_quadlets,
     init_codex,
 )
+from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
@@ -101,7 +102,7 @@ def _advertised_generic_soulstone(
     """Build a real local declaration that synthesizes one fallback capability."""
     return GenericSoulstoneConfig(
         name="test",
-        image="example/runtime",
+        quadlet=QuadletConfig(image="example/runtime"),
         runtime="openai_compatible",
         secret_env_files=secret_env_files or {},
     )

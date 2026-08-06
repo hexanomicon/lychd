@@ -27,8 +27,10 @@ roots. Percent signs, backslashes, and non-printable characters are rejected.
 ```toml
 name = "private-runtime"
 runtime = "vllm"
-image = "vllm/vllm-openai:latest"
 model_path = "/models/qwen-awq"
+
+[quadlet]
+image = "vllm/vllm-openai:latest"
 
 [secret_env_files]
 HF_TOKEN_FILE = "hf_runtime_token"

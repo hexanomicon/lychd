@@ -60,9 +60,9 @@ and registers; it does not compete for topology law.
 | --- | --- |
 | `docs/index.md` | Prophecy and reader paths. |
 | `docs/adr/**` | Architectural law. |
-| State of Work | Delivery boundary and evidence. |
+| State of Work | Shared whole-system delivery boundary and evidence envelope. |
 | Lexicon | Canonical meanings. |
-| Compositions | Accepted contracts and visibly marked candidate studies. |
+| Compositions | Native reference application contracts, worked examples, and their local current-material statement. |
 | Sepulcher | Anatomy, operation, and recovery. |
 | Divination / Altar | Meeting the running body. |
 | Transcendence | The Great Work and constitutional meaning. |

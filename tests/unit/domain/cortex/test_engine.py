@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
@@ -13,8 +14,9 @@ import pytest
 
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
+from lychd.domain.codex.schemas import ConsentView
 from lychd.domain.cortex.engine import QueueRouter, RunEngine, enqueue_run, run_job_key
-from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
+from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 
@@ -186,6 +188,33 @@ class _FlakyAbortQueue(_FakeQueue):
         await super().abort(job, error, ttl)
 
 
+@dataclass
+class _TestConsentAuthority:
+    views: dict[str, ConsentView] = field(default_factory=dict)
+
+    async def get(self, consent_id: str) -> ConsentView | None:
+        return self.views.get(consent_id)
+
+    async def cancel_pending_for_run(self, run_id: str, *, decided_by: str) -> int:
+        _ = (run_id, decided_by)
+        return 0
+
+    def decide(self, *, run_id: str, consent_id: str) -> None:
+        self.views[consent_id] = ConsentView(
+            id=consent_id,
+            run_id=run_id,
+            tool_name="test_tool",
+            status="granted",
+            decided_by="test:operator",
+            decided_at=datetime.now(UTC),
+        )
+
+
+def _decide(engine: RunEngine, *, run_id: str, consent_id: str) -> None:
+    assert isinstance(engine.consents, _TestConsentAuthority)
+    engine.consents.decide(run_id=run_id, consent_id=consent_id)
+
+
 def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
     # honor_intent_run_id: test-only seam so these assertions can key off stable ids
     # (R4: production always mints; identity is the ledger's, not the advisory field).
@@ -198,6 +227,7 @@ def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
         workflows=builtin_workflow_registry(),
         queue_router=QueueRouter(),
         queues=queues,
+        consents=_TestConsentAuthority(),
     )
     return engine, ledger, queues
 
@@ -220,6 +250,7 @@ async def test_submit_routes_persists_and_enqueues() -> None:
 
     assert handle.run_id == "run_1"
     assert handle.workflow_name == "bridge_chat"
+    assert handle.channel is not None
     assert handle.channel.run_id == "run_1"
 
     run = await ledger.get("run_1")
@@ -406,6 +437,51 @@ async def test_idempotent_replay_loads_durable_admission_before_routing() -> Non
 
     assert replay.run_id == first.run_id
     assert replay.workflow_name == first.workflow_name
+
+
+@pytest.mark.asyncio
+async def test_idempotent_replay_seeds_fresh_channel_after_durable_events() -> None:
+    engine, ledger, queues = _engine()
+    intent = Intent(session_id="s", prompt="resume projection", source="bridge")
+    first = await engine.submit(intent, idempotency_key="bridge:s:req-seeded")
+    await ledger.append_event(
+        RunEvent(run_id=first.run_id, seq=7, kind=RunEventKind.STATUS, data=RunStatus.QUEUED.value)
+    )
+    fresh_bus = InProcessEventBus(ledger=ledger)
+    replay_engine = RunEngine(
+        ledger=ledger,
+        bus=fresh_bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues=queues,
+    )
+
+    replay = await replay_engine.submit(intent, idempotency_key="bridge:s:req-seeded")
+
+    assert replay.channel is not None
+    assert replay.channel.next_seq == 8
+
+
+@pytest.mark.asyncio
+async def test_terminal_idempotent_replay_does_not_mint_live_channel() -> None:
+    engine, ledger, queues = _engine()
+    intent = Intent(session_id="s", prompt="already settled", source="bridge")
+    first = await engine.submit(intent, idempotency_key="bridge:s:req-terminal")
+    assert await ledger.try_claim_run(first.run_id, enqueue_seq=0) is True
+    assert await ledger.try_settle_claim(first.run_id, enqueue_seq=0, status=RunStatus.DONE) is True
+    fresh_bus = InProcessEventBus(ledger=ledger)
+    replay_engine = RunEngine(
+        ledger=ledger,
+        bus=fresh_bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues=queues,
+    )
+
+    replay = await replay_engine.submit(intent, idempotency_key="bridge:s:req-terminal")
+
+    assert replay.channel is None
+    assert fresh_bus.snapshot(first.run_id) is None
 
 
 @pytest.mark.asyncio
@@ -1145,6 +1221,7 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
     await ledger.set_status("run_p", RunStatus.RUNNING)
     await ledger.set_status("run_p", RunStatus.AWAITING_CONSENT)
     await ledger.set_consent("run_p", "consent_1")
+    _decide(engine, run_id="run_p", consent_id="consent_1")
 
     await engine.approve("consent_1", approved=True)
 
@@ -1158,6 +1235,22 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
     delivery = await ledger.get_delivery("run_p", enqueue_seq=1)
     assert delivery is not None
     assert delivery.resume is True
+
+
+@pytest.mark.asyncio
+async def test_approve_refuses_a_parked_run_without_matching_decided_consent() -> None:
+    engine, ledger, queues = _engine()
+    await engine.submit(Intent(session_id="s", run_id="run_pending", prompt="hi", source="bridge"))
+    await ledger.set_status("run_pending", RunStatus.RUNNING)
+    await ledger.set_status("run_pending", RunStatus.AWAITING_CONSENT)
+    await ledger.set_consent("run_pending", "consent_pending")
+
+    await engine.approve("consent_pending", approved=True)
+
+    run = await ledger.get("run_pending")
+    assert run is not None
+    assert run.status is RunStatus.AWAITING_CONSENT
+    assert [job["key"] for job in queues["runs"].enqueued] == [run_job_key("run_pending", 0)]
 
 
 @pytest.mark.asyncio
@@ -1176,6 +1269,7 @@ async def test_double_approve_enqueues_the_resume_once() -> None:
     await ledger.set_status("run_d", RunStatus.RUNNING)
     await ledger.set_status("run_d", RunStatus.AWAITING_CONSENT)
     await ledger.set_consent("run_d", "consent_d")
+    _decide(engine, run_id="run_d", consent_id="consent_d")
 
     await asyncio.gather(
         engine.approve("consent_d", approved=True),
@@ -1199,6 +1293,7 @@ async def test_approve_enqueue_failure_retains_exact_resume_delivery() -> None:
     await ledger.set_status("run_r", RunStatus.RUNNING)
     await ledger.set_status("run_r", RunStatus.AWAITING_CONSENT)
     await ledger.set_consent("run_r", "consent_r")
+    _decide(engine, run_id="run_r", consent_id="consent_r")
 
     queues["runs"] = _FailingQueue()  # type: ignore[assignment]
     await engine.approve("consent_r", approved=True)
@@ -1228,6 +1323,7 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     await ledger.set_status("run_cancel", RunStatus.RUNNING)
     await ledger.set_status("run_cancel", RunStatus.AWAITING_CONSENT)
     await ledger.set_consent("run_cancel", "consent_cancel")
+    _decide(engine, run_id="run_cancel", consent_id="consent_cancel")
     queue = _CancellationQueue()
     queues["runs"] = queue  # type: ignore[assignment]
     task = asyncio.create_task(engine.approve("consent_cancel", approved=True))

@@ -5,47 +5,53 @@ icon: material/home-search
 
 # :material-home-search: Home Seeker
 
-**Candidate question:** can a private, location-aware search rank property evidence transparently
-without pretending to perform legal, financial, structural, or transaction diligence?
+Home Seeker turns a private housing brief into a reproducible shortlist whose rankings can be
+explained line by line. It helps the Magus compare dated property evidence; it does not disguise a
+listing, route estimate, or attractive photograph as legal, financial, or structural diligence.
 
-> “Over the next three months, find me a two-room apartment below €220,000. Prefer places within
-> fifteen minutes on foot of this school and a shopping centre, or reasonably positioned between
-> school and work. Search daily and show exactly why every candidate ranks where it does.”
+!!! note "Current material"
+    No Home Seeker Pattern, campaign ledger, Scout source, geocoder/router, schedule, ranking
+    projection, or due-diligence packet path is registered or executable.
 
-| Local maturity | Identity | Patterns | Never does |
-| --- | --- | --- | --- |
-| **Unaccepted candidate study** | `home.seeker/rev1` | `home.plan_search@1`, `home.daily_search@1`, `home.prepare_due_diligence@1` | contact, book, offer, reserve, deposit, sign, settle, or certify |
+[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
 
-## Criteria before photographs
+## Contract
 
-Hard filters cover purchase/rent, property type, rooms, usable area, listing/all-in maximum,
-localities, deadline, required features, and selected travel-time maxima. Preferences weight price
-headroom, area fit, access to each private anchor/amenity, a chosen between-destinations rule,
-freshness, and evidence completeness. Uncertainty includes fees, address precision, stale routes
-or amenities, contradictory area, and unsupported claims.
+| Field | Reference contract |
+| --- | --- |
+| **Identity** | `home.seeker` revision `1` |
+| **Principal Pattern** | `home.plan_search@1` |
+| **Application begins with** | A purchase or rental brief, hard criteria, weighted preferences, private anchors, deadline, source policy, and explicit travel semantics |
+| **Application can return** | A durable search campaign, evidence-bound ranked digest, or human due-diligence packet |
+| **Application stops before** | Contact, viewing booking, offer, reservation, deposit, signature, settlement, professional judgment, or certification |
 
-For a hard predicate, `false` rejects, `true` admits, and `unknown` enters review—not a pass
-because a model likes the photographs. “Near” pins mode, time window, target, and maximum
-duration. “Between A and B” chooses one meaning: lowest worse journey, lowest total, lowest
-imbalance, or route corridor. Straight-line distance is never presented as travel time.
+Home Seeker owns campaign criteria, listing observations, location resolution, route and amenity
+derivations, rankings, shortlists, and diligence questions. Scout and geo providers own bounded
+acquisition observations; the Magus owns criteria, weights, anchor disclosure, shortlist, and every
+transaction step. A Mind may extract an ambiguous phrase or explain a result, but deterministic
+tools own filters, scoring, route arithmetic, freshness, and tie-breaks.
 
-## Three small scores
+Its other Patterns are `home.daily_search@1` and `home.prepare_due_diligence@1`.
 
-```text
-home.plan_search@1: intent → constraints → private/public anchors → travel/between semantics
-                    → weights + unknown policy → source/privacy/schedule review → campaign
+## Criteria to shortlist
 
-home.daily_search@1: occurrence → permitted property observations → provenance/freshness
-                     → hard checks → available-precision location → permitted geo observations
-                     → derived routes/amenities without anchor leak → ranking → digest
+1. `home.plan_search@1` records transaction type, property type, rooms, usable area, listing or
+   all-in maximum, localities, deadline, required features, and selected travel-time maxima.
+2. The Magus chooses how “near” is measured and what “between A and B” means: lowest worse
+   journey, lowest total, lowest imbalance, or a route corridor. Straight-line distance is never
+   presented as travel time.
+3. `home.daily_search@1` admits permitted listing observations with source, retrieval time,
+   freshness, address precision, claims, and contradictions, then applies every hard predicate.
+4. For a hard predicate, `false` rejects, `true` admits, and `unknown` enters review. A model cannot
+   convert an unknown address, fee, area, route, or amenity into a pass.
+5. Known preferences receive non-negative weights and normalize to `[0, 1]`. The projection shows
+   known utility, a conservative lower bound, an upper bound that includes unknown weight, and the
+   exact revision and inputs behind the ordering.
+6. The digest orders candidates by hard eligibility, location and evidence sufficiency, lower
+   bound, then declared price and freshness. `home.prepare_due_diligence@1` turns a human shortlist
+   into a viewing checklist, claims-versus-evidence ledger, professional needs, and questions.
 
-home.prepare_due_diligence@1: human shortlist → viewing checklist → claims versus evidence
-                              → legal/technical/financial questions → professional needs → packet
-```
-
-Each rank pins criteria, listing observation, location resolution, geocoder/route/amenity sources,
-times, raw measurements, transforms, weights, ranges, unknowns, score interval, and ranking
-revision. Every preference has a non-negative weight and normalization to `[0, 1]`:
+The score remains inspectable:
 
 ```text
 eligible      = all mandatory predicates are supported
@@ -54,33 +60,42 @@ lower bound   = known utility / total configured weight
 upper bound   = (known utility + unknown weight) / total configured weight
 ```
 
-Order by hard eligibility, location/evidence sufficiency, conservative lower bound, then declared
-price and freshness tie-breakers. A model can extract an ambiguous Slovak phrase or explain
-arithmetic; it cannot invent coordinates, adjust weights, turn unknown into pass, or rank a
-neighbourhood through protected characteristics or demographic proxies.
+## Evidence and reusable acquisition
 
-## Keep the anchors private
+Each rank pins criteria, listing observation, location resolution, geocoder, route and amenity
+sources, observation times, raw measurements, transforms, weights, ranges, unknowns, score
+interval, and ranking revision. Listing claims, geocoder derivations, route observations, official
+records, and professional verdicts remain separate evidence classes.
 
-School, work, family, health, and routine anchors receive least-data handling. Sources, prompts,
-and traces get only a coarse region, derivation, observation, or opaque anchor reference needed
-for the admitted step. The evidence chain is explicit:
+Home Seeker may reuse Scout acquisition, finite Occurrences, source snapshots, normalization,
+deduplication, freshness, and explainable score machinery also used by [Tech
+Scavenger](tech-scavenger.md). Property criteria and location diligence never cross into hardware
+compatibility or purchase records. Revision one sends no `NegotiationMandate@1` to [Bazaar
+Haggler](bazaar-haggler.md); it ends at ranking and diligence preparation.
 
-```text
-listing observation ≠ seller claim ≠ geocoder derivation
-≠ route/amenity observation ≠ official record ≠ professional verdict
-```
+## Private anchors and recovery
 
-School access proves only the derived access observed then. A shortlist proves neither title,
-liens, alterations, structural condition, noise, flood/future development, financing, insurance,
-tax, nor final transaction cost. Those need other evidence and qualified human review.
+School, work, family, health, and routine anchors receive least-data handling. Prompts, traces, and
+sources see only the coarse region, opaque anchor reference, or derived observation required by an
+admitted step. Ranking must not use protected characteristics or demographic proxies.
 
-## Smallest proof
+A route observation proves only derived access at that time. The shortlist proves nothing about
+title, liens, unauthorized alterations, structural condition, noise, flood, future development,
+financing, insurance, tax, or final transaction cost. Unknowns remain visible and can stop
+automatic ranking or require review.
 
-Use offline Slovak fixtures only: one two-room campaign with price ceiling, school/shop anchors,
-and explicit balancing rule; exact-street through deleted listings; deterministic extraction;
-offline walking/geocode fixtures with visible uncertainty; a daily digest reproducing hard
-verdicts, components, intervals, and caveats; crash recovery without duplicate observation or
-notification; and a human shortlist/due-diligence checklist. No live crawl/contact/private
-coordinate/legal query/booking/offer/reservation/deposit/signature/payment enters the proof.
+Scheduled searches are bounded and coalesce rather than creating a backlog. Restart reuses pinned
+observations and idempotency keys, producing neither duplicate observation nor notification.
+Changed or missing source state parks the occurrence; it never authorizes contact or a transaction
+effect.
 
-Return to the [Composition Portfolio](index.md).
+## Proving search
+
+Use offline Slovak fixtures for one two-room campaign with a price ceiling, school and shopping
+anchors, and one explicit balancing rule. Prove exact-street through deleted listings,
+deterministic extraction, offline walking and geocode uncertainty, reproducible hard verdicts and
+score intervals, crash recovery without duplicates, and a human shortlist with due-diligence
+questions. Include no live crawl, contact, private coordinate query, legal query, booking, offer,
+reservation, deposit, signature, or payment.
+
+Related: [Composition Portfolio](index.md) · [Workflow](../adr/28-workflow.md)

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -51,7 +52,7 @@ class StubRegistry:
         self._runtime = runtime
         self._soulstone = GenericSoulstoneConfig(
             name=spec.animator_name,
-            image=f"example/{spec.animator_name}:test",
+            quadlet=QuadletConfig(image=f"example/{spec.animator_name}:test"),
             runtime=spec.runtime,
             concurrency=spec.concurrency,
         )

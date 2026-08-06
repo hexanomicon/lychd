@@ -100,6 +100,7 @@ def row_to_view(row: Consent) -> ConsentView:
         args=args,
         status=cast("Any", row.status),
         decided_by=row.decided_by,
+        decided_at=row.decided_at,
         preauth_slug=row.preauth_slug,
     )
 

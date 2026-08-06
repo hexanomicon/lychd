@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
@@ -40,25 +41,25 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
     soulstones = [
         GenericSoulstoneConfig(
             name="alpha",
-            image="registry.example/alpha:1",
+            quadlet=QuadletConfig(image="registry.example/alpha:1"),
             groups=["logic"],
             concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
         ),
         GenericSoulstoneConfig(
             name="beta",
-            image="registry.example/beta:1",
+            quadlet=QuadletConfig(image="registry.example/beta:1"),
             groups=["logic"],
             concurrency=ConcurrencyIntent(conflict_domains=[]),
         ),
         GenericSoulstoneConfig(
             name="gamma",
-            image="registry.example/gamma:1",
+            quadlet=QuadletConfig(image="registry.example/gamma:1"),
             groups=[],
             concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
         ),
         GenericSoulstoneConfig(
             name="resident",
-            image="registry.example/resident:1",
+            quadlet=QuadletConfig(image="registry.example/resident:1"),
             groups=[],
             concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
         ),
