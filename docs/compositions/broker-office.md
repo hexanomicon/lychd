@@ -1,11 +1,11 @@
 ---
-title: Broker Office
+title: Broker
 icon: material/briefcase-account-outline
 ---
 
-# :material-briefcase-account-outline: Broker Office
+# :material-briefcase-account-outline: Broker
 
-Broker Office carries one client request through a regulated service firm. It finishes with an
+Broker carries one client request through a regulated service firm. It finishes with an
 attributable answer, a prepared act, a human handoff, or a precise blocker; it never hides missing
 authority behind a fluent reply.
 
@@ -14,7 +14,7 @@ pressures identity, private records, product evidence, deadlines, human review, 
 without claiming that LychD is itself a broker or adviser.
 
 !!! note "Current material"
-    No Broker Office Pattern, business or client surface, mail or telephone intake, case ledger,
+    No Broker Pattern, business or client surface, mail or telephone intake, case ledger,
     insurer adapter, or regulated effect is registered or executable. The Altar, local Sigil, and
     Run engine are common substrate, not this application.
 
@@ -60,7 +60,7 @@ scores with separate authority; the service-case Pattern does not inherit every 
 
 ## Business records and surfaces
 
-Broker Office keeps distinct records for the firm and its authority, Principals and relationships,
+Broker keeps distinct records for the firm and its authority, Principals and relationships,
 contacts and source artifacts, cases and waits, product releases and live quote observations,
 comparisons and explanations, prepared effects and receipts, consent and disclosures, corrections,
 complaints, exports, and deletion fences. Records identify whether a fact was imported, stated by

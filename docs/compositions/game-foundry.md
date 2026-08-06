@@ -1,16 +1,16 @@
 ---
-title: Game Foundry
+title: Foundry
 icon: material/gamepad-variant
 ---
 
-# :material-gamepad-variant: Game Foundry
+# :material-gamepad-variant: Foundry
 
-Game Foundry carries one game idea far enough that a person can play and inspect it. It keeps the
+Foundry carries one game idea far enough that a person can play and inspect it. It keeps the
 source, engine recipe, tests, controller observations, and build evidence that make the result
 repeatable. A convincing story about an Agent making a game is not a playable build.
 
 !!! note "Current material"
-    Game Foundry is a Native Reference Composition, not an executable build pipeline today. No
+    Foundry is a Native Reference Composition, not an executable build pipeline today. No
     Foundry Pattern, engine adapter, project ledger, playtest harness, or
     `PlayableBuildBundle@1` path is registered; LychD's own packaging evidence proves none of them.
 
@@ -90,5 +90,5 @@ controller scenario, and emit exactly one `PlayableBuildBundle@1` with source, b
 playtest receipts. Signing, upload, store accounts, telemetry export, public players, and release
 remain outside the proof.
 
-Related: [Voidlight Studio](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
+Related: [Voidlight](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
 [Composition portfolio](index.md)

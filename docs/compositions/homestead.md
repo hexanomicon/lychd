@@ -71,8 +71,8 @@ controller receipts, maintenance, laboratory evidence, professional documents, a
 
 | Handoff | Boundary |
 | --- | --- |
-| Requirements → [Tech Scavenger](tech-scavenger.md) | Homestead states compatibility, certification, serviceability, environment, budget, and evidence needs; Tech returns dated candidate and seller evidence, never commissioning authority. |
-| Harvest or acquisition → [Lifestyle Steward](lifestyle-steward.md) | Lifestyle may admit household inventory; Homestead keeps plot, crop, resource, and work truth. Harvest does not prove safe food or consumption. |
+| Requirements → [Scavenger](scavenger.md) | Homestead states compatibility, certification, serviceability, environment, budget, and evidence needs; Scavenger returns dated candidate and seller evidence, never commissioning authority. |
+| Harvest or daily provision → [Wellbeing](wellbeing.md) | Wellbeing may admit household inventory; Homestead keeps plot, crop, resource, and work truth. Harvest does not prove safe food or consumption. |
 | Product or site request → Scout | Scout acquires attributed observations; web text cannot become a physical instruction. |
 | Typed work → a Legion node | The droid receives a fenced task, zone, resources, expiry, and stop conditions—not shell access or a general farm mandate. |
 
