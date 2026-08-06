@@ -78,8 +78,16 @@ candidate digests, transformer/policy revisions, operations, removed categories,
 uncertainty, utility loss, and expiry without raw spans. A Cut that destroys the identifiers,
 dependency relations, or diagnostics needed for its declared task must refuse remote formation
 rather than call privacy alone a success. Transformations provide evidence; only Security's egress
-decision admits that exact branch to a Portal. Current `Block` and `AssembledContext` carry neither
-labels nor lineage, so this is law rather than delivered behavior.
+decision admits that exact branch to a Portal.
+
+Current `Block` and `AssembledContext` carry labels and a conservative aggregate join. Present
+query, history, or continuation material without supplied lineage defaults to `restricted` and
+`local_only`; empty placeholders do not taint the call. A deterministic local Censor rebuilds
+bounded JSON-like values, redacts the first typed identifier set, and issues digest-, revision-,
+count-, residual-label-, and expiry-bound evidence that is explicitly ineligible for egress and
+claims no removed category. Governed SQL/tool/artifact source adapters, immutable end-to-end
+lineage, semantic Privacy Agent, pseudonym map, sanitized Context branch, Privacy Cut verifier, and
+Portal Egress Gate remain undelivered.
 
 ## Grant-aware rebinding
 

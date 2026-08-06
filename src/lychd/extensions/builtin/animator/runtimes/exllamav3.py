@@ -15,7 +15,7 @@ from lychd.domain.animation.services.adapters.catalog import capability_specs_fr
 from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
 from lychd.domain.animation.services.adapters.surfaces import local_link_default
-from lychd.extensions.builtin.animator.exllamav3.connector import ExLlamaV3Connector, ExLlamaV3Stone
+from lychd.extensions.builtin.animator.exllamav3.connector import ExLlamaV3Connector, ExLlamaV3Soulstone
 from lychd.extensions.builtin.animator.exllamav3.control_plane import (
     TabbyAPIControlPlane,
     TabbyAPIControlPlaneError,
@@ -88,7 +88,7 @@ class ExLlamaV3RuntimeAdapter:
             auth_secret_name=stone.auth_secret_name,
             metadata=self._runtime_metadata(),
         )
-        return ExLlamaV3Stone(rune=stone, connector=connector)
+        return ExLlamaV3Soulstone(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Publish every declared TabbyAPI model as a dynamic capability."""

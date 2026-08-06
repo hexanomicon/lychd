@@ -63,8 +63,8 @@ class ExLlamaV3Connector(OpenAICompatibleConnector):
         return load_tabbyapi_auth_keys(self._auth_secret_name).api_key
 
 
-class ExLlamaV3Stone(SoulstoneAnimator[ExLlamaV3Connector, ExLlamaV3SoulstoneConfig]):
+class ExLlamaV3Soulstone(SoulstoneAnimator[ExLlamaV3Connector, ExLlamaV3SoulstoneConfig]):
     """Concrete ExLlamaV3/TabbyAPI Soulstone runtime handle."""
 
 
-__all__ = ["ExLlamaV3Connector", "ExLlamaV3Stone"]
+__all__ = ["ExLlamaV3Connector", "ExLlamaV3Soulstone"]

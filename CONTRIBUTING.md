@@ -124,8 +124,9 @@ and mocks are not live systemd, Podman, PostgreSQL, GPU, or model-engine receipt
 - **Documentation:** Follow
   **[ADR 01 §Documentation Topology](docs/adr/01-doctrine.md#documentation-topology)**. Root files
   are thin entry doors; ADRs own accepted decisions, the lexicon owns canonical terms,
-  compositions declare the maturity of application designs and candidates, and State of Work owns
-  delivery claims. xDDD establishes vocabulary and boundaries in the owning documentation before
+  compositions own native reference application contracts, worked examples, and their local
+  current-material statement, while State of Work owns the shared whole-system evidence envelope.
+  xDDD establishes vocabulary and boundaries in the owning documentation before
   implementation. Myth is constitutional telos, not evidence that a feature ships. If code changes
   system truth, update its owning documentation and routing links in the same change.
 

@@ -5,98 +5,93 @@ icon: material/broadcast
 
 # :material-broadcast: Broadcast Studio
 
-Broadcast Studio makes a public candidate answerable to the material beneath it. A sentence,
-voiceover, caption, and cut on the timeline should be traceable back to a source span—or visibly
-marked as interpretation—before it is ever asked to leave the workshop.
+Broadcast Studio turns an admitted dossier into a publication candidate whose claims, words,
+voice, captions, and cuts can be traced to their source. It gives an editor enough evidence to
+approve, correct, or refuse the work before any platform receives it.
 
-| Maturity | Accepted Reference Composition — architecture, not delivery; [State of Work](../state-of-the-work.md) owns what runs |
+!!! note "Current material"
+    Broadcast is a Native Reference Composition, not an executable publishing application today.
+    No Broadcast Pattern, claim ledger, narration and caption pipeline, deterministic renderer,
+    platform adapter, or publication effect is registered. Bridge text and Partial Audio admission
+    do not constitute this Studio.
+
+[State of Work](../state-of-the-work.md#composition-portfolio-delivery) owns the delivery boundary for this reference.
+
+## Contract
+
+| Field | Reference contract |
 | --- | --- |
-| Identity | `broadcast.studio` revision `1` |
-| Principal Pattern | `broadcast.build_local_package@1` |
-| Local outputs | `EditorialPackage@1`, `PublicationCandidate@1`, then a `PublicationReceipt@1` only after an effect |
+| **Identity** | `broadcast.studio` revision `1` |
+| **Principal Pattern** | `broadcast.build_local_package@1` |
+| **Application begins with** | a frozen source dossier, editorial brief, target profile, and admitted creative assets |
+| **Application can return** | local `EditorialPackage@1` and `PublicationCandidate@1`; `PublicationReceipt@1` only after a separate effect |
+| **Application stops before** | unattended publication, engagement farming, borrowed asset authority, or unreviewed external egress |
 
-Broadcast owns source dossiers, claims, articles, scripts, storyboards, timelines, local candidates,
-and publication receipts. [Voidlight Studio](voidlight-studio.md) owns creative source assets and
-their lineage; Game Foundry owns games. A platform adapter is a replaceable delivery mechanism,
-not editorial authority, and the Studio is neither engagement farm nor unattended publisher.
+Broadcast owns dossiers, source snapshots, claims, articles, scripts, storyboards, narration,
+captions, timelines, local renders, publication candidates, corrections, and destination receipts.
+[Voidlight Studio](voidlight-studio.md) retains the lineage of creative source assets. A platform
+adapter delivers an approved payload; it has no editorial authority.
 
-## The exact chain
+## Dossier to local candidate
 
-The principal score moves a frozen dossier through a claim ledger, canonical article and formatted
-scripts, an asset request/admission boundary, narration/back-transcript/captions, an explicit
-timeline, deterministic render, review, and a bounded repair into a local candidate:
+1. **Freeze the dossier.** Pin exact source snapshots, rights posture, intended audience, target,
+   disclosures, and retention before claims are extracted.
+2. **Build the claim ledger.** Bind each factual claim to a source span, extraction or
+   interpretation status, confidence, reviewer, and every article or script object that depends on
+   it.
+3. **Approve the words.** Produce the canonical article and formatted scripts before narration,
+   captions, or timeline assembly can conceal uncertainty.
+4. **Admit creative assets.** Match each `CreativeAssetBundle@1` digest, semantic role, constraints,
+   provenance, rights, validators, findings, and approval to this exact project.
+5. **Assemble locally.** Create narration and a back-transcript, captions, storyboard, and an
+   explicit timeline; render with pinned inputs, fonts, codecs, filters, loudness, colour settings,
+   command, probes, and checksum.
+6. **Review and package.** One bounded forward repair may answer a finding. The accepted result is
+   a local `EditorialPackage@1` and `PublicationCandidate@1`, still without permission to publish.
 
-```text
-FreezeDossier → ExtractClaims → ApproveArticleAndScripts → RequestOrAdmitAssets
-→ NarrateAndBacktranscribe → Caption → AssembleTimeline → RenderLocally
-→ Review → RepairOnceOrRefuse → PackageCandidate
-```
+The lineage remains visible from `source span → claim → article/script → narration, caption, or
+storyboard → timeline → published revision`. A correction appends a corrected or withdrawn state
+and stales dependants; it never rewrites the historical claim or receipt.
 
-The protected lineage is:
+## Claim lineage and creative handoff
 
-```text
-source span → claim → article/script → narration/caption/storyboard → timeline → published revision
-```
-
-Claims name source, exact span, extraction/interpretation status, confidence, review, and dependent
-objects. A correction appends a corrected or withdrawn state and stales its dependants; it does not
-replace historical claim, article, caption, or receipt. This permits the distinct Patterns for
-`broadcast.review_package@1`, `broadcast.revise_from_correction@1`,
-`broadcast.publish_draft@1`, `broadcast.publish_public@1`,
-`broadcast.correct_publication@1`, and `broadcast.takedown@1` to mean something different rather
-than becoming one button.
-
-## Handoffs, without borrowed authority
-
-Broadcast may issue `CreativeAssetRequest@1` with the editorial role, target profile, timing,
-constraints, rights/likeness requirements, and request digest. It admits `CreativeAssetBundle@1`
-only after checking bundle id/revision/digest, semantic role, spatial/temporal constraints,
-provenance/rights, validators/findings, and approval against the exact project. Its result is a
-consumer admission receipt; neither side writes the other's domain truth.
-
-| Record | Owner and use |
+| Record or Pattern | Office |
 | --- | --- |
-| Dossier, source snapshot, claim, article, script, storyboard | Broadcast editorial truth |
-| Creative request and bundle-admission receipt | Broadcast's side of a typed handoff |
-| Narration, back-transcript, captions, timeline, render candidate | Broadcast production truth |
-| `EditorialPackage@1` / `PublicationCandidate@1` | immutable local outputs |
-| `PublicationReceipt@1` | destination effect evidence, not a credential |
+| `CreativeAssetRequest@1` | asks for an editorial role, profile, timing, constraints, rights, likeness requirements, and request digest |
+| Asset-admission receipt | records Broadcast's validation of one immutable `CreativeAssetBundle@1` |
+| `broadcast.review_package@1` | returns attributed findings without changing accepted material |
+| `broadcast.revise_from_correction@1` | admits a new forward correction |
+| `broadcast.publish_draft@1` / `broadcast.publish_public@1` | perform separately authorized destination effects |
+| `broadcast.correct_publication@1` / `broadcast.takedown@1` | correct or request removal without erasing prior history |
 
-A Suite can retain a durable graph/run correlation and immutable handoffs, but members retain
-their records, Sigils, secrets, budget judgment, gates, and effect authority. A request gives
-Voidlight no authority to publish; admitting a bundle gives Broadcast no right to amend its
-lineage.
+The handoff shares no Sigil, secret, provider session, approval, or downstream authority. Voidlight
+cannot publish through an asset request, and Broadcast cannot amend Voidlight's provenance after
+admitting a bundle.
 
-## Deterministic assembly and gates
+## Publication gates and correction
 
-A timeline pins ordered tracks, clip ranges, transforms, transitions, captions, chapters, fonts,
-credits, loudness, and output profile. Rendering pins input/timeline digests, renderer and codec
-environment, filter configuration, fonts, color/audio settings, command, probe results, checksum,
-and any hardware variance that prevents byte identity. Unknown completion reconciles by request
-and output digest before retry.
+Source rights, claim review, voice and likeness, privacy and Portal use, accessibility, asset
+admission, render validation, and destination release each have an exact gate. Publication also
+pins the candidate digest, audience, visibility, schedule, disclosures, and money. An ungrounded or
+low-quality draft ends as a candidate, correction request, or refusal.
 
-Gates cover source rights, claim review, voice and likeness, privacy/Portal, accessibility, asset
-admission, target and render validation, and fresh consent for the exact destination, visibility,
-candidate digest, schedule, disclosures, and money. A low-quality or ungrounded draft ends as a
-candidate or refusal. Publishing draft, public release, correction, and takedown are independent
-effects: each has an idempotency key, destination/object lookup, receipt, and unknown-effect
-reconciliation. Browser automation cannot become an untyped fallback or authority.
+Rendering, draft publication, public release, correction, and takedown are separate effects. Each
+uses an idempotency key, request digest, destination identity, lookup material, and receipt. Lost
+acknowledgement produces an **unknown** effect; reconciliation must precede retry, and browser
+automation cannot become an untyped fallback.
 
-## Lifecycle and smallest proof
+Restart resumes only with the pinned Pattern, dossier, handoff, timeline, renderer, adapter, and
+receipt revisions. Source snapshots, rejected renders, candidates, destination receipts, and
+analytics receive separate retention. Deletion inventories derivatives and requests remote
+takedown while preserving a content-free receipt; it cannot promise that caches or feeds forgot a
+published copy.
 
-Durable editorial records are separate from Graph checkpoints and raw bytes. Source snapshots,
-draft narration, rejected renders, candidates, remote receipts, and analytics each receive an
-explicit retention rule. Exports contain permitted sources, claim ledgers, scripts, asset refs,
-timelines, approvals, render facts, and checksums. Deletion inventories drafts and derivatives;
-published deletion requests a remote takedown and retains a content-free receipt rather than
-promising copies, caches, or feeds will vanish. Pattern, schema, handoff, timeline, renderer,
-adapter, and receipt versions migrate independently; parked runs drain, explicitly migrate, or
-end honestly.
+## Proving package
 
-The proving slice builds a three-to-five-minute source-grounded local package from a small frozen
-dossier: claims, article/script, local narration with back-transcript and captions, deterministic
-timeline/render, one bounded repair, and `EditorialPackage@1` plus `PublicationCandidate@1`. It makes
-no platform call.
+Build a three-to-five-minute local package from a small frozen dossier: source-linked claims, an
+article and script, local narration with back-transcript, captions, an explicit timeline,
+deterministic render, one bounded repair, and final `EditorialPackage@1` plus
+`PublicationCandidate@1`. The proof makes no platform call.
 
-Continue with [Voidlight Studio](voidlight-studio.md), [Workflow](../adr/28-workflow.md), and the
-[Composition portfolio](index.md).
+Related: [Voidlight Studio](voidlight-studio.md) · [Workflow](../adr/28-workflow.md) ·
+[Audio](../adr/37-audio.md) · [Composition portfolio](index.md)

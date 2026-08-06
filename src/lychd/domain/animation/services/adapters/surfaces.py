@@ -189,7 +189,7 @@ class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
     """Concrete generic Soulstone runtime with immutable rune + connector references.
 
     Extensions may subclass this for connector typing (e.g. llama.cpp) but the
-    base is fully usable on its own; per-runtime stone subclasses are no longer
+    base is fully usable on its own; per-runtime Soulstone subclasses are no longer
     domain types (spec §5).
     """
 
@@ -232,11 +232,11 @@ class PortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
         return self._connector
 
 
-class GenericStone(SoulstoneAnimator[Connector, SoulstoneConfig]):
+class GenericSoulstone(SoulstoneAnimator[Connector, SoulstoneConfig]):
     """Fallback local animator when no runtime-specific connector exists yet."""
 
 
-class OpenAICompatibleStone(SoulstoneAnimator[OpenAICompatibleConnector, SoulstoneConfig]):
+class OpenAICompatibleSoulstone(SoulstoneAnimator[OpenAICompatibleConnector, SoulstoneConfig]):
     """Local Soulstone exposing an OpenAI-compatible connector surface."""
 
 
@@ -267,9 +267,9 @@ def portal_link_default(*, base_url: str) -> Link:
 
 __all__ = [
     "GenericPortal",
-    "GenericStone",
+    "GenericSoulstone",
     "OpenAICompatibleConnector",
-    "OpenAICompatibleStone",
+    "OpenAICompatibleSoulstone",
     "OpenAIPortal",
     "PassiveConnector",
     "PortalAnimator",

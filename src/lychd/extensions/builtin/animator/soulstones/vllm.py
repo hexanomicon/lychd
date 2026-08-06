@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from pydantic import Field
 
+from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
@@ -25,7 +26,6 @@ class VllmSoulstoneConfig(SoulstoneConfig):
 name = "qwen35"
 description = "Daily-driver vLLM Soulstone."
 groups = ["local-llm"]
-image = "vllm/vllm-openai:nightly"
 port = 8000
 
 devices = ["nvidia.com/gpu=all"]
@@ -57,9 +57,12 @@ exec = [
   "--generation-config", "vllm",
   "--speculative-config", '{"method":"dflash","model":"/models/z-lab__Qwen3.5-27B-DFlash","num_speculative_tokens":4}',
 ]
+
+[quadlet]
+image = "vllm/vllm-openai:nightly"
 """
     runtime: str = "vllm"
-    image: str = "vllm/vllm-openai:latest"
+    quadlet: QuadletConfig = Field(default_factory=lambda: QuadletConfig(image="vllm/vllm-openai:latest"))
     model_format: ModelFormat | None = ModelFormat.AWQ
 
     ipc_host: bool = Field(

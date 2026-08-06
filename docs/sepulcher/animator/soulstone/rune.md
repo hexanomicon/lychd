@@ -16,13 +16,18 @@ leaf runtime schema:
 The abstract Animator and Soulstone branches cannot own TOML files. Folder ancestry selects the
 Rune type; no `type=` field may switch it after discovery.
 
+In code, the Rune combines Animator-owned identity and capability intent with an embedded
+`quadlet: QuadletConfig` value. That nested value owns the common image invariant only. Soulstone
+keeps its own runtime, endpoint, resource, secret, and lifecycle policy, and the generated
+`QuadletContainer` remains a separate Bind/Scribe artifact.
+
 ## The Runtime Shape
 
 | Field | Default | Office |
 | :--- | :--- | :--- |
 | `name` | required | Animator identity; first segment of every capability key. |
 | `description` | `""` | Operator note. |
-| `image` | runtime default | OCI image; required by the generic runtime. |
+| `quadlet.image` | runtime default | OCI image inside the embedded `QuadletConfig`; required by the generic runtime. |
 | `runtime` | `"generic"` | Selects the local runtime adapter. |
 | `model_path` | `null` | Single-model artifact path or runtime-specific identity input. |
 | `base_url` | derived | Connector endpoint override. |

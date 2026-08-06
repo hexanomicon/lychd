@@ -6,6 +6,7 @@ from typing import ClassVar, Literal
 
 from pydantic import Field, field_validator, model_validator
 
+from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import LocalModelConfig, ModelFormat, SoulstoneConfig
 from lychd.extensions.builtin.animator.tabby_auth import is_valid_tabby_auth_secret_name
 
@@ -32,9 +33,6 @@ name = "exl3"
 description = "Dynamic ExLlamaV3 Soulstone served by TabbyAPI."
 groups = ["local-llm"]
 
-# Pinned linux/amd64 manifest from the official rolling image (2026-07-21).
-# Re-pin only after the contract tests and a local NVIDIA hardware receipt pass.
-image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3"
 port = 5000
 model_dir = "/app/models"
 auth_secret_name = "tabby_exl3_auth"
@@ -49,10 +47,15 @@ volumes = ["/data/models:/app/models:ro"]
 id = "qwen-exl3"
 path = "/app/models/qwen-exl3"
 format = "EXL3"
+
+# Pinned linux/amd64 manifest from the official rolling image (2026-07-21).
+# Re-pin only after the contract tests and a local NVIDIA hardware receipt pass.
+[quadlet]
+image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3"
 """
 
     runtime: str = "exllamav3"
-    image: str = TABBYAPI_IMAGE
+    quadlet: QuadletConfig = Field(default_factory=lambda: QuadletConfig(image=TABBYAPI_IMAGE))
     port: int | None = Field(default=5000, ge=1, le=65535)
     model_format: ModelFormat | None = ModelFormat.EXL3
     model_dir: Path = _TABBY_MODEL_DIR
@@ -85,7 +88,7 @@ format = "EXL3"
         if self.exec:
             msg = "ExLlamaV3SoulstoneConfig owns the pinned TabbyAPI command; exec passthrough is not supported"
             raise ValueError(msg)
-        if self.image != TABBYAPI_IMAGE:
+        if self.quadlet.image != TABBYAPI_IMAGE:
             msg = "ExLlamaV3 image must match the digest-pinned TabbyAPI envelope"
             raise ValueError(msg)
         if self.model_path is not None:

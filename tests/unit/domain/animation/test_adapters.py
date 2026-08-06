@@ -11,9 +11,9 @@ from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelInfo, Mo
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import (
-    GenericStone,
+    GenericSoulstone,
     OpenAICompatibleConnector,
-    OpenAICompatibleStone,
+    OpenAICompatibleSoulstone,
 )
 from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
 from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamaCppControlPlane, LlamaCppLifecycle
@@ -391,7 +391,7 @@ def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
     soulstone = GenericSoulstoneConfig.model_validate(
         {
             "name": "crawler",
-            "image": "crawler:latest",
+            "quadlet": {"image": "crawler:latest"},
             "runtime": "crawler",
             "port": 18080,
         }
@@ -399,7 +399,7 @@ def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
 
     registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
-    assert isinstance(runtime, GenericStone)
+    assert isinstance(runtime, GenericSoulstone)
     assert runtime.connector.kind == "generic:crawler"
     # An unknown runtime is not assumed to be OpenAI-compatible and invents no specs.
     assert registry.build_capability_specs(soulstone) == []
@@ -409,7 +409,7 @@ def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
     soulstone = GenericSoulstoneConfig.model_validate(
         {
             "name": "local-openai",
-            "image": "local-openai:latest",
+            "quadlet": {"image": "local-openai:latest"},
             "runtime": "openai_compatible",
             "model_path": "/models/qwen.gguf",
             "port": 18080,
@@ -418,7 +418,7 @@ def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
 
     registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
-    assert isinstance(runtime, OpenAICompatibleStone)
+    assert isinstance(runtime, OpenAICompatibleSoulstone)
     assert runtime.connector.kind == "generic-openai-compatible"
 
 
@@ -426,7 +426,7 @@ def test_generic_runtime_without_capability_hints_does_not_invent_chat() -> None
     soulstone = GenericSoulstoneConfig.model_validate(
         {
             "name": "sidecar",
-            "image": "sidecar:latest",
+            "quadlet": {"image": "sidecar:latest"},
             "runtime": "crawler",
         }
     )

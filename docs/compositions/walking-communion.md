@@ -5,94 +5,92 @@ icon: material/account-voice
 
 # :material-account-voice: Walking Communion
 
-> _The road should not sever the Communion._
+Walking Communion is the reference mobile route into an admitted LychD Pattern. It is a Portfolio
+companion rather than a Composition: speaking on the road is an ingress and result-projection path,
+while the selected application or Core owner keeps the purpose, records, judgment, and effects.
 
-Walking Communion gives the Magus a narrow way to speak from the road without pretending that a
-phone is an altar, a voice is an identity, or a spoken “yes” is authority. Its Android Mobile
-Emissary carries one deliberate utterance over the Tether/Echo path and receives a committed result
-in text before it is optionally heard.
+The route carries one deliberate utterance from an enrolled Android client, returns committed text,
+and may then speak that text. It does not turn a phone into the Altar, a tunnel key into identity,
+or a spoken “yes” into authority.
 
-| Maturity | Accepted Reference Composition — architecture, not delivery; [State of Work](../state-of-the-work.md) owns what runs |
+!!! note "Current material"
+    No Android Emissary, audio-byte transport, Tether route, remote Principal enrollment, or mobile
+    voice path is registered or executable. Audio admission and Tether are Partial; remote IAM
+    remains Designed in its owning record.
+
+## Route contract
+
+| | |
 | --- | --- |
-| Identity | `walking.communion` revision `1` |
-| Principal Pattern | `communion.voice_turn@1` |
-| First route | foreground Android push-to-talk into a bounded destination Invocation |
+| **Profile** | `walking.communion` revision `1` |
+| **Begins with** | foreground push-to-talk from one enrolled application and current Principal |
+| **Carries** | bounded audio, one typed Intent, correlation, and a committed text result |
+| **Returns** | text first, with optional synthesized speech as a projection |
+| **Stops before** | ambient capture, emergency monitoring, mobile administration, deferred effects, or voice-only consent |
 
-It is not an always-on listener, emergency service, voice-only consent system, administrative
-console, deferred command runner, or a second Lich.
+The route owns no application Pattern. After transcription and review, a designed caller and
+channel policy produces an admitted Intent for an eligible application purpose; Weaver then routes
+that Intent to an exact registered Pattern. The channel does not acquire application purpose
+merely because it can carry many purposes, and live Portfolio selection remains Designed.
 
-## Who holds which boundary
+## One utterance
 
-| Concern | Owner |
-| --- | --- |
-| Capture permission, foreground PTT, frame sequence/digest/final/retry, playback | Mobile Emissary |
-| Private reachability | Tether |
-| App/device proof, scopes, revocation, object policy | Ward |
-| Bounded audio, transcription, synthesis, ephemeral media custody | Echo |
-| Intent admission, route, Pattern revision, logical priority | Weaver |
-| Delivery and crash pickup | Workers |
-| Ear/Mind/Voice capability selection | Dispatcher |
-| Residency and lease transitions | Orchestrator |
-| Run, result, transcript policy, and receipts | Phylactery plus the owning Composition |
-| Domain effect and consent | destination Composition and HitL |
-
-The client is intentionally thin. It holds an application key separately from its tunnel key,
-performs challenge-response for short-lived scopes, shows text before or alongside speech, and
-offers a local barge-in distinction between **stop speaking** and **cancel the Run**. It holds no
-secrets for providers, database, durable workflow, or deferred executor. A tunnel key proves
-transport possession only; it does not identify the current person/app, authorize an object, or
-make a stolen device safe.
-
-## One utterance, not an immortal session
-
-Raw frames and live sockets never become Graph checkpoint state. The bounded path is:
+1. The foreground client opens push-to-talk and binds a fresh utterance identity, frame sequence,
+   byte and duration ceilings, codec profile, and expiry.
+2. Tether may provide private reachability. Ward separately proves the application, device,
+   Principal, current scopes, and object authority; possession of either key proves only its own
+   boundary.
+3. Echo admits bounded frames, produces an attributed transcript, and drops raw audio under the
+   selected retention policy. Low confidence asks for clarification.
+4. The client shows the transcript when policy requires review, then submits one idempotent Intent.
+5. Weaver routes the admitted Intent to an exact registered Pattern. Its owning Composition or
+   Core surface performs any domain-specific clarification, consent, work, and recovery.
+6. The committed text result becomes the durable answer. Speech synthesis and playback may fail or
+   be interrupted without erasing it.
 
 ```text
-foreground PTT → authenticated bounded audio → transcription → preview or clarification
-→ idempotent Intent → destination Invocation → committed text → optional speech
+push-to-talk → authenticate → transcribe → preview or clarify
+→ typed Intent → admitted Pattern → committed text → optional speech
 ```
 
-`communion.voice_turn@1` admits, normalizes, classifies a read-only route, clarifies or routes,
-invokes Bridge or a destination, commits text, requests optional speech, and ends. A media session
-may carry several turns, but every consequential utterance has its own id, pinned revision, Run,
-authority, budget, and terminal outcome. Speech delivery is merely a projection: synthesis,
-playback, or reconnect failure cannot erase the Principal-bound text result.
+## Divided authority
 
-Early destinations are Bridge, note capture, and narrow read-only status. A cross-Composition
-effect is a typed destination admission, not a privilege inherited through voice or a Suite edge.
+| Boundary | Owner |
+| --- | --- |
+| capture, frame transport, playback, and local interruption | Mobile Emissary |
+| tunnel reachability | Tether |
+| device, Principal, scopes, and revocation | Ward |
+| bounded audio, transcription, synthesis, and media custody | Echo |
+| Intent, Pattern, Run, and delivery | Weaver, Workers, and Phylactery |
+| domain records, consequential effects, and consent | destination application or Core owner and its effect owners |
 
-## Privacy, consent, and failure
+The thin client carries no provider, database, workflow, or host-lifecycle credential. It
+distinguishes **stop speaking** from **cancel the Run**, and text remains visible before or beside
+audio. The first proving targets are Core routes—Bridge conversation, note capture, and narrow
+read-only status—not Portfolio Compositions. A future Composition route remains unavailable until
+its Pattern and application selection are actually registered. None of these routes grants
+administrative or purchase authority.
+
+## Privacy and recovery
 
 Raw voice is `restricted`; transcript and reply are at least `private`. Audio is ephemeral by
-default and not training material. Portal speech requires explicit opt-in—there is no quiet
-privacy fallback. Malformed, oversized, stale, duplicate, out-of-order, or replayed frames fail
-shut. Low confidence produces clarification, never a guessed consequential command.
+default and is never training material merely because it was captured. Portal speech requires an
+explicit, exact egress decision. Malformed, stale, duplicate, replayed, out-of-order, or oversized
+frames fail closed, and a transcript cannot smuggle instructions around destination policy.
 
-Voice cannot approve administration, purchase, publication, world rollback, or health treatment.
-The destination must normalize the requested action and obtain fresh visual or touch consent. An
-offline client fails visibly closed; an optional encrypted local recording is a short-lived draft
-requiring review and send after reconnection, never an automatic deferred effect. Always-on capture
-is a separately governed surveillance capability, not a configuration switch here.
+Reconnect asks for the committed result by Principal and utterance identity. It does not resend
+audio, replay the Intent, or deliver an expired command. An optional offline recording is a
+short-lived draft that requires review after reconnection; it never becomes an automatic queued
+effect. Enrollment revocation and destination export or deletion remain separate owner actions.
 
-Reconnect queries the committed result by Principal and `utterance_id`; it neither resends audio
-nor replays an Intent or stale speech. Mobile protocol, codec, challenge, Intent, Pattern, and
-result schemas version independently. A safe overlap is required. Incompatible parked work ends
-honestly and a new visible utterance is required.
+## Proving the mobile route
 
-## Lifecycle and smallest proof
-
-Communion owns enrolled-device metadata, revocation, session envelope, utterance/result correlation,
-and delivery acknowledgement. The destination owns the note, project, world task, or other domain
-record it admits. Retention distinguishes raw audio, transcript metadata, authentication audit, and
-destination data. The Principal may inspect retained Communion metadata, delete its own history,
-and revoke an enrollment; destination export/deletion stays with its owner.
-
-The smallest proof is a fifteen-second local Android route for one enrolled adult: isolated voice
-endpoint, separate app-key challenge, local Ear → text Mind → Voice, one active turn per device,
-ephemeral audio, durable text, and reconnect by utterance id. Tests cover stolen tunnel key,
-revoked app key, replay, object guessing, frame/transcript injection, disconnect, expiry, and
-locked-device playback. No public proxy, Portal, ambient capture, mobile approval, administration,
-or medical promise belongs in it.
+Use a fifteen-second local Android fixture for one enrolled adult: separate tunnel and application
+keys, local speech recognition, one text-capable destination, optional synthesis, ephemeral audio,
+durable text, and reconnect by utterance id. Test a stolen tunnel key, revoked application key,
+replay, object guessing, transcript injection, disconnect, expiry, and locked-device playback. No
+public proxy, Portal, ambient capture, mobile approval, administration, or medical promise enters
+the proof.
 
 Continue with [Echo](../sepulcher/extensions/echo.md), [Tether](../sepulcher/extensions/tether.md),
-[Ward](../sepulcher/extensions/ward.md), and [Workflow](../adr/28-workflow.md).
+[Ward](../sepulcher/extensions/ward.md), or the [Composition Portfolio](index.md).

@@ -55,8 +55,9 @@ canonical owners still govern truth.
 - Delivery claims: [docs/state-of-the-work.md](docs/state-of-the-work.md)
 - Vocabulary: [docs/lexicon/index.md](docs/lexicon/index.md)
 - Lore and identity: [docs/sepulcher/lich/index.md](docs/sepulcher/lich/index.md)
-- Application designs and candidate futures: [docs/compositions/index.md](docs/compositions/index.md);
-  page-local maturity controls
+- Native application contracts, worked examples, and local current material:
+  [docs/compositions/index.md](docs/compositions/index.md); [State of Work](docs/state-of-the-work.md)
+  keeps the shared whole-system evidence envelope
 - System constants: `src/lychd/system/constants.py`
 
 For documentation, enter through `docs/index.md`, the relevant directory `index.md`, and then the

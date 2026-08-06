@@ -6,6 +6,7 @@ import inspect
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import (
@@ -111,7 +112,11 @@ def test_contribution_port_cannot_duplicate_a_core_host_port() -> None:
 
 
 def test_contribution_container_lands_after_core_before_stones() -> None:
-    stone = GenericSoulstoneConfig(name="alpha", image="registry.example/alpha:1", groups=[])
+    stone = GenericSoulstoneConfig(
+        name="alpha",
+        quadlet=QuadletConfig(image="registry.example/alpha:1"),
+        groups=[],
+    )
     manifests = _transmuter(_ContainerContributor()).transmute_all([stone], runes=RuneRegistry([]))
     order = [
         type(m).__name__ + ":" + (getattr(m, "container_name", "") or getattr(m, "pod_name", "")) for m in manifests
@@ -135,7 +140,7 @@ def test_contributors_receive_isolated_deep_snapshots() -> None:
     original_port = settings.server.port
     stone = GenericSoulstoneConfig(
         name="alpha",
-        image="registry.example/alpha:1",
+        quadlet=QuadletConfig(image="registry.example/alpha:1"),
         concurrency=ConcurrencyIntent(dedicated=True),
     )
     observed: list[tuple[int, bool]] = []

@@ -171,11 +171,13 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
         dedent(
             f"""
             name = "crypt-stone"
-            image = "localhost/crypt-conformance:latest"
             runtime = "crypt-adversarial"
             capability_model_id = "{_MODEL_ID}"
             crypt_seal = "registered-outside-core"
             extra_modality = "ciphertext"
+
+            [quadlet]
+            image = "localhost/crypt-conformance:latest"
             """
         ).lstrip(),
         encoding="utf-8",

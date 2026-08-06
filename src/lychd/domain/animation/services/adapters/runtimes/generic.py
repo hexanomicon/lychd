@@ -17,8 +17,8 @@ from lychd.domain.animation.services.adapters.runtimes.shared import (
     resolved_soulstone_base_url,
 )
 from lychd.domain.animation.services.adapters.surfaces import (
-    GenericStone,
-    OpenAICompatibleStone,
+    GenericSoulstone,
+    OpenAICompatibleSoulstone,
     PassiveConnector,
     local_link_default,
 )
@@ -48,14 +48,14 @@ class GenericRuntimeAdapter:
                 runtime=soulstone.runtime_name,
                 kind="generic-openai-compatible",
             )
-            return OpenAICompatibleStone(rune=soulstone, connector=connector)
+            return OpenAICompatibleSoulstone(rune=soulstone, connector=connector)
 
         connector = PassiveConnector(
             kind=f"generic:{soulstone.runtime_name}",
             link=local_link_default(runtime=soulstone.runtime_name),
             base_url=resolved_soulstone_base_url(soulstone),
         )
-        return GenericStone(rune=soulstone, connector=connector)
+        return GenericSoulstone(rune=soulstone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs only when the generic runtime declares intent."""

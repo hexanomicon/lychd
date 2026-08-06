@@ -21,6 +21,10 @@ issuer, backend identity, and transport policy. Port `80` may handle ACME challe
 port `443` admitted TLS; binding detects collisions. Internal or offline deployments may use an
 operator-provided certificate or separately accepted internal issuer.
 
+If Veil is projected through Quadlet, its future Rune may embed the code-level `QuadletConfig`
+value under `quadlet`. Veil remains the Domain identity and owns its ingress fields and compiler;
+it is not another Stone, Animator, or opening for raw Quadlet/systemd text.
+
 ## Compiled ingress, not shared text
 
 Core and extensions contribute typed route intent: host/route match, backend service and port,

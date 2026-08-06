@@ -1,6 +1,5 @@
 name = "glm"
 description = "Reference static vLLM soulstone (reachable ⇒ WARM)."
-image = "vllm/vllm-openai:latest"
 model_path = "/models/GLM-4.6.gguf"
 port = 8000
 groups = ["glm"]
@@ -10,3 +9,6 @@ exec = [
   "--served-model-name", "GLM-4.6",
   "--host", "0.0.0.0", "--port", "8000",
 ]
+
+[quadlet]
+image = "vllm/vllm-openai:latest"

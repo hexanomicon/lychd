@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 
 from lychd.agents.router import ArtifactContent, ArtifactRef, Intent
 from lychd.domain.cortex.events import RunEvent, RunEventKind
-from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
 
 
@@ -20,6 +22,16 @@ def _intent(run_id: str = "run_1") -> Intent:
         source="bridge",
         sigil_name="operator",
         sigil_scopes=frozenset({"runs:submit"}),
+    )
+
+
+def _consent_evidence(run_id: str, consent_id: str) -> ConsentAdmissionEvidence:
+    return ConsentAdmissionEvidence(
+        consent_id=consent_id,
+        run_id=run_id,
+        status="granted",
+        decided_by="test:operator",
+        decided_at=datetime.now(UTC),
     )
 
 
@@ -233,7 +245,14 @@ async def test_claimed_failure_is_owned_by_enqueue_sequence() -> None:
     assert await ledger.try_claim_run("run_1", enqueue_seq=1) is True
 
     await ledger.park_consent("run_1", "consent-current")
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-current") == 2
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-current",
+            evidence=_consent_evidence("run_1", "consent-current"),
+        )
+        == 2
+    )
     assert await ledger.try_claim_run("run_1", enqueue_seq=2) is True
 
     assert await ledger.try_fail_claimed("run_1", enqueue_seq=1, error="old hop failed") is False
@@ -257,10 +276,24 @@ async def test_stale_consent_delivery_cannot_claim_retried_hop() -> None:
     assert await ledger.try_claim_run("run_1", enqueue_seq=0) is True
     await ledger.park_consent("run_1", "consent-first")
 
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-first") == 1
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-first",
+            evidence=_consent_evidence("run_1", "consent-first"),
+        )
+        == 1
+    )
     assert await ledger.try_claim_run("run_1", enqueue_seq=1) is True
     await ledger.park_consent("run_1", "consent-second")
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-second") == 2
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-second",
+            evidence=_consent_evidence("run_1", "consent-second"),
+        )
+        == 2
+    )
 
     assert await ledger.try_claim_run("run_1", enqueue_seq=1) is False
     queued = await ledger.get("run_1")
@@ -277,16 +310,37 @@ async def test_historical_consent_cannot_admit_a_later_wait() -> None:
     assert await ledger.try_claim_run("run_1", enqueue_seq=0)
     await ledger.set_consent("run_1", "consent-old")
     await ledger.park_consent("run_1", "consent-old")
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-old") == 1
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-old",
+            evidence=_consent_evidence("run_1", "consent-old"),
+        )
+        == 1
+    )
     assert await ledger.try_claim_run("run_1", enqueue_seq=1)
     await ledger.set_consent("run_1", "consent-current")
     await ledger.park_consent("run_1", "consent-current")
 
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-old") is None
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-old",
+            evidence=_consent_evidence("run_1", "consent-old"),
+        )
+        is None
+    )
     waiting = await ledger.get("run_1")
     assert waiting is not None
     assert waiting.status is RunStatus.AWAITING_CONSENT
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-current") == 2
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-current",
+            evidence=_consent_evidence("run_1", "consent-current"),
+        )
+        == 2
+    )
 
 
 @pytest.mark.asyncio
@@ -299,7 +353,14 @@ async def test_generic_status_writer_cannot_bypass_consent_admission() -> None:
     with pytest.raises(IllegalRunTransitionError):
         await ledger.set_status("run_1", RunStatus.QUEUED)
 
-    assert await ledger.try_admit_consent("run_1", consent_id="consent-current") == 1
+    assert (
+        await ledger.try_admit_consent(
+            "run_1",
+            consent_id="consent-current",
+            evidence=_consent_evidence("run_1", "consent-current"),
+        )
+        == 1
+    )
 
 
 @pytest.mark.asyncio
@@ -317,7 +378,14 @@ async def test_delivery_cursor_sees_old_run_when_resume_makes_it_eligible() -> N
     )
     cursor = (current.updated_at, current.run_id)
 
-    assert await ledger.try_admit_consent(old.run_id, consent_id="consent-old") == 1
+    assert (
+        await ledger.try_admit_consent(
+            old.run_id,
+            consent_id="consent-old",
+            evidence=_consent_evidence(old.run_id, "consent-old"),
+        )
+        == 1
+    )
     candidates = await ledger.list_delivery_candidates(after=cursor)
 
     assert [candidate.run_id for candidate in candidates] == [old.run_id]

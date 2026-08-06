@@ -3,7 +3,7 @@
 The domain owns generic connectors (``PassiveConnector`` /
 ``OpenAICompatibleConnector``) and the concrete generic ``SoulstoneAnimator``;
 the llama.cpp-specific connector (router/single lifecycle metadata) and its typed
-stone live here in the extension package.
+Soulstone live here in the extension package.
 """
 
 from __future__ import annotations
@@ -59,8 +59,8 @@ class LlamacppConnector(OpenAICompatibleConnector):
         return dict(self._metadata)
 
 
-class LlamacppStone(SoulstoneAnimator[LlamacppConnector, LlamaCppSoulstoneConfig]):
+class LlamacppSoulstone(SoulstoneAnimator[LlamacppConnector, LlamaCppSoulstoneConfig]):
     """Concrete llama.cpp Soulstone runtime handle."""
 
 
-__all__ = ["LlamacppConnector", "LlamacppStone"]
+__all__ = ["LlamacppConnector", "LlamacppSoulstone"]

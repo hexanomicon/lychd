@@ -21,7 +21,7 @@ from lychd.domain.animation.services.adapters.contracts import (
 )
 from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
 from lychd.domain.animation.services.adapters.surfaces import local_link_default
-from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppStone
+from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppSoulstone
 from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane, LlamaCppControlPlaneError
 from lychd.extensions.builtin.animator.llamacpp.parser import LlamaCppCommandParser, LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
@@ -73,7 +73,7 @@ class LlamaCppRuntimeAdapter:
             router_query_model_id=descriptor.router_query_model_id,
             metadata=descriptor.metadata,
         )
-        return LlamacppStone(rune=stone, connector=connector)
+        return LlamacppSoulstone(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for llama.cpp single or router runtimes."""

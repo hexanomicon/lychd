@@ -18,6 +18,7 @@ import asyncio
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 import structlog
@@ -167,6 +168,7 @@ async def enqueue_run(
 async def admit_consent_resume(
     queues: Mapping[str, RunQueue],
     ledger: RunLedger,
+    consents: ConsentAuthority,
     run: RunRecord,
     *,
     consent_id: str,
@@ -177,7 +179,28 @@ async def admit_consent_resume(
     that commit wins, publication failure never retracts the verdict: startup or an
     operator reconcile republishes the same idempotent key.
     """
-    admit_task = asyncio.ensure_future(ledger.try_admit_consent(run.run_id, consent_id=consent_id))
+    consent = await consents.get(consent_id)
+    if (
+        consent is None
+        or consent.id != consent_id
+        or consent.run_id != run.run_id
+        or consent.status not in {"granted", "denied", "expired"}
+        or not consent.decided_by
+        or consent.decided_at is None
+        or consent.decided_at.tzinfo is None
+        or consent.decided_at.utcoffset() is None
+    ):
+        return False
+    from lychd.domain.cortex.ledger import ConsentAdmissionEvidence
+
+    evidence = ConsentAdmissionEvidence(
+        consent_id=consent.id,
+        run_id=consent.run_id,
+        status=consent.status,
+        decided_by=consent.decided_by,
+        decided_at=consent.decided_at,
+    )
+    admit_task = asyncio.ensure_future(ledger.try_admit_consent(run.run_id, consent_id=consent_id, evidence=evidence))
     try:
         enqueue_seq = await asyncio.shield(admit_task)
     except asyncio.CancelledError:
@@ -256,8 +279,31 @@ class RunQueue(Protocol):
     async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None: ...
 
 
-class PendingConsentCanceller(Protocol):
-    """The cancellation-only consent authority required by Cortex."""
+class ConsentAdmissionView(Protocol):
+    """Structural decided-consent view consumed without importing Codex."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def run_id(self) -> str: ...
+
+    @property
+    def status(self) -> str: ...
+
+    @property
+    def decided_by(self) -> str | None: ...
+
+    @property
+    def decided_at(self) -> datetime | None: ...
+
+
+class ConsentAuthority(Protocol):
+    """The narrow consent read and cancellation authority required by Cortex."""
+
+    async def get(self, consent_id: str) -> ConsentAdmissionView | None:
+        """Return exact consent truth for resume admission."""
+        ...
 
     async def cancel_pending_for_run(self, run_id: str, *, decided_by: str) -> int:
         """Settle every pending consent owned by one Run."""
@@ -268,7 +314,7 @@ async def contain_run_effects(
     run_id: str,
     *,
     delegates: DelegatedAgentCoordinatorPort | None,
-    consents: PendingConsentCanceller | None,
+    consents: ConsentAuthority | None,
     decided_by: str,
 ) -> list[BaseException]:
     """Contain every child authority correlated to one Run and report uncertainty."""
@@ -372,7 +418,7 @@ class RunEngine:
         cancellations: RunCancellationCoordinator | None = None,
         stasis_store: Any | None = None,
         delegates: DelegatedAgentCoordinatorPort | None = None,
-        consents: PendingConsentCanceller | None = None,
+        consents: ConsentAuthority | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
         self.ledger = ledger
@@ -442,7 +488,7 @@ class RunEngine:
             if existing is not None:
                 if await self._repair_replayed_admission(existing, retain_before_publish):
                     return await self._publish_admission(existing)
-                return self._run_handle(existing)
+                return await self._replayed_run_handle(existing)
 
         workflow = self.workflows.route(intent)
         queue_name, priority = self.queue_router.resolve(intent)
@@ -468,14 +514,14 @@ class RunEngine:
             raise
         if not created:
             if not await self._repair_replayed_admission(run, retain_before_publish):
-                return self._run_handle(run)
+                return await self._replayed_run_handle(run)
         elif retain_before_publish is not None:
             await self._retain_and_release_admission(run, retain_before_publish)
         return await self._publish_admission(run)
 
     async def _publish_admission(self, run: RunRecord) -> RunHandle:
         """Open the live projection and publish one already-durable admission."""
-        channel = self.bus.open(run.run_id)
+        channel = await self._open_seeded_channel(run.run_id)
         try:
             await self._enqueue(run)
         except asyncio.CancelledError:
@@ -544,7 +590,16 @@ class RunEngine:
             True,
         )
 
-    def _run_handle(self, run: RunRecord, *, channel: Any | None = None) -> RunHandle:
+    async def _replayed_run_handle(self, run: RunRecord) -> RunHandle:
+        """Project replayed truth without minting a false terminal live channel."""
+        channel = None if run.status in TERMINAL_STATUSES else await self._open_seeded_channel(run.run_id)
+        return self._run_handle(run, channel=channel)
+
+    async def _open_seeded_channel(self, run_id: str) -> Any:
+        """Open a fresh process channel strictly after retained durable events."""
+        return self.bus.open(run_id, from_seq=await self.ledger.next_seq(run_id))
+
+    def _run_handle(self, run: RunRecord, *, channel: Any | None) -> RunHandle:
         """Project one canonical Run identity into the submit handle."""
         manifest = run.pattern_manifest
         pattern_id = str(manifest.get("key") or run.workflow_name)
@@ -558,7 +613,7 @@ class RunEngine:
                 "Literal['process_local', 'durable_best_effort']",
                 self.ledger.evidence_capture,
             ),
-            channel=channel or self.bus.open(run.run_id),
+            channel=channel,
         )
 
     async def _retain_and_release_admission(
@@ -795,10 +850,18 @@ class RunEngine:
         A call that does not win the CAS (not parked, already admitted, terminal) no-ops.
         """
         _ = approved
+        if self.consents is None:
+            return
         run = await self.ledger.get_by_consent(consent_id)
         if run is None:
             return
-        await admit_consent_resume(self.queues, self.ledger, run, consent_id=consent_id)
+        await admit_consent_resume(
+            self.queues,
+            self.ledger,
+            self.consents,
+            run,
+            consent_id=consent_id,
+        )
 
     async def adopt_delegate(self, job_id: str, result: DelegatedAgentResult) -> bool:
         """Adopt a terminal delegated result, then publish one durable graph resume."""

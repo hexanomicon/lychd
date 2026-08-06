@@ -201,11 +201,11 @@ class RunDeliveryRecord:
 
 @dataclass(frozen=True, kw_only=True)
 class RunHandle:
-    """Authoritative admission receipt plus the run's live channel."""
+    """Authoritative admission receipt and a live channel when work remains active."""
 
     run_id: str
     workflow_name: str
     pattern_id: str
     pattern_revision: str
     evidence_capture: Literal["process_local", "durable_best_effort"]
-    channel: RunChannel
+    channel: RunChannel | None

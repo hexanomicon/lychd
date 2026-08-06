@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
+from ipaddress import ip_address
 from typing import Any, cast, overload
 from urllib.parse import urlsplit
 
@@ -113,6 +114,7 @@ class AnimatorLoader:
     def _hydrate_soulstone_endpoints(self, stones: list[SoulstoneConfig]) -> list[SoulstoneConfig]:
         used_ports = set(self._reserved_ports.values())
         for stone in stones:
+            self._validate_soulstone_base_url(stone)
             port_was_set = self._field_was_set(stone, "port")
             base_url_was_set = self._field_was_set(stone, "base_url")
             base_url_port = self._port_from_base_url(stone.base_url)
@@ -156,6 +158,36 @@ class AnimatorLoader:
             hydrated.append(cast("SoulstoneConfig", merged))
 
         return hydrated
+
+    def _validate_soulstone_base_url(self, stone: SoulstoneConfig) -> None:
+        """Keep local Soulstone traffic on an explicit loopback endpoint.
+
+        A non-loopback endpoint is a Portal-class egress boundary even when its
+        configuration is shaped like a Soulstone. Requiring an explicit port also
+        keeps the connector URL identical to the locally launched runtime port.
+        """
+        if stone.base_url is None:
+            return
+        parsed = urlsplit(str(stone.base_url))
+        if parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment:
+            msg = f"Soulstone '{stone.name}' base_url cannot contain userinfo, query, or fragment components."
+            raise AnimatorConfigError(msg)
+        hostname = parsed.hostname
+        if hostname is None or not self._is_loopback_host(hostname):
+            msg = f"Soulstone '{stone.name}' base_url must use an approved loopback host."
+            raise AnimatorConfigError(msg)
+        if parsed.port is None:
+            msg = f"Soulstone '{stone.name}' base_url must declare an explicit port."
+            raise AnimatorConfigError(msg)
+
+    @staticmethod
+    def _is_loopback_host(hostname: str) -> bool:
+        if hostname == "localhost":
+            return True
+        try:
+            return ip_address(hostname).is_loopback
+        except ValueError:
+            return False
 
     def _field_was_set(self, instance: SoulstoneConfig | PortalConfig, field_name: str) -> bool:
         return field_name in instance.model_fields_set
@@ -263,7 +295,7 @@ class AnimatorLoader:
         return value in (None, "", [], {})
 
     def _is_unresolved_sample_soulstone(self, stone: SoulstoneConfig) -> bool:
-        if is_placeholder(stone.name) or is_placeholder(stone.image):
+        if is_placeholder(stone.name) or is_placeholder(stone.quadlet.image):
             logger.debug("skipping_sample_soulstone", path=str(stone.source_file))
             return True
         return False

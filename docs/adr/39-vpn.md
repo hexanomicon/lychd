@@ -21,6 +21,11 @@ are Rune-owned configuration, not hard-coded topology. Typed operations beneath 
 generate a keypair, admit, inspect, revoke, rotate, or export a short-lived client configuration
 or QR projection; it adds no root CLI verb.
 
+If that service is projected through Quadlet, its future Rune may embed the code-level
+`QuadletConfig` value under `quadlet`. That does not rename Tether to a kind of Stone, make it an
+Animator, or grant generic unit-text authority; Tether keeps ownership of its exact network fields
+and compilation policy.
+
 The gateway remains outside the shared application Pod. It receives no broad mounts, application
 secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN` inside that Pod
 is not an acceptable shortcut.

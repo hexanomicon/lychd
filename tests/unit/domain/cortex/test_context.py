@@ -13,6 +13,7 @@ from pydantic_ai.messages import (
 
 from lychd.domain.animation.capabilities import CapabilityGrant
 from lychd.domain.cortex.context import ContextBudgetExceededError, ContextOrchestrator
+from lychd.domain.cortex.privacy import PrivacyClass, PrivatizationLabel
 
 
 class _Registry:
@@ -113,4 +114,55 @@ def test_required_continuation_over_budget_fails_loudly() -> None:
             session_id="session",
             query="current",
             continuation=continuation,
+        )
+
+
+def test_context_defaults_unlabelled_material_to_restricted_unknown() -> None:
+    context = ContextOrchestrator(registry=cast("Any", _Registry()))
+
+    assembled = context.assemble(run_id="run", session_id="session", query="identify me")
+
+    query = next(block for block in assembled.blocks if block.layer == 6)
+    assert query.label.privacy_class is PrivacyClass.RESTRICTED
+    assert query.label.lineage_known is False
+    assert assembled.aggregate_label.privacy_class is PrivacyClass.RESTRICTED
+    assert "local_only" in assembled.aggregate_label.handling_constraints
+
+
+def test_context_joins_explicit_privacy_influences_without_lowering() -> None:
+    context = ContextOrchestrator(registry=cast("Any", _Registry()))
+    history_label = PrivatizationLabel(
+        privacy_class=PrivacyClass.PRIVATE,
+        weight=0.8,
+        categories=frozenset({"email"}),
+        material_parents=frozenset({"message:1"}),
+    )
+    query_label = PrivatizationLabel(
+        privacy_class=PrivacyClass.INTERNAL,
+        weight=0.3,
+        categories=frozenset({"source_code"}),
+        material_parents=frozenset({"request:1"}),
+    )
+
+    assembled = context.assemble(
+        run_id="run",
+        session_id="session",
+        query="repair the account",
+        history=[{"role": "user", "content": "alice@example.invalid"}],
+        history_label=history_label,
+        query_label=query_label,
+    )
+
+    assert assembled.aggregate_label.privacy_class is PrivacyClass.PRIVATE
+    assert assembled.aggregate_label.weight == 0.8
+    assert assembled.aggregate_label.categories == frozenset({"email", "source_code"})
+    assert assembled.aggregate_label.material_parents == frozenset({"message:1", "request:1"})
+
+
+def test_unknown_lineage_cannot_be_presented_as_public() -> None:
+    with pytest.raises(ValueError, match="Unknown privacy lineage"):
+        PrivatizationLabel(
+            privacy_class=PrivacyClass.PUBLIC,
+            weight=0.0,
+            lineage_known=False,
         )

@@ -61,7 +61,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
     read-only law lost.
     """
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
+    stone = SoulstoneFactory.build(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     content = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8")
@@ -82,7 +82,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
 def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> None:
     """Host identity is explicit for agent containers, never forced on Postgres."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    stone = SoulstoneFactory.build(name="hermes", image="ollama/ollama", groups=[])
+    stone = SoulstoneFactory.build(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8").splitlines()
@@ -128,7 +128,7 @@ def test_f3_exec_and_env_are_systemd_quoted_not_html_escaped(tmp_path: Path) -> 
             )
 
     transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
-    stone = SoulstoneFactory.build(name="qwen", image="vllm/vllm-openai:latest", groups=[])
+    stone = SoulstoneFactory.build(name="qwen", quadlet={"image": "vllm/vllm-openai:latest"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     content = (output_dir / "lychd-qwen.container").read_text(encoding="utf-8")
@@ -153,7 +153,7 @@ def test_real_quadlet_generator_preserves_literal_environment_and_command_bounda
                 env_overrides={"LITERAL": "${HOST_TOKEN}"},
             )
 
-    stone = SoulstoneFactory.build(name="generator", image="example/runtime")
+    stone = SoulstoneFactory.build(name="generator", quadlet={"image": "example/runtime"})
     output_dir, _ = _inscribe(
         Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all([stone]),
         tmp_path,
@@ -186,11 +186,14 @@ def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
     dedicated = SoulstoneFactory.build(
-        name="loner", image="ollama/ollama", groups=[], concurrency=ConcurrencyIntent(dedicated=True)
+        name="loner",
+        quadlet={"image": "ollama/ollama"},
+        groups=[],
+        concurrency=ConcurrencyIntent(dedicated=True),
     )
     resident = SoulstoneFactory.build(
         name="resident",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=[],
         concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
     )
@@ -213,25 +216,25 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     compatible = ConcurrencyIntent(conflict_domains=[])
     alpha = SoulstoneFactory.build(
         name="alpha",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=["logic"],
         concurrency=compatible,
     )
     beta = SoulstoneFactory.build(
         name="beta",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=["logic"],
         concurrency=compatible,
     )
     gamma = SoulstoneFactory.build(
         name="gamma",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=["creative"],
         concurrency=compatible,
     )
     delta = SoulstoneFactory.build(
         name="delta",
-        image="ollama/ollama",
+        quadlet={"image": "ollama/ollama"},
         groups=["creative"],
         concurrency=compatible,
     )
@@ -275,8 +278,8 @@ def test_conflict_domain_renders_one_reciprocal_ordered_edge(tmp_path: Path) -> 
     """Each physical conflict pair renders once, on the lexical higher endpoint."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
     gpu = ConcurrencyIntent(conflict_domains=["gpu"])
-    alpha = SoulstoneFactory.build(name="alpha", image="example/runtime", concurrency=gpu)
-    gamma = SoulstoneFactory.build(name="gamma", image="example/runtime", concurrency=gpu)
+    alpha = SoulstoneFactory.build(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gamma = SoulstoneFactory.build(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
 
     output_dir, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
     alpha_target = (systemd_dir / animator_target_unit("alpha")).read_text(encoding="utf-8").splitlines()
@@ -295,8 +298,8 @@ def test_systemd_analyze_accepts_compiled_conflict_graph(tmp_path: Path) -> None
     """Ask systemd itself to reject requirement or ordering cycles."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
     gpu = ConcurrencyIntent(conflict_domains=["gpu"])
-    alpha = SoulstoneFactory.build(name="alpha", image="example/runtime", concurrency=gpu)
-    gamma = SoulstoneFactory.build(name="gamma", image="example/runtime", concurrency=gpu)
+    alpha = SoulstoneFactory.build(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gamma = SoulstoneFactory.build(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
     _, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
 
     (systemd_dir / "lychd-pod.service").write_text(

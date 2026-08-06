@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig
 from lychd.domain.orchestration.actuator import (
     RuntimePreconditionError,
@@ -64,7 +65,7 @@ class _ShowProcess:
 def _stone(name: str, *, conflict_domains: list[str]) -> GenericSoulstoneConfig:
     return GenericSoulstoneConfig(
         name=name,
-        image=f"example/{name}:latest",
+        quadlet=QuadletConfig(image=f"example/{name}:latest"),
         concurrency=ConcurrencyIntent(conflict_domains=conflict_domains),
     )
 

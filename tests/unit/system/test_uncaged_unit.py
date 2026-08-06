@@ -18,6 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from lychd.cli.commands import bind_quadlets
+from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.transmute import transmute_uncaged_vessel
 from lychd.system.binding_sites import (
@@ -204,7 +205,7 @@ def runner() -> CliRunner:
 
 def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNamespace:
     """Stub the normal bind pass so the uncaged branch can be exercised in isolation."""
-    stone = GenericSoulstoneConfig(name="test", image="example/runtime")
+    stone = GenericSoulstoneConfig(name="test", quadlet=QuadletConfig(image="example/runtime"))
     portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader_cls.return_value.hydrate_all.return_value = ([stone], [portal])

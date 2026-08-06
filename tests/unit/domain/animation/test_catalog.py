@@ -28,7 +28,7 @@ _FIXTURES = Path(__file__).resolve().parents[3] / "fixtures"
 
 
 def _soulstone(**overrides: object) -> GenericSoulstoneConfig:
-    payload: dict[str, object] = {"name": "s", "image": "img:latest", "runtime": "llamacpp"}
+    payload: dict[str, object] = {"name": "s", "quadlet": {"image": "img:latest"}, "runtime": "llamacpp"}
     payload.update(overrides)
     return GenericSoulstoneConfig.model_validate(payload)
 

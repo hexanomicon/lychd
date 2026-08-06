@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from lychd.config import QuadletConfig
 from lychd.domain.animation.conflicts import (
     ConflictTopologyError,
     build_conflict_topology,
@@ -27,7 +28,7 @@ def _stone(
 ) -> GenericSoulstoneConfig:
     return GenericSoulstoneConfig(
         name=name,
-        image="example/runtime",
+        quadlet=QuadletConfig(image="example/runtime"),
         groups=groups or [],
         concurrency=ConcurrencyIntent(
             dedicated=dedicated,

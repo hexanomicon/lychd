@@ -6,6 +6,7 @@ from typing import ClassVar, Literal
 
 from pydantic import Field, model_validator
 
+from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
 
 
@@ -29,7 +30,9 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
 
     path_fragment: ClassVar[Path] = Path("llamacpp")
     runtime: str = "llamacpp"
-    image: str = "ghcr.io/ggml-org/llama.cpp:server-cuda"
+    quadlet: QuadletConfig = Field(
+        default_factory=lambda: QuadletConfig(image="ghcr.io/ggml-org/llama.cpp:server-cuda")
+    )
     model_format: ModelFormat | None = ModelFormat.GGUF
 
     startup_mode: LlamaCppMode = LlamaCppMode.AUTO

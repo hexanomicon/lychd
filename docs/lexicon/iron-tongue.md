@@ -31,7 +31,6 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Blade** | The discrimination office that separates supported shape, evidence, authority, and continuation from persuasive or unsafe alternatives. | [Blade](../sepulcher/lich/blade.md) |
 | **Bridge** | The Altar instrument that accepts and routes natural-language Intent. | [Altar Bridge](../divination/altar/bridge.md) |
 | **Call** | The reception and routing office that makes present signals, recalled forms, and possible acts addressable without selecting one. | [Call](../sepulcher/lich/call.md) |
-| **Candidate study** | An explicitly unaccepted Portfolio proposal retained for examination without architectural promotion. | [Composition Portfolio](../compositions/index.md) |
 | **Capability** | A typed service requestable from an Animator, defined by family, implementation identity, modalities, tools, and live phase. | [Dispatcher (ADR 22)](../adr/22-dispatcher.md#capability-binding-cartography) |
 | **CapabilityGrant** | The Dispatcher's temporary binding of one warm capability to its state, runtime handles, resolved generation profile, toolsets, and GrantLease. | [Dispatcher (ADR 22)](../adr/22-dispatcher.md#the-grant-lease-doctrine) |
 | **Censor** | A typed local transformation station that produces a sanitized candidate and findings without declassification or egress authority. | [Weaver anonymization](../sepulcher/extensions/weaver/anonymization.md#transformations-are-evidence) |
@@ -93,6 +92,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Manifestation** | The concrete form an Extension Domain takes in one assembled body or profile. | ADR 05 + [State](../state-of-the-work.md) |
 | **Mirror** | The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution, and declared continuity. | [Mirror](../sepulcher/extensions/mirror.md) + ADR 32 |
 | **Necropolis** | The designed peer-to-peer topology in which sovereign LychD nodes negotiate bounded work over A2A. | [A2A (ADR 26)](../adr/26-a2a.md) |
+| **Native Reference Composition** | A first-party supported operator-visible application contract and worked example whose leaf states its current material against tracked evidence. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
 | **Nexus** | The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and Orchestrator transitions. | [Altar Nexus](../divination/altar/nexus.md) + Orchestrator |
 | **Occurrence** | One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation admission; distinct from the Graph runtime's legacy station-attempt `occurrence_id`. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
 | **Oculus** | The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and rebuildable read models. | [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md) |
@@ -107,7 +107,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Phylactery** | The PostgreSQL-centered durable-data jurisdiction for committed Run truth and other durable application records. | `src/lychd/db/`; [ADR 06](../adr/06-persistence.md) + [State](../state-of-the-work.md) |
 | **Portal** | A remote-service Animator backed by a Portal Rune. | `src/lychd/domain/animation/` |
 | **Portal Rune** | A validated Codex TOML declaration of remote endpoint, provider, model defaults, capabilities, tools, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
-| **Portfolio** | The designed Weaver registry of Reference Compositions and their enablement, Pattern, and schedule catalogues. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
+| **Portfolio** | The designed Weaver registry of Native Reference Compositions and their enablement, Pattern, and schedule catalogues. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
 | **Posture** | A per-run Agent specialization expressed through output schema, tool grant, model settings, and prompt frame. | [Agents (ADR 20)](../adr/20-agents.md#mechanical-cognitive-postures) |
 | **Prism** | The vision Extension Domain for source-grounded regions, frames, transforms, and visual observations. | [Prism](../sepulcher/extensions/prism.md) + ADR 36 |
 | **Privacy Cut** | A new sanitized Context branch built locally without reusing raw history, continuation, attachment projections, or provider cache identity. | [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut) |
@@ -121,7 +121,6 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Reanimation** | Process-death recovery that reconciles durable Run, queue, and checkpoint truth from a supported Durable Stasis boundary. | Phylactery |
 | **Reaper** | Shadow's designed hygiene Ghoul for releasing branch-owned workspaces and resources while preserving required failure evidence. | [Simulation (ADR 31)](../adr/31-simulation.md#the-branch-reaper) |
 | **Recall** | A retained Seed becoming active in present Flux after retrieval and Context make it available. | [Recall](../sepulcher/lich/spirit/recall.md) |
-| **Reference Composition** | An accepted operator-visible application architecture assembled from Patterns, Agents, capabilities, policies, data, and projections. | [Compositions](../compositions/index.md) + Weaver (ADR 28) |
 | **Reliquary** | A designed artifact-custody lifecycle for immutable lineage, authorized retrieval, comparison, and retention. | [Artifact-reference boundary](../state-of-the-work.md#artifact-reference-contract) + [Phylactery](../sepulcher/phylactery/index.md) |
 | **Riddle** | The evaluation Extension Domain for versioned trials, controls, repeated Outcomes, calibrated findings, attribution candidates, and uncertainty. | [Riddle](../sepulcher/extensions/riddle/index.md) + ADR 34 |
 | **Run** | The executable and ledger record through which the current implementation represents one Invocation. | `src/lychd/db/models/run.py`; Weaver (ADR 28) |

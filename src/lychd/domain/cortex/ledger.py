@@ -11,7 +11,7 @@ settled text belongs to the session turn.
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, cast
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
@@ -34,7 +34,29 @@ if TYPE_CHECKING:
     from lychd.agents.router import Intent
     from lychd.domain.cortex.events import RunEvent
 
-__all__ = ["DbRunLedger", "InMemoryRunLedger", "RunAdmissionConflictError", "RunLedger"]
+__all__ = [
+    "ConsentAdmissionEvidence",
+    "DbRunLedger",
+    "InMemoryRunLedger",
+    "RunAdmissionConflictError",
+    "RunLedger",
+]
+
+
+@dataclass(frozen=True, kw_only=True)
+class ConsentAdmissionEvidence:
+    """Settled consent truth required by the non-durable Run adapter.
+
+    PostgreSQL re-reads and locks the canonical Consent row in the same transaction.
+    The loop-confined adapter has no shared database, so its caller must supply the
+    exact verdict read from the consent authority before the admission CAS.
+    """
+
+    consent_id: str
+    run_id: str
+    status: str
+    decided_by: str
+    decided_at: datetime
 
 
 class RunAdmissionConflictError(ValueError):
@@ -254,14 +276,22 @@ class RunLedger(Protocol):
         """Return the run parked on ``consent_id`` (feeds `engine.approve`)."""
         ...
 
-    async def try_admit_consent(self, run_id: str, *, consent_id: str) -> int | None:
+    async def try_admit_consent(
+        self,
+        run_id: str,
+        *,
+        consent_id: str,
+        evidence: ConsentAdmissionEvidence | None = None,
+    ) -> int | None:
         """Atomically admit a parked run and allocate its next enqueue sequence.
 
         The SINGLE resume-admission gate (F1/F4): returns the new sequence iff THIS
         caller performed the transition. Concurrent approves, and an `engine.approve`
         racing `perform_run`'s post-flip re-check, all funnel here so exactly one
-        sequence is allocated and enqueued. When supplied, ``consent_id`` must own
-        the current wait so a historical verdict cannot advance a later gate.
+        sequence is allocated and enqueued. ``consent_id`` must own the current wait
+        so a historical verdict cannot advance a later gate. The in-memory adapter
+        additionally requires exact settled evidence because it has no shared DB row
+        to lock; PostgreSQL re-establishes the same truth transactionally.
         """
         ...
 
@@ -737,13 +767,29 @@ class InMemoryRunLedger:
                 return record
         return None
 
-    async def try_admit_consent(self, run_id: str, *, consent_id: str) -> int | None:
+    async def try_admit_consent(
+        self,
+        run_id: str,
+        *,
+        consent_id: str,
+        evidence: ConsentAdmissionEvidence | None = None,
+    ) -> int | None:
         """CAS the parked run to QUEUED and allocate its sequence in one loop turn.
 
         There is no await across either mutation, so no stale job can claim between
         admission and sequence allocation.
         """
         record = self._require(run_id)
+        if (
+            evidence is None
+            or evidence.consent_id != consent_id
+            or evidence.run_id != run_id
+            or evidence.status not in {"granted", "denied", "expired"}
+            or not evidence.decided_by
+            or evidence.decided_at.tzinfo is None
+            or evidence.decided_at.utcoffset() is None
+        ):
+            return None
         if record.status is not RunStatus.AWAITING_CONSENT or record.consent_id != consent_id:
             return None
         _apply_status(record, RunStatus.QUEUED, error=None)
@@ -1669,12 +1715,19 @@ class DbRunLedger:
             )
             return self._to_record(row) if row is not None else None
 
-    async def try_admit_consent(self, run_id: str, *, consent_id: str) -> int | None:
+    async def try_admit_consent(
+        self,
+        run_id: str,
+        *,
+        consent_id: str,
+        evidence: ConsentAdmissionEvidence | None = None,
+    ) -> int | None:
         """Lock the exact decided Consent owner and allocate one resume delivery."""
         from sqlalchemy import select
 
         from lychd.db.models import Consent, Run, RunDelivery
 
+        _ = evidence  # the database re-establishes this truth under its own lock
         try:
             consent_uuid = UUID(consent_id)
         except ValueError:

@@ -222,7 +222,6 @@ container path `/models` unchanged. TOML does not expand `$HOME`.
 ```toml title="atelier.toml"
 name = "atelier"
 description = "First local llama.cpp router."
-image = "ghcr.io/ggml-org/llama.cpp:server-cuda"
 startup_mode = "router"
 model_path = "/models/first-model.gguf"
 models_dir = "/models"
@@ -243,6 +242,9 @@ description = "First local tool-capable chat model."
 [models.capabilities]
 families = ["chat"]
 supports_tools = true
+
+[quadlet]
+image = "ghcr.io/ggml-org/llama.cpp:server-cuda"
 ```
 
 Keep top-level `model_path`: the router connector probes the same `first-model` identity it loads.

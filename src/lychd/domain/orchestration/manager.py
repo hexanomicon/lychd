@@ -343,8 +343,12 @@ class OrchestratorManager:
                     # a terminal outcome. Keep queue claims and evictee admission
                     # closed for the separate readiness convergence that follows.
                     self._publish(trace, "verifying")
-                    await self._converge_warm(target_capability_key)
-                    await self._converge_evicted_cold(plan.evict_coven_ids)
+                    convergence_deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
+                    await self._converge_warm(target_capability_key, deadline=convergence_deadline)
+                    await self._converge_evicted_cold(
+                        plan.evict_coven_ids,
+                        deadline=convergence_deadline,
+                    )
                 except (Exception, asyncio.CancelledError) as convergence_error:
                     compensation = build_compensation_intent(intent)
                     trace.compensation_transition_id = compensation.transition_id
@@ -380,7 +384,8 @@ class OrchestratorManager:
         async with self._runtime_mutation_barrier([target_animator]) as barrier:
             try:
                 self._publish(trace, "actuating")
-                await self._converge_warm(target_capability_key)
+                deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
+                await self._converge_warm(target_capability_key, deadline=deadline)
             except (Exception, asyncio.CancelledError):
                 # There is no trustworthy model-level inverse without recording
                 # the previously loaded model. Do not reopen into unknown state.
@@ -462,10 +467,9 @@ class OrchestratorManager:
             msg = f"Failed to activate capability '{target.key}' on '{target.animator_name}'{reason}."
             raise RuntimeError(msg)
 
-    async def _converge_warm(self, capability_key: str) -> None:
+    async def _converge_warm(self, capability_key: str, *, deadline: float) -> None:
         """Perform target refresh, activation, and WARM proof under one deadline."""
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + self._switching.warmup_timeout_s
         try:
             async with asyncio.timeout_at(deadline):
                 spec, current_state = await self._get_capability_record(capability_key)
@@ -480,10 +484,9 @@ class OrchestratorManager:
                 reason="target convergence exceeded the warm-up deadline",
             ) from exc
 
-    async def _converge_evicted_cold(self, animator_names: list[str]) -> None:
+    async def _converge_evicted_cold(self, animator_names: list[str], *, deadline: float) -> None:
         """Refresh evictee state and prove no stopped runtime remains active."""
         still_started: list[str] = []
-        deadline = asyncio.get_running_loop().time() + self._switching.warmup_timeout_s
         try:
             async with asyncio.timeout_at(deadline):
                 for animator_name in animator_names:

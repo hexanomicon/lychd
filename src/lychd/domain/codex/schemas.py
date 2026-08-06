@@ -10,6 +10,7 @@ constraint check).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from fnmatch import fnmatchcase
 from pathlib import PurePosixPath
 from typing import Any, Literal, cast
@@ -52,6 +53,7 @@ class ConsentView:
     args: dict[str, Any] = field(default_factory=dict)
     status: ConsentStatusValue
     decided_by: str | None = None
+    decided_at: datetime | None = None
     preauth_slug: str | None = None
 
 

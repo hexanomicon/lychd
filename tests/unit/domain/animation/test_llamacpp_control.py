@@ -13,13 +13,13 @@ from lychd.extensions.builtin.animator.llamacpp import (
     LlamacppConnector,
     LlamaCppControlPlane,
     LlamaCppControlPlaneError,
-    LlamacppStone,
+    LlamacppSoulstone,
 )
 from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 from lychd.lib.http import HttpJsonError
 
 
-def _router_animator() -> LlamacppStone:
+def _router_animator() -> LlamacppSoulstone:
     rune = LlamaCppSoulstoneConfig(
         name="router",
         startup_mode=LlamaCppMode.ROUTER,
@@ -35,7 +35,7 @@ def _router_animator() -> LlamacppStone:
         router_query_model_id="qwen-next-80b",
         metadata={},
     )
-    return LlamacppStone(rune=rune, connector=connector)
+    return LlamacppSoulstone(rune=rune, connector=connector)
 
 
 @pytest.mark.asyncio

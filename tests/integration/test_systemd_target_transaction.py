@@ -15,6 +15,7 @@ from typing import NoReturn
 
 import pytest
 
+from lychd.config import QuadletConfig
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
@@ -154,7 +155,7 @@ def _inscribe_conflicting_targets(
     soulstones = tuple(
         GenericSoulstoneConfig(
             name=name,
-            image="example/runtime",
+            quadlet=QuadletConfig(image="example/runtime"),
             groups=[],
             concurrency=shared_gpu,
         )

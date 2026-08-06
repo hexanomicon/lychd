@@ -5,8 +5,11 @@ icon: material/list-status
 
 # State of Work
 
-LychD is **pre-alpha**. This page is the canonical account of what repository evidence supports,
-what still needs a named operator receipt, and what remains design.
+LychD is **pre-alpha**. This page is the canonical whole-system account of what repository evidence
+supports, what still needs a named operator receipt, and what remains design. Each
+[Composition](./compositions/index.md) leaf summarizes its application-specific material under the
+canonical [Portfolio delivery boundary](#composition-portfolio-delivery) below; a leaf cannot
+promote delivery independently.
 
 The proved envelope is local, loopback-oriented, single-user, and one control process in the
 repository-test profile. A disposable PostgreSQL receipt now exercises the real application
@@ -248,7 +251,11 @@ repair remains an operator responsibility.
 **State:** Operator validation
 
 **Proved now:** LychD has a generated unit contract and a mediated host actuator for its declared
-Linux deployment shape.
+Linux deployment shape. Soulstone and Phoenix Runes embed the minimum frozen non-Rune
+`QuadletConfig` value under `quadlet` and share its OCI image validation without sharing Domain
+identity, Rune ancestry, raw manifest authority, or live runtime state. Their owning compilers
+remain responsible for admitted physical policy. Concrete local runtime handles use explicit
+`*Soulstone` names; there is no generic `Stone`, `ServiceStone`, or `AmbientStone` code type.
 
 **Receipt needed:** A maintained receipt naming Linux distribution and kernel, systemd and Podman
 versions, the generated Animator/Coven targets and conflict edges, loaded-source attestation, a
@@ -257,9 +264,14 @@ GPU and model validation remain separate receipts.
 
 **Evidence**
 
-- **Source:** [Runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py)
+- **Source:** [Embedded Quadlet configuration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/config/quadlet.py),
+  [Soulstone transmuter](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/transmute.py),
+  [Phoenix contributor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/observability/phoenix/contributor.py),
+  [runtime actuator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime.py),
   and [runtime topology attestor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/system/services/runtime_topology.py)
 - **Verification:** [Runtime protocol tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime.py),
+  [embedded Quadlet configuration tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/config/test_quadlet.py),
+  [Rune writer tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/config/runes/test_writer.py),
   [loaded-topology attestation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/services/test_runtime_topology.py),
   and [pending llama.cpp fixture boundary](https://github.com/hexanomicon/lychd/blob/main/tests/fixtures/llamacpp/README.md)
 - **Rite:** [Summoning](./summoning.md)
@@ -313,7 +325,9 @@ active delivery before sequence rotation instead of preserving an abandoned pre-
 crash-window recovery requires the first resumable checkpoint to bind the exact latest non-cancelled
 Consent, then persists that owner on `Run.consent_id`; ordinary reconciliation reads that exact
 pointer rather than inferring ownership from newest-row order. Re-admission requires the same-run
-Consent to carry a terminal verdict, decision principal, and decision time. The same rule covers a delegated
+Consent to carry a terminal verdict, decision principal, and timezone-aware decision timestamp;
+the in-memory adapter now requires explicit evidence from the Consent authority while PostgreSQL re-establishes
+the same truth under its row lock. The same rule covers a delegated
 pre-park owner, whose same-run job must carry shape-valid terminal result evidence. Generic status mutation cannot bypass either
 owner-specific resume gate. Unrecoverable correlated effects are
 contained before parent failure. PostgreSQL startup refuses degraded durable recovery. Disposable PostgreSQL tests cover
@@ -366,7 +380,9 @@ resume admission retain exact durable publication intent, including requested pr
 delivery generation still in `HELD`, so a release that committed before raising cannot be failed;
 bounded refusal retry surfaces unresolved custody rather than silently stranding it. An idempotent
 replay inspects existing delivery truth and repairs a stranded `HELD` caller-context gate before it
-can return a handle, and republishes an exact `PENDING` hop before returning. Startup plus the runtime relay repair missing broker jobs without rerouting the
+can return a handle, and republishes an exact `PENDING` hop before returning. A fresh process-local
+channel starts after retained durable Step history, while replay of a terminal Run returns no false
+live channel. Startup plus the runtime relay repair missing broker jobs without rerouting the
 Pattern or guessing fresh versus resume mode, fairly revisit every caller-held, degraded, or live
 external-wait page while scanning forward, and retry exact abort of a broker job accepted after
 cancellation fenced canonical truth; caller cancellation cannot interrupt that containment probe.
@@ -568,7 +584,9 @@ nested specification and state values while keeping explicitly named runtime han
 Runtime hydration now consumes only declarations plus adapter and Connector contracts: it neither
 imports nor retains `QuadletContainer`, does not invoke `Transmuter`, and no longer recompiles the
 complete physical body merely to construct live handles. Bind-time planning and the rendered
-Quadlet/systemd generation remain covered by their existing parity tests.
+Quadlet/systemd generation remain covered by their existing parity tests. Soulstone hydration
+accepts only explicit loopback connector URLs whose port agrees with the launched runtime; a remote
+endpoint cannot enter through the locally trusted Soulstone family.
 
 **Boundary:** `AnimatorRegistry` still combines several ownership roles. `GrantLease.expires_at`
 exists, but the ledger does not enforce it; current leases are context-managed, not renewable
@@ -579,9 +597,11 @@ and raw extension Quadlet contribution remain in place. Generic service/body com
 **Evidence**
 
 - **Source:** [Animator registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py),
+  [Animator configuration loader](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/loader.py),
   [Dispatcher](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py),
   and [lease ledger](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/leases.py)
 - **Verification:** [Registry tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py),
+  [Soulstone endpoint policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_soulstone_endpoint_policy.py),
   [import-law tests](https://github.com/hexanomicon/lychd/blob/main/tests/architecture/test_import_law.py),
   [Dispatcher tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_dispatcher.py),
   [lease tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_leases.py),
@@ -748,10 +768,11 @@ readiness convergence, loaded-graph attestation, one compound target transaction
 classification, exact-prior-world compensation, cancellation restoration, and fail-closed
 containment. A proved restoration reopens admission; `.contained` and unresolved `.processing`
 fence startup and later Reactor work. Direct Orchestrator admission refuses a non-warm shared
-dynamic Animator before soft activation or host effects, matching Dispatcher ownership law. The
+dynamic Animator before soft activation or host effects, matching Dispatcher ownership law. One
 absolute warm-up deadline covers target refresh, optional activation, accepted-activation refresh,
 and WARM polling. Activation or accepted-refresh interruption performs bounded adapter abandonment
-despite repeated caller cancellation before propagating failure. The deadline also bounds post-stop cold probes for evictees, so an
+despite repeated caller cancellation before propagating failure. The same deadline also bounds
+post-stop cold probes for evictees, so an
 unresponsive observation enters typed compensation or containment rather than holding the gates
 forever.
 
@@ -948,6 +969,28 @@ workflow mutation surface, Svelte Flow drafting canvas, or production-browser re
 - **Law:** [ADR 15 — Frontend](./adr/15-frontend.md) and
   [ADR 28 — Workflow](./adr/28-workflow.md)
 
+### Composition Portfolio {#composition-portfolio-delivery}
+
+**State:** Designed
+
+**Proved now:** The [Composition Portfolio](./compositions/index.md) publishes Native Reference
+Composition contracts and worked examples. The delivered boot-composed workflow catalogue contains
+only `bridge_chat@1` and `delegated_rite@1`; it is not a Composition registry and proves none of the
+Portfolio applications executable.
+
+**Do not expect yet:** There is no Composition contribution or enablement store, application
+selector, Portfolio-owned Pattern registration, Suite executor, application scheduler, or delivered
+domain-record/effect path for any Portfolio member. A leaf's **Current material** block is a local
+summary of this boundary and the relevant substrate records, not a separate delivery authority.
+
+**Evidence**
+
+- **Source:** [fixed workflow registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py)
+- **Verification:** [workflow routing tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_router.py)
+  and [Loom registry tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py)
+- **Topic:** [Composition Portfolio](./compositions/index.md)
+- **Law:** [ADR 28 — Workflow](./adr/28-workflow.md)
+
 ### Orb instrument {#orb-instrument}
 
 **State:** Partial
@@ -1038,25 +1081,34 @@ application trace export to it. The sample `latest` image is not a reproducible 
 
 ### Context privatization and Portal egress {#context-privatization-and-portal-egress}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** **Law in place:** Context, Security, Dispatcher, and Workflow define
+**Proved now:** Context, Security, Dispatcher, and Workflow define
 lineage-carrying Privatization Labels, a local Privacy Cut, separate transformation and
 declassification authority, exact pre-transmission decisions, retry and delegation handling, and
-quarantined returns. Current source only recursively censors values whose dictionary keys look
-secret-shaped before storing a consent projection. Dispatcher also fails closed for every Portal
-source, including direct capability-key dispatch, until a typed egress path exists.
+quarantined returns. Every assembled Context Block now carries a label; present query, history, and
+continuation material without supplied lineage defaults to restricted/local-only, and the aggregate
+join retains the highest class and weight plus all declared influences. A deterministic local Censor
+rebuilds bounded JSON-like values, redacts the delivered typed identifier set, and emits exact
+non-egress-eligible transformation evidence without raw spans or removal claims. Consent projections
+retain their older secret-shaped-key censor. Dispatcher also fails closed for every Portal source,
+including direct capability-key dispatch, until a typed egress path exists.
 
-**Do not expect yet:** Blocks, SQL and tool results do not carry general labels or influence
-lineage. There is no deterministic identifier scanner, Privacy Agent, `TransformationReceipt`,
-sanitized Context branch, Portal Egress Gate, admission/transmission check, pseudonym map,
-or deletion propagation. Portal declarations and probes remain visible but cannot receive a Run.
+**Boundary — Not yet:** SQL, tools, artifacts, and other producers do not attach governed source
+lineage. The deterministic evidence is not declassification authority and does not form a sanitized
+Context branch. There is no semantic Privacy Agent, verified Privacy Cut, Portal Egress Gate,
+admission/transmission check, pseudonym map, or deletion propagation. Portal declarations and probes
+remain visible but cannot receive a Run.
 
 **Evidence**
 
-- **Source:** [Consent projection censor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/schemas.py)
+- **Source:** [Context privacy contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/privacy.py),
+  [Context assembly](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py),
+  [Consent projection censor](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/codex/schemas.py)
   and [Dispatcher quarantine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/dispatcher.py)
-- **Verification:** [Secret-shaped consent projection test](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
+- **Verification:** [Privacy contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_privacy.py),
+  [Context label tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py),
+  [secret-shaped consent projection test](https://github.com/hexanomicon/lychd/blob/main/tests/codex/test_preauth.py)
   and [Portal quarantine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_portals.py)
 - **Law:** [ADR 09 — Security](./adr/09-security.md),
   [ADR 21 — Context](./adr/21-context.md),
@@ -1359,15 +1411,24 @@ authorization, delegation, revocation, tenant isolation, or audit contract.
 
 ### A2A and Intercom {#a2a-intercom}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** **Law in place:** ADR 26 reserves a typed peer-protocol boundary.
+**Proved now:** ADR 26's transport-neutral envelope, authenticated-verification evidence, local
+policy port, bounded value/ArtifactRef payload, sender-scoped replay fences, explicit lifecycle,
+and first-terminal-wins adoption contracts exist with a process-local reference ledger. Exact
+replay is inert; conflicting task, message, idempotency, or nonce reuse fails closed. This
+foundation performs no network or Run effect.
 
-**Do not expect yet:** There is no authenticated durable inbox/outbox, peer identity, message
-ordering, deduplication, cancellation, delegation, effect receipt, or interoperability profile.
+**Boundary — Not yet:** There is no peer registry or key custody, discovery, cryptographic verifier,
+transport adapter, authenticated durable inbox/outbox, callback or artifact fetch, Run/Graph bridge,
+durable restart recovery, effect receipt, or independent interoperability profile.
 
 **Evidence**
 
+- **Source:** [Intercom contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/intercom/models.py)
+  and [admission service](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/intercom/services.py)
+- **Verification:** [Intercom admission tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/intercom/test_services.py)
+  and [envelope contract tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/intercom/test_models.py)
 - **Law:** [ADR 26 — Agent-to-Agent](./adr/26-a2a.md)
 
 ### x402 payments {#x402-payments}
@@ -1403,15 +1464,24 @@ accepted Node Agent protocol remains architecture rather than an implemented fle
 
 ### VPN Tether {#vpn-tether}
 
-**State:** Designed
+**State:** Partial
 
-**Proved now:** **Law in place:** ADR 39 assigns private network transport to Tether.
+**Proved now:** ADR 39 assigns private network transport to Tether. Pure Domain contracts now
+validate immutable public interface and peer intent, secret references instead of private key
+values, canonical WireGuard public keys, endpoint grammar, peer and route uniqueness, active-route
+overlap, forward revisions, and revocation tombstones retained across validated intent generations.
+They perform no host or network effect.
 
-**Do not expect yet:** There is no VPN provider, enrollment, key rotation, route policy, network
-health, revocation, or proof that network reachability establishes identity.
+**Boundary — Not yet:** There is no Tether Rune, VPN provider, generated service, UDP publication,
+interface, enrollment, key generation or rotation effect, live route policy, network health,
+reconciliation adapter, revocation effect, or proof that reachability establishes identity.
 
 **Evidence**
 
+- **Source:** [Tether intent](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/models.py)
+  and [reconciliation policy](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/tether/policy.py)
+- **Verification:** [Tether intent tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/tether/test_models.py)
+  and [reconciliation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/tether/test_policy.py)
 - **Topic:** [Tether](./sepulcher/extensions/tether.md)
 - **Law:** [ADR 39 — VPN](./adr/39-vpn.md)
 
@@ -1471,10 +1541,11 @@ grow a framework until the operator records a ruling in the owning ADR.
 9. **Delegated external effects.** A real agent runtime needs durable start/cancel operation identity,
    leases, process-tree containment, artifact custody, measured budgets, and terminal receipts.
    Process-local idempotency is not authority over a remote or long-lived external job.
-10. **Egress and anonymization.** Secret-shaped key censoring plus Portal quarantine is a safe stop,
-    not anonymization. Do not enable Portal dispatch until labels/lineage, deterministic transforms,
-    declassification authority, exact pre-transmission decisions, retry semantics, and deletion
-    propagation are ruled and tested.
+10. **Egress and anonymization.** Conservative Context labels, deterministic local redaction
+    evidence, and Portal quarantine are a safer foundation, not completed anonymization. Do not
+    enable Portal dispatch until governed source lineage, a verified Privacy Cut and sanitized
+    branch, declassification authority, exact pre-transmission decisions, retry semantics, and
+    deletion propagation are ruled and tested.
 11. **Nexus and browser intent.** Decide how a retained lost-ticket `409` identity is explicitly
     abandoned when the operator later intends genuinely new work for the same target. Durable ticket
     observations, cross-process event delivery, bounded subscriber queues, browser receipts, and
@@ -1483,8 +1554,9 @@ grow a framework until the operator records a ruling in the owning ADR.
     `renameat2`; macOS is not an equivalent test host. Keep a Linux CI receipt before merge and rule
     on the support matrix rather than adding a weaker fallback.
 
-A2A, proxy, VPN, federation, autonomous training execution, and other remote expansion remain
-deliberately deferred. They are not prerequisites for reviewing and stabilizing this local core.
+A2A and VPN now have priority inert foundations, but live remote transport, proxy, federation,
+autonomous training execution, and other remote expansion remain gated behind their security and
+operator receipts. They are not prerequisites for reviewing and stabilizing this local core.
 
 ## Operator receipt requirements
 

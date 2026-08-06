@@ -30,7 +30,7 @@ class PhoenixQuadletContributor:
             containers=(
                 QuadletContainer(
                     description="External Eye (Arize Phoenix)",
-                    image=phoenix.image,
+                    image=phoenix.quadlet.image,
                     container_name=f"lychd-{phoenix.name}",
                     pod="lychd.pod",
                     env_vars={
