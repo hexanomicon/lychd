@@ -34,7 +34,8 @@ Also load [Build](build.md) when the task implements that truth under `src/**` o
 - Extension law: `docs/adr/05-extensions.md`, `docs/sepulcher/extensions/`
 - Native application contracts, Pattern catalogues, and workloads:
   `docs/compositions/index.md`, `docs/adr/28-workflow.md`; Portfolio membership accepts the
-  reference contract, each leaf states current material, and State keeps the shared evidence envelope
+  reference contract, State keeps the shared evidence envelope, and a leaf mentions delivery only
+  when it materially changes interpretation.
 - Containers and workers: `docs/adr/08-containers.md`, `docs/adr/14-workers.md`
 - Security and configuration: `docs/adr/09-security.md`, `docs/adr/12-configuration.md`
 - Agents and execution: `docs/adr/20-agents.md`, `docs/adr/22-dispatcher.md`,
