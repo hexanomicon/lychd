@@ -48,8 +48,8 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Riffmaw](riffmaw.md) | an original musical-work bundle and picture-cue map |
 | [Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
 | [Broadcast](broadcast-studio.md) | a source-grounded local publication candidate |
-| [Wellbeing](wellbeing.md) | an editable daily plan, honest infeasibility, corrected provision evidence, or acknowledged, refused, or unknown grocery checkout outcome |
-| [Homestead](homestead.md) | a legible resource plan, bounded work order, or safely refused physical intent |
+| [Wellbeing](wellbeing.md) | an editable food-and-movement plan, honest infeasibility, minimal food need, or confirmed check-in |
+| [Homestead](homestead.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
 | [Scavenger](scavenger.md) | an evidence-bound hunt, shortlist, negotiated outcome, commitment, parcel result, or diligence packet |
 | [Broker](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
 | [Blockworld](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
@@ -73,10 +73,10 @@ Typed requests, observations, artifact references, and receipts may cross those 
 database access, credentials, Sigils, provider sessions, and domain judgment do not.
 
 Scavenger keeps irregular listing hunts, seller negotiation, major commitments, parcels, and
-property diligence in one application with revisioned subject profiles. Wellbeing keeps daily food,
-movement, household provision, receipts, grocery carts, and private reflections in another. They may
-reuse source snapshots, schedules, offer and money schemas, route observations, and effect receipts;
-neither receives the other's records, credentials, private constraints, or authority by reuse.
+property diligence. Homestead owns the bounded place and its recurring provision, whether stock
+arrives from a supermarket or a field. Wellbeing owns eating, ordinary movement, and private
+reflection. Typed inventory, food-need, and provision-result handoffs connect the last two without
+moving merchant credentials, health records, private constraints, or effect authority.
 
 ## Suites do not dissolve their members
 
