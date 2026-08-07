@@ -46,18 +46,18 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 
 | Composition | It finishes with |
 | --- | --- |
-| [Voidlight](voidlight-studio.md) | an attributable, rights-aware visual asset bundle |
-| [Riffmaw](riffmaw.md) | an attributable sonic asset bundle and optional synchronization map |
-| [Foundry](game-foundry.md) | a reproducible, playtested local build candidate |
-| [Broadcast](broadcast-studio.md) | a source-grounded local publication candidate |
-| [Wellbeing](wellbeing.md) | an editable food-and-movement plan, honest infeasibility, minimal food need, or confirmed check-in |
-| [Homestead](homestead.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
-| [Scavenger](scavenger.md) | an evidence-bound hunt, shortlist, negotiated outcome, commitment, parcel result, or diligence packet |
-| [Broker](broker-office.md) | a client answer, prepared act, human handoff, or exact blocker |
-| [Blockworld](blockworld-inhabitant.md) | one finite mission whose world effects are verified and recoverable |
-| [Reach](reach.md) | one bounded social turn, summon, or admitted presence effect |
+| [Voidlight](voidlight/index.md) | an attributable visual asset package |
+| [Riffmaw](riffmaw/index.md) | an attributable sonic package and optional synchronization map |
+| [Foundry](foundry/index.md) | a reproducible, playtested local build candidate |
+| [Broadcast](broadcast/index.md) | a source-grounded local publication candidate |
+| [Wellbeing](wellbeing/index.md) | an editable eating-or-fitness plan, honest infeasibility, or confirmed check-in |
+| [Homestead](homestead/index.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
+| [Scavenger](scavenger/index.md) | an evidence-bound acquisition campaign, shortlist, bargain, commitment, parcel result, or diligence packet |
+| [Broker](broker/index.md) | a client answer grounded in current product knowledge, prepared act, human handoff, or exact blocker |
+| [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
+| [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
 
-[Communion](walking-communion.md) remains a reference mobile route into these applications, not a
+[Communion](communion/index.md) remains a reference mobile route into these applications, not a
 Composition of its own.
 
 ## Reuse without a universal helper
@@ -74,7 +74,7 @@ Composition of its own.
 Typed requests, observations, artifact references, and receipts may cross those seams. Ambient
 database access, credentials, Sigils, provider sessions, and domain judgment do not.
 
-Scavenger keeps irregular listing hunts, seller negotiation, major commitments, parcels, and
+Scavenger keeps irregular listing campaigns, seller negotiation, major commitments, parcels, and
 property diligence. Homestead owns the bounded place and its recurring provision, whether stock
 arrives from a supermarket or a field. Wellbeing owns eating, ordinary movement, and private
 reflection. Typed inventory, food-need, and provision-result handoffs connect the last two without
