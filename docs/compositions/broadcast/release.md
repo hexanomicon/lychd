@@ -1,5 +1,5 @@
 ---
-title: Broadcast Release
+title: Release
 icon: material/publish
 ---
 

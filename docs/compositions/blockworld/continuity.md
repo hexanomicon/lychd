@@ -18,8 +18,8 @@ a remembered story is the live world.
 | socket, pathing, animation, and unacknowledged buffers | volatile bridge state |
 
 On boot, Blockworld reconciles server identity, world epoch, Sentinel cursor, bot UUID, and the
-last action receipt before a [Bounded Mission](bounded-mission.md) resumes. A missing acknowledgement
-is first resolved through the [World Bridge](world-bridge.md); an `unverified_effect` never becomes
+last action receipt before a [Mission](mission.md) resumes. A missing acknowledgement
+is first resolved through [Sentinel](sentinel.md); an `unverified_effect` never becomes
 permission to repeat the action.
 
 ## Restoration changes the ground

@@ -1,5 +1,5 @@
 ---
-title: Voidlight Package
+title: Package
 icon: material/package-variant-closed-check
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: Voidlight Motion
+title: Motion
 icon: material/movie-open-outline
 ---
 

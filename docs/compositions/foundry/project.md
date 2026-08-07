@@ -1,9 +1,9 @@
 ---
 title: Project
-icon: material/source-branch
+icon: material/source-repository
 ---
 
-# :material-source-branch: Project
+# :material-source-repository: Project
 
 A project binds the design, repository revision, engine and adapter versions, dependencies,
 environment, build recipe, declared scenario, and acceptance checks before work begins.

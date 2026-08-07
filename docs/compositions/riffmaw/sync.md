@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Sync
+title: Sync
 icon: material/timeline-clock-outline
 ---
 

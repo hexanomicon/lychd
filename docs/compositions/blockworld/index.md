@@ -26,9 +26,9 @@ receipt records. The server remains authoritative for blocks, entities, inventor
 
 ## Enter by question
 
-- [Bounded Mission](bounded-mission.md) — what may wake the inhabitant, what it may pursue, and
+- [Mission](mission.md) — what may wake the inhabitant, what it may pursue, and
   where the work must stop.
-- [World Bridge](world-bridge.md) — which observations and effects may cross the server boundary,
+- [Sentinel](sentinel.md) — which observations and effects may cross the server boundary,
   and how one consequence becomes verified.
 - [Continuity](continuity.md) — what survives interruption or restoration, where each truth lives,
   and what proves recovery.

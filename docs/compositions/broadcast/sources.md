@@ -1,5 +1,5 @@
 ---
-title: Broadcast Sources
+title: Sources
 icon: material/file-document-multiple-outline
 ---
 

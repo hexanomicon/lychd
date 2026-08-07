@@ -1,5 +1,5 @@
 ---
-title: Broadcast Script
+title: Script
 icon: material/script-text-outline
 ---
 

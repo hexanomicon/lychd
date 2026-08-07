@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Sessions
+title: Sessions
 icon: material/record-circle-outline
 ---
 

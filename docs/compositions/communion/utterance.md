@@ -1,9 +1,9 @@
 ---
 title: Utterance
-icon: material/microphone-outline
+icon: material/microphone-message
 ---
 
-# :material-microphone-outline: Utterance
+# :material-microphone-message: Utterance
 
 1. The foreground client opens push-to-talk and binds a fresh utterance identity, frame sequence,
    byte and duration ceilings, codec profile, and expiry.

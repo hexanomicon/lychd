@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Sources
+title: Sources
 icon: material/folder-music-outline
 ---
 
