@@ -117,17 +117,83 @@ nav = [
     ]},
     { "Compositions" = [
         "compositions/index.md",
-        "compositions/voidlight-studio.md",
-        "compositions/riffmaw.md",
-        "compositions/game-foundry.md",
-        "compositions/broadcast-studio.md",
-        "compositions/wellbeing.md",
-        "compositions/homestead.md",
-        "compositions/scavenger.md",
-        "compositions/broker-office.md",
-        "compositions/blockworld-inhabitant.md",
-        "compositions/reach.md",
-        "compositions/walking-communion.md"
+        { "Voidlight" = [
+            "compositions/voidlight/index.md",
+            "compositions/voidlight/brief.md",
+            "compositions/voidlight/direction.md",
+            "compositions/voidlight/assets.md",
+            "compositions/voidlight/motion.md",
+            "compositions/voidlight/package.md"
+        ]},
+        { "Riffmaw" = [
+            "compositions/riffmaw/index.md",
+            "compositions/riffmaw/sources.md",
+            "compositions/riffmaw/sessions.md",
+            "compositions/riffmaw/music.md",
+            "compositions/riffmaw/voice.md",
+            "compositions/riffmaw/sound.md",
+            "compositions/riffmaw/sync.md",
+            "compositions/riffmaw/package.md"
+        ]},
+        { "Foundry" = [
+            "compositions/foundry/index.md",
+            "compositions/foundry/project.md",
+            "compositions/foundry/assets.md",
+            "compositions/foundry/playtest.md",
+            "compositions/foundry/build.md"
+        ]},
+        { "Broadcast" = [
+            "compositions/broadcast/index.md",
+            "compositions/broadcast/sources.md",
+            "compositions/broadcast/script.md",
+            "compositions/broadcast/edit.md",
+            "compositions/broadcast/render.md",
+            "compositions/broadcast/release.md"
+        ]},
+        { "Wellbeing" = [
+            "compositions/wellbeing/index.md",
+            "compositions/wellbeing/profile.md",
+            "compositions/wellbeing/eating.md",
+            "compositions/wellbeing/fitness.md",
+            "compositions/wellbeing/journal.md"
+        ]},
+        { "Homestead" = [
+            "compositions/homestead/index.md",
+            "compositions/homestead/utilities.md",
+            "compositions/homestead/stores.md",
+            "compositions/homestead/provision.md",
+            "compositions/homestead/cultivation.md",
+            "compositions/homestead/maintenance.md"
+        ]},
+        { "Scavenger" = [
+            "compositions/scavenger/index.md",
+            "compositions/scavenger/campaign.md",
+            "compositions/scavenger/market.md",
+            "compositions/scavenger/bargain.md",
+            "compositions/scavenger/acquisition.md"
+        ]},
+        { "Broker" = [
+            "compositions/broker/index.md",
+            "compositions/broker/cases.md",
+            "compositions/broker/products.md",
+            "compositions/broker/channels.md"
+        ]},
+        { "Blockworld" = [
+            "compositions/blockworld/index.md",
+            "compositions/blockworld/bounded-mission.md",
+            "compositions/blockworld/world-bridge.md",
+            "compositions/blockworld/continuity.md"
+        ]},
+        { "Reach" = [
+            "compositions/reach/index.md",
+            "compositions/reach/habitat.md",
+            "compositions/reach/turn.md"
+        ]},
+        { "Communion" = [
+            "compositions/communion/index.md",
+            "compositions/communion/utterance.md",
+            "compositions/communion/return.md"
+        ]}
     ]},
     { "Map" = "map.md" },
     { "State of Work" = "state-of-the-work.md" },
