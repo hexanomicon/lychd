@@ -1,9 +1,9 @@
 ---
 title: Pattern lifecycle
-icon: material/source-branch
+icon: material/source-branch-sync
 ---
 
-# :material-source-branch: Pattern lifecycle
+# :material-source-branch-sync: Pattern lifecycle
 
 > _To change the score is to name another revision. The admitted Run keeps its first seal._
 
