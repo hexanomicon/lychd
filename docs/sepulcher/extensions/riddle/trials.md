@@ -1,9 +1,9 @@
 ---
 title: Trials
-icon: material/chart-bell-curve-cumulative
+icon: material/flask-outline
 ---
 
-# :material-chart-bell-curve-cumulative: The Trials: Evidence Before Verdict
+# :material-flask-outline: The Trials: Evidence Before Verdict
 
 A subject refuses an impossible task. Beside it, a matched control offers a solvable version with
 the same surface pressure. Refusing both reveals blanket timidity; distinguishing them may reveal

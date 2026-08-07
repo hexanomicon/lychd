@@ -1,9 +1,9 @@
 ---
 title: 25. HitL
-icon: material/account-voice
+icon: material/account-supervisor-outline
 ---
 
-# :material-account-voice: 25. HitL
+# :material-account-supervisor-outline: 25. HitL
 
 !!! abstract "Context"
     An Agent may propose an effect, never become its authority. A human decision or bounded standing

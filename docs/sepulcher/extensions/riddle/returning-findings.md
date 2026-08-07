@@ -1,9 +1,9 @@
 ---
 title: Returning Findings
-icon: material/source-branch
+icon: material/source-merge
 ---
 
-# :material-source-branch: Returning Findings: The Smallest Supported Cut
+# :material-source-merge: Returning Findings: The Smallest Supported Cut
 
 An artifact passes its producer's checks and reaches two independent consumers. One succeeds; the
 other fails under a different Environment. That failure neither condemns the artifact nor

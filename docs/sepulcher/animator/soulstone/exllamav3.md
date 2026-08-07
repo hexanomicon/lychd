@@ -1,9 +1,9 @@
 ---
 title: ExLlamaV3 through TabbyAPI
-icon: material/flash
+icon: material/memory
 ---
 
-# :material-flash: ExLlamaV3 through TabbyAPI
+# :material-memory: ExLlamaV3 through TabbyAPI
 
 **ExLlamaV3 is the inference library; TabbyAPI is its official OpenAI-compatible server.** LychD
 keeps that server outside the daemon dependency graph and registers it as the dynamic

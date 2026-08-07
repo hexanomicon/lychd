@@ -1,9 +1,9 @@
 ---
 title: Compositions
-icon: material/source-branch
+icon: material/shape-outline
 ---
 
-# :material-source-branch: Compositions
+# :material-shape-outline: Compositions
 
 A Composition is a job the Magus can recognize from beginning to end. It owns the purpose,
 application records, policies, and finish condition; versioned Patterns carry that purpose through

@@ -1,9 +1,9 @@
 ---
 title: Echo
-icon: material/waveform
+icon: material/ear-hearing-loop
 ---
 
-# :material-waveform: Echo
+# :material-ear-hearing-loop: Echo
 
 > _A voice is not delivered when it is made, but when another body receives it._
 

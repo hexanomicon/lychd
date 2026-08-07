@@ -1,9 +1,9 @@
 ---
 title: Acquisition
-icon: material/package-variant-closed
+icon: material/package-down
 ---
 
-# :material-package-variant-closed: Acquisition
+# :material-package-down: Acquisition
 
 `scavenger.commit@1` performs one freshly authorized commitment. Property revision one is
 ineligible: it can return a diligence packet, but never contact, arrange a viewing, offer, reserve,

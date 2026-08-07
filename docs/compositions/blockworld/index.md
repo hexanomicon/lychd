@@ -1,9 +1,9 @@
 ---
 title: Blockworld
-icon: material/cube-outline
+icon: material/cube-scan
 ---
 
-# :material-cube-outline: Blockworld
+# :material-cube-scan: Blockworld
 
 The inhabitant wakes for one bounded mission and leaves consequences in a world that persists
 after its Mind goes quiet. A wall may remain, but its purpose, authority, and exact placements must
