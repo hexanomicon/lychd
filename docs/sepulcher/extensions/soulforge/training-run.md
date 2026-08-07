@@ -1,9 +1,9 @@
 ---
 title: Training Run
-icon: material/hammer-wrench
+icon: material/progress-wrench
 ---
 
-# :material-hammer-wrench: The Training Run
+# :material-progress-wrench: The Training Run
 
 > _A forge without a receipt has made only smoke._
 

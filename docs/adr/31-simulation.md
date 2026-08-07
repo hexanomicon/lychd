@@ -1,9 +1,9 @@
 ---
 title: 31. Simulation
-icon: material/source-branch
+icon: material/gamepad-variant-outline
 ---
 
-# :material-source-branch: 31. Simulation
+# :material-gamepad-variant-outline: 31. Simulation
 
 !!! abstract "Context"
     Alternatives are not reality. **Shadow**, Vikalpa's possibility-lineage jurisdiction, opens

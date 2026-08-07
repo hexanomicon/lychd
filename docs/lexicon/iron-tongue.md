@@ -1,9 +1,9 @@
 ---
 title: Iron Tongue
-icon: material/anvil
+icon: material/alphabet-tengwar
 ---
 
-# :material-anvil: Iron Tongue — Canonical Project Terms
+# :material-alphabet-tengwar: Iron Tongue — Canonical Project Terms
 
 _The canonical project vocabulary: one alphabet, one compact meaning per term._
 

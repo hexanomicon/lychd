@@ -1,9 +1,9 @@
 ---
 title: Wellbeing
-icon: material/scale-balance
+icon: material/heart-pulse
 ---
 
-# :material-scale-balance: Wellbeing
+# :material-heart-pulse: Wellbeing
 
 Wellbeing helps one consenting adult decide what food and ordinary movement fit, then record what
 actually happened without turning either into a verdict about the person. It plans and reflects;

@@ -1,9 +1,9 @@
 ---
 title: Script
-icon: material/script-text-outline
+icon: material/script-text-play-outline
 ---
 
-# :material-script-text-outline: Script
+# :material-script-text-play-outline: Script
 
 Script owns the canonical words: the article, narration, dialogue, title, description, and
 formatted variants from which captions and spoken delivery are derived.

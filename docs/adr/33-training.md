@@ -1,9 +1,9 @@
 ---
 title: 33. Training
-icon: material/anvil
+icon: material/school-outline
 ---
 
-# :material-anvil: 33. Training
+# :material-school-outline: 33. Training
 
 !!! abstract "Context"
     Memory changes one reasoning event; training changes parameters. A useful trace is not thereby

@@ -1,9 +1,9 @@
 ---
 title: Voidlight
-icon: material/camera-timer
+icon: material/camera-iris
 ---
 
-# :material-camera-timer: Voidlight
+# :material-camera-iris: Voidlight
 
 Voidlight turns a visual commission into an attributable package of images, models, textures, and
 motion. The Magus remains the visual director; generators, editors, renderers, and deterministic
