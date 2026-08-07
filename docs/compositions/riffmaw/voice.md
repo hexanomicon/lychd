@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Voice
+title: Voice
 icon: material/microphone-outline
 ---
 

@@ -1,9 +1,9 @@
 ---
 title: Assets
-icon: material/cube-outline
+icon: material/toy-brick-outline
 ---
 
-# :material-cube-outline: Assets
+# :material-toy-brick-outline: Assets
 
 `game.import_asset_bundle@1` admits exact `VisualAssetBundle@1` and `SonicAssetBundle@1` inputs
 against the project target, semantic roles, formats, rights posture, and spatial or temporal limits.

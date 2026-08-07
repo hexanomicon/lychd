@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Sound
+title: Sound
 icon: material/waveform
 ---
 

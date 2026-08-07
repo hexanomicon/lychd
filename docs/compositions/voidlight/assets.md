@@ -1,5 +1,5 @@
 ---
-title: Voidlight Assets
+title: Assets
 icon: material/image-multiple-outline
 ---
 

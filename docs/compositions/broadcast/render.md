@@ -1,5 +1,5 @@
 ---
-title: Broadcast Render
+title: Render
 icon: material/movie-cog-outline
 ---
 

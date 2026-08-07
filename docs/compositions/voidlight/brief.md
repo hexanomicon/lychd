@@ -1,5 +1,5 @@
 ---
-title: Voidlight Brief
+title: Brief
 icon: material/text-box-outline
 ---
 

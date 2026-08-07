@@ -1,5 +1,5 @@
 ---
-title: Riffmaw Music
+title: Music
 icon: material/music-note-outline
 ---
 

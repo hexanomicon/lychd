@@ -180,8 +180,8 @@ nav = [
         ]},
         { "Blockworld" = [
             "compositions/blockworld/index.md",
-            "compositions/blockworld/bounded-mission.md",
-            "compositions/blockworld/world-bridge.md",
+            "compositions/blockworld/mission.md",
+            "compositions/blockworld/sentinel.md",
             "compositions/blockworld/continuity.md"
         ]},
         { "Reach" = [

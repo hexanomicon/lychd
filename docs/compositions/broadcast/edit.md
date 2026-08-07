@@ -1,5 +1,5 @@
 ---
-title: Broadcast Edit
+title: Edit
 icon: material/timeline-text-outline
 ---
 

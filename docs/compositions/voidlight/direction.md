@@ -1,5 +1,5 @@
 ---
-title: Voidlight Direction
+title: Direction
 icon: material/palette-outline
 ---
 

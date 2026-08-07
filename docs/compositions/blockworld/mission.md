@@ -1,16 +1,16 @@
 ---
-title: Bounded Mission
+title: Mission
 icon: material/target
 ---
 
-# :material-target: Bounded Mission
+# :material-target: Mission
 
 A mission gives one awakening a finish line. It is not permission to roam until the bot runs out
 of ideas, and continuity from an older mission does not silently widen the next one.
 
 ## Admission
 
-Admission pins the exact Pattern and bridge revisions, authenticated bot UUID, world identity and
+Admission pins the exact Pattern and adapter revisions, authenticated bot UUID, world identity and
 epoch, region lease, blueprint, deadline, budgets, and permitted reads and effects. Missing or
 stale authority refuses the mission before the Mind proposes a world action.
 
@@ -32,7 +32,7 @@ tool, or effect.
 1. Read bounded world status, inventory, region, nearby entities, and recent chat.
 2. Recall only the admitted project and relevant memory material.
 3. Propose one typed step inside the mission envelope.
-4. Let the [World Bridge](world-bridge.md) validate, issue, and verify that step.
+4. Let [Sentinel](sentinel.md) validate, issue, and verify that step.
 5. Commit its action receipt and advance the durable mission cursor.
 6. Continue within budget, finish, or return the exact reason the mission is incomplete.
 

@@ -1,9 +1,9 @@
 ---
-title: Riffmaw Package
-icon: material/package-variant-closed-check
+title: Package
+icon: material/archive-music-outline
 ---
 
-# :material-package-variant-closed-check: Package
+# :material-archive-music-outline: Package
 
 `riffmaw.forge_sonic_bundle@1` seals accepted music, voice, effects, ambience, stems, mix
 relationships, and masters into `SonicAssetBundle@1`. The bundle preserves credits, provenance,
