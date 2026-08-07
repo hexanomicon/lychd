@@ -10,9 +10,10 @@ of ideas, and continuity from an older mission does not silently widen the next 
 
 ## Admission
 
-Admission pins the exact Pattern and adapter revisions, authenticated bot UUID, world identity and
-epoch, region lease, blueprint, deadline, budgets, and permitted reads and effects. Missing or
-stale authority refuses the mission before the Mind proposes a world action.
+Admission pins the exact Pattern and adapter revisions, `managed` or `attached` server mode,
+authenticated bot UUID, world identity and epoch, attested server capabilities, region lease,
+blueprint, deadline, budgets, and permitted reads and effects. Missing or stale authority refuses
+the mission before the Mind proposes a world action.
 
 Four application records keep long-lived meaning distinct:
 
@@ -37,7 +38,9 @@ tool, or effect.
 6. Continue within budget, finish, or return the exact reason the mission is incomplete.
 
 Public autonomy, unrestricted exploration, administrator commands, remote shell, cross-plot power,
-and an invented success after uncertain effects are not alternate endings. They are refusals.
+server or modpack mutation, and an invented success after uncertain effects are not alternate
+endings. They are refusals. A managed server changes only through a separately admitted deployment,
+never by widening an inhabitant mission.
 
 Continue with [Continuity](continuity.md) for interruption, restoration, and the distinction between
 mission progress and the world's own truth. Return to [Blockworld](index.md).
