@@ -22,10 +22,17 @@ from lychd.domain.animation.conflicts import ConflictTopologyError
 from lychd.domain.animation.errors import CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, OpenAIPortalConfig, PortalConfig, SoulstoneConfig
+from lychd.domain.animation.schemas import (
+    CapabilityFamily,
+    ModelInfo,
+    OpenAIPortalConfig,
+    PortalConfig,
+    SoulstoneConfig,
+)
 from lychd.domain.animation.services.adapters.contracts import PortalDefinition
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
+from lychd.domain.animation.services.binder import AnimatorBinder
 from lychd.domain.animation.services.declarations import (
     AnimatorDeclarations,
     compile_animator_declarations,
@@ -831,6 +838,68 @@ class _HealthControl(LlamaCppControlPlane):
             health=self._health,
         )
 
+    def set_health(self, health: str) -> None:
+        """Change the next observed health without replacing the control plane."""
+        self._health = health
+
+
+class _RecordingBinder(AnimatorBinder):
+    """Expose deterministic model/tool handles and record hydration calls."""
+
+    def __init__(self, *, toolsets: tuple[Any, ...] = ()) -> None:
+        self.model = object()
+        self.toolsets = toolsets
+        self.model_calls = 0
+        self.toolset_calls = 0
+
+    def bind_model(self, animator: Any, *, model_id: str | None = None) -> Any:
+        _ = animator, model_id
+        self.model_calls += 1
+        return self.model
+
+    def bind_toolsets(self, animator: Any) -> tuple[Any, ...]:
+        _ = animator
+        self.toolset_calls += 1
+        return self.toolsets
+
+
+def _family_registry(
+    runes_dir: Path,
+    *,
+    family: CapabilityFamily,
+    supports_tools: bool | None = None,
+    binder: AnimatorBinder | None = None,
+) -> tuple[AnimatorRegistry, str]:
+    """Build one warm fixed runtime whose v1 family is controlled by the test."""
+    _write(
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "family.toml",
+        """
+        name = "family-local"
+        model_path = "/models/family.gguf"
+        """,
+    )
+
+    class FamilyAdapter(LlamaCppRuntimeAdapter):
+        def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
+            base = super().build_capability_specs(soulstone)[0]
+            return [
+                base.model_copy(
+                    update={
+                        "family": family,
+                        "key": f"{base.animator_name}:{family.value}:{base.model_id}",
+                        "supports_tools": supports_tools,
+                    }
+                )
+            ]
+
+    registry = AnimatorRegistry(
+        declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
+        runtime_adapters=[FamilyAdapter(control_plane=_HealthControl("ok"))],
+        binder=binder,
+    )
+    registry.ensure_loaded()
+    return registry, registry.list_capabilities()[0].key
+
 
 def _warm_registry(runes_dir: Path, *, health: str) -> tuple[AnimatorRegistry, str]:
     _write(
@@ -859,6 +928,7 @@ async def test_issue_grant_returns_grant_for_warm_capability(tmp_path: Path) -> 
     assert grant.lease.holder == "run:r1"
     assert grant.generation == grant.spec.generation_profile
     assert isinstance(grant.model, OpenAIChatModel)
+    assert not hasattr(grant, "animator")
 
     spec_snapshot = grant.spec
     state_snapshot = grant.state
@@ -873,6 +943,119 @@ async def test_issue_grant_returns_grant_for_warm_capability(tmp_path: Path) -> 
 
     again = await registry.issue_grant(key, holder="run:r1")
     assert again.lease.grant_id != grant.lease.grant_id  # unique per issue
+
+
+@pytest.mark.asyncio
+async def test_issue_grant_reprobes_cached_warm_state_before_issue(tmp_path: Path) -> None:
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "soulstones" / "llamacpp" / "qwen.toml",
+        """
+        name = "qwen-local"
+        model_path = "/models/qwen.gguf"
+        """,
+    )
+    control = _HealthControl("ok")
+    registry = AnimatorRegistry(
+        declarations=_declarations(runes_dir, [LlamaCppSoulstoneConfig]),
+        runtime_adapters=[LlamaCppRuntimeAdapter(control_plane=control)],
+    )
+    registry.ensure_loaded()
+    key = registry.list_capabilities()[0].key
+    assert registry.get_capability_state(key).phase is CapabilityPhase.WARM  # type: ignore[union-attr]
+
+    control.set_health("loading")
+
+    with pytest.raises(CapabilityUnavailable, match="phase=warming"):
+        await registry.issue_grant(key, holder="run:r1")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "family",
+    [
+        CapabilityFamily.VISION,
+        CapabilityFamily.EMBEDDING,
+        CapabilityFamily.STT,
+        CapabilityFamily.TTS,
+        CapabilityFamily.RERANK,
+    ],
+)
+async def test_issue_grant_refuses_metadata_only_v1_families(tmp_path: Path, family: CapabilityFamily) -> None:
+    binder = _RecordingBinder()
+    registry, key = _family_registry(tmp_path / family.value, family=family, binder=binder)
+
+    with pytest.raises(CapabilityUnavailable, match="routing metadata without an executable grant surface"):
+        await registry.issue_grant(key, holder="run:r1")
+
+    assert binder.model_calls == 0
+    assert binder.toolset_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_chat_grant_attaches_toolsets_only_when_explicitly_admitted(tmp_path: Path) -> None:
+    marker = object()
+    for label, supports_tools in (("unknown", None), ("denied", False)):
+        denied_binder = _RecordingBinder(toolsets=(marker,))
+        denied_registry, denied_key = _family_registry(
+            tmp_path / label,
+            family=CapabilityFamily.CHAT,
+            supports_tools=supports_tools,
+            binder=denied_binder,
+        )
+
+        denied_grant = await denied_registry.issue_grant(denied_key, holder="run:r1")
+
+        assert denied_grant.toolsets == ()
+        assert denied_binder.toolset_calls == 0
+
+    admitted_binder = _RecordingBinder(toolsets=(marker,))
+    admitted_registry, admitted_key = _family_registry(
+        tmp_path / "admitted",
+        family=CapabilityFamily.CHAT,
+        supports_tools=True,
+        binder=admitted_binder,
+    )
+
+    admitted_grant = await admitted_registry.issue_grant(admitted_key, holder="run:r1")
+
+    assert admitted_grant.toolsets == (marker,)
+    assert admitted_binder.toolset_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_tool_execution_grant_refuses_an_empty_surface(tmp_path: Path) -> None:
+    binder = _RecordingBinder()
+    registry, key = _family_registry(
+        tmp_path / "tool-only",
+        family=CapabilityFamily.TOOL_EXECUTION,
+        binder=binder,
+    )
+
+    with pytest.raises(CapabilityUnavailable, match="has no admitted toolset surface"):
+        await registry.issue_grant(key, holder="run:r1")
+
+    assert binder.model_calls == 0
+    assert binder.toolset_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_tool_execution_grant_exposes_only_a_non_empty_toolset_surface(tmp_path: Path) -> None:
+    marker = object()
+    binder = _RecordingBinder(toolsets=(marker,))
+    registry, key = _family_registry(
+        tmp_path / "tool-only",
+        family=CapabilityFamily.TOOL_EXECUTION,
+        binder=binder,
+    )
+
+    grant = await registry.issue_grant(key, holder="run:r1")
+
+    assert grant.model is None
+    assert grant.toolsets == (marker,)
+    assert not hasattr(grant, "animator")
+    assert binder.model_calls == 0
+    assert binder.toolset_calls == 1
 
 
 @pytest.mark.asyncio

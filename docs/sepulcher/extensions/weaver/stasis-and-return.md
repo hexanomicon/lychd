@@ -84,4 +84,4 @@ external effect.
 [delegated execution](../../../state-of-the-work.md#delegated-agent-execution) are **Partial**.
 Real checkpoint-plus-Consent/delegate restart proof, distributed fencing, and general periodic
 workflow recovery remain absent. [Workers](../../../adr/14-workers.md) owns custody;
-[Weaver](index.md) routes the subsystem.
+[Spellweaver](index.md) routes the subsystem.

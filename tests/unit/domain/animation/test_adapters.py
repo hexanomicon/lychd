@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+import httpx
 import pytest
+import respx
 
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
 from lychd.domain.animation.links import Link
@@ -221,6 +223,7 @@ def test_sglang_openai_compatible_plan() -> None:
         {
             "name": "qwen-sglang",
             "model_path": "/models/qwen-awq",
+            "served_model_id": "public-qwen",
             "port": 8011,
             "exec": exec_args,
         }
@@ -229,7 +232,7 @@ def test_sglang_openai_compatible_plan() -> None:
     connector, plan = _build_sglang_connector(soulstone)
 
     assert connector.kind == "sglang"
-    assert [info.id for info in connector.list_models()] == ["qwen-awq"]
+    assert [info.id for info in connector.list_models()] == ["public-qwen"]
     assert plan.exec_args == exec_args
     assert "--ipc=host" not in plan.podman_args
     assert connector.metadata["runtime"] == "sglang"
@@ -257,6 +260,121 @@ def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
     assert spec.concurrency.dedicated is True
     assert spec.concurrency.persistent_resident is False
     assert spec.metadata["runtime"] == "vllm"
+
+
+@pytest.mark.asyncio
+async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.MockRouter) -> None:
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "declaration-name",
+            "model_path": "/models/weights-directory",
+            "served_model_id": "public-model-alias",
+            "port": 8000,
+        }
+    )
+    adapter = VllmRuntimeAdapter()
+    runtime = adapter.build_runtime(soulstone)
+    assert runtime is not None
+    respx_mock.get("http://localhost:8000/v1/models").mock(
+        return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "public-model-alias"}]})
+    )
+
+    specs = adapter.build_capability_specs(soulstone)
+    states = await adapter.probe_capability_states(runtime, specs)
+
+    assert [spec.model_id for spec in specs] == ["public-model-alias"]
+    assert {state.phase for state in states} == {CapabilityPhase.WARM}
+    assert all(state.loaded_model_ids == ["public-model-alias"] for state in states)
+
+
+@pytest.mark.asyncio
+async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_mock: respx.MockRouter) -> None:
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "missing-vllm",
+            "model_path": "/models/declared-model",
+            "port": 8000,
+        }
+    )
+    adapter = VllmRuntimeAdapter()
+    runtime = adapter.build_runtime(soulstone)
+    assert runtime is not None
+    respx_mock.get("http://localhost:8000/v1/models").mock(
+        return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "unrelated-model"}]})
+    )
+
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+
+    assert {state.phase for state in states} == {CapabilityPhase.ERROR}
+    assert all(state.health == "model_missing" for state in states)
+    assert all(state.loaded_model_ids == [] for state in states)
+    activation = await adapter.activate_capability(runtime, adapter.build_capability_specs(soulstone)[0])
+    assert activation.phase is CapabilityPhase.ERROR
+    assert "absent from /models" in (activation.reason or "")
+
+
+@pytest.mark.asyncio
+async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.MockRouter) -> None:
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "malformed-vllm",
+            "model_path": "/models/declared-model",
+            "port": 8000,
+        }
+    )
+    adapter = VllmRuntimeAdapter()
+    runtime = adapter.build_runtime(soulstone)
+    assert runtime is not None
+    respx_mock.get("http://localhost:8000/v1/models").mock(
+        return_value=httpx.Response(200, json={"object": "list", "data": [{"object": "model"}]})
+    )
+
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+
+    assert runtime.connector.link.up is True
+    assert {state.phase for state in states} == {CapabilityPhase.ERROR}
+    assert all(state.health == "inventory_invalid" for state in states)
+    assert all(state.loaded_model_ids == [] for state in states)
+    assert all("non-empty string id" in (state.reason or "") for state in states)
+    activation = await adapter.activate_capability(runtime, adapter.build_capability_specs(soulstone)[0])
+    assert activation.phase is CapabilityPhase.ERROR
+    assert "non-empty string id" in (activation.reason or "")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("inventory", "reason"),
+    [
+        ([{"id": f"model-{index}"} for index in range(1025)], "exceeds 1024 entries"),
+        ([{"id": "m" * 513}], "exceeds 512 characters"),
+    ],
+)
+async def test_vllm_probe_bounds_live_model_inventory(
+    respx_mock: respx.MockRouter,
+    inventory: list[dict[str, str]],
+    reason: str,
+) -> None:
+    soulstone = VllmSoulstoneConfig.model_validate(
+        {
+            "name": "bounded-vllm",
+            "model_path": "/models/declared-model",
+            "port": 8000,
+        }
+    )
+    adapter = VllmRuntimeAdapter()
+    runtime = adapter.build_runtime(soulstone)
+    assert runtime is not None
+    connector = cast("OpenAICompatibleConnector", runtime.connector)
+    respx_mock.get("http://localhost:8000/v1/models").mock(
+        return_value=httpx.Response(200, json={"object": "list", "data": inventory})
+    )
+
+    states = await adapter.probe_capability_states(runtime, adapter.build_capability_specs(soulstone))
+
+    assert {state.phase for state in states} == {CapabilityPhase.ERROR}
+    assert all(state.health == "inventory_invalid" for state in states)
+    assert all(reason in (state.reason or "") for state in states)
+    assert connector.observed_model_ids is None
 
 
 def test_llamacpp_router_builds_specs_for_preset_catalog(tmp_path: Path) -> None:

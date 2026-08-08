@@ -5,9 +5,9 @@ icon: material/eye-lock-outline
 
 # :material-eye-lock-outline: Anonymization, taint, and egress
 
-> _The gate judges what leaves. The Weaver only brings the sealed vessel to its threshold._
+> _The gate judges what leaves. The Spellweaver only brings the sealed vessel to its threshold._
 
-Sensitive material may be copied long before a Portal station appears. Weaver therefore carries
+Sensitive material may be copied long before a Portal Spell placement appears. Spellweaver therefore carries
 privacy lineage through the Pattern and creates a new sanitized branch before remote inference.
 [Context](../../../adr/21-context.md#privatization-and-the-privacy-cut) owns labels and the Privacy
 Cut; [Security](../../../adr/09-security.md#portal-privatization-and-egress) owns declassification
@@ -127,7 +127,7 @@ Loom may derive badges such as `PORTAL-ELIGIBLE`, `EGRESS`, `SANITIZES`, `DELEGA
 the provider, decision, payload digest, receipt, and result that actually happened. A hand-authored
 `dangerous = true` flag is not enough.
 
-Weaver rejects a contributed Pattern whose Portal station has no egress policy, whose
+Spellweaver rejects a contributed Scroll/Pattern whose Portal Spell placement has no egress policy, whose
 declassification edge has no receipt, or whose delegated branch can bypass the parent boundary.
 
 ## Refusal is part of the score

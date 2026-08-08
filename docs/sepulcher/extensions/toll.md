@@ -23,6 +23,11 @@ A destination-pinned connector produces a candidate request and quote.
 [Dispatcher](../../adr/22-dispatcher.md) considers an admitted price only after capability,
 privacy, policy, and resource eligibility. Two unequal planes then carry the same request.
 
+For Intercom, casting work and teaching a missing Spell are different purchased resources. Each
+needs its own exact quote, content identity, budget reservation, consent or standing authority,
+idempotency key, delivery condition, and reconciliation. Payment for one never buys or retries the
+other.
+
 The **Counting House** parses one supported, versioned quote in integer units, accounts its cost,
 reserves worst-case exposure, and reconciles receipts. It holds no spend key. The reservation binds
 an authenticated Principal and budget owner; trusted merchant or service; exact method and
@@ -52,6 +57,10 @@ memory or tools, bypass consent, or displace protected local work. A purchased g
 at the intersection of settlement evidence, Ward policy, capability policy, and available
 resources. Currency-free [Legion](legion.md) work still needs quotas, reservations, attribution,
 and evidence.
+
+Settlement cannot authenticate a peer, make an unknown Spell compatible, admit a teaching bundle,
+publish an implementation, activate a catalogue generation, or resume the refused Invocation. It
+may satisfy only the economic condition of an otherwise eligible act.
 
 Payment and delivery are not atomic. Settlement may yield no useful artifact; apparent success may
 be false or unusable. Refund, credit, dispute, expiry, paid-but-undelivered, and ambiguous outcomes

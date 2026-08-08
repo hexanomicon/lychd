@@ -136,7 +136,17 @@ operator recovery. Inert private-systemd tests prove ordering, not Quadlet/Podma
 
 Resource-aware scheduling is Designed. Preload and idle-eviction fields are validated but unused;
 explicit coexistence and persistent_resident are declarations, not capacity proof. Future measured
-envelopes must keep plan/drain/attest/actuate/converge intact.
+`ResourceEnvelopeRef`s record idle, active, and transition-peak GPU memory, host RAM, devices and
+topology, disk, bandwidth, warm/unload time, concurrency, and measurement conditions.
+`PlacementProfile`s relate exact immutable capability profiles and required headroom on one host or
+Legion topology. A future `CapabilitySetRequest@1` asks for one desired set of exact bindings; it is
+not a Coven, queue, or semantic selection request.
+
+The planner may admit one serialized desired-world transaction only after fresh observation and
+reservation. Physical effects are not atomic: partial change must follow the existing
+drain/attest/actuate/converge sequence and exact compensation, restoration, or containment law.
+Durable local service attempts additionally transfer their exact reservation/fence before a Run
+parks. Current process-local leases cannot prove that handoff.
 
 ### 3. Delegated Provider Capacity
 

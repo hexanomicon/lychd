@@ -47,6 +47,7 @@ nav = [
         { "Animator" = [
             "sepulcher/animator/index.md",
             "sepulcher/animator/capabilities.md",
+            "sepulcher/animator/connectors.md",
             { "Soulstone" = [
                 "sepulcher/animator/soulstone/index.md",
                 "sepulcher/animator/soulstone/rune.md",
@@ -60,7 +61,7 @@ nav = [
         { "Extensions" = [
             "sepulcher/extensions/index.md",
             "sepulcher/extensions/smith.md",
-            { "Weaver" = [
+            { "Spellweaver" = [
                 "sepulcher/extensions/weaver/index.md",
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
                 "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
@@ -85,7 +86,15 @@ nav = [
             "sepulcher/extensions/tether.md",
             "sepulcher/extensions/veil.md",
             "sepulcher/extensions/ward.md",
-            "sepulcher/extensions/prism.md",
+            { "Prism" = [
+                "sepulcher/extensions/prism/index.md",
+                "sepulcher/extensions/prism/sight.md",
+                "sepulcher/extensions/prism/scanner.md",
+                "sepulcher/extensions/prism/image.md",
+                "sepulcher/extensions/prism/video.md",
+                "sepulcher/extensions/prism/form.md",
+                "sepulcher/extensions/prism/kinesis.md"
+            ]},
             "sepulcher/extensions/echo.md",
             { "Shadow" = [
                 "sepulcher/extensions/shadow/index.md",
@@ -102,6 +111,7 @@ nav = [
         { "Altar" = [
             "divination/altar/index.md",
             "divination/altar/bridge.md",
+            "divination/altar/circle.md",
             "divination/altar/orb.md",
             "divination/altar/nexus.md",
             "divination/altar/loom.md"
@@ -130,6 +140,7 @@ nav = [
             "compositions/riffmaw/sources.md",
             "compositions/riffmaw/sessions.md",
             "compositions/riffmaw/music.md",
+            "compositions/riffmaw/studio.md",
             "compositions/riffmaw/voice.md",
             "compositions/riffmaw/sound.md",
             "compositions/riffmaw/sync.md",
@@ -139,6 +150,7 @@ nav = [
             "compositions/foundry/index.md",
             "compositions/foundry/project.md",
             "compositions/foundry/assets.md",
+            "compositions/foundry/world.md",
             "compositions/foundry/playtest.md",
             "compositions/foundry/build.md"
         ]},

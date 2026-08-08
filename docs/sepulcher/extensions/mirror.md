@@ -28,7 +28,7 @@ workflow performance; **Run** is its durable execution identity. Eligible identi
 may enter hydration.
 
 None substitutes for another. [Agent](../../adr/20-agents.md) owns Agent and Posture semantics;
-[Weaver](../../adr/28-workflow.md) owns Pattern and Invocation law.
+[Spellweaver](../../adr/28-workflow.md) owns Pattern and Invocation law.
 
 ## III. Attribution Without Laundering
 

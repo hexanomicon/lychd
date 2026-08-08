@@ -16,10 +16,12 @@ defaults include `--gpu-memory-utilization 0.9`, `--max-num-seqs 1`, and
 `--quantization awq`. Put intentional changes in the runtime's `extra_args`, or use `exec` when
 the whole command must become operator-owned.
 
-A server pinned to one model produces `is_dynamic=False` capabilities. Its endpoint binds after
-the model loads, so reachability and warmth coincide. Current planning and connector behavior are
-covered by focused tests; a named image, model, driver, readiness, inference, and shutdown receipt
-remains [operator validation](../../../state-of-the-work.md#vllm-integration).
+A server pinned to one model produces `is_dynamic=False` capabilities. Reachability establishes
+only link liveness: a capability becomes `WARM` when the validated live `/models` inventory also
+contains its exact declared model id. Malformed inventory or a missing id becomes `ERROR`. Current
+planning and connector behavior are covered by focused tests; a named image, model, driver,
+readiness, inference, and shutdown receipt remains [operator
+validation](../../../state-of-the-work.md#vllm-integration).
 
 ## II. The Radix (SGLang) {#ii-the-radix-sglang}
 

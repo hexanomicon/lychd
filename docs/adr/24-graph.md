@@ -37,11 +37,15 @@ uncommitted work may die. This is declared memory, not total recall.
 
 ## Pattern binding
 
-PatternManifest is Weaver's renderer-neutral score: URL-safe key/revision, checkpoint-schema id,
+PatternManifest is Spellweaver's renderer-neutral score: URL-safe key/revision, checkpoint-schema id,
 unique stations, unique permitted edges, and deterministic digest. Every executable station maps
 one-to-one to a Python node; mapped implementations equal the node set; delegated stations use
 DelegatedAgentNode; edge endpoints are declared. The digest proves declared snapshot, not source
 equivalence or every return path.
+
+In the accepted workflow grammar, one station places a Spell contract. The current manifest has no
+independent Spell identity or catalogue: its stations are legacy inline placements bound directly
+to Python nodes. `PatternManifest` is therefore not the portable Scroll ABI.
 
 Admission pins the full manifest. Before execute or resume, worker requires that snapshot to remain
 valid and exactly equal the registered revision; drift fails instead of silently changing score.
@@ -61,7 +65,7 @@ perform_run is the single execution site: it rejects stale/duplicate delivery, c
 enqueue sequence, verifies pinned Pattern, builds run services, then invokes GraphRunner. Each node
 attempt gets a process-local station-attempt correlation and an entered, settled, waiting
 (hardware/consent/delegate), or failed event. Its delivered field remains the legacy
-`occurrence_id`; canonical Weaver **Occurrence** instead names a schedule or external-trigger firing
+`occurrence_id`; canonical Spellweaver **Occurrence** instead names a schedule or external-trigger firing
 before Invocation admission. Dispatch adds its grant event only after lease admission;
 Orchestrator events retain the station-attempt correlation. Events observe; they neither recover
 work nor establish a global order.
@@ -87,10 +91,19 @@ new queue claim. Gate or DelegatedAgentNode automatically selects the durable ti
 | --- | --- | --- |
 | Human verdict | ConsentPending | AWAITING_CONSENT |
 | Delegated job | DelegatedAgentPending | AWAITING_DELEGATE |
+| Service job (Designed) | ServiceJobPending | AWAITING_SERVICE |
 
 Long Sleep means a durable wait that outlives the worker. Vessel lifecycle and A2A waits remain
-designs until they use this same checkpoint/re-admission rule. Missing checkpoint fails as stasis
-lost; process death in RUNNING or AWAITING_HARDWARE reconciles to failure, never opportunistic replay.
+designs until they use this same checkpoint/re-admission rule. `AWAITING_SERVICE` is accepted law
+but has no source, persistence, or relay yet. Missing checkpoint fails as stasis lost; process death
+in RUNNING or AWAITING_HARDWARE reconciles to failure, never opportunistic replay.
+
+For a future service job, the owning station persists `ServiceJobAttempt@1` before first submit,
+checkpoints the same owner, then parks. Re-entry reads terminal attempt truth and dispatches afresh;
+it never resumes a Connector, grant, provider SDK object, or process handle. Unknown external
+effect remains contained rather than being repeated. [Workers
+(14)](14-workers.md#service-job-attempts-designed) owns the common attempt and recovery mechanics;
+the Composition/domain contract owns result meaning and acceptance.
 
 ## Checkpoint Ownership and Terminal Commit
 

@@ -1,4 +1,4 @@
-"""A4: portals become real — synthesis, opt-in probe, factory inversion, grant."""
+"""A4: Portal synthesis, opt-in probes, factory inversion, and grant quarantine."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import httpx
 import pytest
 import respx
 from pydantic import ValidationError
-from pydantic_ai.models.openai import OpenAIChatModel
 
 from lychd.config.runes import ConfigLoader, RuneConfig
 from lychd.config.runes.extension import RuneConfigStore
@@ -37,6 +36,7 @@ from lychd.domain.cortex.leases import LeaseLedger
 from lychd.extensions.builtin.animator.register import build_openai_portal, probe_openai_portal
 from lychd.extensions.context import ExtensionContext
 from lychd.extensions.host import AssembledExtensions
+from lychd.lib.http import run_sync
 
 _PORTAL_SCHEMAS: list[type[RuneConfig]] = [
     AnimatorConfig,
@@ -160,6 +160,9 @@ def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
     state = registry.list_capability_states()[0]
     assert state.phase is CapabilityPhase.UNKNOWN
     assert state.health == "unverified"
+    activation = run_sync(registry.activate_capability(state.capability_key))
+    assert activation.phase is CapabilityPhase.UNKNOWN
+    assert activation.reason == "portal reachability not probed"
 
 
 @respx.mock
@@ -185,6 +188,44 @@ def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
     registry.load()
 
     assert route.called
+    state = registry.list_capability_states()[0]
+    assert state.phase is CapabilityPhase.ERROR
+    assert state.health == "model_missing"
+    assert state.loaded_model_ids == []
+
+
+@respx.mock
+def test_probe_true_portal_separates_live_link_from_invalid_inventory(tmp_path: Path) -> None:
+    respx.get("https://api.openai.com/v1/models").mock(
+        return_value=httpx.Response(200, json={"object": "list", "data": [{"object": "model"}]})
+    )
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "invalid-inventory.toml",
+        """
+        name = "invalid-inventory"
+        probe = true
+        [[models]]
+        id = "gpt-x"
+        """,
+    )
+    registry = AnimatorRegistry(
+        declarations=_portal_declarations(runes_dir),
+        runtime_adapters=[],
+        portal_definitions=[_OPENAI_PORTAL],
+    )
+    registry.load()
+
+    animator = registry.get_runtime("invalid-inventory")
+    assert animator is not None
+    assert animator.connector.link.up is True
+    state = registry.list_capability_states()[0]
+    assert state.phase is CapabilityPhase.ERROR
+    assert state.health == "inventory_invalid"
+    assert "non-empty string id" in (state.reason or "")
+    activation = run_sync(registry.activate_capability(state.capability_key))
+    assert activation.phase is CapabilityPhase.ERROR
+    assert "non-empty string id" in (activation.reason or "")
 
 
 @respx.mock
@@ -329,7 +370,7 @@ async def test_portal_hydrates_but_dispatch_remains_quarantined(
     respx_mock: respx.MockRouter,
 ) -> None:
     respx_mock.get("https://api.openai.com/v1/models").mock(
-        return_value=httpx.Response(200, json={"object": "list", "data": []})
+        return_value=httpx.Response(200, json={"object": "list", "data": [{"id": "gpt-5.2"}]})
     )
     secrets = tmp_path / "secrets"
     secrets.mkdir(parents=True, exist_ok=True)
@@ -363,13 +404,13 @@ async def test_portal_hydrates_but_dispatch_remains_quarantined(
     )
     dispatcher = Dispatcher(registry=registry, leases=LeaseLedger())
 
-    grant = await registry.issue_grant("openai-main:chat:gpt-5.2", holder="test:mechanics")
-    assert isinstance(grant.model, OpenAIChatModel)
-    assert grant.generation.max_tokens == 4096
-    assert grant.generation.temperature == 0.5
-    settings = grant.model_settings()
-    assert settings is not None
-    assert settings.get("max_tokens") == 4096
+    spec = registry.get_capability("openai-main:chat:gpt-5.2")
+    assert spec is not None
+    assert spec.generation_profile.max_tokens == 4096
+    assert spec.generation_profile.temperature == 0.5
+
+    with pytest.raises(CapabilityUnavailable, match="portal egress admission"):
+        await registry.issue_grant("openai-main:chat:gpt-5.2", holder="test:mechanics")
 
     with pytest.raises(CapabilityUnavailable, match="portal egress admission"):
         async with dispatcher.lease_grant(family="chat", model_name="gpt-5.2", run_id="r1"):

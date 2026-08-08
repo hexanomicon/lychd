@@ -15,6 +15,15 @@ authenticated bot UUID, world identity and epoch, attested server capabilities, 
 blueprint, deadline, budgets, and permitted reads and effects. Missing or stale authority refuses
 the mission before the Mind proposes a world action.
 
+A canonical `BlockGrid@1` admitted by exact digest may describe desired blocks; it grants no
+placement authority. A Sponge `.schem` remains hostile source and transport evidence until a
+pinned parser reads it back, applies its offset and `DataVersion` policy, rejects or records every
+unsupported state, and normalizes it to that canonical grid. A closed procedural blueprint must
+likewise be evaluated by its admitted interpreter before it becomes desired-block truth. Sentinel
+computes and validates each bounded effect from the resolved grid against the world epoch, leased
+region, inventory, server capabilities, and mission policy. A preview, generated grid, or
+successful offline round trip cannot be cited as evidence that the live world changed.
+
 Four application records keep long-lived meaning distinct:
 
 | Record | What it carries |

@@ -7,29 +7,108 @@ icon: material/tournament
 
 !!! abstract "Context"
     Graph carries typed movement, not the answer to which graph serves an Intent, who owns its
-    revision, or which score remains valid through pause and repair. Weaver supplies that logical
-    jurisdiction without absorbing authority, execution, or application purpose.
+    revision, or which score remains valid through pause and repair. Spellweaver supplies that
+    logical jurisdiction without absorbing authority, execution, or application purpose.
 
-[Weaver](../sepulcher/extensions/weaver/index.md) keeps the score through motion, pause, and return.
+[Spellweaver](../sepulcher/extensions/weaver/index.md) keeps the score through motion, pause, and return.
 
 ## Decision
 
-Weaver is LychD's single logical workflow jurisdiction; Pattern is immutable executable score.
+**Spellweaver** is LychD's single logical workflow jurisdiction; `Weaver` remains its short,
+code-facing name and the compatibility spelling used by existing paths.
 
 | Name | Office |
 | --- | --- |
 | Composition | Operator-visible purpose, records, effects, policies, projections, Pattern catalogue |
-| Pattern | One versioned executable score owned by a Composition |
-| Invocation | One admitted performance of exact Pattern revision |
+| Pattern | One named executable-score lineage owned by a Composition |
+| Scroll | The mythic name for one immutable Pattern revision: the whole score, not one node |
+| Spell | One independently named semantic action contract: what a station may do |
+| Spell placement | One Scroll-local station that invokes an exact Spell contract |
+| Invocation | One admitted bounded world—the Circle—in which identity, Context, authority, and consequence meet |
+| Casting | The performance of one exact Scroll within that Invocation |
 | Run | Durable execution/ledger identity |
 | Graph | Typed state topology |
 | Loom | Read-only declared-score projection |
 | Suite | Versioned coordination of separate Compositions |
 
-Weaver owns validation, registration, routing, logical dependencies, Gates, schedules/overlap,
+Spellweaver owns validation, registration, routing, logical dependencies, Gates, schedules/overlap,
 revision continuity, and contribution. Composition owns judgment; IAM/Ward/HitL authority;
 Dispatcher capability; Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and
 checkpoints; Riddle evaluation; Soulforge promotion.
+
+## Spells, Scrolls, and casting
+
+The mythic grammar is exact: a **Scroll** is one immutable workflow score; each semantic station is
+a placement of a **Spell**; a **casting** performs that Scroll inside one admitted Invocation and
+its [Circle](../divination/altar/circle.md). These names do not create duplicate schemas or let
+imagery replace engineering identity.
+
+A Spell is the smallest independently named, discoverable, teachable action at the workflow
+boundary: ask an Agent, anonymize material, await consent, write an artifact, delegate work, or
+send through a Portal. “Smallest” is semantic, not mechanical. Its implementation may involve
+model calls, tools, syscalls, retries, or adapter machinery. An internal operation becomes another
+Spell placement only when the Scroll must independently type, route, authorize, checkpoint,
+retry, inspect, or recover it.
+
+The **Spell contract** defines typed input, output, errors and non-completion; semantic
+requirements; authority and effect demands; and continuity obligations. A provider-owned **Spell
+implementation** claims to realize one exact contract revision and has separate code, package,
+adapter, provenance, checkpoint, and evidence identity. A Spell is not an uppercase Dispatcher
+`Capability`, tool, Agent, credential, grant, Python type, or live handle. Its name requests a
+bounded action and grants no power to perform it.
+
+A Scroll declares its placements, edges, entry, termination, configuration, budgets, requirements,
+and authority/effect/privacy ceilings; receiving the artifact conveys none of that authority. Each
+placement names an exact authority-qualified Spell contract revision and digest. A receiver-owned,
+immutable **Resolution Lock** binds it to an exact local implementation, adapter, code/artifact,
+Agent/Posture requirement, tool/effect contracts, checkpoint codec, and registry generation where
+needed. The Run pins both the Scroll snapshot and Resolution Lock digest. Contract identity,
+implementation identity, and placement identity never substitute for one another.
+
+A one-Spell Scroll is valid. A larger workflow or batch is simply a Scroll with several placements;
+the same Spell may appear more than once under distinct placement identities and bindings. This
+uses the existing workflow identity rather than inventing another batch object.
+
+Admission distinguishes parseable, contract-conformant, locally bound, available, authorized, and
+admissible. A claim at one level proves none of the later levels. Unknown, unavailable,
+incompatible, revoked, or unauthorized placements block casting; no similar name, version range,
+provider, or newer revision may be substituted. A future Loom may render an **inert resolution
+report** with grey placements and redacted reasons, but such a view is not an executable Graph.
+
+The current fixed manifests expose station key, label, kind, one workflow-wide implementation
+closure, and edges, with each executable station bound one-to-one to a Python Graph node. A current
+station therefore behaves like a legacy inline Spell placement plus implementation binding, but it
+has no independent Spell identity. The runtime does not ship a Spell catalogue, Resolution Lock,
+portable Scroll ABI, remote compatibility negotiation, teaching surface, or package contribution
+store.
+
+Policy for an unknown Spell may choose only among refusal, a request for an attributed teaching
+candidate, or use of an already admitted exact contract with an exact local binding. A teaching
+candidate is hostile foreign craft: it enters [Assimilation](35-assimilation.md), not the live
+registry. Smith may re-express it locally, but Spellweaver validates and the target owner publishes
+it only after evidence and authorization. Publication creates new catalogue truth and a later
+casting; it never mutates or resumes the refused Invocation under changed law.
+
+## Portable declaration
+
+Portable `SpellContract`, `Scroll`, and `TeachingBundle` artifacts use versioned, restricted UTF-8
+JSON. Hash and signature inputs use the pinned
+[JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785.html); duplicate keys,
+non-interoperable numeric values, unknown unnamespaced fields, YAML tags/aliases/merge semantics,
+and source-language object construction are refused. Semantically unordered arrays define and
+verify their own deterministic order. Identity includes schema reference, authority-qualified name,
+exact revision, algorithm-tagged digest, and domain-separated artifact kind.
+
+YAML may serve as a friendly Loom or repository authoring projection, but it must compile through
+the same typed validator into canonical JSON. YAML text is never portable identity and is never the
+signed object. A different wire encoding requires a separately versioned adapter and conformance
+corpus; it cannot claim byte identity with JSON.
+
+`core` contract namespaces are reserved to their canonical owner. Built-in, Crypt, operator, and
+foreign publishers retain distinct authority-qualified identities. A private implementation may
+prove conformance to a public contract without acquiring its publisher's name. Learned material is
+private by default and preserves `derived_from` or `implements` lineage; promotion cannot squat a
+canonical namespace.
 
 ## Current material
 
@@ -66,11 +145,31 @@ Admission persists snapshot/digest; execution/resume requires exact current regi
 fails pinned Pattern unavailable. Multiple exact source-registered revisions may coexist: new
 admission uses only an active revision while an older Run resolves its retained pinned revision
 directly. Removing old executable code still makes that revision unavailable. Compatibility
-Automatic source-code drift detection, durable publication, drain, and migration remain future work.
+is proved only by exact registered equality and the reviewed closure. Automatic source-code drift
+detection, durable publication, drain, and migration remain future work.
+
+## Migration without rewritten history
+
+Portable Spells and Scrolls arrive additively:
+
+1. Freeze current Pattern schema v2 digests and persisted-Run fixtures.
+2. Introduce Spell-contract, implementation, placement, and Resolution-Lock types without changing
+   v2 snapshots.
+3. Adapt each v2 station at assembly as a Scroll-private `legacy_inline` Spell identity; it is
+   neither reusable nor portable.
+4. Add separate provider-attributed Spell-contract, implementation, and Scroll stores, then build
+   one immutable registry generation shared by admission, workers, Bridge, Loom, and Orb.
+5. Introduce a new Scroll schema with exact Spell references and a Resolution Lock while dispatching
+   v2 and the new schema through separate validators and resolvers.
+6. Publish built-ins only as new revisions. Never rewrite `bridge_chat@1` or `delegated_rite@1`, and
+   retain their executable closures until pinned Runs drain or settle honestly unavailable.
+
+No compatibility shim may present a v2 Python node as a canonical public Spell merely because its
+label resembles one.
 
 ## Admission and ownership
 
-Weaver selects once from admitted Intent; Run ledger owns identity/status:
+Spellweaver selects once from admitted Intent; Run ledger owns identity/status:
 
 1. validate/select Pattern;
 2. atomically create Run with exact manifest and its initial durable delivery;
@@ -78,14 +177,15 @@ Weaver selects once from admitted Intent; Run ledger owns identity/status:
 4. publish the exact job key; relay it later when the broker is unavailable.
 
 The Run delivery outbox is transactional with Run truth, not with the external broker. Workers and
-the relay publish, claim, and settle physical hops; Graph checkpoints; Weaver neither writes the
-outbox directly nor operates containers. Weaver owns scheduling identity, eligibility, overlap,
+the relay publish, claim, and settle physical hops; Graph checkpoints; Spellweaver neither writes the
+outbox directly nor operates containers. Spellweaver owns scheduling identity, eligibility, overlap,
 and miss semantics; a separate clock/relay mechanism detects due work and publishes only the
-ordinary delivery that Weaver has admitted. Weaver does not become that timer or broker.
+ordinary delivery that Spellweaver has admitted. Spellweaver does not become that timer or broker.
 
 ## Pattern contribution
 
-A publishable revision declares identity/revision/owner/provenance/support/parentage; typed
+A publishable Scroll revision declares identity/revision/owner/provenance/support/parentage;
+every required Spell contract and placement; typed
 input/output/state/error/non-completion; topology and cancellation; capability/tool/plane/budget/
 wait; Sigil/effect/privacy/egress/consent and secret-free durable state; checkpoint/idempotency/
 receipt/compatibility/migration/drain/refusal; Loom metadata; and serialization/failure/recovery
@@ -94,6 +194,14 @@ identity, ambiguous routes, unknown adapters, unreachable station, unsafe cycle,
 state, missing continuity, forbidden effect, then freezes generation. Workflow dataclass is internal
 pre-v1, not ABI. Creation/Assimilation/Extension law governs candidate publication; source/model/
 Loom draft cannot publish without validation, review, evidence, immutable revision.
+
+Spell-contract publication, executable implementation registration, Scroll publication, and
+activation are separate acts and shaped stores. Deactivation of an implementation closes dependent
+Scrolls to new admission; already pinned Runs may use an explicitly retained closure, while security
+revocation forbids even retained execution. Installing code or replacing a process-built catalogue
+is [Evolution](18-evolution.md), not Reanimation; Reanimation restores an exact whole-body
+checkpoint. A future declarative-only Scroll may activate without Vessel replacement only when all
+implementations are already admitted and an atomic durable catalogue-generation mechanism exists.
 
 ## Gates, effects, and Stasis
 
@@ -135,7 +243,7 @@ child identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/c
 must be defined first.
 
 A Schedule makes one durable, deduplicated **Occurrence** for each firing and enters ordinary
-admission. Weaver owns calendar/event meaning, service class, temporal eligibility,
+admission. Spellweaver owns calendar/event meaning, service class, temporal eligibility,
 priority/overlap/coalescing/revision, and the decision to admit or settle a missed firing. Workers
 deliver and retry exact admitted hops; Dispatcher resolves capability; Orchestrator owns readiness.
 A timer never calls a Graph node, model, Animator, or container.
@@ -167,14 +275,15 @@ engine, service-class persistence, safe preemption, or periodic workflow schedul
 ## Returning findings
 
 Riddle returns SuiteFindingSet@1, AttributionCandidate@1, InvalidationSet@1, CorrectionRequest@1
-as evidence, not reverse edges. Weaver admits a Correction Request only as new forward Invocation
+as evidence, not reverse edges. Spellweaver admits a Correction Request only as new forward Invocation
 under validation/budget/authority/consent; it cannot resume arbitrary old station, mutate artifact,
 inherit consumer authority, or turn recurrence into training. Repair starts from smallest supported
 cut; reuse requires full input/evaluation closure; unresolved attribution/exhausted budget terminates honestly.
 
 ## Loom projection and drafting
 
-[Loom](../divination/altar/loom.md) reads fixed immutable manifest: stations, edges, Gate/delegate,
+[Loom](../divination/altar/loom.md) reads the fixed immutable Pattern manifest: semantic stations,
+edges, Gate/delegate,
 revision, implementation revision, checkpoint schema, digest. Mermaid/canvas are views. Charcoal remains inert until canonical
 declarative Pattern has typed ports/state/effects/authority/termination/continuity. Drawn grouping
 does not nest Pattern or execute Suite. Publication alone makes new immutable revision; Invocations
@@ -188,7 +297,7 @@ Functions suit a bounded station, not long-lived identity with parking, projecti
 
 ### A second application scheduler
 
-It fragments admission, priority, recovery, and inspection; applications contribute to Weaver.
+It fragments admission, priority, recovery, and inspection; applications contribute to Spellweaver.
 
 ### Visual source as executable law
 
@@ -209,3 +318,9 @@ Renderer state cannot state all type, authority, effect, and recovery invariants
 Registry, route-once, manifest, serialization, Loom, admission, claim, consent, delegation, and
 recovery tests prove the floor. Each future surface needs focused ambiguity, compatibility, failure,
 cancellation, replay, and projection evidence before State promotion.
+
+The portable profile additionally requires golden and negative fixtures consumed by two independent
+implementations: canonical bytes/digests; duplicate and unknown fields; numeric and ordering edge
+cases; namespace collision; exact contract resolution; repeated Spell placement; missing,
+unauthorized, unavailable, retained, and revoked implementations; v2 coexistence; and refusal of
+similar-name, version-range, or newer-revision substitution.

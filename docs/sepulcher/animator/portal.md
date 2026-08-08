@@ -38,9 +38,11 @@ Three limits matter:
    validates intent, proves named-secret presence, and mounts the reference into the Vessel.
 
 With probing off, a declared route is projected as `UNKNOWN`, not fabricated as `WARM`. With
-probing on, current source performs a two-second, unauthenticated `GET <base_url>/models`; a
-credentialed provider may reject that probe even when its ordinary authenticated model path works.
-Successful readiness observation still does not bypass the current all-Portal dispatch quarantine.
+probing on, current source performs a two-second, unauthenticated `GET <base_url>/models` and
+validates the returned `data[*].id` inventory. A live link with malformed inventory or without the
+declared model id becomes `ERROR`, while a credentialed provider may reject the probe even when its
+ordinary authenticated model path works. Successful readiness observation still does not bypass
+the current all-Portal dispatch quarantine.
 
 [State of Work](../../state-of-the-work.md#context-privatization-and-portal-egress) owns the absent
 egress gate. The documented anonymization Pattern does not authorize transmission.
@@ -135,8 +137,9 @@ uv run --extra postgres-binary lychd status
 ```
 
 Successful bind proves Rune validation, secret presence, and atomic unit reconciliation—not
-provider reachability. The `openai-main:chat:gpt-5.2` row proves synthesis and registration.
-Passive warm proves eligibility. Only a successful model invocation proves the credentialed path.
+provider reachability. The `openai-main:chat:gpt-5.2` row proves synthesis and registration. A
+`WARM` observation proves only readiness of that exact declared binding; it proves neither egress
+eligibility nor credentialed invocation. Current Dispatcher policy quarantines every Portal grant.
 
 The Bridge has no provider picker. For attributable end-to-end proof, make this Portal the only
 eligible `chat` plus tools candidate and send a benign public-safe prompt.

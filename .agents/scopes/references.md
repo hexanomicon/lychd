@@ -72,6 +72,20 @@ authorization, semantics, and retained evidence.
 | `podman` | `README.md`, then `docs/`, `cmd/podman/`, or focused tests | Exact rootless Podman, Quadlet, container lifecycle, socket, or systemd integration behavior matters |
 | `playwright` | `README.md`, then `docs/src/`, `packages/playwright-test/`, or focused tests | Real-browser acceptance, accessibility, routing, focus, screenshots, or cross-engine behavior matters |
 
+## Web Acquisition and Browser Services
+
+| Reference | Cheapest edge | Useful when |
+|---|---|---|
+| `searxng` | `README.rst`, then `docs/dev/engines/`, `searx/`, or focused tests | Comparing self-hosted metasearch, engine adapters, query fan-out, result normalization, failure suspension, or JSON API behavior |
+| `crawl4ai` | `README.md`, `CHANGELOG.md`, `SECURITY.md`, then `deploy/docker/`, `crawl4ai/`, or focused security tests | Evaluating a browser-backed self-hosted crawl/extraction API; pin the reviewed revision and inspect current advisories before any trial |
+| `firecrawl` | `README.md`, `SELF_HOST.md`, `docker-compose.yaml`, then `apps/api/` or focused tests | Comparing OSS/cloud search, scrape, crawl, render, extraction, custody, queue, and provider-evidence boundaries |
+| `browserless` | `README.md`, `LICENSE`, then `src/`, `docker/`, or focused tests | Comparing self-hosted browser/CDP/Playwright and REST rendering surfaces; SSPL/commercial terms and browser isolation remain separate gates |
+| `tavily-python` | `README.md`, then `tavily/`, tests, and the current official API docs | Inspecting the client contract for Tavily Search/Extract/Crawl/Map; the closed provider implementation remains opaque |
+
+These are mechanism references only. Scout and Webcrawler law still own effect separation,
+destination authority, budgets, receipts, hostile-content fencing, and custody; Animator law owns
+whether a local Soulstone or remote Portal may expose the typed capability.
+
 ## Local Inference, Hardware, and Packaging
 
 | Reference | Cheapest edge | Useful when |

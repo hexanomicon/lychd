@@ -13,8 +13,8 @@ page introduces its own vocabulary beside the thing it names.
 ## Iron Tongue
 
 [Iron Tongue](./iron-tongue.md) names the project in its technical register: Lich, Vessel,
-Phylactery, Animator, Invocation, Sigil, Pattern, Run, and the other nouns that mark stable
-jurisdictions or contracts.
+Phylactery, Animator, Animus, Spellweaver, Spell, Scroll, Invocation, Circle, Sigil, Pattern, Run,
+and the other nouns that mark stable jurisdictions or contracts.
 
 Each entry carries one compact meaning and points toward its owner. The owning Covenant or topic
 page keeps the depth.

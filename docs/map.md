@@ -19,13 +19,14 @@ flowchart LR
         C --> A["Composition or Suite<br/>application purpose"]
     end
     subgraph L["Logical execution"]
-        A --> W["Weaver<br/>Pattern admission"]
-        W --> G["Invocation + Graph<br/>Agents and deterministic steps"]
+        A --> I["Invocation<br/>Circle opens"]
+        I --> W["Spellweaver<br/>Scroll admission"]
+        W --> G["Casting + Graph<br/>Spell placements in motion"]
     end
     subgraph P["Physical embodiment"]
-        G --> D["Dispatcher<br/>semantic demand"]
+        G --> D["Dispatcher<br/>interface + profile demand"]
         D --> O["Orchestrator<br/>readiness"]
-        O --> N["Animator<br/>local or external capability"]
+        O --> N["Animator + Connector<br/>local or external surface"]
         N --> G
     end
     subgraph E["Evidence and authority"]
@@ -43,31 +44,35 @@ model, Agent, database, workflow, Composition, or interface is the whole by itse
 
 ## The application road
 
-Extensions contribute mechanisms; Patterns make work repeatable; Compositions make it useful to an
+Extensions contribute mechanisms; Scrolls make work repeatable; Compositions make it useful to an
 operator. Suites connect applications without erasing their independent data, policy, identity, or
-authority. Weaver registers, pins, schedules, and admits logical movement; it does not own every
+authority. Spellweaver registers, pins, schedules, and admits logical movement; it does not own every
 thread it weaves.
 
 The shortest vocabulary is:
 
 ```text
 Extension   = how implementation enters the body
-Pattern     = one immutable workflow score
+Spell       = one independently named semantic action contract
+Scroll      = one immutable Pattern revision containing Spell placements and their paths
+Pattern     = the technical executable-score family
 Composition = the application the Magus operates
 Suite        = independently owned Compositions related by typed handoffs
-Weaver       = logical admission and time
-Invocation   = one admitted performance of an exact Pattern revision
+Spellweaver = logical admission and time
+Invocation  = one admitted Circle
+Casting     = performance of one exact Scroll inside that Circle
 ```
 
 Enter the [Composition Portfolio](./compositions/index.md) for application contracts and candidate
-studies. Enter [Weaver](./sepulcher/extensions/weaver/index.md) for Pattern lifecycle, logical time,
+studies. Enter [Spellweaver](./sepulcher/extensions/weaver/index.md) for Scroll/Pattern lifecycle, logical time,
 admission, schedules, and the boundary between coordination and ownership.
 
 ## From logical work to iron
 
-Weaver admits purpose and logical time. Workers and Ghouls carry durable hops; Graph owns typed
-movement and checkpoints. Dispatcher resolves capability demand, Orchestrator readiness, and an
-Animator supplies local or external capability. Phylactery retains run and checkpoint truth. A
+Spellweaver admits purpose and logical time. Workers and Ghouls carry durable hops; Graph owns typed
+movement and checkpoints. Dispatcher resolves exact interface/profile demand, Orchestrator owns
+local readiness, and an Animator plus its Connector supplies the admitted invocation surface.
+Phylactery retains run and checkpoint truth. A
 Pattern asks for capability without commanding hardware; a provider cannot choose application
 purpose.
 
@@ -76,7 +81,7 @@ purpose.
 | Your question | Begin here | Continue through |
 | --- | --- | --- |
 | What can this revision actually do? | [State of Work](./state-of-the-work.md) | cited source, tests, lockfiles, and maintained receipts |
-| How does Intent become an application and a run? | [Composition Portfolio](./compositions/index.md) | Weaver → Pattern → Invocation → Graph |
+| How does Intent become an application and a run? | [Composition Portfolio](./compositions/index.md) | Invocation/Circle → Spellweaver → Scroll/casting → Graph |
 | Which organ owns a physical mechanism? | [Sepulcher](./sepulcher/index.md) | Vessel, Phylactery, Animators, and Extensions |
 | How do observations become evidence and memory? | [Lich](./sepulcher/lich/index.md) | Riddle/Oculus → Phylactery/Memory → correction or Recall |
 | Which law governs a change? | [Covenants](./adr/index.md) | owning ADR → topic page → State → source evidence |

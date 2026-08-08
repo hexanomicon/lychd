@@ -5,16 +5,13 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from textwrap import dedent
-from typing import cast
 
 from pydantic_ai.models.test import TestModel
 
 from lychd.config.runes.registry import load_rune_registry
 from lychd.config.settings.root import get_settings
-from lychd.domain.animation.connectors import Connector
-from lychd.domain.animation.schemas import CapabilityFamily, SoulstoneConfig
+from lychd.domain.animation.schemas import CapabilityFamily
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
-from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator
 from lychd.domain.animation.services.declarations import compile_animator_declarations
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.animation.transmute import Transmuter
@@ -244,14 +241,10 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
             require_modalities=("ciphertext",),
             requires_tools=True,
         ) as grant:
-            assert isinstance(grant.animator, SoulstoneAnimator)
-            animator = cast("SoulstoneAnimator[Connector, SoulstoneConfig]", grant.animator)
             assert grant.key == _CAPABILITY_KEY
             assert grant.state.health == "crypt-ready"
             assert grant.state.metadata == {"observer": "crypt-conformance"}
-            assert animator.rune.source_file == rune_file
-            assert animator.connector.kind == "crypt-conformance"
-            assert not hasattr(animator, "quadlet")
+            assert not hasattr(grant, "animator")
             assert isinstance(grant.model, TestModel)
             assert [(row.capability_key, row.holder) for row in leases.active()] == [
                 (_CAPABILITY_KEY, "run:crypt-conformance")

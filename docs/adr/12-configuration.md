@@ -29,7 +29,7 @@ not create Codex files, repair input, generate credentials, or mutate the enviro
 materializes and revalidates its own copy rather than retaining mutable nested models.
 
 `[extensions]` selects permitted built-in and Crypt packages; it neither selects an application nor
-creates a runtime. A future application selector requires its own accepted Weaver schema and may
+creates a runtime. A future application selector requires its own accepted Spellweaver schema and may
 resolve only registered revisions. Settings owns the fixed `runs` and `rites` physical queues and
 their concurrency; routing can name only those queues. Global port claims and Rune port claims are
 arbitrated before any unit is written.
@@ -65,13 +65,26 @@ but cannot change port arbitration, coven exclusivity, or host ownership. Upstre
 `CLI arguments > model-specific preset section > global [*] section`; a generated CLI override
 that deliberately shadows a preset value must remain visible to the operator.
 
-Capability declarations such as `[[models]]` describe models behind one Rune instance, including
-families, modalities, tool/streaming support, and context size. They are not a way to encode
-multiple instances. Capability synthesis begins with text input and output. Field precedence is
-Rune hint, then live probe or adapter-discovered runtime fact, then runtime profile default. An
+The accepted general-service Rune shape uses first-class `[[capabilities]]` entries. Each entry
+references one registered semantic interface and exact immutable profile, declares its permitted
+operations and invocation mode, and pins the runtime driver/dialect, conformance evidence, resource
+envelope, and containment profile required to make that instance honest. Definitions are
+provider-owned registry contributions; a Rune selects them and supplies instance-local endpoint,
+secret reference, lifecycle, and explicit overlay values. It cannot redefine their schemas,
+licenses, or proved limits inline.
+
+Current source delivers only `[[models]]`: models behind one Rune instance with closed families,
+modalities, tool/streaming support, context size, and generation overlays. Those blocks remain v1
+compatibility sugar for exact admitted model-interface projections; non-model services never
+invent a `model_id` or generation overlay merely to become loadable. Neither form encodes multiple
+Rune instances.
+
+For the current v1 path, capability synthesis begins with text input and output. Field precedence
+is Rune hint, then live probe or adapter-discovered runtime fact, then runtime profile default. An
 explicit modality hint replaces discovered and default modalities; when omitted, probed modalities
-may enrich the runtime base. [Dispatcher (22)](22-dispatcher.md) may verify a declared capability
-only by downgrading it.
+may enrich the runtime base. In v2, open facts are profile-specific and a live probe may establish
+readiness but never invent an interface, operation, language, format, dialect, or permission.
+[Dispatcher (22)](22-dispatcher.md) may verify a declared capability only by downgrading it.
 
 ## Extension activation and application selection
 

@@ -25,7 +25,8 @@ tools remain replaceable machinery.
   author.
 - [Assets](assets.md) creates, transforms, reviews, and traces still images, models, textures, and
   other visual material.
-- [Motion](motion.md) owns animation and visual sequence timing, but not sound or the final edit.
+- [Motion](motion.md) owns generated or authored animation and visual sequence timing, but not
+  sound or the final edit.
 - [Package](package.md) seals the approved revisions, effects, recovery rules, and consumer
   handoff.
 

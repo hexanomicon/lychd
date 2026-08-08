@@ -16,9 +16,8 @@ no corpus-admission service, trainer execution plane, candidate registry, promot
 serving integration is delivered. [ADR 33](../../../adr/33-training.md) owns the law and complete
 record schemas.
 
-[**Nidrā**](../../../lexicon/inner-tongue.md), from _ni-drā_—“going down into”—is received here as
-an image of bounded tending during cognitive rest. In the forge, that inward tending takes the
-explicit passage below.
+Soulforge may run during an admitted idle resource window, but sleep supplies no training or
+consolidation contract. The forge instead follows the explicit passage below.
 
 ## The Four Passages {#iv-orchestration-of-the-forge}
 

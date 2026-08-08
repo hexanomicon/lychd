@@ -23,7 +23,9 @@ controller or emergency stop may refuse fresh work even after LychD admitted it.
 approved controls, but tunnel possession supplies no Principal or effect authority and never falls
 back to a public dashboard. Cameras require a named purpose, privacy masks, active hours, viewers,
 and retention; face recognition, neighbour surveillance, ambient audio, public streaming, and
-indefinite retention are absent by default.
+indefinite retention are absent by default. Prism's future
+[live Sight session](../../sepulcher/extensions/prism/sight.md) may analyze an admitted feed under
+those limits; it gains no camera, maintenance, droid, or site authority.
 
 A lost acknowledgement remains an unknown effect. Recovery reads the controller, independent
 evidence, and any open work or hazard before repeat or closure. Return to

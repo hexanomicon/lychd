@@ -35,10 +35,12 @@ passes forward a more task-specific view. The zoom remains trustworthy only whil
 constraints, omissions, and uncertainty survive the handoffs. Otherwise compression becomes
 forgetting, and a sharp answer may only be a narrow one.
 
-**Vikalpa** is the whetstone: honest possibilities show where discrimination is blunt. The Magus’s
-**Viveka** supplies more than a winner when it names the distinction by which a later judgment may
-improve. In [the First Invocation](./index.md#the-first-invocation), the Circle’s doors demand one
-consequential crossing: Blade makes the cut; [Answer](./answer.md) makes it attributable.
+**Vikalpa** is used here as the whetstone: explicitly hypothetical possibilities show where
+discrimination is blunt. Their honest handling is project discipline, not the source meaning of
+the term. The Magus’s **Viveka** supplies more than a winner when it names the distinction by which
+a later judgment may improve. In [the First Invocation](./index.md#the-first-invocation), the
+Circle’s doors demand one consequential crossing: Blade makes the cut; [Answer](./answer.md) makes
+it attributable.
 
 > **Vikalpa is the stone. The Magus’s Viveka is the hand. The Blade is the digital edge being
 > sharpened.**

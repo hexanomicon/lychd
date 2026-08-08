@@ -32,13 +32,13 @@ instance, never an abstract Domain.
 | [Tether](tether.md) | **Private reachability:** opens exact private paths while tunnel possession grants no application authority |
 | [Veil](veil.md) | **Hostile ingress:** terminates TLS and protocols, canonicalizes metadata, and admits routes while authority stays behind the edge |
 | [Ward](ward.md) | **IAM and authority:** resolves principals and rechecks current permission over an exact object or effect |
-| [Weaver](weaver/index.md) | **Workflow:** owns Pattern lifecycle, admission, continuity, and logical time |
+| [Spellweaver](weaver/index.md) | **Workflow:** validates Spell contracts and Scroll/Pattern lifecycle, admits castings, and owns continuity and logical time |
 | [Scout](scout.md) | **Web acquisition:** bounds search, fetch, extraction, rendering, and interaction without turning contact into truth or stronger permission |
 | [Smith](smith.md) | **Assimilation:** re-expresses admitted material as attributable candidate code; authorship supplies no promotion authority |
 | [Soulforge](soulforge/index.md) | **Training:** binds admitted corpus, base digest, objective, Recipe, Training Run, evaluation, and candidate-weight lineage |
 | [Riddle](riddle/index.md) | **Evaluation:** binds exact subjects to versioned trials and returns calibrated findings with uncertainty; privilege and promotion remain elsewhere |
 | [Toll](toll.md) | **Economics:** separates quote, authorization, settlement, delivery, refund, and reconciliation |
-| [Prism](prism.md) | **Vision:** grounds regions, frames, transformations, and observations to exact sources and times without replacing source with derivation |
+| [Prism](prism/index.md) | **Visual and spatial grounding:** binds observations, transformations, reconstructions, and generated forms to exact sources and derivatives without replacing one with another |
 | [Echo](echo.md) | **Speech lifecycle:** carries audio capture, transcription, synthesis, and delivery with origin, consent, and outcome intact |
 | [Shadow](shadow/index.md) | **Possibility lineage:** holds isolated candidate worlds with exact parentage, evidence, and terminal disposition; no branch appoints reality |
 | [Mirror](mirror.md) | **Identity:** preserves Persona lineage, hydration provenance, and attribution without minting caller authority |

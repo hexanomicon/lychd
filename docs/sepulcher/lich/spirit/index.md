@@ -25,8 +25,8 @@ Spirit has three dynamics:
 
 The terms are LychD correspondences, kept beside rather than inside their sources. Later Vedāntic
 four-function presentations, classical Sāṃkhya’s threefold internal organ, and Yoga’s broader Citta
-and Vṛttis are distinct registers. [Inner Tongue](../../../lexicon/inner-tongue.md#correspondences)
-keeps the lineage and working distinctions.
+and Vṛttis are distinct registers. [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+keeps the source notes, limits, and working distinctions.
 
 One office crosses three surfaces: parametric inheritance (model dispositions), durable forms
 (Phylactery records and governed retrieval), and active assembled Context. These describe how

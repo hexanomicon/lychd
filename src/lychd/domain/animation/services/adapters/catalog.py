@@ -86,6 +86,8 @@ _RUNTIME_PROFILES: dict[str, _CapabilityProfile] = {
 
 def default_model_id_for_soulstone(soulstone: SoulstoneConfig, model_infos: Sequence[ModelInfo]) -> str | None:
     """Deterministic model id inferred from runtime facts."""
+    if soulstone.served_model_id:
+        return soulstone.served_model_id
     if soulstone.model_path:
         return Path(soulstone.model_path).stem
     if model_infos:
@@ -96,7 +98,9 @@ def default_model_id_for_soulstone(soulstone: SoulstoneConfig, model_infos: Sequ
 def model_infos_from_soulstone(soulstone: SoulstoneConfig) -> list[ModelInfo]:
     """Build connector-facing model summaries from runtime-local facts."""
     profile = _RUNTIME_PROFILES.get(soulstone.runtime_name, _DEFAULT_PROFILE)
-    model_id = Path(soulstone.model_path).stem if soulstone.model_path else soulstone.name
+    model_id = soulstone.served_model_id or (
+        Path(soulstone.model_path).stem if soulstone.model_path else soulstone.name
+    )
     metadata: dict[str, object] = {}
     if soulstone.model_path:
         metadata["path"] = soulstone.model_path

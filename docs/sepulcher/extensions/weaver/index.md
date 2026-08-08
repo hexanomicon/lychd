@@ -1,19 +1,24 @@
 ---
-title: Weaver
+title: Spellweaver
 icon: material/state-machine
 ---
 
-# :material-state-machine: The Weaver
+# :material-state-machine: The Spellweaver
 
-> _An Agent is a single note. The Weaver keeps the score through motion, pause, and return._
+> _A Spell gives one station its action. The Spellweaver keeps the Scroll through motion, pause,
+> and return._
 
-An Agent performs one typed cognitive step. **Weaver** is LychD's singular logical workflow
-jurisdiction. It validates and admits immutable, versioned **Patterns** that order those steps
-through execution, pause, return, and ending.
+An Agent call, Gate, tool, effect, wait, or delegation may warrant an independently named semantic
+action: a **Spell**. One Scroll-local station places that Spell's exact contract. The whole
+immutable Pattern revision is its **Scroll**. **Spellweaver** is LychD's singular logical workflow
+jurisdiction: it validates Scrolls and admits their casting through execution, pause, return, and
+ending. `Weaver` remains the short name used by code and existing paths.
 
-Future packages may contribute Pattern declarations through a Weaver-shaped store, but the Core
-office retains workflow authority. Weaver never inherits the policy or physical control of the
-offices it sequences. [ADR 28](../../../adr/28-workflow.md) owns the complete contract.
+Future packages may contribute Spell contracts and Scroll declarations through separate
+Spellweaver-shaped stores. Executable implementations and adapters remain separate Extension or
+effect-owner registrations; publication and activation are not implied by contribution. The Core
+office retains workflow authority. Spellweaver never inherits the policy or physical control of
+the offices it sequences. [ADR 28](../../../adr/28-workflow.md) owns the complete contract.
 
 ## From purpose to performance
 
@@ -21,12 +26,17 @@ Four identities keep purpose, score, performance, and ledger distinct:
 
 - **[Composition](../../../compositions/index.md)** records the operator-visible application and
   human purpose.
-- **Pattern** is one versioned executable score owned by that Composition.
-- **Invocation** is one admitted performance pinned to an exact Pattern revision.
+- **Pattern** is one named executable-score lineage owned by that Composition; one immutable
+  revision is a **Scroll**.
+- **Spell** is one independently named semantic action contract; a station places it in that
+  Scroll.
+- **Invocation** opens one bounded [Circle](../../../divination/altar/circle.md).
+- **Casting** performs the exact Scroll inside that Invocation.
 - **Run** is the durable execution and ledger identity of that Invocation.
 
-Graph is the typed topology that advances Pattern state. The
-[Loom](../../../divination/altar/loom.md) is a read-only projection of its declared truth.
+Graph is the typed topology that advances Scroll state among Spell placements. The
+[Loom](../../../divination/altar/loom.md) is a read-only projection of its declared truth. The
+current fixed registry has no independent Spell catalogue or teaching surface.
 
 The current registry is fixed and source-defined:
 
@@ -57,7 +67,7 @@ activation](../../../state-of-the-work.md#extension-activation-contributions), a
 Pattern contribution and durable publication, scheduling, durable parallelism, compatibility and
 migration, and editing remain undelivered. Architectural treatment is not operational evidence.
 
-## Follow the score
+## Follow the Scroll
 
 Choose the route that matches the question:
 
@@ -76,4 +86,4 @@ Choose the route that matches the question:
 
 Repository coding-agent choreography is separate: the
 [tracked workflow playbooks](https://github.com/hexanomicon/lychd/tree/main/.agents/workflows) own
-contributor procedure only, never Weaver or Pattern law.
+contributor procedure only, never Spellweaver or Pattern law.

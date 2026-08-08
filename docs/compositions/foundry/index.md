@@ -19,15 +19,30 @@ repeatable.
 | **Can return** | one attributable `PlayableBuildBundle@1`, or an exact non-completion |
 | **Stops before** | deciding what is fun, autonomous project direction, public multiplayer, signing, upload, or store release |
 
-Foundry owns design, version-controlled source, scenes, resources, imports, tests, build recipes,
-playtests, balance evidence, release candidates, and distribution receipts. It does not own
+Foundry owns design, version-controlled source, worlds, scenes, resources, imports, tests, build
+recipes, playtests, balance evidence, local release candidates, and their receipts. It does not own
 Voidlight's visual lineage, Riffmaw's sonic lineage, the game engine, a store account, or another
 workflow jurisdiction.
+
+The principal Pattern coordinates proposed semantic Spell placements; none of these names is a
+Dispatcher capability or delivered implementation:
+
+| Kind | Contract | Office |
+| --- | --- | --- |
+| Pattern | `game.build_playable_slice@1` | complete bounded journey from admitted project intent to attributable local candidate |
+| Spell | `game.bootstrap_project@1` | establish project custody and pinned engine boundary |
+| Spell | `game.import_asset_bundle@1` | admit and import exact visual/sonic assets |
+| Spell | `game.assemble_world@1`, `game.bake_world@1`, `game.validate_world@1` | compile and validate engine-world meaning |
+| Spell | `game.playtest_candidate@1` | execute one bounded gameplay scenario |
+| Spell | `game.balance_from_evidence@1` | propose one forward revision from attributed observations |
+| Spell | `game.build_candidate@1`, `game.prepare_release@1` | produce and freeze a local handoff candidate without publication |
 
 ## Enter the workshop
 
 - [Project](project.md) fixes design, source, engine, dependencies, and one bounded change.
 - [Assets](assets.md) admits visual and sonic bundles without rewriting their lineage.
+- [World](world.md) assembles engine scenes, collision, navigation, physics, controllers,
+  procedural rules, gameplay, and bounded actor policies.
 - [Playtest](playtest.md) gathers bounded game evidence without pretending to decide fun.
 - [Build](build.md) creates, reviews, recovers, and optionally prepares a release candidate.
 

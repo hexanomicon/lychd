@@ -30,6 +30,7 @@ keeps its own runtime, endpoint, resource, secret, and lifecycle policy, and the
 | `quadlet.image` | runtime default | OCI image inside the embedded `QuadletConfig`; required by the generic runtime. |
 | `runtime` | `"generic"` | Selects the local runtime adapter. |
 | `model_path` | `null` | Single-model artifact path or runtime-specific identity input. |
+| `served_model_id` | `null` | Exact provider-facing id returned by live model inventory; required when it differs from the path basename or Soulstone name. |
 | `base_url` | derived | Connector endpoint override. |
 | `port` | assigned | Unique host port; derives `http://localhost:{port}/v1`. |
 | `groups` | `[]` | Compatible [Coven](../coven.md) target membership. |
@@ -45,7 +46,19 @@ Runtime leaves may add typed fields such as `extra_args` or llama.cpp `startup_m
 defaults are followed by typed overrides; explicit `exec` replaces synthesized arguments rather
 than extending them.
 
-## Declared Models Become Capabilities
+## Capability declarations
+
+The accepted general-service shape adds first-class `[[capabilities]]` entries. A declaration
+references one registered `interface_id` and immutable `profile_ref` (stable id plus revision or digest), selects its permitted
+operations, and pins the driver/dialect, evidence, resource envelope, and containment profile for
+this instance. A Rune may supply endpoint, secret reference, lifecycle, and explicit admitted
+overlays; it cannot rewrite the referenced profile's request/result schemas, licenses, formats,
+languages, or proved limits.
+
+The following model catalogue is the currently delivered v1 compatibility path, not the universal
+service schema.
+
+### Declared models become v1 capabilities
 
 Each `[[models]]` block names a stable `id`, an explicit container-side `path`, an optional
 description and format, capability hints, and a per-model generation overlay. It yields capability
@@ -64,7 +77,9 @@ in [Capabilities](../capabilities.md).
 
 Every Soulstone must synthesize at least one capability through its adapter. An unrecognised
 generic runtime remains passive. It becomes routable only through a registered adapter or an
-explicit OpenAI-compatible alias with defined binding semantics.
+explicit OpenAI-compatible alias with defined binding semantics. In the general-service shape,
+non-model services use `[[capabilities]]`; they do not fake a model declaration. Compatibility is
+claimed separately for each named [Connector dialect](../connectors.md#openai-compatibility-is-per-dialect).
 
 ## Generation Overlays
 
@@ -95,8 +110,10 @@ non-empty set fails binding because LychD may neither evict the shared runtime n
 that could evict a resident. Labels are lowercase identifiers of at most 50 characters; operators
 must not spell `default-exclusive` directly.
 
-`groups` requests compatible aggregation. `alliances` is accepted shape without enforcement
-authority. Neither changes the conflict graph.
+`groups` requests compatible aggregation, and one Rune may name several groups. That means the
+same service participates in several operator formations; it does not duplicate the instance or
+promise that the complete union may coexist. `alliances` is accepted shape without enforcement
+authority. Neither changes the conflict graph, reserves hardware, or asks for semantic dispatch.
 
 ## Refusal and Handoff
 

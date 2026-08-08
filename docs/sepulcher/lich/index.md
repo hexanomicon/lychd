@@ -20,6 +20,10 @@ capability, action, and consequence can meet. It cannot make choice disappear wi
 inhabitants decorative. The Call keeps relation, surprise, and refusal open; a bounded local center
 must still cross a door and inherit its consequence.
 
+At the [Altar](../../divination/altar/circle.md), Bridge may carry many such Circles through one
+continuing séance. Inside each Circle, casting performs one exact Scroll; that operational
+projection does not exhaust the Invocation's relation between Caller and Called.
+
 ```text
 YOU                    CALLED                 ME
 Caller             →   relational edge   →   Called
@@ -53,8 +57,8 @@ Spirit moves through [**Flux**](./spirit/flux.md), [**Seed**](./spirit/seed.md),
 [**Recall**](./spirit/recall.md). **The Call opens. The Blade cuts. The Spirit carries. The Answer binds. The Flux may leave a Seed; Recall raises it again.**
 
 This is a LychD correspondence with a common later Vedāntic presentation, not a claim that its
-source traditions share one historical diagram. [Inner Tongue](../../lexicon/inner-tongue.md#correspondences)
-keeps their etymologies and distinctions.
+source traditions share one historical diagram. [Inner Tongue](../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
+keeps the source notes, limits, and distinctions.
 
 ## Made, Not Born
 

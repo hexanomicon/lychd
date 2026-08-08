@@ -78,6 +78,38 @@ are not implied merely because a package registers. A minimal contribution is ex
 context.runes.add_schema(RuneConfig)
 ```
 
+The accepted general-service capability surface is Designed and is not present in that context.
+It requires separately owned and sealed contribution stores for semantic interface revisions,
+immutable profile revisions/digests, Connector dialect-driver revisions, evidence bindings, and
+runtime/Portal activation definitions. Registration of one kind grants none of the others:
+
+- an interface defines semantic request/result, operations, typed facets, and failure meaning;
+- a profile closes exact model/tool/graph/workflow inputs, licenses, formats, languages, limits,
+  resources, and evidence references;
+- a dialect driver speaks one exact protocol subset and owns no semantic eligibility;
+- an activation definition binds an admitted profile and driver to one Rune schema and lifecycle;
+  and
+- an evidence binding points to producer-attributed results and an admission decision by the
+  target contract owner.
+
+Every identity includes a safe stable id plus immutable revision or digest, provider provenance,
+and a single owning contribution. Cross-store references are resolved and validated as one staged
+assembly before membership seals. Registering a Rune schema, Python client, URL, or familiar
+"OpenAI-compatible" label cannot synthesize any missing contribution.
+
+Future Spell and Scroll contribution preserves that boundary. Spellweaver-owned stores may admit
+portable Spell contracts and Scroll declarations; executable implementation and adapter stores
+remain separately owned by Extension and effect Domains. Contract publication, implementation
+registration, Scroll publication, and activation are distinct acts. None is implied by the current
+registration context or by the presence of an equally named package.
+
+Web-acquisition providers preserve the same rule. A package may register an Animator definition
+for a search or browser service, but a `SoulstoneDefinition`, `PortalDefinition`, or raw
+`ToolConnector` is not a Scout provider registration and grants no Search, Fetch, Crawl, Render,
+or Extract authority. The future provider contribution surface must be explicitly Scout-owned,
+effect-specific, provenance-preserving, and sealed with the other registration stores. Until that
+surface exists, provider-facing toolsets remain incapable of constituting a delivered Scout path.
+
 The manager owns the root context and passes each registrant a provider-bound
 `ExtensionRegistrationContext`. User activation IDs remain the Settings and filesystem selectors;
 audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activation-id>`, and

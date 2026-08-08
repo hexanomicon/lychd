@@ -73,6 +73,13 @@ the Phylactery retains its PostgreSQL image user and its data mount uses `:U,Z`.
 allow assigned paths, not ambient Crypt access. The Tomb is a separate Security/Workers boundary,
 not a safer Pod member.
 
+Current Soulstone compilation joins every service to `lychd.pod`. That topology is not admissible
+for a browser-bearing Scout renderer. Such a Soulstone must compile into a dedicated rootless
+containment and network zone with no route to Core peers, Phylactery, host control sockets, wallets,
+or unrelated secrets; its target egress must cross the Scout-owned destination gate. Until the
+Rune, `RuntimePlan`, compiler, and effectful containment tests can express and prove that topology,
+the Crawl4AI renderer candidate remains Designed rather than deployable.
+
 ## Scribe inscription
 
 Scribe materializes one validated generation transactionally: render and validate in staging,

@@ -13,6 +13,10 @@ Quadlet and supervised by the user's systemd manager. Its **Soulstone Rune** is 
 intent. Binding compiles that intent into a physical service; the Animator adapter separately
 declares capabilities, probes readiness, and translates supported runtime-native operations.
 
+For a model-backed capability, the Soulstone is the local furnace in which an
+[Animus](../index.md#animus-the-power-answering) may become active. The loaded model lends bounded
+power through its Connector and CapabilityGrant; it is not the Lich's Spirit or identity.
+
 The name is one domain concept, not a Python decomposition into `Soul + Stone`. `Soulstone` is the
 only service term ending in “Stone”; shared deployment code uses the literal `QuadletConfig` name.
 Soulstone and Phoenix already embed that minimum value under `quadlet` without sharing Domain or

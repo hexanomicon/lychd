@@ -21,6 +21,7 @@ from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_soulstone
 from lychd.domain.animation.services.adapters.runtimes.shared import (
     build_openai_connector,
+    fixed_openai_activation_result,
     probe_openai_compatible_link,
     require_runtime_soulstone,
 )
@@ -37,8 +38,8 @@ class OpenAICompatibleRuntimeAdapter:
     """Base adapter for a local runtime that serves an OpenAI-compatible API.
 
     Always non-dynamic (``is_dynamic=False``): the server binds its port only after
-    the model is loaded, so a reachable endpoint means WARM and an unreachable one
-    means COLD.
+    a model is loaded, but a declared capability is WARM only when the validated
+    live ``/models`` inventory contains that exact model id.
     Subclasses set two class attributes; hooks may be overridden as needed.
     """
 
@@ -92,37 +93,49 @@ class OpenAICompatibleRuntimeAdapter:
     ) -> list[CapabilityState]:
         """Probe the OpenAI-compatible endpoint and project non-dynamic phase states.
 
-        Reachable ⇒ WARM, unreachable ⇒ COLD (spec §2 phase table).
+        Reachable plus exact inventory match ⇒ WARM; missing or malformed
+        inventory ⇒ ERROR; transport-unreachable ⇒ COLD.
         """
         connector = cast("OpenAICompatibleConnector", animator.connector)
         link = await probe_openai_compatible_link(connector)
         connector.set_link(link)
         up = link.up
-        phase = CapabilityPhase.WARM if up else CapabilityPhase.COLD
-        active_model_id = getattr(connector, "default_model_id", None)
-        loaded_model_ids = [spec.model_id for spec in specs] if up else []
+        observed_model_ids = connector.observed_model_ids or ()
+        inventory_error = connector.inventory_error
         checked_at = datetime.now(UTC)
-        return [
-            CapabilityState(
-                capability_key=spec.key,
-                is_dynamic=False,
-                phase=phase,
-                health="ok" if up else "down",
-                active_model_id=active_model_id,
-                loaded_model_ids=loaded_model_ids,
-                reason=link.reason,
-                checked_at=checked_at,
-                metadata=connector.metadata,
+        states: list[CapabilityState] = []
+        for spec in specs:
+            model_present = spec.model_id in observed_model_ids
+            phase = CapabilityPhase.WARM if up and model_present else CapabilityPhase.COLD
+            health = "ok" if phase is CapabilityPhase.WARM else "down"
+            reason = link.reason
+            if up and inventory_error is not None:
+                phase = CapabilityPhase.ERROR
+                health = "inventory_invalid"
+                reason = inventory_error
+            elif up and not model_present:
+                phase = CapabilityPhase.ERROR
+                health = "model_missing"
+                reason = f"declared model {spec.model_id!r} is absent from /models"
+            states.append(
+                CapabilityState(
+                    capability_key=spec.key,
+                    is_dynamic=False,
+                    phase=phase,
+                    health=health,
+                    active_model_id=spec.model_id if phase is CapabilityPhase.WARM else None,
+                    loaded_model_ids=[spec.model_id] if phase is CapabilityPhase.WARM else [],
+                    reason=reason,
+                    checked_at=checked_at,
+                    metadata=connector.metadata,
+                )
             )
-            for spec in specs
-        ]
+        return states
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
         """Report that non-dynamic runtimes expose no in-runtime activation (unit-owned)."""
-        _ = spec
-        up = animator.connector.link.up
-        phase = CapabilityPhase.WARM if up else CapabilityPhase.COLD
-        return ActivationResult(accepted=False, phase=phase, reason="fixed capability; lifecycle owned by unit")
+        connector = cast("OpenAICompatibleConnector", animator.connector)
+        return fixed_openai_activation_result(connector, spec)
 
     def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
         """Return ``None``; non-dynamic OpenAI-compatible runtimes have no control plane."""

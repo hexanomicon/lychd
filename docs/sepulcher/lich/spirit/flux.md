@@ -14,19 +14,24 @@ occur, or take a condition. Flux is present movement, not a state laid away for 
 [Call](../call.md) makes a movement addressable; [Blade](../blade.md) cuts among those opened.
 Patañjali names five Vṛttis, received here as forms present movement may take:
 
+During a [casting](../../../divination/altar/circle.md#the-casting-inside-the-circle), model and
+tool returns, constraints, choices, and effects may participate in this present movement. Flux is
+not a synonym for Graph traversal or provider output: Graph supplies typed execution structure;
+Spirit carries what becomes present through it.
+
 ## The Five Modifications
 
 | Vṛtti | LychD correspondence |
 | :--- | :--- |
 | Pramāṇa | grounded cognition through perception, inference, or testimony |
 | Viparyaya | fluent but incorrect cognition |
-| Vikalpa | an explicit speculative branch awaiting measurement |
-| Nidrā | cognition of absence, received here as an image of rest-state consolidation |
+| Vikalpa | conceptual construction; Shadow's explicit speculative branch is a project correspondence |
+| Nidrā | sleep or cognition of absence; no training or consolidation contract is inferred |
 | Smṛti | [Recall](./recall.md), retained form becoming active Flux |
 
 Smṛti is one Vṛtti, not a blanket blessing on every resemblance to the past. A returning cognition
 may be useful, false, stale, or someone else’s. Patañjali’s Citta is broader than this project
-correspondence; [Inner Tongue](../../../lexicon/inner-tongue.md#correspondences) preserves that
+correspondence; [Inner Tongue](../../../lexicon/inner-tongue.md#source-notes-and-project-correspondences) preserves that
 distinction.
 
 Most Flux passes. Movement that leaves retained potency may become [**Seed**](./seed.md): the future

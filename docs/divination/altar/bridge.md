@@ -6,8 +6,12 @@ icon: material/bridge
 # :material-bridge: Bridge
 
 The **Bridge** is the operating conversation: the Magus offers a bounded Intent, follows its
-result, and decides a supported consent request. It carries conversation without becoming Weaver,
+result, and decides a supported consent request. It carries conversation without becoming Spellweaver,
 Oculus, artifact custody, or authority over anything mentioned in a reply.
+
+Bridge is the place of continuing relation. Its [**Circle**](circle.md) is the pinnacle: one
+Invocation in which that relation concentrates into an answerable casting. A séance may hold many
+Circles without merging their Runs, Sigils, Context boundaries, or consequences.
 
 Enter through:
 
@@ -35,6 +39,10 @@ The delivered Bridge supports:
 The run strip names the Run, Pattern revision, canonical status, and current activity. It does not
 show evidence freshness or a structured **Why waiting?** explanation. A spinner, elapsed clock, or
 open stream is never promoted into workflow progress.
+
+The strip is the current thin material projection of a Circle. No focused Circle workspace exists:
+Bridge does not yet compose the exact Scroll, active Spell placement, Context and authority
+boundary, Animator grant, or Orb evidence into one view.
 
 Bridge is not a general run dashboard, workflow editor, annotation canvas, or ambient view of
 every Agent. Loom owns Pattern projection; Orb owns evidence; Nexus owns physical transitions.
@@ -77,12 +85,12 @@ remain absent.
 
 Two useful movements remain designed:
 
-- **Pin and Ask** would attach an authorized typed reference—such as an exact Pattern revision and
-  node, Run event, transition, or artifact revision—to a new Intent. The composer must preview
+- **Pin and Ask** would attach an authorized typed reference—such as an exact Scroll/Pattern
+  revision and Spell placement, Run event, transition, or artifact revision—to a new Intent. The composer must preview
   identity, included/summarized/unavailable/redacted material, and permission; the Vessel must
   reauthorize the reference at admission. A pin grants neither retrieval nor mutation by itself.
-- **Propose in Loom** would turn selected conversation into an attributable charcoal candidate
-  against an exact base Pattern. The candidate would remain inert until Weaver's future draft
+- **Propose in Loom** would turn selected conversation into an attributable charcoal Scroll candidate
+  against an exact base Pattern. The candidate would remain inert until Spellweaver's future draft
   contract validates and publishes a new revision.
 
 Neither exists today. Copying prose or a canvas coordinate is not a typed reference, and natural

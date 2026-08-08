@@ -79,6 +79,8 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         self._provider_name = provider_name
         self._toolsets = tuple(toolsets)
         self._metadata = dict(metadata or {})
+        self._observed_model_ids: tuple[str, ...] | None = None
+        self._inventory_error: str | None = None
 
     @property
     def kind(self) -> str:
@@ -102,6 +104,24 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
 
     def list_models(self) -> Sequence[ModelInfo]:
         return tuple(model.model_copy(deep=True) for model in self._model_infos)
+
+    @property
+    def observed_model_ids(self) -> tuple[str, ...] | None:
+        """Return the last validated live ``/models`` inventory, if one was probed."""
+        return self._observed_model_ids
+
+    def set_observed_model_ids(self, model_ids: Sequence[str] | None) -> None:
+        """Replace live inventory evidence without mutating the declared catalogue."""
+        self._observed_model_ids = None if model_ids is None else tuple(model_ids)
+
+    @property
+    def inventory_error(self) -> str | None:
+        """Return the last live inventory conformance failure, if any."""
+        return self._inventory_error
+
+    def set_inventory_error(self, error: str | None) -> None:
+        """Replace inventory conformance evidence independently of link liveness."""
+        self._inventory_error = error
 
     def get_model(self, *, model_id: str | None = None) -> Model:
         selected_model = self._select_model_id(model_id)

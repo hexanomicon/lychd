@@ -223,7 +223,6 @@ def _grant(*, generation: GenerationProfile) -> CapabilityGrant:
         state=_state(spec),
         lease=GrantLease(grant_id="grant-1", holder="run:r1", issued_at=datetime.now(UTC)),
         generation=generation,
-        animator=StubRuntime(id="local-chat"),  # pyright: ignore[reportArgumentType]
         model=None,
     )
 

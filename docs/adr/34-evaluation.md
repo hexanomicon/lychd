@@ -16,7 +16,7 @@ Riddle is LychD's singular evaluation jurisdiction: it defines Cases/Suites, cap
 observations, applies versioned Rubrics, reports uncertainty, and returns bounded findings. It does
 not execute unsafe payloads or own Tomb; select Animator/capability; authorize spend, publication,
 repair, or deployment; define Persona; mutate Pattern, Composition, or artifact; admit training;
-or promote a Soulstone. Execution, Dispatcher, Toll, Weaver, Mirror, Smith, Soulforge, and HitL
+or promote a Soulstone. Execution, Dispatcher, Toll, Spellweaver, Mirror, Smith, Soulforge, and HitL
 keep those effects. Evaluation is evidence offered to policy, never policy disguised as a score.
 
 !!! warning "Delivery boundary"
@@ -103,7 +103,7 @@ not merge rows, secrets, Sigils, approvals, policies, or effect authority.
 | `InvalidationSet@1` | claims whose support fails and claims with intact closure |
 | `CorrectionRequest@1` | bounded owner delta, preserved constraints, evidence, scope, repair budget |
 
-These grant no authority, spend, publication, deletion, training, promotion, or mutation. Weaver
+These grant no authority, spend, publication, deletion, training, promotion, or mutation. Spellweaver
 may admit a new forward Invocation under ordinary policy/HitL; old Runs/Outcomes remain lineage.
 Riddle walks declared dependencies backwards to the smallest supported cut, not nearest producer.
 Reuse requires matching complete input closure, artifact revisions, Rubric, Evaluator, relevant

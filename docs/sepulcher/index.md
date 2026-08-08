@@ -37,10 +37,14 @@ Together they sustain the recurrent whole called the **Lich**.
 ### II. The Animating Spark
 
 - **[Animator](./animator/index.md) — an addressable capability service.** Read this for the common
-  service contract and adapter boundary. Model inference is one capability family, not the whole
+  service contract and adapter boundary. Model inference is one kind of capability, not the whole
   category.
 - **[Capabilities](./animator/capabilities.md) — what an Animator can do and whether it is ready.**
-  Read this for families, modalities, identity, and the readiness words shown by the Nexus.
+  Read this for semantic interfaces, immutable profiles, typed demand, grant variants, identity,
+  and the readiness words shown by the Nexus.
+- **[Connectors](./animator/connectors.md) — how one admitted surface is invoked.** Read this for
+  exact dialect drivers, partial OpenAI-compatible profiles, native calls, durable jobs, sessions,
+  probes, and the boundary between transport and capability meaning.
 - **[Soulstone](./animator/soulstone/index.md) — a local service.** Read this when declaring a
   Quadlet-backed runtime, its models, mounts, devices, secrets, and lifecycle intent.
 - **[Portal](./animator/portal.md) — a remote connection.** Read this when declaring an external API

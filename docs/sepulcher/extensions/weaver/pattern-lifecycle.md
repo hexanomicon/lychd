@@ -1,14 +1,15 @@
 ---
-title: Pattern lifecycle
+title: Scroll and Pattern lifecycle
 icon: material/source-branch-sync
 ---
 
-# :material-source-branch-sync: Pattern lifecycle
+# :material-source-branch-sync: Scroll and Pattern lifecycle
 
 > _To change the score is to name another revision. The admitted Run keeps its first seal._
 
-Within [Weaver](index.md), a Pattern revision is never silently rewritten. Weaver selects one
-revision from an admitted Intent; the Invocation names that performance, and the canonical Run
+Within [Spellweaver](index.md), a Scroll—one immutable Pattern revision—is never silently
+rewritten. Spellweaver selects one revision from an admitted Intent; the Invocation names that
+casting, and the canonical Run
 carries its identity. If the registered executable no longer matches, execution fails instead of
 substituting another workflow. [Pattern identity](../../../adr/28-workflow.md#pattern-identity)
 owns the complete law.
@@ -27,6 +28,15 @@ representation from which all behavior is compiled. The implementation revision 
 built-ins) records a reviewed compatibility closure: change it or the public Pattern revision when
 new behavior cannot safely resume old state. It does not automatically detect source edits. Edge
 parity and return semantics must still be established by source review and tests.
+
+Each semantic station currently behaves like a legacy inline Spell placement: key, label, kind,
+implementation closure, and edges are bound only inside its Scroll. There is no independent Spell
+identity or portable catalogue. A future portable Scroll pins exact authority-qualified Spell
+contract revisions and digests; a receiver-owned Resolution Lock separately binds each placement
+to an exact local implementation. Admission reports every unknown, unavailable, incompatible,
+revoked, or unauthorized placement instead of substituting a similar name or newer revision. A
+future Loom may show the absence only in an inert resolution report; an unresolved placement never
+enters an executable Graph.
 
 The catalogue is immutable after construction. It rejects duplicate `(key, revision)` pairs,
 requires an explicit active revision when one name has alternatives, requires explicit non-default
@@ -81,9 +91,17 @@ pin manifests. [Extension activation](../../../state-of-the-work.md#extension-ac
 is **Partial**, but no Pattern store or public contribution API is delivered.
 
 Future publication follows the [Pattern contribution](../../../adr/28-workflow.md#pattern-contribution)
-law: an inert candidate declares identity, contracts, continuity, and evidence; validation and
-review may publish an immutable revision through a selected shaped store and freeze that process
-generation. The current `Workflow` type remains internal and pre-v1, not a third-party ABI.
+law: inert Scroll and Spell-contract candidates declare identity, continuity, and evidence;
+executable Spell implementations register through a separate owner. Validation and review may
+publish an immutable revision, bind an implementation, and activate a new process generation only
+as distinct effects. An A2A teaching bundle reaches this path only through
+[Assimilation](../../../adr/35-assimilation.md#teaching-a-missing-spell). The current `Workflow`
+type remains internal and pre-v1, not a third-party ABI.
+
+Current code or contribution changes require controlled Evolution and Vessel/catalogue
+replacement; this is not Reanimation. A future declarative-only Scroll may activate without a
+restart only after all required implementations already exist and an atomic durable catalogue
+generation mechanism is proved.
 
 A future scheduler would create an Occurrence and submit it through ordinary revision-pinned
 admission. Its timer never calls a Graph node, model, or container directly. [Scheduling and

@@ -7,7 +7,9 @@ centralizing repeated type-guard and connector construction logic.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 
+from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase, CapabilitySpec
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import (
@@ -69,6 +71,8 @@ def resolved_soulstone_base_url(soulstone: SoulstoneConfig) -> str:
 
 
 PROBE_TIMEOUT_SECONDS = 2.0
+MAX_OPENAI_MODEL_INVENTORY_ENTRIES = 1024
+MAX_OPENAI_MODEL_ID_LENGTH = 512
 
 
 async def probe_openai_compatible_link(
@@ -77,24 +81,47 @@ async def probe_openai_compatible_link(
     timeout_seconds: float = PROBE_TIMEOUT_SECONDS,
     path: str = "/models",
 ) -> Link:
-    """Perform a live async reachability probe of an OpenAI-compatible endpoint.
+    """Probe link liveness and the exact OpenAI-compatible model inventory.
 
     Issues a short-timeout ``GET {base_url}{path}`` (default ``/models``, i.e.
-    ``/v1/models`` for the standard Soulstone base URL) and returns a refreshed
-    ``Link``. The caller is expected to push it onto the connector via
-    ``connector.set_link(...)``. A down or non-OpenAI responder resolves to
-    ``up=False`` with a human-readable reason; it never raises (A3-U3: async
-    httpx replaces the blocking ``urlopen``).
+    ``/v1/models`` for the standard Soulstone base URL), validates the standard
+    ``data[*].id`` inventory, records that observation separately from the
+    connector's declared catalogue, bounds retained inventory cardinality and
+    id length, and returns a refreshed ``Link``. Transport failure resolves to
+    ``up=False``. A reachable but non-conformant response keeps the physical
+    link live and records a separate inventory error; this function never
+    raises (A3-U3: async httpx replaces the blocking ``urlopen``).
     """
     normalized_path = path if path.startswith("/") else f"/{path}"
     request_url = f"{connector.base_url.rstrip('/')}{normalized_path}"
     try:
-        await request_json("GET", request_url, headers={"Accept": "application/json"}, timeout=timeout_seconds)
+        payload = await request_json(
+            "GET",
+            request_url,
+            headers={"Accept": "application/json"},
+            timeout=timeout_seconds,
+        )
+    except HttpJsonError as exc:
+        connector.set_observed_model_ids(None)
+        if exc.transport:
+            connector.set_inventory_error(None)
+            up = False
+            reason = f"probe failed: {exc}"
+        else:
+            connector.set_inventory_error(f"inventory probe failed: {exc}")
+            up = True
+            reason = None
+    else:
         up = True
         reason = None
-    except HttpJsonError as exc:
-        up = False
-        reason = f"probe failed: {exc}"
+        try:
+            model_ids = _parse_openai_model_inventory(payload)
+        except HttpJsonError as exc:
+            connector.set_observed_model_ids(None)
+            connector.set_inventory_error(f"inventory validation failed: {exc}")
+        else:
+            connector.set_observed_model_ids(model_ids)
+            connector.set_inventory_error(None)
 
     return Link(
         up=up,
@@ -104,8 +131,78 @@ async def probe_openai_compatible_link(
     )
 
 
+def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]:
+    """Validate and detach one OpenAI ``/models`` response."""
+    data = payload.get("data")
+    if not isinstance(data, list):
+        msg = "OpenAI-compatible /models response has no data list"
+        raise HttpJsonError(msg)
+    entries = cast("list[object]", data)
+    if len(entries) > MAX_OPENAI_MODEL_INVENTORY_ENTRIES:
+        msg = (
+            "OpenAI-compatible /models response exceeds "
+            f"{MAX_OPENAI_MODEL_INVENTORY_ENTRIES} entries"
+        )
+        raise HttpJsonError(msg)
+
+    model_ids: list[str] = []
+    seen: set[str] = set()
+    for index, entry_value in enumerate(entries):
+        if not isinstance(entry_value, dict):
+            msg = f"OpenAI-compatible /models entry {index} is not an object"
+            raise HttpJsonError(msg)
+        entry = cast("dict[object, object]", entry_value)
+        model_id = entry.get("id")
+        if not isinstance(model_id, str) or not model_id.strip():
+            msg = f"OpenAI-compatible /models entry {index} has no non-empty string id"
+            raise HttpJsonError(msg)
+        if len(model_id) > MAX_OPENAI_MODEL_ID_LENGTH:
+            msg = (
+                f"OpenAI-compatible /models entry {index} id exceeds "
+                f"{MAX_OPENAI_MODEL_ID_LENGTH} characters"
+            )
+            raise HttpJsonError(msg)
+        if model_id in seen:
+            msg = f"OpenAI-compatible /models repeats model id {model_id!r}"
+            raise HttpJsonError(msg)
+        seen.add(model_id)
+        model_ids.append(model_id)
+    return tuple(model_ids)
+
+
+def fixed_openai_activation_result(
+    connector: OpenAICompatibleConnector,
+    spec: CapabilitySpec,
+) -> ActivationResult:
+    """Reject activation while preserving the exact observed fixed-runtime phase."""
+    reason = "fixed capability; lifecycle owned by unit"
+    if not connector.link.up:
+        return ActivationResult(accepted=False, phase=CapabilityPhase.COLD, reason=reason)
+    if connector.inventory_error is not None:
+        return ActivationResult(
+            accepted=False,
+            phase=CapabilityPhase.ERROR,
+            reason=connector.inventory_error,
+        )
+    observed_model_ids = connector.observed_model_ids
+    if observed_model_ids is None:
+        return ActivationResult(
+            accepted=False,
+            phase=CapabilityPhase.ERROR,
+            reason="fixed capability inventory is unverified",
+        )
+    if spec.model_id not in observed_model_ids:
+        return ActivationResult(
+            accepted=False,
+            phase=CapabilityPhase.ERROR,
+            reason=f"declared model {spec.model_id!r} is absent from /models",
+        )
+    return ActivationResult(accepted=False, phase=CapabilityPhase.WARM, reason=reason)
+
+
 __all__ = [
     "build_openai_connector",
+    "fixed_openai_activation_result",
     "probe_openai_compatible_link",
     "require_runtime_soulstone",
     "resolved_soulstone_base_url",

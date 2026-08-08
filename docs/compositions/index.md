@@ -27,8 +27,11 @@ A page belongs in the Portfolio when all three answers are concrete:
 | --- | --- |
 | **Composition** | operator-visible application purpose, records, policies, projections, effects, and Pattern catalogue |
 | **Native Reference Composition** | first-party supported application contract and worked example |
-| **Pattern** | one immutable executable score owned by a Composition |
-| **Invocation** | one admitted performance of an exact Pattern revision |
+| **Pattern** | one executable-score family owned by a Composition; each immutable revision is a Scroll |
+| **Scroll** | one whole immutable Pattern revision made of one or more Spell placements and their paths |
+| **Spell** | one independently named semantic action contract placed at a Scroll station; its name grants no capability or authority |
+| **Invocation** | one admitted Circle in which an exact Scroll may be cast |
+| **Casting** | the performance of that exact Scroll within the Invocation |
 | **Suite** | versioned coordination of separate Compositions through typed handoffs |
 | **Extension** | a governed way for implementation to enter LychD; never an application by itself |
 
@@ -102,7 +105,7 @@ flowchart LR
     P --> PC["Publication candidate"]
 ```
 
-The diagram is a designed handoff, not an executor. Weaver must still settle child identity,
+The diagram is a designed handoff, not an executor. Spellweaver must still settle child identity,
 revision closure, budgets, cancellation, Stasis, retry, effect receipts, compensation, and honest
 partial completion before a Suite can run.
 
