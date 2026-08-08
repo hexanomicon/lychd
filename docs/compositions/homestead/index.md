@@ -14,7 +14,7 @@ the source does not change who owns the stock.
 | Field | Reference contract |
 | --- | --- |
 | **Identity** | `homestead.steward` revision `1` |
-| **Principal Pattern** | `homestead.map_site@1` |
+| **Patterns** | `homestead.map_site@1`, `homestead.reconcile_stores@1`, `homestead.plan_provision@1`, `homestead.tend_land@1`, and `homestead.maintain_site@1` |
 | **Application begins with** | A reviewed household boundary, asset and resource evidence, responsible people, recurring provision policy, hazards, budgets, and commissioned device limits |
 | **Application can return** | `HomesteadPlan@1`, freshness-visible resource and stores ledgers, `InventorySnapshot@1`, a reviewable provision plan or cart, acknowledged, refused, or unknown checkout result, bounded work or control intents, alerts, and effect receipts |
 | **Application stops before** | Health or consumption judgment, unapproved purchase or disclosure, irregular high-value acquisition, design certification, permits, construction, potability claims, unsafe energization, interlock bypass, hazardous repair, or general robot authority |
@@ -44,6 +44,11 @@ commissioned envelope; or deterministic safe containment. Schedules create finit
 not an always-awake model. There is no accepted general smart-home or physical-actuator Domain;
 [Legion](../../adr/42-legion.md), Workflow, Security, IAM, Vision, and host owners retain those
 boundaries.
+
+Those Pattern names identify separately invocable household journeys. The more granular versioned
+names on the leaf pages—observation, balancing, receipt ingestion, shop observation, cart build,
+checkout, and guarded controls—are proposed Spell contracts placed by one of those Patterns. A
+single `map_site` casting cannot truthfully claim the whole application finish set.
 
 ## Portfolio seams
 

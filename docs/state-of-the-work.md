@@ -320,17 +320,52 @@ notification delivery, or external channel.
 
 **Proved now:** Catalog hydration, matching, probe publication, grant issue and settlement, and
 lease-aware dispatch are tested with duplicate attribution, snapshot isolation, cancellation
-invalidation, and strict loopback Soulstone endpoint policy.
+invalidation, and strict loopback Soulstone endpoint policy. Every issue re-probes the exact chosen
+record rather than trusting cached warmth. Fixed OpenAI-compatible local and opt-in Portal probes
+validate `/models` inventory and warm only an exact returned model id; malformed or missing
+inventory fails closed, and inventory count and id length are bounded before retention. A
+`served_model_id` Rune field pins the provider-facing identity when it differs from a path or
+Soulstone name. The v1 grant exposes no Animator or Connector: `chat` admits a hydrated model and
+only declared agent-loop toolsets, `tool_execution` requires a non-empty toolset, and all
+metadata-only families fail closed. Registry-level Portal issue is quarantined as well as both
+Dispatcher entry points.
 
-**Boundary:** Registry ownership remains broad; lease expiry is recorded but not enforced; current
-Soulstone/Portal inheritance and raw Quadlet contribution remain. Generic service compilation and
-secret-vault integration are not delivered.
+**Boundary:** This is the v1 `{animator}:{family}:{model_id}` catalogue with one chat-model/toolset
+compatibility grant, not the general discriminated grant union. Registry ownership remains broad;
+lease expiry is recorded but not enforced; current Soulstone/Portal inheritance and raw Quadlet
+contribution remain. General interface/profile compilation, call/job/session grants,
+`[[capabilities]]`, service-job attempts, per-dialect OpenAI-compatible drivers, and secret-vault
+integration are not delivered.
 
 **Evidence**
 
-- **Source:** [Animator registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py)
-- **Verification:** [Registry tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py)
+- **Source:** [Animator registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py),
+  [Soulstone Rune schema](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/schemas/runes/animators.py),
+  [OpenAI-compatible probe](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/adapters/runtimes/shared.py),
+  and [fixed-runtime projection](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/adapters/runtimes/openai_compat.py)
+- **Verification:** [Registry tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py),
+  [runtime adapter tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_adapters.py),
+  and [Portal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_portals.py)
 - **Law:** [Dispatcher](./adr/22-dispatcher.md)
+
+### General service capability substrate {#general-service-capabilities}
+
+**State:** Designed
+
+**Proved now:** No general-service implementation is claimed. Accepted law separates semantic
+interfaces, immutable implementation profiles, typed demand, readiness, discriminated
+model/call/job/session grants, exact Connector dialects, and durable service attempts while
+retaining the current model path as explicit v1 compatibility.
+
+**Do not expect yet:** There is no `CapabilitySpecV2`, `CapabilityDemand@1`, `[[capabilities]]`
+compiler, general call/job/session driver registry, `ServiceJobAttempt@1` persistence or relay,
+`AWAITING_SERVICE`, local durable reservation transfer, OpenAI audio/image/video dialect bake, or
+CapabilitySet placement solver.
+
+**Evidence**
+
+- **Topic:** [Capabilities](./sepulcher/animator/capabilities.md) and [Connectors](./sepulcher/animator/connectors.md)
+- **Law:** [Dispatcher](./adr/22-dispatcher.md), [Workers](./adr/14-workers.md), and [Graph](./adr/24-graph.md)
 
 ### Extension activation and contributions {#extension-activation-contributions}
 
@@ -478,11 +513,13 @@ production-factory browser receipt.
 
 **Proved now:** Bridge supports typed sessions, text admission, consent, inspection, semantic SSE,
 closed GenUI descriptors, durable request identity, authoritative snapshot recovery, lifecycle
-fencing, and bounded reconstruction against server-owned Run and Pattern identities.
+fencing, and bounded reconstruction against server-owned Run and Pattern identities. Its per-turn
+run strip is the first thin projection of one Invocation's Circle.
 
 **Boundary — Not yet:** There is no real-browser receipt, durable cross-process event/token
 delivery, general multi-approval, Attention, or notification channel. Text is the only command
-modality, and warm Environment caching lacks a changing grant epoch.
+modality, warm Environment caching lacks a changing grant epoch, and no focused Circle workspace
+composes Scroll, active Spell placement, Context/authority, capability, and evidence projections.
 
 **Evidence**
 
@@ -515,10 +552,11 @@ or resume safely; retry refuses to relaunch it.
 
 **Proved now:** Loom browses exact immutable Pattern revisions, manifests, semantic station and
 permission outlines, checkpoint schemas, implementation revisions, source, active/default state,
-and retained revisions with generation-fenced loading.
+and retained revisions with stale-response-fenced client loading.
 
-**Boundary — Not yet:** Loom is a view over the fixed registry, not a Weaver editor, mutation
-surface, drafting canvas, Suite executor, or production-browser receipt.
+**Boundary — Not yet:** Loom is a view over the fixed registry, not a Spellweaver editor, mutation
+surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
+canvas, inert unresolved-Spell projection, Suite executor, or production-browser receipt.
 
 **Evidence**
 
@@ -669,10 +707,14 @@ untrusted-browser use remain unsupported.
 **State:** Designed
 
 **Proved now:** Web-acquisition law separates search, fetch, render, extraction, destination
-pinning, quarantine, authentication, and paid effects.
+pinning, quarantine, authentication, and paid effects. The accepted design selects native static
+Fetch + Extract, a SearXNG Search Soulstone, and a later isolated Crawl4AI renderer candidate;
+Firecrawl remains deferred and paid web-acquisition Portals remain private-extension territory.
 
 **Do not expect yet:** There is no Scout provider, browser service, endpoint, Agent tool,
-acquisition receipt, download quarantine, authenticated session, or Smith ingestion path.
+acquisition receipt, download quarantine, authenticated session, or Smith ingestion path. There is
+no SearXNG or Crawl4AI Rune/adapter, no Scout provider store or effect-scoped tool binding, and no
+renderer containment outside the shared Pod.
 
 **Evidence**
 
@@ -684,7 +726,8 @@ acquisition receipt, download quarantine, authenticated session, or Smith ingest
 **State:** Partial
 
 **Proved now:** Capability declarations distinguish the Vision family from image modality and
-dispatch metadata preserves that distinction.
+dispatch metadata preserves that distinction. A `WARM` v1 `vision` record still fails closed at
+grant issue because no typed visual execution surface exists.
 
 **Boundary — Not yet:** LychD does not upload, store, normalize, request, transport, or render image
 bytes through Bridge and an engine.
@@ -692,7 +735,8 @@ bytes through Bridge and an engine.
 **Evidence**
 
 - **Source:** [Capability vocabulary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/schemas/capability_family.py)
-- **Verification:** [Vision tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py)
+- **Verification:** [Vision catalogue tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py)
+  and [grant-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py)
 - **Law:** [Vision](./adr/36-vision.md)
 
 ### Audio admission {#audio-admission}
@@ -700,7 +744,8 @@ bytes through Bridge and an engine.
 **State:** Partial
 
 **Proved now:** Capabilities declare audio input/output modalities while speech services remain the
-`stt` and `tts` families.
+`stt` and `tts` families. Even when observed `WARM`, both v1 families fail closed at grant issue
+because no typed transcription or synthesis call surface exists.
 
 **Boundary — Not yet:** There is no audio-byte custody or transport, streaming socket, resonance
 buffer, working STT/TTS adapter, or Audio Coven.
@@ -708,7 +753,8 @@ buffer, working STT/TTS adapter, or Audio Coven.
 **Evidence**
 
 - **Source:** [Capability vocabulary](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/schemas/capability_family.py)
-- **Verification:** [Audio tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py)
+- **Verification:** [Audio catalogue tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_catalog.py)
+  and [grant-boundary tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_registry.py)
 - **Law:** [Audio](./adr/37-audio.md)
 
 ### Artifact reference contract {#artifact-reference-contract}
@@ -851,7 +897,7 @@ nonce identity fails closed. This foundation performs no network or Run effect.
 
 **Boundary — Not yet:** There is no peer/key custody, discovery, cryptographic verifier, transport,
 durable inbox/outbox, callback or artifact fetch, Run/Graph bridge, restart recovery, effect receipt,
-or interoperability profile.
+Spell compatibility/teaching negotiation, or interoperability profile.
 
 **Evidence**
 

@@ -5,7 +5,7 @@ icon: material/script-text-outline
 
 # :material-script-text-outline: Incantation
 
-Before the first form, an empty margin: **Zero**, unmarked openness, not an object waiting among
+Before the first form, an empty margin: zero, unmarked openness, not an object waiting among
 objects. A mark is drawn. The **Word**—the Logos—names a difference. The difference gives a
 Circle its edge: an inside that can take form, an outside that can answer, and a boundary across
 which Call and Answer may meet.
@@ -21,8 +21,8 @@ vocabulary, and boundaries in documentation and specification—before implement
 body. A first embodiment begins by deciding what may speak for purpose, responsibility, and
 lawful seams.
 
-!!! abstract "The Primal Skeleton"
-    The rite raises the **Primal Skeleton**, a first bounded form.
+!!! abstract "A first bounded form"
+    The rite raises a form small enough to inspect and answer for.
 
     - **The Verse establishes intent.** It names what should exist and why its boundaries matter.
     - **The Covenant establishes architecture.** An accepted ADR decides how the body is to be

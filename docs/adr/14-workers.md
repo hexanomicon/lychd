@@ -24,10 +24,10 @@ interpreter crash kills the Vessel.
 | `runs` | Bridge and CLI workflows | `perform_run` |
 | `rites` | background workflow intents | `perform_run` plus no-effect `perform_rite` |
 
-These are physical delivery lanes, not Weaver service classes. A future `foreground`,
+These are physical delivery lanes, not Spellweaver service classes. A future `foreground`,
 `deadline_windowed`, or `spare_capacity` admission may be delivered through either lane or another
 bounded topology; queue name, source, worker concurrency, and scalar priority cannot substitute for
-the persisted temporal contract. Work that is not yet eligible must remain with Weaver's durable
+the persisted temporal contract. Work that is not yet eligible must remain with Spellweaver's durable
 Occurrence truth rather than occupy a Ghoul while sleeping for its window.
 
 `reconcile_runs` is called directly by lifespan startup with its captured boot cutoff. It is not
@@ -218,6 +218,60 @@ as physical containment.
 The memory persistence profile and `LiveStasisPhylactery` are test/local process state. PostgreSQL
 checkpoint shapes exist, but the standard suite does not prove checkpoint-plus-consent restart on a
 real PostgreSQL lifecycle.
+
+## Service job attempts (Designed)
+
+Long-running image, video, Form, Kinesis, Scanner, Scout, speech, engine, or provider work is not a
+broker retry and cannot be represented by a live Connector handle in Graph state. The accepted
+common mechanical envelope is `ServiceJobAttempt@1`; source, migrations, adapters, and restart
+receipts are not delivered yet.
+
+Before the first local or remote submit, the owning domain Worker persists an attempt containing:
+
+- owner job and Run/station-attempt identity, exact request digest, idempotency identity, and retry
+  generation;
+- one discriminated execution binding: either a capability-backed interface, immutable profile
+  revision/digest, operation, driver and dialect revisions; or a direct-tool-backed Spell
+  implementation and Resolution Lock, immutable `ToolProfile`, and executor or Tomb profile;
+- classified source and working `ArtifactRef`s, destination, purpose, consent/egress decision, and
+  relevant policy revisions;
+- state, provider/executor job identity when known, progress cursor, result and diagnostic refs, usage,
+  cost, warnings, cancellation request, and reconciliation evidence; and
+- for managed local resident or scarce substrate, the exact durable Orchestrator-visible
+  reservation/fence that prevents readiness from disappearing while the effect can still execute.
+
+The mechanical attempt states are:
+
+```text
+PREPARED → SUBMITTING → ACCEPTED → RUNNING → SUCCEEDED | FAILED | CANCELLED
+               |             |         |
+               +-------------+---------+→ INDETERMINATE
+```
+
+`PREPARED` proves no submit has started. A CAS to `SUBMITTING` occurs before the driver is called,
+and the exact idempotency identity accompanies every permitted transmission. The returned
+provider/executor job identity is persisted before `ACCEPTED`. A timeout, disconnect, crash,
+malformed acknowledgement,
+or lost cancellation acknowledgement after submit stays `SUBMITTING` or settles
+`INDETERMINATE`; it never fabricates failure or authorizes a new effect. Reconciliation first looks
+up the same provider/executor identity and idempotency identity. Re-submit is legal only when its
+evidence proves no effect occurred and the domain's retry policy admits the same generation. A
+provider or executor unable to offer idempotency or lookup cannot host autonomously repeatable
+durable effects.
+
+Cancellation records intent, asks the exact attempt owner, and continues reconciliation.
+`CANCELLED` means execution containment is proved, not merely that a request was sent. Local
+reservation release follows terminal containment; an indeterminate local or paid remote attempt
+keeps the relevant fence or operator-visible containment instead of guessing. The common envelope
+owns delivery, reconciliation, cancellation, and settlement mechanics. Scanner, Prism, Form,
+Kinesis, Foundry, Scout, Echo, and each Composition retain their domain request/result contracts,
+validation, acceptance, and finish law.
+
+After checkpoint and exact attempt ownership are durable, the parent Run may park as
+`AWAITING_SERVICE`. Only an owner-specific CAS from a proved terminal attempt creates the next
+`PENDING` delivery; the generic status writer cannot resume it. Startup and the lifespan relay page
+every service wait, reconcile the same attempt under a deadline, and contain unresolved effects.
+No live Connector, grant, SDK client, stream, tensor, process, or session enters the checkpoint.
 
 ## Delegated `AgentJob` labor
 

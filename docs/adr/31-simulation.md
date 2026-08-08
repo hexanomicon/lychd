@@ -6,7 +6,8 @@ icon: material/source-branch
 # :material-source-branch: 31. Simulation
 
 !!! abstract "Context"
-    Alternatives are not reality. **Shadow**, Vikalpa's possibility-lineage jurisdiction, opens
+    Alternatives are not reality. **Shadow**, whose possibility work uses Vikalpa as a literary
+    correspondence, opens
     bounded candidates against a pinned base, preserves why they ended, and offers evidence to the
     boundary that owns reality. [Dancer](../sepulcher/extensions/shadow/dancer.md) opens doors;
     [Hunter](../sepulcher/extensions/shadow/hunter.md) tests their ground; neither chooses the exit.
@@ -17,8 +18,13 @@ Shadow owns simulation Intent, branch lineage, assumptions and unknowns, expansi
 separation, budgets and stop conditions, branch evidence/artifact references, eligibility packages,
 and cleanup eligibility/receipts. It does not own scheduling, unsafe execution, capability
 selection, readiness, truth, Persona, consent, live mutation, Memory curation, or training;
-Weaver, execution, Dispatcher, Orchestrator, Riddle, Mirror, HitL, Archive, and Soulforge keep
+Spellweaver, execution, Dispatcher, Orchestrator, Riddle, Mirror, HitL, Archive, and Soulforge keep
 those offices.
+
+A game engine simulating physics, navigation, actors, and gameplay inside an exact local project
+is [Foundry](../compositions/foundry/world.md) execution, not a Shadow branch. Shadow may compare
+separate project candidates under pinned bases, but it neither becomes the engine world nor owns
+the selected game's scene, rules, playtest, or build.
 
 !!! warning "Delivery boundary"
     Shadow is **Designed**. Current source supplies only `ShadowSimulationConfig` with `mode` and
@@ -77,7 +83,7 @@ directory deletion cannot end processes, revoke credentials, close ports, undo r
 restore shared state. The designed Tomb proves none of this today.
 
 Intent bounds branch/depth count, tokens, wall time, spend, disk, artifacts, concurrent execution,
-and review rounds; children consume their parent's reserved envelope. Weaver coordinates fan-out,
+and review rounds; children consume their parent's reserved envelope. Spellweaver coordinates fan-out,
 join, cancellation, and termination; Dispatcher chooses capability; Orchestrator manages readiness
 and lease conflict; Workers run jobs. Exhaustion cancels or marks incomplete, then cleans up—it
 never selects a winner.
@@ -112,7 +118,7 @@ Vision → target owner revalidates current state and evidence → rollback/snap
 The target rechecks base, preconditions, policy, authority, and rollback against current reality.
 Historical success or preauthorization outside an eligible class cannot merge, publish, purchase,
 deploy, restore, or otherwise cross the boundary. Archive separately admits memory; Soulforge
-separately admits training. This is the Demarcation Law: Weaver coordinates live Invocations;
+separately admits training. This is the Demarcation Law: Spellweaver coordinates live Invocations;
 Shadow produces candidate realities.
 
 ## Consequences

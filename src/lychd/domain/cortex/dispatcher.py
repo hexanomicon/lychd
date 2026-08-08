@@ -112,7 +112,7 @@ class Dispatcher:
         self._require_egress_admission(spec)
         if self._leases.admission(spec.animator_name) is AnimatorAdmission.DRAINING:
             raise self._transition_required(spec)
-        return await self._drive_to_grant(spec, holder=holder, allow_refresh=True)
+        return await self._drive_to_grant(spec, holder=holder)
 
     @staticmethod
     def _require_egress_admission(spec: CapabilitySpec) -> None:
@@ -148,7 +148,7 @@ class Dispatcher:
             self._estimated_ready_ms(spec),
         )
 
-    async def _drive_to_grant(self, spec: CapabilitySpec, *, holder: str, allow_refresh: bool) -> CapabilityGrant:
+    async def _drive_to_grant(self, spec: CapabilitySpec, *, holder: str) -> CapabilityGrant:
         _spec, state = await require_capability_record(self._registry, spec.key)
         phase = state.phase
 
@@ -170,10 +170,8 @@ class Dispatcher:
         if phase is CapabilityPhase.ERROR:
             raise CapabilityUnavailable(spec.key, state.reason)
 
-        # UNKNOWN: refresh once and re-enter the table exactly once.
-        if allow_refresh:
-            await self._registry.refresh_capability_state(spec.key)
-            return await self._drive_to_grant(spec, holder=holder, allow_refresh=False)
+        # ``require_capability_record`` already performed the one admitted refresh.
+        # UNKNOWN after that observation settles unavailable without a probe loop.
         raise CapabilityUnavailable(spec.key, state.reason or "capability phase unknown")
 
     def _estimated_ready_ms(self, spec: CapabilitySpec) -> int | None:

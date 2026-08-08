@@ -4,7 +4,7 @@ import asyncio
 import time
 from collections.abc import Callable, Collection, Sequence
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import uuid4
 
 import anyio
@@ -23,7 +23,7 @@ from lychd.domain.animation.capabilities import (
 from lychd.domain.animation.conflicts import require_soulstone_capability_coverage
 from lychd.domain.animation.connectors import ModelConnector
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
-from lychd.domain.animation.schemas import ModelInfo, PortalConfig, SoulstoneConfig
+from lychd.domain.animation.schemas import CapabilityFamily, ModelInfo, PortalConfig, SoulstoneConfig
 from lychd.domain.animation.services.binder import AnimatorBinder, AnimatorBindingError
 from lychd.lib.asyncio import complete_under_cancellation
 from lychd.lib.http import run_sync
@@ -540,9 +540,13 @@ class AnimatorRegistry:
         spec = self._capabilities.get(key)
         if spec is None:
             raise CapabilityUnavailable(key, "unknown capability")
+        if spec.source_kind is SourceKind.PORTAL:
+            raise CapabilityUnavailable(key, "portal egress admission is not configured")
 
-        if self._capability_states.get(key) is None:
-            await self.refresh_capability_state(key)
+        # ADR 22 requires a fresh exact observation immediately before issue.
+        # A cached WARM state may outlive the runtime or loaded model and cannot
+        # authorize a new live handle on its own.
+        await self.refresh_capability_state(key)
         async with self._probe_lock:
             state = self._capability_states.get(key)
             if state is None or state.phase is not CapabilityPhase.WARM:
@@ -554,12 +558,23 @@ class AnimatorRegistry:
                 raise CapabilityUnavailable(key, "animator not registered")
 
             model = None
-            if spec.family.requires_model:
+            toolsets: tuple[AbstractToolset[Any], ...] = ()
+            if spec.family is CapabilityFamily.CHAT:
                 try:
                     model = self._binder.bind_model(animator, model_id=spec.model_id)
                 except AnimatorBindingError as exc:
                     raise CapabilityUnavailable(key, f"model hydration failed: {exc}") from exc
-            toolsets = tuple(self._binder.bind_toolsets(animator))
+                if spec.supports_tools is True:
+                    toolsets = tuple(self._binder.bind_toolsets(animator))
+            elif spec.family is CapabilityFamily.TOOL_EXECUTION:
+                toolsets = tuple(self._binder.bind_toolsets(animator))
+                if not toolsets:
+                    raise CapabilityUnavailable(key, "tool_execution has no admitted toolset surface")
+            else:
+                raise CapabilityUnavailable(
+                    key,
+                    f"v1 {spec.family.value} is routing metadata without an executable grant surface",
+                )
 
             canonical_spec = spec.model_copy(deep=True)
             canonical_state = state.model_copy(deep=True)
@@ -569,7 +584,6 @@ class AnimatorRegistry:
                 state=canonical_state,
                 lease=lease,
                 generation=canonical_spec.generation_profile,
-                animator=animator,
                 model=model,
                 toolsets=toolsets,
             )

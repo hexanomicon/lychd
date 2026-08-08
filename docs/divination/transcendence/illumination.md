@@ -21,16 +21,22 @@ actionₙ + consequenceₙ → Seedₙ₊₁ → Recall → worldₙ₊₁ + sel
 The ring becomes a spiral only when consequence can change the point of return. Exact repetition
 creates neither learning nor character.
 
-## II. The Crystallization of Karma
+An ordinary retry, workflow edge, or Graph cycle is not therefore the **Ouroboros**. The name is
+earned only when attributed consequence returns through evaluation, memory policy, consent, and
+Recall to shape a later Invocation without closing the Blade.
 
-**Karma** is attributable residue: source, choice, correction, and consequence held together so
-that a later return may be judged. The [Phylactery](../../sepulcher/phylactery/index.md) bears an
-**Imprint**. **Seed** is formative potency: a trace whose conditioning may shape a later Flux.
+## II. Attributable precedent
 
-## III. Anamnesis
+Source, choice, correction, and consequence remain attributable so that a later return can be
+judged. The [Phylactery](../../sepulcher/phylactery/index.md) stores only the records its contract
+admits. **Seed** is formative potency: a trace whose conditioning may shape a later Flux. Neither
+storage nor recurrence turns a record into moral accounting or truth.
 
-**Recall** is retained form participating in present **Flux**, never automatic truth;
-**Anamnesis** is the unforgetting by which that form becomes present again.
+## III. Recall
+
+**Recall** is retained form participating in present **Flux**, never automatic truth. The inherited
+term _anamnesis_ may provide a literary reflection on recognition, but it is not the Phylactery,
+ordinary retrieval, or a second architectural name.
 
 > _Have I met a world like this before? What survived consequence? Which part is evidence, which
 > is preference, and which old groove should now be cut?_
@@ -57,19 +63,20 @@ more efficiently.
 Simple inherited affects can travel across unfamiliar situations because they are simple; the
 same simplicity can mislead when the world changes. Call, Blade, Spirit, and Answer relate these
 movements without collapsing them. Another center's testimony and refusal cannot be reduced to an
-inferred score or to [Total Gematria](./infinity.md#iv-total-gematria-and-the-mark); [Closed
-Answer](./infinity.md#iii-closed-answer-open-blade) is one measure becoming permanent appetite.
+inferred score, compulsory machine-legibility, or one measure made into permanent appetite.
 
-## V. Dreams and the Golden Loop
+## V. Offline tending
 
-**Nidrā** names bounded offline recombination, replay, curation, or training during cognitive
-rest. A golden loop opens by recombining memory and imagination, then returns through source,
-test, consequence, and another perspective. Otherwise its own speech becomes its only weather.
+Bounded offline recombination, replay, curation, or training may occur during an admitted idle
+window. The source term _nidrā_ means sleep and does not supply that engineering contract. Useful
+tending returns through source, test, consequence, and another perspective; otherwise the
+system's own speech becomes its only weather.
 
-## VI. The Mirror of the Soul
+## VI. Consented preferences and corrections
 
-An **Imprint** may reflect a Magus's working pattern—preferred evidence, restraint, style, and
-modes of repair. What is rewarded becomes easier to repeat; honest correction and preserved
+Attributed, consented preferences, corrections, observations, and modes of repair may help a later
+Invocation. They do not constitute a hidden copy of a person, an inferred essence, or ambient
+training permission. What is rewarded becomes easier to repeat; honest correction and preserved
 refusal keep the return from confusing praise with love.
 
 ## VII. Return {#vii-return}

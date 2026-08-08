@@ -24,11 +24,12 @@ inner geography.
 [Layout](../adr/13-layout.md) owns the exact paths, permissions, receipts, and Host/Container
 boundary.
 
-## The Prime Scroll
+## The Prime Inscription
 
 `lychd.toml` contains process-wide settings only: server and persistence settings, orchestration
-policy, and extension selection. Named runtime or provider instances belong in individual scrolls
-beneath `runes/`.
+policy, and extension selection. Named runtime or provider instances belong in individual Rune
+documents beneath `runes/`. **Scroll** is reserved for an immutable Spellweaver Pattern revision;
+configuration is not executable workflow law.
 
 Settings resolve in one order: explicit construction → environment overrides → `lychd.toml` →
 Pydantic file secrets → model defaults. LychD loads no `.env`; nested sections load no separate
@@ -59,7 +60,7 @@ runes/animator/portals/<family>/<instance>.toml
 ```
 
 Extensions may register anchors. The Librarian accepts only declared anchors and validated
-schemas; a scroll in an invented directory creates nothing.
+schemas; a Rune document in an invented directory creates nothing.
 
 Three rules keep the Archive legible:
 
@@ -67,6 +68,12 @@ Three rules keep the Archive legible:
   Host source.
 - Runes name secrets; they never embed secret values.
 - Valid Runes feed `lychd bind`; they never edit systemd or Podman state themselves.
+
+Current Animator Runes expose model-shaped `[[models]]` declarations. The Designed
+general-service form uses `[[capabilities]]` references to registered interface/profile/driver/
+dialect/evidence/resource definitions. Non-model services do not invent a model id, and an
+"OpenAI-compatible" label never implies every API beneath `/v1`; see
+[Capabilities](animator/capabilities.md) and [Connectors](animator/connectors.md).
 
 Read [Animator](animator/index.md), [Soulstone](animator/soulstone/index.md), and
 [Portal](animator/portal.md) for the built-in families.

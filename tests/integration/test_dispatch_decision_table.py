@@ -135,7 +135,6 @@ class FakeRegistry:
             state=self.state,
             lease=GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC)),
             generation=self.spec.generation_profile,
-            animator=self._runtime,
             model=object(),
             toolsets=(),
         )
@@ -347,6 +346,7 @@ async def test_unknown_row_refreshes_once_then_unavailable() -> None:
         async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
             pass
 
+    assert registry.calls.count("refresh") == 1
     assert "activate" not in registry.calls  # stayed unknown, never activated
 
 

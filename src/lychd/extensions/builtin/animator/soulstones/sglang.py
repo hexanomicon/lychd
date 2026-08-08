@@ -24,6 +24,7 @@ class SglangSoulstoneConfig(SoulstoneConfig):
 name = "sglang-main"
 description = "SGLang Soulstone."
 port = 8011
+served_model_id = "/models/your-model"
 
 exec = ["-m", "sglang.launch_server", "--port", "8011", "--model-path", "/models/your-model"]
 

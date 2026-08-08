@@ -22,7 +22,7 @@ or another candidate presented for review. Its envelope carries candidate identi
 source Intent, assumptions, required state, claimed predicates, observations, evidence, artifacts,
 and the owning policy or contract.
 
-The owning [Weaver Pattern](../../../adr/28-workflow.md) declares the Lens, permitted evidence and
+The owning [Spellweaver Pattern](../../../adr/28-workflow.md) declares the Lens, permitted evidence and
 tool access, review rounds, budget, and stop conditions. A fresh Invocation receives no private
 Dancer generation context and cannot rewrite sibling history. Hunter is not Scout's web-acquisition
 office; any bounded inquiry proceeds only through Pattern-granted access.
@@ -58,7 +58,7 @@ No extra round appears automatically, and Hunter declares neither rejection nor 
 Passing Hunter does not certify a candidate; failing Hunter does not erase its identity,
 provenance, artifacts, or failure evidence.
 
-Findings may return to Weaver and its Pattern, enter deterministic checks, become a
+Findings may return to Spellweaver and its Pattern, enter deterministic checks, become a
 [Riddle](../riddle/trials.md) trial subject, or reach the Magus for an owned decision. Repair or
 renewed expansion requires Dancer or another separate Invocation.
 

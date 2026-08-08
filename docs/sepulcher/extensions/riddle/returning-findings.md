@@ -15,7 +15,7 @@ Returning findings are **Designed**; no feedback path runs, and reverse executio
 Maturity remains in
 [State of Work](../../../state-of-the-work.md#riddle-evaluation);
 [ADR 34](../../../adr/34-evaluation.md#returning-findings-across-a-suite) owns the evidentiary law,
-while [Weaver](../../../adr/28-workflow.md#returning-findings) owns any later executable admission.
+while [Spellweaver](../../../adr/28-workflow.md#returning-findings) owns any later executable admission.
 
 ## Fix the graph under examination
 
@@ -64,7 +64,7 @@ responsibility is refused when lineage or Evaluator independence is absent.
 
 ## Return through ordinary forward admission
 
-Weaver may admit a `CorrectionRequest@1` only as a new forward Invocation under ordinary
+Spellweaver may admit a `CorrectionRequest@1` only as a new forward Invocation under ordinary
 validation, budget, authority, consent, cancellation, and termination rules. It cannot resume an
 old producer arbitrarily, mutate the retained artifact, or inherit authority from the failing
 consumer. Prior Runs and Outcomes remain immutable lineage.

@@ -18,13 +18,13 @@ runs. [State of Work](../../../state-of-the-work.md#shadow-simulation) records d
 ## One bounded fork
 
 A Dancer Invocation receives the source Intent shared by its siblings, one operational Lens, and a
-pinned base and current Context. The owning [Weaver Pattern](../../../adr/28-workflow.md) supplies
+pinned base and current Context. The owning [Spellweaver Pattern](../../../adr/28-workflow.md) supplies
 the containment and effect boundary, budget, branch limit, stop conditions, and expected output
 shape.
 
 The Lens is one angle of examination or variation. It carries no Persona, identity, or permission.
 A Dancer does not receive sibling output before the declared join, nor does it receive Hunter's
-review context. Weaver owns fan-out, joins, budgets, cancellation, and termination; Shadow owns
+review context. Spellweaver owns fan-out, joins, budgets, cancellation, and termination; Shadow owns
 branch identity and candidate lineage.
 
 ## Return attributed alternatives
@@ -40,9 +40,10 @@ One bounded Invocation returns:
 Shadow attaches that return to the common Intent and pinned Context. Dancer supplies typed
 expansion material, not a private reasoning trace.
 
-Every alternative remains **Vikalpa**—an honest possibility fashioned apart from actuality—until
-evidence and the responsible owner decide otherwise. **Phantasma** names Shadow's isolated
-expansion mode; it grants no identity, execution sandbox, or proof of containment.
+Every alternative remains a possibility awaiting measurement; **Vikalpa** is the page's literary
+correspondence for that state, not a source claim that the possibility is honest. Evidence and the
+responsible owner decide what follows. **Phantasma** names Shadow's isolated expansion mode; it
+grants no identity, execution sandbox, or proof of containment.
 
 Dancer may open, combine, reframe, or vary candidate material. It produces no score, rank, pruning
 decision, certification, promotion, selection, live effect, or proof of novelty. An alternative

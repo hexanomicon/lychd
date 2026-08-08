@@ -35,8 +35,10 @@ LychD uses in-process **Pydantic AI**, at lockfile-pinned `pydantic-ai-slim==1.2
 A v2 adapter must set `end_strategy` explicitly: allowing sibling mutating tools to finish is a
 security change requiring review, not a library upgrade.
 
-An Agent joins immutable `AgentSpec`, process-local `AgentForge`, step-scoped `CapabilityGrant`,
-fresh `LychDDeps`, and a declared output union. The boundaries are deliberate:
+An Agent joins immutable `AgentSpec`, process-local `AgentForge`, a step-scoped model-shaped
+`CapabilityGrant`, fresh `LychDDeps`, and a declared output union. This is the delivered model path;
+ADR 22's general grant union does not turn every service into an Agent dependency. The boundaries
+are deliberate:
 
 | Concern | Owner |
 | --- | --- |
@@ -74,11 +76,13 @@ not in The First One's current output union.
 
 ## Late-bound capability
 
-For each Bridge inference step, the workflow asks the Dispatcher for a `chat` grant containing
-capability specification and state, step/run lease, resolved generation profile, live Animator,
-optional Pydantic AI model, and admitted runtime toolsets. It passes `grant.model`,
-`grant.model_settings()`, and `grant.toolsets` to `agent.run_stream_events`. Agent specifications
-therefore name neither endpoint nor credential; no fictitious model/tool-provider pair is needed.
+For each Bridge inference step, the current workflow asks the Dispatcher for a v1 `chat` grant
+containing capability specification and state, step/run lease, resolved generation profile, a
+required hydrated Pydantic AI model, and agent-loop toolsets only when the capability explicitly
+declares `supports_tools = true`. The grant exposes neither its Animator nor Connector. Bridge
+passes `grant.model`, `grant.model_settings()`, and `grant.toolsets` to
+`agent.run_stream_events`. Agent specifications therefore name neither endpoint nor credential;
+no fictitious model/tool-provider pair is needed.
 
 One spec can run with any admitted model meeting the adapter contract. A foreign framework is not
 an in-process Agent by analogy: it remains a typed delegated runtime or Animator boundary until a
@@ -130,7 +134,7 @@ branch. A **Persona** is a durable revisioned identity that may wear Postures. P
 actor; Posture constrains this act; Lens diversifies a simulation. These are enforceable contracts
 only where types, grants, settings, and Graph placement preserve the claimed separation.
 
-A local Privacy Agent is a Posture at an explicit Weaver station. It receives bounded raw material
+A local Privacy Agent is a Posture at an explicit Spell placement. It receives bounded raw material
 to produce a sanitized candidate and findings, but no Portal tool or declassification authority;
 its confidence is not permission. Deterministic control comes first, policy can require an
 independent verifier, and Security's trusted Portal Egress Gate makes the exact decision.

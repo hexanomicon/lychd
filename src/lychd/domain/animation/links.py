@@ -1,11 +1,13 @@
 """Runtime link state primitives for orchestration.
 
-``Link`` is the basic orchestration readiness primitive for an animator's
-connector. It is a status snapshot, not a transport client and not a pool.
+``Link`` is the basic connector liveness and lifecycle observation for an
+animator. It is a status snapshot, not a transport client, capability grant,
+or pool.
 
-Orchestration policy can use ``link.up`` for immediate routing and inspect the
-additional hints (activation possibility/cost and reason) to decide whether a
-down link is worth bringing up.
+Orchestration policy can combine ``link.up`` with exact capability/profile
+evidence. Liveness alone never authorizes immediate routing. The additional
+hints (activation possibility/cost and reason) help decide whether a down link
+is worth bringing up.
 """
 
 from __future__ import annotations
@@ -16,10 +18,11 @@ from datetime import UTC, datetime
 
 @dataclass(slots=True)
 class Link:
-    """Snapshot of connector readiness for request dispatch.
+    """Snapshot of connector liveness and lifecycle reachability.
 
     ``up`` answers the core orchestration question:
-    "Can requests be sent to this animator *right now*?"
+    "Is this connector alive enough to inspect or use, subject to an exact
+    capability state and grant?"
 
     Connectors may update this object in place as readiness changes. The
     remaining fields are policy hints. They allow the orchestrator to make a
@@ -28,7 +31,7 @@ class Link:
     """
 
     up: bool
-    """True when requests can be sent immediately."""
+    """True when the connector is live; exact profile readiness remains separate."""
 
     activatable: bool = False
     """True when the connector/runtime can potentially transition to ``up``."""

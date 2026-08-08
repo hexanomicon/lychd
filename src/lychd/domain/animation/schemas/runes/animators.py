@@ -75,6 +75,14 @@ class SoulstoneConfig(AnimatorConfig, ABC):
             "Use runtime-specific catalogs for multi-model runtimes."
         ),
     )
+    served_model_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Exact provider-facing model id returned by the runtime inventory. "
+            "Set this when it differs from the model_path basename or Soulstone name."
+        ),
+    )
     model_format: ModelFormat | None = Field(
         default=None,
         description="Optional model weight format for connector metadata and runtime planning.",

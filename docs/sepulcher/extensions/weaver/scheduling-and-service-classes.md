@@ -30,10 +30,15 @@ foreground work, or intentionally suppressed. `opportunistic` alone is also too 
 while the host looks idle does not prove that the work can release a worker, Animator lease, GPU, or
 effect safely.
 
+Origin is orthogonal to tempo. A local operator, schedule, owned Legionnaire, or sovereign A2A peer
+may request any class its policy allows; `remote` is not a fourth bucket. Admission preserves that
+provenance and may lower or refuse the requested class, but a sender cannot promote its own labor by
+labelling it foreground.
+
 ```text
 Schedule or external trigger
   → durable unique Occurrence
-  → Weaver eligibility and service-class decision
+  → Spellweaver eligibility and service-class decision
   → ordinary revision-pinned Invocation / Run admission
   → QueueRouter chooses a physical delivery lane
   → Worker / Ghoul
@@ -72,7 +77,7 @@ admission outcome. Reusing it for changed work fails closed. A crash after persi
 admission relays the same Occurrence; it does not mint another firing.
 
 The delivered Graph runtime also has a field named `occurrence_id` for each node attempt. That is a
-legacy station-attempt correlation, not the durable Weaver Occurrence described here. A future
+legacy station-attempt correlation, not the durable Spellweaver Occurrence described here. A future
 implementation must use distinct `trigger_occurrence_id` and `station_attempt_id` identities rather
 than joining them by spelling.
 
@@ -109,7 +114,7 @@ become an unbounded effect or spending storm.
 ## Selection is not three FIFO lines
 
 Foreground receives the default latency preference. That preference cannot be absolute: continuous
-foreground demand would otherwise make a deadline promise dishonest. Weaver first removes invalid,
+foreground demand would otherwise make a deadline promise dishonest. Spellweaver first removes invalid,
 revoked, duplicate, or expired candidates, then considers deadline feasibility and protected
 capacity, foreground latency, remaining deadline-windowed work, and finally spare-capacity work.
 Within a class, pinned priority and aging may order eligible candidates; neither may widen Sigil,
@@ -137,7 +142,7 @@ WARM, admission-open capability that requires no disruptive hardware transition.
 its priority or trigger a hard swap merely to keep the machine occupied.
 
 Deadline-windowed work may request readiness convergence only under its declared transition budget
-and policy. Weaver declares the capability requirement; Dispatcher still chooses a candidate and
+and policy. Spellweaver declares the capability requirement; Dispatcher still chooses a candidate and
 Orchestrator still owns the physical decision. Scheduling never binds a concrete Animator or
 rewrites a deadline because the substrate is inconvenient.
 
@@ -172,7 +177,7 @@ worker or capability readiness. The name promises attention, not instantaneous e
 ### A flexible nightly rite
 
 A schedule nominally fires at `02:00 Europe/Bratislava`, permits start until `05:00`, forbids
-overlap, and skips rather than replays an occurrence older than one day. Weaver may admit it at any
+overlap, and skips rather than replays an occurrence older than one day. Spellweaver may admit it at any
 feasible instant in the window. At `05:00` it records the pinned miss outcome instead of silently
 running at noon.
 

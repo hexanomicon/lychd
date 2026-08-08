@@ -77,23 +77,64 @@ Contributions enter and leave under MPL-2.0. There is no CLA and no private reli
 
 This Work stands on code freely given and relentlessly maintained. To its makers: thank you.
 
-- **The Vessel** — [Litestar](https://litestar.dev/) and
-  [Granian](https://github.com/emmett-framework/granian) serve the application;
-  [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy),
-  [SQLAlchemy](https://www.sqlalchemy.org/), PostgreSQL, Alembic, and pgvector anchor material
-  state.
-- **The inner loop** — [Pydantic AI](https://ai.pydantic.dev/) and Graph carry bounded model,
-  tool, output, and graph contracts; [SAQ](https://github.com/tobymao/saq) carries background labor
-  without becoming the workflow ledger.
-- **The Altar** — [Svelte](https://svelte.dev/), SvelteKit, Vite, Zod, OpenAPI Fetch, and Mermaid
-  shape the browser instruments.
-- **The iron** — Linux, systemd user units, rootless Podman, and Quadlet define the generated
-  deployment plan; maintained real-host embodiment still awaits its receipt.
-- **The flame** — llama.cpp, vLLM, SGLang, and ExLlamaV3 through TabbyAPI lend local inference its
-  several bodies; [State](docs/state-of-the-work.md#animation-and-orchestration) records where
-  real-host proof is still owed.
-- **The scribes** — [Zensical](https://zensical.org/) renders the Hexanomicon; uv, Ruff,
-  basedpyright, pytest, Vitest, and Svelte Check keep source and contracts legible.
+### 🕸️ Backend
+
+- **[Litestar](https://litestar.dev/)** — Forges the Vessel and serves its application through
+  **[Granian](https://github.com/emmett-framework/granian)**.
+- **[SQLAlchemy](https://www.sqlalchemy.org/)** — Maps material state, with
+  **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** providing its repository
+  foundation.
+- **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Carries bounded model, tool, output, and
+  graph contracts through the inner loop.
+- **[SAQ](https://github.com/tobymao/saq)** — Carries background labor without becoming the
+  workflow ledger.
+
+### 🎭 Frontend
+
+- **[Svelte](https://svelte.dev/) + [SvelteKit](https://svelte.dev/docs/kit)** — Shape the Altar's
+  browser instruments.
+- **[Vite](https://vite.dev/)** — Forges the Altar's static assets.
+- **[Zod](https://zod.dev/) + [OpenAPI Fetch](https://openapi-ts.dev/openapi-fetch/)** — Keep its
+  browser contracts typed.
+- **[Mermaid](https://mermaid.js.org/)** — Renders diagrams within the browser surface.
+
+### 📦 Containerization & Sandboxing
+
+- **[Linux](https://kernel.org/) + [systemd](https://systemd.io/)** — Define the host and its user
+  service lifecycle.
+- **[Podman](https://podman.io/) +
+  [Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)** — Define the
+  generated rootless deployment plan. Maintained real-host embodiment still awaits its receipt.
+
+### 🔥 Inference Engines
+
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** — Lends local inference a lightweight
+  execution body.
+- **[vLLM](https://github.com/vllm-project/vllm)** — Lends local inference a high-throughput
+  execution body.
+- **[SGLang](https://github.com/sgl-project/sglang)** — Lends local inference an execution body for
+  structured generation and agentic workloads.
+- **[ExLlamaV3](https://github.com/turboderp-org/exllamav3) through
+  [TabbyAPI](https://github.com/theroyallab/tabbyAPI)** — Lends local inference its EXL3 body.
+  [State](docs/state-of-the-work.md#animation-and-orchestration) records where real-host proof is
+  still owed.
+
+### 👁️ Database
+
+- **[PostgreSQL](https://www.postgresql.org/)** — Anchors material state.
+- **[Alembic](https://alembic.sqlalchemy.org/) + [pgvector](https://github.com/pgvector/pgvector)**
+  — Evolve its schema and extend it with vector search.
+
+### 🛠️ Code Control
+
+- **[Zensical](https://zensical.org/)** — Renders the Hexanomicon.
+- **[uv](https://github.com/astral-sh/uv)** — Manages the Python environment and dependencies.
+- **[Ruff](https://github.com/astral-sh/ruff) +
+  [basedpyright](https://github.com/DetachHead/basedpyright)** — Keep Python source formatted,
+  linted, and typed.
+- **[pytest](https://pytest.org/) + [Vitest](https://vitest.dev/) +
+  [Svelte Check](https://www.npmjs.com/package/svelte-check)** — Keep source and contracts
+  verified.
 
 Portions of the database connection setup are adapted from
 [Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack). Shipped license

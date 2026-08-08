@@ -27,8 +27,10 @@ from lychd.domain.animation.services.adapters.contracts import (
     SoulstoneRuntimeAdapter,
 )
 from lychd.domain.animation.services.adapters.runtimes.generic import GenericRuntimeAdapter
+from lychd.domain.animation.services.adapters.runtimes.shared import fixed_openai_activation_result
 from lychd.domain.animation.services.adapters.surfaces import (
     GenericPortal,
+    OpenAICompatibleConnector,
     PassiveConnector,
     portal_link_default,
 )
@@ -137,6 +139,14 @@ class RuntimeAdapterRegistry:
         """Delegate runtime-specific capability activation when supported."""
         rune = animator.rune
         if isinstance(rune, PortalConfig):
+            if not rune.probe:
+                return ActivationResult(
+                    accepted=False,
+                    phase=CapabilityPhase.UNKNOWN,
+                    reason="portal reachability not probed",
+                )
+            if isinstance(animator.connector, OpenAICompatibleConnector):
+                return fixed_openai_activation_result(animator.connector, spec)
             return ActivationResult(
                 accepted=False,
                 phase=CapabilityPhase.WARM if animator.connector.link.up else CapabilityPhase.COLD,
@@ -241,20 +251,40 @@ class RuntimeAdapterRegistry:
             phase = CapabilityPhase.UNKNOWN
         health = "ok" if up else ("down" if probed else "unverified")
         checked_at = datetime.now(UTC) if probed else None
-        return [
-            CapabilityState(
-                capability_key=spec.key,
-                is_dynamic=False,
-                phase=phase,
-                health=health,
-                active_model_id=spec.model_id if phase is CapabilityPhase.WARM else None,
-                loaded_model_ids=[spec.model_id] if phase is CapabilityPhase.WARM else [],
-                reason=None if up else link.reason,
-                checked_at=checked_at,
-                metadata=cast("dict[str, object]", getattr(connector, "metadata", {})),
+        observed_model_ids = getattr(connector, "observed_model_ids", None)
+        inventory_error = getattr(connector, "inventory_error", None)
+        states: list[CapabilityState] = []
+        for spec in specs:
+            spec_phase = phase
+            spec_health = health
+            reason = None if up else link.reason
+            loaded_model_ids = [spec.model_id] if phase is CapabilityPhase.WARM else []
+            if probed and up and inventory_error is not None:
+                loaded_model_ids = []
+                spec_phase = CapabilityPhase.ERROR
+                spec_health = "inventory_invalid"
+                reason = str(inventory_error)
+            elif probed and up and observed_model_ids is not None:
+                model_present = spec.model_id in observed_model_ids
+                loaded_model_ids = [spec.model_id] if model_present else []
+                if not model_present:
+                    spec_phase = CapabilityPhase.ERROR
+                    spec_health = "model_missing"
+                    reason = f"declared model {spec.model_id!r} is absent from /models"
+            states.append(
+                CapabilityState(
+                    capability_key=spec.key,
+                    is_dynamic=False,
+                    phase=spec_phase,
+                    health=spec_health,
+                    active_model_id=spec.model_id if spec_phase is CapabilityPhase.WARM else None,
+                    loaded_model_ids=loaded_model_ids,
+                    reason=reason,
+                    checked_at=checked_at,
+                    metadata=cast("dict[str, object]", getattr(connector, "metadata", {})),
+                )
             )
-            for spec in specs
-        ]
+        return states
 
 
 __all__ = ["RuntimeAdapterRegistry"]

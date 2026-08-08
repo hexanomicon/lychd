@@ -3,18 +3,22 @@ title: Loom
 icon: material/vector-polyline
 ---
 
-# :material-vector-polyline: Loom: The Visible Score
+# :material-vector-polyline: Loom: The Visible Scroll
 
-The **Loom** is a read-only browser for exact published **Pattern** revisions. It exposes the
-Weaver-authored possibility: a declared semantic score with immutable manifest identity. It does
-not execute, edit, publish, or follow a live Run.
+The **Loom** is a read-only browser for exact source-registered **Pattern** revisions—the immutable
+**Scrolls** read by Spellweaver. It exposes each declared station and permitted edge under one
+manifest identity. In the future grammar, each semantic station places an exact **Spell** contract;
+the current manifests do not yet carry that independent identity. Loom does not execute, edit,
+publish, teach, or follow a live Run.
 
-## Composition, Pattern, Loom, Invocation
+## Composition, Scroll, Loom, casting
 
-- A **Pattern** is the immutable workflow score identified by `pattern_id`, `revision`, and
+- A **Scroll** is one immutable Pattern revision identified by `pattern_id`, `revision`, and
   `digest`.
-- The **Loom** projects that score.
-- An **Invocation**, shown elsewhere as a Run, performs a Pattern.
+- A **Spell** is one independently named semantic action; one Scroll-local station places it.
+- The **Loom** projects that Scroll.
+- An **Invocation** opens a Circle; casting performs the Scroll within it; the Run carries durable
+  ledger truth.
 
 A station or permission states what the published score allows; it is not evidence that a Run
 entered that station or completed that edge.
@@ -32,9 +36,9 @@ title and `pattern_id@revision`. `/loom` selects the catalogue default and repla
 its exact route, currently `/loom/bridge_chat/1`. Browser deep links require both id and revision:
 `/loom/{pattern_id}` is not accepted.
 
-For the selected Pattern, confirm:
+For the selected Scroll, confirm:
 
-- header: `title`, `description`, `pattern_id@revision`, and publication `published`;
+- header: `title`, `description`, `pattern_id@revision`, and the current UI label `published`;
 - **Semantic score**: station count, permission count, and each node's `label`, `key`, `kind`, and
   permitted next station;
 - **Immutable identity**: `checkpoint`, declared `entry` station, reviewed `implementation`
@@ -55,13 +59,19 @@ context, never part of Pattern identity.
 
 ## The Designed Map
 
-No Portfolio, Composition hierarchy, node inspector, live occurrence overlay, nested Pattern,
-Suite, draft, or editor map is delivered. A node with kind `delegate` receives a distinct glyph;
-that mark does not prove a provider-backed runtime executed.
+No Portfolio, Composition hierarchy, independent Spell catalogue, compatibility negotiation,
+teaching surface, node inspector, live occurrence overlay, nested Pattern, Suite, draft, or editor
+map is delivered. A station with kind `delegate` receives a distinct glyph; that mark does not
+prove a provider-backed runtime executed or establish an independent Spell contract.
+
+A future grey Spell placement belongs only to an inert candidate/resolution report with a redacted
+status such as missing contract, missing implementation, incompatible, unauthorized, or revoked.
+The whole Scroll must remain `castable=false`; no grey placeholder may enter the executable Graph.
 
 ## Charcoal, Law, and Publication
 
-The current Loom shows only `published` revisions. There is no charcoal candidate, layout document,
+The current Loom shows only source-registered revisions and labels them `published`; that label is
+not evidence of a durable publication store. There is no charcoal candidate, layout document,
 **Propose**, **Run**, **Publish**, drag, connect, or mutation action.
 
 ## Before the Loom May Accept Executable Drafts

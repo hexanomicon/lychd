@@ -27,10 +27,12 @@ class CapabilityUnavailable(Exception):  # noqa: N818
 
 
 class HardwareTransitionRequired(Exception):  # noqa: N818
-    """A capability exists but its substrate needs a hard transition (COLD + activatable).
+    """A managed capability needs readiness convergence before re-dispatch.
 
-    Deliberately handle-free: JSON-loggable, park-safe. Consumers re-fetch the spec
-    from the registry by key — the registry is the only truth for records.
+    The observed phase may be COLD, ACTIVATABLE, or WARMING, and the
+    Orchestrator may settle with no-op, soft swap, or hard transition. The
+    signal is deliberately handle-free and park-safe: consumers re-fetch the
+    spec from the registry by key.
     """
 
     def __init__(

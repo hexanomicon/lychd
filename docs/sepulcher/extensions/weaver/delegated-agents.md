@@ -7,7 +7,7 @@ icon: material/account-arrow-right-outline
 
 > _The errand may leave the tower. The keys, the ledger, and the last word do not._
 
-[Weaver](index.md) delegates through an attributed `AgentJob`. The coordinator tracks it; Graph
+[Spellweaver](index.md) delegates through an attributed `AgentJob`. The coordinator tracks it; Graph
 holds station state; the Run ledger binds its wait. An adapter receives a frozen request, never
 the live Run, and the Pattern parks for one terminal adoption.
 

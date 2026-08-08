@@ -34,9 +34,9 @@ class Connector(ABC):
     surfaces. Concrete connectors may support one or many capabilities by
     inheriting the mixins below.
 
-    A connector owns a persistent ``link`` status snapshot. Orchestration reads
-    ``connector.link.up`` to determine whether requests can be sent
-    immediately.
+    A connector owns a persistent ``link`` status snapshot. Link liveness is
+    only one probe fact; exact capability/profile readiness remains a separate
+    registry observation.
     """
 
     @property
@@ -48,7 +48,7 @@ class Connector(ABC):
     @property
     @abstractmethod
     def link(self) -> Link:
-        """Return the current readiness snapshot for orchestration."""
+        """Return the current connector-liveness snapshot for orchestration."""
         ...
 
     @property
@@ -81,7 +81,7 @@ class ModelConnector(ABC):
 
     @abstractmethod
     def list_models(self) -> Sequence[ModelInfo]:
-        """Return connector-local model summaries for this connector."""
+        """Return the connector's configured catalogue, not live inventory evidence."""
         ...
 
     @abstractmethod
@@ -95,10 +95,11 @@ class ModelConnector(ABC):
 
 
 class ToolConnector(ABC):
-    """Connector capability mixin for tool/toolset hydration.
+    """Connector mixin for Pydantic AI agent-loop toolset hydration.
 
-    This covers classic function/tool-calling as well as media-style capability
-    surfaces that an agent may consume as tools (for example STT/TTS wrappers).
+    This covers classic function/tool-calling surfaces. It does not turn media,
+    search, host-process, browser, payment, or other effect interfaces into
+    agent authority merely because a model can invoke a tool-shaped wrapper.
 
     Connectors return Pydantic AI toolset abstractions directly. This allows
     LychD to reuse deferred tools, external tool execution, and toolset

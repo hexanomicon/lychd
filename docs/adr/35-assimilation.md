@@ -32,6 +32,37 @@ LychD code. Its output is a candidate, never a live organ.
 No act promises bit-for-bit reproduction, protocol or license compatibility, or freedom from
 upstream maintenance without separate evidence.
 
+## Teaching a missing Spell
+
+A peer may answer an unknown-Spell refusal with an attributed **teaching bundle**. The bundle is a
+foreign pattern offered for study, not a Spell installed by Intercom. Its bounded,
+content-addressed manifest binds the exact public contract revision and digest, examples,
+source/artifact identities, provenance, license and notice duties, implementation requirements,
+declared authority/effects, and claimed evidence. Every claim remains untrusted until local
+admission and proof; intake never imports or executes its contents.
+
+Smith may re-express the lesson as a local Spell-contract or implementation candidate under an
+Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require new
+code, an adapter, package, tool, or capability; each follows its own owner and verification path.
+Spellweaver validates contract and Scroll candidates, while Extension, Creation, Packaging,
+Security, Evolution, and effect owners retain implementation, promotion, and activation authority.
+
+Policy may refuse teaching entirely, request it only from named peers and content classes, or
+accept only an already trusted exact contract with a local implementation binding. No configuration
+may turn a teaching bundle into ambient package installation or self-publication. Foreign claims
+retain publisher/key attribution; learned contracts and implementations enter an operator- or
+Crypt-owned namespace, never `core` or another canonical publisher's namespace. If future
+promotion succeeds, a new immutable catalogue generation may make the unchanged exact Scroll
+admissible to a later Invocation. The original refused peer task is never resumed under changed
+catalogue truth.
+
+Code or contribution changes activate through controlled [Evolution](18-evolution.md): close or
+drain admission as required, preserve retained executable closures for pinned Runs, replace the
+Vessel or process-built catalogue, reconcile durable state, verify readiness, and reopen. This is
+not **Reanimation**, which restores an exact whole-body checkpoint. Declarative-only Scroll
+publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
+already-admitted implementations exist; neither is delivered now.
+
 ## Smith and admission
 
 Smith is a future specialized [Agent](./20-agents.md) in a reference Extension. It may inspect
@@ -97,7 +128,8 @@ its explanation.
 
 Cloud archives/historical conversations belong to a separate Heritage Composition. Smith may
 propose a parser, but output remains provenance-bearing candidate Memory—not Persona, instruction,
-preference, or training truth. Assimilated capability is private by default; A2A advertising,
+preference, or training truth. Assimilated capability and every learned Spell are private by
+default; A2A advertising,
 Legion distribution, or public packaging needs its own authorization.
 
 Assimilation is not consumption: Smith breaks foreign pattern on the anvil of local law and offers

@@ -12,8 +12,6 @@ if TYPE_CHECKING:
     from pydantic_ai.settings import ModelSettings
     from pydantic_ai.toolsets import AbstractToolset
 
-    from lychd.domain.animation.animators import RuntimeAnimator
-
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
@@ -37,7 +35,7 @@ class CapabilityPhase(StrEnum):
     COLD = "cold"  # animator unit down / endpoint unreachable
     ACTIVATABLE = "activatable"  # unit up; DYNAMIC model not loaded (router: status != loaded)
     WARMING = "warming"  # activation in flight (/health 503 "Loading model")
-    WARM = "warm"  # /health ok — requests accepted now
+    WARM = "warm"  # exact admitted binding currently accepts its proved operation set
     ERROR = "error"
     UNKNOWN = "unknown"
 
@@ -160,7 +158,7 @@ class GrantLease:
 class CapabilityGrant:
     """Canonical dispatch handoff for one granted capability (spec-00-FINAL C1).
 
-    Carries live runtime handles while keeping the issued spec/state snapshots private.
+    Carries only admitted live call handles while keeping the issued spec/state snapshots private.
     Accessors return defensive copies, so a consumer cannot rewrite the grant's
     capability identity or observed issue-time truth through nested mutable fields.
     """
@@ -169,7 +167,6 @@ class CapabilityGrant:
     _state: CapabilityState
     _lease: GrantLease
     _generation: GenerationProfile
-    _animator: RuntimeAnimator
     _model: Model | None
     _toolsets: tuple[AbstractToolset[Any], ...]
 
@@ -180,7 +177,6 @@ class CapabilityGrant:
         state: CapabilityState,
         lease: GrantLease,
         generation: GenerationProfile,
-        animator: RuntimeAnimator,
         model: Model | None,
         toolsets: tuple[AbstractToolset[Any], ...] = (),
     ) -> None:
@@ -189,7 +185,6 @@ class CapabilityGrant:
         object.__setattr__(self, "_state", state.model_copy(deep=True))
         object.__setattr__(self, "_lease", lease)
         object.__setattr__(self, "_generation", generation.model_copy(deep=True))
-        object.__setattr__(self, "_animator", animator)
         object.__setattr__(self, "_model", model)
         object.__setattr__(self, "_toolsets", tuple(toolsets))
 
@@ -210,10 +205,6 @@ class CapabilityGrant:
     @property
     def generation(self) -> GenerationProfile:
         return self._generation
-
-    @property
-    def animator(self) -> RuntimeAnimator:
-        return self._animator
 
     @property
     def model(self) -> Model | None:

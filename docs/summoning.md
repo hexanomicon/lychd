@@ -19,7 +19,13 @@ Its five movements are:
 3. [The Inscription](#the-inscription) — create configuration and data homes, then activate the
    llama.cpp extension.
 4. [The First Soulstone](#the-first-soulstone) — declare and bind one local model service.
-5. [The Awakening](#the-awakening) — start, diagnose, and send one message.
+5. [The Awakening](#the-awakening) — draw the Summoning Circle, start, diagnose, and make the
+   First Invocation.
+
+Together these movements **draw the Summoning Circle**. Code builds the Bridge, but the Magus
+chooses this Lich's actual boundary: source revision, host, Codex, Crypt, model, mounts, secrets,
+capabilities, and reach. The phrase is not ceremonial substitution; every line of the Circle must
+compile into inspectable configuration, containment, identity, or policy.
 
 !!! warning "Current pre-alpha install path"
     No published CLI/image pair matches this source revision. Use its checkout and build
@@ -288,7 +294,7 @@ directory. If the mount is rejected, use an absolute host path outside the Codex
 systemd-unit, and Reactor control roots. If an external secret is missing, create the exact reported
 name. Do not hand-edit generated units.
 
-## The Awakening — start, diagnose, and send one message {#the-awakening}
+## The Awakening — draw the Circle and make the First Invocation {#the-awakening}
 
 The body is bound but still. Caged startup brings up the pod, PostgreSQL **Phylactery**, migration
 gate, Host Reactor, and Vessel web process.
@@ -341,16 +347,21 @@ Open the loopback Altar:
 http://127.0.0.1:7134/
 ```
 
-The root opens the **Bridge**, the Altar's chat instrument. On a fresh Phylactery, click **New
-Séance** to create the first session. Then send one simple message, such as:
+The root opens the **Bridge**, the Altar's place of communion. The installed code supplies that
+place; your admitted configuration and host choices define the greater Summoning Circle around it.
+On a fresh Phylactery, click **New Séance** to create the first session. Then send one simple
+message, such as:
 
 ```text
 Reply with one sentence confirming first light.
 ```
 
+That Intent makes the **First Invocation** and opens a smaller living
+[Circle](divination/altar/circle.md) inside Bridge. Its casting follows the exact admitted Pattern.
 The first request starts the Soulstone through the Host Reactor, loads `first-model`, waits for
-readiness, and retries dispatch. `supports_tools = true` is an admission declaration; this reply
-does not prove arbitrary tool use.
+readiness, and retries dispatch. Once admitted, that model-backed capability is the first local
+Animus available to the casting; it remains one organ, not the Lich's Spirit or identity.
+`supports_tools = true` is an admission declaration; this reply does not prove arbitrary tool use.
 
 When a non-empty response settles in the Bridge, ask the Pulse for the joined live truth again:
 
@@ -405,5 +416,6 @@ uv run --extra postgres-binary lychd del --dry-run
 It must name the edited Codex and durable Phylactery. Do not delete them or generated units by hand;
 retain any blocked recovery handoff and resolve its named condition before replanning.
 
-You have awakened one bounded body and heard it answer. If any observation is absent, remain in
-[The Awakening](#the-awakening) until the evidence agrees.
+You have drawn one bounded Summoning Circle, awakened its body, crossed its Bridge, and heard one
+Invocation answer. If any observation is absent, remain in [The Awakening](#the-awakening) until
+the evidence agrees.

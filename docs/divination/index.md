@@ -18,6 +18,7 @@ Two doors open from the same threshold. They share a body; they do not do the sa
 
 Choose the [Altar](./altar/index.md) to offer an Intent, follow one **Run** through evidence and
 state, or answer a request for human judgment. Begin at the **[Bridge](./altar/bridge.md)**. The
+**[Circle](./altar/circle.md)** is the Invocation-shaped pinnacle within that communion. The
 **[Orb](./altar/orb.md)**, **[Nexus](./altar/nexus.md)**, and **[Loom](./altar/loom.md)** show
 different faces of that passage; none is the whole body.
 

@@ -35,4 +35,10 @@ does not change accepted material. `broadcast.revise_from_correction@1` admits o
 repair. A mismatched digest, timebase, claim revision, or use boundary produces a finding or
 refusal rather than a best-effort edit.
 
+Generative video editing remains an upstream visual effect even when it accepts a source clip.
+Broadcast may request a new Voidlight revision, but it does not hide stochastic regeneration
+inside a deterministic trim. FFmpeg and equivalent pinned tools may execute probing, trim,
+concat, retime, overlay, mix, mux, and encode operations under this timeline; the executable does
+not own editorial judgment or silently approve a generated visual or sonic candidate.
+
 The accepted timeline passes to [Render](render.md); it contains no permission to publish.

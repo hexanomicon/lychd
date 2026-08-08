@@ -16,7 +16,7 @@ Mirror is LychD's singular identity-binding jurisdiction. It owns Persona defini
 one exact Persona binding per Invocation, scoped identity context and eligible memory hydration,
 hydration receipts, attribution across people and machinery, and reviewed Persona-revision
 proposals. It does not authenticate a Principal, grant scope, select model, schedule Pattern,
-evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Weaver, Riddle, and
+evaluate quality or causal blame, or train weights; IAM/Ward, Dispatcher, Spellweaver, Riddle, and
 Soulforge retain those offices.
 
 !!! warning "Delivery boundary"
@@ -35,7 +35,7 @@ Soulforge retain those offices.
 | **Persona** | Which durable voice, commitments, and orientation shaped the Agent? | Mirror |
 | **AgentSpec** | Which executable cognitive/output/tool contract ran? | Agent |
 | **Posture** | Which per-run settings and constraints applied? | Pattern/Agent |
-| **Composition / Pattern** | Which purpose and workflow admitted the act? | Composition/Weaver |
+| **Composition / Pattern** | Which purpose and workflow admitted the act? | Composition/Spellweaver |
 | **Producer** | Which human, model, provider, tool, or adapter contributed? | provenance owner |
 
 No value substitutes for another: Persona grants no authority; a Principal does not author every
@@ -101,7 +101,7 @@ attributed observations/findings → bounded diff against exact parent → valid
 → Riddle congruence/regression evidence → required Magus/HitL decision → immutable child
 ```
 
-Smith may draft/package and Weaver coordinate, but neither publishes through Mirror. Repetition,
+Smith may draft/package and Spellweaver coordinate, but neither publishes through Mirror. Repetition,
 praise, model confidence, and memory volume grant no scope, tool, trigger, queue, or hardware
 priority. Rollback directs future Invocations to a prior promoted revision; it cannot rewrite
 earlier Runs/artifacts. A static prompt lacks binding, scoped memory, receipt, lineage, and

@@ -27,12 +27,17 @@ retention. A revoked consent or later-invalid source stales dependants without e
 Deletion stops capture and indexing, removes permitted derivatives, inventories exported copies,
 and preserves only required content-free receipts; it cannot erase a consumer's copy by promise.
 
-## Proving session
+## Proving the bundle
 
-Use two local synthetic two-minute references with known events, one thirty-second guitar or MIDI
-take, one approved spoken fixture, and a marker at `01:32`. Produce deterministic onset and tempo
-observations, an editable `FeelProfile`, an original four-section arrangement, one AI-generated
-candidate with complete receipt, human selection and editing, one voice or effect asset, stems, a
-local mix and master, three synchronization markers, restart-safe indexing, and a lineage-complete
-`SonicAssetBundle@1`. No arbitrary folder, ambient microphone, copyrighted catalogue, Portal,
-visual generation, paid effect, or platform call enters the proof.
+Use two local synthetic two-minute references with known events, one frozen thirty-second guitar
+take, one short MIDI fixture, one approved spoken fixture, and a marker at `01:32`. Produce pinned
+onset and tempo observations, an editable `FeelProfile@1`, an original four-section arrangement,
+one AI-generated candidate with complete receipt, human selection and editing, one voice or effect
+asset, rendered intermediate stems, a candidate mix, a target-conformant technical master, three
+synchronization markers, restart-safe indexing, and a lineage-complete `SonicAssetBundle@1`.
+Separated estimates must be labelled separately from native or rendered stems. No arbitrary folder,
+ambient microphone, copyrighted catalogue, Portal, visual generation, paid effect, or platform
+call enters this proof.
+
+The separate live-jam fixture belongs to [Sessions](sessions.md#proving-the-jam). Package proves
+only the lineage-complete sonic bundle and its exact handoff.

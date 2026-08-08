@@ -12,7 +12,7 @@ icon: material/microphone-message
 3. Echo admits bounded frames, produces an attributed transcript, and drops raw audio under the
    selected retention policy. Low confidence asks for clarification.
 4. The client previews the transcript when required, then submits one idempotent Intent.
-5. Weaver routes it to an exact registered Pattern. The owning application handles domain-specific
+5. Spellweaver routes it to an exact registered Pattern. The owning application handles domain-specific
    clarification, consent, work, and recovery.
 6. Committed text becomes the durable answer. Synthesis or playback may fail without erasing it.
 

@@ -16,6 +16,24 @@ One member emits no target. Different groups create no coexistence promise. Memb
 conflict sets must not overlap; an internally conflicting Coven fails closed. `alliances` is
 accepted shape without enforcement authority.
 
+One Rune may participate in more than one formation:
+
+```toml
+name = "echo"
+groups = ["conversation", "studio"]
+```
+
+That still names one service instance. Starting `conversation.target` and `studio.target` does not
+create two copies, and common membership does not prove the complete union fits. The compiled
+conflict graph remains the executable coexistence law.
+
+A Coven is also not a scheduler, semantic capability set, VRAM pool, placement request, or cloud
+burst policy. A later `CapabilitySetRequest@1` may ask Orchestrator to converge several exact
+capabilities using measured resource envelopes and placement profiles. It may use a Coven as an
+operator convenience only after expanding and validating every member; the Coven itself grants no
+capacity, route, lease, egress, or authority. That is one serialized desired-world transaction,
+not an atomic hardware promise; partial effect uses compensation, restoration, and containment.
+
 !!! warning "Operator break-glass surface"
     Starting or stopping a generated Coven target directly propagates through its compatible
     Animator targets. This bypasses Orchestrator admission, lease drain, stale-world validation,
@@ -24,7 +42,7 @@ accepted shape without enforcement authority.
 ## What the Nexus Shows
 
 The [Nexus](../../divination/altar/nexus.md) projects the six
-[capability phases](./capabilities.md#dynamic-is-not-ready) as five operator labels; Capabilities
+[capability phases](./capabilities.md#readiness-is-not-compatibility) as five operator labels; Capabilities
 owns that mapping.
 
 ## The Transition Contract

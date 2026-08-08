@@ -20,9 +20,10 @@ executor identity belong to separately owned boundaries.
 
 The branch record pins its base, parentage, assumptions, required state, unknowns, evidence,
 artifact references, budget, status, and resource owner.
-[**Vikalpa**](../../../lexicon/inner-tongue.md) names an honest possibility fashioned apart from
-actuality while it awaits measurement. **Phantasma** is Shadow's isolated expansion mode;
-evaluation remains elsewhere.
+[**Vikalpa**](../../../lexicon/inner-tongue.md) is used here as a literary correspondence for a
+possibility fashioned apart from actuality while it awaits measurement. Its explicit uncertainty
+and honest handling come from project law, not from the source term. **Phantasma** is Shadow's
+isolated expansion mode; evaluation remains elsewhere.
 
 Shadow is **Designed**. The selectable `simulation` package contributes only the
 `ShadowSimulationConfig` Rune schema with `mode` and a positive `max_timelines`. No runnable
@@ -40,7 +41,7 @@ them.
 evidence and boundary failures without inventing its replacement.
 
 Their attributable handoff preserves lineage, assumptions, challenges, evidence requests, and
-uncertainty. Weaver and Graph own ordering, fan-out, and joins.
+uncertainty. Spellweaver and Graph own ordering, fan-out, and joins.
 
 ## Nothing crosses by acclaim
 

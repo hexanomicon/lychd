@@ -27,6 +27,7 @@ name = "qwen35"
 description = "Daily-driver vLLM Soulstone."
 groups = ["local-llm"]
 port = 8000
+served_model_id = "Qwen3.5-27B"
 
 devices = ["nvidia.com/gpu=all"]
 # security_label_disable = false  # SELinux stays on for the container (CDI handles GPU access)

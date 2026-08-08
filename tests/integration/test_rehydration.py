@@ -127,7 +127,6 @@ class DrainRaceRegistry:
                 scope=scope,
             ),
             generation=MOCK_SPEC.generation_profile,
-            animator=object(),  # type: ignore[arg-type] - no runtime use in this graph
             model=None,
         )
 

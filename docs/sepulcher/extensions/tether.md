@@ -45,6 +45,11 @@ object or effect authorization, consent, and device trust remain outside that pr
 firewall selects each reachable listener; [Veil](veil.md) may constrain route or transport policy,
 while [Ward](ward.md) and the Vessel authenticate and authorize.
 
+For Intercom, the conservative first designed road is a Veil-compiled HTTP route exposed only
+through Tether. Tether supplies private reachability; Veil canonicalizes ingress; Ward admits the
+peer; Intercom verifies and replay-fences the A2A envelope. None may impersonate the next layer or
+turn an advertised Spell or Scroll into authority.
+
 A tunnel address, interface, peer key, or forwarded metadata contributes at most credential
 evidence. It cannot mint `magus:*`, widen a Sigil, or create an administrator. Bootstrap
 `magus:*` stays same-host only. Routes default to exact destinations; PostgreSQL, model APIs,

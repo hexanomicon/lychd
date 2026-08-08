@@ -37,7 +37,6 @@ def _grant(*, grant_id: str, animator_name: str = "titan") -> CapabilityGrant:
         state=state,
         lease=GrantLease(grant_id=grant_id, holder="run:r1", issued_at=datetime.now(UTC)),
         generation=GenerationProfile(),
-        animator=object(),  # pyright: ignore[reportArgumentType]
         model=None,
     )
 

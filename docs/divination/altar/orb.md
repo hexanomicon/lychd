@@ -9,6 +9,11 @@ The **Orb** opens one selected **Invocation**, represented in the UI as a **Run*
 structural evidence. Looking through it is **scrying**. It shows records and explicit gaps; it does
 not fill missing history with inference.
 
+The Run owns canonical ledger status; the Orb exposes only the bounded **trace** available to its
+sources. A trace may gap or disappear and cannot replace Run, consent, grant, effect, or artifact
+truth. Under separate Memory policy some residue may become a Seed, but observation alone gives it
+no power to return.
+
 Enter from a Bridge result with **Look into the Orb**, or open `/orb/{run_id}` directly. The bare
 `/orb` route asks you to open Bridge because there is no authorized run list.
 

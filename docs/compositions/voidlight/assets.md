@@ -27,12 +27,24 @@ Generated, edited, captured, and transformed material are all new artifacts. A f
 does not erase a control image, and a normalized export does not replace its source. Hostile-media
 limits from [Vision](../../adr/36-vision.md) apply before decoding or transformation.
 
+Spatial candidates additionally name their exact geometry, appearance, structure, deformation,
+assembly, and procedural facets; units, axes, origin, scale, bounds, coordinate transforms,
+material channels, parts, skeleton or camera facts; and every representation conversion. One
+glTF/GLB container may combine mesh, PBR appearance, skeleton, skinning, and animation facets;
+those facets remain explicit rather than becoming mutually exclusive file kinds. Point cloud,
+Gaussian form, radiance form, neutral voxel grid, game-specific block grid, and portable scene
+assembly remain distinct artifact forms. Prism's
+[Form](../../sepulcher/extensions/prism/form.md) owns their candidate generation, reconstruction,
+and transformation contract. Voidlight retains the brief, visual judgment, accepted revision, and
+package lineage.
+
 ## Produce, normalize, review
 
 Candidates are made against the exact brief and direction revision. Deterministic probes establish
-format, dimensions, frames, color facts, geometry, size, and other target constraints before
-review. Normalization records its own lineage; it cannot launder a failed source or ambiguous
-likeness.
+format, dimensions, frames, color facts, geometry, topology, material channels, units, axes,
+bounds, size, and other target constraints before review. Normalization, retopology, baking,
+rigging, or voxelization records its own lineage and declared loss; none can launder a failed
+source or ambiguous likeness.
 
 Review chooses, rejects, or returns attributed findings. The smallest supported correction may
 produce one new candidate. Replacement of accepted material is a new revision, never an in-place

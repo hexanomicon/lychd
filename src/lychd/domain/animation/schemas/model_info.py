@@ -25,10 +25,11 @@ class ModelSurface(StrEnum):
 
 
 class ModelInfo(BaseModel):
-    """Runtime-discovered model summary exposed by a connector.
+    """Connector-local configured or observed model summary.
 
     ``ModelInfo`` answers a connector-local question:
-    "What models does this connector currently expose?"
+    "Which model facts does this catalogue declare?" It is not live inventory
+    or readiness evidence unless an exact probe explicitly supplied those facts.
 
     Connectors are free to return Pydantic AI ``Model`` instances directly for
     execution. ``ModelInfo`` exists so orchestration can reason about model

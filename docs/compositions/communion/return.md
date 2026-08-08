@@ -6,7 +6,7 @@ icon: material/sync
 # :material-sync: Return
 
 Capture and playback belong to the mobile client; reachability to Tether; device and Principal
-authority to Ward; speech processing to Echo; admission and Run delivery to Weaver, Workers, and
+authority to Ward; speech processing to Echo; admission and Run delivery to Spellweaver, Workers, and
 Phylactery; domain records and effects to the selected destination.
 
 The thin client carries no provider, database, workflow, or host-lifecycle credential. It

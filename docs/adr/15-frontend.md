@@ -24,6 +24,8 @@ icon: material/language-html5
   layout never prove execution.
 - Bridge, Orb, Nexus, and Loom are separate routes with explicit server fallbacks. Generated UI is
   closed descriptors, never model- or extension-supplied HTML, JavaScript, Svelte, or imports.
+- Circle is the Invocation-shaped focus within Bridge, not a fifth authority surface or a claim
+  that the current run strip already composes every owning projection.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
   regions, and visible unknown/error states.
 
@@ -55,13 +57,18 @@ owns delivery.
 | Bridge | Session selection, text admission, active-Run reconstruction, semantic stream, consent, and closed fragments | Partial: text only; live reconstruction and tokens are process-local. |
 | Orb | One selected Run's ordered, paged structural evidence, gaps, capture label, and links | Partial: no index, tail, complete trace store, annotation, or multi-Run field. |
 | Nexus | Timestamped capability observations, non-binding plan preview, typed request, and ticket stream | Partial: observations and tickets are process-local and not restart-complete. |
-| Loom | Immutable Pattern-revision reader, station/permission outline, optional Mermaid lens | Partial: fixed registry reader, not Weaver editing or publication. |
+| Loom | Immutable Scroll/Pattern-revision reader, station/permission outline, optional Mermaid lens | Partial: fixed registry reader without independent Spell identities, editing, teaching, or publication. |
 
 The shell owns navigation, source identity, pending-consent count, and transient notices; an
 instrument owns route-local presentation. `/scrying`, `/reliquary`, `/bindings`, and ambiguous
 unversioned Loom detail are deliberately not routes. Scrying is Orb's act, not a fifth instrument.
 Artifact references and configuration observations are contextual projections, not browser custody
 or configuration authority.
+
+[Circle](../divination/altar/circle.md) is likewise not a fifth instrument or route in the present
+contract. One Bridge séance may contain many Invocation/Run projections; a future Circle focus may
+compose authorized Loom, Nexus, and Orb lenses around exactly one of them without importing their
+authority into browser state. The current run strip is only its delivered seed.
 
 ### Projection law
 

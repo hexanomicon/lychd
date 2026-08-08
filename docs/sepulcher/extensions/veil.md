@@ -39,6 +39,10 @@ and Vessel still authenticate the caller and authorize the exact object and effe
 through Tether, or forwarded metadata may supply evidence, but cannot mint a Sigil, create an
 administrator, or make the fixed bootstrap `magus:*` identity valid remotely.
 
+An A2A Agent Card, Scroll, or teaching bundle remains application material after crossing Veil.
+Veil may expose the admitted Intercom route locally, through Tether, or eventually publicly; it
+cannot validate Spell compatibility, approve teaching, admit a casting, or settle its Run.
+
 Before a browser-facing listener opens, Host and Origin admission, DNS-rebinding defenses, secure
 sessions, local assets, request bounds, and protected diagnostics must pass hostile tests.
 [State of Work](../../state-of-the-work.md#local-browser-bind-boundary) records the present
