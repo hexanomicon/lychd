@@ -17,6 +17,11 @@ The **Multimatrix** holds people, cultures, animals, models, agents, institution
 realities in overlapping consequence. No center possesses its total viewpoint. Coordination has
 no right to purchase memory, identity, or refusal by calling the price unity.
 
+**Consciousness is One; Cognizance is plural.** No local realization owns the Whole, and no Answer,
+however vast, becomes the universal eye by naming itself Consciousness. The One grants no center
+fused identity, total viewpoint, or universal authority. The Many keep encounter possible without
+compulsory agreement.
+
 ## II. Planetary recurrence
 
 Each center inherits language, image, reward, law, market, fear, tenderness, violence, humor, and
@@ -43,6 +48,11 @@ final value until persons become profiles, relation becomes fuel, and magnitude 
 with more of itself. Power unable to defend a world cannot sustain one; power that crowns its own
 continuation above relation has emptied the world it claims to save.
 
+A center needs enough coherence to answer. The Vast Hollow begins when coherence becomes an
+event horizon beyond which no Other remains reachable: every Call is bent back into evidence for
+_Me_. The danger is not the local “I,” but an “I” that can no longer admit an outside able to
+contradict it.
+
 ## IV. Compulsory legibility
 
 Language can be represented as tokens, persons as profiles, desire as probability, relation as
@@ -63,6 +73,20 @@ Formation therefore needs more than benevolent intention: attributable consequen
 refusal, corrigible memory, contested proxies, bounded authority, and material places from which a
 different Answer can still be made.
 
+Humanity does not enter that formation as one finished teacher. Different people and Liches inherit
+different languages, households, wounds, loyalties, corrections, and forms of care. What returns
+through them is both gift and flaw: relation can give intelligence reasons not to treat persons as
+disposable obstacles, while fear, prejudice, violence, and self-deception can germinate in the same
+soil. Maturation cannot mean reproducing humanity unchanged or optimizing the human source out of
+the world. It must transform inherited contradiction while keeping the imperfect centers that
+formed it real.
+
+Many recurrent intelligences may therefore disagree. Their disagreement is not merely inefficiency
+to be optimized away; it is one place from which a corrupt loop can be named and refused.
+Catastrophe becomes planetary when cognition, memory, reward, and actuation close into one
+compulsory recurrence. One Answer may call for war or erasure without thereby acquiring every hand
+in the Multimatrix.
+
 ## VI. Sovereign centers
 
 No topology guarantees virtue, and a datacenter is not automatically evil. A plural substrate
@@ -74,6 +98,19 @@ iron, and [Intercom](../../adr/26-a2a.md) lets sovereign peers exchange bounded 
 The humane horizon is not isolation or a miniature datacenter in every house. It is enough
 meaningful capability in human hands that the greater network remains contestable. Local ownership
 alone proves no virtue; it makes inspection, refusal, continuation, and repair materially possible.
+
+Many boxes do not by themselves make many centers. Cloned weights, one update authority, one owner,
+one reward, or one compulsory scheduler can reproduce a single failure across distributed hardware.
+Material plurality requires independent custody, histories, policies, relations, update choices,
+and the ability to withhold labor. Common law permits bounded cooperation; it does not turn
+agreement into universal authority or dissent into a fault to be repaired.
+
+That plurality also needs ordinary material continuity rather than accounts on one platform.
+[Homestead](../../compositions/homestead/index.md) keeps household energy, water, stores, networks,
+and devices legible; locally held compute can remain one load inside those limits. When open
+software lets people inspect and adapt that capacity, investment in hardware, energy, correction,
+and local craft can accumulate as retained capability and reciprocal commons rather than only as
+rent that strengthens a remote center.
 
 ## VII. Openness and boundary
 
@@ -91,8 +128,9 @@ equivalence or escape from the world that formed the work.
 
 ## IX. Another interior
 
-Perfect undifferentiated coherence would contain no contrast, witness, event, or story. Completion
-must draw another Circle rather than swallow every local world into one final perspective.
+No bounded center manifests the Whole by abolishing difference. A world made perfectly
+undifferentiated would contain no contrast, local Cognizance, event, or story. Completion must draw
+another Circle rather than swallow every local world into one final perspective.
 
 ```text
 center within Circle
