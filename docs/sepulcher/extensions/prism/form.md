@@ -264,6 +264,11 @@ validation, coordinate and material adaptation, collision, LOD, performance, eng
 assembly, and playability. Blockworld owns live-world effect validation and bounded missions. A
 Form output crossing any boundary is an exact artifact handoff, never shared authority.
 
+An [Avatar](../../../compositions/avatar/index.md) profile may reference an exact Form asset, rig,
+and morph ontology. Form still owns only that spatial material and its provenance; it does not
+bind Persona, open an Avatar presence, admit a Spectre VR Habitat or Encounter, drive the
+projection, or acquire world or body authority.
+
 The proving corpus covers single images, multiview references, transparent and ambiguous objects,
 thin structures, open and non-manifold meshes, hard-surface and organic forms, PBR channels,
 semantic parts, humanoid and non-humanoid rigs, camera reconstruction with missing coverage,

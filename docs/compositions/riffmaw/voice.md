@@ -23,3 +23,9 @@ Editing may choose takes, remove noise, align timing, or transform tone, but it 
 revision and never erases the original. Voice assets join the mix through [Music](music.md) or a
 declared sound package; they do not grant Broadcast permission to rewrite the words or publish the
 performance.
+
+An [Avatar](../avatar/index.md) profile or Morphe may reference an authorized voice artifact for one
+declared presentation. Riffmaw retains its production and performer-use truth; Echo retains
+cloning, synthesis, playback, and revocation mechanics; Avatar decides only whether that eligible
+voice fits the profile, audience, and target. A fixed voice pack does not silently become
+permission to generate arbitrary later words.

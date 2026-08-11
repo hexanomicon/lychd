@@ -20,9 +20,11 @@ private records, tools, or effects. Discord roles may narrow visibility but neve
 Principal, grant, or consent decision.
 
 Mirror retains Persona lineage. Discord and its adapter retain place, member, event, session, and
-delivery state. A local turn records only purpose-limited material. The same Persona may later
-appear through [Blockworld](../blockworld/index.md), but that continuity carries no shared Context,
-authority, or endless session.
+delivery state. A local turn records only purpose-limited material. The same Persona may later be
+projected through [Avatar](../avatar/index.md) into this Reach Habitat, a
+[Blockworld](../blockworld/index.md) inhabitant, or a [Spectre](../spectre/index.md) VR Habitat, but
+that continuity carries no shared Context, authority, or endless session. An Avatar presence
+cannot make Discord history private or grant the next turn.
 
 Everything projected to Discord is obtainable by Discord or an attacker who compromises it.
 Channel privacy and ephemeral replies narrow audience; they are not end-to-end encryption.

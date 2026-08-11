@@ -28,7 +28,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **ArtifactRef** | Immutable metadata naming external durable content by identity, SHA-256 digest, media type, byte size, and classification. | [Dispatcher (ADR 22)](../adr/22-dispatcher.md#durable-content-and-artifactref) |
 | **Authorship Attestation** | An attributable claim binding an exact artifact region and content digest to `human_attested`, `agent_generated`, `mixed`, or `unknown` origin; approval is not authorship. | [Workflow (ADR 28)](../adr/28-workflow.md#authorship-provenance-and-protected-regions) |
 | **Autopoiesis** | The Work's intended capacity for verified self-repair and extension under the operator's authority. | [Immortality](../divination/transcendence/immortality.md) + ADR 16/18/35 |
-| **Avatar** | The Composition that binds one Lich presentation to one or many separately admitted physical, ambient, social, or virtual projections without granting identity, world, device, or body authority. | [Avatar](../compositions/avatar/index.md) |
+| **Avatar** | The Composition that binds one Lich presentation to one or many separately admitted physical, ambient, social, or virtual projections; it may project into a Spectre VR Habitat but does not own the Habitat or Encounter. | [Avatar](../compositions/avatar/index.md) |
 | **awaited** | The Nexus `CovenState` token for a reachable dynamic capability in `ACTIVATABLE` phase that is not yet loaded. | `src/lychd/domain/web/schemas.py` |
 | **Binding** | The `lychd bind` operation that compiles validated Rune intent into generated Quadlet manifests at the host binding site. | CLI |
 | **Blade** | The discrimination office that separates supported shape, evidence, authority, and continuation from persuasive or unsafe alternatives. | [Blade](../sepulcher/lich/blade.md) |
@@ -59,6 +59,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Durable Stasis** | A pause that exits the process after a mandatory Graph checkpoint and resumes only through Reanimation. | [Graph (ADR 24)](../adr/24-graph.md) |
 | **EgressDecision** | The Portal Egress Gate's allow-or-deny record for one exact payload, principal, purpose, destination, provider, model, policy revision, and receipt. | [Security (ADR 09)](../adr/09-security.md#portal-privatization-and-egress) |
 | **Echo** | The speech-lifecycle Extension Domain for temporal capture, transcription, synthesis, codecs, and voice activity. | [Echo](../sepulcher/extensions/echo.md) + ADR 37 |
+| **Encounter** | One bounded Spectre meeting or experience inside an admitted VR Habitat. Meeting the Lich through its Avatar there is an Encounter; Spectre owns its participants, semantic chronology, interruption, safe exit, and settlement, while Avatar retains presentation and projection membership. | [Spectre](../compositions/spectre/index.md#vr-habitat-and-encounter) |
 | **Extension Context** | The shaped host registration surface passed to an extension package's `register(context)` function. | `src/lychd/extensions/context.py` |
 | **Extension Domain** | One of the Fifteen stable user-facing jurisdictions through which the Lich may grow. | [Fifteen Extensions](../sepulcher/extensions/index.md) + ADR 05 |
 | **Extension package** | Selected built-in or private Crypt code admitted for registration through the Extension Protocol. | `src/lychd/extensions/`; ADR 05 |
@@ -72,6 +73,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Graph** | The typed stateful topology that moves a workflow among declared nodes and recoverable boundaries. | [Graph (ADR 24)](../adr/24-graph.md) |
 | **Graph checkpoint** | A Run-owned durable snapshot of typed Graph state at a supported recovery boundary. | [Graph (ADR 24)](../adr/24-graph.md#checkpoint-ownership-and-terminal-commit) + [Snapshots (ADR 07)](../adr/07-snapshots.md) |
 | **Hard Refusal** | The retrieval policy that forbids an Agent from guessing when no Archive result clears the declared similarity threshold. | [Memory (ADR 27)](../adr/27-memory.md) |
+| **Habitat** | A Composition-local admitted place boundary in which participants, projections, and events may meet. Reach's first Habitat is The Necropolis; Spectre's Habitat is VR. A Habitat does not by itself grant identity, Context, device, world, or effect authority. | [Reach Habitat](../compositions/reach/habitat.md) + [Spectre](../compositions/spectre/index.md#vr-habitat-and-encounter) |
 | **Hexanomicon** | The project and its published grimoire: prophecy, doctrine, operation, law, and lore rendered from `docs/`. | `docs/` |
 | **HitL** | The consent protocol through which live approval or narrower declared preauthorization may authorize an eligible consequence. | [Human-in-the-Loop (ADR 25)](../adr/25-hitl.md) |
 | **Incantation** | The xDDD act of establishing documentation and specification before implementation. | Doctrine |
@@ -149,7 +151,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Sovereignty Wall** | The Security-owned privacy and egress boundary enforced by Dispatcher routing. | Security + Dispatcher |
 | **Spheres** | The strict volume-mount and filesystem-permission topology of the Crypt. | [Crypt](../sepulcher/crypt.md#the-spheres) + ADR 13 |
 | **Spirit** | The conditioning and remembering office that bears retained form through Flux, Seed, and Recall. | [Spirit](../sepulcher/lich/spirit/index.md) |
-| **Spectre** | The Composition for one bounded immersive encounter, including negotiated capabilities, participant and spatial context, comfort/accessibility policy, interruption, safe exit, and honest settlement. | [Spectre](../compositions/spectre/index.md) |
+| **Spectre** | The Virtual Reality Composition whose admitted Habitat is VR and whose bounded unit of meeting or experience is an Encounter. | [Spectre](../compositions/spectre/index.md) |
 | **Stasis** | A Run paused at a recoverable boundary as either resident Live Stasis or checkpointed Durable Stasis. | Graph (ADR 24) + Orchestrator (ADR 23) |
 | **Stillness** | The discipline of bounded work that avoids needless residency, disruptive swaps, and unbounded speculation while preserving measured quality. | Orchestrator (ADR 23) + Riddle (ADR 34) |
 | **Suite** | A designed, versioned graph of separately owned Compositions and typed handoffs. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |

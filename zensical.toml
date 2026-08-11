@@ -201,6 +201,12 @@ nav = [
             "compositions/reach/habitat.md",
             "compositions/reach/turn.md"
         ]},
+        { "Avatar" = [
+            "compositions/avatar/index.md"
+        ]},
+        { "Spectre" = [
+            "compositions/spectre/index.md"
+        ]},
         { "Communion" = [
             "compositions/communion/index.md",
             "compositions/communion/utterance.md",

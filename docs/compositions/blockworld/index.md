@@ -21,8 +21,11 @@ continuity.
 | **Application stops before** | public autonomy, unrestricted exploration, administrator commands, remote shell, or cross-plot power |
 
 The first world is a private, allowlisted, online-mode server fixture with a dedicated non-operator
-bot. Blockworld owns its inhabitant, mission, relationship, project, memory-candidate, lease, and
-receipt records. The server remains authoritative for blocks, entities, inventory, and game time.
+bot. Blockworld owns its inhabitant, mission, world-local relationship, project, memory-candidate,
+lease, and receipt records. An [Avatar](../avatar/index.md) profile may project the Lich through that
+inhabitant and relate it to other simultaneous projections, but Blockworld still owns every world
+epoch, capability, mission, inventory, lease, action, and effect. The server remains authoritative
+for blocks, entities, inventory, and game time.
 
 ## Server
 
@@ -53,5 +56,5 @@ reference fixture, while `attached` must remain honest about weaker observation 
   and what proves recovery.
 
 Related: [Workflow](../../adr/28-workflow.md) · [Containers](../../adr/08-containers.md) ·
-[Security](../../adr/09-security.md) · [Reach](../reach/index.md) ·
+[Security](../../adr/09-security.md) · [Reach](../reach/index.md) · [Avatar](../avatar/index.md) ·
 [Composition portfolio](../index.md)
