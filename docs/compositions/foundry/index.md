@@ -24,6 +24,10 @@ recipes, playtests, balance evidence, local release candidates, and their receip
 Voidlight's visual lineage, Riffmaw's sonic lineage, the game engine, a store account, or another
 workflow jurisdiction.
 
+An XR build remains a Foundry candidate. [Spectre](../spectre/index.md) may later use that exact
+candidate to admit a VR Habitat and open bounded Encounters, but it does not inherit project
+source, engine-world meaning, controller implementation, playtest evidence, or build authority.
+
 The principal Pattern coordinates proposed semantic Spell placements; none of these names is a
 Dispatcher capability or delivered implementation:
 
@@ -47,4 +51,5 @@ Dispatcher capability or delivered implementation:
 - [Build](build.md) creates, reviews, recovers, and optionally prepares a release candidate.
 
 Related: [Voidlight](../voidlight/index.md) · [Riffmaw](../riffmaw/index.md) ·
+[Spectre](../spectre/index.md) ·
 [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

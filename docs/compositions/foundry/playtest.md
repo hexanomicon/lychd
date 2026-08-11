@@ -33,6 +33,10 @@ Scenario author, automated controller, evaluator, and human player are distinct 
 may show that a level loads, an interaction completes, a frame-time bound holds, or a regression
 appears. It cannot establish that the game is fun or that a release should occur.
 
+A [Spectre](../spectre/index.md) Encounter is not a longer PlaytestSession. Foundry uses declared
+scenarios to judge a candidate build; Spectre uses an admitted VR Habitat to keep participant,
+comfort, interruption, and safe-exit truth for one bounded meeting or experience.
+
 The proposed Spell `game.balance_from_evidence@1` may propose a bounded revision from attributed observations. The
 change returns through ordinary project, build, and playtest gates; old evidence is never rewritten
 to fit the new candidate.

@@ -59,6 +59,8 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Broker](broker/index.md) | a client answer grounded in current product knowledge, prepared act, human handoff, or exact blocker |
 | [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
 | [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
+| [Avatar](avatar/index.md) | one attributable Lich presentation projected into one or more separately admitted places, with honest partial settlement |
+| [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
 
 [Communion](communion/index.md) remains a reference mobile route into these applications, not a
 Composition of its own.
@@ -82,6 +84,11 @@ property diligence. Homestead owns the bounded place and its recurring provision
 arrives from a supermarket or a field. Wellbeing owns eating, ordinary movement, and private
 reflection. Typed inventory, food-need, and provision-result handoffs connect the last two without
 moving merchant credentials, health records, private constraints, or effect authority.
+
+Avatar keeps one Lich presentation profile and bounded multi-projection presence across separately
+admitted places; Reach retains each external social turn, Blockworld each persistent-world mission
+and effect, and Spectre each VR Habitat, Encounter, and safe exit. Avatar coordinates presentation
+and projection settlement but receives no universal world, device, or body authority.
 
 ## Suites do not dissolve their members
 

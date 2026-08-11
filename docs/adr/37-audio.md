@@ -146,6 +146,11 @@ application that carries sound. A Composition such as [Riffmaw](../compositions/
 may own a domain session and musical-clock overlay, but every live route still obeys Audio custody,
 transport, interruption, and uncertain-playback law.
 
+[Avatar](../compositions/avatar/index.md) may use an authorized exact voice profile or derived
+artifact inside one profile or Morphe. Avatar can narrow purpose, audience, words, disclosure,
+retention, and revocation, but cannot create speaker authority, copy a Persona, widen the cloning
+grant, or claim that synthesized speech was played. Echo retains those lifecycle facts.
+
 Monitoring, recording, retention, analysis, transformation, remote transmission, and machine
 response are independently admitted scopes. A visible armed input proves none of the others. A
 live route binds an exact route and clock epoch, monotonic and sample-frame mapping, sequence,

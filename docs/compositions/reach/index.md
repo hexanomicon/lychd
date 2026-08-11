@@ -20,4 +20,8 @@ awakening; the platform account never becomes the Lich.
 - [Habitat](habitat.md) defines the admitted social place, caller boundary, and cross-world continuity.
 - [Turn](turn.md) carries one event through Context, committed result, delivery, and recovery.
 
+[Avatar](../avatar/index.md) may bind one Lich projection into a Habitat, but Reach still owns the
+platform event, audience, turn, delivery, and reply receipt. Avatar receives only those attributed
+results; the platform account never becomes the Lich or grants the next projection.
+
 Related: [Composition Portfolio](../index.md) · [Workflow](../../adr/28-workflow.md)

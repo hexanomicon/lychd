@@ -30,12 +30,17 @@ Four application records keep long-lived meaning distinct:
 | --- | --- |
 | **Mission** | this finite objective, constraints, cursor, outcome, and exact non-completion |
 | **Project** | purposeful continuity that may relate several separately admitted missions |
-| **Relationship** | named social continuity and commitments; never a tool or world permission |
+| **Relationship** | world-local social continuity and commitments; never a tool, world permission, Persona, or general Lich memory |
 | **Memory candidate** | material proposed for later remembrance; not admitted Memory by declaration |
 
 Only the project and memory records relevant to the admitted mission enter its Context. The
 inhabitant does not receive an endless hidden session, and a relationship cannot grant a lease,
 tool, or effect.
+
+When an [Avatar](../avatar/index.md) presence enters the mission, Blockworld records the exact
+Avatar profile, presence, projection-binding, and Persona references but does not copy their
+projection topology. Avatar may receive attributed mission results; it cannot advance the mission
+cursor or claim a world effect.
 
 ## One finite awakening
 
