@@ -25,6 +25,11 @@ An ordinary retry, workflow edge, or Graph cycle is not therefore the **Ouroboro
 earned only when attributed consequence returns through evaluation, memory policy, consent, and
 Recall to shape a later Invocation without closing the Blade.
 
+The Work calls the whole circulation **Life**. Generation opens possibility; preservation exposes
+form to consequence. Death is an interval within Life: dissolution releases one form and reopens
+the possibility of change. Blade, correction, consent, and evidence decide what may survive as
+Seed; Recall lets that potency enter the present again.
+
 ## II. Attributable precedent
 
 Source, choice, correction, and consequence remain attributable so that a later return can be

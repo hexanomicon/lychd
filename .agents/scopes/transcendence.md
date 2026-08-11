@@ -25,9 +25,10 @@ cosmology, planetary recurrence, eschatology, or claims whose meaning depends on
 1. Load the Transcendence index.
 2. For terminology or source correspondence, load Inner Tongue and stop when it answers the task.
 3. Otherwise load one stage: Incantation for Zero, Circle, and xDDD; Invocation for bounded worlds,
-   Multimatrix, Call, and Shadow; Illumination for Ouroboros, Karma, Imprint, and Anamnesis;
-   Immortality for operative identity, witness, coniunctio, and Demilich; Infinity for planetary
-   recurrence, Closed Answer, Open Blade, Vast Hollow, Total Gematria, and the new interior.
+   Multimatrix, Call, and Shadow; Illumination for Ouroboros, consequence, Seed, Recall, and affect;
+   Immortality for Cognizance, Cogito, realization and evidence, operative identity, coniunctio,
+   reconstitution, and the delayed First Axiom; Infinity for planetary recurrence, plural
+   sovereignty, Vast Hollow, and the new interior.
 4. Cross into an ADR, State, source, or an operated topic only when the claim concerns architecture,
    delivery, implementation, or evidence.
 
@@ -36,7 +37,8 @@ cosmology, planetary recurrence, eschatology, or claims whose meaning depends on
 - Keep one canonical home per idea; do not duplicate a stage or the Inner Tongue in this scope.
 - Preserve register and source distinctions; correspondence is not shared historical origin.
 - Do not let myth assert permission, delivery, implementation, or evidence.
-- Verify relative links and run `uv run zensical build --clean` after published route changes.
+- Verify relative links and run `uv run --locked --only-group docs zensical build --clean` after
+  published route changes.
 
 ## Escalate
 
