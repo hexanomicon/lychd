@@ -146,6 +146,14 @@ Portal or local model vanished.
 candidate bundle. World hands them one exact assembly plan, bake receipt, engine profile, and
 finding set; it does not duplicate their scenario, observation, or fixture truth.
 
+[Spectre](../spectre/index.md) may receive one exact world or scene revision, build digest, engine
+profile, and relevant playtest evidence as candidate material for a `VRHabitat@1`. Spectre then
+admits the runtime capabilities, reference-space policy, comfort, accessibility, retention, and
+exit boundary required for VR. It does not absorb Foundry's project source, engine derivatives,
+gameplay meaning, build judgment, or playtest verdict. A successful Foundry playtest does not by
+itself admit a Habitat, and a Spectre Encounter does not rewrite whether the candidate build was
+reproducible or playable.
+
 ## The neighboring worlds
 
 [Shadow](../../sepulcher/extensions/shadow/) owns counterfactual branch lineage and promotion
