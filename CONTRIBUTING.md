@@ -19,7 +19,7 @@ binding terms.
   Podman/Quadlet. Most repository tests use isolated substitutes and do not prove that a real host
   works; [Summoning](docs/summoning.md) owns the live-host prerequisites and rite.
 - Frontend work uses Node.js 24.18.0 (`.nvmrc`) and npm 11.16.0
-  (`frontend/package.json`): supported ranges are 24.18.x-or-newer within Node 24 and
+  (`clients/web/package.json`): supported ranges are 24.18.x-or-newer within Node 24 and
   11.16.x-or-newer within npm 11.
 
 ## Setup and Commands
@@ -33,7 +33,7 @@ make help
 ```
 
 `make install` creates or updates `.venv` from `uv.lock`, including the local
-`postgres-binary` convenience extra. `make frontend-install` runs `npm ci` from the frontend lock.
+`postgres-binary` convenience extra. `make frontend-install` runs `npm ci` from the web-client lock.
 
 `make init` materializes local host layout; it is not a development bootstrap. Use it only for
 [Summoning](docs/summoning.md) or deliberate host-initialization testing.
@@ -52,10 +52,18 @@ Omit a target variable for the repository-wide default. `make check` runs the co
 non-mutating Python lint, format, type, and test suite—not frontend checks. Use `make format` only
 when you intend to change files.
 
-Tests run in parallel by default. Use `N=0` for serial execution, `K="expression"` for pytest
-name selection, and `VERBOSE=1` for raw output and long tracebacks. Pytest scratch data defaults to
-`.cache/pytest`; set `PYTEST_BASETEMP` to another current-user-owned directory when isolation
-requires it.
+Tests run serially by default so shared host-resource probes remain deterministic. Set an explicit
+worker count such as `N=8` to opt into bounded parallelism, use `K="expression"` for pytest name
+selection, and use `VERBOSE=1` for raw output, long tracebacks, and live DEBUG logs. Ordinary runs use
+pytest's native compact report, capture logs, and allocate a unique scratch directory beneath
+`.cache/pytest`; set `PYTEST_BASETEMP` to an explicit current-user-owned path only when a caller
+must own that location.
+
+Pull requests run four independent repository checks: the Python umbrella, the disposable
+PostgreSQL receipts, the Altar check/build plus generated-diff guard, and a clean documentation
+build. Pushes to `main` repeat the first three while the deployment workflow's clean documentation
+build supplies the fourth gate and its Pages artifact. The tag/manual release-candidate workflow
+remains a separate non-publishing artifact receipt.
 
 Disposable PostgreSQL receipts are an explicit host-integration profile, not part of ordinary
 `make check`:
@@ -83,7 +91,7 @@ Both regenerate the Litestar OpenAPI contract. The build updates the tracked sta
 For documentation changes, run:
 
 ```bash
-uv run zensical build --clean
+uv run --locked --only-group docs zensical build --clean
 ```
 
 `make docs` serves the Hexanomicon at `http://localhost:7778` for local inspection.
@@ -114,11 +122,11 @@ and mocks are not live systemd, Podman, PostgreSQL, GPU, or model-engine receipt
   **[ADR 11](docs/adr/11-backend.md)**.
 - **Dependencies:** Use `uv add` or `uv remove` with the correct dependency group and commit the
   resulting `pyproject.toml` and `uv.lock` changes together. Frontend dependencies must likewise
-  update both `frontend/package.json` and `frontend/package-lock.json`.
+  update both `clients/web/package.json` and `clients/web/package-lock.json`.
 - **Frontend:** Follow **[ADR 15](docs/adr/15-frontend.md)**. The Altar is a Svelte 5/SvelteKit
   static SPA served by Litestar; do not add SvelteKit server routes, a JavaScript production
   server, or handwritten mirrors of generated OpenAPI transport contracts. Coding agents must
-  also follow the [frontend scope](.agents/scopes/frontend.md) before touching `frontend/**`.
+  also follow the [frontend scope](.agents/scopes/frontend.md) before touching `clients/web/**`.
 - **Logging:** Use `structlog` with stable semantic event names. Make fatal initialization errors
   useful; shared configuration captures exceptions and tracebacks.
 - **Documentation:** Follow

@@ -1,0 +1,146 @@
+name: Repository Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: repository-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_LOCKED: "1"
+
+jobs:
+  python:
+    name: Python contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      UV_CACHE_DIR: .cache/uv
+      PYTEST_BASETEMP: .cache/pytest/python-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Python and uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: checks-python
+
+      - name: Run repository Python gate
+        run: make check
+
+  postgres:
+    name: Disposable PostgreSQL receipts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      UV_CACHE_DIR: .cache/uv
+      PYTEST_BASETEMP: .cache/pytest/postgres-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Python and uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: checks-postgres
+
+      - name: Run disposable PostgreSQL receipts
+        run: make test-containers N=0
+
+  altar:
+    name: Altar contracts and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UV_CACHE_DIR: .cache/uv
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Python and uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: checks-altar
+
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: clients/web/package-lock.json
+
+      - name: Install pinned npm and Altar dependencies
+        run: |
+          npm install --global npm@11.16.0
+          npm ci --prefix clients/web
+
+      - name: Check and build the Altar
+        run: |
+          env -u GITHUB_SHA make frontend-check
+          env -u GITHUB_SHA make frontend-build
+
+      - name: Verify generated projections are current
+        shell: bash
+        run: |
+          generated_paths=(
+            clients/web/openapi.json
+            clients/web/src/lib/api/openapi.d.ts
+            clients/web/static/THIRD_PARTY_NOTICES.txt
+            src/lychd/public
+          )
+          generated_status="$(git status --porcelain=v1 --untracked-files=all -- "${generated_paths[@]}")"
+          if [[ -n "$generated_status" ]]; then
+            echo "Generated Altar projections are stale or untracked:"
+            printf '%s\n' "$generated_status"
+            exit 1
+          fi
+
+  documentation:
+    name: Hexanomicon build
+    # Main already performs this clean build while producing the Pages artifact.
+    # Keep the independent check here for pull requests without rebuilding twice
+    # after the same revision lands.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_CACHE_DIR: .cache/uv
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Python and uv
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.11.28"
+          python-version: "3.13"
+          enable-cache: true
+          cache-suffix: checks-documentation
+
+      - name: Build published documentation
+        run: uv run --only-group docs zensical build --clean
