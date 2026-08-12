@@ -16,13 +16,13 @@ which adversarially challenges one already formed candidate.
 | **Identity** | `scavenger` revision `2` |
 | **Principal Pattern** | `scavenger.plan_campaign@1` |
 | **Begins with** | a revisioned subject profile, concrete need, known inventory, budget, deadline, region, evidence standard, source policy, and autonomy ceiling |
-| **Can return** | a durable campaign, evidence-bound shortlist, seller thread, negotiated outcome, commitment, parcel result, or diligence packet |
+| **Can return** | a durable campaign, reviewed candidate field, explicit preference revision, evidence-bound shortlist, seller thread, negotiated outcome, commitment, parcel result, or diligence packet |
 | **Stops before** | unbounded scraping, spam, false identity or leverage, hidden criteria changes, professional certification, unapproved commitment, payment, deposit, signature, or settlement |
 
-Scavenger owns campaigns, criteria, observations, evidence, rankings, seller threads, offers,
-commitments, parcels, inspections, and diligence packets. Scout owns bounded acquisition and
-interaction receipts. The Magus owns private disclosure, final commitment, payment, acceptance,
-dispute, and every property transaction.
+Scavenger owns campaigns, criteria, observations, evidence, rankings, candidate judgments,
+preference revisions, seller threads, offers, commitments, parcels, inspections, and diligence
+packets. Scout owns bounded acquisition and interaction receipts. The Magus owns private
+disclosure, final commitment, payment, acceptance, dispute, and every property transaction.
 
 Its Patterns are `scavenger.plan_campaign@1`, `scavenger.observe_market@1`,
 `scavenger.qualify_candidate@1`, `scavenger.rank_candidates@1`, `scavenger.negotiate@1`,
@@ -31,7 +31,8 @@ Its Patterns are `scavenger.plan_campaign@1`, `scavenger.observe_market@1`,
 ## Open the campaign
 
 - [Campaign](campaign.md) fixes the subject, evidence standard, budget, mode, and stopping line.
-- [Market](market.md) admits finite listing evidence and produces an inspectable shortlist.
+- [Market](market.md) admits finite listing evidence, exposes the whole candidate field for human
+  review, and produces an inspectable ranking plus explicit preference revisions.
 - [Bargain](bargain.md) governs seller questions, offers, disclosure, and uncertain sends.
 - [Acquisition](acquisition.md) covers commitment, property diligence, parcels, inspection, and recovery.
 

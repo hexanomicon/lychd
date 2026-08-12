@@ -32,6 +32,28 @@ Caller-supplied forwarding, identity, and client-certificate claims are discarde
 scheme, host, origin, and peer metadata may cross only an authenticated backend path the Vessel
 explicitly trusts. That is designed behavior, not today's loopback service.
 
+## Reach route profiles
+
+The [Reach deployment matrix](../../compositions/reach/deployments/index.md) uses no Veil for
+home-only or standalone outbound VPS. The split
+[`reach.edge-home.public@1`](../../compositions/reach/deployments/vps-edge-home-core.md) profile
+binds a private home Veil only to its Tether address. Later profiles expose a closed set rather
+than a catch-all:
+
+| Surface | Backend and admission |
+| --- | --- |
+| Reach edge relay | private Tether-only event-admission, delivery-claim, delivery-settlement, and health routes to an isolated adapter; current edge Principal, epochs, bounds, replay fence, and Ward policy |
+| public-safe Agent Card | `GET` on the adapter-pinned well-known path; public metadata only; no implied trust or enrollment |
+| callback-only client | exact authenticated route to isolated Intercom ingress; existing outbound task/token correlation, replay fence, current authorization, and durable admission |
+| full A2A server | separate Intercom server ingress with Ward, inbox/outbox, Workers, quotas, and result path |
+| unauthoritative health | local or Tether-only until remote Ward IAM ships; no generic control route |
+| Altar, database, model API, corpus writer, Reach core, Discord edge, egress gate, container or host control | closed; no Veil contribution is admissible |
+
+Each admitted route pins methods, media, compressed and expanded size, JSON work, authentication,
+stream/time limits, exposure tier, backend, and adapter revision. Veil holds certificate and route
+material only. It never receives bot/provider/A2A application credentials or a path from hostile
+bytes to Discord delivery.
+
 ## Keep authority behind the route
 
 TLS authenticates an endpoint and protects bytes; routing selects a destination. The [Ward](ward.md)

@@ -42,15 +42,15 @@ The catalogue is immutable after construction. It rejects duplicate `(key, revis
 requires an explicit active revision when one name has alternatives, requires explicit non-default
 route precedence, and names its default. Its two current source-defined manifests are
 `bridge_chat@1`, the default with checkpoint schema `bridge-chat-state-v1`, and
-`delegated_rite@1`, the `/delegate` route with `delegated-rite-state-v1`. Construction performs no
-package scan.
+`delegated_rite@1`, the exact `/delegate` command-token route with
+`delegated-rite-state-v1`. Construction performs no package scan.
 
 ??? example "The fixed registry in source"
     ```python
-    --8<-- "src/lychd/agents/workflows/__init__.py:191:202"
+    --8<-- "src/lychd/agents/workflows/__init__.py:222:232"
     ```
 
-    [Open the owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py#L191-L202)
+    [Open the owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py#L222-L232)
 
 ## Admission happens once
 
@@ -77,6 +77,44 @@ missing workflow, or unavailable revision fails as
 
 Checkpoint and suspension mechanics belong to [Stasis and return](stasis-and-return.md).
 `AgentJob` and provider boundaries belong to [Delegated agents](delegated-agents.md).
+
+## Human-attested material stops at a Gate
+
+Spellweaver does not infer human authorship from a commit name, account, writing style, or a human
+approval. A future trusted authoring surface records an [Authorship Attestation and Protected
+Region](../../../adr/28-workflow.md#authorship-provenance-and-protected-regions) against the exact
+artifact revision, stable region id, and content digest. Existing material remains `unknown` until
+a human attests its current form.
+
+```text
+base artifact + protected-region manifest + candidate
+                         |
+                  target-owner diff
+                    /          \
+             no overlap       overlap
+                 |               |
+          ordinary gates    exact live HitL
+                                 |
+                         target-owner promotion
+```
+
+An Agent may prepare a replacement in its candidate workspace. It cannot change the active region,
+remove protection by deleting a source marker, or reuse a verdict from another base or patch. The
+live review names every touched region, old and replacement digests, and an authorized exact-diff
+artifact. Base drift, candidate drift, a newly touched region, or a changed target effect
+invalidates the call and requires another verdict.
+
+Approval and authorship remain separate after promotion. A wholly Agent-written replacement stays
+`agent_generated`; retained human text interleaved with Agent work becomes `mixed`. Unchanged
+human-attested content may keep its origin through an approved move. Only a fresh human authorship
+attestation can mark a rewritten exact digest `human_attested`.
+
+Visible comments, front matter, and Loom decoration are projections of the target-owner manifest,
+not enforcement. A compliant effectful Agent therefore works through Creation's candidate surface;
+a direct writer with authority over the active checkout bypasses Spellweaver and cannot claim this
+protection. No attestation store, protected-region resolver, authoring UI, or exact diff review card
+is delivered. [State of Work](../../../state-of-the-work.md#smith-forge-promotion) owns that
+boundary.
 
 ## A new score is a new revision
 

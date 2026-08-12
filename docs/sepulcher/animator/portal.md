@@ -15,9 +15,21 @@ it may read the one Podman secret explicitly mounted for it.
 The credential shares that trust boundary: file permissions do not hide it from code already
 executing inside the Vessel.
 
+That delivered v1 placement is insufficient for every [Reach deployment
+profile](../../compositions/reach/deployments/index.md). Reach core and the Discord edge must never
+inherit the provider secret merely because services run on one host. Its Designed profiles require
+a separate Provider Gate/egress-adapter service that alone holds one exact provider or peer
+credential and accepts only typed, egress-admitted attempts. Until that service boundary and its
+deployment receipt ship, a current Vessel-local Portal connector cannot activate as a Reach
+provider path, including on the public VPS profile.
+
 LychD does not own the remote service's lifecycle. Portal capabilities are
 `dedicated=False` and `is_dynamic=False`: the Orchestrator cannot start, stop, load, or repair the
 provider.
+
+[Portal Roads](portal-roads.md) owns the choice between direct server APIs, BYOK gateways,
+aggregators, human coding subscriptions, subscription bridges, and local inference. A provider or
+dashboard appearing there is a candidate classification, not a delivered connector or endorsement.
 
 ## Egress Is a Deliberate Boundary
 
@@ -141,8 +153,11 @@ provider reachability. The `openai-main:chat:gpt-5.2` row proves synthesis and r
 `WARM` observation proves only readiness of that exact declared binding; it proves neither egress
 eligibility nor credentialed invocation. Current Dispatcher policy quarantines every Portal grant.
 
-The Bridge has no provider picker. For attributable end-to-end proof, make this Portal the only
-eligible `chat` plus tools candidate and send a benign public-safe prompt.
+The Bridge has no provider picker. Once the general Egress Gate is delivered, a future attributable
+end-to-end proof may make this Portal the only eligible `chat` plus tools candidate and send one
+benign public-safe fixture through a fresh payload-bound decision. Today, do not send that prompt:
+the current executable proof ends at declaration, bind, and readiness observation because
+Dispatcher refuses the grant.
 
 ## Failure and Closure
 

@@ -20,12 +20,14 @@ effect-owner registrations; publication and activation are not implied by contri
 office retains workflow authority. Spellweaver never inherits the policy or physical control of
 the offices it sequences. [ADR 28](../../../adr/28-workflow.md) owns the complete contract.
 
-## From purpose to performance
+## From Product to performance
 
-Four identities keep purpose, score, performance, and ledger distinct:
+These identities keep packaging, domain truth, score, performance, and ledger distinct:
 
-- **[Composition](../../../compositions/index.md)** records the operator-visible application and
-  human purpose.
+- **[Product](../../../compositions/index.md#products-package-compositions)** names the professional
+  or market package and its supported use cases; it grants no member authority.
+- **[Composition](../../../compositions/index.md)** owns reusable application records, judgment,
+  policy, effects, and outcomes.
 - **Pattern** is one named executable-score lineage owned by that Composition; one immutable
   revision is a **Scroll**.
 - **Spell** is one independently named semantic action contract; a station places it in that
@@ -65,18 +67,21 @@ activation](../../../state-of-the-work.md#extension-activation-contributions), a
 [Loom](../../../state-of-the-work.md#loom-workflow-views) remain **Partial**.
 
 Pattern contribution and durable publication, scheduling, durable parallelism, compatibility and
-migration, and editing remain undelivered. Architectural treatment is not operational evidence.
+migration, editing, authorship attestation, and protected-region admission remain undelivered.
+Architectural treatment is not operational evidence.
 
 ## Follow the Scroll
 
 Choose the route that matches the question:
 
 - **[Pattern lifecycle](./pattern-lifecycle.md)** covers identity, manifests, admission,
-  contribution, and revision continuity.
+  contribution, authorship protection, and revision continuity.
 - **[Scheduling and service classes](./scheduling-and-service-classes.md)** covers foreground,
   deadline-windowed, and spare-capacity admission, schedule time law, overlap, and explicit misses.
 - **[Stasis and return](stasis-and-return.md)** covers Live and Durable Stasis, checkpoints,
   re-admission, terminal cleanup, and recovery limits.
+- **[Execution roads](execution-roads.md)** covers the layered choice among native/local work,
+  Portal-backed cognition, sovereign A2A tasks, delegated coding runtimes, and operator seats.
 - **[Anonymization, taint, and egress](anonymization.md)** covers the local Privacy Cut,
   information-flow labels, Portal admission, quarantined return, and the boundary that makes
   subsidized remote reasoning usable.

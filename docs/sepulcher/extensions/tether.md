@@ -38,6 +38,20 @@ history, or public peer records. Future typed operations beneath `lychd run` may
 inspect, revoke, rotate, or export a short-lived client configuration or QR projection without
 adding a root CLI verb.
 
+## Reach attachment
+
+The [Reach deployment matrix](../../compositions/reach/deployments/index.md) gives Tether one exact
+consumer: [`reach.edge-home.public@1`](../../compositions/reach/deployments/vps-edge-home-core.md).
+Home-only and standalone outbound VPS use none. The split profile admits one named VPS peer, one
+exact address and route, explicit expiry and revocation generation, and one Tether-only private
+Veil backend for event admission, delivery claim, settlement, and health. It never uses
+`0.0.0.0/0`, exposes the home Phylactery, Reach core, Altar, model API, Podman socket, Reactor, or
+forwards arbitrary VPS traffic through the sovereign host.
+
+Tether holds only tunnel material. Root/VPS compromise still requires revoking that peer,
+separately rotating every resident application and operator credential, reconciling uncertain
+effects, and rebuilding the host; tunnel revocation alone is not containment.
+
 ## Tunnel identity and exact routes
 
 WireGuard proves possession of a tunnel key and encrypts packets. Human or process identity,

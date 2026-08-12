@@ -58,8 +58,8 @@ high-value, compatibility-heavy, property, and seller-negotiated acquisition. Ty
 inventory snapshots, food needs, provision results, and confirmed consumption cross these seams;
 credentials, private records, and effect authority do not.
 
-Product or site research crosses to Scout as attributed observations; web text never becomes a
-physical instruction.
+Research about household goods or a site crosses to Scout as attributed observations; web text
+never becomes a physical instruction.
 
 Coordinates, floor plans, camera material, and device access remain restricted. Deletion revokes
 grants, disables schedules and checkout authority, drains or contains admitted motion, inventories
