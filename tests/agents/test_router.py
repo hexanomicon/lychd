@@ -34,6 +34,20 @@ def test_route_delegate_command_selects_delegated_rite_before_default() -> None:
     assert workflow.name == "delegated_rite"
 
 
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "/delegated ordinary request",
+        "/delegatex ordinary request",
+        "/delegate/ordinary-request",
+    ],
+)
+def test_route_delegate_command_requires_a_token_boundary(prompt: str) -> None:
+    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt=prompt, source="bridge"))
+
+    assert workflow.name == "bridge_chat"
+
+
 def test_route_unknown_source_falls_to_default() -> None:
     """An unmatched source falls back to the default (first-registered) workflow."""
     workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else"))
@@ -51,6 +65,13 @@ def test_registry_get_by_name_and_default() -> None:
     assert WORKFLOW_REGISTRY.get("bridge_chat") is WORKFLOW_REGISTRY.default
     assert WORKFLOW_REGISTRY.get("nonexistent") is None
     assert WORKFLOW_REGISTRY.default.name == "bridge_chat"
+
+
+def test_builtin_registry_has_the_exact_ordered_boot_inventory() -> None:
+    assert [(workflow.manifest.key, workflow.manifest.revision) for workflow in WORKFLOW_REGISTRY.all()] == [
+        ("bridge_chat", "1"),
+        ("delegated_rite", "1"),
+    ]
 
 
 def test_registry_keeps_old_revision_while_new_admissions_use_active_revision() -> None:

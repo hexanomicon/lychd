@@ -26,6 +26,7 @@ from lychd.domain.delegation import (
     DelegatedAgentResult,
     InMemoryDelegatedAgentJobStore,
 )
+from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgentRuntime
 from lychd.ghouls.runs import (
     _commit_delegate_park,
     _reconcile_delegate_page,
@@ -178,6 +179,56 @@ async def test_delegate_relay_closes_terminal_result_loop_without_callback() -> 
     assert result == {"status": "reconciled", "count": 1, "probe_errors": 0, "_revisit": False}
     assert cursor is None
     assert queue.enqueued[0]["enqueue_seq"] == 1
+
+
+@pytest.mark.asyncio
+async def test_delegate_relay_rehydrates_effect_free_reference_job_after_restart() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    queue = _Queue()
+    store = InMemoryDelegatedAgentJobStore()
+    first_runtime = ReferenceDelegatedAgentRuntime()
+    first_coordinator = DelegatedAgentCoordinator(
+        runtimes={first_runtime.name: first_runtime},
+        store=store,
+    )
+    await _seed_running(ledger, "run-reference-restart")
+    request = DelegatedAgentRequest(
+        request_id="request-reference-restart",
+        run_id="run-reference-restart",
+        step_id="delegate",
+        runtime="reference",
+        prompt="recover the deterministic result",
+    )
+    ref = await first_coordinator.submit(request)
+    await ledger.park_delegate(request.run_id, ref.job_id)
+
+    restarted_runtime = ReferenceDelegatedAgentRuntime()
+    restarted_coordinator = DelegatedAgentCoordinator(
+        runtimes={restarted_runtime.name: restarted_runtime},
+        store=store,
+    )
+    engine = _engine(
+        ledger=ledger,
+        bus=bus,
+        queue=queue,
+        coordinator=restarted_coordinator,
+    )
+
+    result, cursor = await _reconcile_delegate_page(engine, after=None)
+
+    run = await ledger.get(request.run_id)
+    assert run is not None
+    assert run.status is RunStatus.QUEUED
+    assert run.enqueue_seq == 1
+    settled = await restarted_coordinator.get(ref.job_id)
+    assert settled is not None
+    assert settled.status is DelegatedAgentJobStatus.SUCCEEDED
+    assert settled.result is not None
+    assert settled.result.output == "Reference delegate completed: recover the deterministic result"
+    assert result == {"status": "reconciled", "count": 1, "probe_errors": 0, "_revisit": False}
+    assert cursor is None
+    assert [job["enqueue_seq"] for job in queue.enqueued] == [1]
 
 
 @pytest.mark.asyncio

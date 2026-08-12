@@ -1295,7 +1295,7 @@ async def _recoverable_delegate_park(substrate: RunSubstrate, run: RunRecord) ->
     """Recognize the crash window after exact delegate checkpoint, before Run park."""
     if substrate.delegates is None:
         return None
-    jobs = await substrate.delegates.jobs_for_run(run.run_id)
+    jobs = await substrate.delegates.jobs_for_run(run.run_id, event_limit=0)
     if not jobs:
         return None
     snapshots = await substrate.stasis_store.load(run.run_id)

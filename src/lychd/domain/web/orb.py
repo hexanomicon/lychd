@@ -54,14 +54,19 @@ async def build_orb_snapshot(
     pattern_id = str(manifest.get("key") or run.workflow_name)
     revision = str(manifest.get("revision") or "legacy-unversioned")
     ledger_head_seq = (await ledger.next_seq(run.run_id)) - 1
-    all_delegated_jobs = await delegates.jobs_for_run(run.run_id) if delegates is not None else ()
-    delegated_jobs = all_delegated_jobs[-_MAX_DELEGATED_JOBS:]
-    known_omissions = ["Token deltas are live Bridge projection and are not retained as structural evidence."]
-    if len(all_delegated_jobs) > len(delegated_jobs):
-        known_omissions.append(
-            f"{len(all_delegated_jobs) - len(delegated_jobs)} older delegated job summaries "
-            "are outside this bounded Orb snapshot."
+    delegated_job_window = (
+        await delegates.jobs_for_run(
+            run.run_id,
+            limit=_MAX_DELEGATED_JOBS + 1,
+            event_limit=_MAX_DELEGATED_EVENTS_PER_JOB + 1,
         )
+        if delegates is not None
+        else ()
+    )
+    delegated_jobs = delegated_job_window[-_MAX_DELEGATED_JOBS:]
+    known_omissions = ["Token deltas are live Bridge projection and are not retained as structural evidence."]
+    if len(delegated_job_window) > len(delegated_jobs):
+        known_omissions.append("Older delegated job summaries are outside this bounded Orb snapshot.")
     return OrbRunSnapshot(
         snapshot_at=datetime.now(UTC),
         run=OrbRunSummary(

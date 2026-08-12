@@ -1,4 +1,7 @@
-"""Bounded, grant-aware context assembly."""
+"""Bounded, grant-aware context assembly.
+
+White-box cache assertions prove active-run ownership and release bounds.
+"""
 
 from types import SimpleNamespace
 from typing import Any, cast
@@ -17,8 +20,11 @@ from lychd.domain.cortex.privacy import PrivacyClass, PrivatizationLabel
 
 
 class _Registry:
+    def __init__(self) -> None:
+        self.states: list[Any] = []
+
     def list_capability_states(self) -> list[Any]:
-        return []
+        return self.states
 
 
 def _grant(*, generation_window: int = 1024, spec_window: int = 2048) -> CapabilityGrant:
@@ -40,6 +46,15 @@ def _exchange(run_id: str, prompt: str, answer: str) -> list[Any]:
         ModelResponse(parts=[TextPart(answer)], run_id=run_id),
     ]
     return list(ModelMessagesTypeAdapter.dump_python(messages, mode="json"))
+
+
+def _environment(assembled: Any) -> Any:
+    return next(block for block in assembled.blocks if block.layer == 3)
+
+
+def _retained_environment_cache_sizes(context: ContextOrchestrator) -> tuple[int, int]:
+    internals = cast("Any", context)
+    return len(internals._env_snapshots), len(internals._env_snapshot_keys_by_run)
 
 
 def test_context_keeps_newest_complete_message_group() -> None:
@@ -74,6 +89,62 @@ def test_bound_environment_replaces_unbound_floor_and_generation_window_wins() -
     assert "active capability: none" in unbound.floor_text()
     assert "active capability: chat:local" in bound.floor_text()
     assert bound.context_window == 1024
+
+
+def test_environment_snapshot_is_shared_until_every_referencing_run_releases() -> None:
+    registry = _Registry()
+    context = ContextOrchestrator(registry=cast("Any", registry))
+
+    first = context.assemble(run_id="run-a", session_id="session", query="first")
+    second = context.assemble(run_id="run-b", session_id="session", query="second")
+    first_environment = _environment(first)
+    assert _environment(second) is first_environment
+
+    context.release("run-a")
+    registry.states = [SimpleNamespace(capability_key="chat:warm", warm=True, is_active=False)]
+    rebound = context.assemble(run_id="run-b", session_id="session", query="again")
+    assert _environment(rebound) is first_environment
+    assert "warm coven: none" in rebound.floor_text()
+
+    context.release("run-b")
+    assert _retained_environment_cache_sizes(context) == (0, 0)
+
+    refreshed = context.assemble(run_id="run-c", session_id="session", query="fresh")
+    assert _environment(refreshed) is not first_environment
+    assert "warm coven: chat:warm" in refreshed.floor_text()
+
+    # A duplicate late release from the old generation cannot evict the new owner.
+    context.release("run-b")
+    registry.states = []
+    still_fresh = context.assemble(run_id="run-c", session_id="session", query="still fresh")
+    assert _environment(still_fresh) is _environment(refreshed)
+    assert "warm coven: chat:warm" in still_fresh.floor_text()
+
+
+def test_release_bounds_environment_snapshots_across_many_epochs() -> None:
+    context = ContextOrchestrator(registry=cast("Any", _Registry()))
+
+    for index in range(1_000):
+        context.assemble(
+            run_id="long-run",
+            session_id="session",
+            grant_epoch=index,
+            query="hello",
+        )
+
+    assert _retained_environment_cache_sizes(context) == (1_000, 1)
+    context.release("long-run")
+    assert context.get("long-run") is None
+    assert _retained_environment_cache_sizes(context) == (0, 0)
+
+
+def test_failed_assembly_does_not_retain_an_environment_snapshot() -> None:
+    context = ContextOrchestrator(registry=cast("Any", _Registry()), char_cap=1)
+
+    with pytest.raises(ContextBudgetExceededError):
+        context.assemble(run_id="run", session_id="session", query="hello")
+
+    assert _retained_environment_cache_sizes(context) == (0, 0)
 
 
 def test_fixed_floor_over_budget_fails_loudly() -> None:

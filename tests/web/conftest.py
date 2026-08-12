@@ -86,6 +86,7 @@ class FakeRunEngine(RunEngine):
         self.consents = consents
         self.ledger = ledger
         self.admitted_keys: dict[str, str] = {}
+        self.exclusive_session_submissions: list[bool] = []
         self.cancelled_runs: list[str] = []
         # (consent_id, approved, verdict_seen_at_approve_time) — verdict-order proof.
         self.approvals: list[tuple[str, bool, bool | None]] = []
@@ -114,6 +115,7 @@ class FakeRunEngine(RunEngine):
         *,
         retain_before_publish: Any = None,
         idempotency_key: str | None = None,
+        exclusive_session: bool = False,
     ) -> RunHandle:
         """Record the intent and open a run channel on the bus for the stream to tail.
 
@@ -123,6 +125,7 @@ class FakeRunEngine(RunEngine):
         import uuid
 
         existing_run_id = self.admitted_keys.get(idempotency_key) if idempotency_key is not None else None
+        self.exclusive_session_submissions.append(exclusive_session)
         run_id = existing_run_id or intent.run_id or f"run_{uuid.uuid4().hex[:12]}"
         if existing_run_id is None:
             self.submitted.append(intent)

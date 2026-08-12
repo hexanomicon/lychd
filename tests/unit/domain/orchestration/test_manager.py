@@ -394,6 +394,12 @@ async def test_same_key_requests_coalesce_through_soft_activation() -> None:
             self.activation_entered = asyncio.Event()
             self.release_activation = asyncio.Event()
 
+        async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+            if self.activation_entered.is_set():
+                message = "an in-flight follower must not repeat registry preflight"
+                raise RuntimeError(message)
+            return await super().refresh_capability_states_for_animator(name)
+
         async def activate_capability(self, key: str) -> ActivationResult:
             self.activation_entered.set()
             await self.release_activation.wait()
@@ -410,7 +416,55 @@ async def test_same_key_requests_coalesce_through_soft_activation() -> None:
     owner_plan, follower_plan = await asyncio.gather(owner, follower)
 
     assert owner_plan.action_type == "SOFT_SWAP"
-    assert follower_plan.action_type in {"SOFT_SWAP", "NO_OP"}
+    assert follower_plan is owner_plan
+    assert registry.activate_calls == [target.key]
+
+
+@pytest.mark.asyncio
+async def test_same_key_cohort_is_reserved_before_async_preflight() -> None:
+    """A slower first probe owns the cohort before a peer can probe during mutation."""
+    target = _spec(
+        key="router:chat:router-main",
+        animator_name="router",
+        lifecycle_mode="dynamic_soft",
+    )
+    state = _state(target, is_static=False, is_active=False, warm=False)
+    state.phase = CapabilityPhase.ACTIVATABLE
+
+    class _CrossingPreflightRegistry(StubRegistry):
+        def __init__(self) -> None:
+            super().__init__([target], [state], {"router": _runtime("router", up=True)})
+            self.first_preflight_entered = asyncio.Event()
+            self.release_first_preflight = asyncio.Event()
+            self.refresh_calls = 0
+
+        async def refresh_capability_states_for_animator(self, name: str) -> list[CapabilityState]:
+            self.refresh_calls += 1
+            if self.refresh_calls == 1:
+                self.first_preflight_entered.set()
+                await self.release_first_preflight.wait()
+            elif not self.release_first_preflight.is_set():
+                message = "a same-cohort peer entered preflight before ownership was reserved"
+                raise RuntimeError(message)
+            return await super().refresh_capability_states_for_animator(name)
+
+    registry = _CrossingPreflightRegistry()
+    manager = _make_manager(AsyncMock(), registry)
+    first = asyncio.create_task(manager.request_transition(target.key, priority=100))
+    await registry.first_preflight_entered.wait()
+    second = asyncio.create_task(manager.request_transition(target.key, priority=100))
+
+    # Give the peer enough scheduler turns to cross the old check-then-preflight
+    # window. With cohort ownership registered first, it only awaits the owner.
+    for _ in range(10):
+        await asyncio.sleep(0)
+    registry.release_first_preflight.set()
+
+    first_plan, second_plan = await asyncio.gather(first, second)
+
+    assert first_plan is second_plan
+    assert first_plan.action_type == "SOFT_SWAP"
+    assert registry.refresh_calls == 2  # owner preflight + arbiter-guarded re-plan
     assert registry.activate_calls == [target.key]
 
 

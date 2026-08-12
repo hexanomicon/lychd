@@ -54,6 +54,10 @@ __all__ = [
 
 # Bounded replay retention per run (reconnect backfill ceiling).
 _REPLAY_LIMIT = 256
+# A stalled live reader may retain no more than one replay window. On overflow its
+# pending deltas are replaced by a RESYNC boundary, and the authoritative snapshot
+# supplies everything through that cursor.
+_SUBSCRIBER_QUEUE_LIMIT = _REPLAY_LIMIT
 
 
 class RunEventKind(StrEnum):
@@ -85,6 +89,11 @@ class RunEvent(BaseModel):
     ts: AwareDatetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+def _detached_event(event: RunEvent) -> RunEvent:
+    """Copy one event deeply before it crosses a mutable consumer boundary."""
+    return event.model_copy(deep=True)
+
+
 @dataclass(frozen=True, slots=True)
 class RunChannelSnapshot:
     """One authoritative, replaceable projection at an exact event cursor."""
@@ -106,6 +115,14 @@ class RunChannelSnapshot:
     terminal: bool
 
 
+@dataclass(slots=True)
+class _WriterGeneration:
+    """One ordered persistence chain and its broadcast failure, if any."""
+
+    tail: asyncio.Task[None] | None = None
+    error: Exception | None = None
+
+
 @runtime_checkable
 class RunEventBus(Protocol):
     """The run→channel surface consumed by the engine, the ghoul, and the web."""
@@ -114,8 +131,9 @@ class RunEventBus(Protocol):
         """Idempotent get-or-create of a run's channel.
 
         `from_seq` seeds a NEWLY minted channel's seq counter (reconcile/resume of a
-        run that already has persisted Step history — see R1); it is ignored for a
-        channel that already exists.
+        run that already has persisted Step history — see R1). It is ignored for an
+        existing open channel; an existing closed channel is detached so repair can
+        publish through a fresh channel without disrupting its in-flight subscribers.
         """
         ...
 
@@ -137,6 +155,10 @@ class RunEventBus(Protocol):
 
     async def wait_persisted(self, run_id: str) -> None:
         """Wait until the run's emitted durable evidence has reached its ledger."""
+        ...
+
+    def begin_persistence_retry(self, run_id: str) -> None:
+        """Start a fresh writer chain after a settled persistence failure."""
         ...
 
 
@@ -211,10 +233,24 @@ class RunChannel:
             self._transition_request_id = data
             self._transition_phase = meta.get("phase") or self._transition_phase
         for queue in self._subscribers:
-            queue.put_nowait(event)
+            self._offer(queue, _detached_event(event))
         if kind is RunEventKind.DONE:
             self._closed = True
-        return event
+        return _detached_event(event)
+
+    def _offer(self, queue: asyncio.Queue[RunEvent], event: RunEvent) -> None:
+        """Enqueue one live event or collapse a stalled reader to a resync boundary."""
+        try:
+            queue.put_nowait(event)
+        except asyncio.QueueFull:
+            while not queue.empty():
+                queue.get_nowait()
+            queue.put_nowait(self._resync_event())
+            logger.warning(
+                "run_subscriber_resync_required",
+                run_id=self.run_id,
+                cursor=event.seq,
+            )
 
     def mark_closed(self) -> None:
         """Force the closed flag (used when a run ends without a terminal emit)."""
@@ -246,7 +282,7 @@ class RunChannel:
             cursor=self._seq - 1,
             content="".join(self._content),
             activity=self._activity,
-            fragments=tuple(self._fragments),
+            fragments=tuple(_detached_event(event) for event in self._fragments),
             occurrence_id=self._occurrence_id,
             dispatch_occurrence_id=self._dispatch_occurrence_id,
             grant_id=self._grant_id,
@@ -286,7 +322,7 @@ class RunChannel:
 
         Loop-confined: one channel is only ever driven by a single event loop.
         """
-        queue: asyncio.Queue[RunEvent] = asyncio.Queue()
+        queue: asyncio.Queue[RunEvent] = asyncio.Queue(maxsize=_SUBSCRIBER_QUEUE_LIMIT)
         self._subscribers.add(queue)
         self._drained.clear()
         try:
@@ -315,7 +351,7 @@ class RunChannel:
                     if from_seq is not None and event.seq <= from_seq:
                         continue
                     backfilled_seq = event.seq
-                    yield event
+                    yield _detached_event(event)
                     if event.kind is RunEventKind.DONE:
                         return
 
@@ -326,8 +362,9 @@ class RunChannel:
                 event = await queue.get()
                 if event.seq <= backfilled_seq:
                     continue
-                yield event
-                if event.kind is RunEventKind.DONE:
+                yield _detached_event(event)
+                backfilled_seq = event.seq
+                if event.kind is RunEventKind.DONE or (event.kind is RunEventKind.RESYNC and self._closed):
                     return
         finally:
             self._subscribers.discard(queue)
@@ -357,7 +394,7 @@ class RunEmitter:
         already_closed = self.channel.closed
         event = self.channel.emit(kind, data, **meta)
         if not already_closed:
-            self.persist(event)
+            self.persist(_detached_event(event))
         return event
 
     def status(self, status: str) -> RunEvent:
@@ -418,8 +455,7 @@ class InProcessEventBus:
         self._channels: dict[str, RunChannel] = {}
         self._ledger = ledger
         self._pending: set[asyncio.Task[None]] = set()
-        self._writer_tails: dict[str, asyncio.Task[None]] = {}  # run_id -> chain tail
-        self._persist_errors: dict[str, Exception] = {}
+        self._writers: dict[str, _WriterGeneration] = {}
 
     def open(self, run_id: str, *, from_seq: int | None = None) -> RunChannel:
         """Return the run's channel, creating it on first access.
@@ -429,11 +465,14 @@ class InProcessEventBus:
         resumed after a restart (`append_event` writes `event.seq` verbatim against
         `uq_step_run_seq`). Reconcile/resume paths pass `from_seq=next_seq` so the
         newly minted channel picks up where the persisted history left off. An
-        already-live channel keeps its own counter (the arg is ignored).
+        already-live channel keeps its own counter (the arg is ignored). A seeded
+        open replaces a closed mapped channel: an attached subscriber retains and
+        drains that old object, while terminal-evidence repair receives a writable
+        channel whose sequence continues from durable history.
         """
         channel = self._channels.get(run_id)
-        if channel is None:
-            channel = RunChannel(run_id=run_id, _seq=from_seq or 0)
+        if channel is None or (from_seq is not None and channel.closed):
+            channel = RunChannel(run_id=run_id, _seq=from_seq if from_seq is not None else 0)
             self._channels[run_id] = channel
         return channel
 
@@ -503,15 +542,28 @@ class InProcessEventBus:
         Terminal settlement and restart reconciliation use this as a durability
         barrier before reporting success. Streaming remains synchronous; only the
         callers that need durable evidence wait for the asynchronous ledger tee.
+        Every waiter on one failed generation observes the same failure; it remains
+        latched until an explicit repair starts a fresh generation.
         """
-        while (tail := self._writer_tails.get(run_id)) is not None:
+        generation = self._writers.get(run_id)
+        if generation is None:
+            return
+        while (tail := generation.tail) is not None:
             await asyncio.shield(tail)
-            if self._writer_tails.get(run_id) is tail:
-                self._writer_tails.pop(run_id, None)
+            if generation.tail is tail:
                 break
-        error = self._persist_errors.pop(run_id, None)
-        if error is not None:
-            raise error
+        if generation.error is not None:
+            raise generation.error
+        if self._writers.get(run_id) is generation:
+            self._writers.pop(run_id, None)
+
+    def begin_persistence_retry(self, run_id: str) -> None:
+        """Detach a settled writer generation before an explicit evidence retry."""
+        generation = self._writers.get(run_id)
+        if generation is not None and generation.tail is not None and not generation.tail.done():
+            msg = f"Run {run_id!r} still has persistence work in flight."
+            raise RuntimeError(msg)
+        self._writers[run_id] = _WriterGeneration()
 
     async def _drop_after_drain(self, run_id: str, channel: RunChannel) -> None:
         """Wait for subscribers to detach (bounded by the grace), then drop the channel."""
@@ -528,13 +580,22 @@ class InProcessEventBus:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             return  # no loop (sync test context): the ledger tee is best-effort
-        prev = self._writer_tails.get(event.run_id)
-        task = loop.create_task(self._append_chained(prev, event))
-        self._writer_tails[event.run_id] = task
+        captured = _detached_event(event)
+        generation = self._writers.get(event.run_id)
+        if generation is None:
+            generation = _WriterGeneration()
+            self._writers[event.run_id] = generation
+        task = loop.create_task(self._append_chained(generation, generation.tail, captured))
+        generation.tail = task
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
 
-    async def _append_chained(self, prev: asyncio.Task[None] | None, event: RunEvent) -> None:
+    async def _append_chained(
+        self,
+        generation: _WriterGeneration,
+        prev: asyncio.Task[None] | None,
+        event: RunEvent,
+    ) -> None:
         """Await the prior same-run append (ordering), then persist this one."""
         if prev is not None:
             with suppress(Exception):  # prev logged its own failure; we only need ordering
@@ -544,7 +605,8 @@ class InProcessEventBus:
         try:
             await self._ledger.append_event(event)
         except Exception as exc:
-            self._persist_errors.setdefault(event.run_id, exc)
+            if generation.error is None:
+                generation.error = exc
             logger.exception("run_event_persist_failed", run_id=event.run_id, kind=str(event.kind), seq=event.seq)
 
 

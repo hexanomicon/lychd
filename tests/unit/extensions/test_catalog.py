@@ -41,6 +41,20 @@ def test_runtime_builtins_expand_shared_animator_dependency_once() -> None:
     )
 
 
+def test_phoenix_builtin_registers_one_owned_quadlet_contributor() -> None:
+    context = ExtensionManager(
+        builtins=["observability/phoenix"],
+        crypt=[],
+    ).assemble()
+
+    assert len(context.transmutation.registrations) == 1
+    registration = context.transmutation.registrations[0]
+    assert registration.provider_id == "builtin:observability/phoenix"
+    assert type(registration.contributor).__name__ == "PhoenixQuadletContributor"
+    with pytest.raises(RuntimeError, match="frozen after extension assembly"):
+        context.transmutation.add_contributor(registration.contributor)
+
+
 def test_multiple_animator_runtimes_keep_exact_provider_ownership() -> None:
     context = ExtensionManager(
         builtins=["animator/vllm", "animator/llamacpp"],

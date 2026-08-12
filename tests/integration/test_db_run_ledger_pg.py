@@ -9,6 +9,8 @@ a real Postgres:
   idempotent same-target concurrent write is benign.
 - Seq fidelity: `append_event` persists `RunEvent.seq` VERBATIM as `Step.seq`
   (no insert-time allocation), so Step order equals emit order (Orb evidence).
+- Factory wire compatibility: plain `json` and versioned `jsonb` both round-trip through the
+  production asyncpg codec hook.
 """
 # The ordinary contributor gate omits the optional container-test group; the whole module is
 # importorskip'd there. SQLAlchemy Table vs FromClause noise on create_all remains locally ignored.
@@ -31,16 +33,35 @@ import pytest_asyncio
 
 pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
-from sqlalchemy import select
+from sqlalchemy import JSON, bindparam, cast, select
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
-from lychd.db.models import Consent, DelegatedAgentJobRecord, Run, RunDelivery, Session, Step
+from lychd.config.settings.server import DatabaseSettings
+from lychd.db.delegation import DbDelegatedAgentJobStore
+from lychd.db.factory import create_db_engine
+from lychd.db.models import (
+    Consent,
+    DelegatedAgentEventRecord,
+    DelegatedAgentJobRecord,
+    Run,
+    RunDelivery,
+    Session,
+    Step,
+)
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import DbRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
+from lychd.domain.delegation.models import (
+    DelegatedAgentJobRef,
+    DelegatedAgentJobStatus,
+    DelegatedAgentProfile,
+    DelegatedAgentRequest,
+)
 from lychd.domain.web.schemas import BridgeTurn
 from lychd.domain.web.sessions import DbBridgeSessionStore
 
@@ -68,6 +89,7 @@ async def pg_factory(pg_url: str) -> AsyncIterator[async_sessionmaker[AsyncSessi
         Step.__table__,
         Consent.__table__,
         DelegatedAgentJobRecord.__table__,
+        DelegatedAgentEventRecord.__table__,
     ]
     async with engine.begin() as connection:
         await connection.run_sync(Run.metadata.drop_all, tables=tables)
@@ -80,6 +102,81 @@ async def _seed(ledger: DbRunLedger, run_id_hint: str = "") -> str:
     intent = Intent(session_id="s", run_id=run_id_hint or None, prompt="p", source="bridge")
     run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
     return run.run_id
+
+
+@pytest.mark.asyncio
+async def test_nonterminal_session_query_is_filtered_and_bounded(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    store = DbBridgeSessionStore(pg_factory, sigil_name="magus")
+    bridge_session = await store.create_session(title="bounded admission")
+    other_session = await store.create_session(title="other")
+    ledger = DbRunLedger(session_factory=pg_factory)
+
+    async def create(session_id: str, prompt: str) -> str:
+        run = await ledger.create(
+            Intent(session_id=session_id, prompt=prompt, source="bridge"),
+            workflow_name="bridge_chat",
+            queue_name="runs",
+            priority=70,
+        )
+        return run.run_id
+
+    terminal_id = await create(bridge_session.id, "terminal")
+    await ledger.set_status(terminal_id, RunStatus.RUNNING)
+    await ledger.set_status(terminal_id, RunStatus.DONE)
+    first_active_id = await create(bridge_session.id, "active first")
+    later_active_id = await create(bridge_session.id, "active later")
+    await create(other_session.id, "other")
+
+    active = await ledger.get_nonterminal_for_session(bridge_session.id)
+
+    assert active is not None
+    assert active.run_id == first_active_id
+    await ledger.set_status(first_active_id, RunStatus.RUNNING)
+    await ledger.set_status(first_active_id, RunStatus.DONE)
+    active = await ledger.get_nonterminal_for_session(bridge_session.id)
+    assert active is not None
+    assert active.run_id == later_active_id
+
+    await ledger.set_status(later_active_id, RunStatus.RUNNING)
+    await ledger.set_status(later_active_id, RunStatus.DONE)
+    assert await ledger.get_nonterminal_for_session(bridge_session.id) is None
+    assert await ledger.get_nonterminal_for_session("not-a-uuid") is None
+
+
+@pytest.mark.asyncio
+async def test_delegated_job_limit_selects_newest_suffix_in_creation_order(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    run_id = await _seed(DbRunLedger(session_factory=pg_factory))
+    store = DbDelegatedAgentJobStore(pg_factory)
+    for index in range(3):
+        request = DelegatedAgentRequest(
+            request_id=f"bounded-request-{index}",
+            run_id=run_id,
+            step_id="bounded-step",
+            runtime="reference",
+            profile=DelegatedAgentProfile.READ,
+            prompt="bounded prompt",
+        )
+        ref = DelegatedAgentJobRef(
+            job_id=f"bounded-job-{index}",
+            request_id=request.request_id,
+            run_id=run_id,
+            runtime=request.runtime,
+            profile=request.profile,
+        )
+        await store.create(request, ref)
+        await store.transition(ref.job_id, DelegatedAgentJobStatus.ADMITTED)
+        await store.transition(ref.job_id, DelegatedAgentJobStatus.PREPARING)
+        await store.transition(ref.job_id, DelegatedAgentJobStatus.RUNNING)
+
+    bounded = await store.jobs_for_run(run_id, limit=2, event_limit=2)
+
+    assert [job.ref.request_id for job in bounded] == ["bounded-request-1", "bounded-request-2"]
+    assert [[event.seq for event in job.events] for job in bounded] == [[2, 3], [2, 3]]
+    assert await store.jobs_for_run(run_id, limit=0) == ()
 
 
 async def _park_decided_consent(
@@ -109,6 +206,41 @@ async def _park_decided_consent(
     consent_id = str(consent.id)
     await ledger.park_consent(run_id, consent_id)
     return consent_id
+
+
+@pytest.mark.asyncio
+async def test_factory_json_and_jsonb_binary_codecs_round_trip(
+    pg_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The factory's distinct wire codecs both survive a real PostgreSQL round trip."""
+    url = make_url(pg_url)
+    monkeypatch.setenv("LYCHD_DB_PASSWORD", url.password or "")
+    settings = DatabaseSettings(
+        host=url.host or "localhost",
+        port=url.port or 5432,
+        user=url.username or "postgres",
+        database=url.database or "postgres",
+        pool_size=1,
+        max_overflow=0,
+    )
+    engine = create_db_engine(settings)
+    payload = {"name": "LychD", "nested": {"depth": 2}}
+    try:
+        async with engine.connect() as connection:
+            plain = await connection.scalar(
+                select(cast(bindparam("plain_payload", type_=JSON), JSON)),
+                {"plain_payload": payload},
+            )
+            binary = await connection.scalar(
+                select(cast(bindparam("jsonb_payload", type_=JSONB), JSONB)),
+                {"jsonb_payload": payload},
+            )
+    finally:
+        await engine.dispose()
+
+    assert plain == payload
+    assert binary == payload
 
 
 @pytest.mark.asyncio

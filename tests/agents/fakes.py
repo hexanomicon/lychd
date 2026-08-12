@@ -151,6 +151,10 @@ class FakeEvents:
         """The recording fake persists synchronously in ``_record``."""
         _ = run_id
 
+    def begin_persistence_retry(self, run_id: str) -> None:
+        """The recording fake has no asynchronous writer generation to reset."""
+        _ = run_id
+
     def _record(self, event: RunEvent) -> None:
         self.events.append((event.run_id, str(event.kind), event.data))
 

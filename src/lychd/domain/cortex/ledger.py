@@ -11,6 +11,7 @@ settled text belongs to the session turn.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Protocol, cast
@@ -263,6 +264,10 @@ class RunLedger(Protocol):
         """Return all Runs owned by one Bridge session in creation order."""
         ...
 
+    async def get_nonterminal_for_session(self, session_id: str) -> RunRecord | None:
+        """Return the earliest nonterminal Run owned by one Bridge session."""
+        ...
+
     async def list_delivery_candidates(
         self,
         *,
@@ -326,6 +331,16 @@ def _reject_generic_resume(current: RunStatus, target: RunStatus, *, run_id: str
     """Keep authority-bearing resume edges behind their owner-specific CAS methods."""
     if current in {RunStatus.AWAITING_CONSENT, RunStatus.AWAITING_DELEGATE} and target is RunStatus.QUEUED:
         raise IllegalRunTransitionError(run_id, current, target)
+
+
+def _copy_run_record(record: RunRecord) -> RunRecord:
+    """Detach mutable in-memory Run truth at the adapter boundary."""
+    return deepcopy(record)
+
+
+def _copy_run_event(event: RunEvent) -> RunEvent:
+    """Detach a retained event, including its mutable metadata mapping."""
+    return deepcopy(event)
 
 
 async def _settle_db_delivery(session: Any, run_id: UUID, enqueue_seq: int) -> None:
@@ -412,7 +427,7 @@ class InMemoryRunLedger:
                 msg = "Deterministic Run identity collided with unrelated admission truth."
                 raise RunAdmissionConflictError(msg)
             _assert_idempotent_replay(existing, intent)
-            return existing, False
+            return _copy_run_record(existing), False
         record = self._insert_run(
             intent,
             run_id=run_id,
@@ -435,7 +450,7 @@ class InMemoryRunLedger:
             msg = "Deterministic Run identity collided with unrelated admission truth."
             raise RunAdmissionConflictError(msg)
         _assert_idempotent_replay(record, intent)
-        return record
+        return _copy_run_record(record)
 
     def _insert_run(
         self,
@@ -464,7 +479,8 @@ class InMemoryRunLedger:
             content=intent.content,
             requested_priority=intent.priority,
         )
-        self._runs[record.run_id] = record
+        stored = _copy_run_record(record)
+        self._runs[stored.run_id] = stored
         self._events[record.run_id] = []
         self._deliveries[(record.run_id, record.enqueue_seq)] = RunDeliveryRecord(
             run_id=record.run_id,
@@ -474,7 +490,7 @@ class InMemoryRunLedger:
             resume=False,
             state=RunDeliveryState.HELD if hold_delivery else RunDeliveryState.PENDING,
         )
-        return record
+        return _copy_run_record(stored)
 
     async def get_delivery(self, run_id: str, *, enqueue_seq: int) -> RunDeliveryRecord | None:
         """Return one exact in-memory delivery hop."""
@@ -532,7 +548,8 @@ class InMemoryRunLedger:
 
     async def get(self, run_id: str) -> RunRecord | None:
         """Return the run record, or ``None``."""
-        return self._runs.get(run_id)
+        record = self._runs.get(run_id)
+        return _copy_run_record(record) if record is not None else None
 
     async def set_status(self, run_id: str, status: RunStatus, *, error: str | None = None) -> None:
         """Advance a run's status, validated against the state machine."""
@@ -650,7 +667,7 @@ class InMemoryRunLedger:
         if record.status in TERMINAL_STATUSES:
             return None
         _apply_status(record, RunStatus.CANCELLING, error=None)
-        return replace(record)
+        return _copy_run_record(record)
 
     async def finish_cancel(self, run_id: str, *, enqueue_seq: int) -> bool:
         """Commit CANCELLED only for the generation elected by ``begin_cancel``."""
@@ -705,7 +722,7 @@ class InMemoryRunLedger:
         """Append one non-TOKEN event to the run's step list."""
         if event.kind is RunEventKind.TOKEN:
             return
-        self._events.setdefault(event.run_id, []).append(event)
+        self._events.setdefault(event.run_id, []).append(_copy_run_event(event))
 
     @property
     def evidence_capture(self) -> str:
@@ -714,11 +731,13 @@ class InMemoryRunLedger:
 
     async def list_events(self, run_id: str, *, after_seq: int = -1, limit: int = 100) -> list[RunEvent]:
         """Return a bounded retained event page from process memory."""
-        return [event for event in self._events.get(run_id, ()) if event.seq > after_seq][:limit]
+        events = [event for event in self._events.get(run_id, ()) if event.seq > after_seq][:limit]
+        return [_copy_run_event(event) for event in events]
 
     async def latest_event(self, run_id: str, kind: RunEventKind) -> RunEvent | None:
         """Return the newest matching in-memory event."""
-        return next((event for event in reversed(self._events.get(run_id, ())) if event.kind is kind), None)
+        event = next((event for event in reversed(self._events.get(run_id, ())) if event.kind is kind), None)
+        return _copy_run_event(event) if event is not None else None
 
     async def next_seq(self, run_id: str) -> int:
         """Return the next unused Step seq for a run (max(seq)+1, or 0 if none)."""
@@ -738,14 +757,29 @@ class InMemoryRunLedger:
         )
         if after is not None:
             records = [record for record in records if (record.created_at, record.run_id) > after]
-        return records if limit is None else records[:limit]
+        page = records if limit is None else records[:limit]
+        return [_copy_run_record(record) for record in page]
 
     async def list_for_session(self, session_id: str) -> list[RunRecord]:
         """Return one session's Runs from memory in creation order."""
-        return sorted(
+        records = sorted(
             (record for record in self._runs.values() if record.session_id == session_id),
             key=lambda record: (record.created_at, record.run_id),
         )
+        return [_copy_run_record(record) for record in records]
+
+    async def get_nonterminal_for_session(self, session_id: str) -> RunRecord | None:
+        """Return the earliest nonterminal session Run without building a history page."""
+        record = min(
+            (
+                record
+                for record in self._runs.values()
+                if record.session_id == session_id and record.status not in TERMINAL_STATUSES
+            ),
+            key=lambda record: (record.created_at, record.run_id),
+            default=None,
+        )
+        return _copy_run_record(record) if record is not None else None
 
     async def list_delivery_candidates(
         self,
@@ -758,13 +792,13 @@ class InMemoryRunLedger:
         candidates.sort(key=lambda record: (record.updated_at, record.run_id))
         if after is not None:
             candidates = [record for record in candidates if (record.updated_at, record.run_id) > after]
-        return candidates[:limit]
+        return [_copy_run_record(record) for record in candidates[:limit]]
 
     async def get_by_consent(self, consent_id: str) -> RunRecord | None:
         """Return the run parked on ``consent_id``."""
         for record in self._runs.values():
             if record.status is RunStatus.AWAITING_CONSENT and record.consent_id == consent_id:
-                return record
+                return _copy_run_record(record)
         return None
 
     async def try_admit_consent(
@@ -823,7 +857,7 @@ class InMemoryRunLedger:
 
     def events(self, run_id: str) -> list[RunEvent]:
         """Return the recorded non-TOKEN events for a run (test/observability read)."""
-        return list(self._events.get(run_id, []))
+        return [_copy_run_event(event) for event in self._events.get(run_id, [])]
 
     def _require(self, run_id: str) -> RunRecord:
         record = self._runs.get(run_id)
@@ -1669,6 +1703,29 @@ class DbRunLedger:
                 )
             ).all()
         return [self._to_record(row) for row in rows]
+
+    async def get_nonterminal_for_session(self, session_id: str) -> RunRecord | None:
+        """Return one earliest nonterminal session Run through a bounded query."""
+        from sqlalchemy import select
+
+        from lychd.db.models import Run
+
+        try:
+            session_uuid = UUID(session_id)
+        except ValueError:
+            return None
+        terminal_values = tuple(status.value for status in TERMINAL_STATUSES)
+        async with self._session_factory() as session:
+            row = await session.scalar(
+                select(Run)
+                .where(
+                    Run.session_id == session_uuid,
+                    Run.status.not_in(terminal_values),
+                )
+                .order_by(Run.created_at, Run.id)
+                .limit(1)
+            )
+        return self._to_record(row) if row is not None else None
 
     async def list_delivery_candidates(
         self,

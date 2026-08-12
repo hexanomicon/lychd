@@ -15,6 +15,7 @@ from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings
 from lychd.domain.codex.runes import CodexPreauthRune
 from lychd.interface.web.lifespan import (
+    _next_relay_restart_delay,
     _reconcile_cancellations_at_startup,
     _reconcile_terminal_checkpoints_at_startup,
     _stop_delivery_relay,
@@ -142,6 +143,18 @@ async def test_relay_supervisor_restarts_unexpected_exit_until_shutdown(first_ex
     await task
 
     assert attempts == 2
+
+
+def test_relay_restart_backoff_is_exponential_and_capped() -> None:
+    delay = 0.1
+    observed: list[float] = []
+
+    for _ in range(8):
+        observed.append(delay)
+        delay = _next_relay_restart_delay(delay, maximum=5.0)
+
+    assert observed == [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 5.0, 5.0]
+    assert _next_relay_restart_delay(0, maximum=5.0) == 0
 
 
 @pytest.mark.asyncio

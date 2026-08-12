@@ -82,14 +82,15 @@ def create_db_engine(settings: DatabaseSettings) -> AsyncEngine:
         Since LychD uses `msgspec` for high-performance binary serialization (`bytes`),
         this hook configures `asyncpg` to bypass the standard string-conversion overhead.
 
-        It injects a custom codec that:
-        1. Accepts already-serialized `bytes` from msgspec (Zero-Copy).
-        2. Prepends the PostgreSQL `\x01` version prefix for JSONB.
+        It injects custom codecs that:
+        1. Accepts already-serialized `bytes` from msgspec.
+        2. Prepends PostgreSQL's `\x01` version prefix only for JSONB.
+           Plain JSON uses its unversioned binary representation.
         3. Decodes raw binary responses directly via `msgspec`.
 
         Optimization:
             Avoids the double-encoding redundancy (`bytes` -> `str` -> `bytes`)
-            found in standard implementations.
+            found in standard implementations. This is not a zero-copy storage claim.
 
         Ref:
             Adapted from connection hooks in `litestar-fullstack` (MIT).
@@ -97,20 +98,25 @@ def create_db_engine(settings: DatabaseSettings) -> AsyncEngine:
         """
 
         # The encoder receives the data that is ALREADY serialized to bytes.
-        def encoder(already_serialized_bytes: bytes) -> bytes:
+        def jsonb_encoder(already_serialized_bytes: bytes) -> bytes:
             # Add the required binary prefix. DO NOT call encode_json again.
             return b"\x01" + already_serialized_bytes
 
-        def decoder(bytes_to_decode: bytes) -> Any:
+        def jsonb_decoder(bytes_to_decode: bytes) -> Any:
             # Strip the prefix and decode using msgspec.
             return decode_json(bytes_to_decode[1:])
 
-        # Register for both jsonb and json types for robustness.
+        def json_encoder(already_serialized_bytes: bytes) -> bytes:
+            return already_serialized_bytes
+
+        def json_decoder(bytes_to_decode: bytes) -> Any:
+            return decode_json(bytes_to_decode)
+
         dbapi_connection.await_(
             dbapi_connection.driver_connection.set_type_codec(
                 "jsonb",
-                encoder=encoder,
-                decoder=decoder,
+                encoder=jsonb_encoder,
+                decoder=jsonb_decoder,
                 schema="pg_catalog",
                 format="binary",
             ),
@@ -119,8 +125,8 @@ def create_db_engine(settings: DatabaseSettings) -> AsyncEngine:
         dbapi_connection.await_(
             dbapi_connection.driver_connection.set_type_codec(
                 "json",
-                encoder=encoder,
-                decoder=decoder,
+                encoder=json_encoder,
+                decoder=json_decoder,
                 schema="pg_catalog",
                 format="binary",
             ),

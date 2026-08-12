@@ -82,7 +82,9 @@ async def test_create_preserves_artifact_references_without_embedding_blob_data(
 
     assert run.to_intent().required_modalities == ("image",)
     assert run.to_intent().content[0].model_dump(mode="json")["artifact"]["digest"] == artifact.digest
-    assert (await ledger.get("run_1")) is run
+    fetched = await ledger.get("run_1")
+    assert fetched == run
+    assert fetched is not run
 
 
 @pytest.mark.asyncio
@@ -92,7 +94,9 @@ async def test_create_always_mints_canonical_id_ignoring_intent_run_id() -> None
     run = await ledger.create(_intent("client-corr-id"), workflow_name="bridge_chat", queue_name="runs", priority=70)
     assert run.run_id != "client-corr-id"  # the advisory field was NOT adopted as identity
     assert run.run_id  # a real id was minted
-    assert (await ledger.get(run.run_id)) is run
+    fetched = await ledger.get(run.run_id)
+    assert fetched == run
+    assert fetched is not run
     assert (await ledger.get("client-corr-id")) is None
 
 
@@ -104,7 +108,112 @@ async def test_create_mints_canonical_id_when_intent_run_id_is_none() -> None:
     run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
     assert run.run_id  # a real id was minted
     assert run.run_id != "None"
-    assert (await ledger.get(run.run_id)) is run
+    fetched = await ledger.get(run.run_id)
+    assert fetched == run
+    assert fetched is not run
+
+
+@pytest.mark.asyncio
+async def test_run_records_are_deeply_detached_on_write_and_read() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    manifest = {"nodes": [{"config": {"tags": ["original"]}}]}
+
+    created = await ledger.create(
+        _intent(),
+        workflow_name="bridge_chat",
+        pattern_manifest=manifest,
+        queue_name="runs",
+        priority=70,
+    )
+    manifest["nodes"][0]["config"]["tags"].append("input mutation")
+    created.pattern_manifest["nodes"][0]["config"]["tags"].append("return mutation")
+    created.status = RunStatus.FAILED
+
+    fetched = await ledger.get("run_1")
+    assert fetched is not None
+    assert fetched.status is RunStatus.QUEUED
+    assert fetched.pattern_manifest == {"nodes": [{"config": {"tags": ["original"]}}]}
+
+    fetched.pattern_manifest["nodes"][0]["config"]["tags"].append("read mutation")
+    fetched.status = RunStatus.FAILED
+    refetched = await ledger.get("run_1")
+    assert refetched is not None
+    assert refetched.status is RunStatus.QUEUED
+    assert refetched.pattern_manifest == {"nodes": [{"config": {"tags": ["original"]}}]}
+
+
+@pytest.mark.asyncio
+async def test_every_run_query_returns_detached_truth() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await ledger.create(
+        _intent(),
+        workflow_name="bridge_chat",
+        pattern_manifest={"nodes": [{"label": "original"}]},
+        queue_name="runs",
+        priority=70,
+    )
+
+    queried = [
+        (await ledger.list_by_status(RunStatus.QUEUED))[0],
+        (await ledger.list_for_session("sess_1"))[0],
+        (await ledger.list_delivery_candidates())[0],
+    ]
+    for record in queried:
+        record.pattern_manifest["nodes"][0]["label"] = "mutated"
+
+    stored = await ledger.get("run_1")
+    assert stored is not None
+    assert stored.pattern_manifest["nodes"][0]["label"] == "original"
+
+    assert await ledger.try_claim_run("run_1", enqueue_seq=0)
+    await ledger.park_consent("run_1", "consent_1")
+    consent_run = await ledger.get_by_consent("consent_1")
+    assert consent_run is not None
+    consent_run.pattern_manifest["nodes"][0]["label"] = "mutated"
+
+    cancelling = await ledger.begin_cancel("run_1")
+    assert cancelling is not None
+    cancelling.pattern_manifest["nodes"][0]["label"] = "mutated again"
+    cancelling.status = RunStatus.FAILED
+
+    stored = await ledger.get("run_1")
+    assert stored is not None
+    assert stored.status is RunStatus.CANCELLING
+    assert stored.pattern_manifest["nodes"][0]["label"] == "original"
+
+
+@pytest.mark.asyncio
+async def test_idempotent_run_queries_return_detached_truth() -> None:
+    ledger = InMemoryRunLedger()
+    intent = _intent()
+    created, was_created = await ledger.create_idempotent(
+        intent,
+        idempotency_key="request-1",
+        workflow_name="bridge_chat",
+        pattern_manifest={"nodes": [{"label": "original"}]},
+        queue_name="runs",
+        priority=70,
+    )
+    assert was_created is True
+    created.pattern_manifest["nodes"][0]["label"] = "mutated"
+    created.status = RunStatus.FAILED
+
+    replayed, was_created = await ledger.create_idempotent(
+        intent,
+        idempotency_key="request-1",
+        workflow_name="ignored_on_replay",
+        pattern_manifest={"nodes": [{"label": "ignored"}]},
+        queue_name="ignored",
+        priority=0,
+    )
+    assert was_created is False
+    assert replayed.status is RunStatus.QUEUED
+    assert replayed.pattern_manifest["nodes"][0]["label"] == "original"
+    replayed.pattern_manifest["nodes"][0]["label"] = "mutated again"
+
+    fetched = await ledger.get_idempotent(intent, idempotency_key="request-1")
+    assert fetched is not None
+    assert fetched.pattern_manifest["nodes"][0]["label"] == "original"
 
 
 @pytest.mark.asyncio
@@ -443,6 +552,33 @@ async def test_append_event_excludes_tokens() -> None:
 
 
 @pytest.mark.asyncio
+async def test_events_are_deeply_detached_on_write_and_read() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await ledger.create(_intent(), workflow_name="bridge_chat", queue_name="runs", priority=50)
+    event = RunEvent(
+        run_id="run_1",
+        seq=0,
+        kind=RunEventKind.STATUS,
+        data="running",
+        meta={"phase": "original"},
+    )
+
+    await ledger.append_event(event)
+    event.meta["phase"] = "input mutation"
+    listed = await ledger.list_events("run_1")
+    assert listed[0].meta == {"phase": "original"}
+
+    listed[0].meta["phase"] = "read mutation"
+    observed = ledger.events("run_1")
+    assert observed[0].meta == {"phase": "original"}
+    observed[0].meta["phase"] = "observability mutation"
+
+    latest = await ledger.latest_event("run_1", RunEventKind.STATUS)
+    assert latest is not None
+    assert latest.meta == {"phase": "original"}
+
+
+@pytest.mark.asyncio
 async def test_next_seq_tracks_persisted_history() -> None:
     """R1: next_seq is max(persisted seq)+1 (0 with no history) — seeds a reconciled channel."""
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
@@ -493,3 +629,34 @@ async def test_list_for_session_never_includes_other_session_truth() -> None:
     )
 
     assert [run.run_id for run in await ledger.list_for_session("sess_1")] == ["run_1"]
+
+
+@pytest.mark.asyncio
+async def test_get_nonterminal_for_session_filters_terminal_and_other_session_truth() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await ledger.create(_intent("terminal"), workflow_name="bridge_chat", queue_name="runs", priority=70)
+    await ledger.set_status("terminal", RunStatus.RUNNING)
+    await ledger.set_status("terminal", RunStatus.DONE)
+    await ledger.create(_intent("active-first"), workflow_name="bridge_chat", queue_name="runs", priority=70)
+    await ledger.create(_intent("active-later"), workflow_name="bridge_chat", queue_name="runs", priority=70)
+    await ledger.create(
+        Intent(session_id="other-session", run_id="other", prompt="hello", source="bridge"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=70,
+    )
+
+    active = await ledger.get_nonterminal_for_session("sess_1")
+
+    assert active is not None
+    assert active.run_id == "active-first"
+    active.status = RunStatus.FAILED
+    refetched = await ledger.get_nonterminal_for_session("sess_1")
+    assert refetched is not None
+    assert refetched.status is RunStatus.QUEUED
+
+    await ledger.set_status("active-first", RunStatus.RUNNING)
+    await ledger.set_status("active-first", RunStatus.DONE)
+    await ledger.set_status("active-later", RunStatus.RUNNING)
+    await ledger.set_status("active-later", RunStatus.DONE)
+    assert await ledger.get_nonterminal_for_session("sess_1") is None

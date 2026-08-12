@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections import deque
+from collections.abc import AsyncIterator, Awaitable, Mapping
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from typing import Protocol, runtime_checkable
 from uuid import uuid4
 
 from lychd.domain.delegation.models import (
@@ -19,6 +22,7 @@ from lychd.domain.delegation.models import (
     DelegatedAgentResult,
 )
 from lychd.domain.delegation.ports import DelegatedAgentJobStore, DelegatedAgentRuntime
+from lychd.lib.asyncio import complete_under_cancellation
 
 __all__ = [
     "DelegatedAgentCoordinator",
@@ -46,6 +50,33 @@ class IllegalDelegatedAgentTransitionError(RuntimeError):
     """Raised when a job attempts to leave the declared lifecycle."""
 
 
+@runtime_checkable
+class _EffectFreeRuntimeRehydration(Protocol):
+    """Private opt-in for pure adapters reconstructable from persisted truth.
+
+    Effectful runtimes must not implement this seam. Their restart recovery
+    requires lookup by a durable provider/executor identity, never replay of
+    submission from a stored request.
+    """
+
+    async def rehydrate_effect_free(
+        self,
+        request: DelegatedAgentRequest,
+        job: DelegatedAgentJobRef,
+    ) -> None:
+        """Rebuild a process-local projection without performing an effect."""
+        ...
+
+
+@runtime_checkable
+class _EffectFreeRuntimeRetirement(Protocol):
+    """Private acknowledgement for a reconstructable process-local projection."""
+
+    async def retire_effect_free(self, job: DelegatedAgentJobRef) -> None:
+        """Forget one projection only after authoritative terminal settlement."""
+        ...
+
+
 @dataclass
 class _JobRow:
     request: DelegatedAgentRequest
@@ -54,13 +85,14 @@ class _JobRow:
     result: DelegatedAgentResult | None = None
     events: list[DelegatedAgentEvent] = field(default_factory=list)
 
-    def view(self) -> DelegatedAgentJob:
+    def view(self, *, event_limit: int | None = None) -> DelegatedAgentJob:
+        events = tuple(self.events) if event_limit is None else tuple(self.events[-event_limit:]) if event_limit else ()
         return DelegatedAgentJob(
             request=self.request,
             ref=self.ref,
             status=self.status,
             result=self.result,
-            events=tuple(self.events),
+            events=events,
         )
 
     def append(self, kind: DelegatedAgentEventKind) -> None:
@@ -73,6 +105,14 @@ class _JobRow:
                 status=self.status,
             )
         )
+
+
+@dataclass(slots=True)
+class _CoordinatorLock:
+    """One keyed lock retained only while callers hold or await it."""
+
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    users: int = 0
 
 
 class InMemoryDelegatedAgentJobStore:
@@ -119,10 +159,26 @@ class InMemoryDelegatedAgentJobStore:
             row = self._rows.get(job_id) if job_id is not None else None
             return row.view() if row is not None else None
 
-    async def jobs_for_run(self, run_id: str) -> tuple[DelegatedAgentJob, ...]:
-        """Return jobs correlated to one canonical LychD run in creation order."""
+    async def jobs_for_run(
+        self,
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[DelegatedAgentJob, ...]:
+        """Return newest bounded jobs and event suffixes in creation order."""
+        if limit is not None and limit < 0:
+            msg = "Delegated job limit must be non-negative."
+            raise ValueError(msg)
+        if event_limit is not None and event_limit < 0:
+            msg = "Delegated event limit must be non-negative."
+            raise ValueError(msg)
         async with self._lock:
-            return tuple(row.view() for row in self._rows.values() if row.request.run_id == run_id)
+            matching_rows = (row for row in self._rows.values() if row.request.run_id == run_id)
+            if limit == 0:
+                return ()
+            rows = tuple(matching_rows) if limit is None else tuple(deque(matching_rows, maxlen=limit))
+            return tuple(row.view(event_limit=event_limit) for row in rows)
 
     async def transition(
         self,
@@ -202,11 +258,17 @@ class DelegatedAgentCoordinator:
         """Bind named runtime adapters to one authoritative job store."""
         self._runtimes = dict(runtimes)
         self._store = store
-        self._locks: dict[str, asyncio.Lock] = {}
+        self._locks: dict[str, _CoordinatorLock] = {}
 
     async def submit(self, request: DelegatedAgentRequest) -> DelegatedAgentJobRef:
-        """Start at most one external job for one stable request id."""
-        async with self._lock_for(f"request:{request.request_id}"):
+        """Start at most one external job for one stable request id.
+
+        Cancellation before ``runtime.start`` returns leaves the external outcome
+        indeterminate and settles ``LOST``. Once start returns, runtime acceptance
+        is established: the ``RUNNING`` transition finishes despite repeated caller
+        cancellation, then the cancellation propagates.
+        """
+        async with self._locked(f"request:{request.request_id}"):
             existing = await self._store.get_by_request(request.request_id)
             if existing is not None:
                 if existing.request != request:
@@ -230,12 +292,14 @@ class DelegatedAgentCoordinator:
                 await self._store.transition(ref.job_id, DelegatedAgentJobStatus.PREPARING)
                 await runtime.start(request, ref)
             except asyncio.CancelledError:
-                await self._store.adopt(
-                    ref.job_id,
-                    DelegatedAgentResult(
-                        job_id=ref.job_id,
-                        status=DelegatedAgentJobStatus.LOST,
-                        error="submission was cancelled with an indeterminate runtime outcome",
+                await complete_under_cancellation(
+                    self._store.adopt(
+                        ref.job_id,
+                        DelegatedAgentResult(
+                            job_id=ref.job_id,
+                            status=DelegatedAgentJobStatus.LOST,
+                            error="submission was cancelled with an indeterminate runtime outcome",
+                        ),
                     ),
                 )
                 raise
@@ -249,43 +313,107 @@ class DelegatedAgentCoordinator:
                     ),
                 )
                 raise
-            await self._store.transition(ref.job_id, DelegatedAgentJobStatus.RUNNING)
+            running_transition = asyncio.create_task(
+                self._store.transition(ref.job_id, DelegatedAgentJobStatus.RUNNING)
+            )
+            try:
+                await asyncio.shield(running_transition)
+            except asyncio.CancelledError:
+                await complete_under_cancellation(running_transition)
+                raise
             return job.ref
 
     async def get(self, job_id: str) -> DelegatedAgentJob | None:
         return await self._store.get(job_id)
 
-    async def jobs_for_run(self, run_id: str) -> tuple[DelegatedAgentJob, ...]:
-        """Return every delegated job correlated to one LychD run."""
-        return await self._store.jobs_for_run(run_id)
+    async def jobs_for_run(
+        self,
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[DelegatedAgentJob, ...]:
+        """Return correlated jobs and events, optionally bounded to newest suffixes."""
+        return await self._store.jobs_for_run(run_id, limit=limit, event_limit=event_limit)
 
     async def refresh(self, job_id: str) -> DelegatedAgentJob:
-        """Poll an active job and adopt its result at most once."""
-        async with self._lock_for(f"job:{job_id}"):
+        """Poll an active job and adopt its result at most once.
+
+        A runtime may opt into reconstruction only through the private,
+        explicitly effect-free seam. Ordinary adapters are polled directly;
+        their submission is never replayed during recovery.
+        """
+        async with self._locked(f"job:{job_id}"):
             job = await self._require(job_id)
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
                 return job
-            result = await self._runtime(job.ref.runtime).poll(job.ref)
+            runtime = self._runtime(job.ref.runtime)
+            if isinstance(runtime, _EffectFreeRuntimeRehydration):
+                await runtime.rehydrate_effect_free(job.request, job.ref)
+            result = await runtime.poll(job.ref)
             if result is None:
                 return job
-            settled, _adopted = await self._store.adopt(job_id, result)
+            if not isinstance(runtime, _EffectFreeRuntimeRetirement):
+                settled, _adopted = await self._store.adopt(job_id, result)
+                return settled
+            settlement = asyncio.create_task(
+                self._settle_and_retire_projection(
+                    self._store.adopt(job_id, result),
+                    runtime=runtime,
+                    job=job.ref,
+                )
+            )
+            try:
+                settled, _adopted = await asyncio.shield(settlement)
+            except asyncio.CancelledError:
+                await complete_under_cancellation(settlement)
+                raise
             return settled
 
     async def adopt(self, job_id: str, result: DelegatedAgentResult) -> bool:
         """Adopt one externally delivered terminal result exactly once."""
-        async with self._lock_for(f"job:{job_id}"):
-            await self._require(job_id)
-            _job, adopted = await self._store.adopt(job_id, result)
+        async with self._locked(f"job:{job_id}"):
+            job = await self._require(job_id)
+            runtime = self._runtimes.get(job.ref.runtime)
+            if not isinstance(runtime, _EffectFreeRuntimeRetirement):
+                _job, adopted = await self._store.adopt(job_id, result)
+                return adopted
+            settlement = asyncio.create_task(
+                self._settle_and_retire_projection(
+                    self._store.adopt(job_id, result),
+                    runtime=runtime,
+                    job=job.ref,
+                )
+            )
+            try:
+                _job, adopted = await asyncio.shield(settlement)
+            except asyncio.CancelledError:
+                await complete_under_cancellation(settlement)
+                raise
             return adopted
 
     async def cancel(self, job_id: str) -> bool:
-        """Contain a possibly live runtime job and record terminal cancellation."""
-        async with self._lock_for(f"job:{job_id}"):
+        """Contain a live job, then durably settle it before propagating cancellation."""
+        async with self._locked(f"job:{job_id}"):
             job = await self._require(job_id)
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES and job.status is not DelegatedAgentJobStatus.LOST:
                 return False
-            await self._runtime(job.ref.runtime).cancel(job.ref)
-            _job, changed = await self._store.cancel(job_id)
+            runtime = self._runtime(job.ref.runtime)
+            if isinstance(runtime, _EffectFreeRuntimeRehydration):
+                await runtime.rehydrate_effect_free(job.request, job.ref)
+            await runtime.cancel(job.ref)
+            settlement = asyncio.create_task(
+                self._settle_and_retire_projection(
+                    self._store.cancel(job_id),
+                    runtime=runtime,
+                    job=job.ref,
+                )
+            )
+            try:
+                _job, changed = await asyncio.shield(settlement)
+            except asyncio.CancelledError:
+                await complete_under_cancellation(settlement)
+                raise
             return changed
 
     async def events(self, job_id: str, *, after_seq: int = -1) -> tuple[DelegatedAgentEvent, ...]:
@@ -305,13 +433,34 @@ class DelegatedAgentCoordinator:
             msg = f"Unknown delegated-agent runtime {name!r}."
             raise UnknownDelegatedAgentRuntimeError(msg) from exc
 
-    def _lock_for(self, key: str) -> asyncio.Lock:
-        """Return a loop-local lock without serializing unrelated delegated jobs."""
-        lock = self._locks.get(key)
-        if lock is None:
-            lock = asyncio.Lock()
-            self._locks[key] = lock
-        return lock
+    @staticmethod
+    async def _settle_and_retire_projection(
+        settlement: Awaitable[tuple[DelegatedAgentJob, bool]],
+        *,
+        runtime: DelegatedAgentRuntime,
+        job: DelegatedAgentJobRef,
+    ) -> tuple[DelegatedAgentJob, bool]:
+        """Retire a pure projection only after its terminal store write succeeds."""
+        outcome = await settlement
+        if isinstance(runtime, _EffectFreeRuntimeRetirement):
+            await runtime.retire_effect_free(job)
+        return outcome
+
+    @asynccontextmanager
+    async def _locked(self, key: str) -> AsyncIterator[None]:
+        """Serialize one key and discard its lock after the last caller exits."""
+        entry = self._locks.get(key)
+        if entry is None:
+            entry = _CoordinatorLock()
+            self._locks[key] = entry
+        entry.users += 1
+        try:
+            async with entry.lock:
+                yield
+        finally:
+            entry.users -= 1
+            if entry.users == 0 and self._locks.get(key) is entry:
+                self._locks.pop(key)
 
 
 def _validate_ref(request: DelegatedAgentRequest, ref: DelegatedAgentJobRef) -> None:

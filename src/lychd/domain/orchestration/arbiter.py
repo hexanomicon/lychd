@@ -54,29 +54,50 @@ class TransitionArbiter:
         self._waiters: list[tuple[float, int, anyio.Event]] = []
         self._inflight: dict[tuple[str, float], asyncio.Future[TransitionPlan]] = {}
 
+    def follow_inflight(self, key: str, priority: float) -> asyncio.Future[TransitionPlan] | None:
+        """Return an isolated wait for an existing same-key, same-priority plan.
+
+        Callers use this before performing their own asynchronous preflight. That
+        keeps a follower from failing on a redundant registry probe while its
+        cohort owner is already changing the runtime world.
+        """
+        existing = self._inflight.get((key, priority))
+        if existing is None:
+            return None
+        return asyncio.shield(existing)
+
     async def run(
         self,
         key: str,
         priority: float,
         executor: Callable[[], Awaitable[TransitionPlan]],
+        *,
+        resolve_before_acquire: Callable[[], Awaitable[TransitionPlan | None]] | None = None,
     ) -> TransitionPlan:
-        """Run ``executor`` in the single-owner critical section, priority-ordered.
+        """Resolve one cohort, entering the physical section only when required.
 
         A second caller for the same ``key`` awaits the first's result (the executor
         runs once); it does NOT enqueue a waiter. An executor exception releases the
-        section and propagates to ALL same-key waiters.
+        section and propagates to ALL same-key waiters. When supplied,
+        ``resolve_before_acquire`` runs after the cohort future is registered but
+        before global arbitration. A non-``None`` result is final, preserving the
+        warm no-op fast path without exposing an asynchronous preflight race.
         """
         cohort = (key, priority)
-        existing = self._inflight.get(cohort)
+        existing = self.follow_inflight(key, priority)
         if existing is not None:
             # A follower owns only its wait, not the shared transition. Without
             # shielding, cancelling one follower cancels the shared Future and
             # poisons the owner plus every other same-key follower.
-            return await asyncio.shield(existing)
+            return await existing
 
         future: asyncio.Future[TransitionPlan] = asyncio.get_running_loop().create_future()
         future.add_done_callback(_swallow)
         self._inflight[cohort] = future
+
+        resolved = await self._resolve_cohort_before_acquire(cohort, future, resolve_before_acquire)
+        if resolved is not None:
+            return resolved
 
         try:
             await self._acquire(priority)
@@ -103,6 +124,28 @@ class TransitionArbiter:
         finally:
             self._inflight.pop(cohort, None)
             self._release()
+
+    async def _resolve_cohort_before_acquire(
+        self,
+        cohort: tuple[str, float],
+        future: asyncio.Future[TransitionPlan],
+        resolver: Callable[[], Awaitable[TransitionPlan | None]] | None,
+    ) -> TransitionPlan | None:
+        """Run one registered cohort's optional no-effect resolver."""
+        if resolver is None:
+            return None
+        try:
+            resolved = await resolver()
+        except BaseException as exc:
+            self._inflight.pop(cohort, None)
+            if not future.done():
+                future.set_exception(exc)
+            raise
+        if resolved is not None:
+            self._inflight.pop(cohort, None)
+            if not future.done():
+                future.set_result(resolved)
+        return resolved
 
     async def _acquire(self, priority: float) -> None:
         """Enter the critical section, or park in the priority heap until admitted.

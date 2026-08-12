@@ -322,7 +322,7 @@ async def contain_run_effects(
     if delegates is not None:
         try:
             async with asyncio.timeout(RUN_CONTAINMENT_TIMEOUT_S):
-                jobs = await delegates.jobs_for_run(run_id)
+                jobs = await delegates.jobs_for_run(run_id, event_limit=0)
         except Exception as exc:  # noqa: BLE001 - consent containment must still run
             errors.append(exc)
         else:
@@ -394,6 +394,7 @@ class RunEngine:
     """
 
     __slots__ = (
+        "_terminal_repairs",
         "admissions",
         "bus",
         "cancellations",
@@ -428,6 +429,7 @@ class RunEngine:
         self.queues = queues
         self.admissions = admissions or RunAdmissionCoordinator()
         self.cancellations = cancellations or RunCancellationCoordinator()
+        self._terminal_repairs = RunAdmissionCoordinator()
         self.delegates = delegates
         self.consents = consents
         if stasis_store is None:
@@ -442,16 +444,65 @@ class RunEngine:
         *,
         retain_before_publish: Callable[[str], Awaitable[None]] | None = None,
         idempotency_key: str | None = None,
+        exclusive_session: bool = False,
     ) -> RunHandle:
-        """Single-flight an optional durable admission identity."""
+        """Admit work, optionally allowing only one nonterminal Run per session.
+
+        ``exclusive_session`` is a Topology-A causal fence for conversational
+        surfaces. It serializes admission on this process's event loop, admits an
+        exact idempotent replay, and otherwise refuses a second nonterminal Run for
+        the same session. Terminal ledger truth releases the fence naturally; no
+        process-local active marker becomes recovery authority.
+        """
+        if exclusive_session:
+            session_key = ("exclusive_session", intent.session_id)
+            while not self.admissions.begin(session_key):
+                await self.admissions.wait(session_key)
+            try:
+                if idempotency_key is not None:
+                    existing = await self.ledger.get_idempotent(intent, idempotency_key=idempotency_key)
+                    if existing is not None:
+                        return await self._submit_singleflight(
+                            intent,
+                            retain_before_publish=retain_before_publish,
+                            idempotency_key=idempotency_key,
+                        )
+                active = await self.ledger.get_nonterminal_for_session(intent.session_id)
+                if active is not None:
+                    from lychd.domain.cortex.ledger import RunAdmissionConflictError
+
+                    msg = f"Bridge session already has active Run {active.run_id!r}."
+                    raise RunAdmissionConflictError(msg)
+                return await self._submit_singleflight(
+                    intent,
+                    retain_before_publish=retain_before_publish,
+                    idempotency_key=idempotency_key,
+                )
+            finally:
+                self.admissions.finish(session_key)
+        return await self._submit_singleflight(
+            intent,
+            retain_before_publish=retain_before_publish,
+            idempotency_key=idempotency_key,
+        )
+
+    async def _submit_singleflight(
+        self,
+        intent: Intent,
+        *,
+        retain_before_publish: Callable[[str], Awaitable[None]] | None,
+        idempotency_key: str | None,
+    ) -> RunHandle:
+        """Single-flight one optional durable admission identity."""
         if idempotency_key is None:
             return await self._submit_admission(
                 intent,
                 retain_before_publish=retain_before_publish,
                 idempotency_key=None,
             )
-        while not self.admissions.begin(idempotency_key):
-            await self.admissions.wait(idempotency_key)
+        admission_key = ("idempotency", idempotency_key)
+        while not self.admissions.begin(admission_key):
+            await self.admissions.wait(admission_key)
         try:
             return await self._submit_admission(
                 intent,
@@ -459,7 +510,7 @@ class RunEngine:
                 idempotency_key=idempotency_key,
             )
         finally:
-            self.admissions.finish(idempotency_key)
+            self.admissions.finish(admission_key)
 
     async def _submit_admission(
         self,
@@ -909,19 +960,34 @@ class RunEngine:
             await queue.abort(job, "cancelled by the Magus")
 
     async def ensure_terminal_evidence(self, run_id: str) -> None:
-        """Repair one terminal event from canonical Run truth."""
+        """Single-flight repair of one terminal event from canonical Run truth."""
+        repair_key = ("terminal_evidence", run_id)
+        while not self._terminal_repairs.begin(repair_key):
+            await self._terminal_repairs.wait(repair_key)
+        try:
+            await self._repair_terminal_evidence(run_id)
+        finally:
+            self._terminal_repairs.finish(repair_key)
+
+    async def _repair_terminal_evidence(self, run_id: str) -> None:
+        """Drain any prior writer, then repair an absent terminal event exactly once."""
         from lychd.domain.cortex.events import RunEventKind
 
         run = await self.ledger.get(run_id)
         if run is None or run.status not in TERMINAL_STATUSES:
             msg = f"Run {run_id!r} has no terminal truth to evidence."
             raise RuntimeError(msg)
+        # Canonical terminal truth authorizes a retry after an earlier async
+        # append failed; the old generation remains latched for its own waiters.
+        with suppress(Exception):
+            await self.bus.wait_persisted(run_id)
         terminal = await self.ledger.latest_event(run_id, RunEventKind.DONE)
         if terminal is not None:
             if terminal.data != run.status.value:
                 msg = f"Run {run_id!r} has terminal evidence {terminal.data!r}, not {run.status.value!r}."
                 raise RuntimeError(msg)
             return
+        self.bus.begin_persistence_retry(run_id)
         self.bus.open(run_id, from_seq=await self.ledger.next_seq(run_id))
         try:
             self.bus.emitter(run_id).done(run.status.value)

@@ -39,6 +39,7 @@ logger = structlog.get_logger()
 _RUN_QUEUE_NAMES = ("runs", "rites")
 _STARTUP_RECONCILIATION_PAGE_SIZE = 128
 _RELAY_RESTART_DELAY_S = 0.1
+_RELAY_RESTART_MAX_DELAY_S = 5.0
 _WORKER_SHUTDOWN_TIMEOUT_S = 30.0
 
 
@@ -344,23 +345,47 @@ async def _supervise_relay(
     stop: asyncio.Event,
     *,
     restart_delay_s: float = _RELAY_RESTART_DELAY_S,
+    max_restart_delay_s: float = _RELAY_RESTART_MAX_DELAY_S,
 ) -> None:
-    """Restart a process-owned relay unless its return belongs to shutdown."""
+    """Restart a process-owned relay with bounded backoff until shutdown."""
+    restart_delay = restart_delay_s
+    failures = 0
     while not stop.is_set():
         try:
             await relay_factory()
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.exception("maintenance_relay_failed", relay=name, error=str(exc))
+            failures += 1
+            logger.exception(
+                "maintenance_relay_failed",
+                relay=name,
+                error=str(exc),
+                consecutive_failures=failures,
+                restart_delay_s=restart_delay,
+            )
         else:
             if stop.is_set():
                 return
-            logger.error("maintenance_relay_exited", relay=name)
+            failures += 1
+            logger.error(
+                "maintenance_relay_exited",
+                relay=name,
+                consecutive_failures=failures,
+                restart_delay_s=restart_delay,
+            )
         try:
-            await asyncio.wait_for(stop.wait(), timeout=restart_delay_s)
+            await asyncio.wait_for(stop.wait(), timeout=restart_delay)
         except TimeoutError:
+            restart_delay = _next_relay_restart_delay(restart_delay, maximum=max_restart_delay_s)
             continue
+
+
+def _next_relay_restart_delay(current: float, *, maximum: float) -> float:
+    """Return deterministic capped exponential backoff for one failed relay."""
+    if current <= 0:
+        return 0
+    return min(current * 2, maximum)
 
 
 async def _stop_delivery_relay(task: asyncio.Task[None], *, timeout_s: float = 5.0) -> None:

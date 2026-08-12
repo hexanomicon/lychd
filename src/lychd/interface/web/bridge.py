@@ -227,6 +227,7 @@ class BridgeController(Controller):
                 ),
                 retain_before_publish=retain_user_turn,
                 idempotency_key=f"bridge:{session_id}:{data.request_id}",
+                exclusive_session=True,
             )
         except RunAdmissionConflictError as exc:
             raise ValidationException(detail=str(exc)) from exc
@@ -370,7 +371,9 @@ class BridgeController(Controller):
         retained_delegated_job_id = latest_node.meta.get("delegated_job_id") if latest_node is not None else None
         retained_delegated_runtime = latest_node.meta.get("delegated_runtime") if latest_node is not None else None
         delegates = getattr(state.services, "delegates", None)
-        delegated_jobs = await delegates.jobs_for_run(run.run_id) if delegates is not None else ()
+        delegated_jobs = (
+            await delegates.jobs_for_run(run.run_id, limit=1, event_limit=0) if delegates is not None else ()
+        )
         delegated_job = delegated_jobs[-1] if delegated_jobs else None
         retained_delegated_job_id = retained_delegated_job_id or (
             delegated_job.ref.job_id if delegated_job is not None else None

@@ -4,9 +4,18 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncGenerator, AsyncIterator
+from typing import cast
+
 import pytest
 
 from lychd.domain.cortex.events import InProcessEventBus, RunChannel, RunEvent, RunEventKind
+
+
+async def _next_event(source: AsyncIterator[RunEvent]) -> RunEvent:
+    """Adapt an async-iterator awaitable to the coroutine required by create_task."""
+    return await anext(source)
 
 
 def test_run_event_json_round_trips() -> None:
@@ -88,6 +97,51 @@ async def test_channel_resync_live_tails_only_events_after_snapshot_boundary() -
     assert reset.kind is RunEventKind.RESYNC
     assert reset.seq == 399
     assert tail == [current, done]
+
+
+@pytest.mark.asyncio
+async def test_stalled_subscriber_is_bounded_and_resyncs_before_live_tail() -> None:
+    """A slow SSE reader cannot retain an unbounded token queue."""
+    channel = RunChannel(run_id="r")
+    source = channel.subscribe()
+    first_pending = asyncio.create_task(_next_event(source))
+    await asyncio.sleep(0)
+
+    for index in range(300):
+        channel.emit(RunEventKind.TOKEN, f"old-{index}")
+
+    queue = next(iter(channel._subscribers))
+    assert queue.qsize() <= 256
+    first = await first_pending
+    next_pending = asyncio.create_task(_next_event(source))
+    await asyncio.sleep(0)
+    current = channel.emit(RunEventKind.TOKEN, "current")
+    done = channel.emit(RunEventKind.DONE, "done")
+    tail = [await next_pending, *[event async for event in source]]
+
+    assert first.kind is RunEventKind.RESYNC
+    assert first.data == "snapshot_required"
+    assert tail[-2:] == [current, done]
+
+
+@pytest.mark.asyncio
+async def test_terminal_overflow_resyncs_and_ends_without_waiting_forever() -> None:
+    channel = RunChannel(run_id="r")
+    source = channel.subscribe()
+    first_pending = asyncio.create_task(_next_event(source))
+    await asyncio.sleep(0)
+
+    for index in range(256):
+        channel.emit(RunEventKind.TOKEN, f"old-{index}")
+    channel.emit(RunEventKind.DONE, "done")
+
+    first = await first_pending
+    tail = [event async for event in source]
+
+    assert first.kind is RunEventKind.RESYNC
+    assert first.seq == channel.snapshot().cursor
+    assert channel.snapshot().terminal is True
+    assert tail == []
 
 
 @pytest.mark.asyncio
@@ -211,3 +265,153 @@ async def test_bus_emitter_tees_non_token_to_ledger() -> None:
     kinds = [str(e.kind) for e in ledger.events("r")]
     assert kinds == ["status", "done"]  # ORDERED, tokens dropped
     assert "token" not in kinds  # tokens are too chatty for Step rows
+
+
+@pytest.mark.asyncio
+async def test_event_metadata_is_detached_across_emit_replay_snapshot_and_persistence() -> None:
+    """Mutable consumer metadata cannot rewrite the channel's canonical event."""
+    from lychd.agents.router import Intent
+    from lychd.domain.cortex.ledger import InMemoryRunLedger
+
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await ledger.create(
+        Intent(session_id="s", run_id="detached", prompt="p"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=50,
+    )
+    bus = InProcessEventBus(ledger=ledger)
+    emitter = bus.emitter("detached")
+    emitted = emitter.dispatch("chat", occurrence_id="original")
+    emitter.emit(
+        RunEventKind.FRAGMENT,
+        '{"fragment":"known","params":{}}',
+        occurrence_id="original-fragment",
+    )
+
+    emitted.meta["occurrence_id"] = "tampered-return"
+    snapshot = bus.snapshot("detached")
+    assert snapshot is not None
+    snapshot.fragments[0].meta["occurrence_id"] = "tampered-snapshot"
+
+    first_source = bus.subscribe("detached")
+    replayed = await anext(first_source)
+    replayed.meta["occurrence_id"] = "tampered-replay"
+    await cast("AsyncGenerator[RunEvent]", first_source).aclose()
+
+    second_source = bus.subscribe("detached")
+    replayed_again = await anext(second_source)
+    await cast("AsyncGenerator[RunEvent]", second_source).aclose()
+    await bus.wait_persisted("detached")
+
+    durable = await ledger.list_events("detached")
+    second_snapshot = bus.snapshot("detached")
+    assert replayed_again.meta["occurrence_id"] == "original"
+    assert second_snapshot is not None
+    assert second_snapshot.fragments[0].meta["occurrence_id"] == "original-fragment"
+    assert [event.meta["occurrence_id"] for event in durable] == [
+        "original",
+        "original-fragment",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_live_subscribers_receive_independent_event_metadata() -> None:
+    """One live consumer cannot rewrite another consumer's queued event."""
+    channel = RunChannel(run_id="live-detached")
+    first_source = channel.subscribe()
+    second_source = channel.subscribe()
+    first_pending = asyncio.create_task(_next_event(first_source))
+    second_pending = asyncio.create_task(_next_event(second_source))
+    await asyncio.sleep(0)
+
+    emitted = channel.emit(RunEventKind.DISPATCH, "chat", occurrence_id="original")
+    first, second = await asyncio.gather(first_pending, second_pending)
+    first.meta["occurrence_id"] = "tampered-first"
+    emitted.meta["occurrence_id"] = "tampered-return"
+
+    assert second.meta["occurrence_id"] == "original"
+    replay_source = channel.subscribe()
+    replayed = await anext(replay_source)
+    assert replayed.meta["occurrence_id"] == "original"
+
+    await cast("AsyncGenerator[RunEvent]", first_source).aclose()
+    await cast("AsyncGenerator[RunEvent]", second_source).aclose()
+    await cast("AsyncGenerator[RunEvent]", replay_source).aclose()
+
+
+@pytest.mark.asyncio
+async def test_failed_persistence_generation_is_broadcast_and_explicitly_retryable() -> None:
+    """Every durability waiter sees one failure until a fresh generation begins."""
+    from lychd.domain.cortex.ledger import InMemoryRunLedger
+
+    class _BlockingLedger(InMemoryRunLedger):
+        def __init__(self) -> None:
+            super().__init__()
+            self.entered = asyncio.Event()
+            self.release = asyncio.Event()
+            self.fail = True
+
+        async def append_event(self, event: RunEvent) -> None:
+            self.entered.set()
+            await self.release.wait()
+            if self.fail:
+                msg = "ledger unavailable"
+                raise RuntimeError(msg)
+            await super().append_event(event)
+
+    ledger = _BlockingLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    emitter = bus.emitter("broadcast")
+    emitter.status("running")
+    await ledger.entered.wait()
+    first = asyncio.create_task(bus.wait_persisted("broadcast"))
+    second = asyncio.create_task(bus.wait_persisted("broadcast"))
+    ledger.release.set()
+
+    results = await asyncio.gather(first, second, return_exceptions=True)
+
+    assert [type(result) for result in results] == [RuntimeError, RuntimeError]
+    assert [str(result) for result in results] == ["ledger unavailable", "ledger unavailable"]
+    with pytest.raises(RuntimeError, match="ledger unavailable"):
+        await bus.wait_persisted("broadcast")
+
+    ledger.fail = False
+    bus.begin_persistence_retry("broadcast")
+    emitter.status("retry")
+    await bus.wait_persisted("broadcast")
+    assert [event.data for event in ledger.events("broadcast")] == ["retry"]
+
+
+@pytest.mark.asyncio
+async def test_cancelled_persistence_waiter_does_not_cancel_the_shared_writer() -> None:
+    """A disconnected durability waiter cannot abort evidence needed by its peers."""
+    from lychd.domain.cortex.ledger import InMemoryRunLedger
+
+    class _BlockingLedger(InMemoryRunLedger):
+        def __init__(self) -> None:
+            super().__init__()
+            self.entered = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def append_event(self, event: RunEvent) -> None:
+            self.entered.set()
+            await self.release.wait()
+            await super().append_event(event)
+
+    ledger = _BlockingLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    bus.emitter("waiter-cancelled").status("running")
+    await ledger.entered.wait()
+    cancelled = asyncio.create_task(bus.wait_persisted("waiter-cancelled"))
+    survivor = asyncio.create_task(bus.wait_persisted("waiter-cancelled"))
+    await asyncio.sleep(0)
+
+    cancelled.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await cancelled
+    assert survivor.done() is False
+
+    ledger.release.set()
+    await survivor
+    assert [event.data for event in ledger.events("waiter-cancelled")] == ["running"]
