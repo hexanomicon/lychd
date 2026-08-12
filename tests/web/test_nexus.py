@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import httpx
 import pytest
 
-_EXPORTED_OPENAPI = Path(__file__).resolve().parents[2] / "frontend" / "openapi.json"
+_EXPORTED_OPENAPI = Path(__file__).resolve().parents[2] / "clients" / "web" / "openapi.json"
 
 if TYPE_CHECKING:
     from types import SimpleNamespace

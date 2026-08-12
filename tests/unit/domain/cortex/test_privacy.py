@@ -65,6 +65,33 @@ def test_deterministic_censor_rebuilds_and_redacts_typed_material() -> None:
     assert transformed.receipt.residual_label == _restricted_label()
 
 
+@pytest.mark.parametrize("key_kind", ["", "RSA ", "EC ", "OPENSSH "])
+def test_deterministic_censor_redacts_supported_pem_private_keys(key_kind: str) -> None:
+    pem = f"-----BEGIN {key_kind}PRIVATE KEY-----\nsynthetic-private-material\n-----END {key_kind}PRIVATE KEY-----"
+
+    transformed = _censor().transform(
+        {"message": f"before {pem} after"},
+        source_label=_restricted_label(),
+        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+    )
+
+    assert transformed.candidate == {"message": "before <redacted:private_key> after"}
+    assert [operation.category for operation in transformed.receipt.operations] == ["private_key"]
+
+
+def test_deterministic_censor_redacts_jwt_shaped_text() -> None:
+    jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signatureABCDEFG"
+
+    transformed = _censor().transform(
+        {"message": f"bearer {jwt}"},
+        source_label=_restricted_label(),
+        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+    )
+
+    assert transformed.candidate == {"message": "bearer <redacted:jwt>"}
+    assert [operation.category for operation in transformed.receipt.operations] == ["jwt"]
+
+
 def test_receipt_contains_no_sensitive_source_values() -> None:
     sensitive_email = "alice@example.com"
     transformed = _censor().transform(

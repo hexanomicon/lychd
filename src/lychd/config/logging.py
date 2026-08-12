@@ -70,6 +70,59 @@ def _build_log_config(
         structlog_processors.insert(-1, structlog.processors.EventRenamer("message"))
         stdlib_processors.insert(-1, structlog.processors.EventRenamer("message"))
 
+    standard_lib_logging_config = LoggingConfig(
+        root={"level": settings.level, "handlers": ["console"]},
+        formatters={
+            "standard": {
+                "()": "structlog.stdlib.ProcessorFormatter",
+                "processors": stdlib_processors,
+            },
+        },
+        handlers={
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "standard",
+            },
+        },
+        loggers={
+            "granian.access": {
+                "propagate": False,
+                "level": settings.granian_level,
+                "handlers": ["console"],
+            },
+            "_granian": {
+                "propagate": False,
+                "level": settings.granian_level,
+                "handlers": ["console"],
+            },
+            "saq": {
+                "propagate": False,
+                "level": settings.saq_level,
+                "handlers": ["console"],
+            },
+            "sqlalchemy.engine": {
+                "propagate": False,
+                "level": settings.sqlalchemy_level,
+                "handlers": ["console"],
+            },
+            "sqlalchemy.pool": {
+                "propagate": False,
+                "level": settings.sqlalchemy_level,
+                "handlers": ["console"],
+            },
+            "pydantic_ai": {
+                "propagate": False,
+                "level": settings.pydantic_ai_level,
+                "handlers": ["console"],
+            },
+        },
+    )
+    # Litestar injects an unused queue listener and routes its own logger through
+    # it. ``dictConfig`` eagerly starts that listener, so repeated CLI/test/app
+    # bootstraps otherwise leak one process-owned thread apiece.
+    standard_lib_logging_config.loggers["litestar"]["handlers"] = ["console"]
+    standard_lib_logging_config.handlers.pop("queue_listener", None)
+
     return StructlogConfig(
         middleware_logging_config=LoggingMiddlewareConfig(
             request_log_fields=settings.request_fields,
@@ -86,53 +139,7 @@ def _build_log_config(
                 else structlog.WriteLoggerFactory(file=sys.stderr)
             ),
             wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelNamesMapping()[settings.level]),
-            standard_lib_logging_config=LoggingConfig(
-                root={"level": settings.level, "handlers": ["console"]},
-                formatters={
-                    "standard": {
-                        "()": "structlog.stdlib.ProcessorFormatter",
-                        "processors": stdlib_processors,
-                    },
-                },
-                handlers={
-                    "console": {
-                        "class": "logging.StreamHandler",
-                        "formatter": "standard",
-                    },
-                },
-                loggers={
-                    "granian.access": {
-                        "propagate": False,
-                        "level": settings.granian_level,
-                        "handlers": ["console"],
-                    },
-                    "_granian": {
-                        "propagate": False,
-                        "level": settings.granian_level,
-                        "handlers": ["console"],
-                    },
-                    "saq": {
-                        "propagate": False,
-                        "level": settings.saq_level,
-                        "handlers": ["console"],
-                    },
-                    "sqlalchemy.engine": {
-                        "propagate": False,
-                        "level": settings.sqlalchemy_level,
-                        "handlers": ["console"],
-                    },
-                    "sqlalchemy.pool": {
-                        "propagate": False,
-                        "level": settings.sqlalchemy_level,
-                        "handlers": ["console"],
-                    },
-                    "pydantic_ai": {
-                        "propagate": False,
-                        "level": settings.pydantic_ai_level,
-                        "handlers": ["console"],
-                    },
-                },
-            ),
+            standard_lib_logging_config=standard_lib_logging_config,
         ),
     )
 

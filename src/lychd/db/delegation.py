@@ -105,18 +105,39 @@ class DbDelegatedAgentJobStore:
             )
             return await self._view(session, row) if row is not None else None
 
-    async def jobs_for_run(self, run_id: str) -> tuple[DelegatedAgentJob, ...]:
+    async def jobs_for_run(
+        self,
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[DelegatedAgentJob, ...]:
+        """Return newest bounded jobs and event suffixes in creation order."""
         from lychd.db.models import DelegatedAgentJobRecord
 
+        if limit is not None and limit < 0:
+            msg = "Delegated job limit must be non-negative."
+            raise ValueError(msg)
+        if event_limit is not None and event_limit < 0:
+            msg = "Delegated event limit must be non-negative."
+            raise ValueError(msg)
+        statement = select(DelegatedAgentJobRecord).where(DelegatedAgentJobRecord.run_id == UUID(run_id))
+        reverse_rows = limit is not None
+        if reverse_rows:
+            statement = statement.order_by(
+                DelegatedAgentJobRecord.created_at.desc(),
+                DelegatedAgentJobRecord.id.desc(),
+            ).limit(limit)
+        else:
+            statement = statement.order_by(
+                DelegatedAgentJobRecord.created_at,
+                DelegatedAgentJobRecord.id,
+            )
         async with self._session_factory() as session:
-            rows = (
-                await session.scalars(
-                    select(DelegatedAgentJobRecord)
-                    .where(DelegatedAgentJobRecord.run_id == UUID(run_id))
-                    .order_by(DelegatedAgentJobRecord.created_at, DelegatedAgentJobRecord.id)
-                )
-            ).all()
-            return tuple([await self._view(session, row) for row in rows])
+            rows = list((await session.scalars(statement)).all())
+            if reverse_rows:
+                rows.reverse()
+            return tuple([await self._view(session, row, event_limit=event_limit) for row in rows])
 
     async def transition(
         self,
@@ -247,16 +268,27 @@ class DbDelegatedAgentJobStore:
         await session.flush()
 
     @staticmethod
-    async def _view(session: AsyncSession, row: DelegatedAgentJobRecord) -> DelegatedAgentJob:
+    async def _view(
+        session: AsyncSession,
+        row: DelegatedAgentJobRecord,
+        *,
+        event_limit: int | None = None,
+    ) -> DelegatedAgentJob:
         from lychd.db.models import DelegatedAgentEventRecord
 
-        events = (
-            await session.scalars(
-                select(DelegatedAgentEventRecord)
-                .where(DelegatedAgentEventRecord.job_record_id == row.id)
-                .order_by(DelegatedAgentEventRecord.seq)
-            )
-        ).all()
+        events: list[DelegatedAgentEventRecord]
+        if event_limit == 0:
+            events = []
+        else:
+            statement = select(DelegatedAgentEventRecord).where(DelegatedAgentEventRecord.job_record_id == row.id)
+            reverse_events = event_limit is not None
+            if reverse_events:
+                statement = statement.order_by(DelegatedAgentEventRecord.seq.desc()).limit(event_limit)
+            else:
+                statement = statement.order_by(DelegatedAgentEventRecord.seq)
+            events = list((await session.scalars(statement)).all())
+            if reverse_events:
+                events.reverse()
         request = DelegatedAgentRequest.model_validate(row.request)
         ref = DelegatedAgentJobRef(
             job_id=row.job_id,

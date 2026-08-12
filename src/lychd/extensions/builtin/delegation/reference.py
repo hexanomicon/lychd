@@ -21,7 +21,7 @@ class _ReferenceJob:
 
 
 class ReferenceDelegatedAgentRuntime:
-    """Process-local adapter that deterministically settles on the first poll."""
+    """No-effect adapter retaining projections only until durable settlement."""
 
     name = "reference"
 
@@ -32,6 +32,22 @@ class ReferenceDelegatedAgentRuntime:
 
     async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
         """Record one correlated request without filesystem, process, or network effects."""
+        await self._remember(request, job)
+
+    async def rehydrate_effect_free(
+        self,
+        request: DelegatedAgentRequest,
+        job: DelegatedAgentJobRef,
+    ) -> None:
+        """Rebuild one deterministic job solely from its persisted request."""
+        await self._remember(request, job)
+
+    async def _remember(
+        self,
+        request: DelegatedAgentRequest,
+        job: DelegatedAgentJobRef,
+    ) -> None:
+        """Idempotently retain the pure request-to-result projection."""
         self._validate_identity(request, job)
         result = DelegatedAgentResult(
             job_id=job.job_id,
@@ -64,6 +80,17 @@ class ReferenceDelegatedAgentRuntime:
                     status=DelegatedAgentJobStatus.CANCELLED,
                 ),
             )
+
+    async def retire_effect_free(self, job: DelegatedAgentJobRef) -> None:
+        """Idempotently forget a projection acknowledged by the job store."""
+        async with self._lock:
+            existing = self._jobs.get(job.job_id)
+            if existing is None:
+                return
+            if existing.ref != job:
+                msg = f"Reference delegated job {job.job_id!r} does not match its tracked identity."
+                raise ValueError(msg)
+            self._jobs.pop(job.job_id)
 
     def _require(self, job: DelegatedAgentJobRef) -> _ReferenceJob:
         try:

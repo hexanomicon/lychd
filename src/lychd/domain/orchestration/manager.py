@@ -225,22 +225,20 @@ class OrchestratorManager:
         self.transitions.record(trace)
         try:
             self._raise_if_contained()
-            pre = await self.calculate_transition_plan(target_capability_key)
-            # The refresh above yields. Another transition may have latched global
-            # containment while this request was planning; recheck before the fast
-            # NO_OP return, which otherwise bypasses the arbiter-side check.
-            self._raise_if_contained()
-            target_animator = self._target_animator(target_capability_key)
-            if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
-                trace.plan = pre
-                self._publish(trace, "completed")
-                return pre
-            self._publish(trace, "arbitrating")
-            result = await self._arbiter.run(
-                target_capability_key,
-                priority,
-                lambda: self._execute_transition(target_capability_key, priority, trace=trace),
-            )
+            in_flight = self._arbiter.follow_inflight(target_capability_key, priority)
+            if in_flight is not None:
+                self._publish(trace, "arbitrating")
+                result = await in_flight
+            else:
+                result = await self._arbiter.run(
+                    target_capability_key,
+                    priority,
+                    lambda: self._execute_transition(target_capability_key, priority, trace=trace),
+                    resolve_before_acquire=lambda: self._resolve_transition_preflight(
+                        target_capability_key,
+                        trace,
+                    ),
+                )
         except TransitionDeclined as exc:
             trace.plan = exc.plan
             self._publish(trace, "declined_no_effect", detail=str(exc))
@@ -281,6 +279,24 @@ class OrchestratorManager:
             trace.plan = result  # coalesced follower: actual owner plan, no invented host id
         self._publish(trace, "completed")
         return result
+
+    async def _resolve_transition_preflight(
+        self,
+        target_capability_key: str,
+        trace: TransitionTrace,
+    ) -> TransitionPlan | None:
+        """Resolve a warm/open fast path after this request owns its cohort."""
+        pre = await self.calculate_transition_plan(target_capability_key)
+        # The refresh above yields. Another transition may have latched global
+        # containment while this request was planning; recheck before a fast return
+        # that bypasses the physical section.
+        self._raise_if_contained()
+        target_animator = self._target_animator(target_capability_key)
+        if pre.action_type == "NO_OP" and self._leases.admission(target_animator) is AnimatorAdmission.OPEN:
+            trace.plan = pre
+            return pre
+        self._publish(trace, "arbitrating")
+        return None
 
     async def _execute_transition(  # noqa: PLR0915 - explicit transition/compensation state machine
         self,

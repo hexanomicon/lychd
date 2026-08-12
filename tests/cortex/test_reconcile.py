@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -19,6 +20,7 @@ from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.context import ContextOrchestrator
+from lychd.domain.cortex.engine import QueueRouter, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
@@ -54,6 +56,17 @@ def _substrate() -> tuple[RunSubstrate, InMemoryRunLedger, InMemoryConsentLedger
     return substrate, ledger, consents
 
 
+def _repair_engine(substrate: RunSubstrate) -> RunEngine:
+    """Build the canonical terminal-evidence repair owner around one test substrate."""
+    return RunEngine(
+        ledger=substrate.ledger,
+        bus=substrate.bus,
+        workflows=substrate.workflows,
+        queue_router=QueueRouter(),
+        queues={},
+    )
+
+
 class _FailFirstTerminalLedger(InMemoryRunLedger):
     def __init__(self) -> None:
         super().__init__(honor_intent_run_id=True)
@@ -83,8 +96,46 @@ async def test_terminal_evidence_repair_reopens_after_failed_persistence() -> No
 
     assert substrate.bus.snapshot(intent.run_id) is None
 
-    await _emit_terminal(substrate, intent.run_id)
+    await _repair_engine(substrate).ensure_terminal_evidence(intent.run_id)
 
+    events = await ledger.list_events(intent.run_id)
+    assert [(event.seq, event.kind, event.data) for event in events] == [(0, RunEventKind.DONE, RunStatus.FAILED.value)]
+
+
+@pytest.mark.asyncio
+async def test_terminal_evidence_repair_replaces_closed_channel_held_by_subscriber() -> None:
+    ledger = _FailFirstTerminalLedger()
+    substrate, _unused, _consents = _substrate()
+    substrate.ledger = ledger
+    bus = InProcessEventBus(ledger=ledger)
+    substrate.bus = bus
+    intent = Intent(session_id="s", run_id="run_terminal_live_retry", prompt="p", source="bridge")
+    await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=50)
+    await ledger.set_status(intent.run_id, RunStatus.RUNNING)
+    await ledger.set_status(intent.run_id, RunStatus.FAILED)
+
+    channel = bus.open(intent.run_id)
+    stream: AsyncIterator[RunEvent] = bus.subscribe(intent.run_id)
+
+    async def next_event() -> RunEvent:
+        return await stream.__anext__()
+
+    waiting = asyncio.create_task(next_event())
+    await asyncio.sleep(0)
+
+    with pytest.raises(RuntimeError, match="first terminal append failed"):
+        await _emit_terminal(substrate, intent.run_id)
+
+    first_terminal = await waiting
+    assert first_terminal.kind is RunEventKind.DONE
+    assert channel.closed is True
+    assert channel.has_subscribers is True
+
+    await _repair_engine(substrate).ensure_terminal_evidence(intent.run_id)
+
+    with pytest.raises(StopAsyncIteration):
+        await anext(stream)
+    await bus.aclose()
     events = await ledger.list_events(intent.run_id)
     assert [(event.seq, event.kind, event.data) for event in events] == [(0, RunEventKind.DONE, RunStatus.FAILED.value)]
 
@@ -270,6 +321,19 @@ async def test_reconcile_recovers_exact_checkpointed_delegate_park() -> None:
         _delegate_checkpoint("run_delegate_recover", job.job_id),
     )
     substrate.queues = {"runs": _OrphanQueue("run_delegate_recover")}
+    jobs_for_run = coordinator.jobs_for_run
+    bounds: list[tuple[int | None, int | None]] = []
+
+    async def record_bounded_read(
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[Any, ...]:
+        bounds.append((limit, event_limit))
+        return await jobs_for_run(run_id, limit=limit, event_limit=event_limit)
+
+    coordinator.jobs_for_run = record_bounded_read
 
     result = await reconcile_runs({"run_substrate": substrate})
 
@@ -278,6 +342,7 @@ async def test_reconcile_recovers_exact_checkpointed_delegate_park() -> None:
     assert run.status is RunStatus.AWAITING_DELEGATE
     assert run.delegated_job_id == job.job_id
     assert runtime.cancellations == []
+    assert bounds == [(None, 0)]
     assert result == {"status": "reconciled", "count": 1, "probe_errors": 0}
 
 

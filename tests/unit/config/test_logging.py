@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from typing import TYPE_CHECKING
 
 import pytest
@@ -34,6 +35,19 @@ def test_build_log_config_creates_valid_structlog_config() -> None:
 
     # Verify the root logger uses console handler
     assert stdlib_config.root["handlers"] == ["console"]
+    assert stdlib_config.loggers["litestar"]["handlers"] == ["console"]
+    assert "queue_listener" not in stdlib_config.handlers
+
+
+def test_repeated_logging_bootstrap_does_not_leak_queue_listener_threads() -> None:
+    """Repeated process-local configuration does not retain unused listeners."""
+    before = {thread.ident for thread in threading.enumerate() if thread.name.endswith(" (_monitor)")}
+
+    apply_logging(force_json=False)
+    apply_logging(force_json=True)
+
+    after = {thread.ident for thread in threading.enumerate() if thread.name.endswith(" (_monitor)")}
+    assert after == before
 
 
 def test_actual_logging_output_console(capsys: pytest.CaptureFixture[str]) -> None:

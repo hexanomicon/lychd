@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 
 __all__ = ["RunAdmissionCoordinator"]
 
+type _AdmissionKey = tuple[str, str]
+
 
 @dataclass
 class _PendingAdmission:
@@ -22,22 +24,22 @@ class RunAdmissionCoordinator:
 
     def __init__(self) -> None:
         """Create an empty key-to-admission map."""
-        self._pending: dict[str, _PendingAdmission] = {}
+        self._pending: dict[_AdmissionKey, _PendingAdmission] = {}
 
-    def begin(self, key: str) -> bool:
+    def begin(self, key: _AdmissionKey) -> bool:
         """Elect one admission writer; concurrent callers become waiters."""
         if key in self._pending:
             return False
         self._pending[key] = _PendingAdmission()
         return True
 
-    def finish(self, key: str) -> None:
+    def finish(self, key: _AdmissionKey) -> None:
         """Release the writer and wake every same-key waiter."""
         pending = self._pending.pop(key, None)
         if pending is not None:
             pending.event.set()
 
-    async def wait(self, key: str) -> None:
+    async def wait(self, key: _AdmissionKey) -> None:
         """Wait for the current writer, if any, to finish."""
         pending = self._pending.get(key)
         if pending is not None:

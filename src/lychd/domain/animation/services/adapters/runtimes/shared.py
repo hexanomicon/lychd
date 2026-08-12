@@ -139,10 +139,7 @@ def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]
         raise HttpJsonError(msg)
     entries = cast("list[object]", data)
     if len(entries) > MAX_OPENAI_MODEL_INVENTORY_ENTRIES:
-        msg = (
-            "OpenAI-compatible /models response exceeds "
-            f"{MAX_OPENAI_MODEL_INVENTORY_ENTRIES} entries"
-        )
+        msg = f"OpenAI-compatible /models response exceeds {MAX_OPENAI_MODEL_INVENTORY_ENTRIES} entries"
         raise HttpJsonError(msg)
 
     model_ids: list[str] = []
@@ -157,10 +154,7 @@ def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]
             msg = f"OpenAI-compatible /models entry {index} has no non-empty string id"
             raise HttpJsonError(msg)
         if len(model_id) > MAX_OPENAI_MODEL_ID_LENGTH:
-            msg = (
-                f"OpenAI-compatible /models entry {index} id exceeds "
-                f"{MAX_OPENAI_MODEL_ID_LENGTH} characters"
-            )
+            msg = f"OpenAI-compatible /models entry {index} id exceeds {MAX_OPENAI_MODEL_ID_LENGTH} characters"
             raise HttpJsonError(msg)
         if model_id in seen:
             msg = f"OpenAI-compatible /models repeats model id {model_id!r}"

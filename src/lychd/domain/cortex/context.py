@@ -77,6 +77,14 @@ class AssembledContext:
         return [*self.state_window, *self.continuation]
 
 
+@dataclass
+class _EnvironmentSnapshot:
+    """One frozen environment block shared by every active referencing run."""
+
+    block: Block
+    run_ids: set[str] = field(default_factory=set)
+
+
 # The First One's persona text — identical to `Agent.instructions` (layer 1, same key).
 IDENTITY_BLOCK_KEY = "identity:the-first-one:v1"
 IDENTITY_BLOCK_TEXT = (
@@ -94,14 +102,16 @@ class ContextOrchestrator:
 
     Layer population (v1): 1/3/5/6 populated; 2/4 stubbed with reserved keys.
     The per-run cache lets `floor_text(run_id)` return exactly the text assembled
-    in the `WeaveContext` node.
+    in the `WeaveContext` node. Environment snapshots remain shared and frozen
+    only while at least one active run references their key.
     """
 
     registry: AnimatorRegistry
     turn_window: int = _DEFAULT_TURN_WINDOW
     char_cap: int = _DEFAULT_CHAR_CAP
     _cache: dict[str, AssembledContext] = field(default_factory=dict)
-    _env_snapshots: dict[str, Block] = field(default_factory=dict)
+    _env_snapshots: dict[str, _EnvironmentSnapshot] = field(default_factory=dict)
+    _env_snapshot_keys_by_run: dict[str, set[str]] = field(default_factory=dict)
 
     def assemble(
         self,
@@ -118,10 +128,15 @@ class ContextOrchestrator:
         continuation_label: PrivatizationLabel | None = None,
     ) -> AssembledContext:
         """Assemble the six-layer floor, carrying unknown influences as restricted."""
+        environment_key, environment_block = self._environment_block(
+            session_id=session_id,
+            grant=grant,
+            grant_epoch=grant_epoch,
+        )
         stable_blocks: list[Block] = [
             self._identity_block(),
             self._codex_block(),
-            self._environment_block(session_id=session_id, grant=grant, grant_epoch=grant_epoch),
+            environment_block,
             self._karma_block(session_id=session_id),
         ]
         stable_blocks.sort(key=lambda block: (block.layer, block.key))
@@ -167,6 +182,11 @@ class ContextOrchestrator:
             aggregate_label=PrivatizationLabel.join(*(block.label for block in blocks)),
             context_window=context_window,
         )
+        self._retain_environment_snapshot(
+            run_id=run_id,
+            key=environment_key,
+            block=environment_block,
+        )
         self._cache[run_id] = assembled
         return assembled
 
@@ -180,8 +200,15 @@ class ContextOrchestrator:
         return self._cache.get(run_id)
 
     def release(self, run_id: str) -> None:
-        """Drop the cached assembly for `run_id` once its run has settled."""
+        """Drop one settled run's assembly and its environment-snapshot leases."""
         self._cache.pop(run_id, None)
+        for key in self._env_snapshot_keys_by_run.pop(run_id, ()):
+            snapshot = self._env_snapshots.get(key)
+            if snapshot is None:
+                continue
+            snapshot.run_ids.discard(run_id)
+            if not snapshot.run_ids:
+                self._env_snapshots.pop(key, None)
 
     def _identity_block(self) -> Block:
         return Block(
@@ -208,7 +235,7 @@ class ContextOrchestrator:
         session_id: str,
         grant: CapabilityGrant | None,
         grant_epoch: str | int,
-    ) -> Block:
+    ) -> tuple[str, Block]:
         # Snapshot per (session, grant_epoch): the env block is frozen at that
         # key and refreshed only at a grant-change boundary, so an identical key
         # set yields byte-identical bytes even if warm hardware churns between
@@ -217,7 +244,7 @@ class ContextOrchestrator:
         key = f"env:{session_id}:{binding}:{grant_epoch}"
         cached = self._env_snapshots.get(key)
         if cached is not None:
-            return cached
+            return key, cached.block
 
         active_key = grant.spec.key if grant is not None else "none"
         warm = self._warm_capability_keys()
@@ -234,8 +261,13 @@ class ContextOrchestrator:
             text=text,
             label=INTERNAL_PRIVATIZATION_LABEL,
         )
-        self._env_snapshots[key] = block
-        return block
+        return key, block
+
+    def _retain_environment_snapshot(self, *, run_id: str, key: str, block: Block) -> None:
+        """Lease a canonical snapshot to one run without double-counting reassembly."""
+        snapshot = self._env_snapshots.setdefault(key, _EnvironmentSnapshot(block=block))
+        snapshot.run_ids.add(run_id)
+        self._env_snapshot_keys_by_run.setdefault(run_id, set()).add(key)
 
     def _bounded_history(self, history: list[Any], *, budget: int) -> list[Any]:
         """Keep newest complete Pydantic message groups within both governors."""

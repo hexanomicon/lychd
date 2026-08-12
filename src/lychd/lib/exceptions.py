@@ -9,21 +9,17 @@ from typing import TYPE_CHECKING, Any, cast
 
 from advanced_alchemy.exceptions import NotFoundError, RepositoryError
 from litestar.exceptions import (
-    HTTPException,
     InternalServerException,
     NotFoundException,
-    # REMOVED: PermissionDeniedException is no longer used
 )
 from litestar.exceptions.responses import (
     create_exception_response,  # type: ignore[reportUnknownVariableType]
 )
-from litestar.status_codes import HTTP_409_CONFLICT
 
 if TYPE_CHECKING:
     from litestar.connection import Request
     from litestar.response import Response
 
-# PRUNED: AuthorizationError removed from __all__
 __all__ = (
     "ApplicationError",
     "HealthCheckConfigurationError",
@@ -33,7 +29,6 @@ __all__ = (
 class ApplicationError(Exception):
     """Base exception type for the lib's custom exception types."""
 
-    # ... (this class remains the same)
     detail: str
 
     def __init__(self, *args: Any, detail: str = "") -> None:
@@ -58,31 +53,24 @@ class ApplicationError(Exception):
         return " ".join((*self.args, self.detail)).strip()
 
 
-# NOTE: These smaller exception classes are still useful for organization.
 class MissingDependencyError(ApplicationError, ImportError): ...
 
 
 class HealthCheckConfigurationError(ApplicationError): ...
 
 
-class _HTTPConflictException(HTTPException):
-    """Request conflict with the current state of the target resource."""
-
-    status_code = HTTP_409_CONFLICT
-
-
 def exception_to_http_response(
     request: Request[Any, Any, Any],
     exc: ApplicationError | RepositoryError,
 ) -> Response[Any]:
-    """Transform repository exceptions to HTTP exceptions."""
-    http_exc: type[HTTPException]
-    if isinstance(exc, NotFoundError):
-        http_exc = NotFoundException
-    elif isinstance(exc, RepositoryError):
-        http_exc = _HTTPConflictException
-    else:
-        http_exc = InternalServerException
+    """Return the stable JSON error shape without exposing internal failure text.
 
-    detail = str(exc.__cause__) if exc.__cause__ is not None else str(exc)
-    return cast("Response[Any]", create_exception_response(request, http_exc(detail=detail)))
+    ``NotFoundError`` is the one repository condition with an explicit public
+    meaning. Every other repository failure is ambiguous infrastructure or
+    persistence truth, so it remains a generic server error rather than a false
+    client conflict. ``ApplicationError`` retains its existing generic 500
+    contract.
+    """
+    http_exc = NotFoundException(detail=exc.detail) if isinstance(exc, NotFoundError) else InternalServerException()
+
+    return cast("Response[Any]", create_exception_response(request, http_exc))

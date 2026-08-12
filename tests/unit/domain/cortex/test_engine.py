@@ -232,6 +232,23 @@ def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
     return engine, ledger, queues
 
 
+class _BoundedSessionAdmissionLedger(InMemoryRunLedger):
+    """Fail if exclusive admission regresses to materializing session history."""
+
+    def __init__(self) -> None:
+        super().__init__(honor_intent_run_id=True)
+        self.nonterminal_queries: list[str] = []
+
+    async def get_nonterminal_for_session(self, session_id: str) -> Any:
+        self.nonterminal_queries.append(session_id)
+        return await super().get_nonterminal_for_session(session_id)
+
+    async def list_for_session(self, session_id: str) -> list[Any]:
+        _ = session_id
+        msg = "exclusive admission must not materialize session history"
+        raise AssertionError(msg)
+
+
 def test_queue_router_resolves_source_and_priority_override() -> None:
     """Bridge routes to runs@70; an explicit Intent.priority overrides the default."""
     router = QueueRouter()
@@ -321,6 +338,116 @@ async def test_idempotent_submit_single_flights_retention_and_publication() -> N
     assert retained == [first_handle.run_id]
     assert [job["run_id"] for job in queues["runs"].enqueued] == [first_handle.run_id]
     assert len(await ledger.list_for_session("s")) == 1
+
+
+@pytest.mark.asyncio
+async def test_exclusive_session_serializes_and_refuses_a_second_active_run() -> None:
+    """Two concurrent Bridge turns cannot reason from the same settled prefix."""
+    engine, ledger, queues = _engine()
+    retained = asyncio.Event()
+    release = asyncio.Event()
+
+    async def retain(_run_id: str) -> None:
+        retained.set()
+        await release.wait()
+
+    first = asyncio.create_task(
+        engine.submit(
+            Intent(session_id="one-session", prompt="first", source="bridge"),
+            retain_before_publish=retain,
+            idempotency_key="bridge:one-session:first",
+            exclusive_session=True,
+        )
+    )
+    await retained.wait()
+    second = asyncio.create_task(
+        engine.submit(
+            Intent(session_id="one-session", prompt="second", source="bridge"),
+            idempotency_key="bridge:one-session:second",
+            exclusive_session=True,
+        )
+    )
+    await asyncio.sleep(0)
+    assert second.done() is False
+
+    release.set()
+    first_handle = await first
+    with pytest.raises(RunAdmissionConflictError, match="already has active Run"):
+        await second
+
+    assert [run.run_id for run in await ledger.list_for_session("one-session")] == [first_handle.run_id]
+    assert [job["run_id"] for job in queues["runs"].enqueued] == [first_handle.run_id]
+
+
+@pytest.mark.asyncio
+async def test_exclusive_session_allows_exact_replay_and_next_turn_after_terminal() -> None:
+    engine, ledger, _queues = _engine()
+    intent = Intent(session_id="one-session", prompt="first", source="bridge")
+    first = await engine.submit(
+        intent,
+        idempotency_key="bridge:one-session:first",
+        exclusive_session=True,
+    )
+    replay = await engine.submit(
+        intent,
+        idempotency_key="bridge:one-session:first",
+        exclusive_session=True,
+    )
+    assert replay.run_id == first.run_id
+
+    assert await ledger.try_claim_run(first.run_id, enqueue_seq=0) is True
+    assert (
+        await ledger.try_settle_claim(
+            first.run_id,
+            enqueue_seq=0,
+            status=RunStatus.DONE,
+        )
+        is True
+    )
+
+    following = await engine.submit(
+        Intent(session_id="one-session", prompt="second", source="bridge"),
+        idempotency_key="bridge:one-session:second",
+        exclusive_session=True,
+    )
+    assert following.run_id != first.run_id
+
+
+@pytest.mark.asyncio
+async def test_exclusive_session_key_cannot_collide_with_idempotency_key() -> None:
+    engine, _ledger, _queues = _engine()
+    session_id = "one-session"
+
+    async with asyncio.timeout(1):
+        handle = await engine.submit(
+            Intent(session_id=session_id, prompt="first", source="bridge"),
+            idempotency_key=f"exclusive-session:{session_id}",
+            exclusive_session=True,
+        )
+
+    assert handle.run_id
+
+
+@pytest.mark.asyncio
+async def test_exclusive_session_uses_bounded_nonterminal_ledger_query() -> None:
+    ledger = _BoundedSessionAdmissionLedger()
+    queues = {"runs": _FakeQueue(), "rites": _FakeQueue()}
+    engine = RunEngine(
+        ledger=ledger,
+        bus=InProcessEventBus(ledger=ledger),
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues=queues,
+    )
+
+    handle = await engine.submit(
+        Intent(session_id="bounded-session", prompt="first", source="bridge"),
+        idempotency_key="bounded-admission",
+        exclusive_session=True,
+    )
+
+    assert handle.run_id
+    assert ledger.nonterminal_queries == ["bounded-session"]
 
 
 @pytest.mark.asyncio
@@ -918,6 +1045,171 @@ async def test_concurrent_cancel_calls_have_one_abort_and_terminal_writer() -> N
 
 
 @pytest.mark.asyncio
+async def test_concurrent_terminal_evidence_repairs_share_one_writer() -> None:
+    """A second repair waits while the first terminal append is still in flight."""
+
+    class _BlockingDoneLedger(InMemoryRunLedger):
+        def __init__(self) -> None:
+            super().__init__(honor_intent_run_id=True)
+            self.entered = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def append_event(self, event: RunEvent) -> None:
+            if event.kind is RunEventKind.DONE:
+                self.entered.set()
+                await self.release.wait()
+            await super().append_event(event)
+
+    ledger = _BlockingDoneLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
+    )
+    await ledger.create(
+        Intent(session_id="s", run_id="repair-once", prompt="hi", source="bridge"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=70,
+    )
+    assert await ledger.try_claim_run("repair-once", enqueue_seq=0) is True
+    assert (
+        await ledger.try_settle_claim(
+            "repair-once",
+            enqueue_seq=0,
+            status=RunStatus.DONE,
+        )
+        is True
+    )
+
+    first = asyncio.create_task(engine.ensure_terminal_evidence("repair-once"))
+    await ledger.entered.wait()
+    second = asyncio.create_task(engine.ensure_terminal_evidence("repair-once"))
+    await asyncio.sleep(0)
+    assert second.done() is False
+
+    ledger.release.set()
+    await asyncio.gather(first, second)
+
+    events = await ledger.list_events("repair-once")
+    assert [(event.seq, event.kind, event.data) for event in events] == [(0, RunEventKind.DONE, RunStatus.DONE.value)]
+
+
+@pytest.mark.asyncio
+async def test_cancelled_terminal_repair_leader_hands_off_to_its_follower() -> None:
+    """Caller cancellation cannot cancel the shared append or strand the repair key."""
+
+    class _BlockingDoneLedger(InMemoryRunLedger):
+        def __init__(self) -> None:
+            super().__init__(honor_intent_run_id=True)
+            self.entered = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def append_event(self, event: RunEvent) -> None:
+            if event.kind is RunEventKind.DONE:
+                self.entered.set()
+                await self.release.wait()
+            await super().append_event(event)
+
+    ledger = _BlockingDoneLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
+    )
+    await ledger.create(
+        Intent(session_id="s", run_id="repair-handoff", prompt="hi", source="bridge"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=70,
+    )
+    assert await ledger.try_claim_run("repair-handoff", enqueue_seq=0) is True
+    assert (
+        await ledger.try_settle_claim(
+            "repair-handoff",
+            enqueue_seq=0,
+            status=RunStatus.DONE,
+        )
+        is True
+    )
+
+    leader = asyncio.create_task(engine.ensure_terminal_evidence("repair-handoff"))
+    await ledger.entered.wait()
+    follower = asyncio.create_task(engine.ensure_terminal_evidence("repair-handoff"))
+    await asyncio.sleep(0)
+
+    leader.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await leader
+    assert follower.done() is False
+
+    ledger.release.set()
+    await follower
+
+    events = await ledger.list_events("repair-handoff")
+    assert [(event.seq, event.kind, event.data) for event in events] == [(0, RunEventKind.DONE, RunStatus.DONE.value)]
+
+
+@pytest.mark.asyncio
+async def test_terminal_evidence_retry_starts_a_fresh_writer_generation() -> None:
+    """A failed terminal append remains visible, then an explicit retry repairs it."""
+
+    class _FailOnceDoneLedger(InMemoryRunLedger):
+        def __init__(self) -> None:
+            super().__init__(honor_intent_run_id=True)
+            self.fail = True
+
+        async def append_event(self, event: RunEvent) -> None:
+            if event.kind is RunEventKind.DONE and self.fail:
+                self.fail = False
+                msg = "terminal append failed"
+                raise RuntimeError(msg)
+            await super().append_event(event)
+
+    ledger = _FailOnceDoneLedger()
+    bus = InProcessEventBus(ledger=ledger)
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(),
+        queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
+    )
+    await ledger.create(
+        Intent(session_id="s", run_id="repair-retry", prompt="hi", source="bridge"),
+        workflow_name="bridge_chat",
+        queue_name="runs",
+        priority=70,
+    )
+    assert await ledger.try_claim_run("repair-retry", enqueue_seq=0) is True
+    assert (
+        await ledger.try_settle_claim(
+            "repair-retry",
+            enqueue_seq=0,
+            status=RunStatus.FAILED,
+            error="failed",
+        )
+        is True
+    )
+
+    with pytest.raises(RuntimeError, match="terminal append failed"):
+        await engine.ensure_terminal_evidence("repair-retry")
+    with pytest.raises(RuntimeError, match="terminal append failed"):
+        await bus.wait_persisted("repair-retry")
+
+    await engine.ensure_terminal_evidence("repair-retry")
+
+    events = await ledger.list_events("repair-retry")
+    assert [(event.seq, event.kind, event.data) for event in events] == [(0, RunEventKind.DONE, RunStatus.FAILED.value)]
+
+
+@pytest.mark.asyncio
 async def test_cancel_failure_leaves_honest_cancelling_truth_for_retry() -> None:
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
@@ -1072,14 +1364,25 @@ async def test_cancelled_retry_repairs_an_escaped_pending_consent() -> None:
 @pytest.mark.asyncio
 async def test_delegate_cancelled_error_keeps_run_honestly_cancelling() -> None:
     class CancelledDelegate:
-        async def jobs_for_run(self, run_id: str) -> tuple[Any, ...]:
+        def __init__(self) -> None:
+            self.bounds: list[tuple[int | None, int | None]] = []
+
+        async def jobs_for_run(
+            self,
+            run_id: str,
+            *,
+            limit: int | None = None,
+            event_limit: int | None = None,
+        ) -> tuple[Any, ...]:
             _ = run_id
+            self.bounds.append((limit, event_limit))
             return (SimpleNamespace(ref=SimpleNamespace(job_id="job-cancelled")),)
 
         async def cancel(self, job_id: str) -> bool:
             _ = job_id
             raise asyncio.CancelledError
 
+    delegates = CancelledDelegate()
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     engine = RunEngine(
         ledger=ledger,
@@ -1087,7 +1390,7 @@ async def test_delegate_cancelled_error_keeps_run_honestly_cancelling() -> None:
         workflows=builtin_workflow_registry(),
         queue_router=QueueRouter(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
-        delegates=CancelledDelegate(),  # type: ignore[arg-type]
+        delegates=delegates,  # type: ignore[arg-type]
     )
     await engine.submit(Intent(session_id="s", run_id="cancel-uncertain", prompt="hi", source="bridge"))
 
@@ -1097,6 +1400,7 @@ async def test_delegate_cancelled_error_keeps_run_honestly_cancelling() -> None:
     run = await ledger.get("cancel-uncertain")
     assert run is not None
     assert run.status is RunStatus.CANCELLING
+    assert delegates.bounds == [(None, 0)]
 
 
 @pytest.mark.asyncio

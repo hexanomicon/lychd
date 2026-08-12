@@ -66,6 +66,12 @@ def _delegated_prompt(prompt: str) -> str:
     return stripped[len(_COMMAND) :].strip()
 
 
+def _matches_delegate_command(prompt: str) -> bool:
+    """Match the slash command as one token, not as an arbitrary prefix."""
+    tokens = prompt.strip().split(maxsplit=1)
+    return bool(tokens) and tokens[0].lower() == _COMMAND
+
+
 @dataclass
 class DispatchDelegate(DelegatedAgentNode, BaseNode[DelegatedRiteState, WorkflowServices, str]):
     """Submit once, then resume this same station from durable AgentJob truth."""
@@ -160,8 +166,8 @@ DELEGATED_RITE = Workflow(
     title="Delegated Rite",
     description="Pass bounded work through one sealed AgentJob and resume from durable truth.",
     trigger=Trigger(
-        hint="Bridge prompts beginning with /delegate",
-        match=lambda intent: intent.source == "bridge" and intent.prompt.strip().lower().startswith(_COMMAND),
+        hint="Bridge prompts using the /delegate command",
+        match=lambda intent: intent.source == "bridge" and _matches_delegate_command(intent.prompt),
     ),
     graph=DELEGATED_RITE_GRAPH,
     start_node=DispatchDelegate,

@@ -835,8 +835,9 @@ async def test_perform_run_fails_honestly_when_pinned_pattern_is_unavailable(
     """A worker never executes against corrupt, drifted, or unavailable Pattern law."""
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, f"pattern-{case}")
-    run = await ledger.get(f"pattern-{case}")
-    assert run is not None
+    # Deliberately corrupt canonical storage through the adapter's private seam;
+    # public reads are detached snapshots, as they are with PostgreSQL.
+    run = ledger._require(f"pattern-{case}")
 
     if case == "invalid_checksum":
         run.pattern_manifest["digest"] = "0" * 64
@@ -1427,8 +1428,8 @@ async def test_reconcile_respects_boot_cutoff_and_deletes_checkpoint() -> None:
 
     # Give "old" an orphaned durable checkpoint (as an AWAITING_HARDWARE crash would).
     await substrate.stasis_store.replace("old", [])
-    old = await ledger.get("old")
-    assert old is not None
+    # Backdate canonical storage to model a run claimed by the prior process.
+    old = ledger._require("old")
     assert old.started_at is not None
     old.started_at = datetime.now(UTC) - timedelta(seconds=30)  # predates the boot cutoff
 

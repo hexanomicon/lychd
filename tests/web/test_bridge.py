@@ -447,9 +447,23 @@ def test_run_snapshot_reconstructs_delegated_crossing(
         return job.job_id
 
     job_id = asyncio.run(_seed())
+    jobs_for_run = fake_services.delegates.jobs_for_run
+    bounds: list[tuple[int | None, int | None]] = []
+
+    async def record_bounded_read(
+        correlated_run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[Any, ...]:
+        bounds.append((limit, event_limit))
+        return await jobs_for_run(correlated_run_id, limit=limit, event_limit=event_limit)
+
+    fake_services.delegates.jobs_for_run = record_bounded_read
     response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
 
     assert response.status_code == 200
+    assert bounds == [(1, 0)]
     body = response.json()
     assert body["run_status"] == "awaiting_delegate"
     assert body["delegated_job_id"] == job_id
@@ -553,6 +567,7 @@ def test_send_happy_path(
     assert fake_services.run_engine.submitted[0].prompt == "raise the dead"
     assert fake_services.run_engine.submitted[0].sigil_name
     assert fake_services.run_engine.submitted[0].sigil_scopes
+    assert fake_services.run_engine.exclusive_session_submissions == [True]
 
 
 def test_send_replay_returns_one_run_and_one_retained_turn(

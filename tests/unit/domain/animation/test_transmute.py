@@ -296,9 +296,7 @@ def test_soulstone_mount_check_resolves_host_symlink_aliases(
 ) -> None:
     alias = tmp_path / "codex-alias"
     alias.symlink_to(constants.PATH_CODEX_ROOT, target_is_directory=True)
-    stone = SoulstoneFactory.build(
-        name="alias", quadlet={"image": "example/runtime"}, volumes=[f"{alias}:/models:ro"]
-    )
+    stone = SoulstoneFactory.build(name="alias", quadlet={"image": "example/runtime"}, volumes=[f"{alias}:/models:ro"])
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])
@@ -340,9 +338,7 @@ def test_soulstone_mounts_respect_configured_control_paths(
     }[control_path]
     safe_host = tmp_path / "models"
     mounts = [f"{selected}:/models:ro"] if side == "host" else [f"{safe_host}:{selected}:ro"]
-    stone = SoulstoneFactory.build(
-        name="configured-control", quadlet={"image": "example/runtime"}, volumes=mounts
-    )
+    stone = SoulstoneFactory.build(name="configured-control", quadlet={"image": "example/runtime"}, volumes=mounts)
 
     with pytest.raises(ValueError, match="overlaps protected control root"):
         Transmuter(settings=settings, runtime_planner=RuntimeAdapterRegistry()).transmute_all([stone])

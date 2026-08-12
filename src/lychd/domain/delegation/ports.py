@@ -54,7 +54,15 @@ class DelegatedAgentJobStore(Protocol):
 
     async def get_by_request(self, request_id: str) -> DelegatedAgentJob | None: ...
 
-    async def jobs_for_run(self, run_id: str) -> tuple[DelegatedAgentJob, ...]: ...
+    async def jobs_for_run(
+        self,
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[DelegatedAgentJob, ...]:
+        """Return newest bounded jobs and event suffixes in creation order."""
+        ...
 
     async def transition(
         self,
@@ -82,7 +90,15 @@ class DelegatedAgentCoordinatorPort(Protocol):
 
     async def get(self, job_id: str) -> DelegatedAgentJob | None: ...
 
-    async def jobs_for_run(self, run_id: str) -> tuple[DelegatedAgentJob, ...]: ...
+    async def jobs_for_run(
+        self,
+        run_id: str,
+        *,
+        limit: int | None = None,
+        event_limit: int | None = None,
+    ) -> tuple[DelegatedAgentJob, ...]:
+        """Return newest bounded jobs and event suffixes in creation order."""
+        ...
 
     async def refresh(self, job_id: str) -> DelegatedAgentJob: ...
 
