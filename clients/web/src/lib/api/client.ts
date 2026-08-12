@@ -162,10 +162,11 @@ export async function getLoomPatternRevision(
 
 export async function getOrbRun(
   runId: string,
-  options: { afterSeq?: number; limit?: number } = {}
+  options: { afterSeq?: number; limit?: number; signal?: AbortSignal } = {}
 ): Promise<OrbRunSnapshot> {
   return unwrap(
     await client.GET("/api/v1/orb/runs/{run_id}", {
+      signal: options.signal,
       params: {
         path: { run_id: runId },
         query: {

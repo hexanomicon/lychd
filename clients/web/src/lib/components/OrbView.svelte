@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { tick } from "svelte";
+  import { onDestroy, tick } from "svelte";
 
   import { getOrbRun } from "$lib/api/client";
   import type { OrbRunSnapshot } from "$lib/api/models";
@@ -28,6 +28,8 @@
   let loadMoreError = $state("");
   let selectionNote = $state("");
   let loadVersion = 0;
+  let loadController: AbortController | undefined;
+  let loadMoreController: AbortController | undefined;
   let activeRunId: string | undefined;
   let selectedInspector: HTMLElement | undefined;
   let selectionReturnFocus: HTMLElement | undefined;
@@ -59,6 +61,11 @@
   $effect(() => {
     if (runId) void load(runId);
     else {
+      loadVersion++;
+      loadController?.abort();
+      loadMoreController?.abort();
+      loadController = undefined;
+      loadMoreController = undefined;
       activeRunId = undefined;
       snapshot = null;
       selected = null;
@@ -66,6 +73,12 @@
       loadingMore = false;
       loadMoreError = "";
     }
+  });
+
+  onDestroy(() => {
+    loadVersion++;
+    loadController?.abort();
+    loadMoreController?.abort();
   });
 
   $effect(() => {
@@ -99,6 +112,11 @@
 
   async function load(id: string) {
     const version = ++loadVersion;
+    const controller = new AbortController();
+    loadController?.abort();
+    loadMoreController?.abort();
+    loadController = controller;
+    loadMoreController = undefined;
     const identityChanged = activeRunId !== id;
     activeRunId = id;
     loading = true;
@@ -112,7 +130,7 @@
       selectionReturnFocus = undefined;
     }
     try {
-      const next = await getOrbRun(id, { limit: 100 });
+      const next = await getOrbRun(id, { limit: 100, signal: controller.signal });
       if (version !== loadVersion) return;
       if (next.run.run_id !== id) {
         throw new Error("The Orb returned evidence for another Run.");
@@ -123,6 +141,7 @@
         error = cause instanceof Error ? cause.message : "The evidence could not be read.";
       }
     } finally {
+      if (loadController === controller) loadController = undefined;
       if (version === loadVersion) loading = false;
     }
   }
@@ -132,10 +151,16 @@
     const afterSeq = current?.next_after_seq;
     if (!runId || !current?.has_more || afterSeq == null || loadingMore) return;
     const version = loadVersion;
+    const controller = new AbortController();
+    loadMoreController = controller;
     loadingMore = true;
     loadMoreError = "";
     try {
-      const next = await getOrbRun(runId, { afterSeq, limit: 100 });
+      const next = await getOrbRun(runId, {
+        afterSeq,
+        limit: 100,
+        signal: controller.signal
+      });
       if (version !== loadVersion || snapshot !== current) return;
       if (next.run.run_id !== runId || next.run.run_id !== current.run.run_id) {
         throw new Error("The Orb returned evidence for another Run.");
@@ -150,6 +175,7 @@
         loadMoreError = cause instanceof Error ? cause.message : "More evidence could not be read.";
       }
     } finally {
+      if (loadMoreController === controller) loadMoreController = undefined;
       if (version === loadVersion) loadingMore = false;
     }
   }

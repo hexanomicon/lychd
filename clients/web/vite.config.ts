@@ -6,8 +6,8 @@ const exactSourceRevision =
   process.env.LYCHD_ALTAR_VERSION?.trim() || process.env.GITHUB_SHA?.trim();
 const sourceRevision = exactSourceRevision || "source";
 const sourceUrl = exactSourceRevision
-  ? `https://github.com/hexanomicon/lychd/tree/${encodeURIComponent(exactSourceRevision)}/frontend`
-  : "https://github.com/hexanomicon/lychd/tree/main/frontend";
+  ? `https://github.com/hexanomicon/lychd/tree/${encodeURIComponent(exactSourceRevision)}/clients/web`
+  : "https://github.com/hexanomicon/lychd/tree/main/clients/web";
 const sourceLabel = exactSourceRevision
   ? "Corresponding source · MPL-2.0"
   : "Project source · MPL-2.0";

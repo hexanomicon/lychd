@@ -10,15 +10,15 @@ The compiled Altar under `src/lychd/public/` contains third-party JavaScript and
 Their package identities, declared license expressions, copyright notices, and license texts are
 shipped with the browser artifact at
 `src/lychd/public/THIRD_PARTY_NOTICES.txt`. The deterministic source inventory lives at
-`frontend/static/THIRD_PARTY_NOTICES.txt` and is regenerated from the pinned
-`frontend/package-lock.json` with:
+`clients/web/static/THIRD_PARTY_NOTICES.txt` and is regenerated from the pinned
+`clients/web/package-lock.json` with:
 
 ```text
-cd frontend
+cd clients/web
 npm run licenses
 ```
 
-The corresponding rebuildable Altar source is distributed in `frontend/` within the LychD source
+The corresponding rebuildable Altar source is distributed in `clients/web/` within the LychD source
 distribution. The browser footer links the source revision and this notice inventory.
 
 ## Vessel Python Environment

@@ -7,6 +7,13 @@ from pathlib import Path
 ROOT = Path(__file__).parents[2]
 
 
+def test_delivery_clients_are_project_roots_outside_python_source() -> None:
+    assert (ROOT / "clients" / "web" / "package.json").is_file()
+    assert (ROOT / "clients" / "android" / "README.md").is_file()
+    assert not (ROOT / "frontend").exists()
+    assert not (ROOT / "src" / "clients").exists()
+
+
 def test_python_distributions_declare_every_project_notice() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
@@ -14,7 +21,7 @@ def test_python_distributions_declare_every_project_notice() -> None:
     assert set(project["project"]["license-files"]) == {
         "LICENSE",
         "THIRD_PARTY_NOTICES.md",
-        "frontend/static/THIRD_PARTY_NOTICES.txt",
+        "clients/web/static/THIRD_PARTY_NOTICES.txt",
     }
 
     sdist_includes = set(project["tool"]["hatch"]["build"]["targets"]["sdist"]["include"])
@@ -23,7 +30,7 @@ def test_python_distributions_declare_every_project_notice() -> None:
         "/LICENSE",
         "/Makefile",
         "/THIRD_PARTY_NOTICES.md",
-        "/frontend",
+        "/clients/web",
         "/scripts",
         "/src",
     } <= sdist_includes
@@ -67,7 +74,7 @@ def test_container_carries_project_license_and_notices() -> None:
 
 
 def test_altar_notice_is_generated_and_shipped_with_static_client() -> None:
-    source_notice = ROOT / "frontend" / "static" / "THIRD_PARTY_NOTICES.txt"
+    source_notice = ROOT / "clients" / "web" / "static" / "THIRD_PARTY_NOTICES.txt"
     public_notice = ROOT / "src" / "lychd" / "public" / "THIRD_PARTY_NOTICES.txt"
     notice = source_notice.read_text(encoding="utf-8")
 
@@ -76,8 +83,18 @@ def test_altar_notice_is_generated_and_shipped_with_static_client() -> None:
     assert "Regenerate with: npm run licenses" in notice
     assert public_notice.read_bytes() == source_notice.read_bytes()
 
-    package = json.loads((ROOT / "frontend" / "package.json").read_text(encoding="utf-8"))
+    package = json.loads((ROOT / "clients" / "web" / "package.json").read_text(encoding="utf-8"))
     assert package["scripts"]["build"].startswith("npm run licenses && ")
+
+
+def test_ordinary_altar_ci_does_not_stamp_the_ambient_github_revision() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "checks.yml").read_text(encoding="utf-8")
+    frontend_commands = [line.strip() for line in workflow.splitlines() if "make frontend-" in line]
+
+    assert frontend_commands == [
+        "env -u GITHUB_SHA make frontend-check",
+        "env -u GITHUB_SHA make frontend-build",
+    ]
 
 
 def test_candidate_workflow_cannot_publish_packages_or_images() -> None:

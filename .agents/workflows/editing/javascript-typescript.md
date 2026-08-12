@@ -1,7 +1,7 @@
 # JavaScript and TypeScript Editing
 
 Load this card immediately before changing `.js`, `.jsx`, `.ts`, or `.tsx` files. For
-`frontend/**`, load the Frontend scope first. Svelte-family files additionally follow the Svelte
+`clients/web/**`, load the Frontend scope first. Svelte-family files additionally follow the Svelte
 scope instead of treating this card as framework guidance.
 
 ## Inspect before patching
@@ -34,7 +34,7 @@ repeats the code.
 
 ## Verify
 
-Run the closest test first, then the package's type/lint gate. For `frontend/**`, use the exact
+Run the closest test first, then the package's type/lint gate. For `clients/web/**`, use the exact
 frontend checks routed by the Frontend scope and run the production build when routes,
 configuration, CSS, dependencies, or packaged assets change.
 

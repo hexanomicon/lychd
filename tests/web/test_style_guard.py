@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-FRONTEND = REPO / "frontend" / "src"
+FRONTEND = REPO / "clients" / "web" / "src"
 
 
 def test_svelte_uses_no_raw_html_sink() -> None:
@@ -33,7 +33,7 @@ def test_static_client_has_no_sveltekit_server_modules() -> None:
 
 
 def test_frontend_styling_is_native_css() -> None:
-    package = json.loads((REPO / "frontend" / "package.json").read_text(encoding="utf-8"))
+    package = json.loads((REPO / "clients" / "web" / "package.json").read_text(encoding="utf-8"))
     declared = {*package.get("dependencies", {}), *package.get("devDependencies", {})}
     forbidden_dependencies = {
         "autoprefixer",

@@ -12,13 +12,13 @@ MAKEFLAGS += --no-print-directory
 # Argument extraction for tests
 # Usage: make test K="animation" M="unit"
 #        make test PYTEST_TARGETS="tests/unit/config/runes"
-# Default parallelism is auto, but can be overridden (e.g., make test N=0).
+# The reliable default is serial; opt into bounded parallelism explicitly (e.g., make test N=8).
 # Disposable container receipts are excluded unless ``make test-containers`` is used.
 # Default output is compact for agent context. Use VERBOSE=1 when debugging:
 # it disables RTK filtering and makes pytest stream stdout plus long tracebacks
-# into the caller. Pytest log streaming is already owned by pyproject.toml.
+# into the caller and enables live DEBUG logging.
 # RTK is optional; when it is missing, targets fall back to raw uv/curl/grep.
-N ?= auto
+N ?= 0
 VERBOSE ?= 0
 PYTEST_TARGETS ?= tests
 CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
@@ -26,7 +26,8 @@ CONTAINER_TEST_TARGETS ?= tests/integration/test_db_consent_pg.py \
 	tests/integration/test_db_nexus_pg.py \
 	tests/integration/test_db_run_ledger_pg.py \
 	tests/integration/test_production_wiring.py::test_production_wiring_real_factory_over_postgres_survives_second_boot
-PYTEST_BASETEMP ?= .cache/pytest
+PYTEST_BASE_ROOT ?= .cache/pytest
+PYTEST_BASETEMP ?=
 RUFF_TARGETS ?= .
 FORMAT_TARGETS ?= .
 TYPECHECK_TARGETS ?=
@@ -35,11 +36,14 @@ RELEASE_TAG ?=
 RELEASE_ARTIFACT_DIR ?= .cache/release-candidate/$(RELEASE_REVISION)
 PYTEST_EFFECTIVE_TARGETS := $(PYTEST_TARGETS)
 UV ?= uv
-UV_DEV_RUN := $(UV) run --extra postgres-binary
+UV_DEV_RUN := $(UV) run --locked --extra postgres-binary
 UV_CACHE_DIR ?= .cache/uv
 RTK ?= rtk
 RTK_AVAILABLE := $(shell command -v $(RTK) >/dev/null 2>&1 && echo 1 || echo 0)
 RTK_ACTIVE := $(RTK_AVAILABLE)
+# Keep pytest attached directly to its xdist workers. A presentation wrapper may
+# compact output, but it must not become part of worker shutdown correctness.
+PYTEST := $(UV_DEV_RUN) pytest
 
 ifeq ($(VERBOSE),1)
 RTK_ACTIVE := 0
@@ -49,7 +53,6 @@ ifeq ($(RTK_ACTIVE),1)
 RUN := $(UV_DEV_RUN) $(RTK) run
 ERR := $(UV_DEV_RUN) $(RTK) err
 RUFF := $(UV_DEV_RUN) $(RTK) ruff
-PYTEST := $(UV_DEV_RUN) $(RTK) pytest
 TYPECHECK := $(UV_DEV_RUN) --group typing $(RTK) err basedpyright
 CURL := $(RTK) curl
 GREP := $(RTK) grep
@@ -57,7 +60,6 @@ else
 RUN :=
 ERR :=
 RUFF := $(UV_DEV_RUN) ruff
-PYTEST := $(UV_DEV_RUN) pytest
 TYPECHECK := $(UV_DEV_RUN) --group typing basedpyright
 CURL := curl
 GREP := grep
@@ -65,11 +67,15 @@ endif
 
 # Keep generated fixtures beneath the checkout so strict path-authority tests
 # do not inherit a foreign-owned `/tmp` from containers or coding sandboxes.
-PYTEST_ARGS := -n $(N) --dist loadscope --basetemp $(PYTEST_BASETEMP)
-CONTAINER_PYTEST_ARGS := -n $(N) --dist loadscope --basetemp $(PYTEST_BASETEMP) -m container
+PYTEST_ARGS := -n $(N) --dist loadscope
+CONTAINER_PYTEST_ARGS := -n $(N) --dist loadscope -m container
 ifeq ($(VERBOSE),1)
-	PYTEST_ARGS += -s --tb=long
-	CONTAINER_PYTEST_ARGS += -s --tb=long
+	PYTEST_ARGS += -s --tb=long -o log_cli=true --log-cli-level=DEBUG
+	CONTAINER_PYTEST_ARGS += -s --tb=long -o log_cli=true --log-cli-level=DEBUG
+else
+	# pyproject adds ``-v``; two quiet flags yield one genuinely compact level.
+	PYTEST_ARGS += -qq
+	CONTAINER_PYTEST_ARGS += -qq
 endif
 ifdef K
 	PYTEST_ARGS += -k "$(K)"
@@ -134,32 +140,33 @@ install: ## Install Python dependencies (Backend)
 # =============================================================================
 
 NPM ?= npm
+WEB_CLIENT_DIR ?= clients/web
 
 .PHONY: frontend-install
 frontend-install: ## Install the pinned Svelte Altar dependencies with npm
 	@echo "${INFO} Installing frontend dependencies..."
-	@$(NPM) ci --prefix frontend
+	@$(NPM) ci --prefix $(WEB_CLIENT_DIR)
 	@echo "${OK} Frontend dependencies installed."
 
 .PHONY: frontend-dev
 frontend-dev: ## Run the SvelteKit Altar in loopback-only development mode
 	@echo "${INFO} Starting frontend dev server..."
-	@$(NPM) --prefix frontend run dev
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run dev
 
 .PHONY: frontend-build
 frontend-build: ## Generate contracts and compile the static Svelte Altar
 	@echo "${INFO} Building frontend assets..."
 	@$(UV_DEV_RUN) python scripts/export_openapi.py
-	@$(NPM) --prefix frontend run generate:api
-	@$(NPM) --prefix frontend run build
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run generate:api
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run build
 	@echo "${OK} Frontend build complete."
 
 .PHONY: frontend-check
 frontend-check: ## Type-check and test the Svelte Altar
 	@$(UV_DEV_RUN) python scripts/export_openapi.py
-	@$(NPM) --prefix frontend run generate:api
-	@$(NPM) --prefix frontend run check
-	@$(NPM) --prefix frontend run test
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run generate:api
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run check
+	@$(NPM) --prefix $(WEB_CLIENT_DIR) run test
 
 .PHONY: clean
 clean: ## Nuke all artifacts, caches, and build files
@@ -210,12 +217,26 @@ type-check: ## Run BasedPyright. Usage: make type-check TYPECHECK_TARGETS="src/l
 .PHONY: test
 test: ## Run tests. Usage: make test K="anim" M="unit"
 	@echo "${INFO} Running tests (Args: $(PYTEST_ARGS) Targets: $(PYTEST_EFFECTIVE_TARGETS))..."
-	@$(PYTEST) $(PYTEST_ARGS) $(PYTEST_EFFECTIVE_TARGETS)
+	@basetemp="$(strip $(PYTEST_BASETEMP))"
+	@if [[ -z "$$basetemp" ]]; then
+		mkdir -p "$(PYTEST_BASE_ROOT)"
+		basetemp="$$(mktemp -d "$(PYTEST_BASE_ROOT)/run.XXXXXX")"
+	else
+		mkdir -p "$$(dirname "$$basetemp")"
+	fi
+	@$(PYTEST) $(PYTEST_ARGS) --basetemp "$$basetemp" $(PYTEST_EFFECTIVE_TARGETS)
 
 .PHONY: test-containers
 test-containers: ## Run explicit disposable-PostgreSQL receipts; requires a Docker-compatible daemon
 	@echo "${INFO} Running disposable PostgreSQL receipts (Targets: $(CONTAINER_TEST_TARGETS))..."
-	@$(UV_DEV_RUN) --group container-test pytest $(CONTAINER_PYTEST_ARGS) $(CONTAINER_TEST_TARGETS)
+	@basetemp="$(strip $(PYTEST_BASETEMP))"
+	@if [[ -z "$$basetemp" ]]; then
+		mkdir -p "$(PYTEST_BASE_ROOT)"
+		basetemp="$$(mktemp -d "$(PYTEST_BASE_ROOT)/run.XXXXXX")"
+	else
+		mkdir -p "$$(dirname "$$basetemp")"
+	fi
+	@$(UV_DEV_RUN) --group container-test pytest $(CONTAINER_PYTEST_ARGS) --basetemp "$$basetemp" $(CONTAINER_TEST_TARGETS)
 
 .PHONY: test-config
 test-config: ## Run configurable/runes focused tests only
@@ -224,7 +245,14 @@ test-config: ## Run configurable/runes focused tests only
 .PHONY: coverage
 coverage: ## Run tests with coverage report
 	@echo "${INFO} Generating coverage..."
-	@$(PYTEST) --basetemp $(PYTEST_BASETEMP) --cov --cov-report=html:htmlcov --cov-report=term
+	@basetemp="$(strip $(PYTEST_BASETEMP))"
+	@if [[ -z "$$basetemp" ]]; then
+		mkdir -p "$(PYTEST_BASE_ROOT)"
+		basetemp="$$(mktemp -d "$(PYTEST_BASE_ROOT)/run.XXXXXX")"
+	else
+		mkdir -p "$$(dirname "$$basetemp")"
+	fi
+	@$(PYTEST) --basetemp "$$basetemp" -m "not container" --cov --cov-report=html:htmlcov --cov-report=term
 	@echo "${OK} Report generated at htmlcov/index.html"
 
 .PHONY: check
