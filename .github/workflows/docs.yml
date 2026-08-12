@@ -39,6 +39,9 @@ jobs:
           python-version: "3.13"
           enable-cache: true
           cache-suffix: pages
+          # The documentation group installs without writing UV_CACHE_DIR, so the
+          # post step would otherwise fail the job after the artifact is already built.
+          ignore-nothing-to-cache: true
 
       - name: Build published documentation
         run: uv run --only-group docs zensical build --clean
