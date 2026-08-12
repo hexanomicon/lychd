@@ -25,6 +25,23 @@ If Veil is projected through Quadlet, its future Rune may embed the code-level `
 value under `quadlet`. Veil remains the Domain identity and owns its ingress fields and compiler;
 it is not another Stone, Animator, or opening for raw Quadlet/systemd text.
 
+## Reach deployment edges
+
+The [Reach deployment matrix](../compositions/reach/deployments/index.md) selects exact routes, not
+an `ingress` toggle. Home-only and standalone outbound VPS have no inbound application listener and
+therefore no Veil. `reach.edge-home.public@1` binds a private home Veil only to its Tether address
+and routes exact event-admission, delivery-claim, settlement, and unauthoritative-health operations
+to an isolated edge adapter. It never exposes a public listener. A later callback-only profile may
+route an authenticated update only to isolated Intercom ingress for one existing outbound task.
+A full A2A server is a separate profile with its own Ward, inbox/outbox, Workers, quotas, and
+result route.
+
+Neither profile may forward hostile bytes directly to the Reach core, Discord edge, or outbound
+credential gate. Every route names its methods, media types, compressed and expanded body limits,
+time/stream ceilings, backend, exposure tier, authentication precondition, and adapter revision; a
+wildcard path is forbidden. Veil receives edge certificates and routing material only, never bot,
+provider, A2A application, corpus-write, database, or delivery authority.
+
 ## Compiled ingress, not shared text
 
 Core and extensions contribute typed route intent: host/route match, backend service and port,

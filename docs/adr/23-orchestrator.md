@@ -63,7 +63,9 @@ TransitionArbiter has one owner. It orders contenders by descending priority the
 capability/same priority joins one in-flight plan, different priorities do not. A hard swap below
 min_priority_for_hard_swap declines before effect; NO_OP and SOFT_SWAP are never threshold gated.
 A warm/open fast path can return early, but every other plan is recomputed inside the arbiter after
-its predecessor settles. Previews bind nothing.
+its predecessor settles. The arbiter reserves the exact capability/priority cohort before its
+owner begins asynchronous registry preflight; followers join that result without probing, while a
+warm/open result still bypasses the global physical-transition section. Previews bind nothing.
 
 The actual rite is:
 

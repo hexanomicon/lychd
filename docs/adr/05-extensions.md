@@ -97,6 +97,16 @@ and a single owning contribution. Cross-store references are resolved and valida
 assembly before membership seals. Registering a Rune schema, Python client, URL, or familiar
 "OpenAI-compatible" label cannot synthesize any missing contribution.
 
+A versioned application deployment profile is another receiving-owner contract, not raw unit text
+or authority inherited from a Composition name. The future sealed `deployment_services` surface
+may admit exact service-role contributions from Core or an Extension Domain; Containers owns the
+`ApplicationDeploymentManifest@1` physical schema and compiler, Configuration owns selection and
+generation assembly, and the application profile owns which registered roles its workload needs.
+A contribution pins its owner, implementation revision, IPC contract, lifecycle, secret, network,
+mount, resource, and recovery requirements. Registration starts no service and cannot add an
+undeclared port, command, mount, network, credential, migration, or dependency during compilation.
+This surface is Designed and absent from the current `ExtensionRegistrationContext`.
+
 Future Spell and Scroll contribution preserves that boundary. Spellweaver-owned stores may admit
 portable Spell contracts and Scroll declarations; executable implementation and adapter stores
 remain separately owned by Extension and effect Domains. Contract publication, implementation
@@ -116,10 +126,12 @@ audit provenance uses disjoint trust-domain identities: `core`, `builtin:<activa
 `crypt:<activation-id>`. Its shaped store facades capture one fixed provider identity and do
 not expose the root provenance mutator; even a retained facade cannot inherit a later registrant's
 identity. Stores retain that provenance, reject another provider's replay even when the Python
-value is equal, and seal membership after the one assembly pass. `AssembledExtensions` therefore
-exposes projections without registration mutators, not a live registry that arbitrary runtime code
-may extend. This seal does not recursively freeze trusted contributed Python objects; each
-contribution contract must provide its own immutability or defensive-copy boundary.
+value is equal, and seal membership after the one assembly pass. `AssembledExtensions` exposes
+read projections plus the sealed root context; retained registration methods remain present for
+assembly compatibility but reject every post-assembly write. It is not a live registry that
+arbitrary runtime code may extend. This seal does not recursively freeze trusted contributed
+Python objects; each contribution contract must provide its own immutability or defensive-copy
+boundary.
 
 ### 3. Contributions as Organs
 
@@ -193,14 +205,14 @@ Crypt packages may live outside the tree while importing internals and `RuneConf
 Magus-local, refactor-risking path; Assimilation may repair it, but no compatibility guarantee is
 made.
 
-#### The Independent Product Path (v1+)
+#### The Independent Extension Package Path (v1+)
 
-An independent product is deferred until a versioned public API, conformance tests, and Forge
+An independently released extension package is deferred until a versioned public API, conformance tests, and Forge
 packaging exist. No SDK is created now and no independent compatibility promise is implied.
 Foreign agent frameworks are not first-class in-process runtimes: use an external-service
 Animator, A2A Emissary, or `DelegatedAgentNode` adapter, or assimilate their useful patterns.
 
-| Property | Built-in Direct | Private Coupled | Future Independent Product |
+| Property | Built-in Direct | Private Coupled | Future Independent Package |
 | --- | --- | --- | --- |
 | Location | `src/lychd/extensions/builtin/` | Magus-owned Crypt space | Forge-managed distribution |
 | Coupling | Core internals and subclasses | Internals by choice | Versioned public API only |

@@ -29,10 +29,24 @@ not create Codex files, repair input, generate credentials, or mutate the enviro
 materializes and revalidates its own copy rather than retaining mutable nested models.
 
 `[extensions]` selects permitted built-in and Crypt packages; it neither selects an application nor
-creates a runtime. A future application selector requires its own accepted Spellweaver schema and may
-resolve only registered revisions. Settings owns the fixed `runs` and `rites` physical queues and
-their concurrency; routing can name only those queues. Global port claims and Rune port claims are
-arbitrated before any unit is written.
+creates a runtime. A future application selector requires its own accepted Spellweaver schema and
+may resolve only one registered exact profile revision, such as one of the mutually exclusive
+[Reach deployment profiles](../compositions/reach/deployments/index.md). For each application and
+Habitat partition, that immutable selection binds one authority epoch, one Discord edge epoch, one
+active Phylactery, one Gateway/delivery credential owner, and the exact per-host role set. Unknown
+mixtures and boolean authority switches such as `trusted`, `use_vps`, `local_db`, or `tether`
+fail before Bind. The selected profile contributes no raw units: one immutable generation resolves
+its exact Composition/Pattern revisions and registered service roles into the
+[`ApplicationDeploymentManifest@1`](08-containers.md#versioned-application-deployments), then
+revalidates global ports, routes, secrets, mounts, migrations, dependencies, and resource policy
+before Bind. Settings owns the fixed `runs` and `rites` physical queues and their concurrency;
+routing can name only those queues. Global port claims and Rune port claims are arbitrated before
+any unit is written.
+
+Changing profile or authority location is a typed Evolution effect, not Settings reload. It must
+quiesce admission, settle or preserve external-effect identities, fence the old epochs, revoke old
+routes and credential owners, transactionally restore an admitted partition when authority moves,
+and activate the new generation last. An old or simultaneous generation fails closed.
 
 ## Runes: location, provenance, semantics
 

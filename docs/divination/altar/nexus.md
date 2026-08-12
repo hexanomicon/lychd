@@ -100,6 +100,31 @@ No graph-shaped body map is delivered. Nexus is a card board, preview drawer, ti
 latest-observation inspector. It does not show queue order, leases, GPU/VRAM/topology/thermal
 pressure, durable history, configuration editing, provider accounts, billing, or credentials.
 
+That native semantic board remains the primary Nexus form. If a body map is admitted later, its
+first trial is a read-only Svelte DOM/SVG lens over one timestamped, validated snapshot and
+available typed transition observations. It may show declared conflicts, containment, affected-set
+membership, drain, actuation, verification, and restoration, but it cannot derive a plan from
+layout, drag or edit a capability, reserve resources, or submit a transition from an edge. Preview
+and mutation remain typed server operations against a stable capability identity; stale or
+contained authority disables them in both the board and lens.
+
+Nexus therefore inherits no renderer from Loom or Orb. What the board displays is a hierarchy—
+Coven, Animator, capability—and a hierarchy folds by disclosure without a graph. The conflict
+structure that selects an eviction set is a real many-to-many graph, but it is compiled and consumed
+by the Vessel, spans two or three Animators on the profiles shipped here, and is not served to the
+browser. A graph library is considered only after a measured host or Legion topology exceeds the
+native lens, and then it must pass the same FOSS, public-API, authority, focus, accessibility,
+recovery, and repeated teardown gates in the
+[Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate). The semantic board
+remains the complete fallback and screen-reader surface.
+
+One designed gap is recorded rather than rendered. Preview names its evictions by Animator while the
+board keys its rows by capability, and a Coven can never hold two conflicting Animators, so an
+eviction always lands on a card other than the one previewed. Marking affected rows from the served
+plan would close that gap inside the existing board. Such a mark would restate one served plan in
+place—never a second calculation, reservation, or promise that the recalculated set will match—and
+would carry in text as well as treatment.
+
 ## Enter after first life
 
 After the four observations and same-host browser boundary in

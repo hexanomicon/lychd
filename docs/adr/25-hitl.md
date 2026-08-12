@@ -30,6 +30,13 @@ host lifecycle remain live-only until narrower enforced law exists. Current ledg
 Rune, Altar verdict, Graph park/resume, and guards do not prove a complete live-only taxonomy;
 State owns delivery.
 
+A candidate that touches a Spellweaver [Protected
+Region](28-workflow.md#authorship-provenance-and-protected-regions) is always live-only. Its call
+binds the exact base, candidate digest, affected region ids, old and replacement digests, an
+authorized exact-diff artifact, and target-owner effect revision. Codex preauthorization, a
+previous approval, or a broader repository grant cannot settle it. The verdict authorizes only
+promotion of that candidate; it does not attest that a human authored the replacement.
+
 ## Consent invariants
 
 ### One verdict, one visible call

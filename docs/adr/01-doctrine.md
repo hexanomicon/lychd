@@ -62,7 +62,7 @@ and registers; it does not compete for topology law.
 | `docs/adr/**` | Architectural law. |
 | State of Work | Shared whole-system delivery boundary and evidence envelope. |
 | Lexicon | Canonical meanings. |
-| Compositions | Native reference application contracts and worked examples; local delivery notes only where needed for interpretation. |
+| Compositions | Native reference reusable application contracts, Product boundaries, and worked examples; local delivery notes only where needed for interpretation. |
 | Sepulcher | Anatomy, operation, and recovery. |
 | Divination / Altar | Meeting the running body. |
 | Transcendence | The Great Work and constitutional meaning. |
@@ -87,6 +87,20 @@ playbooks preserve procedure, load after scope, and yield to canonical owners.
 Other pages summarize once and link. Begin at the fitting door, use parent indexes as maps, then
 read the smallest owner. Executable claims terminate in source, tests, lockfiles, artifacts, or
 maintained receipts; scratch notes, searches, and generated indexes own nothing.
+
+## Repository Source Topology
+
+The repository contains one authoritative LychD system and separately tooled delivery clients.
+`src/lychd/**` is the Python distribution and domain source. Native first-party Composition truth
+enters `src/lychd/compositions/<identity>/**`; a Portfolio page alone remains design, not delivery.
+
+`clients/<target>/**` contains complete client project roots. A client may own presentation,
+platform integration, connection mechanics, and bounded local interaction state, but its separate
+toolchain does not grant it Composition records, policy, effect authority, or finish judgment. The
+web project lives at `clients/web/**`; `clients/android/**` is the reserved Android project root.
+Each project keeps the source layout native to its toolchain, including `clients/web/src/**` and
+Android's `clients/android/app/src/main/**`. Repeated inner `src` names express separate build
+ownership rather than one mixed repository source tree.
 
 ## Consequences
 

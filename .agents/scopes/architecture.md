@@ -45,8 +45,10 @@ Also load [Build](build.md) when the task implements that truth under `src/**` o
 - Host lifecycle and Pulse: `docs/adr/13-layout.md`, `docs/adr/19-cli.md`,
   `src/lychd/cli/`, `src/lychd/system/readiness/`,
   `src/lychd/system/services/lifecycle/`
-- Anatomy and assembly: `docs/adr/13-layout.md`, `src/lychd/system/constants.py`,
-  `src/lychd/app.py`, `src/lychd/extensions/host.py`, `src/lychd/config/components.py`
+- Anatomy and application assembly: `docs/adr/11-backend.md`, `docs/adr/13-layout.md`,
+  `src/lychd/system/constants.py`, `src/lychd/app.py`,
+  `src/lychd/interface/web/lifespan.py`, `src/lychd/extensions/host.py`,
+  `src/lychd/config/components.py`
 
 ## Optional Reference Probes
 
@@ -66,7 +68,8 @@ acceptance, delivery, compatibility, or performance.
 - Check links and source hooks with targeted `rg` queries.
 - For Markdown-only work, run
   `git diff --check -- AGENTS.md docs .agents/scopes .agents/workflows`.
-- For published documentation or navigation changes, run `uv run zensical build --clean`.
+- For published documentation or navigation changes, run
+  `uv run --locked --only-group docs zensical build --clean`.
 - For source-backed decisions, run the targeted and repository gates defined in
   [CONTRIBUTING.md](../../CONTRIBUTING.md).
 

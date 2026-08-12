@@ -20,10 +20,13 @@ when the change crosses it.
 
 ### 1. The Engine (Pytest + Xdist)
 
-`pytest-xdist` runs the default suite in parallel. `N=0` requests serial execution, `K="expression"`
-selects a pytest keyword expression, `M="expression"` selects registered markers, and `VERBOSE=1`
-increases report detail. Scratch space defaults to
-`.cache/pytest`; `PYTEST_BASETEMP` may point to an alternate path owned by the invocation.
+The default suite is serial because some tests exercise shared host-resource boundaries; a caller
+may opt into bounded `pytest-xdist` parallelism with an explicit worker count such as `N=8`.
+`K="expression"` selects a pytest keyword expression, and `M="expression"` selects registered
+markers. Ordinary runs capture logs and allocate a unique invocation directory beneath
+`.cache/pytest` and use pytest's native compact report without an intervening output wrapper; an
+explicit `PYTEST_BASETEMP` instead names a caller-owned path. `VERBOSE=1` streams stdout, long
+tracebacks, and live DEBUG logs for diagnosis.
 
 The layout is `tests/unit`, `tests/integration`, `tests/architecture`, and `tests/web`. Start at
 the smallest relevant directory, then widen deliberately rather than turning each edit into an
@@ -55,7 +58,10 @@ contract being asserted.
 
 `pytest-cov` measures branch coverage with the `pyproject.toml` 80% floor and deliberate
 structural exclusions. `make coverage` enforces that floor, but default `make test`, `make check`,
-and release-candidate CI do not pass `--cov`; it is an opt-in gate, not a release receipt.
+pull-request checks, and release-candidate CI do not pass `--cov`; it is an opt-in gate, not a
+release receipt. Coverage remains serial and preserves the ordinary suite's `not container`
+selection. Pull-request and `main` checks run the ordinary suite and disposable PostgreSQL profile
+in separate jobs, preserving their distinct evidence boundaries.
 
 ### 5. Runtime Surface Probes
 

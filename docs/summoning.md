@@ -335,11 +335,13 @@ uv run --extra postgres-binary lychd logs --lines 120
 
 !!! danger "Temporary local-browser boundary"
     Use a dedicated browser profile on this host. Keep the listener on `127.0.0.1`; do not publish,
-    proxy, tunnel, or forward it. Do not enable SAQ or open `/schema/scalar`, and do not mix this
-    profile with hostile sites.
+    proxy, tunnel, or forward it. Keep the optional SAQ diagnostic UI disabled, do not expose
+    `/schema/scalar`, and do not mix this profile with hostile sites. The two internal SAQ workers
+    are required for normal Run execution.
 
-    The fixed `magus:*` Sigil is not authentication. Wildcard CORS and unconstrained Host authority
-    leave GET/SSE and DNS-rebinding exposure despite CSRF. Stop the Vessel after the rite.
+    The fixed `magus:*` Sigil is not authentication. The Vessel constrains Host authority and CORS
+    to explicit loopback values and uses CSRF, but those controls do not make an untrusted browser
+    profile or remote exposure safe. Stop the Vessel after the rite.
 
 Open the loopback Altar:
 

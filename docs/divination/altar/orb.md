@@ -49,6 +49,39 @@ and transition correlation when present. A generic wait does not reveal its caus
 The current Orb has no searchable run list, multi-run field, graph canvas, time lens, historical
 replay, or live tail. Select another Run in Bridge.
 
+## Designed graph boundary
+
+The accepted future direction is the one DOM renderer Orb shares with [Loom](./loom.md), reached
+through a LychD-owned Svelte adapter over the shared projection supply. Neither dependency nor a
+graph field is delivered. The renderer would hold only a disposable view of the selected
+authoritative snapshot and ordered evidence; its arrays, camera, animation, and hit-testing state
+could never become Run, capture, gap, annotation, or settlement truth.
+
+Orb is bounded by folding, not by a dense engine. A separate WebGL renderer would double the
+adapter, semantic twin, teardown audit, and licence review while supplying no accessible surface,
+and no measured Orb field requires it. Sigma with Graphology and cosmos.gl remain mapped in the
+[Frontend Covenant](../../adr/15-frontend.md#decision-lock-and-reopening-gate) against a later field
+that folding cannot bound; G6 was evaluated and rejected. That Covenant owns the choice, and State
+of Work owns whether any part has entered matter.
+
+## Folding and bounded expansion
+
+The field never renders a whole trace. Folding keeps the rendered set bounded at every camera scale,
+because a field no reader can read is not evidence.
+
+Folding follows structure this Vessel already declares: Run, then station subject, then occurrence,
+then event, with delegated jobs as their own declared groups. A group carries its declared name and
+membership count and stays selectable and expandable through the same typed identities. Geometric or
+computed clustering is not admitted; proximity would assert a relation no authority declared.
+
+Bounded progressive loading is a Vessel contract, not a renderer feature: authority serves what was
+asked for, and the browser holds only what it was served. An unexpanded group whose members were
+never served is an explicit unknown, exactly like a `#start–end` sequence gap, and the Orb does not
+infer across it.
+
+Folding is presentation only. A group is never an evidence record, and collapsing never merges,
+omits, or reorders retained sequence truth.
+
 ## Inspect One Event
 
 Select an evidence row to open **Selected event**. The URL becomes

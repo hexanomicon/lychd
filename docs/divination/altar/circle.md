@@ -37,7 +37,7 @@ name nor its presence in the Circle grants that power.
 When a model-backed capability is admitted, an [Animator](../../sepulcher/animator/index.md) makes
 its **Animus** available through a Connector and exact CapabilityGrant. Animus names the active
 power answering through that capability—for example a loaded Gemma model behind llama.cpp—not the
-Lich's identity, Spirit, Persona, authority, or proof of consciousness. The request is the spark;
+Lich's identity, Spirit, Persona, authority, or evidence of Cognizance. The request is the spark;
 the returned material is a candidate. Spirit may receive and carry it through present
 [Flux](../../sepulcher/lich/spirit/flux.md), while Blade and Answer still judge and attribute the
 crossing.

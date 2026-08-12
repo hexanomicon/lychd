@@ -80,8 +80,11 @@ Observe delegated runtimes only at admitted adapter boundary. LychD job state/po
 artifacts/adoption differs from provider-reported usage/protocol; neither reveals planner,
 subagent tree, or private reasoning. Orb exposes at most 32 newest job summaries and 64 newest
 lifecycle events/job, state/result-or-artifact presence but no prompt/output/private error, with
-truncation explicit. Raw future protocol artifact is untrusted bounded input; cannot settle job,
-authorize effect, mutate Graph, or become training data by default.
+truncation explicit. Its bounded read asks the job store for one extra job and event as omission
+sentinels; database `LIMIT`s select those newest suffixes before per-job event hydration, then
+restore creation/sequence order for projection. Raw future protocol artifact is untrusted bounded
+input; it cannot settle a job, authorize an effect, mutate Graph, or become training data by
+default.
 
 ### 5. Orb Read Models
 
@@ -105,15 +108,19 @@ not grants/reservations/health verdicts/promotion thresholds.
 
 Each class declares purpose/fields/classification/visibility/retention/export. Redact before
 serialization with policy version; Eye applies second filter; reject secret material. Privatization
-evidence stores decision/receipt ids, payload/source digests, categories/counts, policy version,
-failure stage, gaps—never sensitive spans or pseudonym reversal map. Security owns decision,
-Context receipt.
+telemetry stores opaque decision/receipt ids, `EvidenceDigest@1` keyed projections,
+categories/counts, policy version, failure stage, and gaps—never canonical raw payload/source
+digests, sensitive spans, or pseudonym reversal maps. Plain digests of low-entropy or stable private
+values are linkage oracles, not anonymization. Security owns the local-only decision and keyed
+evidence projection; Context owns receipts.
 
 Current Orb allowlists structural fields and omits raw prompts, output, private errors, LOG
 messages. Shared logging has no general redaction/storage/rotation/retention/correlation contract;
 HTTP instrumentation disabling blanket body/header capture is not whole proof. A conforming Oculus
-bounds producer/subscriber queues and batching/flush/shutdown. Today replay is bounded 256/live
-Run but subscriber queues unbounded; slow backpressure absent. Persist failure logs and may gap Step.
+bounds producer/subscriber queues and batching/flush/shutdown. Today each live Run subscriber and
+its replay window are bounded at 256 events; an overflow collapses pending deltas to an explicit
+snapshot-resync boundary rather than applying producer backpressure. Persist failure logs and may
+gap Step.
 Correctness records remain acting-office transactions: lost telemetry harms diagnosis, never proves success.
 
 ## Consequences

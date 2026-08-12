@@ -195,7 +195,8 @@ integration.
 **Proved now:** Run, delivery, step, session, consent, checkpoint, and delegated-wait shapes exist
 with sequence-fenced claim and settlement, owner-specific resume gates, startup reconciliation, and
 PostgreSQL migration checks. A real factory receipt completes and recovers a Bridge Run across two
-boots.
+boots. Distinct production asyncpg codecs round-trip plain `json` and versioned JSONB, while the
+memory Run ledger detaches mutable values at the same public boundary as database reads.
 
 **Boundary — Not yet:** PostgreSQL and SAQ are not one transaction; Step events lack an outbox;
 adapter parity is incomplete; persistent same-boot containment failure has no durable watchdog. The
@@ -204,8 +205,8 @@ real-host, inference-engine, or browser receipt.
 
 **Evidence**
 
-- **Source:** [First-light migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0001_phylactery_first_light.py) and [wait-owner migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0008_wait_owner_evidence.py)
-- **Verification:** [Run ledger tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_ledger.py) and [two-boot lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
+- **Source:** [First-light migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0001_phylactery_first_light.py), [wait-owner migration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/migrations/versions/0008_wait_owner_evidence.py), and [database factory](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/factory.py)
+- **Verification:** [Run ledger tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_ledger.py), [PostgreSQL run-ledger receipts](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_db_run_ledger_pg.py), and [two-boot lifecycle](https://github.com/hexanomicon/lychd/blob/main/tests/integration/test_production_wiring.py)
 - **Law:** [Persistence](./adr/06-persistence.md)
 
 ### Topology-A local run execution {#topology-a-local-runs}
@@ -214,17 +215,18 @@ real-host, inference-engine, or browser receipt.
 
 **Proved now:** One Vessel process admits, claims, executes, cancels, settles, resumes, and projects
 Runs against immutable Pattern revisions. Durable publication intent, replay repair, external-wait
-relays, terminal-evidence repair, bounded identity fencing, and orderly shutdown are tested.
+relays with capped restart backoff, terminal-evidence repair, bounded identity fencing, bounded
+slow-reader resynchronization, and orderly shutdown are tested.
 Unresolved child containment stays nonterminal rather than claiming false `FAILED` truth; a timed-
 out cancellation remains `CANCELLING`.
 
 **Boundary:** This does not prove automatic source compatibility, a transactional event outbox,
-separate-worker truth, multi-process streaming, federation, or governed subscriber backpressure.
+separate-worker truth, multi-process streaming, federation, or producer backpressure.
 
 **Evidence**
 
-- **Source:** [Run engine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py)
-- **Verification:** [Run engine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py)
+- **Source:** [Run engine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py), [event bus](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/events.py), and [startup relay](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/lifespan.py)
+- **Verification:** [Run engine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py), [event-bus tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_events.py), and [lifespan tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/web/test_lifespan.py)
 - **Law:** [Workers](./adr/14-workers.md)
 
 ### Pydantic AI 1.25.1 cognitive adapter {#pydantic-ai-v1-adapter}
@@ -274,26 +276,33 @@ approval.
 
 **Evidence**
 
-- **Source:** [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py)
-- **Verification:** [Consent resume tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_consent_resume.py)
+- **Source:** [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py) and [Run engine](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/engine.py)
+- **Verification:** [Consent resume tests](https://github.com/hexanomicon/lychd/blob/main/tests/agents/test_consent_resume.py) and [Run engine tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_engine.py)
 - **Law:** [Human in the Loop](./adr/25-hitl.md)
 
 ### Delegated agent execution {#delegated-agent-execution}
 
 **State:** Partial
 
-**Proved now:** Typed secret-free requests, artifact references, process-local job
+**Proved now:** Typed requests without credential or ambient-authority fields, artifact references, process-local job
 submission/adoption/cancellation, exact wait ownership, Graph parking and re-admission, policy-only
-Coffin/Gate admission, PostgreSQL shapes, and a no-effect reference adapter exist.
+Coffin/Gate admission, PostgreSQL shapes, and a no-effect reference adapter exist. The reference
+adapter reconstructs its deterministic projection for refresh and cancellation after
+coordinator/runtime restart without replaying an external effect, retains it across failed durable
+adoption, and retires it after terminal settlement.
 
 **Boundary — Not yet:** No declared external provider launches. There is no lower-trust executor,
 credential or egress isolation, process-tree containment, durable artifact custody, measured
 budgets, real PostgreSQL/provider recovery receipt, or live-browser proof.
+Request prompts are persisted verbatim; callers must apply the Privacy Cut and egress policy before
+any future remote runtime receives them. An effectful runtime must also reconcile ambiguous
+post-transmission start failures through durable provider identity rather than treating a generic
+exception as proof of failure.
 
 **Evidence**
 
-- **Source:** [Delegated job store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/delegation.py), [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py), and [reference adapter catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/delegation/register.py)
-- **Verification:** [Delegation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/delegation/test_coordinator.py), [delegate stasis tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_delegate_stasis.py), and [extension-policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py)
+- **Source:** [Delegation coordinator](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/delegation/services.py), [delegated job store](https://github.com/hexanomicon/lychd/blob/main/src/lychd/db/delegation.py), [Graph runner](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/graph_runner.py), [reference runtime](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/delegation/reference.py), and [reference adapter catalogue](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/builtin/delegation/register.py)
+- **Verification:** [Delegation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/delegation/test_coordinator.py), [restart-resume tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_delegate_resume.py), [delegation schema tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/db/test_delegation_schema.py), and [extension-policy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py)
 - **Law:** [Workers](./adr/14-workers.md)
 
 ### Durable in-app Attention {#durable-attention}
@@ -381,8 +390,8 @@ public SDK are absent.
 
 **Evidence**
 
-- **Source:** [Extension manager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/manager.py)
-- **Verification:** [Extension tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_catalog.py)
+- **Source:** [Extension manager](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/manager.py), [registration context](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/context.py), and [assembly host](https://github.com/hexanomicon/lychd/blob/main/src/lychd/extensions/host.py)
+- **Verification:** [Assembly tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_catalog.py), [activation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_admission.py), [delegation contribution tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_delegation.py), [Run-operation tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/extensions/test_run_operations.py), and [generated bind-fileset tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/system/test_bind_fileset.py)
 - **Law:** [Extensions](./adr/05-extensions.md)
 
 ### llama.cpp integration {#llamacpp-integration}
@@ -505,16 +514,19 @@ footprints, load time, topology, bandwidth, LRU, refits, tiers, or transition pe
 
 The Svelte 5 static client, generated `/api/v1` types, validated semantic SSE, local schema assets,
 and Litestar delivery exist. Focused tests prove contracts and components, not a
-production-factory browser receipt.
+production-factory browser receipt. No XYFlow/Svelte Flow, Sigma, or Graphology dependency and no
+Loom or Orb graph canvas or shared graph-projection supply is delivered; ADR 15's renderer
+directions and admission gates are law, not implementation evidence.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 
 **State:** Partial
 
-**Proved now:** Bridge supports typed sessions, text admission, consent, inspection, semantic SSE,
-closed GenUI descriptors, durable request identity, authoritative snapshot recovery, lifecycle
-fencing, and bounded reconstruction against server-owned Run and Pattern identities. Its per-turn
-run strip is the first thin projection of one Invocation's Circle.
+**Proved now:** Bridge supports typed sessions, one-nonterminal-Run session admission, consent,
+inspection, semantic SSE, closed GenUI descriptors, durable request identity, authoritative
+snapshot recovery, lifecycle fencing, and bounded reconstruction against server-owned Run and
+Pattern identities. Exact retries reuse the canonical Run; distinct overlapping turns are refused.
+Its per-turn run strip is the first thin projection of one Invocation's Circle.
 
 **Boundary — Not yet:** There is no real-browser receipt, durable cross-process event/token
 delivery, general multi-approval, Attention, or notification channel. Text is the only command
@@ -556,12 +568,13 @@ and retained revisions with stale-response-fenced client loading.
 
 **Boundary — Not yet:** Loom is a view over the fixed registry, not a Spellweaver editor, mutation
 surface, independent Spell identity or catalogue, compatibility or teaching surface, drafting
-canvas, inert unresolved-Spell projection, Suite executor, or production-browser receipt.
+canvas, admitted graph-renderer dependency, inert unresolved-Spell projection, Suite executor, or
+production-browser receipt.
 
 **Evidence**
 
-- **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py), [Pattern registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py), and [Loom client](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/LoomView.svelte)
-- **Verification:** [Loom tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py) and [client lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/frontend/src/lib/components/LoomView.test.ts)
+- **Source:** [Loom controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/loom.py), [Pattern registry contract](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/base.py), and [Loom client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/LoomView.svelte)
+- **Verification:** [Loom tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_loom.py) and [client lifecycle tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/LoomView.test.ts)
 - **Law:** [Workflow](./adr/28-workflow.md)
 
 ### Composition Portfolio {#composition-portfolio-delivery}
@@ -571,8 +584,9 @@ canvas, inert unresolved-Spell projection, Suite executor, or production-browser
 **Proved now:** The Portfolio publishes Native Reference Composition contracts and examples; the
 boot catalogue contains only `bridge_chat@1` and `delegated_rite@1`.
 
-**Do not expect yet:** There is no Composition store or selector, Portfolio Pattern registration,
-Suite execution, application scheduling, or delivered domain/effect path for any Portfolio member.
+**Do not expect yet:** There is no Composition store or selector, Product catalogue or selector,
+Portfolio Pattern registration, Suite execution, application scheduling, or delivered domain/effect
+path for any Portfolio member or Product.
 
 **Evidence**
 
@@ -586,15 +600,18 @@ Suite execution, application scheduling, or delivered domain/effect path for any
 **State:** Partial
 
 **Proved now:** Orb renders one Run as ordered, paginated evidence with Pattern revision, capture
-durability, ledger boundaries, gaps, transition links, stable selection, and bounded retry.
+durability, ledger boundaries, gaps, transition links, stable selection, bounded retry, and
+teardown-cancelled snapshot reads. Its delegated-job projection applies newest-job and per-job
+event limits at the store query boundary before rendering the public 32/64 suffixes.
 
 **Boundary — Not yet:** There is no run list, live tail, graph field, durable Oculus read model,
-cross-process completeness, health query, artifact custody, annotation, or multi-run view.
+Sigma/Graphology adapter, cross-process completeness, health query, artifact custody, annotation,
+or multi-run view.
 
 **Evidence**
 
-- **Source:** [Orb controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/orb.py)
-- **Verification:** [Orb tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb.py)
+- **Source:** [Orb controller](https://github.com/hexanomicon/lychd/blob/main/src/lychd/interface/web/orb.py) and [Orb client](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbView.svelte)
+- **Verification:** [Orb API tests](https://github.com/hexanomicon/lychd/blob/main/tests/web/test_orb.py) and [Orb client tests](https://github.com/hexanomicon/lychd/blob/main/clients/web/src/lib/components/OrbView.test.ts)
 - **Law:** [Observability](./adr/29-observability.md)
 
 ### Structured logging configuration {#structured-logging}
@@ -602,7 +619,8 @@ cross-process completeness, health query, artifact custody, annotation, or multi
 **State:** Available
 
 **Proved now:** One tested builder configures human and JSON stdlib/Structlog output for CLI and
-Litestar while preserving stdout/stderr semantics and recovery-command fallback.
+Litestar while preserving stdout/stderr semantics, recovery-command fallback, and thread-stable
+repeated bootstrap without an unused logging queue.
 
 **Boundary:** Shared configuration does not prove complete semantic audit coverage, trace storage,
 OpenTelemetry export, redaction, retention, resource correlation, or Oculus.
@@ -663,8 +681,8 @@ Privacy Cut, Egress Gate, pseudonym map, transmission check, or deletion propaga
 
 **Evidence**
 
-- **Source:** [Privacy contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/privacy.py)
-- **Verification:** [Privacy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_privacy.py)
+- **Source:** [Privacy contracts](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/privacy.py), [Context orchestration](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/cortex/context.py), and [Portal registry](https://github.com/hexanomicon/lychd/blob/main/src/lychd/domain/animation/services/registry.py)
+- **Verification:** [Privacy tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_privacy.py), [Context tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/cortex/test_context.py), and [Portal tests](https://github.com/hexanomicon/lychd/blob/main/tests/unit/domain/animation/test_portals.py)
 - **Law:** [Security](./adr/09-security.md)
 
 ### Local Sigil and scope authority {#local-sigil-authority}
@@ -862,7 +880,8 @@ paths, budgets, tools, network declaration, custody, deterministic verification,
 human review, chronology, and an idempotent inert promotion request.
 
 **Boundary — Not yet:** There is no workspace, filesystem/command executor, database recovery,
-safe forge, autonomous repair, target-owner promotion effect, rollback execution, or self-extension
+safe forge, autonomous repair, target-owner promotion effect, authorship-attestation store,
+protected-region resolver, exact candidate-bound review card, rollback execution, or self-extension
 runtime.
 
 **Evidence**

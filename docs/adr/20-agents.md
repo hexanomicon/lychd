@@ -88,6 +88,26 @@ One spec can run with any admitted model meeting the adapter contract. A foreign
 an in-process Agent by analogy: it remains a typed delegated runtime or Animator boundary until a
 later ADR admits a versioned interface.
 
+A **coding agent** is a delegated runtime when an external process owns an iterative planner/tool
+loop and receives an exact repository or workspace projection under an `AgentJob` `read`,
+`candidate`, or `verify` profile. One native Agent step using a remote model is instead a Portal-
+backed Agent call; a sovereign node accepting a public task is A2A. These classifications follow
+labor and authority, not the model brand. A coding agent may obtain cognition through a local
+capability or its job-scoped Provider Gate, but every child remote payload remains a separate
+Security-admitted Portal attempt. The outer job never conveys provider credentials, a general
+network route, authoritative checkout, or promotion authority.
+
+The same byte-time rule applies inside a native Agent loop: validation repair, tool-result follow-
+up, changed history, or another model round creates another canonical payload and therefore another
+Portal road decision/EgressDecision. One grant or first-round approval never authorizes the whole
+loop's future payloads.
+
+At that boundary the trusted Portal adapter or job-scoped Provider Gate freezes the canonical
+child body and presents it to Spellweaver's road-decision service under the pinned parent placement
+policy. It must obtain a fresh road decision, a consumer-specific Cut when transformation is
+required, and the byte-time EgressDecision before sending. A native model loop or Coffin runtime
+cannot mint, cache, widen, or reuse them; inability to obtain the full chain refuses that round.
+
 Provider Portals route their declared alias through the matching Pydantic AI provider or
 model-profile resolver, including unsupported-setting filtering. OpenRouter, LiteLLM, and Ollama
 use their provider resolvers; Google's OpenAI-shaped endpoint uses the Google model profile over

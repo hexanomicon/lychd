@@ -9,13 +9,14 @@ Load this scope after [`frontend.md`](frontend.md) for Svelte, SvelteKit, Svelte
 
 1. [ADR 15](../../docs/adr/15-frontend.md) and [`frontend.md`](frontend.md) own LychD's browser
    boundary and project gates.
-2. [`frontend/package.json`](../../frontend/package.json), lockfile, and configuration own installed
+2. [`clients/web/package.json`](../../clients/web/package.json), lockfile, and configuration own installed
    behavior and versions.
 3. Current official [Svelte AI instructions](https://svelte.dev/docs/ai/instructions),
    [skills guidance](https://svelte.dev/docs/ai/skills), documentation, and
    [best practices](https://svelte.dev/docs/svelte/best-practices) own framework syntax and
    diagnostics.
-4. Current official Svelte Flow documentation and source own renderer behavior.
+4. Current official Svelte Flow documentation and source own explicitly evaluated candidate
+   behavior; no candidate overrides ADR 15 or becomes installed by consultation.
 5. Local examples, shelf snapshots, and model memory are probes only.
 
 ## Mandatory AI Workflow
@@ -26,7 +27,8 @@ For every `.svelte`, `.svelte.ts`, or `.svelte.js` analysis or change:
 2. Start with `list-sections`; choose sections by `use_cases`, then retrieve every relevant
    section with `get-documentation`.
 3. Load the official `svelte-core-bestpractices` guidance.
-4. Inspect the installed Svelte/Svelte Flow versions before applying version-sensitive guidance.
+4. Inspect the installed Svelte version and, only when a Svelte Flow candidate is explicitly in
+   scope, that candidate's exact version before applying version-sensitive guidance.
 5. Run `svelte-autofixer` on every changed Svelte file until no actionable issue or suggestion
    remains.
 6. Return to [`frontend.md` § Verify](frontend.md#verify) for project checks.
@@ -54,17 +56,26 @@ must never make the repository unbuildable.
 
 - New code uses runes and current event/snippet syntax, not `$:`, `export let`, `on:`, slots,
   `<svelte:component>`, or `<svelte:self>`.
-- Use `$state` only when changes update a template, `$derived`, or `$effect`; prefer `$state.raw`
-  for large API/graph objects replaced as units.
+- Use `$state` only when changes update a template, `$derived`, or `$effect`; `$state.raw` holds
+  deeply readonly API/graph snapshots replaced as units. Nested mutation is forbidden.
 - Compute with `$derived` or `$derived.by`. `$effect` is only for external synchronization, not
   state propagation; prefer handlers, bindings, attachments, context, or `createSubscriber`.
 - Treat props as changing inputs and derive dependent values.
 - Use stable identities, never array indices, for changing nodes, edges, events, and artifacts.
 - Snapshot or unwrap reactive values before Fetch, SSE, IndexedDB, structured clone, workers, or
-  third-party boundaries.
+  third-party boundaries. No reactive proxy crosses a renderer, worker, Fetch, or clone boundary.
 - Keep runes in components and presentation-owned `.svelte.ts` modules. Use typed context for
   subtree-owned interactive state. Contracts, transport, validation, reducers, and domain logic
   remain ordinary TypeScript.
+
+## Framework lock
+
+Svelte 5 with static SvelteKit is selected architecture, not a standing framework bake-off. Follow
+[ADR 15's reopening gate](../../docs/adr/15-frontend.md#decision-lock-and-reopening-gate). Do not
+propose React, Vue, Solid, Lit, a Rust UI, Bun, or Tailwind as generic cleanup; first produce the
+named executable failure of the selected stack and a matched replacement receipt. Official Svelte
+AI tooling helps with syntax and diagnostics, but it is not architectural evidence and never
+relaxes browser authority, lifecycle, accessibility, or recovery law.
 
 ## Task Routing
 
@@ -85,13 +96,28 @@ reducer. Apply the browser authority and accessibility gates in [`frontend.md`](
 
 ### Svelte Flow
 
-Inspect the installed version, read the official AI index, and retrieve only the matching
-guide/API sections. Route renderer access through one LychD-owned adapter:
+Inspect whether the package is installed and, if so, its exact version; then read the official AI
+index and retrieve only the matching guide/API sections. Route renderer access through one
+LychD-owned adapter:
 
 - map server DTOs to explicit presentation nodes/edges;
 - keep domain identity separate from renderer identity and coordinates;
 - reconstruct identical semantic state after reconnect/backfill; and
 - target annotations by stable server identity.
+
+Svelte Flow is the admitted candidate for the one renderer Loom and Orb share; no package is
+installed yet. Derive folding and the semantic twin from the shared supply so both survive a
+renderer change. A candidate adapter keeps
+bound node and edge arrays as disposable renderer drafts, emits domain commands only from explicit
+public gesture and veto hooks, derives its semantic twin only from the authoritative snapshot plus
+owned selection/focus, and replaces drafts from authority without a keyed whole-flow remount. It
+owns or intercepts keyboard mutation before renderer internals, forbids direct store mutation
+outside the adapter, and proves teardown across repeated mount, replacement, settlement, and HMR
+cycles. Reject
+the candidate if retained heap grows after forced collection, a rejected gesture changes semantic
+truth, or correctness requires a private API, maintained fork, or whole-array cause inference. An
+observer that still observes a target is retained by the ResizeObserver lifetime rule whether or not
+a scripting reference survives; only measured retained heap after forced collection settles it.
 
 Do not parse Mermaid as the Svelte Flow contract, persist its internal store as Pattern/Run truth,
 let layout assign semantics, or let Loom gestures and Orb animation become publication,

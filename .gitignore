@@ -8,6 +8,9 @@
 .jj/
 .jjconfig.toml
 
+# Generated business/pilot material — never published
+output/
+
 
 # --- Web UI / Frontend ---
 node_modules/

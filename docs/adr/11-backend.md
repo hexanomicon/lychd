@@ -72,9 +72,9 @@ does not establish external tracing.
 
 The process owns one async SQLAlchemy engine/session factory. Connection and signing secrets are
 resolved only by their consuming component; Settings retain references, never secret contents.
-The current asyncpg binary codec is valid for JSONB. It also frames plain `json` as JSONB, which is
-a known defect until separate codecs are proved against PostgreSQL. This ADR requires correctness
-tests, not a throughput claim.
+The asyncpg hook registers separate binary codecs: JSONB adds and removes PostgreSQL's version
+byte, while plain `json` passes its unversioned bytes directly. Focused hook tests pin both wire
+shapes; this is a correctness contract, not a throughput claim.
 
 ## Trust boundary and evidence
 
@@ -89,8 +89,9 @@ boundary is maintained by [State of Work](../state-of-the-work.md#tomb-untrusted
 
 Focused tests cover memory-profile composition and web contracts. A disposable two-boot receipt
 exercises the real application factory, PostgreSQL, in-process SAQ, and asyncpg installation with an
-offline model and HTTP test client. It does not directly prove the known plain-`json` codec defect,
-a real browser, inference engine, or deployed host. [State of
+offline model and HTTP test client; a focused disposable receipt round-trips both plain `json` and
+JSONB through the same engine factory. Neither proves a real browser, inference engine, or deployed
+host. [State of
 Work](../state-of-the-work.md#current-evidence-envelope) owns the evidence envelope.
 
 ## Consequences

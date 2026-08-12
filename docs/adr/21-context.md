@@ -52,9 +52,10 @@ as instructions.
 
 `AssembledContext` exposes all blocks, digest, bounded settled history, an indivisible continuation
 when present, query, and known active context window. The run-id assembly cache lasts only for the
-process and releases after settlement. Layer 3's separate environment snapshot cache lasts for the
-process with no current eviction. Durable conversation belongs to the session ledger and durable
-suspension to [Graph](./24-graph.md).
+process and releases after settlement. Layer 3 snapshots are shared by exact environment key while
+any referencing Run remains active; settlement releases that Run's leases and evicts a snapshot
+after its final reference. Durable conversation belongs to the session ledger and durable suspension
+to [Graph](./24-graph.md).
 
 ## Privatization and the Privacy Cut
 
@@ -70,15 +71,67 @@ embedding, captioning, transcription, and model transformation do not lower infl
 may identify exact contributors to avoid unrelated overtaint; unknown lineage is `restricted` at
 egress.
 
-A **Privacy Cut** forms a new sanitized branch without mutating raw material or reusing
-continuation, serialized history, tool bodies, attachment projections, or provider prefix-cache
-identity. Its pseudonym map is restricted, local to one Run and attempt, and never enters prompt,
-log, checkpoint, receipt, or provider request. Its `TransformationReceipt` binds source and
-candidate digests, transformer/policy revisions, operations, removed categories, residual label,
-uncertainty, utility loss, and expiry without raw spans. A Cut that destroys the identifiers,
-dependency relations, or diagnostics needed for its declared task must refuse remote formation
-rather than call privacy alone a success. Transformations provide evidence; only Security's egress
-decision admits that exact branch to a Portal.
+Source influence and disclosure risk are separate facts. Transformation never relabels ancestry as
+public; a residual-disclosure assessment says only what one exact recipient may receive for one
+purpose under one threat model. Pseudonymized material remains private while a reversal or likely
+linkage path exists. A distinctive private repository, diagnostic, or relationship graph may be an
+authorized sanitized disclosure without being anonymous.
+
+A **Privacy Cut** forms a new recipient- and purpose-specific sanitized branch without mutating raw
+material or reusing continuation, serialized history, tool bodies, attachment projections, or
+provider prefix-cache identity. Its `DisclosurePlan@1` binds the consumer kind and identity, purpose,
+minimal-projection manifest digest plus an opaque restricted local ref, semantic invariants,
+threat-model and retention profiles, maximum transmission/disclosure uses, and proposed remote
+target; it does not embed source bytes or identities in broadly retained evidence. Every
+transforming stage emits immutable non-authorizing
+`TransformationReceipt` evidence. When stages compose, receipts form an ordered digest-bound chain
+whose terminal receipt binds the exact final candidate and all parent receipts. A semantic Privacy
+Agent proposes findings and typed operations only; a deterministic applicator creates any changed
+candidate and terminal receipt. An independent local verifier emits `CutVerification@1`; Context
+seals a `PrivacyCut@1` only when source, final candidate, plan, complete receipt chain, verifier
+verdict, policy, and expiry all match. Security alone admits the exact wire/export branch.
+
+Receipts retain digests, revisions, typed operations and safe category summaries—not raw spans,
+credentials, subject names, filenames, material-parent identities, or reversal data. The delivered
+first-slice `TransformationReceipt` still embeds its complete residual label in process and is
+therefore ineligible for persistence, export, or egress evidence until a secret-free projection
+exists. A Cut that destroys the identifiers, dependency relations, citations, or diagnostics
+needed for its declared task refuses that road rather than call privacy alone a success.
+
+An irreversible Cut has no reversal map and promises no rehydration. A reversible Cut stores the
+map only through an encrypted local `PseudonymMapLease@1`: the map itself enters no prompt, log,
+checkpoint, receipt, or remote request; a checkpoint may retain only an opaque lease reference.
+Context owns the lease lifecycle and a narrow rehydration port; a deployment-local Privacy Vault
+alone holds encrypted map bytes and their per-lease data-encryption keys. The lease binds Cut, Run,
+attempt, target/purpose, an unpredictable keyed token namespace,
+source/candidate digests, key epoch, authorized rehydration station, expiry, and cryptographic
+erasure. If its durability cannot cover the remote deadline and return window, a Pattern that
+requires rehydration remains local or refuses. A missing, expired, or unrecoverable lease never
+licenses reconstruction from raw history or retransmission under a new namespace.
+
+The non-bearer lease follows `ACTIVE -> CLAIMED -> CONSUMED | EXPIRED | REVOKED`, with every
+terminal entering key destruction. Claim is an idempotent compare-and-set over authorized
+Principal/Sigil, Run, attempt, station, and quarantined-return digest; callers never receive the
+map. Rehydration recognizes only exact lease-issued tokens that appeared in the disclosed candidate
+and only at output-schema paths explicitly marked for their category, cardinality, and purpose. It
+rejects invented, altered, cross-namespace, cross-category, wrong-path, over-cardinality, or
+replayed tokens and never scans arbitrary prose for placeholder-shaped strings.
+
+The port returns a candidate plus `RehydrationReceipt@1` binding Cut/lease, quarantined-return and
+final digests, typed substitution counts, verifier/policy revisions, and the restored influence-
+label digest without raw values. The result regains its original label, remains local, is validated
+again, and cannot flow directly into an executable field, effect, public delivery, or another
+remote call. Its `purge_at` is no later than the earliest source expiry, Cut expiry, or Composition
+retention maximum. Mapping ciphertext uses a per-lease data key excluded from backup; cleanup
+destroys that key and proves restored backup material is undecryptable rather than claiming every
+physical backup byte was erased. If no accepted Vault profile is available, every durable remote
+wait uses an irreversible Cut.
+
+The accepted Vault profile must also contain plaintext during transformation and rehydration:
+mapping pages are locked against swap or host swap is disabled; core/crash dumps and debugger
+attachment are disabled; bounded buffers are zeroized; and traces, allocator diagnostics, and
+support bundles exclude the map. Acceptance tests exercise crash and memory-pressure paths. Failure
+to prove this profile disables reversible Cuts rather than weakening the erasure claim.
 
 Current `Block` and `AssembledContext` carry labels and a conservative aggregate join. Present
 query, history, or continuation material without supplied lineage defaults to `restricted` and
@@ -86,8 +139,8 @@ query, history, or continuation material without supplied lineage defaults to `r
 bounded JSON-like values, redacts the first typed identifier set, and issues digest-, revision-,
 count-, residual-label-, and expiry-bound evidence that is explicitly ineligible for egress and
 claims no removed category. Governed SQL/tool/artifact source adapters, immutable end-to-end
-lineage, semantic Privacy Agent, pseudonym map, sanitized Context branch, Privacy Cut verifier, and
-Portal Egress Gate remain undelivered.
+lineage, semantic Privacy Agent, secret-free receipt projection, Disclosure Plan, Cut Verification,
+pseudonym-map vault, sanitized Context branch, and trusted Egress Gate remain undelivered.
 
 ## Grant-aware rebinding
 
@@ -99,10 +152,11 @@ over the capability specification's discovered maximum.
 Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
 Its key is `(session, capability binding, grant epoch)`, but the Bridge presently supplies neither
 grant id nor changing epoch: both paths use `0`. A later grant to the same binding can reuse an
-older warm-Coven snapshot, and snapshots accumulate for the process lifetime. Fresh-grant rebinding
-and cleanup remain gaps. VRAM, power, connectivity, and Sigil scope are absent; the Sigil belongs
-in [`LychDDeps`](./20-agents.md#run-dependencies), where tools can enforce it rather than prompt
-prose.
+older warm-Coven snapshot while a referencing Run remains active. Same-key concurrent Runs share
+that frozen snapshot, and one Run's settlement cannot evict it from another; the final referencing
+settlement releases it. Fresh-grant rebinding remains a gap. VRAM, power, connectivity, and Sigil
+scope are absent; the Sigil belongs in [`LychDDeps`](./20-agents.md#run-dependencies), where tools
+can enforce it rather than prompt prose.
 
 ## Governors
 
@@ -149,12 +203,21 @@ is **Flux**. The image explains shape; hashes, budgets, groups, and focused test
     intact, and capability can change the budget before inference.
 
 !!! failure "Negative"
-    Character estimates can underuse a window; caches vanish on restart, snapshot epochs can go
-    stale, and a stable prefix helps only when the provider actually supports it.
+    Character estimates can underuse a window; snapshots vanish after their final active Run or a
+    restart, snapshot epochs can go stale, and a stable prefix helps only when the provider actually
+    supports it.
 
 ## Verification
 
 `tests/unit/domain/cortex/test_context.py` covers newest complete groups, grant-bound environment
-replacement, generation-window precedence, floor overflow, and continuation. Bridge graph and
-consent-resume tests cover two-stage assembly and re-entry. [State](../state-of-the-work.md) owns
-the public delivery boundary.
+replacement, same-key sharing and release bounds, generation-window precedence, floor overflow,
+and continuation. Bridge graph and consent-resume tests cover two-stage assembly and re-entry.
+[State](../state-of-the-work.md) owns the public delivery boundary.
+
+The full Privacy Cut profile additionally requires governed-source lineage; direct, quasi-, and
+semantic identifier fixtures; isolation/linkage/inference and utility verdicts; transformer/
+verifier disagreement; consumer and target substitution; secret-free receipt projection; fresh
+namespace per new semantic attempt; bounded exact transport redelivery retaining the sealed
+namespace while a fresh EgressDecision consumes its disclosure-use ceiling; and two-boot
+`PseudonymMapLease@1` access, expiry, key rotation, loss, and verified purge without map material in
+checkpoints, logs, backups, or remote payloads.

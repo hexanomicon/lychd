@@ -68,6 +68,35 @@ A future grey Spell placement belongs only to an inert candidate/resolution repo
 status such as missing contract, missing implementation, incompatible, unauthorized, or revoked.
 The whole Scroll must remain `castable=false`; no grey placeholder may enter the executable Graph.
 
+## Renderer admission
+
+No graph editor or XYFlow dependency is delivered. The Altar remains Svelte; a future Loom
+renderer is a replaceable projection behind framework-neutral TypeScript views of validated Scroll
+snapshots and mutation-intent contracts, not a reason to move Pattern truth into a component store
+or reopen the frontend by preference.
+
+XYFlow is the admitted candidate for the one DOM renderer Loom shares with [Orb](./orb.md), under
+the [Frontend Covenant's lifecycle gate](../../adr/15-frontend.md#decision-lock-and-reopening-gate).
+A released candidate must use only public APIs, show no retained heap growth after repeated
+replacement and forced collection on every supported engine, and preserve one authority-derived
+semantic score through drag, keyboard, resize, selection, connect, reconnect, delete, rejection, and
+resync. Renderer arrays and geometry remain drafts. Failure rejects the dependency; only matched
+evidence that Svelte cannot satisfy the whole Altar contract while a replacement can is evidence to
+reopen the framework.
+
+Loom is an editor at editor scale. `bridge_chat@1` places five stations over six permitted edges,
+including a self-edge and a diamond; `delegated_rite@1` places three. Both stay in the tens to low
+hundreds under any admitted Suite grammar, so a DOM-node renderer is the fit. A
+dense engine would cost Loom the drag, connect, reconnect, and handle grammar it exists to provide,
+and would supply no accessible twin.
+
+Two gates stand between that renderer and an editing Loom, and neither is a renderer defect. The
+served score carries no position and the Scroll grammar declares no layout document, so until
+authority owns layout and mutation intent, Loom projects a computed layout and admits no drag.
+XYFlow also exposes no keyboard path to create a connection, because its connection handles are not
+focusable; Loom owns that path above the renderer rather than shipping an editor its keyboard twin
+cannot operate.
+
 ## Charcoal, Law, and Publication
 
 The current Loom shows only source-registered revisions and labels them `published`; that label is
