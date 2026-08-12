@@ -30,12 +30,12 @@ def _only(directory: Path, pattern: str) -> Path:
 
 
 def _contains_exact_source(payloads: list[bytes], revision: str, label: str) -> None:
-    expected = f"{SOURCE_URL_PREFIX}{revision}/frontend".encode()
+    expected = f"{SOURCE_URL_PREFIX}{revision}/clients/web".encode()
     joined = b"\n".join(payloads)
     if expected not in joined:
         message = f"{label} does not link its Altar to exact source revision {revision}"
         raise ReleaseArtifactError(message)
-    if f"{SOURCE_URL_PREFIX}main/frontend".encode() in joined:
+    if f"{SOURCE_URL_PREFIX}main/clients/web".encode() in joined:
         message = f"{label} still embeds the mutable main-branch source URL"
         raise ReleaseArtifactError(message)
 
@@ -127,7 +127,7 @@ def _verify_wheel(wheel: Path, revision: str, version: str, root: Path) -> None:
         )
         frontend_notice_member = _require_suffix(
             names,
-            ".dist-info/licenses/frontend/static/THIRD_PARTY_NOTICES.txt",
+            ".dist-info/licenses/clients/web/static/THIRD_PARTY_NOTICES.txt",
             "wheel",
         )
         public_notice_member = _require_suffix(
@@ -139,7 +139,7 @@ def _verify_wheel(wheel: Path, revision: str, version: str, root: Path) -> None:
 
         expected_license = (root / "LICENSE").read_bytes()
         expected_source_notice = (root / "THIRD_PARTY_NOTICES.md").read_bytes()
-        expected_frontend_notice = (root / "frontend" / "static" / "THIRD_PARTY_NOTICES.txt").read_bytes()
+        expected_frontend_notice = (root / "clients" / "web" / "static" / "THIRD_PARTY_NOTICES.txt").read_bytes()
         if archive.read(license_member) != expected_license:
             message = "wheel project license differs from the reviewed repository license"
             raise ReleaseArtifactError(message)
@@ -195,11 +195,11 @@ def _verify_sdist_files(
     expected_files = {
         "LICENSE": (source_root / "LICENSE").read_bytes(),
         "THIRD_PARTY_NOTICES.md": (source_root / "THIRD_PARTY_NOTICES.md").read_bytes(),
-        "frontend/static/THIRD_PARTY_NOTICES.txt": (
-            source_root / "frontend" / "static" / "THIRD_PARTY_NOTICES.txt"
+        "clients/web/static/THIRD_PARTY_NOTICES.txt": (
+            source_root / "clients" / "web" / "static" / "THIRD_PARTY_NOTICES.txt"
         ).read_bytes(),
         "src/lychd/public/THIRD_PARTY_NOTICES.txt": (
-            source_root / "frontend" / "static" / "THIRD_PARTY_NOTICES.txt"
+            source_root / "clients" / "web" / "static" / "THIRD_PARTY_NOTICES.txt"
         ).read_bytes(),
     }
     for relative, expected in expected_files.items():
@@ -240,11 +240,11 @@ def _verify_sdist(sdist: Path, revision: str, version: str, source_root: Path) -
             "LICENSE",
             "Makefile",
             "THIRD_PARTY_NOTICES.md",
-            "frontend/package-lock.json",
-            "frontend/package.json",
-            "frontend/static/THIRD_PARTY_NOTICES.txt",
-            "frontend/src/lib/components/AltarShell.svelte",
-            "frontend/vite.config.ts",
+            "clients/web/package-lock.json",
+            "clients/web/package.json",
+            "clients/web/static/THIRD_PARTY_NOTICES.txt",
+            "clients/web/src/lib/components/AltarShell.svelte",
+            "clients/web/vite.config.ts",
             "scripts/generate_python_third_party_notices.py",
             "scripts/verify_release_artifacts.py",
             "scripts/verify_release_source.py",

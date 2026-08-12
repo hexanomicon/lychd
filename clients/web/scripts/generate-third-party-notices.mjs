@@ -120,8 +120,8 @@ const sections = [...packages.values()]
 const output = `${[
   "LychD Altar — Third-Party Notices",
   "",
-  "Generated deterministically from frontend/package-lock.json and the installed package",
-  "license files. The inventory deliberately covers the complete locked frontend dependency",
+  "Generated deterministically from clients/web/package-lock.json and the installed package",
+  "license files. The inventory deliberately covers the complete locked web-client dependency",
   "non-optional set; inclusion here does not claim that every package contributes code to every",
   "bundle. Platform-specific optional build packages are not shipped in the browser artifact.",
   "",

@@ -82,6 +82,45 @@ afterEach(() => {
 });
 
 describe("Orb evidence focus", () => {
+  it("aborts a pending Orb read when its view is destroyed", async () => {
+    const pending = deferred<OrbRunSnapshot>();
+    let signal: AbortSignal | undefined;
+    vi.mocked(getOrbRun).mockImplementationOnce((_runId, options) => {
+      signal = options?.signal;
+      return pending.promise;
+    });
+    const view = render(OrbView, { runId: "run-a" });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(signal?.aborted).toBe(false);
+    view.unmount();
+
+    expect(signal?.aborted).toBe(true);
+    await act(() => pending.reject(new DOMException("Aborted", "AbortError")));
+  });
+
+  it("aborts a pending Orb read when the selected Run is cleared", async () => {
+    const pending = deferred<OrbRunSnapshot>();
+    let signal: AbortSignal | undefined;
+    vi.mocked(getOrbRun).mockImplementationOnce((_runId, options) => {
+      signal = options?.signal;
+      return pending.promise;
+    });
+    const view = render(OrbView, { runId: "run-a" });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await view.rerender({ runId: undefined });
+
+    expect(signal?.aborted).toBe(true);
+    expect(screen.getByRole("heading", { name: "Orb" })).toBeTruthy();
+    await act(() => pending.reject(new DOMException("Aborted", "AbortError")));
+    view.unmount();
+  });
+
   it("returns focus to the evidence row after its inspector closes", async () => {
     const view = render(OrbView, { runId: "run-a" });
     const opener = await screen.findByRole("button", { name: /Step completed/ });
@@ -207,8 +246,16 @@ describe("Orb evidence pagination", () => {
     expect(await screen.findByRole("button", { name: /Second step completed/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Step completed/ })).toBeTruthy();
     expect(screen.queryByText("Next page unavailable")).toBeNull();
-    expect(getOrbRun).toHaveBeenNthCalledWith(2, "run-a", { afterSeq: 0, limit: 100 });
-    expect(getOrbRun).toHaveBeenNthCalledWith(3, "run-a", { afterSeq: 0, limit: 100 });
+    expect(getOrbRun).toHaveBeenNthCalledWith(
+      2,
+      "run-a",
+      expect.objectContaining({ afterSeq: 0, limit: 100 })
+    );
+    expect(getOrbRun).toHaveBeenNthCalledWith(
+      3,
+      "run-a",
+      expect.objectContaining({ afterSeq: 0, limit: 100 })
+    );
     view.unmount();
   });
 

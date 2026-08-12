@@ -11,7 +11,7 @@ license = "MPL-2.0"
 license-files = [
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "frontend/static/THIRD_PARTY_NOTICES.txt",
+    "clients/web/static/THIRD_PARTY_NOTICES.txt",
 ]
 keywords = ["systemd", "agentic", "llm", "daemon", "litestar", "pydantic-ai", "quadlet", "ai"]
 classifiers = [
@@ -119,7 +119,7 @@ include = [
     "/Makefile",
     "/README.md",
     "/THIRD_PARTY_NOTICES.md",
-    "/frontend",
+    "/clients/web",
     "/pyproject.toml",
     "/scripts",
     "/src",
@@ -151,7 +151,7 @@ addopts = [
     "-v",                      # Verbose
 ]
 
-log_cli = true
+log_cli = false
 log_cli_level = "DEBUG"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 log_cli_format = "%(asctime)s %(levelname)s %(message)s"

@@ -18,7 +18,7 @@ from lychd.interface.web.deps import web_dependencies
 from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "frontend" / "openapi.json"
+OUTPUT = ROOT / "clients" / "web" / "openapi.json"
 
 
 def main() -> None:

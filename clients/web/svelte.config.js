@@ -9,8 +9,8 @@ export default {
   kit: {
     adapter: adapter({
       fallback: "index.html",
-      pages: "../src/lychd/public",
-      assets: "../src/lychd/public",
+      pages: "../../src/lychd/public",
+      assets: "../../src/lychd/public",
       strict: true
     }),
     version: {
