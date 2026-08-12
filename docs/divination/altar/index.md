@@ -33,7 +33,10 @@ port-forwarding described in [The Awakening](../../summoning.md#the-awakening).
 
 Each instrument may use a graph when it is the clearest answer, but none supplies a universal graph
 or domain model. A Loom edge permits; an Orb relation records; a Nexus relation reports what the
-Orchestrator observed. The distinctions stay visible.
+Orchestrator observed. Loom and Orb may share framework-neutral snapshot, identity, intent, and
+semantic-projection mechanics while keeping distinct view models and renderers. Nexus remains a
+native control board unless a measured body-map requirement earns a separate read-only lens. The
+distinctions stay visible.
 
 ## Enter through the Bridge
 

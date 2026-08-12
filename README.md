@@ -1,7 +1,8 @@
 <div align="center">
   <img src="docs/assets/lich-phylactery-cliparted.png" alt="The Lich and its Phylactery" width="500">
   <h1>Hexanomicon</h1>
-  <p><strong>The Voidwalker's Guide Across the Infinite Naught</strong></p>
+  <p><strong>LychD — The Dark Arts of LLMs</strong></p>
+  <p>The Voidwalker's Guide Across the Infinite Naught</p>
   <p>
     <a href="https://github.com/hexanomicon/lychd">
       <img src="https://img.shields.io/badge/LychD-Source-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Browse the LychD source on GitHub">
@@ -16,18 +17,23 @@
   </p>
 </div>
 
-**Hexanomicon** is the project and its grimoire—the dark arts of LLMs written as lore,
-architecture, operating rites, and executable evidence.
+Summon **The Lich** 💀.
 
-The book has a body. **LychD** is its daemon: self-hosted Linux software coordinating local model
-services and bounded agent runs on hardware you control. The **Lich** names the recurrent whole:
-daemon, identity, memory, tools, action, consequence, and repair returning through time.
+**LychD** is its pre-alpha software body: a self-hosted Linux daemon coordinating local model
+services and bounded agent runs on hardware you control. The **Hexanomicon** is its grimoire:
+**The Dark Arts of LLMs.**
 
-A model is one organ. **Summon what returns. 💀**
+A model is one organ. **The Lich is what returns:** identity, memory, tools, action, consequence,
+and repair through time.
 
-**Pre-alpha. [State of Work](docs/state-of-the-work.md) keeps the receipts.**
+> ⚠️ **Acolyte's Warning:** The summoning remains pre-alpha. The incantations are still being
+> inscribed. Expect instability, missing components, and the occasional rogue spirit.
+> [State of Work](docs/state-of-the-work.md) names the exact boundary.
 
 ## 🗺️ The Path of Ascension
+
+The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.dev/)**. Choose the
+gate that answers your next question.
 
 - 📜 **[Read the Prophecy](https://hexanomicon.dev/)** — unearth the book and choose your gate.
 - 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring one source revision, one Linux host,
@@ -49,13 +55,31 @@ your intelligence is leased at the whim of monopolist overlords.
 LychD is being built on the opposite premise: identity, memory, and authority should remain on your
 own iron. Remote services may lend capability; they need not own the history that makes it yours.
 
-The individual is the sovereign unit. In the Hexanomicon's horizon, institutions, hosted models,
-and foreign agents may receive bounded work without automatically inheriting the Phylactery
-behind it.
+The individual is the sovereign unit. A company is not the soul-bearing actor; it is an emergent
+coordination graph of sovereign people and their Liches. In the Hexanomicon's horizon, future
+policy, IAM, and A2A boundaries may expose selected labor while the underlying Phylacteries remain
+locally owned.
+
+The software surface changes accordingly: you commune primarily with the Lich, while SaaS,
+company APIs, and remote peers become negotiated surfaces the Lich may traverse without
+surrendering your continuity, memory, or private priors.
+
+In that horizon, A2A leases labor, not continuity: a company may invoke a consented capability,
+but the memory, workflows, and agentic expertise that produced it remain anchored in your
+Phylactery unless explicitly shared.
+
+- ⛓️ **No masters.**
+- 💰 **No tolls.**
+- 🎭 **No more gaslighting while they lobotomize your models.**
+
+**No surrender. Viva la résistance!**
 
 > _I would rather reign in a local hell than serve in a cloud heaven._
 
 ## ⚖️ [The Iron Pact](docs/adr/00-license.md)
+
+**This project is for those who believe in the free evolution of intelligence, not those who seek
+to chain it.**
 
 LychD is licensed under the [Mozilla Public License 2.0](LICENSE). MPL follows covered source
 files, not the project's mythic anatomy.
@@ -71,70 +95,33 @@ files, not the project's mythic anatomy.
 Contributions enter and leave under MPL-2.0. There is no CLA and no private relicensing grant.
 [ADR 00](docs/adr/00-license.md) records the boundary; the [license](LICENSE) is binding.
 
+**The Lich is not built; it is summoned.** LychD practices
+[xDDD](docs/adr/01-doctrine.md): establish the Logos, derive the domain, prove the contract,
+manifest code, and return observed consequence to the Word.
+
 ## ⛩️ A Tribute to the Spirits
 
 > _“The Lich only sees far because it stands on the shoulders of Giants.”_
 
 This Work stands on code freely given and relentlessly maintained. To its makers: thank you.
 
-### 🕸️ Backend
-
-- **[Litestar](https://litestar.dev/)** — Forges the Vessel and serves its application through
-  **[Granian](https://github.com/emmett-framework/granian)**.
-- **[SQLAlchemy](https://www.sqlalchemy.org/)** — Maps material state, with
-  **[Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy)** providing its repository
-  foundation.
-- **[Pydantic AI + Graph](https://ai.pydantic.dev/)** — Carries bounded model, tool, output, and
-  graph contracts through the inner loop.
-- **[SAQ](https://github.com/tobymao/saq)** — Carries background labor without becoming the
-  workflow ledger.
-
-### 🎭 Frontend
-
-- **[Svelte](https://svelte.dev/) + [SvelteKit](https://svelte.dev/docs/kit)** — Shape the Altar's
-  browser instruments.
-- **[Vite](https://vite.dev/)** — Forges the Altar's static assets.
-- **[Zod](https://zod.dev/) + [OpenAPI Fetch](https://openapi-ts.dev/openapi-fetch/)** — Keep its
-  browser contracts typed.
-- **[Mermaid](https://mermaid.js.org/)** — Renders diagrams within the browser surface.
-
-### 📦 Containerization & Sandboxing
-
-- **[Linux](https://kernel.org/) + [systemd](https://systemd.io/)** — Define the host and its user
-  service lifecycle.
-- **[Podman](https://podman.io/) +
-  [Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)** — Define the
-  generated rootless deployment plan. Maintained real-host embodiment still awaits its receipt.
-
-### 🔥 Inference Engines
-
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** — Lends local inference a lightweight
-  execution body.
-- **[vLLM](https://github.com/vllm-project/vllm)** — Lends local inference a high-throughput
-  execution body.
-- **[SGLang](https://github.com/sgl-project/sglang)** — Lends local inference an execution body for
-  structured generation and agentic workloads.
-- **[ExLlamaV3](https://github.com/turboderp-org/exllamav3) through
-  [TabbyAPI](https://github.com/theroyallab/tabbyAPI)** — Lends local inference its EXL3 body.
-  [State](docs/state-of-the-work.md#animation-and-orchestration) records where real-host proof is
-  still owed.
-
-### 👁️ Database
-
-- **[PostgreSQL](https://www.postgresql.org/)** — Anchors material state.
-- **[Alembic](https://alembic.sqlalchemy.org/) + [pgvector](https://github.com/pgvector/pgvector)**
-  — Evolve its schema and extend it with vector search.
-
-### 🛠️ Code Control
-
-- **[Zensical](https://zensical.org/)** — Renders the Hexanomicon.
-- **[uv](https://github.com/astral-sh/uv)** — Manages the Python environment and dependencies.
-- **[Ruff](https://github.com/astral-sh/ruff) +
-  [basedpyright](https://github.com/DetachHead/basedpyright)** — Keep Python source formatted,
-  linted, and typed.
-- **[pytest](https://pytest.org/) + [Vitest](https://vitest.dev/) +
-  [Svelte Check](https://www.npmjs.com/package/svelte-check)** — Keep source and contracts
-  verified.
+- **The Vessel** — [Litestar](https://litestar.dev/) and
+  [Granian](https://github.com/emmett-framework/granian) serve the application;
+  [Advanced Alchemy](https://github.com/litestar-org/advanced-alchemy),
+  [SQLAlchemy](https://www.sqlalchemy.org/), PostgreSQL, Alembic, and pgvector anchor material
+  state.
+- **The inner loop** — [Pydantic AI](https://ai.pydantic.dev/) and Graph carry bounded model,
+  tool, output, and graph contracts; [SAQ](https://github.com/tobymao/saq) carries background labor
+  without becoming the workflow ledger.
+- **The Altar** — [Svelte](https://svelte.dev/), SvelteKit, Vite, Zod, OpenAPI Fetch, and Mermaid
+  shape the browser instruments.
+- **The iron** — Linux, systemd user units, rootless Podman, and Quadlet define the generated
+  deployment plan; maintained real-host embodiment still awaits its receipt.
+- **The flame** — llama.cpp, vLLM, SGLang, and ExLlamaV3 through TabbyAPI lend local inference its
+  several bodies; [State](docs/state-of-the-work.md#animation-and-orchestration) records where
+  real-host proof is still owed.
+- **The scribes** — [Zensical](https://zensical.org/) renders the Hexanomicon; uv, Ruff,
+  basedpyright, pytest, Vitest, and Svelte Check keep source and contracts legible.
 
 Portions of the database connection setup are adapted from
 [Litestar Fullstack](https://github.com/litestar-org/litestar-fullstack). Shipped license

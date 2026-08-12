@@ -67,8 +67,10 @@ Cancelling a Run immediately clears the selected session's consent cards and cou
 authoritative session truth. A failed refetch leaves those actions revoked rather than displaying
 stale authority.
 
-This is bounded conversational continuity. It is not Archive retrieval, full-session replay,
-cross-process event durability, or proof that concurrent turns serialize.
+This is bounded conversational continuity. One Bridge session admits at most one nonterminal Run:
+an exact retry reuses its canonical Run, while a different message is refused until terminal ledger
+truth admits the next crossing. That process-local policy is not Archive retrieval, full-session
+replay, cross-process event durability, or a queued multi-process conversation scheduler.
 
 ## Consent is not a suggestion
 

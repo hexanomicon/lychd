@@ -19,7 +19,8 @@ code-facing name and the compatibility spelling used by existing paths.
 
 | Name | Office |
 | --- | --- |
-| Composition | Operator-visible purpose, records, effects, policies, projections, Pattern catalogue |
+| Composition | Reusable application capability owning domain records, judgment, effects, policies, projections, and a Pattern catalogue |
+| Product | Named professional or market package selecting Composition or Suite revisions, profiles, projections, and concrete use cases |
 | Pattern | One named executable-score lineage owned by a Composition |
 | Scroll | The mythic name for one immutable Pattern revision: the whole score, not one node |
 | Spell | One independently named semantic action contract: what a station may do |
@@ -32,9 +33,11 @@ code-facing name and the compatibility spelling used by existing paths.
 | Suite | Versioned coordination of separate Compositions |
 
 Spellweaver owns validation, registration, routing, logical dependencies, Gates, schedules/overlap,
-revision continuity, and contribution. Composition owns judgment; IAM/Ward/HitL authority;
-Dispatcher capability; Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and
-checkpoints; Riddle evaluation; Soulforge promotion.
+revision continuity, and contribution. Composition owns domain judgment. Product owns its customer
+promise, supported-use-case catalogue, packaging, and defaults, but none of its members' records,
+policy, secrets, consent, or effect authority. IAM/Ward/HitL own authority; Dispatcher capability;
+Orchestrator readiness; Workers delivery/retry; Phylactery/Graph stores and checkpoints; Riddle
+evaluation; Soulforge promotion.
 
 ## Spells, Scrolls, and casting
 
@@ -113,12 +116,12 @@ canonical namespace.
 ## Current material
 
 Fixed source registry has bridge_chat@1 (Bridge conversation, context, Agent turn, optional consent
-Gate, reply) and delegated_rite@1 (/delegate reference job, Durable Stasis, result/reply). The
-latter proves no external coding-agent/Tomb plane. One boot-composed catalogue is shared by
-admission, workers, Bridge, Loom, and Orb. It freezes after construction, rejects duplicate exact
-revisions, requires an explicit active revision when alternatives exist, permits registered
-revisions or whole names to remain retained but inactive, requires explicit non-default route
-precedence whenever multiple names are active, and has one active default. Run commits selected
+Gate, reply) and delegated_rite@1 (exact `/delegate` command token, reference job, Durable Stasis,
+result/reply). The latter proves no external coding-agent/Tomb plane. One boot-composed catalogue
+is shared by admission, workers, Bridge, Loom, and Orb. It freezes after construction, rejects
+duplicate exact revisions, requires an explicit active revision when alternatives exist, permits
+registered revisions or whole names to remain retained but inactive, requires explicit non-default
+route precedence whenever multiple names are active, and has one active default. Run commits selected
 name and manifest; resume never routes Intent again. Loom exposes active/default/route-rank metadata
 without making retained revisions admissible.
 
@@ -203,6 +206,74 @@ is [Evolution](18-evolution.md), not Reanimation; Reanimation restores an exact 
 checkpoint. A future declarative-only Scroll may activate without Vessel replacement only when all
 implementations are already admitted and an atomic durable catalogue-generation mechanism exists.
 
+## Authorship provenance and protected regions
+
+Authorship and approval are different records. A human may approve model-written text without
+having written it; an Agent may commit through a human-configured VCS identity. Git author,
+committer, account name, prose style, detector score, and absence of model metadata are evidence at
+most. None may mint human provenance.
+
+An **Authorship Attestation** binds one artifact revision and stable region id to its canonical
+content digest, locator, origin class, attesting Principal, and evidence references:
+
+| Origin | Meaning |
+| --- | --- |
+| `human_attested` | An authorized human Principal explicitly claims authorship of the exact bound content. Approval alone is insufficient. |
+| `agent_generated` | Host-observed Agent or model lineage produced the bound content. |
+| `mixed` | Human and Agent contribution are materially interleaved and cannot be separated honestly. |
+| `unknown` | No admissible record establishes authorship. |
+
+The attestation is an attributable claim, not proof of private cognition. A trusted local or
+authenticated human surface may create `human_attested`; an Agent, provider assertion, imported
+commit, or style classifier may not. Agent outputs receive `agent_generated` from the host job and
+artifact lineage even when a human later approves them. Approval changes authority to promote, not
+the history of who composed the bytes.
+
+Attestations append; they do not overwrite inconvenient lineage. Contradictory or inseparable
+human and Agent evidence resolves to `mixed`, while insufficient evidence remains `unknown`. A
+trusted human surface may attest a new human-written replacement only when it binds that editing
+boundary and exact result. Copying unchanged Agent output through the human surface cannot launder
+its origin.
+
+A **Protected Region** binds a stable region id, target artifact revision, canonical content digest,
+locator, and `live_change_only` policy. Accepting a human authorship attestation protects that region
+by default; an authorized human may also protect material of another or unknown origin. Line numbers
+are only a projection. Document block ids, syntax-aware symbols, structured field paths, or
+media-specific selectors locate the region, while the digest catches drift. Moving, deleting,
+splitting, reformatting, changing its marker, or changing the protection record itself counts as a
+touch.
+
+Source comments, front matter, editor decoration, and VCS notes may display the mark but are not its
+authority. The target owner retains the base-revision attestation and protection manifest outside
+the candidate's control. An Agent cannot unprotect text by deleting its visible marker.
+
+For a candidate that may replace an artifact, Spellweaver orders one admission path:
+
+1. bind the exact base revision, candidate digest, and target-owner diff;
+2. resolve touched regions against the base-revision protection manifest;
+3. continue normally when none overlap, or enter Durable Stasis for one live HitL verdict naming
+   every affected region, old and replacement digests, and an authorized exact-diff artifact;
+4. after approval, revalidate base, candidate, region set, and effect identity before the target
+   owner writes a successor artifact and manifest.
+
+Protected-region change never accepts Codex preauthorization, a previous verdict, a broad “edit
+this repository” grant, or approval of a different patch. Base or candidate drift creates a new
+call. Denial preserves the candidate as inert evidence; it does not mutate the active artifact.
+An Agent may prepare a suggested replacement in Lab, but cannot apply it to the protected body.
+
+An approved Agent edit remains `agent_generated` when it wholly replaces a region and `mixed` when
+it interleaves with retained human material. Unchanged human-attested content retains its
+provenance across an approved move. A human may later rewrite and freshly attest the exact result;
+the approval itself never performs that relabelling.
+
+For legacy material, history and stylometry may nominate likely regions for review. They remain
+`unknown` until a human explicitly attests the exact current digest. Spellweaver owns the Gate and
+ordering; the artifact/effect owner owns region resolution and mutation; [Creation](16-creation.md)
+owns candidate isolation and target-owner promotion; [HitL](25-hitl.md) owns the live verdict.
+No Authorship Attestation store, protected-region manifest, trusted authoring surface, overlap
+resolver, or candidate-bound review card is delivered. [State of
+Work](../state-of-the-work.md#smith-forge-promotion) owns that boundary.
+
 ## Gates, effects, and Stasis
 
 | Boundary | Rule |
@@ -217,9 +288,75 @@ appears only where HitL/effect policy demands; a verdict covers exact effect, no
 or downstream authority. Archive, Ward, Dispatcher, provider, execution retain policy even when
 coordinated.
 
-A protected Portal score joins labels, locally transforms, may ask local Privacy Agent, verifies
-TransformationReceipt, creates Privacy Cut, gets exact EgressDecision, calls Portal, quarantines
-return. Censor/Agent proposes only. Context owns cut; Security owns declassification.
+A protected remote score joins labels, selects a minimum disclosure projection, locally transforms,
+may ask a local Privacy Agent, independently verifies transformation evidence, creates a consumer-
+specific Privacy Cut, gets an exact tagged-target EgressDecision, transmits once, and quarantines
+the return. Censor/Agent proposes only. Context owns the Cut; Security owns declassification.
+
+## Execution-road planning
+
+Portal, A2A, and delegated coding are not interchangeable provider names. Spellweaver first closes
+the labor boundary, then any cognition boundary inside it:
+
+- a native Spell or Agent keeps decomposition in LychD and may use deterministic work, a local
+  Soulstone, or one admitted Portal capability;
+- an A2A placement delegates one public task schema to a sovereign peer, which owns its private
+  decomposition and provider choice; and
+- a delegated coding placement gives one foreign runtime a contained `read`, `candidate`, or
+  `verify` workspace and tool loop. A child model call is a nested Portal boundary.
+
+Each eligible placement pins `ExecutionRoadPolicy@1`: exact Pattern/Spell/placement revisions;
+semantic input/output and non-completion; permitted labor and cognition roads with explicit branch
+predicates; classification, lineage, Cut, consent, quarantine, and validators; effect demands;
+deadlines and request/token/concurrency/spend ceilings; durability and idempotency; permitted
+fallback edges; and result-adoption evidence. Economics and readiness may eliminate an eligible
+branch, never make an ineligible one lawful.
+
+Before road admission, Spellweaver creates immutable `ExecutionRoadDecision@1`; the Run ledger
+stores it before any road-owned submission, and the later dispatch event, `ServiceJobAttempt`,
+Intercom task, or `AgentJob` references its id. The decision binds Run, station attempt, parent
+decision/retry generation, exact input/export digest, artifact-reference-set digest, opaque
+custody refs, and canonical content-digest/media-type/size/classification evidence,
+source-manifest and influence-label digests, safe residual-disclosure summary/digest, opaque
+restricted lineage refs, purpose, policy and expiry, chosen road, budgets, expected
+result/quarantine, record classification/visibility/retention, and the expected road binding. It
+contains no caller-supplied full `ArtifactRef`, raw subject, filename, material-parent, source span,
+reversal value, credential, or live grant/lease handle:
+
+The complete decision is restricted, deployment-local, non-exportable evidence. Loom, logs, and
+external receipts receive only an opaque decision id or Security-owned `EvidenceDigest@1`
+projection; canonical raw digests never leave local decision/attempt custody and are not anonymous.
+
+| Road | Exact authority retained by its owner |
+| --- | --- |
+| local capability | dispatch event records demand plus observed grant/lease identity only; asynchronous or effectful work transfers to `ServiceJobAttempt` |
+| Portal | bounded immediate `ModelGrant`/`CallGrant` uses the decision, exact `EgressDecision`, lease, and dispatch/security events; Reach, asynchronous, paid, autonomously retriable, or post-submit-reconcilable work uses `ServiceJobAttempt` |
+| A2A | enrolled peer, outbound peer-task/outbox identity, Durable Stasis, authenticated terminal adoption |
+| delegated coding | `AgentJob`, runtime/profile, Coffin containment, workspace/artifact boundary, terminal adoption |
+
+The decision records selection only; it never replaces those ledgers, observes a terminal, or
+settles their truth. Durable road admission commits the decision and its road record atomically when
+they share one Phylactery transaction; otherwise the decision commits first and the idempotent road
+record adopts its id. A local
+deterministic road-selection Spell may choose only among manifest-declared branches using pinned
+policy and admitted observations. Dispatcher then binds an already eligible capability; it does
+not rank price, privacy, peer trust, or coding runtimes. Orchestrator makes managed local substrate
+ready; it does not change the road. Gateway `auto`, model-written routing, or a foreign runtime's
+provider choice cannot substitute for this decision.
+
+A semantic retry, fallback, changed payload, target, peer, model, workspace projection, or
+delegated child call creates a new road decision, then its road owner creates the appropriate
+attempt/task/job and every required Cut/egress decision. Exact transport redelivery within one
+admitted road-owned attempt instead preserves sealed bytes, target, external/idempotency identity,
+road decision, and Cut/token namespace; the adapter must prove atomic same-key/same-payload
+idempotent replay or no prior effect, road-specific retry/reconciliation law must permit it, and
+each physical transmission receives a fresh EgressDecision and consumes its bounded disclosure
+use. A submitted attempt is first reconciled under its existing identity; uncertainty cannot
+activate an alternate branch by pretending the first effect did not happen. Every remote return
+stays attributed and quarantined until the Composition owner validates and adopts it.
+
+[Execution roads](../sepulcher/extensions/weaver/execution-roads.md) carries this law through the
+operator-facing selection and failure journey.
 
 ## Parallelism and delegation
 
@@ -230,12 +367,25 @@ Dispatcher, Orchestrator, HitL, or revision. Delegated station declares request/
 containment, budget, timeout, cancellation, artifact boundary, downstream use; provider adapter
 invokes foreign runtime, never embedded CLI/credential/private graph.
 
-## Compositions, Suites, and schedules
+## Compositions, Products, Suites, and schedules
 
 Portfolio membership marks an accepted **Native Reference Composition**: a first-party supported
 application contract and worked example. It does not prove executable delivery;
 [State of Work](../state-of-the-work.md) keeps the shared whole-system envelope, while a
 Composition mentions local delivery only when it materially changes how the contract is read.
+
+A **Product** gives a profession or market one named operator door. It pins eligible Composition
+or Suite revisions, service profiles, projections, supported use cases, defaults, and its customer
+and support envelope. A Product may use one Composition or coordinate several through a Suite; it
+does not become another workflow executor, merge member ownership, or convert packaging into
+authority. Deployment instantiates a Product under one operator's configuration without creating a
+new Product identity merely because its host, customer, or credentials differ.
+
+A Native Reference Composition may also publish an exact reference deployment profile without
+becoming a Product. Such a profile binds an implementation and acceptance target; it creates no
+service until Configuration selects a delivered registered revision and Containers admits its
+complete deployment manifest.
+
 Suite may coordinate separate Compositions
 with typed ArtifactRef/Intent handoffs, pinned revisions/correlation/ceilings/dependencies/partial
 completion, never merge ownership/secrets/Sigils/HitL/domain judgment. Suite execution is Designed:
@@ -303,15 +453,29 @@ It fragments admission, priority, recovery, and inspection; applications contrib
 
 Renderer state cannot state all type, authority, effect, and recovery invariants; Loom projects and may draft candidates.
 
+### Git identity or an AI detector as authorship proof
+
+Commit identity can be borrowed by an Agent, and style classification is probabilistic. Both may
+nominate legacy material for review; neither can create a human authorship attestation.
+
+### A prompt warning or source comment as protection
+
+An effectful Agent can ignore the prompt or delete the marker. Protection is enforced by
+target-owner comparison with the base manifest and an exact live Gate, outside candidate control.
+
 ## Consequences
 
 !!! success "Accepted"
     - Exact Pattern identity, waits, contributions, Suites, schedules, and Loom share one future admission law.
     - Ownership stays split and immutable revision prevents substitution.
+    - Human authorship remains distinct from human approval, and protected material cannot be
+      promoted through an Agent edit without one exact live verdict.
 
 !!! failure "Cost"
     - Automatic compatibility proof, durable Pattern publication, scheduling, parallel durability, and editing are separate programs.
     - Construction proves declared Graph topology only; effect, recovery, and compatibility semantics still need their own evidence.
+    - Trusted human identity, stable media-specific selectors, retained manifests, and exact diff
+      review add storage, UI, and recovery work.
 
 ## Acceptance evidence
 
@@ -324,3 +488,15 @@ implementations: canonical bytes/digests; duplicate and unknown fields; numeric 
 cases; namespace collision; exact contract resolution; repeated Spell placement; missing,
 unauthorized, unavailable, retained, and revoked implementations; v2 coexistence; and refusal of
 similar-name, version-range, or newer-revision substitution.
+
+The authorship-protection profile additionally requires fixtures for every origin class;
+conflicting and inherited lineage; unchanged moves, splits, marker deletion, and manifest drift;
+base and candidate races; live-only refusal of preauthorization; exact affected-region review; and
+proof that approving Agent output never relabels it `human_attested`.
+
+The execution-road profile additionally requires complete local/Portal/A2A/delegated matrices;
+manifest-undeclared and model-selected road refusal; consumer-specific Cut and target binding;
+nested coding-agent child egress; capability/peer/runtime unavailability; pre- and post-submit
+failure at every edge; new-attempt fallback; indeterminate reconciliation; quarantine/adoption; and
+proof that a decision commits before admission, contains no live handle, is referenced by the
+road-owned record/event, and never settles that ledger.

@@ -52,10 +52,22 @@ make frontend-check
 make frontend-build
 ```
 
-Both frontend gates regenerate OpenAPI and build the client. Resulting updates beneath
-`src/lychd/public/` are tracked so review can see the generated projection. Published
-documentation is checked separately with `uv run zensical build --clean`; this ADR does not claim
-that command runs automatically.
+Both frontend gates regenerate the OpenAPI client contract. `frontend-check` then checks and tests
+the Altar; `frontend-build` compiles its tracked projection beneath `src/lychd/public/` so review can
+see generated changes. Published documentation is checked separately with
+`uv run --locked --only-group docs zensical build --clean`.
+
+[ADR 15](15-frontend.md#decision-lock-and-reopening-gate) owns the exact Node/npm pins and the
+single frontend tool vocabulary. A quality or DX task may not introduce Bun, a second JavaScript
+lock/runtime, Tailwind, or another styling compiler without first satisfying that Covenant's
+product-shaped reopening gate.
+
+Pull requests keep four independent lanes visible: `make check`, the disposable PostgreSQL
+receipts, Altar check/build with a generated-projection diff guard, and the clean documentation
+build. A `main` push repeats the first three while the Pages workflow's clean build supplies the
+documentation gate and deployment artifact without running the same build twice. The tag/manual
+release-candidate workflow remains separate because an ordinary green change is not an artifact or
+host promotion receipt.
 
 The editor configuration also routes Markdown through `markdownlint` and TOML, YAML, and JSON
 through Prettier. The client uses strict TypeScript, `svelte-check`, and Vitest/jsdom; native CSS

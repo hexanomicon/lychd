@@ -6,6 +6,8 @@ Load this scope for implementation work under `src/**` or `tests/**`, including 
 assembly, persistence, execution, capabilities, agents, orchestration, extensions, and interfaces.
 Also load [Architecture](architecture.md) when the implementation changes a decision,
 documentation topology, public operation, or delivery truth.
+Also load [Frontend](frontend.md) when a backend contract changes browser, OpenAPI, or SSE
+projection.
 
 ## Authorities
 
@@ -19,7 +21,8 @@ documentation topology, public operation, or delivery truth.
 
 ## Probes
 
-- Composition: `src/lychd/app.py`, `src/lychd/extensions/host.py`,
+- Application composition: `docs/adr/11-backend.md`, `src/lychd/app.py`,
+  `src/lychd/interface/web/lifespan.py`, `src/lychd/extensions/host.py`,
   `src/lychd/config/components.py`
 - Persistence: `docs/adr/06-persistence.md`, `src/lychd/db/`,
   `src/lychd/domain/cortex/ledger.py`
@@ -29,6 +32,12 @@ documentation topology, public operation, or delivery truth.
   `docs/adr/23-orchestrator.md`, `src/lychd/domain/animation/`,
   `src/lychd/domain/orchestration/`
 - Agent runtime: `docs/adr/20-agents.md`, `src/lychd/agents/`
+- Delegated execution: `docs/adr/14-workers.md`, `docs/adr/20-agents.md`,
+  `docs/adr/24-graph.md`, `src/lychd/domain/delegation/`,
+  `src/lychd/extensions/delegation.py`, `src/lychd/db/delegation.py`
+- Browser-facing interfaces: `docs/adr/11-backend.md`, `docs/adr/15-frontend.md`,
+  `src/lychd/interface/api/`, `src/lychd/interface/web/`,
+  `src/lychd/domain/web/contracts.py`, `tests/web/`
 - Extensions and host effects: `docs/adr/05-extensions.md`, `docs/adr/08-containers.md`,
   `docs/adr/10-privilege.md`, `src/lychd/extensions/`, `src/lychd/system/`
 

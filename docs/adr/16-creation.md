@@ -21,6 +21,8 @@ icon: material/creation
   receipts.
 - The eventual target owner—not the creator—must recheck current state, authority, evidence, and
   recovery at promotion time.
+- The target owner must compare a candidate with any base-revision Protected Region manifest;
+  overlap requires an exact live human verdict and cannot use standing preauthorization.
 - Lineage and terminal disposition must remain attributable, so interrupted work can resume or be
   discarded without touching the live body.
 
@@ -103,7 +105,9 @@ effects, compatibility evidence, and rollback or compensation instructions. It n
 into Crypt nor assumes a federated lockfile. At effect time the target owner must:
 
 1. revalidate the live base, source tree, and candidate identity;
-2. evaluate [Consent](25-hitl.md), or a narrowly bounded preauthorization;
+2. evaluate [Consent](25-hitl.md), or a narrowly bounded preauthorization; a
+   [Protected Region](28-workflow.md#authorship-provenance-and-protected-regions) forbids
+   preauthorization and binds live review to the exact candidate;
 3. confirm that the evidence is current for this effect;
 4. use its own transaction and recovery boundary; and
 5. verify the resulting state or invoke rollback or compensation.

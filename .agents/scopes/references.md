@@ -86,6 +86,17 @@ These are mechanism references only. Scout and Webcrawler law still own effect s
 destination authority, budgets, receipts, hostile-content fencing, and custody; Animator law owns
 whether a local Soulstone or remote Portal may expose the typed capability.
 
+## Model Gateways and Provider Routing
+
+| Reference | Cheapest edge | Useful when |
+|---|---|---|
+| `omniroute` | `README.md`, `docs/reference/PROVIDER_REFERENCE.md`, `docs/routing/`, then one selected `open-sse/` handler or translator | Comparing provider catalogues, protocol translation, routing, quotas, cost telemetry, circuit breakers, OpenAI-compatible ingress, MCP, or A2A; never treat subscription pooling, copied web sessions, stealth, MITM, free-tier claims, or automatic fallback as an admitted LychD road |
+
+OmniRoute is a pattern and source probe, not a dependency or ready Provider Gate. Portal and
+Security law still own exact credentials, destinations, custody hops, fresh egress admission,
+durable attempts, budgets, quarantine, and reconciliation. Assimilate only a bounded mechanism
+behind a typed LychD adapter; do not import its authority, credential store, or routing defaults.
+
 ## Local Inference, Hardware, and Packaging
 
 | Reference | Cheapest edge | Useful when |

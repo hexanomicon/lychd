@@ -25,13 +25,15 @@ Load one matching scope before task action:
 |---|---|
 | ADRs, doctrine, package boundaries, system-truth documentation, or tracked agent routing | [.agents/scopes/architecture.md](.agents/scopes/architecture.md) |
 | Implementation or tests under `src/**` or `tests/**` | [.agents/scopes/build.md](.agents/scopes/build.md) |
-| `frontend/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [.agents/scopes/frontend.md](.agents/scopes/frontend.md) |
+| `clients/web/**`, browser projection, Svelte/SvelteKit, Vite, or native CSS | [.agents/scopes/frontend.md](.agents/scopes/frontend.md) |
 | Published Divination pages, Altar reader journey, or Zensical navigation | [.agents/scopes/divination.md](.agents/scopes/divination.md) |
 | The Great Work, mythic voice, formation, consciousness, cosmology, or eschatology | [.agents/scopes/transcendence.md](.agents/scopes/transcendence.md) |
-| Optional comparison with the checkout-local reference shelf | [.agents/scopes/references.md](.agents/scopes/references.md), after the primary scope |
+| A named or decision-relevant external technology, protocol, library, research project, or benchmark | [.agents/scopes/references.md](.agents/scopes/references.md), after the primary scope; probe a matching operator-designated local reference when present |
 
-The frontend scope routes onward to the Svelte scope when required. Cross-domain work may load a
-second scope only when the task actually crosses that boundary.
+The frontend scope routes onward to the Svelte scope when required. Backend work under `src/**` or
+`tests/**` starts with Build and adds Frontend only when it changes browser, OpenAPI, or SSE
+projection. Cross-domain work may load a second scope only when the task actually crosses that
+boundary.
 
 ## Workflow router
 
@@ -70,8 +72,11 @@ smallest owning leaf. Do not inventory a tree when one route answers the task.
 3. Follow its cheapest authoritative probe.
 4. Inspect the smallest source and test slice that can establish current behavior.
 5. Inspect `.venv/lib/` when installed dependency behavior matters.
-6. Use shell probes to close remaining uncertainty.
-7. Ask the operator only after internal archaeology is exhausted.
+6. When an external technology materially affects the answer, load the References scope and check
+   the index of any operator-designated local shelf for a matching snapshot before browsing or
+   guessing; absence is not a blocker and the shelf never becomes project truth.
+7. Use shell probes to close remaining uncertainty.
+8. Ask the operator only after internal archaeology is exhausted.
 
 Do not guess paths, APIs, delivery, compatibility, or recovery behavior. If a routed path is stale,
 use the next authority and repair the route only when routing maintenance is in scope.

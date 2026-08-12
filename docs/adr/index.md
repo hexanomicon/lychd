@@ -79,7 +79,7 @@ name the telos it serves, but its decision must stand on technical requirements 
 | How does human consent survive pause and re-admission? | [25 — HitL](25-hitl.md) |
 | How may sovereign Liches address one another? | [26 — A2A](26-a2a.md) |
 | How are Seeds admitted, retrieved, corrected, and reanimated? | [27 — Memory](27-memory.md) |
-| How are Spells woven into immutable Scrolls and attributable castings? | [28 — Workflow](28-workflow.md) |
+| How do Products package Compositions, how are Spells woven into immutable Scrolls and attributable castings, and how do human-attested regions stop for live review? | [28 — Workflow](28-workflow.md) |
 | Which evidence makes an execution legible without granting authority? | [29 — Observability](29-observability.md) |
 | How are search, fetch, render, and extraction effects contained? | [30 — Webcrawler](30-webcrawler.md) |
 | How are speculative worlds isolated, judged, and promoted? | [31 — Simulation](31-simulation.md) |

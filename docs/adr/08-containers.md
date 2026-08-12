@@ -33,6 +33,40 @@ lifecycle-managed Soulstone, compatible `lychd-coven-*.target` aggregates, the m
 Phylactery and Vessel, and admitted extension units. A Portal is a logical remote connection; it
 does not summon a local container.
 
+### Versioned application deployments
+
+A future `ApplicationDeploymentManifest@1` admits a complete application-specific service body
+without granting a Composition raw Quadlet or systemd authority. It binds one immutable application
+profile and its exact Composition/Pattern revisions to registered service-role implementations;
+images and commands; dependency/start/stop order; local IPC and service identities; migrations;
+mounts and durable volumes; ingress, egress, and isolated networks; secret references; ports;
+resource ceilings; readiness; backup/restore; reconciliation; and removal policy. Unknown,
+unowned, cyclic, overlapping, or undeclared edges fail before unit generation.
+
+Configuration selects and assembles one registered profile generation. A multi-host profile closes
+separately compiled per-host manifests plus one compatibility/enrolment receipt binding profile
+revision, deployment and authority epochs, manifest digests, service Principals, protocol/schema
+ranges, and exact private-route generations. It does not create a distributed control plane:
+each host compiles and attests only its own Codex, secrets, volumes, and units. Each Core or
+Extension Domain owns its typed service contribution. The Containers compiler arbitrates each
+whole physical manifest and Scribe alone emits the units and receipts. A profile may place a
+hostile parser, credential edge, or browser outside `lychd.pod` in a dedicated rootless network
+zone, but it cannot create a second application authority, raw unit fragment, Podman socket route,
+or lifecycle channel.
+Operator provisioning supplies the one non-root host account and platform floor; LychD services
+receive no account-creation or cross-user authority.
+
+The first concrete consumers are the designed, mutually exclusive
+[Reach deployment profiles](../compositions/reach/deployments/index.md). No application selector,
+deployment-profile registry, service-role contribution store, manifest compiler, or effectful host
+receipt ships; the current generated topology above remains authoritative delivery truth.
+
+A profile transition closes admission, drains or classifies every external effect, fences the old
+generation, stops and revokes its credential owner, and activates the replacement authority last.
+Two manifests for one profile never license two Phylacteries or Gateway owners. Downgrade or
+rollback refuses when it would erase live custody; after the new authority admits work, return to
+the old body is another quiesced migration rather than process restart.
+
 A generated Quadlet manifest is a Bind/Scribe deployment artifact. A live Animator retains its
 Rune identity, Connector, and typed runtime surfaces; it never owns the generated manifest.
 `RuntimePlan` compilation is available through the bind planner, not through the live

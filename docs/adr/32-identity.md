@@ -8,7 +8,7 @@ icon: material/drama-masks
 !!! abstract "Context"
     A model process is not an accountable actor. **Mirror** gives Ahaṃkāra—the Answer that says
     “I”—a filtered, durable but revisable Persona binding and legible lineage. It is neither a
-    hidden runtime nor a claim of continuous consciousness.
+    hidden runtime nor a claim of continuous Cognizance.
 
 ## Decision
 

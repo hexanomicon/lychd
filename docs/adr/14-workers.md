@@ -16,7 +16,7 @@ event loop (`separate_process=False`, no SAQ server lifespan). Both use SAQ's se
 pool and tables; Run, Step, checkpoint, consent, and delegated-job records remain LychD data.
 Lifespan connects queues before publishing the run substrate and disconnects them in reverse order
 after workers stop. Per-queue concurrency is bounded, but it is not an admission quota, CPU cap,
-memory limit, or slow-subscriber backpressure. A blocking Ghoul can impair HTTP and an OOM or
+memory limit, or producer throttle for slow subscribers. A blocking Ghoul can impair HTTP and an OOM or
 interpreter crash kills the Vessel.
 
 | Queue | Default source | Registered work |
@@ -69,6 +69,12 @@ invalidate already admitted truth. An exact `PENDING` delivery is published agai
 returns, while an already published or claimed hop is only observed. Key reuse for different work
 fails closed.
 
+Bridge additionally requests a Topology-A session fence. The process-local admission coordinator
+serializes that session's admission decision, permits an exact idempotent replay, and otherwise
+refuses a second nonterminal Run through a bounded ledger lookup. Durable terminal Run truth
+releases the policy naturally; no process-local active-session marker becomes recovery authority.
+This is a one-process conversation causality rule, not a cross-process quota.
+
 Run plus delivery intent are transactional; PostgreSQL plus SAQ publication are not one
 distributed transaction. A broker error or caller cancellation after durable admission leaves the
 Run `QUEUED` and its exact delivery recoverable. The process-owned relay probes the idempotent job
@@ -98,16 +104,21 @@ Both configured routing rules and explicit `Intent.priority` overrides validate 
 
 ## Events, settlement, and waits
 
-`perform_run` alone drives Graph execution and publishes semantic lifecycle events. Replay is
-bounded; a cursor outside the window receives resynchronization. Subscriber queues are unbounded.
+`perform_run` alone drives Graph execution and publishes semantic lifecycle events. Replay and each
+live subscriber queue retain at most 256 events. A cursor outside replay or a live reader that falls
+behind receives one `resync` boundary at the current cursor; its authoritative snapshot replaces
+everything through that boundary before live tailing continues.
 An ordered asynchronous tee writes non-token events to Step rows; token deltas are live-only and
 settled text belongs in the session record. Terminal paths wait for that run's writer chain before
 closing their channel, so recovery does not report completion while its terminal Step is merely
 scheduled. A failed Step append is surfaced at that barrier but cannot roll back already committed
 Run truth, so this evidence remains `durable_best_effort`, not a transactional event outbox or
 durable live stream.
-If terminal evidence persistence fails, the closed process-local channel is discarded so startup
-or a later idempotent repair can seed a fresh sequence and retry the missing Step.
+The bus detaches mutable event metadata at every replay, subscriber, snapshot, and persistence
+boundary. All waiters on one failed writer generation observe the same latched failure. If terminal
+evidence persistence fails, the closed process-local channel is discarded; startup or a later
+single-flight repair confirms canonical terminal truth, starts an explicit fresh writer generation,
+seeds a fresh sequence, and retries the missing Step exactly once.
 
 Normal return, failure, and cancellation settle the claimed status/sequence under shielding.
 Terminal Run state commits before contextual release and best-effort stasis deletion. The channel
@@ -183,9 +194,10 @@ One internal page scheduler retains every distinct degraded, caller-held, or cle
 external-wait page and alternates queued revisits with forward cursor progress. Multiple old poison,
 live broker, unfinished delegate, pending consent, or not-yet-released pages therefore neither
 disappear from repair nor starve newer identities. Exceptions are isolated per owner within a page.
-The lifespan supervisor restarts any relay that exits before shutdown. Delegated and consent probes
-share their timeout-bounded reconciliation paths with startup; a verdict or terminal child committed
-after an earlier clean probe is therefore re-fired without requiring another process restart.
+The lifespan supervisor restarts any relay that exits before shutdown with deterministic
+exponential backoff capped at five seconds. Delegated and consent probes share their timeout-bounded
+reconciliation paths with startup; a verdict or terminal child committed after an earlier clean
+probe is therefore re-fired without requiring another process restart.
 These relays are not generic SAQ retry: Graph effects remain
 fenced by claim sequence and their own idempotency law. There is still no periodic workflow
 scheduler or public failed-Run retry. Recovery exists only at declared checkpoints; uncheckpointed
@@ -255,9 +267,12 @@ malformed acknowledgement,
 or lost cancellation acknowledgement after submit stays `SUBMITTING` or settles
 `INDETERMINATE`; it never fabricates failure or authorizes a new effect. Reconciliation first looks
 up the same provider/executor identity and idempotency identity. Re-submit is legal only when its
-evidence proves no effect occurred and the domain's retry policy admits the same generation. A
-provider or executor unable to offer idempotency or lookup cannot host autonomously repeatable
-durable effects.
+evidence proves no effect occurred, or when the admitted adapter proves atomic server-side same-
+key/same-payload replay that returns the original effect/job identity and rejects changed-content
+key reuse. The domain retry policy must admit the same generation, sealed bytes and target must be
+unchanged, and each physical transmission obtains a fresh EgressDecision. A provider or executor
+unable to offer that idempotency guarantee or lookup cannot host autonomously repeatable durable
+effects.
 
 Cancellation records intent, asks the exact attempt owner, and continues reconciliation.
 `CANCELLED` means execution containment is proved, not merely that a request was sent. Local
@@ -277,13 +292,20 @@ No live Connector, grant, SDK client, stream, tensor, process, or session enters
 
 Delegated work is neither Tomb execution nor a broker retry. The coordinator has idempotent typed
 `AgentJob` submission/adoption/cancellation, parks the graph with exact ownership, and resumes one
-bounded hop. The selectable `reference` adapter is deterministic and effect-free. Database shapes,
-a migration, and a PostgreSQL adapter exist, but no real PostgreSQL/migration receipt, provider
-launch, Coffin supervisor, effectful child, cross-process pickup, or durable artifact custody is
-proved. [State of Work](../state-of-the-work.md#delegated-agent-execution) owns the Partial claim.
+bounded hop. The selectable `reference` adapter is deterministic and effect-free; it may rebuild
+its process-local result projection from the persisted request before restart-time refresh or
+cancellation, retains that projection across a failed store adoption, and retires it only after
+authoritative terminal settlement. Effectful runtimes cannot use that seam: they require lookup by
+durable provider/executor identity and must never replay submission. Database shapes, a migration,
+and a PostgreSQL adapter exist, but no real provider launch, Coffin supervisor, effectful child,
+cross-process pickup, or durable artifact custody is proved. [State of
+Work](../state-of-the-work.md#delegated-agent-execution) owns the Partial claim.
 `LOST` is terminal for result adoption and ordinary polling, but it is not evidence that an external
 process stopped. Parent cancellation must still call the owning runtime's containment operation and
 may record `LOST → CANCELLED` only after that operation returns.
+Before an effectful runtime is admitted, its contract must also distinguish a definitely rejected
+start from a post-transmission ambiguous failure; a generic exception after an effect may have
+escaped is not proof that the job failed or stopped.
 
 There is no Rite registry: `perform_rite` is a logged no-effect placeholder, and background work
 on `rites` is ordinary `perform_run` execution. Any future registry needs typed identifiers,

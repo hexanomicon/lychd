@@ -30,6 +30,16 @@ The gateway remains outside the shared application Pod. It receives no broad mou
 secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN` inside that Pod
 is not an acceptable shortcut.
 
+## Reach deployment roads
+
+The [Reach deployment matrix](../compositions/reach/deployments/index.md) selects Tether by exact
+profile, not a trust toggle. Home-only and standalone outbound VPS use no Tether. Only
+`reach.edge-home.public@1` requires one named VPS peer and the smallest route to a Tether-only
+private Veil backend for typed event admission, delivery claim, settlement, and health. It receives
+no default route or path to the home Phylactery, Reach core, Altar, model/provider API, Podman
+socket, Reactor, or host administration. Tether custody contains tunnel keys only; the edge relay
+keeps its disjoint workload credential and revoking one class never repairs another.
+
 ## Peer custody and exact routes
 
 The Codex may retain stable peer identity, public key, allowed addresses/routes, endpoint and
