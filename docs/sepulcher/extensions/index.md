@@ -18,11 +18,13 @@ where work belongs; presence on the map proves neither a package nor delivered b
 | **Manifestation** | The form a Domain takes in one profile: Core office, package, Composition, managed Provider, external attachment, or dormant design |
 | **Contribution** | A typed addition admitted through a Domain-owned store while that Domain keeps authority |
 | **Provider** | A concrete engine or service supplying mechanism behind a typed contract |
-| **Composition** | An [operator-visible application](../../compositions/index.md) with one purpose, Pattern catalogue, domain state, policy, and effects |
+| **Composition** | A [reusable native application capability](../../compositions/index.md) with a Pattern catalogue, domain state, judgment, policy, and effects |
+| **Product** | A named professional or market package selecting Compositions, Suites, profiles, projections, and supported use cases without inheriting their authority |
 
 Packages may contribute across several Domains; a Domain may have several packages or Providers.
-Compositions use Domains without becoming one. **Activation** names a concrete package or declared
-instance, never an abstract Domain.
+Compositions use Domains without becoming one, and Products package Compositions without becoming
+an Extension or authority owner. **Activation** names a concrete package or declared instance,
+never an abstract Domain.
 
 ## The Federation of Fifteen
 

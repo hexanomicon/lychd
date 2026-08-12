@@ -56,6 +56,7 @@ nav = [
                 "sepulcher/animator/soulstone/resources.md"
             ]},
             "sepulcher/animator/portal.md",
+            "sepulcher/animator/portal-roads.md",
             "sepulcher/animator/coven.md"
         ]},
         { "Extensions" = [
@@ -66,6 +67,7 @@ nav = [
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
                 "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
                 "sepulcher/extensions/weaver/stasis-and-return.md",
+                "sepulcher/extensions/weaver/execution-roads.md",
                 "sepulcher/extensions/weaver/anonymization.md",
                 "sepulcher/extensions/weaver/delegated-agents.md"
             ]},
@@ -190,6 +192,9 @@ nav = [
             "compositions/broker/products.md",
             "compositions/broker/channels.md"
         ]},
+        { "Workshop (candidate)" = [
+            "compositions/workshop/index.md"
+        ]},
         { "Blockworld" = [
             "compositions/blockworld/index.md",
             "compositions/blockworld/mission.md",
@@ -199,7 +204,13 @@ nav = [
         { "Reach" = [
             "compositions/reach/index.md",
             "compositions/reach/habitat.md",
-            "compositions/reach/turn.md"
+            "compositions/reach/turn.md",
+            { "Deployment profiles" = [
+                "compositions/reach/deployments/index.md",
+                "compositions/reach/deployments/home-public.md",
+                "compositions/reach/deployments/vps-edge-home-core.md",
+                "compositions/reach/deployments/vps-public.md"
+            ]}
         ]},
         { "Avatar" = [
             "compositions/avatar/index.md"

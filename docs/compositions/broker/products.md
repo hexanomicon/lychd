@@ -12,8 +12,8 @@ jurisdiction, and expiry.
 
 For PZP, a case queries the releases represented by the firm, validates the vehicle and client facts
 the requested action actually needs, and records live quote observations separately from the
-underlying product. Product refresh creates a new release; it never rewrites the release pinned by
-an in-flight comparison.
+underlying product. Refreshing the catalogue creates a new release; it never rewrites the release
+pinned by an in-flight comparison.
 
 “Best” is not a product fact. A comparison must state its universe, retrieval time, hard
 eligibility, criteria, fees or relationships, missing facts, and expiry. It may truthfully return

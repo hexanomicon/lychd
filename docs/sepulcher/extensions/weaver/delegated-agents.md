@@ -72,9 +72,22 @@ provenance-tagged and quarantined: it grants no instruction, execution, promotio
 authority, only station-declared interpretation. A reference alone neither admits nor materializes bytes.
 [Return quarantine](../../../adr/09-security.md#7-return-quarantine) owns this law.
 
+The host marks candidate content produced through this job lineage `agent_generated`; a later
+human approval does not relabel it. When a candidate touches a [Protected
+Region](../../../adr/28-workflow.md#authorship-provenance-and-protected-regions), promotion follows
+the exact live Gate in [Pattern lifecycle](pattern-lifecycle.md#human-attested-material-stops-at-a-gate).
+The delegated runtime never receives the authority to alter or erase the target-owner manifest.
+
 If a delegated request, child provider call, or returned derivative may cross a remote boundary,
 it also follows the parent [anonymization and egress](anonymization.md) contract. Delegation cannot
 copy authority or shed privacy lineage.
+
+The runtime and its provider are separate consumers. A remote runtime receives its own minimum
+workspace projection under a `DelegatedRuntimeTarget`; a child model receives a second consumer-
+specific Cut when transformation policy requires one, plus a fresh `PortalTarget` decision for its
+exact prompt/tool envelope. A local Coffin still
+protects the host from its runtime even when only the child call crosses the network. The outer
+`AgentJob` never authorizes an unknown series of child payloads.
 
 This separation is also the delegation's economic leverage: the
 [local anonymizer and bastion](anonymization.md#the-leverage-of-a-local-boundary) can make
@@ -85,6 +98,8 @@ Provider-private commands and credentials stay behind the adapter boundary. Effe
 labor additionally requires the Security-owned Coffin supervisor, job-scoped `nono` policy, and
 Provider Gate; none belongs inside Pattern law. [The Coffin
 profile](../../../adr/09-security.md#the-coffin-delegated-agent-profile) owns those boundaries.
+A runtime that cannot use the exact Provider Gate endpoint, disclose its child model route, or
+disable ambient network/fallback is ineligible. Transparent MITM is not an adapter.
 
 ## Name the delivered truth
 
@@ -103,3 +118,6 @@ The [tracked delegated-coding
 playbook](https://github.com/hexanomicon/lychd/blob/main/.agents/workflows/delegated-coding.md)
 records repository procedure and design input. It supplies neither runtime law nor delivery
 evidence.
+
+[Execution roads](execution-roads.md) owns when this job form is preferable to a native Portal
+call or sovereign A2A task.

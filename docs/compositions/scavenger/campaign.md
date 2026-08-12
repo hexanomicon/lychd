@@ -28,4 +28,11 @@ Autopilot` may act only inside a fully pinned envelope. Changing the subject, ce
 disclosure, payment rail, evidence requirement, or deadline creates a new campaign revision rather
 than silently widening the old one.
 
+A `PreferenceRevision@1` may refine only soft ordering inside that campaign. It pins the reviewed
+candidate field, admitted judgments, scope, provenance, and predecessor revision. It cannot turn a
+failed hard gate into an eligible candidate, widen budget or authority, change disclosure, or
+rewrite the campaign's past rankings. A campaign may make a reviewed preference revision active
+for the next observation only through its declared learning mode; otherwise the revision remains a
+proposal for explicit acceptance.
+
 Continue with [Market](market.md) once the campaign is closed enough to measure candidates.

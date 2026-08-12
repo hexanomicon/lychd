@@ -197,9 +197,10 @@ prove.
 ## Composition boundary
 
 A capability answers "which exact technical interface can be invoked now?" A Spell answers "which
-semantic action belongs at this Pattern station?" A Composition answers "which human purpose,
-records, policy, judgment, and finish condition own the work?" Sharing a capability never merges
-those offices.
+semantic action belongs at this Pattern station?" A Composition answers "which reusable records,
+policy, judgment, effects, and outcomes own the work?" A Product answers "which profession or
+market receives that capability, through which supported use cases and operator promise?" Sharing
+a capability or packaging a Product never merges those offices.
 
 Scanner, Image, Video, Sight, Form, Kinesis, Scout, Echo, and Foundry retain their distinct domain
 jobs and results. They reuse discriminated capability-backed or direct-tool execution binding,

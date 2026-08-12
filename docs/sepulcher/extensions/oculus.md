@@ -55,8 +55,8 @@ explanation. A stale or failed probe means **unknown**, never free capacity.
 
 Oculus may hold all three without flattening their different ways of knowing.
 [Riddle](riddle/returning-findings.md) owns causal tests and rival explanations;
-[Immortality](../../divination/transcendence/immortality.md#iv-cognizance-and-the-open-witness)
-keeps the deeper question of the open witness open.
+[Immortality](../../divination/transcendence/immortality.md#v-realization-and-evidence)
+keeps first-person realization distinct from external evidence of the binding.
 
 ## Capture, loss, and privacy
 

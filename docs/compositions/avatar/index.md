@@ -130,7 +130,7 @@ voice and likeness use retain their own consent, licence, provenance, disclosure
 | [Spectre](../spectre/index.md) | VR Habitat admission, Encounter chronology, comfort, interruption, and safe exit |
 | room or household display | Homestead place policy, bystanders, capture indicators, device purpose, and local controls |
 | vehicle | the selected vehicle controller's occupants, safety envelope, device purpose, local controls, and motion or effect authority |
-| drone or robot | Legion node identity, controller health, physical envelope, emergency stop, and effect receipt |
+| [Familiar](../familiar/index.md) | body identity, form factor, capability snapshot, safety envelope, geofence, emergency stop, mission, observations, and effect receipts |
 
 Prism and Voidlight retain visual artifact truth, Echo and Riffmaw retain audio and voice truth,
 Kinesis retains technical motion, and Mirror retains Persona identity. Avatar assembles exact
@@ -159,11 +159,11 @@ an uninterrupted embodiment merely because the same profile appears again.
 
 Avatar belongs in the Portfolio without requiring a current packaged application. A later
 **Avatar Studio** may package customization and preview; a Suite may combine Avatar with Spectre,
-Blockworld, Reach, or a physical embodiment. Neither packaging choice moves target authority into
+Blockworld, Reach, or Familiar. Neither packaging choice moves target authority into
 Avatar.
 
 The smallest proving fixture is synthetic and network-disabled: one profile projected
-simultaneously into a mock text-and-voice surface, Blockworld adapter, Spectre adapter, and physical
+simultaneously into a mock text-and-voice surface, Blockworld adapter, Spectre adapter, and Familiar
 body adapter. It proves mirrored and parallel modes, one-target refusal, capability downgrade,
 Morphe change, disconnect, restart, consent revocation, partial settlement, export, and deletion.
 No public platform, real performer clone, headset, drone, vehicle, or robot enters that fixture.

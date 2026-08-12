@@ -15,10 +15,12 @@ awakening; the platform account never becomes the Lich.
 | **Patterns** | `reach.external_converse@1`, `reach.external_summon@1`, `reach.external_presence@1` |
 | **Begins with** | one allowlisted mention, guild command, or policy-admitted internal event |
 | **Can return** | `ReachTurn@1` and optional `ReachDelivery@1` |
-| **Stops before** | moderation, ambient surveillance, attachments, DMs, remote shell, deployment, or platform-settled consent |
+| **Stops before** | Lich identity or cross-place projection continuity, moderation, ambient surveillance, attachments, DMs, remote shell, deployment effects, or platform-settled consent |
 
-- [Habitat](habitat.md) defines the admitted social place, caller boundary, and cross-world continuity.
+- [Habitat](habitat.md) defines The Necropolis as the admitted social place, caller boundary, and cross-world continuity.
 - [Turn](turn.md) carries one event through Context, committed result, delivery, and recovery.
+- [Deployment profiles](deployments/index.md) close home-only, VPS-edge/home-core, and standalone
+  VPS placement, service, secret, E2E, and recovery boundaries.
 
 [Avatar](../avatar/index.md) may bind one Lich projection into a Habitat, but Reach still owns the
 platform event, audience, turn, delivery, and reply receipt. Avatar receives only those attributed

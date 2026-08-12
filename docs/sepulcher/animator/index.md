@@ -38,9 +38,9 @@ lease by which a caller may draw.
 
 A Spell shapes that draw as a typed request: the request is a spark and the return is candidate
 material. Animus is not the Lich's Spirit, Persona, identity, authority, memory, or evidence of
-consciousness. It may contribute to present
-[Flux](../lich/spirit/flux.md) only after the surrounding Circle, Context, Blade, and Answer receive
-and bind what returned.
+Cognizance. Animus powers cognition, but it does not bind Cognizance by itself. It may contribute
+to present [Flux](../lich/spirit/flux.md) only after the surrounding Circle receives what returned,
+Blade discriminates it, Spirit carries it in Flux, and Answer binds it locally.
 
 ## Two Sources of Power
 
@@ -78,5 +78,7 @@ its lease. Use returns through the caller's own evidence path. Current source pe
 handshake only for its v1 family/model demand and narrow chat-model/toolset compatibility grant.
 
 Choose [Soulstone](./soulstone/index.md) for local iron, [Portal](./portal.md) for a remote
-boundary, [Connectors](./connectors.md) for exact invocation dialects, and [Coven](./coven.md) for compatible local aggregation. [State of
-Work](../../state-of-the-work.md#animation-and-orchestration) owns what each path currently proves.
+boundary, [Portal Roads](./portal-roads.md) for provider and subscription selection,
+[Connectors](./connectors.md) for exact invocation dialects, and [Coven](./coven.md) for compatible
+local aggregation. [State of Work](../../state-of-the-work.md#animation-and-orchestration) owns
+what each path currently proves.
