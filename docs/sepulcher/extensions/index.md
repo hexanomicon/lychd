@@ -54,6 +54,15 @@ entry points. Built-ins evolve atomically with Core, while private packages acce
 breakage. A versioned independent-product API and conformance suite remain future work, so an
 external protocol is the present boundary where process or lifecycle coupling is unacceptable.
 
+That assembly is one frozen extension generation per Vessel process. There is no hot-load,
+hot-replace, or hot-unload path. Changing executable code, package selection, dependencies, or a
+contribution contract changes the next body generation; the current process keeps its exact
+assembly until a controlled [Evolution](../../adr/18-evolution.md) replaces it. Volatile extension
+objects are not migrated or cleaned into a new shape. Continuity comes from compatible Phylactery
+truth and explicit [Reanimation](../phylactery/reanimation.md), not from preserving process memory.
+Automated Evolution remains designed rather than delivered; the current implementation enforces
+the frozen-generation side of this boundary at boot.
+
 [ADR 05](../../adr/05-extensions.md) owns admission and compatibility. [State of
 Work](../../state-of-the-work.md#extension-activation-contributions) records the Partial seven-store
 surface and its attribution limits. Selection grants shaped registration—not route, secret,

@@ -67,6 +67,30 @@ surfacing the error, so a repaired retry cannot inherit half-imported module sta
 Activation ids must already be canonical POSIX-relative paths: aliases, traversal, absolute paths,
 empty segments, and control characters are refused before import.
 
+#### One process, one extension generation
+
+The selected package set is assembled as one process generation. Registration mutates only a
+fresh assembly context; successful assembly seals membership before runtime consumers receive
+their projections. LychD does not hot-load, hot-replace, or unload executable extension code
+inside a live Vessel. A change to code, dependencies, package selection, or contribution
+contracts is an [Evolution](18-evolution.md) of the body: prepare an inactive candidate, settle
+admitted work, replace the Vessel generation, and reconstruct volatile state from validated
+configuration and durable truth.
+
+This is a coherence boundary, not a missing cleanup API. A fine-grained lifecycle can reverse only
+the registrations and resources mediated through it. References, closures, background tasks,
+caches, foreign-library state, and already-emitted filesystem, database, or network effects can
+escape that ledger; removing a module cannot prove that old and new memory no longer coexist.
+LychD therefore treats process memory as disposable rather than making perfect effect capture a
+system-wide invariant. Ordinary shutdown must still quiesce owned workers and resources, but
+teardown hygiene never authorizes live code replacement or claims that external effects were
+rolled back.
+
+A future declarative catalogue generation may activate without Vessel replacement only when it
+introduces no new executable implementation and its owner supplies atomic durable generation and
+pinning semantics. Otherwise activation follows [Creation](16-creation.md),
+[Packaging](17-packaging.md), and Evolution into a new process generation.
+
 ### 2. The Registration Surface (The Extension Context)
 
 The context has shaped stores for `runes`, `soulstones`, `portals`, `transmutation`,

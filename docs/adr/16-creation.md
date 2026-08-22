@@ -30,7 +30,7 @@ icon: material/creation
 
 | Option | Decision | Why |
 | --- | --- | --- |
-| Live hot-reload | Rejected | A candidate can damage the active process before review and has no promotion or rollback boundary. |
+| Live hot-reload | Rejected | It mixes candidate and active object graphs before promotion; cleanup can prove only mediated registrations, not restoration of process memory or external effects. |
 | Ordinary pull request | Safe current route | Human review and merge remain a fallback, but do not encode admission, budgets, execution isolation, or receipts. |
 | Shadow candidate and owned promotion | Selected design | It makes candidate failure external to the body and keeps the final effect with its proper owner. |
 
@@ -39,6 +39,12 @@ icon: material/creation
 Creation is a designed chain, not an autonomous capability:
 
 `Creation Request → Candidate → Verification → Promotion Request → target-owner effect`
+
+A candidate never mounts, imports, or executes as a plugin in the active Vessel, even as a
+temporary trial. Removing callbacks or a module would not prove that its objects, tasks, caches,
+foreign-library state, or emitted effects had vanished. Promotion therefore selects a new body
+generation rather than trying to clean a candidate out of the current process; continuity crosses
+that boundary only through owned durable records and explicit recovery semantics.
 
 Verification makes a candidate eligible to ask; it never performs the live effect. The current
 `PATH_LAB_DIR` and its read-write Vessel mount support trusted preparation, while the image's

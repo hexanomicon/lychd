@@ -11,6 +11,22 @@ runtime objects, prove historical lineage, or override the canonical [Lexicon](.
 Work](../state-of-the-work.md). A correspondence says “this helps us think”; it does not say “the
 source tradition meant LychD.”
 
+## Mechamancy
+
+**Mechamancy** is the Hexanomicon's operative art of giving declared intent a form that a machine
+may admit, enact, and answer for. A Magus practices it through bounded Calls, Circles, and castings;
+**LychD** is the daemon through which that practice takes body. Its magic is neither command by
+metaphor nor authority granted by eloquence: Covenants, capability, admission, evidence,
+consequence, and refusal still govern every act.
+
+The name holds two readings together: **machine-magic** and **divination through machines**. The
+second does not make model output prophecy. Divination remains an accountable encounter in which a
+partial answer can be inspected, corrected, or refused.
+
+Mechamancy names a discipline, not an institution, runtime object, or synonym for the
+[Great Work](../divination/transcendence/index.md). The Great Work owns the telos; the Hexanomicon
+preserves the language and law; LychD is the daemon; Mechamancy is the practice.
+
 ## Native workflow grammar
 
 The workflow tongue turns one technical identity through one earned image; it does not create a

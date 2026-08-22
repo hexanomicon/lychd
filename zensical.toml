@@ -52,7 +52,15 @@ nav = [
                 "sepulcher/animator/soulstone/index.md",
                 "sepulcher/animator/soulstone/rune.md",
                 "sepulcher/animator/soulstone/disciplines.md",
-                "sepulcher/animator/soulstone/exllamav3.md",
+                { "Engines" = [
+                    "sepulcher/animator/soulstone/engines/index.md",
+                    "sepulcher/animator/soulstone/engines/vllm.md",
+                    "sepulcher/animator/soulstone/engines/sglang.md",
+                    "sepulcher/animator/soulstone/engines/llamacpp.md",
+                    "sepulcher/animator/soulstone/engines/exllamav3.md",
+                    "sepulcher/animator/soulstone/engines/comfyui.md",
+                    "sepulcher/animator/soulstone/engines/audiocpp.md"
+                ]},
                 "sepulcher/animator/soulstone/resources.md"
             ]},
             "sepulcher/animator/portal.md",

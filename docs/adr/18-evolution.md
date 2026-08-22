@@ -27,6 +27,7 @@ icon: material/refresh
 | Option | Decision | Why |
 | --- | --- | --- |
 | Upgrade the active environment in place | Rejected | Acquisition, resolution, migration, and activation share a running body without recovery proof. |
+| Hot-replace modules inside the Vessel | Rejected | Old and new object graphs can coexist while only mediated effects can be unwound; process memory is not a recovery coordinate. |
 | Never update | Rejected | An immutable artifact need not abandon reviewed security and compatibility work. |
 | Inactive candidate with owned promotion | Selected design | Local work survives only when it still verifies; activation remains separately authorized. |
 
@@ -51,6 +52,24 @@ break. The selected set must build and test with the candidate; no Smith repair 
 [Extension law](05-extensions.md#7-extension-compatibility-tiers) owns the tiers. An
 external-service Animator is decoupled only where its declared protocol and adapter remain
 compatible.
+
+### Replace the generation, not its memory
+
+A promoted Core or coupled extension change activates as a new Vessel process generation.
+Evolution never imports replacement modules into the live Vessel and never carries its
+process-local object graph across that boundary. Listeners, caches, coroutines, dependency
+handles, and other volatile objects belong to the old generation and die with it.
+
+The old generation closes admission and drains, parks, or resolves owned work according to its
+domain contracts. The new generation reconstructs its volatile world from the attested manifest,
+validated configuration, and compatible Phylactery records. Unresolved work and already-emitted
+external effects remain subject to the [Graph](06-graph.md), [Workers](08-workers.md), and
+[Reanimation](../sepulcher/phylactery/reanimation.md) rules; process replacement does not pretend
+to rewind them.
+
+This boundary optimizes for coherent recovery, not uninterrupted availability. Death of a Vessel
+running the same body is Reanimation. Deliberately starting a changed body is Evolution. In both
+cases durable truth, rather than surviving process memory, is the continuity substrate.
 
 ### Record the recovery coordinate
 

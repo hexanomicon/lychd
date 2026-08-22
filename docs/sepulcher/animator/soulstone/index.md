@@ -41,10 +41,11 @@ Read [Soulstone Rune](./rune.md) to declare the service and its models. Read
 
 ## Choose a Discipline
 
-[Disciplines](./disciplines.md) explains the built-in vLLM, SGLang, and llama.cpp runtime shapes,
-including the difference between a server pinned to one model and a router that activates models
-in process. [ExLlamaV3 through TabbyAPI](./exllamav3.md) owns that runtime's stricter two-key,
-whole-stream, and containment contract.
+[Disciplines](./disciplines.md) is the short map of the built-in runtime families. The detailed
+engine contracts live under [Soulstone Engines](./engines/index.md), including the difference
+between a server pinned to one model and a router that activates models in process. The engine
+pages own runtime-specific launch, connector, readiness, resource, and evidence boundaries;
+Soulstone owns their local lifecycle and Rune binding.
 
 <span id="coven-management-the-group-rule"></span>
 
