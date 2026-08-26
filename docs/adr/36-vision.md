@@ -40,6 +40,12 @@ provenance, and declared information loss.
 | **Form** | Bounded generation, reconstruction, texturing, structural decomposition, rigging, rendering, and representation conversion of spatial material through separate tool or effect contracts. |
 | **Kinesis** | Bounded recovery, generation, retargeting, cleanup, synchronization, validation, and conversion of structured motion through a dedicated finite-job contract. |
 
+Visual language is typed per job, not inherited from the host or Altar locale. Original prompt,
+requested model-facing language, permitted detection, translation or enhancement revision, and
+declared loss remain separate facts. A translated prompt is a derivative instruction, not a
+replacement for the operator's visual direction; a model that happens to understand a language
+has not passed the image, video, typography, or control bake for that language.
+
 A Coven may group compatible local services for operation. It is not a dispatch unit: manifesting
 one visual faculty does not manifest the rest.
 

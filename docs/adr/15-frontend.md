@@ -28,6 +28,9 @@ icon: material/language-html5
   that the current run strip already composes every owning projection.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
   regions, and visible unknown/error states.
+- The Altar keeps a replaceable localization boundary for interface copy, accessibility labels,
+  pluralization, locale-sensitive formatting, and text direction. Interface locale never rewrites
+  Intent, model output, artifacts, or evidence.
 - Every executable software dependency in the supported client, build, and renderer path is
   locally operable FOSS under OSI-approved terms; non-code data may use reviewed
   public-domain-equivalent terms such as CC0. Proprietary services and source-available-only
@@ -322,6 +325,35 @@ skip link, visible focus, hidden labels, narrow layout, and `prefers-reduced-mot
 restore their live opener after closing when one exists; deep links use router focus reset.
 Tailwind, Sass, project-owned PostCSS, and a parallel styling vocabulary are forbidden. Transitive
 Vite packages in the lockfile are not a styling API.
+
+### Interface locale and content language
+
+The Altar localizes its own chrome through ordinary framework-neutral message catalogues and
+locale-aware formatters. Canonical route, API, Pattern, Spell, Run, event, status, and field
+identities remain stable and untranslated. Components consume message identities and typed
+parameters; a translator or model never supplies HTML, Svelte, executable templates, or domain
+keys. Catalogues are reviewed static client assets under the same FOSS, notice, CSP, and release
+boundary as the rest of the Altar, not a runtime translation service.
+
+Locale resolution is explicit Altar choice, then an admitted Principal preference, then a browser
+language hint, then an admitted operator default, then English. The current loopback `magus:*`
+bootstrap is not an authenticated Principal and may retain only a presentation-local choice.
+Applying a locale sets document `lang` and direction and governs dates, times, numbers,
+pluralization, visible copy, and accessibility text. Every admitted locale owes fallback,
+missing-message, overflow, keyboard, screen-reader, and bidirectional-layout receipts; a catalogue
+claim alone does not establish support.
+
+Interface locale is separate from content language. A Magus may use a Slovak Altar while reading
+an English prompt, original Japanese evidence, or another language selected for speech, image,
+video, or music. Changing locale never translates retained content. Translation is an explicit,
+attributed semantic transformation that preserves source text, target language, implementation
+revision, declared loss, and authority. Persona language or a model's detected language never
+silently changes the Magus's interface.
+
+The delivered Altar remains English-only: it has no message catalogue, locale selector,
+Principal-preference binding, or right-to-left receipt. Browser-native formatting that happens to
+follow a device locale is not this contract; [State](../state-of-the-work.md#altar-and-observability)
+owns the exact material boundary.
 
 ### Build boundary, security, and reopening
 

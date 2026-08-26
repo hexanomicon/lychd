@@ -10,7 +10,7 @@ Mind that accepts an image and returns text: ordinary vLLM can serve that Mind, 
 or omni-generation engine must produce the new pixels. Every result is a new derivative artifact,
 never an observation that can replace its source.
 
-This candidate study was reviewed on **2026-08-07**. It records a proposed contract and bake, not
+This candidate study was reviewed on **2026-08-26**. It records a proposed contract and bake, not
 delivery, automatic fallback, or permission to generate, edit, publish, or export an image.
 
 ## One job, explicit operation
@@ -31,6 +31,12 @@ authorized source, reference, mask, and control `ArtifactRef` values, requested 
 candidate count, seed policy, immutable preset, deadline, budget, and output policy. Optional
 inputs do not grant an engine capabilities it has not declared and proved.
 
+The job also retains the operator-facing prompt, its declared or detected source language when
+known, the requested model-facing language, and translation policy. A translator may derive a
+model-facing prompt only through an admitted transformation that preserves both texts, translator
+revision, and declared loss. Interface locale, model convenience, or prompt enhancement never
+silently replaces visual direction.
+
 Source-grounded masks, regions, pose, depth, and other controls may come from
 [Sight](sight.md). Image retains the generative effect; the control's source coordinates,
 transform lineage, uncertainty, and exact artifact digest remain visible rather than becoming
@@ -44,9 +50,10 @@ Numeric progress, previews, cancellation acceptance and settlement, multiple ref
 masks, deterministic seeds, and partial streaming are independent capability facts. A Connector
 must not synthesize support from a broadly compatible endpoint.
 
-Each result receipt retains source and output digests, engine and container revision, model and
-component digests, exact preset or graph digest, LoRA and control adapters, scheduler, steps,
-guidance, seed, dtype and quantization, dimensions, timing, warnings, and cancellation settlement.
+Each result receipt retains source and output digests, original and derived prompt language and
+texts, translator revision and declared loss, engine and container revision, model and component
+digests, exact preset or graph digest, LoRA and control adapters, scheduler, steps, guidance, seed,
+dtype and quantization, dimensions, timing, warnings, and cancellation settlement.
 Provider filenames, image IDs, and embedded PNG metadata are evidence inputs, not canonical
 provenance.
 

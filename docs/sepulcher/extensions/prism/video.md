@@ -10,7 +10,7 @@ through time. A video model may create a shot, animate a still, continue a clip,
 or condition performance on audio. It does not thereby own visual direction, sound production, the
 final audiovisual timeline, structured animation curves, or publication.
 
-This candidate study was reviewed on **2026-08-08**. It records a proposed contract, runtime
+This candidate study was reviewed on **2026-08-26**. It records a proposed contract, runtime
 shortlist, model register, and proving bake—not delivery, automatic fallback, or permission to
 generate, transform, export, or publish video.
 
@@ -103,7 +103,7 @@ operation.
 | [Wan2.1 VACE-1.3B](https://github.com/ali-vilab/VACE) | Reference-to-video, controlled video-to-video, masked changes, motion, swap, expansion, and other structural editing. | Small first control/editor candidate. Pin exact VACE and Wan dependencies and close their licenses; do not infer that a later VACE profile is equivalent. |
 | [Wan2.2 Animate-14B](https://huggingface.co/Wan-AI/Wan2.2-Animate-14B) | Character animation and subject replacement driven by reference motion. | Apache-2.0 specialist. Its optional dependencies retain separate terms; no community quantization or wrapper changes those terms. |
 | [Wan2.2 S2V-14B](https://huggingface.co/Wan-AI/Wan2.2-S2V-14B) | Image-plus-audio performance for speech, song, and other synchronized visible motion. | Apache-2.0 specialist with a substantially heavier official placement than TI2V-5B. Supplying audio is conditioning, not proof that the model created or owns that audio. |
-| [LTX-2.3](https://github.com/Lightricks/LTX-2) | Joint synchronized audio-video generation, retake, extension, dubbing, and multi-keyframe work in one family. | Distinct capability candidate under the LTX-2 Community License rather than Apache-2.0; revenue threshold, attribution/disclosure, derivative terms, compatible Gemma encoder terms, and larger-memory placement require separate admission. |
+| [LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | Joint synchronized audio-video generation, multishot and multi-keyframe work, image conditioning, continuation, and related audio/video transformations in one family. | Distinct capability candidate under the LTX-2.x Community License rather than Apache-2.0. Its August 2026 terms include a commercial-revenue threshold and other use, transfer, attribution, and derivative conditions; the exact checkpoint, Gemma 4 encoder, video/audio decoders, Comfy or native pipeline, and placement require one reviewed closure. |
 | [HunyuanVideo-1.5](https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5) | Efficient text- and image-conditioned video where its exact profile wins a bake. | Region-gated candidate, not a universal local option: its community license excludes use in the EU, UK, and South Korea. Location and current license eligibility must fail closed before model download or execution. |
 
 Wan TI2V-5B is the first permissive routine default; VACE is the first controlled editor. Animate

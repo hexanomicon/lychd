@@ -17,6 +17,12 @@ tools remain replaceable machinery.
 | **Can return** | one approved, immutable `VisualAssetBundle@1`, or an exact non-completion |
 | **Stops before** | sound production, engine import, final audiovisual assembly, publication, or rights certification |
 
+The commission also declares its finish boundary. It may complete honestly with an accepted still,
+continue through an admitted image-to-video or first/last-frame path, or seal a larger visual
+package. A later continuation starts from the immutable earlier artifact; it does not keep a
+finished image Run artificially paused. [Motion](motion.md#progressive-visual-depth) follows the
+reference journey.
+
 ## The work
 
 - [Brief](brief.md) freezes the commission, references, constraints, source influence, and

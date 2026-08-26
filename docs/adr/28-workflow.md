@@ -92,6 +92,45 @@ registry. Smith may re-express it locally, but Spellweaver validates and the tar
 it only after evidence and authorization. Publication creates new catalogue truth and a later
 casting; it never mutates or resumes the refused Invocation under changed law.
 
+### Language is typed, not global
+
+Canonical Composition, Pattern, Scroll, Spell, placement, schema, field, route, status, and event
+identities are locale-neutral and never translated. Human-facing labels and explanations may use
+versioned catalogues, but changing their locale cannot change the signed declaration, Resolution
+Lock, Graph topology, or Run. [Frontend](15-frontend.md#interface-locale-and-content-language) owns
+Altar locale; [Vision](36-vision.md) and [Audio](37-audio.md#engine-model-protocol-and-language)
+own their media-language boundaries.
+
+A Spell contract carries exact language or locale fields only where its semantics require them:
+ordered input/output preferences, original language, requested result language, permitted
+detection, fallback, and refusal. Translation is a separately named, attributed Spell or
+owner-declared transformation; it retains source and derived text, implementation revision, and
+declared loss. A model, engine, browser, peer, or Persona may not infer a host-global language or
+silently translate another station's material.
+
+### Progressive finish and forward continuation
+
+A Scroll may declare several typed finish boundaries and an exact admission-time finish policy,
+including a bounded interactive policy whose possible Gates and terminal routes are already in the
+score. For example, one visual score may permit an accepted still, an animated sequence, or a
+sealed visual package. Reaching the requested still boundary is successful completion of that
+Invocation, not a Run left in Stasis. Failing to reach a requested motion boundary is partial or
+non-complete according to the pinned score; an intermediate image cannot be relabelled as the
+requested video.
+
+A Gate may pause the same casting for an exact review or a declared choice to continue. Live or
+Durable Stasis exists only while an admitted owner, capability transition, consent, or delegated
+result remains outstanding. Once the operator settles at a valid finish boundary, the Run becomes
+terminal. Later animation, soundtrack, edit, or publication begins a new forward Invocation over
+immutable `ArtifactRef` inputs and preserves the prior result.
+
+Different prompts, source artifacts, requested language, target profiles, or a declared finish
+boundary are new Invocation inputs when the exact Scroll schema permits them. Different stations,
+edges, Spell contracts, authority ceilings, or model requirements create another Scroll revision.
+Several steps owned by one Composition may inhabit one Scroll; separate Composition-owned work is
+coordinated by a Suite through typed handoffs, never by nesting or silently resuming another
+Pattern.
+
 ## Portable declaration
 
 Portable `SpellContract`, `Scroll`, and `TeachingBundle` artifacts use versioned, restricted UTF-8

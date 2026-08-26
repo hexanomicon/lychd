@@ -57,6 +57,40 @@ The registry is executable substrate, not a general workflow platform. `delegate
 exercises only the deterministic reference adapter; it delivers no foreign runtime or execution
 plane.
 
+## Progressive craft without a mutable score
+
+A future media Scroll shows how exact stations can compose without making an engine graph or one
+model canonical:
+
+```text
+commission + sources + language policy + finish boundary
+→ Prism Image candidates
+→ exact Magus review Gate
+├─ requested still reached → VisualAssetBundle@1 → terminal
+└─ continue in the pinned score
+   → Prism Video i2v or first_last
+   → motion review and visual package → terminal
+```
+
+Qwen Image, another local model, or a Portal may implement the image Spell; LTX, Wan, or another
+eligible profile may implement the video Spell. A ComfyUI graph is the immutable engine preset
+behind one implementation, never this Scroll. The receiver-owned Resolution Lock binds each
+placement to its exact local or Portal implementation before casting.
+
+The finish boundary answers “how far this Invocation should go.” Stopping at an admitted still is
+completion, not an indefinite pause. A review, hardware transition, or remote wait may enter
+Stasis while the same casting remains live. Continuing a terminal still into motion starts a new
+Invocation over its immutable artifact. Optional music starts a Riffmaw Invocation; synchronized
+audio returned by a video model is a compound candidate whose sonic facet still needs Riffmaw
+admission. Final audiovisual relation belongs to Broadcast, and cross-Composition coordination is
+a Suite.
+
+An A2A peer can request the public task while the receiver privately chooses this decomposition,
+or send a portable Scroll as an inert candidate. Neither path imports a Comfy graph, model,
+custom node, credential, or authority. The same Scroll may accept different prompts, languages,
+source frames, target profiles, and finish boundaries; changing its stations or contracts creates
+a new revision.
+
 ## The present score
 
 [Topology-A local runs](../../../state-of-the-work.md#topology-a-local-runs) and the [Pydantic AI

@@ -28,6 +28,20 @@ The Magus selects and arranges the musical matter. Structure, tempo map, meter, 
 instrumental roles, transitions, repetition, and controlled variation remain editable decisions.
 Generated output is a candidate, not a finished track and not evidence that reuse is safe.
 
+## Language belongs to the musical request
+
+The sonic brief language, structured music-description language, lyric language, requested sung
+language, and any phonetic or transliteration aid are separate typed facts. Riffmaw preserves the
+original words. Translation or lyric adaptation creates an attributed derivative with its own
+author, implementation revision, rhyme, metre, pronunciation, and meaning-loss findings; it never
+silently replaces lyrics merely because a generator prefers another prompt language.
+
+Each exact music profile declares and separately verifies description understanding, lyric
+rendering, pronunciation, structure tags, mixed-language behavior, and instrumental mode. Altar
+locale and Persona language do not select these values. Model-generated or optimized lyrics are a
+separate authored candidate, not an invisible convenience flag and not permission to change words
+already approved for performance.
+
 ## Answer and develop
 
 During an admitted jam, Riffmaw may generate or schedule accompaniment, counterpoint, percussion,

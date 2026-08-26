@@ -517,6 +517,10 @@ and Litestar delivery exist. Focused tests prove contracts and components, not a
 production-factory browser receipt. No XYFlow/Svelte Flow, Sigma, or Graphology dependency and no
 Loom or Orb graph canvas or shared graph-projection supply is delivered; ADR 15's renderer
 directions and admission gates are law, not implementation evidence.
+The document language and interface copy are English. There is no message catalogue, explicit
+locale resolver or selector, Principal-preference binding, translated accessibility surface, or
+right-to-left receipt. Browser-native date/time formatting may reflect a device locale, but that
+incidental variation is not delivered localization support.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 

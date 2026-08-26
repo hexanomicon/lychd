@@ -18,6 +18,38 @@ and conversion. Voidlight owns the commission, choreography, visual direction, r
 acceptance. An engine job, model worker, Blender task, Comfy graph, provider history, or generated
 clip is not itself a Voidlight Pattern or accepted motion asset.
 
+## Progressive visual depth
+
+The admitted commission declares how far the current Invocation should go: accepted still,
+accepted motion, or sealed visual package. A broader `voidlight.build_visual_package@1` Scroll may
+contain the exact image, review, motion, probe, and package placements and branch only on that typed
+finish policy. A narrower journey may instead finish one Scroll and pass its immutable artifact to
+`voidlight.forge_visual_sequence@1` in a new Invocation. Neither form lets an engine invent the
+next step.
+
+One reference journey is:
+
+```text
+brief + target profiles + language policy
+→ ImageJob@1 generate or edit
+→ review and select exact first frame
+→ optional second boundary image
+→ VideoJob@1 i2v or first_last
+→ temporal probe and visual review
+→ VisualAssetBundle@1
+```
+
+The still boundary is terminal success when that is what the commission requested. A review Gate
+may pause before selection or continuation, and a hardware transition may enter Stasis, but a
+completed still is never kept artificially nonterminal merely because animation remains possible.
+Continuing later creates a forward Invocation over the retained image digest.
+
+The Scroll names Image and Video Spell contracts rather than Qwen, LTX, ComfyUI, or a hosted API.
+Its Resolution Lock may bind an exact Qwen Image and LTX-2.5 Comfy preset on one host, different
+local profiles on another, or separately admitted Portal implementations. Operator-facing and
+model-facing prompt languages remain attributed through Prism's translation contract. An imported
+Comfy graph is never a portable Scroll.
+
 `voidlight.forge_animation_set@1` produces accepted animation clips tied to exact asset and Form
 rig revisions plus exact Kinesis motion revisions when that machinery participated.
 `voidlight.forge_visual_sequence@1` arranges visual events under a declared frame rate, duration,

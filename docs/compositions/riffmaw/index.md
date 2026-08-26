@@ -17,6 +17,12 @@ all contribute; the Magus remains the producer and no model or DAW owns the craf
 | **Can return** | `SonicAssetBundle@1`, `PerformanceSession@1`, `SonicCandidateSet@1`, `RiffmawFindingSet@1`, optional `SyncCueMap@1`, or an exact refusal |
 | **Stops before** | visual generation, final audiovisual assembly, performer impersonation, or publication |
 
+Prompt language, lyric language, requested sung language, and interface locale remain separate.
+The exact Riffmaw model profile owns proved musical and language behavior; Soulstone may bind it to
+a local ComfyUI or another admitted runtime, while Portal may bind a separately evidenced hosted
+API. Similar product names never make those implementations equivalent. [Music](music.md#language-belongs-to-the-musical-request)
+owns the request boundary and [Studio](studio.md#current-candidate-map) keeps the candidate routes.
+
 ## Ways of making
 
 Riffmaw can complete the same application purpose through different production modes:

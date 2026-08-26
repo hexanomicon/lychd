@@ -37,7 +37,7 @@ without pretending that every plug-in and automation lane round-trips losslessly
 
 ## Current candidate map
 
-This design study was reviewed on **2026-08-07**. It is not delivery evidence or final engine
+This design study was reviewed on **2026-08-26**. It is not delivery evidence or final engine
 promotion. Each candidate still owes license admission, an exact engine and model profile where
 applicable, a pinned Rune, hardware and latency measurements, hostile-input limits, deterministic
 fixtures, restart behavior, and a bake against the Riffmaw contract.
@@ -45,6 +45,8 @@ fixtures, restart behavior, and a bake against the Riffmaw contract.
 | Candidate | Candidate office | Present reading |
 | --- | --- | --- |
 | [audio.cpp](https://github.com/0xShug0/audio.cpp) `0.5` | Inference engine for generative and separation model profiles | Promising, rapidly moving local route for explicitly supported ACE-Step, Stable Audio, Demucs and RoFormer families. Server API and pipelines remain experimental; loaded sessions live until process exit, and Apache-2.0 runtime terms do not admit a model's weights. Keep exact families in isolated, lifecycle-reclaimable workers. |
+| [MiniMax Music 3](https://huggingface.co/MiniMaxAI/MiniMax-Music3) | Offline generative-processor model profile | Direct long-form song candidate conditioned on lyrics plus a detailed music description. The upstream card exposes SGLang-Omni and Diffusers routes; the [Comfy-Org pack](https://huggingface.co/Comfy-Org/MiniMax-Music-3) supplies a ComfyUI-shaped route. Each pack, component, structured-caption transform, language, duration, precision, offload plan, cancellation behavior, and licence closure needs an exact bake; no route becomes Riffmaw truth or speech TTS. |
+| [MiniMax hosted Music Generation](https://platform.minimax.io/docs/api-reference/music-generation) | Portal generative-processor candidate | A separate provider API currently names `music-3.0` and accepts prompt plus lyrics. It is not presumed byte-, model-, output-, or policy-equivalent to the open-weight Music 3 profile. The provider announced August 2026 access changes, so availability and terms must be rechecked before every trial; no local failure may replay here automatically. |
 | [DawDreamer](https://github.com/DBraun/DawDreamer) | Isolated offline renderer and DSP/instrument host | Strong first candidate for processor DAGs, audio and MIDI, timing, automation, VST and FAUST, and simultaneous graph-node captures. It is GPLv3 and Alpha, has no capture or live-jam contract, and emits no persistent human-editable DAW session; its “stems” are selected graph outputs. |
 | [FFmpeg](https://ffmpeg.org/) | Media utility and conformance probe | Mature conversion, resampling, channel, packaging, and two-pass loudness-normalization route when the exact binary, build flags and sample format are pinned. Target compliance is not mastering judgment. |
 | [librosa](https://github.com/librosa/librosa) | Initial analysis library | Active ISC-licensed first route for a bounded tempo and onset proving fixture. It is an analysis implementation, not a realtime clock or production decision-maker. |
@@ -61,12 +63,14 @@ fixtures, restart behavior, and a bake against the Riffmaw contract.
 
 ## Minimum first proofs
 
-The first offline proof needs one baked `audio.cpp` music profile and one separated-source profile,
-an isolated DawDreamer renderer with allowlisted processors, a pinned FFmpeg worker, librosa tempo
-and onset probes, and a LychD-owned sample-accurate compiler from `SonicProductionPlan@1` creative
-placements to one pinned render graph. It can prove `assets_only` and a bounded
-`assisted_session`; the human handoff is stems, MIDI, tempo, markers, processor receipts, and mix
-notes rather than a native DawDreamer project.
+The first offline proof chooses one baked music profile rather than installing a speculative
+catalogue. MiniMax Music 3 through one immutable allowlisted ComfyUI preset is the first
+product-shaped long-form candidate; an `audio.cpp` profile remains the alternative family route.
+The proof also needs one separated-source profile, an isolated DawDreamer renderer with allowlisted
+processors, a pinned FFmpeg worker, librosa tempo and onset probes, and a LychD-owned
+sample-accurate compiler from `SonicProductionPlan@1` creative placements to one pinned render
+graph. It can prove `assets_only` and a bounded `assisted_session`; the human handoff is stems,
+MIDI, tempo, markers, processor receipts, and mix notes rather than a native DawDreamer project.
 
 The first input proof adds one PortAudio capture worker for a bounded armed take. The first live
 proof is separate: PipeWire/JACK graph and timebase evidence, MIDI scheduling, capture writer,

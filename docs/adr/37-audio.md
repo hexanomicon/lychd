@@ -72,6 +72,12 @@ detection when policy allows it. A model may route a language only after declari
 authorizes translation, and TTS may not substitute another language or voice when the selected
 output locale is unavailable. Translation is a separate semantic act.
 
+Altar interface locale is independent of this speech policy: a Slovak interface may capture an
+English utterance and request a Japanese Voice, provided each exact step is admitted. Musical
+lyrics, singing, arrangement, and sonic acceptance belong to Riffmaw rather than Echo; they reuse
+the same no-global-language and no-silent-translation law without turning a song generator into
+TTS.
+
 ## Capture and custody
 
 Capture authority is explicit, visible, time-bounded, and revocable. Consent to one utterance is

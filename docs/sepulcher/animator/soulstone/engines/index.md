@@ -27,8 +27,8 @@ transitions.
 | [audio.cpp](audiocpp.md) | local audio inference service or worker | bounded music, separation, and speech profiles |
 
 The same engine may manifest several Soulstones with different model sets, graphs, GPUs, conflict
-domains, and capability profiles. `comfy-qwen` and `comfy-ltx`, for example, may use one ComfyUI
-image while remaining separate managed service instances.
+domains, and capability profiles. `comfy-qwen`, `comfy-ltx`, and `comfy-music3`, for example, may
+use one ComfyUI image while remaining separate managed service instances.
 
 Models and workflow graphs are not universal engine facts. An exact model, graph, node set,
 quantization, license, and hardware placement become a capability profile only after the selected

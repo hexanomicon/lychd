@@ -39,3 +39,10 @@ Build one local, style-led 2D package from a licensed reference set: a frozen [b
 versioned [direction](direction.md), concept and sprite or texture assets, deterministic probing
 and normalization, one bounded repair, and an accepted `VisualAssetBundle@1`. The proof uses no
 sound production, engine import, channel render, Portal call, paid generation, or public release.
+
+After that minimum proof, the first progressive worked journey should produce separate landscape
+and portrait hero profiles, retain their accepted stills, animate one or two exact boundary frames
+through an admitted Video implementation, probe loop and export behavior, and seal the result as a
+new visual-package revision. It may stop honestly after either the still or motion boundary.
+Optional model-returned ambience crosses only as a Riffmaw candidate; optional generated music is
+a separate Riffmaw Invocation, and Broadcast alone accepts the final audiovisual relation.

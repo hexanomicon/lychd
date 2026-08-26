@@ -118,6 +118,13 @@ boundary.
 
 ## A new score is a new revision
 
+Keep Invocation choice separate from score change. A new prompt, source `ArtifactRef`, requested
+language, target profile, or declared finish boundary is another Invocation of the same Scroll only
+when its typed schema already admits that value. Adding a station, edge, Spell contract, authority
+ceiling, or required model changes the score and therefore creates a new immutable revision.
+Finishing one Invocation at an accepted intermediate boundary and later continuing from its
+artifact is a new forward Invocation, never resurrection of the terminal Run.
+
 The current catalogue can preserve multiple executable revisions per workflow name. Active routing
 is explicit; a saved Run continues through its exact registered revision even after activation moves
 forward. The catalogue is still source-built and preserves no historical Python by itself. Removing

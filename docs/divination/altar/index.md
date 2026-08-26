@@ -23,6 +23,14 @@ Loopback and the fixed `magus:*` Sigil are not caller authentication or browser-
 keep the dedicated local browser profile, literal `127.0.0.1` listener, and no proxy, tunnel, or
 port-forwarding described in [The Awakening](../../summoning.md#the-awakening).
 
+The Altar keeps its own tongue separate from the language of an Invocation. Its interface is
+designed to follow the Magus's selected locale while leaving prompts, answers, artifacts, and Run
+evidence in their attributed source form; changing the chrome never translates or rewrites what
+the Altar projects. The current delivered interface remains English-only.
+[Frontend](../../adr/15-frontend.md#interface-locale-and-content-language) owns the localization
+contract, while [State](../../state-of-the-work.md#altar-and-observability) keeps its delivery
+boundary.
+
 ## One Altar, Four Instruments
 
 - **[Bridge](./bridge.md)** carries conversation, consent, and settled result.
