@@ -27,9 +27,15 @@ current Altar. [State of Work](../../state-of-the-work.md#vpn-tether) owns that 
 narrow network capability and explicit UDP publication. Interface, listen port, address space,
 DNS behavior, routes, and peer limits remain Rune-owned intent.
 
-The gateway stays outside the shared application Pod and receives no broad mounts, application
-secrets, database credentials, or host-mutation authority. `CAP_NET_ADMIN` inside that Pod is not
-an acceptable shortcut.
+The Tether service stays outside the shared application Pod and receives no broad mounts,
+application secrets, database credentials, or host-mutation authority. `CAP_NET_ADMIN` inside that
+Pod is not an acceptable shortcut.
+
+An optional [Gateway Host](../gateway.md) composes Tether only for a placement that needs a private
+routed road. **Remote** may bind one exact peer and route from the off-site Veil to one Core
+backend. **Home** does not require Tether when an exact local segment already supplies
+reachability. In neither placement does a tunnel grant authority or a default route into the home
+network.
 
 The Codex may retain stable peer identity, public key, allowed addresses and routes, endpoint and
 keepalive policy, enabled or revoked state, and creation or rotation metadata. Private and

@@ -154,6 +154,13 @@ branch. A **Persona** is a durable revisioned identity that may wear Postures. P
 actor; Posture constrains this act; Lens diversifies a simulation. These are enforceable contracts
 only where types, grants, settings, and Graph placement preserve the claimed separation.
 
+[Crucible](../sepulcher/extensions/weaver/crucible.md) uses explicitly biased Postures to pressure
+one decision from several declared angles. Every advocate receives the same pinned evidence and
+acceptance criteria, names its burden of proof and defeat condition, and runs separately from the
+Lead that synthesizes its claims. The posture label is neither a Persona nor authority, and a
+second-round rebuttal receives attributed opponent claims rather than hidden reasoning or an
+unbounded sibling transcript.
+
 A local Privacy Agent is a Posture at an explicit Spell placement. It receives bounded raw material
 to produce a sanitized candidate and findings, but no Portal tool or declassification authority;
 its confidence is not permission. Deterministic control comes first, policy can require an

@@ -6,7 +6,7 @@ icon: material/drone
 # :material-drone: Embodiment
 
 A Familiar body is one physical form admitted for bounded real-world work. The form determines
-what the body can sense, how it moves, where it may go, and what must stop it.
+what the body can sense, how it moves or presents, where it may go, and what must stop it.
 
 ## Body admission
 
@@ -18,7 +18,7 @@ that this body is fit for mission work.
 | Field | What it binds |
 | --- | --- |
 | Legion node reference | exact enrolled node identity, credential generation, fencing |
-| Form factor | `drone`, `rover`, or `legged` |
+| Form factor | `car`, `drone`, `rover`, `legged`, `manipulator`, `card`, `display`, or another explicitly admitted form |
 | Make and model | hardware identity for capability inference and safety defaults |
 | Capability snapshot | requested, required, granted, missing, and revoked sensors and actuators |
 | Safety envelope | geofence, altitude floor/ceiling, speed ceiling, battery floor, terrain allowlist |
@@ -28,7 +28,11 @@ Missing a required capability refuses admission. Missing an optional capability 
 downgrade recorded on the body. A later hardware change creates a new body revision; it never
 silently widens a running mission.
 
-## Forms
+## Example forms
+
+These are orientation profiles, not compatibility, purchasing, regulatory, or safety guidance.
+Each admitted body still needs an exact hardware/controller revision, measured envelope, local-law
+closure, and an independently reachable stop path.
 
 ### Drone
 
@@ -43,7 +47,7 @@ aerial observation, and property survey.
 | **Endurance** | 15–40 minutes depending on payload and battery |
 | **Safety envelope** | max altitude (regulatory + terrain), min altitude, geofence polygon, no-fly zones, kill-switch behaviour (immediate land vs. return-to-home) |
 | **Emergency stop** | motor disarm + controlled descent or immediate cut; autonomous trigger on geofence breach, battery critical, signal loss timeout, or manual override |
-| **Controller stack** | Pixhawk / ArduPilot running PX4 or ArduCopter; companion computer (Raspberry Pi 5, Jetson Nano) on UART/MAVLink |
+| **Controller stack** | Pixhawk-class flight controller running one pinned ArduPilot or PX4 build; a separately admitted companion computer may connect over UART/MAVLink |
 | **Legionnaire** | companion computer runs Node Agent; connects to LychD via Intercom; relays MAVLink telemetry and receives waypoint commands |
 
 ### Rover
@@ -78,23 +82,37 @@ Best for indoor following, multi-floor environments, and close physical presence
 | **Controller stack** | Raspberry Pi 5 or Jetson with ROS2; servo driver board |
 | **Legionnaire** | same SBC runs Node Agent alongside controller |
 
+### Manipulator, card, and display
+
+A Familiar need not locomote. A robotic hand, tactile device, card, or display can be admitted as
+a physical presentation or effect body when its controller exposes an exact capability snapshot,
+local safety envelope, bounded effect vocabulary, and hardware-level stop path. Such a body does
+not inherit drone, vehicle, or locomotion authority merely because it shares the Familiar identity.
+
+### Car and other vehicles
+
+A car or other vehicle is admitted as a vehicle body with its own controller, occupants, motion
+envelope, route boundary, local override, and emergency policy. Familiar receives semantic vehicle
+tasks and attributed receipts; it does not receive raw steering, throttle, brake, or actuator
+authority.
+
 ## Capability admission is honest
 
 A capability declared "required" refuses body admission when the hardware or controller cannot
 supply it. A capability declared "optional" becomes an explicit downgrade recorded on
-`FamiliarBody@1`. Familiar never infers capabilities from the word "drone" or "rover."
+`FamiliarBody@1`. Familiar never infers capabilities from a form-factor label alone.
 
 | Capability | What it enables | Absence means |
 | --- | --- | --- |
 | `gps` | outdoor waypoint navigation, return-to-home, geofence enforcement with global coordinates | indoor-only or relative-position missions |
 | `optical_flow` | hover-hold without GPS, indoor position holding | drift-prone hover, refused for indoor drones |
 | `obstacle_avoidance` | autonomous path deviation around detected obstacles | stop-on-obstacle only; mission may require manual clearance |
-| `rgb_camera` | visual subject lock, observation capture, Voidlight artifact feed, Avatar visual context | follow by beacon/GPS only; no visual observation or Lich sight |
+| `rgb_camera` | visual subject lock and separately admitted Prism/Sight observations or visual source material | follow by beacon/GPS only; no visual observation or image-derived grounding |
 | `thermal_camera` | subject lock by heat signature, thermal observation | visible-spectrum-only subject designation |
-| `microphone` | Riffmaw audio capture, voice-command trigger for speaking mode | no audio capture; speaking mode unavailable |
-| `speaker` | Lich voice projection, audible alerts, disclosure announcements | silent body; Avatar projection limited to display or motion |
+| `microphone` | separately admitted Echo capture/transcription and an authorized activation event | no audio capture; microphone-dependent speaking mode unavailable |
+| `speaker` | Echo delivery, authorized Avatar voice projection, audible alerts, and disclosure announcements | silent body; Avatar projection limited to display or motion |
 | `lidar` | precise obstacle mapping, SLAM, 3D observation | coarser obstacle detection via ultrasonic or vision |
-| `wheel_odometry` (rover) | dead-reckoning position between GPS fixes | position drift without external reference; drone/legged forms use IMU + visual odometry instead |
+| `wheel_odometry` (rover or vehicle) | dead-reckoning position between GPS fixes | position drift without external reference; other forms use their own admitted local reference |
 
 ## One body, many missions
 

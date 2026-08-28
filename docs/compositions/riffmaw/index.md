@@ -49,6 +49,8 @@ a master does not authorize publication.
 - [Studio](studio.md) defines the replaceable production-tool roles and the current candidate stack.
 - [Voice](voice.md) binds spoken or sung performance to approved words and performer authority.
 - [Sound](sound.md) creates and edits effects, foley, textures, and ambience.
+- [Audio hardware and host routes](hardware.md) maps Linux-first microphones, interfaces, mobile
+  receivers, remote bodies, and the operator workstation to the future Echo/Riffmaw adapters.
 - [Sync](sync.md) exposes sonic timing without directing the image.
 - [Package](package.md) seals lineage, effects, recovery, and the consumer handoff.
 

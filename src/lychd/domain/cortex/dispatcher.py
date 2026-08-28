@@ -25,7 +25,13 @@ _INTENT_ALIASES = {"reasoning": CapabilityFamily.CHAT}
 
 
 class Dispatcher:
-    """Resolve abstract intent onto the canonical registry and lease scoped grants."""
+    """Resolve abstract intent onto the canonical registry and lease scoped grants.
+
+    Architecturally, this is the Graph-facing ``GraphInterfaceFactory`` seam:
+    it turns a capability request into a lease-scoped ``CapabilityGrant`` while
+    the registry assembles the concrete surface and the Animator remains its
+    addressable runtime route.
+    """
 
     def __init__(
         self,

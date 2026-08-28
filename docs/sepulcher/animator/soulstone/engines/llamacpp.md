@@ -24,4 +24,4 @@ A real engine/GPU/model result remains [operator validation](../../../../state-o
 
 See [Soulstone Disciplines](../disciplines.md#iii-the-titan-llamacpp),
 [llama.cpp](https://github.com/ggml-org/llama.cpp), and the
-[support files](../../../../examples/llamacpp/README.md).
+[repository support files](https://github.com/hexanomicon/lychd/tree/main/examples/llamacpp).

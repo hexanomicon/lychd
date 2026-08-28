@@ -16,9 +16,22 @@ icon: material/shield-lock-outline
 | Zone | May hold | Must not hold |
 | --- | --- | --- |
 | Vessel | durable control-plane state, trusted provider and database authority | arbitrary shell/Python execution, writable trusted code |
+| Gateway Host | edge certificates and routes, firewall intent, one backend service credential, optional tunnel key, bounded transport evidence | database or application authority, private Context, provider credentials, Sigils, corpus, general LAN route, host administration |
 | Platform edge | one platform credential, service credential, bounded transport/effect journal, and typed adapter | provider/database credentials, corpus, private Context, policy, home Sigil, arbitrary home route or host administration |
 | Tomb | a narrow execution-job hand and disposable child workspace | agent/LLM authority, provider or broad database secrets, host capability, Host Reactor access |
 | Coffin | one foreign agent under one `AgentJob` and a revocable Gate bearer | queue/database credentials, promotion, authoritative VCS, host effects |
+
+A [Gateway Host](../sepulcher/gateway.md) is an optional separate ingress placement, not an
+Extension Domain, Composition, caller, or second authority plane. Veil owns its admitted routes;
+Tether may supply an exact private road; the receiving Ward and application still authenticate
+and authorize every request. The Core host accepts only the named backend flow from the Gateway
+identity, while the Gateway has no arbitrary LAN or Internet route. A same-host proxy is Veil but
+not a Gateway Host.
+
+Gateway compromise closes the route, revokes edge certificates, backend and tunnel credentials,
+fences its deployment generation, quarantines bounded transport evidence, and rebuilds the host.
+It does not justify rotating disjoint Core credentials unless evidence shows they crossed, and it
+never upgrades forwarded identity or authorizes an effect.
 
 A remote platform edge is an application adapter, not caller authority. If upstream events lack an
 independently verifiable end-user signature, compromise of that edge can fabricate caller evidence;

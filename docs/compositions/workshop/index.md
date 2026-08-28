@@ -87,7 +87,7 @@ follow the Portfolio's [Product boundary](../index.md#products-package-compositi
 
 | Existing office | What Workshop retains |
 | --- | --- |
-| [Communion](../communion/index.md), [Echo](../../sepulcher/extensions/echo.md), [Tether](../../sepulcher/extensions/tether.md) and [Ward](../../sepulcher/extensions/ward.md) | case purpose, object-specific application policy and field-conversation meaning—not capture, speech chronology, transport, authentication, grants or revocation |
+| [Companion](../companion/index.md), [Echo](../../sepulcher/extensions/echo.md), [Tether](../../sepulcher/extensions/tether.md) and [Ward](../../sepulcher/extensions/ward.md) | case purpose, object-specific application policy and field-conversation meaning—not capture, speech chronology, transport, authentication, grants or revocation |
 | [Scout](../../sepulcher/extensions/scout.md) and [Sight](../../sepulcher/extensions/prism/sight.md) | source applicability, technical interpretation and a policy-admitted next-check proposal—not acquisition mechanics, pixels, regions or uncertainty |
 | [Scavenger](../scavenger/index.md) | exact part need and acceptance evidence—not Bazoš listings, sellers, bargaining, commitment, payment or parcels |
 

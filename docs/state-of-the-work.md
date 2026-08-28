@@ -521,6 +521,12 @@ The document language and interface copy are English. There is no message catalo
 locale resolver or selector, Principal-preference binding, translated accessibility surface, or
 right-to-left receipt. Browser-native date/time formatting may reflect a device locale, but that
 incidental variation is not delivered localization support.
+The compiled Altar has one fixed LychD Dark palette, dark browser metadata, dark native-control
+colour scheme, and no light/system selector, system-scheme following, palette configuration,
+runtime theme loader, or supported theme extension. Semantic CSS custom properties establish a
+future refactoring seam, but hard-coded dark surfaces remain in the main background, Mermaid, and
+static artwork. There is no complete contrast matrix or bright/dim production-browser receipt;
+ADR 15's bounded operator-palette contract is design law, not delivered configurability.
 
 ### Bridge conversation and consent surface {#bridge-surface}
 
@@ -590,7 +596,8 @@ boot catalogue contains only `bridge_chat@1` and `delegated_rite@1`.
 
 **Do not expect yet:** There is no Composition store or selector, Product catalogue or selector,
 Portfolio Pattern registration, Suite execution, application scheduling, or delivered domain/effect
-path for any Portfolio member or Product.
+path for any Portfolio member or Product. Crucible is a designed Weaver choreography, not a
+registered Pattern, parallel Graph, dossier schema, or Altar surface.
 
 **Evidence**
 
@@ -982,12 +989,13 @@ identity proof.
 
 **Proved now:** Proxy law assigns edge proxy and TLS composition to Veil.
 
-**Do not expect yet:** There is no provider, certificate lifecycle, generated edge policy, remote
-ingress hardening, or proof that a proxy substitutes for application authorization.
+**Do not expect yet:** There is no provider, certificate lifecycle, generated edge policy,
+Gateway Host manifest or Home/Remote realization, firewall projection, remote ingress hardening,
+or proof that a proxy substitutes for application authorization.
 
 **Evidence**
 
-- **Topic:** [Veil](./sepulcher/extensions/veil.md)
+- **Topic:** [Veil](./sepulcher/extensions/veil.md) and [Gateway](./sepulcher/gateway.md)
 - **Law:** [Proxy](./adr/40-proxy.md)
 
 ## Human ruling queue

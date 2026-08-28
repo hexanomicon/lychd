@@ -10,8 +10,9 @@ icon: material/calendar-clock
 Scheduling is **Designed and undelivered**. LychD currently has no periodic workflow scheduler,
 durable Occurrence service, eligibility engine, service-class field, or safe-preemption protocol.
 The physical `runs` and `rites` SAQ queues and scalar priority are current delivery machinery, not
-an implementation of this design. [Workflow](../../../adr/28-workflow.md#compositions-suites-and-schedules)
-owns the law; [Workers](../../../adr/14-workers.md) owns the present queue truth.
+an implementation of this design.
+[Workflow](../../../adr/28-workflow.md#compositions-products-suites-and-schedules) owns the law;
+[Workers](../../../adr/14-workers.md) owns the present queue truth.
 
 ## One admission office, three tempos
 

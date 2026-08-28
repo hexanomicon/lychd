@@ -25,6 +25,8 @@ Together they sustain the recurrent whole called the **Lich**.
   Runes, resolving configuration precedence, or preparing `lychd bind`.
 - **[Crypt](./crypt.md) — managed persistent files.** Read this when locating LychD's XDG data home,
   filesystem boundaries, or mounts.
+- **[Gateway](./gateway.md) — an optional separate ingress host.** Read this when placing Veil on
+  Home or Remote iron while keeping data and application authority behind one exact backend path.
 - **[Vessel](./vessel/index.md) — the application process.** Read this when tracing Litestar
   composition, application lifecycle, the web surface, or in-process runtime services.
 - **[Phylactery](./phylactery/index.md) — committed database truth.** Read this when asking which

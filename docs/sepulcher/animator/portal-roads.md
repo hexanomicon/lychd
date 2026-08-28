@@ -121,7 +121,7 @@ spending or sending data.
 | Candidate | Road | Current use in LychD | Position |
 | --- | --- | --- | --- |
 | Direct OpenAI, Anthropic, Google, or other upstream API | direct server API | intended production road for an exact eligible workload | Preferred; use provider-issued server credentials and pin the real model/destination |
-| [DeepInfra](https://deepinfra.com/pricing), [Groq](https://groq.com/pricing), [Together](https://www.together.ai/pricing), or [Fireworks](https://fireworks.ai/pricing) | direct model-hosting API | no first-party LychD profile | Benchmark exact model and custody profiles; DeepInfra is the current low-cost primary-worker candidate, not a permanent winner |
+| [DeepInfra](https://deepinfra.com/pricing), [Groq](https://groq.com/pricing), [Together](https://www.together.ai/pricing), or [Fireworks](https://fireworks.ai/pricing) | direct model-hosting API | no first-party LychD profile | Comparison pool only: benchmark the exact model, custody route, terms, limits, and dated price; no provider is a current winner |
 | [OpenRouter](https://openrouter.ai/docs/faq) | metered aggregator and optional BYOK | built-in provider alias exists; dispatch remains quarantined | Useful catalogue; pin one `provider/model` candidate per LychD attempt, disable shared/internal fallback, and treat returned upstream identity as gateway-asserted |
 | [Cloudflare AI Gateway](https://developers.cloudflare.com/ai-gateway/), [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/), [Pydantic AI Gateway](https://pydantic.dev/docs/ai/overview/gateway/) | BYOK and/or managed gateway | no first-party LychD profile | Candidates when their policy, observability, region, or budget control justifies another custodian |
 | [OpenCode Go](https://opencode.ai/docs/go/) | limited coding subscription with documented API endpoints | no admitted profile | Attractive operator experiment; unattended or third-party use waits for terms that unambiguously permit it |
@@ -130,14 +130,12 @@ spending or sending data.
 | [openusage](https://github.com/janekbaraniewski/openusage) | local usage dashboard | reference candidate only | Prefer the read-only telemetry pattern; a dashboard observes quota and cost but grants no routing authority |
 | [AIUsage](https://github.com/sylearn/AIUsage), [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI), and its dashboards | dashboard plus optional subscription/API proxy | Lab references only | Separate harmless local observation from credential switching, translation, LAN exposure, or subscription pooling; none is an admitted Portal |
 | [Sub2API](https://github.com/Wei-Shaw/sub2api) | subscription-to-API gateway and account pool | rejected production candidate | Its own project warns of upstream Terms-of-Service risk; do not use it to serve Reach or third parties |
-| [Hyvemind](https://github.com/Unravl/Hyvemind) | local multi-model agent orchestrator | upstream reference candidate only | Useful bounded fan-out, circuit-breaker, cache, and reviewer pattern; not itself a trusted provider or subscription entitlement |
 
 The first implementation target is direct-only: one exact server API, provider, endpoint, region,
 model revision, credential, data policy, hard budget, and no fallback, selected only after its
 maintained receipt closes every field above. No commercial candidate has completed that selection
-gate yet. Current price research makes a low-cost DeepInfra model the first comparison candidate
-and direct OpenAI API the first quality-escalation candidate, but neither is a canonical profile
-until the exact receipt exists.
+gate yet. Price or reputation alone does not nominate a first profile; every comparison and
+quality-escalation candidate remains non-canonical until an exact dated receipt exists.
 
 Cloudflare, Pydantic, Vercel, and OpenRouter remain unresolved multi-hop comparisons. They may be
 benchmarked for DLP, accounting, OpenTelemetry, catalogue reach, or cost without being stacked or

@@ -48,6 +48,23 @@ quiesce admission, settle or preserve external-effect identities, fence the old 
 routes and credential owners, transactionally restore an admitted partition when authority moves,
 and activate the new generation last. An old or simultaneous generation fails closed.
 
+Gateway placement follows the same exact-profile law. [Home and Remote](../sepulcher/gateway.md)
+are reference placements of one separate Gateway Host role, not applications, Extension
+Domains, or free configuration literals. A selected deployment profile either omits that role or
+binds its exact per-host manifest, Veil routes, optional Tether generation, backend identity,
+service Principals, edge secrets, firewall and management boundaries, and recovery contract.
+Loose fields such as `gateway=true`, `rpi`, `vps`, or an arbitrary proxy target cannot assemble a
+partial edge.
+
+Presentation configuration obeys the same typed-source law when it is admitted. In particular, a
+future [Altar palette](15-frontend.md#canonical-appearance-and-bounded-palette-configuration) may
+enter only through an explicitly owned validated Settings field or another Covenant-owned typed
+source with declared precedence; it is never an unmodelled TOML table, raw CSS file, selector, or
+extension side channel. Frontend owns the finite semantic colour roles and accessibility rules,
+while Configuration owns loading, validation, attribution, and immutable generation. Current
+Settings contains no palette field and changing the accepted root shape requires an implementation
+and State update.
+
 ## Runes: location, provenance, semantics
 
 A Rune is one validated top-level TOML instance in the Codex `runes/` tree, not a runtime object

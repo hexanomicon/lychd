@@ -5,7 +5,8 @@ LychD system under `src/lychd/`; they do not own capital-C Composition truth mer
 have independent toolchains or release artifacts.
 
 - `web/` is the SvelteKit Altar project.
-- `android/` is reserved for the Android client; no Android application is delivered yet.
+- `android/` is reserved for the native Android client for the [Companion Composition](../docs/compositions/companion/index.md);
+  no Android application is delivered yet.
 
 [ADR 01](../docs/adr/01-doctrine.md#repository-source-topology) owns this repository boundary, and
 [ADR 15](../docs/adr/15-frontend.md) owns the web client.

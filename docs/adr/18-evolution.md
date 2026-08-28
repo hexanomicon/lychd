@@ -63,7 +63,7 @@ handles, and other volatile objects belong to the old generation and die with it
 The old generation closes admission and drains, parks, or resolves owned work according to its
 domain contracts. The new generation reconstructs its volatile world from the attested manifest,
 validated configuration, and compatible Phylactery records. Unresolved work and already-emitted
-external effects remain subject to the [Graph](06-graph.md), [Workers](08-workers.md), and
+external effects remain subject to the [Graph](24-graph.md), [Workers](14-workers.md), and
 [Reanimation](../sepulcher/phylactery/reanimation.md) rules; process replacement does not pretend
 to rewind them.
 

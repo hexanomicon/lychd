@@ -43,8 +43,8 @@ snippets, and Mermaid are used when they clarify. Snippets stay short and use re
 Placement establishes register. Myth needs no disclaimer where it belongs, but a technical page
 cannot borrow scientific or mystical certainty to make an unproved mechanism sound inevitable.
 Portfolio publication marks a Native Reference Composition and accepted application contract; it
-does not prove executable delivery. Each leaf states its current application material, while State
-of Work keeps the shared whole-system evidence envelope.
+does not prove executable delivery. A leaf mentions local delivery only when it materially changes
+how the contract is read; State of Work keeps the shared whole-system evidence envelope.
 
 ## Progressive revelation
 

@@ -98,6 +98,10 @@ operator assigns one for the current task.
   report findings rather than reassurance.
 - **Progressive context:** load one useful edge at a time. A broad task does not justify speculative
   ingestion of the repository or local reference shelf.
+- **Private-material boundary:** operator or company dossiers, client collateral, contracts, local
+  transformation workspaces, and their generated artifacts live outside the repository checkout.
+  An ignored path prevents accidental publication; it does not make the checkout an acceptable
+  private-material workspace.
 
 For docs changes, verify local links and run the architecture State test when delivery prose
 moves. For published routes or navigation, run a clean Zensical build. For source changes, use the

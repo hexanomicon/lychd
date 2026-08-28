@@ -26,9 +26,15 @@ If that service is projected through Quadlet, its future Rune may embed the code
 Animator, or grant generic unit-text authority; Tether keeps ownership of its exact network fields
 and compilation policy.
 
-The gateway remains outside the shared application Pod. It receives no broad mounts, application
-secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN` inside that Pod
-is not an acceptable shortcut.
+The Tether service remains outside the shared application Pod. It receives no broad mounts,
+application secrets, database credentials, or host-mutation channel; granting `CAP_NET_ADMIN`
+inside that Pod is not an acceptable shortcut.
+
+The optional [Gateway Host](../sepulcher/gateway.md) uses Tether only when placement requires a
+private routed road. **Remote** may admit one exact peer and backend route from the off-site Veil to
+Core; it receives no default route or ambient home reachability. **Home** needs no Tether merely
+because Veil runs on a separate local machine: an exact directly routed private segment may supply
+reachability while firewall and service authorization retain their separate duties.
 
 ## Reach deployment roads
 

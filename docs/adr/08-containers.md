@@ -56,6 +56,15 @@ or lifecycle channel.
 Operator provisioning supplies the one non-root host account and platform floor; LychD services
 receive no account-creation or cross-user authority.
 
+An exact profile may place Veil on a separate
+[Gateway Host](../sepulcher/gateway.md). That host is a deployment trust role, not a Composition,
+Extension Domain, second Vessel, or application authority. Its manifest closes the public
+listeners, typed Veil routes, exact authenticated backend, firewall flows, management boundary,
+edge-only secrets, optional Tether attachment, resources, readiness, reconciliation, and removal.
+The Core manifest accepts only that backend identity and flow. The reference placements **Home**
+and **Remote** reuse this role with different physical and custody boundaries; a hostname, RPi,
+VPS, or boolean toggle cannot synthesize either topology.
+
 The first concrete consumers are the designed, mutually exclusive
 [Reach deployment profiles](../compositions/reach/deployments/index.md). No application selector,
 deployment-profile registry, service-role contribution store, manifest compiler, or effectful host

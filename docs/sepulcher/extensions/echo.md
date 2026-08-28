@@ -114,10 +114,11 @@ otherwise eligible managed provider that is not warm may cause the requesting Ru
 ordinary Graph Stasis while Orchestrator drains and readies the affected Animators. Echo cannot silently fall back to a remote service, infer permanent
 microphone authority, inflate priority, or revoke another grant or lease.
 
-## The Emissary
+## The Companion device boundary
 
-A future Mobile Emissary may own device capture and playback as Echo's physical ear and mouth. A
-private [Tether](tether.md) supplies reachability, not caller authority:
+A future [Companion](../../compositions/companion/index.md) client may own device capture and
+playback as Echo's physical ear and mouth. A private [Tether](tether.md) supplies reachability, not
+caller authority:
 [Ward](ward.md) still authenticates and authorizes, while capture and consent remain visible. A
 remote [Portal](../animator/portal.md) additionally requires eligible classification, egress
 policy, consent where required, and bounded cost. These are laws of the accepted design, not

@@ -142,8 +142,9 @@ guessing from a live socket.
 
 Cancellation names its scope: stopping playback need not erase an artifact, revoking capture stops
 new input, and cancelling an Invocation settles every admitted provider and transport attempt.
-A future mobile Emissary can own physical capture, playback, route selection, and low-level state;
-a private Tether still supplies transport, not application authority, classification, or consent.
+A future [Companion](../compositions/companion/index.md) client can own physical capture, playback,
+route selection, and low-level device state; a private Tether still supplies transport, not
+application authority, classification, or consent.
 
 ## Application-owned live audio
 

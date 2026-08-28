@@ -32,6 +32,16 @@ Caller-supplied forwarding, identity, and client-certificate claims are discarde
 scheme, host, origin, and peer metadata may cross only an authenticated backend path the Vessel
 explicitly trusts. That is designed behavior, not today's loopback service.
 
+## Gateway
+
+Veil may share the Core host or run on an optional separate
+[Gateway Host](../gateway.md). The reference placements **Home** and **Remote** move the same typed
+ingress boundary onto operator-controlled local iron or an off-site host respectively. They do not
+create another Extension Domain or application authority. Home uses an exact local backend road;
+Remote may add one Tether peer and route. In both, the Core accepts only the declared Gateway
+identity and port, while the Gateway receives no general LAN route, database, Context, Sigil,
+provider credential, or host-control path.
+
 ## Reach route profiles
 
 The [Reach deployment matrix](../../compositions/reach/deployments/index.md) uses no Veil for

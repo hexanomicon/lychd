@@ -42,7 +42,6 @@ delivery evidence, a dependency, or permission to copy upstream design.
 
 | Reference | Cheapest edge | Useful when |
 |---|---|---|
-| `Hyvemind` | `README.md`, `docs/`, then `app/src/` | Comparing multi-model task conversations, swarms, code review, desktop agent orchestration, or visual execution UX |
 | `cwc-workshops` | `production-ready-agent/` or `how-we-claude-code/` after the root README | Studying streamed agent events, gated tool calls, verifiable UI contracts, or human/agent design workflows |
 | `svelte-stack.md` | Specialized [Svelte shelf index](../references/svelte-stack.md) | Any Svelte 5, SvelteKit, Svelte Flow, graph canvas, or official Svelte AI-tooling task |
 

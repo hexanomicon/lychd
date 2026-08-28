@@ -67,8 +67,9 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 | [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
 | [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
 | [Avatar](avatar/index.md) | one attributable Lich presentation projected into one or more separately admitted places, with honest partial settlement |
+| [Companion](companion/index.md) | one mobile Familiar form with a configurable client, local device session, and bounded LychD interaction |
 | [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
-| [Familiar](familiar/index.md) | one admitted physical body and bounded mission that follows, observes, speaks, and settles honestly |
+| [Familiar](familiar/index.md) | one admitted physical body and bounded real-world task or presence that settles honestly |
 
 ## Candidate studies
 
@@ -76,8 +77,9 @@ Candidate studies test the application boundary without entering the Portfolio o
 delivery. [Workshop](workshop/index.md) tests one evidence-driven technical-service capability;
 **Mechanic** is the first Product that packages its passenger-vehicle profile.
 
-[Communion](communion/index.md) remains a reference mobile route into these applications, not a
-Composition or Product of its own.
+Communion remains a bounded mobile interaction route inside [Companion](companion/index.md), not a
+separate Composition or Product. The first client target for Companion is native Android; the
+client projects Companion's contract without acquiring its records, policies, or effect authority.
 
 ## Products package Compositions
 

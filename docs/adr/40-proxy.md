@@ -25,6 +25,22 @@ If Veil is projected through Quadlet, its future Rune may embed the code-level `
 value under `quadlet`. Veil remains the Domain identity and owns its ingress fields and compiler;
 it is not another Stone, Animator, or opening for raw Quadlet/systemd text.
 
+## Gateway placement
+
+Veil may share the Core host or manifest on an optional separate
+[Gateway Host](../sepulcher/gateway.md). The Gateway is a deployment trust role rather than another
+Extension Domain or Composition. **Home** places it on operator-controlled local iron and forwards
+only to an exact private Core backend. **Remote** places it off-site and may use one Tether peer and
+route to that same narrow backend. RPi and VPS are physical provider choices, not architectural
+identities.
+
+Both placements compile the same typed route contract and keep the same application authority
+behind it. The Gateway receives only edge certificates, route material, one backend service
+credential, optional tunnel material, and bounded transport evidence. Its firewall denies general
+LAN and arbitrary egress; the Core firewall accepts only the declared Gateway identity and backend
+flow. Same-host, Home, and Remote are selected by exact deployment profiles, never an `ingress`,
+`gateway`, `rpi`, or `vps` toggle.
+
 ## Reach deployment edges
 
 The [Reach deployment matrix](../compositions/reach/deployments/index.md) selects exact routes, not
@@ -35,6 +51,9 @@ to an isolated edge adapter. It never exposes a public listener. A later callbac
 route an authenticated update only to isolated Intercom ingress for one existing outbound task.
 A full A2A server is a separate profile with its own Ward, inbox/outbox, Workers, quotas, and
 result route.
+
+The Reach VPS Discord edge is a platform adapter, not a Gateway Host merely because it is remote;
+that profile's Veil remains the private home ingress named above.
 
 Neither profile may forward hostile bytes directly to the Reach core, Discord edge, or outbound
 credential gate. Every route names its methods, media types, compressed and expanded body limits,

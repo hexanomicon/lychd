@@ -406,6 +406,30 @@ Dispatcher, Orchestrator, HitL, or revision. Delegated station declares request/
 containment, budget, timeout, cancellation, artifact boundary, downstream use; provider adapter
 invokes foreign runtime, never embedded CLI/credential/private graph.
 
+### Crucible choreography
+
+[Crucible](../sepulcher/extensions/weaver/crucible.md) is the canonical adversarial choreography
+for forming a decision candidate: frame one question and common evidence; run separately biased
+first-round Postures; join their strongest claims, citations, concessions, defeat conditions, and
+unknowns; return that attributed projection for a second-round rebuttal; synthesize without a
+vote; then stop at an exact Magus Gate or inert dossier boundary. Logical independence is required;
+physical concurrency is optional. A serial implementation must preserve the same isolation and
+must not leak an earlier advocate's output into another first-round Context.
+
+Bias is declared input, never authority or a substitute for evidence. Compression between rounds
+retains source references, every advocate's nominated strongest claims, concessions, dissent,
+unknowns, and omissions; the full reports remain attributable artifacts. Missing evidence may
+produce `UNKNOWN`, a bounded evidence request, or honest non-decision. Majority, confidence,
+eloquence, model identity, or survival through summarization cannot adopt the result.
+
+Crucible is a reusable score form, not an ownerless global Pattern. A Composition that uses it must
+publish its exact Pattern and dossier contract and apply ordinary revision, road, budget, and
+authority law. When the receiving decision belongs to another office, that office retains judgment
+and the Composition only coordinates the dossier. The choreography neither evaluates a capability
+in Riddle's place, materializes Shadow branches, nor promotes its own recommendation. A downstream
+mutation or Covenant edit begins only through its target owner's workflow after the exact human
+verdict.
+
 ## Compositions, Products, Suites, and schedules
 
 Portfolio membership marks an accepted **Native Reference Composition**: a first-party supported

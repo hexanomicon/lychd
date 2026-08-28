@@ -8,7 +8,8 @@
 .jj/
 .jjconfig.toml
 
-# Generated business/pilot material — never published
+# Guard only: private business/pilot material belongs outside the checkout.
+# If accidentally produced here, keep it untracked while relocating it.
 output/
 
 

@@ -110,6 +110,8 @@ Choose the route that matches the question:
 
 - **[Pattern lifecycle](./pattern-lifecycle.md)** covers identity, manifests, admission,
   contribution, authorship protection, and revision continuity.
+- **[Crucible](./crucible.md)** covers two-round adversarial formation: declared biased Postures,
+  independent first claims, attributed rebuttal, dissent-preserving synthesis, and the Magus Gate.
 - **[Scheduling and service classes](./scheduling-and-service-classes.md)** covers foreground,
   deadline-windowed, and spare-capacity admission, schedule time law, overlap, and explicit misses.
 - **[Stasis and return](stasis-and-return.md)** covers Live and Durable Stasis, checkpoints,

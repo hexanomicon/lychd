@@ -5,12 +5,13 @@ icon: material/owl
 
 # :material-owl: Familiar
 
-Familiar is the real-world embodiment Composition. It admits one physical body — drone, rover, or
-legged robot — and opens one bounded mission inside that body. The body moves through physical
-space, observes, and returns with an honest account of what happened.
+Familiar is the real-world embodiment Composition. It admits one physical body — car, drone,
+rover, legged robot, manipulator, card, display, or another explicitly declared vessel — and opens
+one bounded task or presence inside that body. The body acts in physical space and returns with an
+honest account of what happened.
 
-Avatar may be projected into the Familiar body. When the Lich speaks through a drone or rides in a
-rover, Familiar owns the body truth and mission; Avatar remains the separate Composition that owns
+Avatar may be projected into the Familiar body. When the Lich speaks through a device or rides in a
+vehicle, Familiar owns the body truth and task; Avatar remains the separate Composition that owns
 presentation and projection membership. The name follows _familiar_ as a bound companion spirit:
 the body serves one Lich without becoming identity, granting universal physical authority, or
 claiming the physical world as its own.
@@ -24,6 +25,7 @@ flowchart LR
     A[Avatar · identity] --> S[Spectre · VR]
     A --> B[Blockworld · game]
     A --> F[Familiar · real world]
+    F --> C[Companion · mobile Familiar form]
 ```
 
 ## Contract
@@ -31,7 +33,7 @@ flowchart LR
 | Field | Reference contract |
 | --- | --- |
 | **Identity** | `familiar.embodiment` revision `1` |
-| **Patterns** | `familiar.admit_body@1`, `familiar.bounded_mission@1`, and `familiar.follow@1` |
+| **Patterns** | `familiar.admit_body@1`, `familiar.bounded_mission@1`, and `familiar.follow@1`; additional body-specific Patterns may be admitted without changing the body contract |
 | **Application begins with** | for body admission, one exact Legion node reference, form factor, capability snapshot, safety envelope, geofence, and emergency stop policy; for a mission, one admitted `FamiliarBody@1`, objective kind, subject designation, budgets, stop conditions, and an optional exact Avatar-owned `ProjectionBinding@1` reference |
 | **Application can return** | an immutable `FamiliarBody@1`, settled `FamiliarMission@1`, attributed `FamiliarObservation@1` and `FamiliarEffect@1` records, or explicit partial/non-completion |
 | **Application stops before** | autonomous weaponization, following non-consenting subjects, entering restricted airspace or private property without admission, operating beyond signal range without pre-authorized return policy, claiming subject identity or consent from proximity, or granting the Lich universal physical authority |
@@ -53,9 +55,9 @@ may use one body without becoming one endless deployment.
 | Layer | Familiar-owned truth | Boundary |
 | --- | --- | --- |
 | `FamiliarBody@1` | one immutable body identity and capability epoch: Legion node reference, form factor and make/model, requested, required, granted, missing, and revoked capabilities, safety envelope, geofence, and emergency stop policy | not the Legion enrollment, credential, hardware reservation, controller firmware, or physical chassis |
-| `FamiliarMission@1` | one bounded objective (follow, patrol, or observe), subject designation, path and terrain constraints, distance/altitude/speed envelopes, obstacle-avoidance policy, signal-loss policy, budgets, stop conditions, optional Avatar projection reference, observation chronology, and terminal judgment | not the MAVLink/ROS2 session, motor actuation, PID loop, raw sensor stream, Avatar profile, or claim of continuous attention |
+| `FamiliarMission@1` | one bounded objective or presence task, subject or target designation where relevant, path or operating constraints, capability-specific safety envelope, signal-loss policy, budgets, stop conditions, optional Avatar projection reference, observation chronology, and terminal judgment | not the provider session, motor or actuator command loop, raw sensor stream, Avatar profile, or claim of continuous attention |
 | provider link epoch | attributed volatile facts about one control session: protocol version, link quality, controller health, firmware revision, start, stop, and loss | evidence observed by Familiar, not a reusable durable session or substitute for body capability admission |
-| terminal settlement | `completed`, `partial`, `subject_lost`, `emergency_stopped`, `signal_lost`, `battery_depleted`, `refused`, or `unresolved`, plus references to Avatar, Voidlight, Riffmaw, or effect receipts owned elsewhere | honest judgment about the mission contract, not proof that every frame, utterance, motor pulse, or external effect occurred |
+| terminal settlement | `completed`, `partial`, `subject_lost`, `emergency_stopped`, `signal_lost`, `battery_depleted`, `refused`, or `unresolved`, plus references to separately owned Avatar bindings, Prism/Echo material, and application or effect receipts | honest judgment about the mission contract, not proof that every frame, utterance, motor pulse, or external effect occurred |
 
 ```mermaid
 flowchart LR
@@ -86,10 +88,11 @@ geofences, and physical observations are application truth that Avatar has no bu
 
 ## Core capability before packaging
 
-Familiar belongs in the Portfolio without requiring a current packaged application. A later
-**Familiar Companion** Product may package a specific drone or rover profile; a Suite may combine
-Familiar with Avatar, Homestead, or Reach. Neither packaging choice moves body, safety, or mission
-authority into another Composition.
+Familiar belongs in the Portfolio without requiring a current packaged application. **Companion**
+is the mobile Familiar form: Familiar supplies the device's embodiment, hardware, capability,
+safety, and stop law; Companion supplies the configurable mobile client and local device experience.
+A Suite may combine Familiar, Companion, and Avatar with other Compositions without moving body,
+safety, or mission authority into the client.
 
 The smallest proving fixture is synthetic and network-disabled: one mock body adapter with simulated
 GPS, IMU, camera, mic, speaker, and battery; one recorded outdoor path; one simulated obstacle; one
@@ -108,4 +111,5 @@ fixture.
 Related: [Avatar](../avatar/index.md) · [Legion](../../adr/42-legion.md) ·
 [Blockworld](../blockworld/index.md) · [Spectre](../spectre/index.md) ·
 [Homestead](../homestead/index.md) · [Vision](../../adr/36-vision.md) ·
-[Audio](../../adr/37-audio.md) · [Composition Portfolio](../index.md)
+[Audio](../../adr/37-audio.md) · [Prism](../../sepulcher/extensions/prism/index.md) ·
+[Echo](../../sepulcher/extensions/echo.md) · [Composition Portfolio](../index.md)

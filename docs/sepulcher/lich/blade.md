@@ -35,6 +35,27 @@ passes forward a more task-specific view. The zoom remains trustworthy only whil
 constraints, omissions, and uncertainty survive the handoffs. Otherwise compression becomes
 forgetting, and a sharp answer may only be a narrow one.
 
+## Crucible
+
+**Crucible** is the Blade's named adversarial discipline for a consequential question with more
+than one defensible cut. Several deliberately biased [Postures](../../adr/20-agents.md#mechanical-cognitive-postures)
+receive the same attributed evidence, acceptance criteria, non-goals, and limits. A bias gives one
+edge a declared angle; it grants no authority, does not change the evidence, and must name the
+finding that would defeat its own case.
+
+The first clash keeps advocates independent. A bounded join then carries forward each side's
+strongest claims, citations, concessions, and unknowns. The second clash answers those actual
+claims rather than a rehearsed straw opponent. A separate Lead quenches the result into a decision
+candidate without voting, erasing dissent, or treating fluency as evidence. The Magus's Viveka
+still decides what distinction matters and whether more evidence, refusal, or another Invocation
+is required.
+
+Compression may narrow the packet between clashes only while it preserves provenance, strongest
+claims, concessions, dissent, missing evidence, and declared omissions. Otherwise the Crucible
+merely rewards what survived summarization. Its executable choreography belongs to
+[Spellweaver](../extensions/weaver/crucible.md); Blade owns the quality of the cut, not scheduling,
+parallelism, model selection, or promotion.
+
 **Vikalpa** is used here as the whetstone: explicitly hypothetical possibilities show where
 discrimination is blunt. Their honest handling is project discipline, not the source meaning of
 the term. The Magus’s **Viveka** supplies more than a winner when it names the distinction by which

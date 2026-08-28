@@ -7,7 +7,8 @@ icon: material/directions
 
 `familiar.follow@1` is the Pattern that wakes the body, locks a subject, traces a path through
 physical space, and settles what happened. It may transition into speaking mode — mic and camera
-activate, the Lich speaks through the body — and return to following when the conversation ends.
+open only under separate capture authority, the Lich may speak through an admitted Avatar/Echo
+path — and return to following when the conversation ends.
 
 ## Admission
 
@@ -50,7 +51,8 @@ a face does not mean the person agreed to be followed.
 
 ## Path-tracing loop
 
-The body runs one closed loop for the mission duration:
+The body-local controller runs the fast safety and motion loop. Familiar owns the slower semantic
+mission steps, waypoint intent, observation references, and receipts:
 
 1. **Acquire** — read sensor inputs, compute subject position relative to body, record lock quality
 2. **Plan** — compute path to maintain target distance envelope, avoid known obstacles, respect
@@ -65,14 +67,15 @@ The body runs one closed loop for the mission duration:
 acquire → plan → move → observe → adjust → check → acquire …
 ```
 
-The loop runs at the body's control rate (typically 5–20 Hz for drones, 1–10 Hz for rovers).
-Between loop iterations the controller maintains the last commanded waypoint and enforces local
-obstacle avoidance autonomously.
+The local controller runs at its own pinned and measured rate; LychD promises no universal control
+frequency. Between semantic waypoint updates, the controller maintains or rejects the last
+admitted command and enforces local obstacle avoidance autonomously.
 
 ## Distance, altitude, and speed envelopes
 
 The follow envelope keeps the body near enough to observe without crowding or endangering the
-subject.
+subject. The values below illustrate one candidate profile; they are not defaults or safety
+guidance, and admission must replace them with validated body- and jurisdiction-specific limits.
 
 | Parameter | Drone | Rover | Legged |
 | --- | --- | --- | --- |
@@ -130,22 +133,24 @@ A trigger begins the speaking session. The trigger is declared at mission admiss
 
 | Trigger | How it works |
 | --- | --- |
-| **Voice command** | body mic detects wake phrase ("Hey Lich"), streams to LychD, Riffmaw confirms, Familiar activates speaking mode |
-| **Proximity** | subject enters close-distance threshold (≤ 1.5 m) and stops moving for N seconds |
-| **Gesture** | subject faces body and raises hand (visual gesture detection via camera) |
-| **Explicit instruction** | Lich decides to speak; Familiar receives command through Intercom |
+| **Voice command** | an admitted Echo Listener recognizes the exact activation phrase and emits a bounded activation request |
+| **Proximity** | the admitted subject enters a declared close-distance threshold; proximity may invite interaction but cannot authorize capture by itself |
+| **Gesture** | an exact admitted gesture may request interaction; a visual match still proves neither identity nor consent beyond that request |
+| **Explicit instruction** | an authorized operator or application requests speaking mode through the admitted control channel |
 
 ### Active session
 
-1. Body stabilizes — hover hold (drone), park (rover), stand (legged)
-2. Camera activates — stream to LychD → Voidlight artifact → enters Lich Context as visual
-   observation; may feed Avatar's visual grounding
-3. Microphone activates — stream to LychD → Riffmaw artifact → speech transcription enters Lich
-   Context
-4. Lich voice projects through body speaker — audio out from LychD → Familiar → speaker
-5. Body records a `FamiliarSpeakingSession` sub-record within the mission observation chronology — start time, audio artifact ref (Riffmaw), video artifact ref (Voidlight), transcript ref
-6. Body indicators activate — camera LED, speaker announcement ("Lich is listening") for
-   disclosure
+1. Body stabilizes — hover hold (drone), park (rover), stand (legged).
+2. Disclosure indicators activate before capture — camera/microphone light and, where appropriate,
+   an audible announcement.
+3. A separately admitted camera epoch opens; Prism/Sight may return exact source-bound observations
+   for Context or Avatar grounding.
+4. A separately admitted Echo capture window opens; any transcript retains its audio source,
+   timing, provider, language assumptions, and uncertainty.
+5. An authorized Avatar voice profile may select presentation while Echo owns synthesis and the
+   device-owned playback result.
+6. Familiar records a `FamiliarSpeakingSession` sub-record containing the exact capture epochs,
+   Prism/Echo references, transcript reference, disclosure, and delivery facts.
 
 ### Deactivation
 
@@ -190,9 +195,9 @@ completed and what stopped it.
 5. Drone follows Magus through garden — records waypoints, avoids tree branch (reroute event),
    re-acquires subject after brief visual occlusion (lock-degraded-then-reacquired event).
 6. Magus stops at workbench, faces drone, says "Hey Lich, what do you think of these seedlings?"
-7. Voice command triggers speaking mode. Drone stabilizes at hover, LED activates, speaker
-   announces presence. Camera streams to Voidlight, mic streams to Riffmaw. Lich sees seedlings,
-   hears question.
+7. The admitted voice-command event requests speaking mode. The drone stabilizes, activates its
+   disclosure indicators, then opens bounded Prism/Sight and Echo capture windows. Their attributed
+   observations and transcript make the seedlings and question available to the Invocation.
 8. Lich responds through drone speaker: "The tomatoes are crowded — give them each a bigger pot.
    The basil is ready to harvest." Speaking session recorded with audio/video/transcript refs.
 9. Magus says "Thanks, resume follow." Speaking mode deactivates. Drone re-acquires beacon,

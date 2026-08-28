@@ -42,6 +42,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Cognizance** | The locally bound relation in which cognition apprehends its own occurrence, Answer attributes it as “mine,” and it participates causally in answerable action, consequence, and correction; not a runtime boolean or synonym for Consciousness. | [Immortality](../divination/transcendence/immortality.md#cognizance) |
 | **Codex** | LychD's editable configuration home at `~/.config/lychd`, containing settings and validated Rune intent. | `src/lychd/config/` |
 | **Coffin** | The lower-trust, per-job containment profile for an opaque delegated-agent runtime with disposable files and a revocable Provider Gate. | [Security (ADR 09)](../adr/09-security.md#the-coffin-delegated-agent-profile) |
+| **Companion** | The mobile Familiar Composition: it owns the configurable device client, bounded local session, interaction state, disclosure, and reconnect behavior while Familiar retains hardware and physical-safety authority. | [Companion](../compositions/companion/index.md) |
 | **Composition** | A reusable native application capability that owns its domain records, judgment, policies, effects, and Pattern catalogue independently of any one Product, customer, or deployment. | [Composition Portfolio](../compositions/index.md) + Spellweaver (ADR 28) |
 | **Composition Revision** | One immutable version of a Composition contract, pinning capability identity, Pattern catalogue, requirements, policy, and projection metadata. | [Composition Portfolio](../compositions/index.md) + Spellweaver (ADR 28) |
 | **Consecration** | The governed authorization by which live consent or declared preauthorization permits an eligible result to become consequence or Karma. | [HitL (ADR 25)](../adr/25-hitl.md) |
@@ -66,8 +67,10 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Extension Protocol** | The in-process law of explicit package selection and shaped registration through `ExtensionContext`. | `src/lychd/extensions/`; ADR 05/28 |
 | **Extensions** | The qualified collective for either the Fifteen Extension Domains or concrete extension packages. | [Fifteen Extensions](../sepulcher/extensions/index.md) + ADR 05 |
 | **Eye** | An external observability viewer that may consume bounded exports without owning canonical LychD state. | [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md) |
+| **Familiar** | The real-world embodiment Composition: it owns one admitted physical body and bounded task or presence, including capability, safety, stop, observation, effect, and settlement truth without acquiring raw controller authority. | [Familiar](../compositions/familiar/index.md) |
 | **Flux** | Spirit in present movement as salience, candidates, tools, constraints, and consequences reshape what may follow. | [Flux](../sepulcher/lich/spirit/flux.md) |
 | **Forge** | The governed container-image construction process. | Build Pipeline |
+| **Gateway Host** | An optional separate ingress deployment role manifesting Veil on Home or Remote iron with one exact authenticated backend path and no application authority or general LAN route. | [Gateway](../sepulcher/gateway.md) + Security/Containers/Proxy |
 | **Ghoul** | One ephemeral unit of background labor raised by the SAQ worker mechanism to carry a Run job. | `src/lychd/ghouls/`; ADR 14 |
 | **GrantLease** | The holder, issue time, scope, and identity record counted for one issued `CapabilityGrant`. | `src/lychd/domain/animation/capabilities.py` |
 | **Graph** | The typed stateful topology that moves a workflow among declared nodes and recoverable boundaries. | [Graph (ADR 24)](../adr/24-graph.md) |
@@ -83,7 +86,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **issue_grant** | The `AnimatorRegistry` method that freshly probes and assembles a `CapabilityGrant` for one eligible warm v1 capability without changing lifecycle state. | `src/lychd/domain/animation/services/registry.py` |
 | **Karma** | Governed, attributable residue of witnessed action, correction, consent, and consequence retained as formative precedent. | [Illumination](../divination/transcendence/illumination.md) + Memory (ADR 27) |
 | **Kinetic** | The vLLM Soulstone discipline for continuous-batched, VRAM-strict parallel serving. | [Soulstone](../sepulcher/animator/soulstone/disciplines.md#i-the-kinetic-vllm) |
-| **Lab** | The repository's `lab/` development sandbox. | Filesystem Layout |
+| **Lab** | The operator workspace in the Crypt at `~/.local/share/lychd/lab` by default; it is mounted read-write only when explicitly admitted. | [Layout (ADR 13)](../adr/13-layout.md) |
 | **lease drain** | The Orchestrator's wait for all GrantLeases on Animators selected for eviction to be released. | `src/lychd/domain/orchestration/` |
 | **LeaseLedger** | The in-process registry whose live GrantLeases are the Orchestrator's drain truth. | `src/lychd/domain/cortex/leases.py` |
 | **Legion** | The distributed-embodiment Extension Domain for fenced delegation across operator-owned nodes. | [Legion](../sepulcher/extensions/legion.md) + ADR 42 |
@@ -99,7 +102,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Mirror** | The identity Extension Domain for versioned Persona lineage, hydration provenance, attribution, and declared continuity. | [Mirror](../sepulcher/extensions/mirror.md) + ADR 32 |
 | **Morphe** | Avatar's immutable audience-, target-, purpose-, and time-scoped selection of eligible voice, appearance, motion, manner, language, or disclosure inside one unchanged profile and Persona boundary; the technical result is a `MorpheBinding@1`, not a mutation of past projection records. | [Avatar](../compositions/avatar/index.md#morphe-changes-presentation-not-identity) |
 | **Necropolis** | The designed peer-to-peer topology in which sovereign LychD nodes negotiate bounded work over A2A. | [A2A (ADR 26)](../adr/26-a2a.md) |
-| **Native Reference Composition** | A first-party supported reusable application contract and worked example whose leaf states its current material against tracked evidence. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |
+| **Native Reference Composition** | A first-party supported reusable application contract and worked example. Delivery remains in State of Work; its leaf mentions local material only when that changes interpretation. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |
 | **Nexus** | The Altar instrument projecting Animator readiness, grants, leases, resource evidence, and Orchestrator transitions. | [Altar Nexus](../divination/altar/nexus.md) + Orchestrator |
 | **Occurrence** | One uniquely identified firing of a schedule or external trigger, deduplicated before Invocation admission; distinct from the Graph runtime's legacy station-attempt `occurrence_id`. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |
 | **Oculus** | The designed evidence Extension Domain for bounded observations, correlation, explicit gaps, and rebuildable read models. | [ADR 29](../adr/29-observability.md) + [State](../state-of-the-work.md) |
@@ -114,7 +117,7 @@ where the project assigns them a stable part, contract, or operated concept.
 | **Phylactery** | The PostgreSQL-centered durable-data jurisdiction for committed Run truth and other durable application records. | `src/lychd/db/`; [ADR 06](../adr/06-persistence.md) + [State](../state-of-the-work.md) |
 | **Portal** | A remote-service Animator backed by a Portal Rune. | `src/lychd/domain/animation/` |
 | **Portal Rune** | A validated Codex TOML declaration of remote endpoint, provider, model defaults, capabilities, tools, and secret references. | `src/lychd/domain/animation/schemas/runes/` |
-| **Portfolio** | The designed Spellweaver registry of Native Reference Compositions and their enablement, Pattern, and schedule catalogues. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |
+| **Portfolio** | The published set of accepted Native Reference Compositions and their application contracts. Membership is design truth, not executable delivery or a live registry. | [Compositions](../compositions/index.md) + Spellweaver (ADR 28) |
 | **Posture** | A per-run Agent specialization expressed through output schema, tool grant, model settings, and prompt frame. | [Agents (ADR 20)](../adr/20-agents.md#mechanical-cognitive-postures) |
 | **Prism** | The visual and spatial grounding Extension Domain for source-bound observations, transforms, reconstructions, and generated forms. | [Prism](../sepulcher/extensions/prism/index.md) + ADR 36 |
 | **Privacy Cut** | A new sanitized Context branch built locally without reusing raw history, continuation, attachment projections, or provider cache identity. | [Context (ADR 21)](../adr/21-context.md#privatization-and-the-privacy-cut) |

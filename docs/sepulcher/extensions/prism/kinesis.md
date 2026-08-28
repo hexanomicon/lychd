@@ -117,7 +117,7 @@ format is a later Kinesis humanoid-motion projection.
 current TOST 1.0 license is pinned explicitly; a Blender round trip cannot be presumed to preserve
 every layer, reference, or variant semantic. FBX is lossy input or output compatibility only. Its
 original digest survives, Blender's
-[animation-import limitations](https://docs.blender.org/manual/en/latest/addons/import_export/scene_fbx.html)
+[FBX import and export contract](https://docs.blender.org/manual/en/5.3/files/import_export/fbx.html)
 are part of the profile, and the EULA-governed Autodesk SDK is neither canonical nor a dependency
 of the FOSS path.
 

@@ -28,6 +28,9 @@ icon: material/language-html5
   that the current run strip already composes every owning projection.
 - Native CSS includes keyboard access, visible focus, non-colour cues, reduced motion, named
   regions, and visible unknown/error states.
+- The Altar ships one canonical built-in appearance, **LychD Dark**. Its semantic colour boundary
+  must remain closed enough for a future validated operator palette override without promising a
+  second built-in theme, arbitrary CSS, or extension-owned UI.
 - The Altar keeps a replaceable localization boundary for interface copy, accessibility labels,
   pluralization, locale-sensitive formatting, and text direction. Interface locale never rewrites
   Intent, model output, artifacts, or evidence.
@@ -325,6 +328,44 @@ skip link, visible focus, hidden labels, narrow layout, and `prefers-reduced-mot
 restore their live opener after closing when one exists; deep links use router focus reset.
 Tailwind, Sass, project-owned PostCSS, and a parallel styling vocabulary are forbidden. Transitive
 Vite packages in the lockfile are not a styling API.
+
+### Canonical appearance and bounded palette configuration
+
+The canonical Altar has one complete built-in appearance: **LychD Dark**. Dark is the product
+default and the only appearance Core currently designs, releases, and supports. The document and
+native controls use a dark colour scheme; Core does not follow `prefers-color-scheme`, expose a
+light/system selector, or create presentation state merely to imply choice. “Readable by day and
+night” remains an acceptance target requiring contrast plus bright- and dim-environment browser
+receipts, not a conclusion inferred from dark tokens.
+
+The styling boundary nevertheless stays configurable in one deliberately narrow direction. A
+future operator-local palette may provide a partial map over an allowlisted set of semantic colour
+roles—for example page and panel surfaces, primary and secondary text, focus/rune, ready, active,
+warning, refusal, borders, and decorative accent. Resolution starts from the complete pinned LychD
+Dark palette, applies valid overrides, and falls back per missing value. The public configuration
+names semantic roles rather than CSS variable or selector identities; Frontend owns their meaning,
+while [Configuration](12-configuration.md) must admit any future typed source and precedence before
+it is delivered.
+
+An override value uses a restricted, resource-free colour grammar and cannot contribute selectors,
+declarations, functions that fetch resources, `url()`, fonts, layout, visibility, opacity,
+animation, HTML, Svelte, JavaScript, routes, or assets. Validation preserves required contrast,
+visible focus, forced-colour behavior, non-colour status distinctions, and the legibility of
+consent, refusal, fault, unknown, and evidence states. Missing roles inherit their canonical
+values; an explicitly invalid map is refused before application rather than producing a
+half-themed Altar.
+
+Components, diagrams, and overridable artwork consume the resolved semantic palette or declare
+themselves fixed LychD brand assets outside it. Mermaid, browser chrome, native controls, static
+art, and generated surfaces cannot keep an undisclosed second palette. A future named palette
+package may serialize this same finite map only after Extensions and Packaging admit its
+provenance, licence, static build, compatibility, and accessibility receipts; it never opens a
+runtime CSS plug-in surface.
+
+Palette choice is local presentation configuration. It never changes a Run, Pattern, event,
+artifact, consent, authority, status, or retained evidence, and it cannot remove their textual and
+structural cues. The current implementation has only the fixed LychD Dark palette and no operator
+override source; [State](../state-of-the-work.md#altar-and-observability) owns that boundary.
 
 ### Interface locale and content language
 

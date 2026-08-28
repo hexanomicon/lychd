@@ -15,8 +15,6 @@ extra_javascript = [
     "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"
 ]
 
-# Awesome nav in progress https://lukasgeiter.github.io/mkdocs-awesome-nav/
-# Until then have to do it like this
 nav = [
     { "Prophecy" = "index.md" },
     { "Summoning" = "summoning.md" },
@@ -36,6 +34,7 @@ nav = [
         ]},
         { "Codex" = "sepulcher/codex.md" },
         { "Crypt" = "sepulcher/crypt.md" },
+        { "Gateway" = "sepulcher/gateway.md" },
         { "Vessel" = [
             "sepulcher/vessel/index.md",
             "sepulcher/vessel/ghouls.md"
@@ -73,6 +72,7 @@ nav = [
             { "Spellweaver" = [
                 "sepulcher/extensions/weaver/index.md",
                 "sepulcher/extensions/weaver/pattern-lifecycle.md",
+                "sepulcher/extensions/weaver/crucible.md",
                 "sepulcher/extensions/weaver/scheduling-and-service-classes.md",
                 "sepulcher/extensions/weaver/stasis-and-return.md",
                 "sepulcher/extensions/weaver/execution-roads.md",
@@ -149,6 +149,7 @@ nav = [
             "compositions/riffmaw/index.md",
             "compositions/riffmaw/sources.md",
             "compositions/riffmaw/sessions.md",
+            "compositions/riffmaw/hardware.md",
             "compositions/riffmaw/music.md",
             "compositions/riffmaw/studio.md",
             "compositions/riffmaw/voice.md",
@@ -226,10 +227,15 @@ nav = [
         { "Spectre" = [
             "compositions/spectre/index.md"
         ]},
-        { "Communion" = [
-            "compositions/communion/index.md",
-            "compositions/communion/utterance.md",
-            "compositions/communion/return.md"
+        { "Familiar" = [
+            "compositions/familiar/index.md",
+            "compositions/familiar/embodiment.md",
+            "compositions/familiar/follow.md"
+        ]},
+        { "Companion" = [
+            "compositions/companion/index.md",
+            "compositions/companion/utterance.md",
+            "compositions/companion/return.md"
         ]}
     ]},
     { "Map" = "map.md" },

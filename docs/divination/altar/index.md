@@ -31,6 +31,12 @@ the Altar projects. The current delivered interface remains English-only.
 contract, while [State](../../state-of-the-work.md#altar-and-observability) keeps its delivery
 boundary.
 
+The Altar likewise has one canonical appearance: **LychD Dark**. Core focuses on making that single
+interface legible in bright and dim conditions rather than shipping a nominal light/system toggle.
+Its semantic colour seam is designed for a future validated, partial operator palette, but not for
+arbitrary CSS or extension-supplied UI; no palette override is delivered today. [Frontend](../../adr/15-frontend.md#canonical-appearance-and-bounded-palette-configuration)
+owns the complete boundary.
+
 ## One Altar, Four Instruments
 
 - **[Bridge](./bridge.md)** carries conversation, consent, and settled result.

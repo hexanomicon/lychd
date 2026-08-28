@@ -83,6 +83,9 @@ purpose.
 The [Avatar Composition](./compositions/avatar/index.md) may bind one Lich presentation to several
 simultaneous physical, ambient, social, or virtual projections, but it adds no universal world,
 device, or body authority. Every target and local controller retains its own truth and refusal.
+[Companion](./compositions/companion/index.md) is the mobile Familiar form: Familiar retains the
+device's embodiment, hardware capabilities, safety, and stop law, while Companion owns the
+configurable mobile client and local device session.
 For [Spectre](./compositions/spectre/index.md), VR is the Habitat; when a participant meets the Lich
 through its Avatar there, Spectre owns that bounded Encounter while Avatar retains presentation
 and projection membership.
