@@ -1,8 +1,7 @@
 /* ══════════════════════════════════════════════════════════════════════
    LychD · The Altar — design tokens (canonical; spec-web-design §2)
    Obsidian base · icy-blue chrome · Matrix-green activity · deep-violet
-   shadow · banked-orange thresholds. Original aesthetic. Cold rune-light
-   over obsidian. No borrowed IP.
+   shadow · banked-orange thresholds. Cold rune-light over obsidian.
 
    Native CSS is the styling language. Tokens remain ordinary custom properties;
    semantic component classes consume them without a utility or preprocessing DSL.
