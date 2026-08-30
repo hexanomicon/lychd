@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.capabilities import ActivationResult, CapabilitySpec, CapabilityState
-from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
 
 LISTEN_HOST = "0.0.0.0"  # noqa: S104
@@ -54,20 +53,6 @@ class PortalDefinition:
     probe: PortalProbe | None = None
 
 
-class AnimatorControlPlane(Protocol):
-    """Optional per-runtime lifecycle surface returned by an adapter (spec §5).
-
-    Generic seam: the domain talks to it via ``inspect_animator`` and, when a
-    runtime supports in-place model loading, ``load_model``/``unload_model``.
-    """
-
-    async def inspect_animator(self, animator: RuntimeAnimator) -> AnimatorLifecycle: ...
-
-    async def load_model(self, base_url: str, model: str) -> bool: ...
-
-    async def unload_model(self, base_url: str, model: str) -> bool: ...
-
-
 @runtime_checkable
 class ActivationObserver(Protocol):
     """Optional adapter capability for releasing asynchronous activation observers."""
@@ -75,10 +60,18 @@ class ActivationObserver(Protocol):
     async def abandon_activation(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> None: ...
 
 
+@runtime_checkable
+class CapabilityActivator(Protocol):
+    """Optional adapter capability for runtimes with in-process model activation."""
+
+    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult: ...
+
+
 class SoulstoneRuntimeAdapter(Protocol):
     """Contract for Soulstone runtime planners/builders."""
 
-    runtime: ClassVar[str]
+    @property
+    def runtime(self) -> str: ...
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan: ...
 
@@ -92,10 +85,6 @@ class SoulstoneRuntimeAdapter(Protocol):
         specs: list[CapabilitySpec],
     ) -> list[CapabilityState]: ...
 
-    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult: ...
-
-    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None: ...
-
 
 class SoulstoneRuntimePlanner(Protocol):
     """Narrow planning contract used by transmutation orchestration."""
@@ -106,7 +95,7 @@ class SoulstoneRuntimePlanner(Protocol):
 __all__ = [
     "LISTEN_HOST",
     "ActivationObserver",
-    "AnimatorControlPlane",
+    "CapabilityActivator",
     "PortalDefinition",
     "PortalProbe",
     "PortalRuntimeFactory",

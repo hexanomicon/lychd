@@ -93,10 +93,10 @@ pinning semantics. Otherwise activation follows [Creation](16-creation.md),
 
 ### 2. The Registration Surface (The Extension Context)
 
-The context has shaped stores for `runes`, `soulstones`, `portals`, `transmutation`,
-`delegated_runtimes`, and `run_operations`; `vessel` is reserved and empty. New contribution kinds
-need an explicit owner. Patterns, Compositions, status, routes, tools, workloads, and migrations
-are not implied merely because a package registers. A minimal contribution is explicit:
+The context has shaped stores for `runes`, `soulstones`, `portals`, `transmutation`, and
+`delegated_runtimes`. New contribution kinds need an explicit owner. Patterns, Compositions,
+status, routes, tools, workloads, operations, and migrations are not implied merely because a
+package registers. A minimal contribution is explicit:
 
 ```python
 context.runes.add_schema(RuneConfig)
@@ -189,12 +189,11 @@ an unexecuted registration. Crypt failure clears that activation's synthetic imp
 Live Animator Rune, group, and capability projections add their own defensive-copy boundary before
 values cross into orchestration, policy, or adapter code.
 
-Run operations live beneath `lychd run`, carry typed metadata and shared authority traceability,
-and do not create a root command or callback. The built-in `delegation` extension has one
-no-network reference adapter and fail-closed declarations for provider-backed candidates. A
-declaration describes immutable transport, delivery, security, and limitation; it never executes a
-matching binary by itself. Registration supplies neither persistence nor infrastructure authority:
-those need accepted ordering, recovery, export, deletion, and uninstall contracts.
+The built-in `delegation` extension has one no-network reference adapter and fail-closed
+declarations for provider-backed candidates. A declaration describes immutable transport,
+delivery, security, and limitation; it never executes a matching binary by itself. Registration
+supplies neither persistence nor infrastructure authority: those need accepted ordering, recovery,
+export, deletion, and uninstall contracts.
 
 ### 4. Substrate Injections
 

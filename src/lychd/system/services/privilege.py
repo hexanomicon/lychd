@@ -5,9 +5,8 @@ from pathlib import Path
 
 import structlog
 
-from lychd.system.constants import PATH_REACTOR_INBOX_DIR
+from lychd.system.services.file_publication_transaction import JournaledCreation
 from lychd.system.services.lifecycle.models import CreatedResources
-from lychd.system.services.publication import JournaledCreation
 
 logger = structlog.get_logger()
 _REGISTRY_MODE = 0o700
@@ -19,14 +18,9 @@ class PrivilegeService:
     Responsible for establishing the security context and signaling registry.
     """
 
-    def __init__(self, signals_dir: Path | None = None) -> None:
-        """Initialize the Privilege Service.
-
-        Args:
-            signals_dir: Optional path for the handshakes registry.
-
-        """
-        self._signals_dir = signals_dir or PATH_REACTOR_INBOX_DIR
+    def __init__(self, signals_dir: Path) -> None:
+        """Bind the exact handshakes registry managed by this service."""
+        self._signals_dir = signals_dir
 
     def initialize(
         self,
@@ -69,8 +63,3 @@ class PrivilegeService:
         if mode != _REGISTRY_MODE:
             message = f"Privilege intent registry mode is {oct(mode)}, expected 0o700: {path}"
             raise RuntimeError(message)
-
-
-def initialize_registry(signals_dir: Path | None = None) -> None:
-    """Legacy wrapper for the Signaling Ritual."""
-    PrivilegeService(signals_dir).initialize()

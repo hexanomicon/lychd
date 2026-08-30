@@ -1,5 +1,8 @@
 """Single-snapshot contracts for pure bind request compilation."""
 
+import sys
+from pathlib import Path
+
 import pytest
 
 from lychd.config import QuadletConfig
@@ -40,6 +43,24 @@ def test_compile_uses_only_its_injected_settings_snapshot() -> None:
             )
         )
     )
+
+
+def test_compile_emits_uncaged_vessel_unit_from_injected_settings() -> None:
+    settings = Settings(server=ServerSettings(port=9999))
+
+    request = compile_bind_request(
+        settings=settings,
+        extensions=assemble_extensions(settings),
+        runes=RuneRegistry(()),
+        soulstones=(),
+        portals=(),
+        uncaged=True,
+    )
+
+    rendered = request.plain_unit_mapping()["lychd-uncaged-vessel.service"]
+    executable = Path(sys.prefix) / "bin" / "lychd"
+    assert f"ExecStart={executable} serve --host 127.0.0.1 --port 9999" in rendered
+    assert 'Environment="LYCHD_MODE=uncaged"' in rendered
 
 
 def test_bind_rejects_a_soulstone_without_an_advertised_capability() -> None:

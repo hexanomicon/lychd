@@ -16,19 +16,14 @@ from lychd.agents.router import Intent
 from lychd.agents.workflows import (
     BRIDGE_CHAT,
     DELEGATED_RITE,
-    WORKFLOW_REGISTRY,
     BuiltinWorkflowRegistry,
+    builtin_workflow_registry,
+    resolve_pinned_workflow,
 )
 
 
-def test_route_bridge_source_selects_bridge_chat() -> None:
-    """A bridge-source intent routes to the bridge_chat workflow."""
-    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="bridge"))
-    assert workflow.name == "bridge_chat"
-
-
 def test_route_delegate_command_selects_delegated_rite_before_default() -> None:
-    workflow = WORKFLOW_REGISTRY.route(
+    workflow = builtin_workflow_registry().route(
         Intent(session_id="s", run_id="r", prompt="/delegate inspect this", source="bridge")
     )
     assert workflow.name == "delegated_rite"
@@ -43,14 +38,16 @@ def test_route_delegate_command_selects_delegated_rite_before_default() -> None:
     ],
 )
 def test_route_delegate_command_requires_a_token_boundary(prompt: str) -> None:
-    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt=prompt, source="bridge"))
+    workflow = builtin_workflow_registry().route(Intent(session_id="s", run_id="r", prompt=prompt, source="bridge"))
 
     assert workflow.name == "bridge_chat"
 
 
 def test_route_unknown_source_falls_to_default() -> None:
     """An unmatched source falls back to the default (first-registered) workflow."""
-    workflow = WORKFLOW_REGISTRY.route(Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else"))
+    workflow = builtin_workflow_registry().route(
+        Intent(session_id="s", run_id="r", prompt="hi", source="somewhere-else")
+    )
     assert workflow.name == "bridge_chat"
 
 
@@ -60,15 +57,9 @@ def test_intent_refuses_priority_outside_doctrine_range(priority: int) -> None:
         Intent(session_id="s", prompt="hi", priority=priority)
 
 
-def test_registry_get_by_name_and_default() -> None:
-    """The registry looks up by persisted name and exposes the route floor."""
-    assert WORKFLOW_REGISTRY.get("bridge_chat") is WORKFLOW_REGISTRY.default
-    assert WORKFLOW_REGISTRY.get("nonexistent") is None
-    assert WORKFLOW_REGISTRY.default.name == "bridge_chat"
-
-
 def test_builtin_registry_has_the_exact_ordered_boot_inventory() -> None:
-    assert [(workflow.manifest.key, workflow.manifest.revision) for workflow in WORKFLOW_REGISTRY.all()] == [
+    registry = builtin_workflow_registry()
+    assert [(workflow.manifest.key, workflow.manifest.revision) for workflow in registry.all()] == [
         ("bridge_chat", "1"),
         ("delegated_rite", "1"),
     ]
@@ -94,16 +85,17 @@ def test_registry_keeps_old_revision_while_new_admissions_use_active_revision() 
     assert registry.get_revision(BRIDGE_CHAT.name, "2") is bridge_v2
 
 
-def test_registry_requires_explicit_activation_for_multiple_revisions() -> None:
+def test_registry_rejects_ambiguous_inventory_and_routing() -> None:
     bridge_v2 = replace(BRIDGE_CHAT, manifest=replace(BRIDGE_CHAT.manifest, revision="2"))
 
     with pytest.raises(ValueError, match="multiple revisions requires explicit active revisions"):
         BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT, bridge_v2))
 
-
-def test_registry_requires_explicit_route_precedence_for_multiple_names() -> None:
     with pytest.raises(ValueError, match="multiple workflow names requires explicit route precedence"):
         BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT, DELEGATED_RITE))
+
+    with pytest.raises(ValueError, match="duplicate Pattern revisions"):
+        BuiltinWorkflowRegistry(workflows=(BRIDGE_CHAT, BRIDGE_CHAT))
 
 
 def test_registry_retains_retired_workflow_for_pinned_execution_only() -> None:
@@ -120,3 +112,29 @@ def test_registry_retains_retired_workflow_for_pinned_execution_only() -> None:
     assert registry.get_revision(DELEGATED_RITE.name, DELEGATED_RITE.manifest.revision) is DELEGATED_RITE
     assert registry.is_active(DELEGATED_RITE.name, DELEGATED_RITE.manifest.revision) is False
     assert registry.is_default(BRIDGE_CHAT.name, BRIDGE_CHAT.manifest.revision) is True
+
+
+def test_pinned_workflow_resolution_requires_exact_owned_snapshot() -> None:
+    registry = builtin_workflow_registry()
+    snapshot = BRIDGE_CHAT.manifest.snapshot()
+    drifted = replace(BRIDGE_CHAT.manifest, implementation_revision="py.drifted").snapshot()
+
+    assert resolve_pinned_workflow(registry, workflow_name=BRIDGE_CHAT.name, snapshot=snapshot) is BRIDGE_CHAT
+    assert resolve_pinned_workflow(registry, workflow_name="another_owner", snapshot=snapshot) is None
+    assert (
+        resolve_pinned_workflow(
+            registry,
+            workflow_name=BRIDGE_CHAT.name,
+            snapshot=drifted,
+        )
+        is None
+    )
+
+
+def test_intent_is_an_immutable_closed_admission_value() -> None:
+    intent = Intent(session_id="s", prompt="bounded request")
+
+    with pytest.raises(ValidationError, match="frozen"):
+        intent.prompt = "changed after routing"
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        Intent.model_validate({"session_id": "s", "prompt": "p", "unknown": True})

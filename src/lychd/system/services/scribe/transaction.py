@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os  # compatibility seam for fault-injection tests
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -11,7 +10,6 @@ from lychd.system.binding_sites import (
     AttestedBindingSite,
     AttestedBindingSites,
 )
-from lychd.system.descriptor_settlement import DescriptorSet
 from lychd.system.services.scribe.authority import BindingAuthority
 from lychd.system.services.scribe.errors import ScribeGenerationError
 from lychd.system.services.scribe.models import BindingWriteSet, SitePlan
@@ -328,8 +326,4 @@ class BindingTransaction(
             raise outcome.adapter_error
 
 
-__all__ = (
-    "BindingTransaction",
-    "DescriptorSet",
-    "os",
-)
+__all__ = ("BindingTransaction",)

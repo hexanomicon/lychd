@@ -40,12 +40,12 @@ from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.config.runes.registry import RuneRegistry
 from lychd.domain.cortex.context import ContextOrchestrator
-from lychd.domain.cortex.engine import QueueRouter
+from lychd.domain.cortex.engine import QueueRouter, RouteRule
 from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
 from lychd.domain.cortex.events import RunEventKind
 from lychd.domain.cortex.runs import RunStatus
 from lychd.domain.cortex.substrate import RunSubstrate, reset_run_substrate, set_run_substrate
-from lychd.domain.web.altar_services import build_altar_services
+from lychd.interface.web.altar_services import build_altar_services
 from tests.agents.fakes import FakeDispatcher, FakeOrchestrator, FakeRegistry
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
@@ -92,10 +92,6 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         runtime_adapters=[],
         profile="memory",  # DB-free: the InMemoryRunLedger
     )
-    assert services.run_engine.cancellations is services.substrate.cancellations
-    assert services.workflows is services.run_engine.workflows
-    assert services.workflows is services.substrate.workflows
-
     # Replace the live dispatcher with an offline one so the graph completes without
     # a Soulstone. The publication and worker lookup still use the production memo path.
     model = TestModel(custom_output_args={"answer": "risen", "fragments": []}, call_tools=[])
@@ -116,7 +112,7 @@ async def test_production_wiring_no_injection_queued_running_done_and_sse() -> N
         ledger=services.ledger,
         bus=services.bus,
         workflows=substrate.workflows,
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues=queues,
         cancellations=substrate.cancellations,
     )
@@ -220,14 +216,16 @@ def _migrate_postgres(pg_url: str) -> None:
     )
 
 
-def _install_minimal_extensions() -> None:
-    """Install one empty, explicit extension generation for the lifecycle test."""
-    from lychd.extensions.host import AssembledExtensions, install_extensions, reset_extensions
+def _install_minimal_extensions(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cache one empty, explicit extension generation for the lifecycle test."""
+    from lychd.extensions import host as extension_host
+    from lychd.extensions.host import AssembledExtensions, get_extensions
     from lychd.extensions.manager import ExtensionManager
 
-    reset_extensions()
     context = ExtensionManager(builtins=(), crypt=()).assemble()
-    install_extensions(AssembledExtensions(context=context, active_ids=()))
+    assembled = AssembledExtensions(context=context)
+    get_extensions.cache_clear()
+    monkeypatch.setattr(extension_host, "assemble_extensions", lambda: assembled)
 
 
 def _configure_offline_dispatch(app: Any) -> None:
@@ -370,7 +368,7 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
     from lychd.config.runes import registry as rune_registry_module
     from lychd.config.settings.root import get_settings
     from lychd.db.engine import dispose_engine
-    from lychd.extensions.host import AssembledExtensions, reset_extensions
+    from lychd.extensions.host import AssembledExtensions, get_extensions
 
     def empty_rune_registry(
         _extensions: AssembledExtensions,
@@ -392,7 +390,7 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
         "load_rune_registry",
         empty_rune_registry,
     )
-    _install_minimal_extensions()
+    _install_minimal_extensions(monkeypatch)
 
     try:
         with PostgresContainer("pgvector/pgvector:pg18-trixie", driver="asyncpg") as pg:
@@ -433,5 +431,5 @@ def test_production_wiring_real_factory_over_postgres_survives_second_boot(
                 _assert_orb_done(second_client, run_id)
     finally:
         asyncio.run(dispose_engine())
-        reset_extensions()
+        get_extensions.cache_clear()
         get_settings.cache_clear()

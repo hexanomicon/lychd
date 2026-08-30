@@ -76,7 +76,6 @@ def test_exact_btrfs_mount_exposes_safe_source_path(
     assert observed.subvolume_id == 259
     assert observed.top_level_mount == Path("/home")
     assert observed.btrfs_source_path == Path("/home/@phylactery")
-    assert observed.read_only is False
     assert runner.calls[0][0][:4] == (
         "/usr/bin/findmnt",
         "--json",

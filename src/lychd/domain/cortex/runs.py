@@ -1,9 +1,9 @@
-"""Run lifecycle vocabulary: `RunStatus`, `RunRecord`, `RunHandle` (A4 §2).
+"""Run lifecycle vocabulary: `RunStatus`, `RunRecord`, and `RunHandle`.
 
-`RunStatus` is the canonical state machine (spec-00-FINAL C2). `RunRecord` is the
+`RunStatus` is the canonical state machine. `RunRecord` is the
 loop-confined, storage-agnostic run truth the `RunLedger` fronts; `RunHandle` is
 what `RunEngine.submit` returns to a caller (its run id, chosen workflow, and live
-channel). Single-writer discipline (A4 §2): `RunEngine` owns QUEUED/CANCELLED and
+channel). Under single-writer discipline, `RunEngine` owns QUEUED/CANCELLED and
 the consent re-enqueue; the ghoul task (`perform_run`) owns RUNNING + terminal
 states; stasis states are written from inside the run.
 
@@ -19,7 +19,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from lychd.agents.router import ContentPart, Intent
+    from lychd.agents.router import Intent
     from lychd.domain.cortex.events import RunChannel
 
 __all__ = [
@@ -38,7 +38,7 @@ __all__ = [
 
 
 class RunStatus(StrEnum):
-    """The run lifecycle state machine (A4 §2, spec-00-FINAL C2)."""
+    """The canonical run lifecycle state machine."""
 
     QUEUED = "queued"  # Run + delivery intent exist; the broker hop is not yet claimed
     RUNNING = "running"  # ghoul claimed; graph iterating
@@ -127,7 +127,7 @@ class RunParked:
     """Graph→substrate sentinel: the run suspended on a consent. NOT a terminal.
 
     Carries `tool_name` (S4) so `perform_run` emits `CONSENT` only after the status
-    is written — a verdict can never race the `engine.approve` status guard.
+    is written — a verdict can never race the `engine.resume_consent` status guard.
     """
 
     consent_id: str
@@ -154,7 +154,6 @@ class RunRecord:
     prompt: str
     sigil_name: str = "magus"
     sigil_scopes: frozenset[str] = field(default_factory=frozenset)
-    content: tuple[ContentPart, ...] = ()
     requested_priority: int | None = None
     attempt: int = 0
     enqueue_seq: int = 0
@@ -174,7 +173,6 @@ class RunRecord:
             session_id=self.session_id,
             run_id=self.run_id,
             prompt=self.prompt,
-            content=self.content,
             source=self.source,
             sigil_name=self.sigil_name,
             sigil_scopes=self.sigil_scopes,

@@ -6,16 +6,23 @@ Soulstone/Portal stores) and ``animation/transmute.py`` (the ``TransmutationStor
 QuadletContributor seam) extend the ``lychd.extensions.base.ExtensionStore`` base.
 This test locks the dependency inversion (concrete runtimes live behind
 registered adapter/connector seams); only the marker base is imported.
+
 """
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
+from tests.architecture._python_imports import imported_modules, is_package
+
 _ANIMATION_ROOT = Path(__file__).resolve().parents[2] / "src" / "lychd" / "domain" / "animation"
-# Sanctioned: the structural extension-store base only (not a concrete runtime).
-_ALLOWED = {"extension.py", "transmute.py"}
+_LYCHD_ROOT = _ANIMATION_ROOT.parents[1]
+_DOMAIN_WEB_ROOT = _LYCHD_ROOT / "domain" / "web"
+# Sanctioned: these exact modules may use only the structural extension-store base.
+_ALLOWED_EXTENSION_IMPORTS = {
+    "extension.py": {"lychd.extensions.base"},
+    "transmute.py": {"lychd.extensions.base"},
+}
 _RUNTIME_HANDLE_PATHS = (
     _ANIMATION_ROOT / "animators.py",
     _ANIMATION_ROOT.parents[1] / "extensions" / "builtin" / "animator" / "llamacpp" / "connector.py",
@@ -31,52 +38,20 @@ _DEPLOYMENT_MODULES = {
 }
 
 
-def _extension_imports(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    hits: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("lychd.extensions"):
-            hits.append(node.module)
-        elif isinstance(node, ast.Import):
-            hits.extend(alias.name for alias in node.names if alias.name.startswith("lychd.extensions"))
-    return hits
-
-
-def _imports(path: Path) -> set[str]:
-    """Return imported module names without executing the inspected module."""
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    modules: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            modules.add(node.module)
-        elif isinstance(node, ast.Import):
-            modules.update(alias.name for alias in node.names)
-    return modules
-
-
 def test_animation_domain_does_not_import_extensions() -> None:
     offenders: dict[str, list[str]] = {}
     for path in _ANIMATION_ROOT.rglob("*.py"):
-        if path.name in _ALLOWED:
-            continue
-        hits = _extension_imports(path)
-        if hits:
-            offenders[str(path.relative_to(_ANIMATION_ROOT))] = hits
+        allowed = _ALLOWED_EXTENSION_IMPORTS.get(str(path.relative_to(_ANIMATION_ROOT)), set())
+        forbidden = sorted(
+            ref.module
+            for ref in imported_modules(path, package_root=_LYCHD_ROOT)
+            if is_package(ref.module, "lychd.extensions")
+            and ref.module not in allowed
+            and ref.from_module not in allowed
+        )
+        if forbidden:
+            offenders[str(path.relative_to(_ANIMATION_ROOT))] = forbidden
     assert offenders == {}, f"domain/animation must not import lychd.extensions: {offenders}"
-
-
-def test_llamacpp_connector_lives_in_extension_not_domain() -> None:
-    from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamacppSoulstone
-
-    assert LlamacppConnector.__module__.startswith("lychd.extensions")
-    assert LlamacppSoulstone.__module__.startswith("lychd.extensions")
-
-    surfaces = __import__(
-        "lychd.domain.animation.services.adapters.surfaces",
-        fromlist=["__all__"],
-    )
-    assert "LlamacppConnector" not in surfaces.__all__
-    assert "SoulstoneAnimator" in surfaces.__all__
 
 
 def test_runtime_hydration_does_not_import_deployment_artifacts() -> None:
@@ -87,7 +62,32 @@ def test_runtime_hydration_does_not_import_deployment_artifacts() -> None:
 
     offenders: dict[str, list[str]] = {}
     for path in paths:
-        forbidden = sorted(_imports(path) & _DEPLOYMENT_MODULES)
+        forbidden = sorted(
+            ref.module for ref in imported_modules(path, package_root=_LYCHD_ROOT) if ref.module in _DEPLOYMENT_MODULES
+        )
         if forbidden:
             offenders[str(path.relative_to(_ANIMATION_ROOT.parents[2]))] = forbidden
     assert offenders == {}, f"runtime hydration must not import deployment artifacts: {offenders}"
+
+
+def test_web_domain_does_not_own_persistence_adapters() -> None:
+    """Keep SQLAlchemy and concrete database adapters outside the web domain."""
+    forbidden_prefixes = ("advanced_alchemy", "sqlalchemy", "lychd.db")
+    offenders: dict[str, list[str]] = {}
+    for path in _DOMAIN_WEB_ROOT.rglob("*.py"):
+        forbidden = sorted(
+            ref.module
+            for ref in imported_modules(path, package_root=_LYCHD_ROOT)
+            if any(is_package(ref.module, prefix) for prefix in forbidden_prefixes)
+        )
+        if forbidden:
+            offenders[str(path.relative_to(_DOMAIN_WEB_ROOT))] = forbidden
+
+    assert not (_DOMAIN_WEB_ROOT / "services.py").exists()
+    assert offenders == {}, f"domain/web must not own persistence adapters: {offenders}"
+
+
+def test_graph_runner_does_not_depend_on_extension_protocols() -> None:
+    """Keep Graph checkpoint law inward of extension implementations."""
+    imports = imported_modules(_ANIMATION_ROOT.parents[0] / "cortex" / "graph_runner.py", package_root=_LYCHD_ROOT)
+    assert all(ref.module != "lychd.extensions.protocols" for ref in imports)

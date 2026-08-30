@@ -19,7 +19,6 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas.model_info import ModelInfo
 
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
@@ -41,12 +40,6 @@ class Connector(ABC):
 
     @property
     @abstractmethod
-    def kind(self) -> str:
-        """Return the connector family id (for logs/diagnostics only)."""
-        ...
-
-    @property
-    @abstractmethod
     def link(self) -> Link:
         """Return the current connector-liveness snapshot for orchestration."""
         ...
@@ -57,32 +50,15 @@ class Connector(ABC):
         """Return the connector endpoint root, when URL-backed."""
         ...
 
-    @property
-    def metadata(self) -> dict[str, object]:
-        """Return connector-owned diagnostics or runtime metadata."""
-        return {}
-
 
 class ModelConnector(ABC):
     """Connector capability mixin for model-facing agent hydration.
 
-    This single mixin intentionally combines:
-    - model discovery/listing (``list_models``)
-    - model hydration (``get_model``)
-
-    The split looked theoretically clean, but it adds cognitive overhead and is
-    usually implemented together by real connectors (llama.cpp, OpenAI, etc.).
-
-    Connectors return Pydantic AI ``Model`` instances directly here. LychD keeps
+    Connectors return Pydantic AI ``Model`` instances directly. LychD keeps
     orchestration/runtime abstractions (Animator/Connector/Link) as domain
     truth, but does not duplicate Pydantic AI's mature model/provider
     abstractions.
     """
-
-    @abstractmethod
-    def list_models(self) -> Sequence[ModelInfo]:
-        """Return the connector's configured catalogue, not live inventory evidence."""
-        ...
 
     @abstractmethod
     def get_model(self, *, model_id: str | None = None) -> Model:

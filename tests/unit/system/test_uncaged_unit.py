@@ -1,15 +1,12 @@
-"""Track 4-D: uncaged daemonhood — SystemdService model, transmute, write_user_unit, CLI flag.
+"""Track 4-D: uncaged daemonhood — SystemdService model and CLI flag.
 
 Real ``systemctl``/``systemd-analyze`` verification is [LINUX] (plan §8) and lives
-outside this DB-free suite; here we assert the rendered text, the atomic write,
-and the CLI flag path (write + enable-hint, NEVER auto-enable).
+outside this DB-free suite; here we assert the rendered text and CLI projection.
 """
 
 from __future__ import annotations
 
-import shutil
 import subprocess
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
@@ -20,7 +17,6 @@ from click.testing import CliRunner
 from lychd.cli.commands import bind_quadlets
 from lychd.config import QuadletConfig
 from lychd.domain.animation.schemas import GenericSoulstoneConfig
-from lychd.domain.animation.transmute import transmute_uncaged_vessel
 from lychd.system.binding_sites import (
     AttestedBindingSite,
     AttestedBindingSites,
@@ -29,10 +25,8 @@ from lychd.system.host_tools import TrustedExecutable
 from lychd.system.readiness import BindingFoundation
 from lychd.system.schemas import SystemdService
 from lychd.system.services.binding_preflight import (
-    BindingPreflightIssue,
     BindingPreflightReport,
 )
-from lychd.system.services.scribe import ScribeService
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -58,20 +52,9 @@ _GOLDEN_UNIT = (
 # ---------------------------------------------------------------------------
 
 
-def test_systemd_service_filename() -> None:
-    """The unit filename is ``<name>.service`` (default lychd-vessel)."""
-    assert SystemdService(exec_start=_GOLDEN_EXEC).filename == "lychd-vessel.service"
-
-
 def test_systemd_service_render_golden() -> None:
     """render() matches the golden [Unit]/[Service]/[Install] text byte-for-byte."""
     assert SystemdService(exec_start=_GOLDEN_EXEC).render() == _GOLDEN_UNIT
-
-
-def test_systemd_service_env_render() -> None:
-    """The default environment renders the LYCHD_MODE=uncaged Environment= line."""
-    rendered = SystemdService(exec_start=_GOLDEN_EXEC).render()
-    assert 'Environment="LYCHD_MODE=uncaged"' in rendered
 
 
 def test_systemd_service_env_deterministic_order() -> None:
@@ -98,6 +81,8 @@ def test_systemd_service_quotes_environment_as_one_assignment() -> None:
         {"environment": {"SAFE": r"value\x22 MALICE=1"}},
         {"environment": {"NOT SAFE": "value"}},
         {"name": "../foreign"},
+        {"name": "foreign..service"},
+        {"wanted_by": ".."},
     ],
 )
 def test_systemd_service_rejects_directive_escape_and_unsafe_names(
@@ -108,93 +93,7 @@ def test_systemd_service_rejects_directive_escape_and_unsafe_names(
 
 
 # ---------------------------------------------------------------------------
-# D2 — transmute_uncaged_vessel (pure domain, writes nothing)
-# ---------------------------------------------------------------------------
-
-
-def test_transmute_uncaged_vessel_builds_from_settings() -> None:
-    """The exec line boots the venv lychd entrypoint on loopback at the settings port."""
-    fake_settings = SimpleNamespace(server=SimpleNamespace(port=9999))
-    service = transmute_uncaged_vessel(fake_settings)  # type: ignore[arg-type]
-
-    assert isinstance(service, SystemdService)
-    expected_bin = str(Path(sys.prefix) / "bin" / "lychd")
-    assert service.exec_start == f"{expected_bin} serve --host 127.0.0.1 --port 9999"
-    assert service.environment == {"LYCHD_MODE": "uncaged"}
-    assert service.filename == "lychd-uncaged-vessel.service"
-
-
-# ---------------------------------------------------------------------------
-# D2 — ScribeService.write_user_unit (atomic, idempotent, isolated)
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def templates_dir(tmp_path: Path) -> Path:
-    d = tmp_path / "templates"
-    d.mkdir()
-    (d / "container.jinja").write_text("ContainerName={{ container_name }}", encoding="utf-8")
-    (d / "pod.jinja").write_text("PodName={{ pod_name }}", encoding="utf-8")
-    (d / "target.jinja").write_text("Description={{ description }}", encoding="utf-8")
-    return d
-
-
-@pytest.fixture
-def output_dir(tmp_path: Path) -> Path:
-    d = tmp_path / "output"
-    d.mkdir()
-    return d
-
-
-@pytest.fixture
-def systemd_dir(tmp_path: Path) -> Path:
-    d = tmp_path / "systemd"
-    d.mkdir()
-    return d
-
-
-@pytest.fixture
-def scribe(templates_dir: Path, output_dir: Path, systemd_dir: Path) -> ScribeService:
-    return ScribeService(templates_dir=templates_dir, output_dir=output_dir, systemd_dir=systemd_dir)
-
-
-def test_write_user_unit_writes_atomically(scribe: ScribeService, systemd_dir: Path) -> None:
-    """The unit lands in the systemd user dir with the rendered content; no temp files linger."""
-    service = SystemdService(exec_start=_GOLDEN_EXEC)
-    path = scribe.write_user_unit(service)
-
-    assert path == systemd_dir / "lychd-vessel.service"
-    assert path.read_text(encoding="utf-8") == service.render()
-    # No staging temp file left behind.
-    assert [p.name for p in systemd_dir.iterdir()] == ["lychd-vessel.service"]
-
-
-def test_write_user_unit_is_byte_stable(scribe: ScribeService, systemd_dir: Path) -> None:
-    """Re-writing the same service is idempotent (byte-stable)."""
-    service = SystemdService(exec_start=_GOLDEN_EXEC)
-    first = scribe.write_user_unit(service).read_text(encoding="utf-8")
-    second = scribe.write_user_unit(service).read_text(encoding="utf-8")
-    assert first == second == _GOLDEN_UNIT
-
-
-def test_write_user_unit_does_not_disturb_other_state(
-    scribe: ScribeService, systemd_dir: Path, output_dir: Path
-) -> None:
-    """Plain-unit writes never touch .container/.target/sentinel state (separate path)."""
-    stale_container = output_dir / "lychd-vessel.container"
-    stale_container.write_text("[Container]\n", encoding="utf-8")
-    coexisting_target = systemd_dir / "lychd-coven-logic.target"
-    coexisting_target.write_text("[Unit]\n", encoding="utf-8")
-
-    scribe.write_user_unit(SystemdService(exec_start=_GOLDEN_EXEC))
-
-    # Quadlet dir untouched; unrelated systemd units preserved.
-    assert stale_container.read_text(encoding="utf-8") == "[Container]\n"
-    assert coexisting_target.read_text(encoding="utf-8") == "[Unit]\n"
-
-
-# ---------------------------------------------------------------------------
-# D3 — CLI `lychd bind --uncaged`
+# D2 — CLI `lychd bind --uncaged`
 # ---------------------------------------------------------------------------
 
 
@@ -203,9 +102,13 @@ def runner() -> CliRunner:
     return CliRunner()
 
 
-def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNamespace:
+def _mock_bind_pass(mocker: MockerFixture) -> SimpleNamespace:
     """Stub the normal bind pass so the uncaged branch can be exercised in isolation."""
-    stone = GenericSoulstoneConfig(name="test", quadlet=QuadletConfig(image="example/runtime"))
+    stone = GenericSoulstoneConfig(
+        name="test",
+        quadlet=QuadletConfig(image="example/runtime"),
+        runtime="openai_compatible",
+    )
     portal = SimpleNamespace(api_key_secret_name=None)
     mock_loader_cls = mocker.patch("lychd.domain.animation.services.loader.AnimatorLoader")
     mock_loader_cls.return_value.hydrate_all.return_value = ([stone], [portal])
@@ -222,41 +125,27 @@ def _mock_bind_pass(mocker: MockerFixture, *, systemctl: str | None) -> SimpleNa
     ).return_value
     preflight = mocker.patch("lychd.system.services.binding_preflight.BindingPreflightService").return_value
     preflight.inspect.return_value = BindingPreflightReport(
-        issues=(
-            ()
-            if systemctl is not None
-            else (
-                BindingPreflightIssue(
-                    code="host-foundation",
-                    target="systemd user manager",
-                    detail="systemd user manager is not reachable",
-                ),
-            )
-        ),
-        foundation=(
-            BindingFoundation(
-                systemctl=TrustedExecutable(path=systemctl, device=1, inode=1),
-                podman=TrustedExecutable(path="/usr/bin/podman", device=1, inode=2),
-                quadlet_user_generator=TrustedExecutable(
-                    path="/usr/lib/systemd/user-generators/podman-user-generator",
+        issues=(),
+        foundation=BindingFoundation(
+            systemctl=TrustedExecutable(path="/usr/bin/systemctl", device=1, inode=1),
+            podman=TrustedExecutable(path="/usr/bin/podman", device=1, inode=2),
+            quadlet_user_generator=TrustedExecutable(
+                path="/usr/lib/systemd/user-generators/podman-user-generator",
+                device=1,
+                inode=3,
+            ),
+            sites=AttestedBindingSites(
+                quadlet=AttestedBindingSite(
+                    path=Path.home() / ".config" / "containers" / "systemd",
                     device=1,
-                    inode=3,
+                    inode=4,
                 ),
-                sites=AttestedBindingSites(
-                    quadlet=AttestedBindingSite(
-                        path=Path.home() / ".config" / "containers" / "systemd",
-                        device=1,
-                        inode=4,
-                    ),
-                    systemd_user=AttestedBindingSite(
-                        path=Path.home() / ".config" / "systemd" / "user",
-                        device=1,
-                        inode=5,
-                    ),
+                systemd_user=AttestedBindingSite(
+                    path=Path.home() / ".config" / "systemd" / "user",
+                    device=1,
+                    inode=5,
                 ),
-            )
-            if systemctl is not None
-            else None
+            ),
         ),
     )
     mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
@@ -275,7 +164,7 @@ def test_bind_uncaged_writes_unit_and_prints_canonical_start_hint(
     mocker: MockerFixture,
 ) -> None:
     """--uncaged writes the unit but keeps raw systemd out of operator guidance."""
-    mocks = _mock_bind_pass(mocker, systemctl="/usr/bin/systemctl")
+    mocks = _mock_bind_pass(mocker)
 
     result = runner.invoke(bind_quadlets, ["--uncaged"])
 
@@ -291,59 +180,3 @@ def test_bind_uncaged_writes_unit_and_prints_canonical_start_hint(
     enable_calls = [c for c in mocks.subprocess.call_args_list if c.args and "enable" in c.args[0]]
     assert reload_calls, "expected a systemd daemon-reload"
     assert not enable_calls, "the Magus flips the switch — bind must not auto-enable"
-
-
-def test_bind_uncaged_without_systemd_blocks_before_writing(
-    runner: CliRunner,
-    mocker: MockerFixture,
-) -> None:
-    """A missing lifecycle substrate is a preflight blocker, not a partial bind."""
-    mocks = _mock_bind_pass(mocker, systemctl=None)
-
-    result = runner.invoke(bind_quadlets, ["--uncaged"])
-
-    assert result.exit_code != 0
-    assert "PREFLIGHT" in result.output
-    assert "systemd user manager is not reachable" in result.output
-    mocks.scribe.reconcile_all.assert_not_called()
-    assert mocks.subprocess.call_args_list == []
-
-
-def test_bind_without_uncaged_writes_no_user_unit(runner: CliRunner, mocker: MockerFixture) -> None:
-    """The default bind (no flag) never touches the uncaged path."""
-    mocks = _mock_bind_pass(mocker, systemctl="/usr/bin/systemctl")
-
-    result = runner.invoke(bind_quadlets)
-
-    assert result.exit_code == 0
-    mocks.scribe.reconcile_all.assert_called_once()
-    assert "lychd-uncaged-vessel.service" not in mocks.scribe.reconcile_all.call_args.kwargs["plain_units"]
-    assert "uncaged" not in result.output.lower()
-
-
-# ---------------------------------------------------------------------------
-# [LINUX] — real systemd validation (plan §8): written, marked, deferred.
-# Skips off-Linux / without systemd-analyze (e.g. the Mac dev box).
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skipif(
-    sys.platform != "linux" or shutil.which("systemd-analyze") is None,
-    reason="[LINUX] real systemd-analyze verification (plan §8)",
-)
-def test_uncaged_unit_passes_systemd_analyze(tmp_path: Path) -> None:
-    """The rendered unit is a valid systemd --user unit (systemd-analyze verify exits 0)."""
-    unit = tmp_path / "lychd-vessel.service"
-    unit.write_text(
-        SystemdService(exec_start=f"{Path(sys.prefix) / 'bin' / 'lychd'} run --host 127.0.0.1 --port 7134").render(),
-        encoding="utf-8",
-    )
-    result = subprocess.run(  # noqa: S603
-        [shutil.which("systemd-analyze") or "systemd-analyze", "--user", "verify", str(unit)],
-        capture_output=True,
-        check=False,
-    )
-    stderr = result.stderr.decode()
-    if result.returncode != 0 and "Operation not permitted" in stderr and "SO_PASS" in stderr:
-        pytest.skip("systemd-analyze user-manager socket operations are blocked by the sandbox")
-    assert result.returncode == 0, stderr

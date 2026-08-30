@@ -13,6 +13,7 @@ imports codex — it sees the ledger as an opaque port.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from fnmatch import fnmatchcase
@@ -151,7 +152,7 @@ class InMemoryConsentLedger:
             id=consent_id,
             run_id=run_id,
             tool_name=tool_name,
-            args=censor(args),
+            args=deepcopy(censor(args)),
             call_ids=call_ids,
             status="granted" if preauth is not None else "pending",
             decided_by="codex:preauth" if preauth is not None else None,
@@ -174,7 +175,7 @@ class InMemoryConsentLedger:
             id=row.id,
             run_id=row.run_id,
             tool_name=row.tool_name,
-            args=row.args,
+            args=deepcopy(row.args),
             status=row.status,
             decided_by=row.decided_by,
             decided_at=row.decided_at,

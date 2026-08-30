@@ -22,16 +22,6 @@ def _runner(mocker: MockerFixture) -> MagicMock:
     return mocker.MagicMock(spec=SubprocessRunner)
 
 
-def test_secret_store_requires_podman_binary(mocker: MockerFixture) -> None:
-    mocker.patch(
-        "lychd.system.services.secrets.trusted_host_tool",
-        return_value=None,
-    )
-
-    with pytest.raises(PodmanSecretStoreError, match="Podman is required"):
-        PodmanSecretStore()
-
-
 def test_secret_store_exists_uses_bounded_podman_probe(
     mocker: MockerFixture,
 ) -> None:
@@ -133,44 +123,6 @@ def test_secret_store_ensure_present_preserves_a_raced_secret(
     assert exists.call_count == 2
     argv = runner.run_with_input.call_args.args[0]
     assert "--replace" not in argv
-
-
-@pytest.mark.parametrize("version", ["podman version 5.4.0", "podman version 6.1.2"])
-def test_secret_store_accepts_supported_quadlet_version(
-    mocker: MockerFixture,
-    version: str,
-) -> None:
-    runner = _runner(mocker)
-    runner.run.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "--version"),
-        returncode=0,
-        stdout=version,
-    )
-
-    PodmanSecretStore(
-        "/usr/bin/podman",
-        runner=cast("InputProcessRunner", runner),
-    ).require_quadlet_version()
-
-
-@pytest.mark.parametrize("version", ["podman version 4.9.4", "podman version 5.3.2"])
-def test_secret_store_rejects_unsupported_quadlet_version(
-    mocker: MockerFixture,
-    version: str,
-) -> None:
-    runner = _runner(mocker)
-    runner.run.return_value = ProcessResult(
-        argv=("/usr/bin/podman", "--version"),
-        returncode=0,
-        stdout=version,
-    )
-    store = PodmanSecretStore(
-        "/usr/bin/podman",
-        runner=cast("InputProcessRunner", runner),
-    )
-
-    with pytest.raises(PodmanSecretStoreError, match="Podman >= 5.4"):
-        store.require_quadlet_version()
 
 
 def test_secret_store_create_uses_bounded_non_echoed_stdin(

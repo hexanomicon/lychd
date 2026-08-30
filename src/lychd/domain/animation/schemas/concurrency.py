@@ -15,7 +15,7 @@ CONFLICT_DOMAIN_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[a-z0-9](?:[a-z0
 class ConcurrencyIntent(BaseModel):
     """Orchestration-facing lifecycle hints."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     dedicated: bool = Field(
         default=True,
@@ -25,7 +25,7 @@ class ConcurrencyIntent(BaseModel):
         default=False,
         description="Whether this capability should stay out of the default eviction set when possible.",
     )
-    conflict_domains: list[str] | None = Field(
+    conflict_domains: tuple[str, ...] | None = Field(
         default=None,
         description=(
             "Exclusive resource-domain memberships. Omission is a conservative global-unknown "
@@ -36,7 +36,7 @@ class ConcurrencyIntent(BaseModel):
 
     @field_validator("conflict_domains")
     @classmethod
-    def _validate_conflict_domains(cls, value: list[str] | None) -> list[str] | None:
+    def _validate_conflict_domains(cls, value: tuple[str, ...] | None) -> tuple[str, ...] | None:
         """Reject ambiguous or unsafe domain declarations without normalizing intent."""
         if value is None:
             return None
@@ -77,4 +77,4 @@ class ConcurrencyIntent(BaseModel):
             return ()
         if self.conflict_domains is None:
             return (DEFAULT_CONFLICT_DOMAIN,)
-        return tuple(self.conflict_domains)
+        return self.conflict_domains

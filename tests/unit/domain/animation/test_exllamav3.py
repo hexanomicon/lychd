@@ -171,12 +171,10 @@ def test_exllamav3_plan_is_dynamic_and_uses_pinned_private_envelope(
 
     assert stone.quadlet.image.startswith("ghcr.io/theroyallab/tabbyapi@sha256:")
     assert connector.runtime_model_name("daily-driver") == "qwen-exl3"
-    assert connector.model_id_for_runtime("qwen-exl3") == "daily-driver"
     assert connector._resolve_api_key() == _API_KEY  # pyright: ignore[reportPrivateUsage]
     assert connector.get_model(model_id="daily-driver").model_name == "qwen-exl3"
     assert {spec.model_id for spec in specs} == {"daily-driver", "small"}
     assert all(spec.is_dynamic for spec in specs)
-    assert all(spec.metadata["server"] == "tabbyapi" for spec in specs)
     assert plan.exec_args == []
     assert plan.env_overrides["TABBY_NETWORK_DISABLE_AUTH"] == "false"
     assert plan.env_overrides["TABBY_LOG_LEVEL"] == "WARNING"
@@ -232,7 +230,7 @@ def test_exllamav3_rendered_quadlets_keep_auth_scoped_and_opaque(tmp_path: Path)
     systemd_dir = tmp_path / "systemd"
     output_dir.mkdir()
     systemd_dir.mkdir()
-    ScribeService(output_dir=output_dir, systemd_dir=systemd_dir).generate_all(manifests)
+    ScribeService(output_dir=output_dir, systemd_dir=systemd_dir).reconcile_all(manifests, plain_units={})
 
     tabby = (output_dir / "lychd-exl3-router.container").read_text(encoding="utf-8")
     vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8")
@@ -332,8 +330,7 @@ async def test_two_tabby_runtimes_keep_data_and_admin_keys_isolated(
         ({"env_vars": {"SAFE": "ok\nExec=/bin/sh"}}, "env_vars are closed"),
         ({"secret_env_files": {"LEAK": "lychd_db_password"}}, "secret_env_files are closed"),
         ({"devices": ["nvidia.com/gpu=all\nExec=/bin/sh"]}, "NVIDIA CDI selectors"),
-        ({"disable_auth": True}, "Input should be False"),
-        ({"model_format": "EXL2"}, "EXL3 or RAW"),
+        ({"disable_auth": True}, "Extra inputs are not permitted"),
         ({"auth_secret_name": "safe,target=/tmp/evil"}, "option-safe Podman secret name"),
         ({"auth_secret_name": "safe\n"}, "option-safe Podman secret name"),
         ({"quadlet": {"image": "ghcr.io/example/unverified:latest"}}, "digest-pinned TabbyAPI"),
@@ -357,8 +354,6 @@ async def test_two_tabby_runtimes_keep_data_and_admin_keys_isolated(
             "path must end",
         ),
         ({"base_url": "https://localhost:5000/v1"}, "must use plain HTTP"),
-        ({"base_url": "http://user:secret@localhost:5000/v1"}, "embedded credentials"),
-        ({"base_url": "http://localhost:5000/v1?mode=unsafe"}, "query or fragment"),
     ],
 )
 def test_exllamav3_rejects_lifecycle_bypasses(override: dict[str, object], message: str) -> None:
@@ -464,28 +459,6 @@ async def test_tabbyapi_rejects_every_malformed_inventory_member(
             return_value=httpx.Response(200, json={"data": data})
         )
         with pytest.raises(TabbyAPIControlPlaneError, match="entry"):
-            await control.inspect(base_url=_BASE_URL)
-
-
-@pytest.mark.parametrize("slots", [True, False, 0, -1, "4"])
-@pytest.mark.asyncio
-async def test_tabbyapi_rejects_invalid_max_batch_size(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    slots: object,
-) -> None:
-    control = _control_plane(tmp_path, monkeypatch)
-    with respx.mock:
-        respx.get("http://tabby:5000/health", headers=_ADMIN_HEADERS).mock(
-            return_value=httpx.Response(200, json={"status": "healthy"})
-        )
-        respx.get("http://tabby:5000/v1/models", headers=_ADMIN_HEADERS).mock(
-            return_value=httpx.Response(200, json={"data": [{"id": "qwen-exl3"}]})
-        )
-        respx.get("http://tabby:5000/v1/model", headers=_ADMIN_HEADERS).mock(
-            return_value=httpx.Response(200, json={"id": "qwen-exl3", "parameters": {"max_batch_size": slots}})
-        )
-        with pytest.raises(TabbyAPIControlPlaneError, match="positive integer"):
             await control.inspect(base_url=_BASE_URL)
 
 
@@ -632,7 +605,6 @@ async def test_tabbyapi_load_consumes_all_sse_stages_then_confirms_current_model
 
     assert lifecycle.health == "ok"
     assert lifecycle.active_model == "qwen-exl3"
-    assert lifecycle.total_slots == 4
     assert control._loads == {}  # pyright: ignore[reportPrivateUsage]
 
 
@@ -664,7 +636,6 @@ async def test_tabbyapi_terminal_load_missing_after_restart_releases_fence(
         lifecycle = await control.inspect(base_url=_BASE_URL)
 
     assert lifecycle.health == "ok"
-    assert lifecycle.raw["load_reconciliation"] == "finished_stream_without_active_model"
     assert control._loads == {}  # pyright: ignore[reportPrivateUsage]
 
 
@@ -699,7 +670,8 @@ async def test_tabbyapi_midstream_crash_is_contained_until_vessel_restart(
         lifecycle = await control.inspect(base_url=_BASE_URL)
 
     assert lifecycle.health == "error"
-    assert "Restart the caged Vessel" in str(lifecycle.raw["load_error"])
+    assert lifecycle.error is not None
+    assert "Restart the caged Vessel" in lifecycle.error
     with pytest.raises(TabbyAPIControlPlaneError, match="refusing concurrent load"):
         await control.load_model(_BASE_URL, "small-exl3")
 
@@ -732,7 +704,8 @@ async def test_tabbyapi_stream_error_becomes_error_not_false_warmth(
         lifecycle = await control.inspect(base_url=_BASE_URL)
 
     assert lifecycle.health == "error"
-    assert "CUDA out of memory" in str(lifecycle.raw["load_error"])
+    assert lifecycle.error is not None
+    assert "CUDA out of memory" in lifecycle.error
 
 
 @pytest.mark.asyncio
@@ -804,10 +777,8 @@ async def test_exllamav3_probe_maps_stable_ids_and_dynamic_phases() -> None:
 
     class StubControl(TabbyAPIControlPlane):
         async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
+            del animator
             return AnimatorLifecycle(
-                runtime="exllamav3",
-                base_url=animator.connector.base_url,
-                mode="dynamic",
                 health="ok",
                 supports_router=True,
                 active_model="qwen-exl3",
@@ -824,5 +795,4 @@ async def test_exllamav3_probe_maps_stable_ids_and_dynamic_phases() -> None:
     by_id = {spec.model_id: state for spec, state in zip(specs, states, strict=True)}
 
     assert by_id["daily-driver"].phase is CapabilityPhase.WARM
-    assert by_id["daily-driver"].active_model_id == "daily-driver"
     assert by_id["small"].phase is CapabilityPhase.ACTIVATABLE

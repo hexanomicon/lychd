@@ -131,19 +131,6 @@ def trusted_podman_user_generator_executable(
     return None
 
 
-def trusted_podman_user_generator(
-    *,
-    search_paths: tuple[Path, ...] = _SYSTEMD_USER_GENERATOR_PATHS,
-    names: tuple[str, ...] = _PODMAN_USER_GENERATOR_NAMES,
-) -> str | None:
-    """Return the path projection of the effective attested user generator."""
-    executable = trusted_podman_user_generator_executable(
-        search_paths=search_paths,
-        names=names,
-    )
-    return executable.path if executable is not None else None
-
-
 def _trusted_generator_target(candidate: Path) -> TrustedExecutable | None:
     """Validate the first effective generator entry without falling through."""
     try:
@@ -197,6 +184,5 @@ __all__ = (
     "TrustedExecutable",
     "trusted_executable",
     "trusted_host_tool",
-    "trusted_podman_user_generator",
     "trusted_podman_user_generator_executable",
 )

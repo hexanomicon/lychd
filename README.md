@@ -36,6 +36,8 @@ The knowledge you seek is inscribed in the **[Hexanomicon](https://hexanomicon.d
 gate that answers your next question.
 
 - 📜 **[Read the Prophecy](https://hexanomicon.dev/)** — unearth the book and choose your gate.
+- 🗺️ **[Map what it is meant to automate](docs/map.md)** — orient yourself, then browse the
+  [Composition Portfolio](docs/compositions/index.md) without mistaking design for delivery.
 - 🕯️ **[Perform the Summoning](docs/summoning.md)** — bring one source revision, one Linux host,
   and one local model to the bounded first-life rite.
 - 🏛️ **[Open the Sepulcher](docs/sepulcher/index.md)** — study the body, memory, animation, and

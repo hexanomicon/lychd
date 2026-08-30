@@ -122,10 +122,6 @@
           "run_id": {
             "type": "string"
           },
-          "session_id": {
-            "default": "",
-            "type": "string"
-          },
           "state": {
             "default": "pending_consent",
             "enum": [

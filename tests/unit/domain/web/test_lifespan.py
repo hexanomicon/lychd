@@ -11,6 +11,7 @@ from unittest.mock import ANY, AsyncMock, Mock
 
 import pytest
 
+import lychd.extensions.host as extension_host
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import Settings
 from lychd.domain.codex.runes import CodexPreauthRune
@@ -38,29 +39,23 @@ class _Queue:
         name: str,
         events: list[str],
         *,
-        fail_connect: bool = False,
-        fail_disconnect: bool = False,
-        cancel_disconnect: bool = False,
+        connect_error: BaseException | None = None,
+        disconnect_error: BaseException | None = None,
     ) -> None:
         self.name = name
         self._events = events
-        self._fail_connect = fail_connect
-        self._fail_disconnect = fail_disconnect
-        self._cancel_disconnect = cancel_disconnect
+        self._connect_error = connect_error
+        self._disconnect_error = disconnect_error
 
     async def connect(self) -> None:
         self._events.append(f"connect:{self.name}")
-        if self._fail_connect:
-            msg = "broker unavailable"
-            raise RuntimeError(msg)
+        if self._connect_error is not None:
+            raise self._connect_error
 
     async def disconnect(self) -> None:
         self._events.append(f"disconnect:{self.name}")
-        if self._cancel_disconnect:
-            raise asyncio.CancelledError
-        if self._fail_disconnect:
-            msg = "disconnect unavailable"
-            raise RuntimeError(msg)
+        if self._disconnect_error is not None:
+            raise self._disconnect_error
 
 
 def _record_event(events: list[str], event: str) -> None:
@@ -173,7 +168,7 @@ async def test_queue_connect_failure_rolls_back_connected_prefix() -> None:
     events: list[str] = []
     queues = {
         "runs": _Queue("runs", events),
-        "rites": _Queue("rites", events, fail_connect=True),
+        "rites": _Queue("rites", events, connect_error=RuntimeError("broker unavailable")),
     }
 
     with pytest.raises(RuntimeError, match="broker unavailable"):
@@ -183,30 +178,50 @@ async def test_queue_connect_failure_rolls_back_connected_prefix() -> None:
 
 
 @pytest.mark.asyncio
-async def test_queue_disconnect_attempts_every_queue_then_reports_failure() -> None:
+async def test_queue_connect_failure_preserves_rollback_failure() -> None:
     events: list[str] = []
-    queues = (
-        _Queue("runs", events),
-        _Queue("rites", events, fail_disconnect=True),
-    )
+    queues = {
+        "runs": _Queue("runs", events),
+        "rites": _Queue(
+            "rites",
+            events,
+            connect_error=RuntimeError("broker unavailable"),
+            disconnect_error=RuntimeError("disconnect unavailable"),
+        ),
+    }
 
-    with pytest.raises(ExceptionGroup, match="failed to disconnect"):
-        await disconnect_run_queues(queues)
+    with pytest.raises(BaseExceptionGroup) as raised:
+        await connect_run_queues(queues)
 
-    assert events == ["disconnect:rites", "disconnect:runs"]
+    assert [str(error) for error in raised.value.exceptions] == [
+        "broker unavailable",
+        "disconnect unavailable",
+    ]
+    assert events == ["connect:runs", "connect:rites", "disconnect:rites", "disconnect:runs"]
 
 
+@pytest.mark.parametrize(
+    "failure",
+    [
+        RuntimeError("disconnect unavailable"),
+        asyncio.CancelledError(),
+        SystemExit(92),
+    ],
+)
 @pytest.mark.asyncio
-async def test_queue_disconnect_defers_cancellation_until_every_queue_is_attempted() -> None:
+async def test_queue_disconnect_attempts_every_queue_before_propagating(
+    failure: BaseException,
+) -> None:
     events: list[str] = []
     queues = (
         _Queue("runs", events),
-        _Queue("rites", events, cancel_disconnect=True),
+        _Queue("rites", events, disconnect_error=failure),
     )
 
-    with pytest.raises(asyncio.CancelledError):
+    with pytest.raises(type(failure)) as raised:
         await disconnect_run_queues(queues)
 
+    assert raised.value is failure
     assert events == ["disconnect:rites", "disconnect:runs"]
 
 
@@ -372,16 +387,6 @@ async def test_worker_stop_return_with_live_task_is_not_safe_to_teardown() -> No
 
 
 @pytest.mark.asyncio
-async def test_worker_stop_is_optional_for_focused_apps_without_saq() -> None:
-    def missing(_kind: type[object]) -> object:
-        raise KeyError
-
-    app = SimpleNamespace(plugins=SimpleNamespace(get=missing))
-
-    await _stop_in_process_workers(app)  # type: ignore[arg-type]
-
-
-@pytest.mark.asyncio
 async def test_terminal_checkpoint_reconciliation_retries_every_terminal_status() -> None:
     from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunStatus
 
@@ -491,7 +496,7 @@ async def test_postgres_reconciliation_failure_blocks_publication_and_cleans_up(
     connected_queues = tuple(queues.values())
 
     mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
-    mocker.patch("lychd.extensions.host.get_extensions", return_value=extensions)
+    mocker.patch.object(extension_host, "get_extensions", return_value=extensions)
     mocker.patch(
         "lychd.system.services.runtime.wait_for_host_reactor_idle",
         new=AsyncMock(),

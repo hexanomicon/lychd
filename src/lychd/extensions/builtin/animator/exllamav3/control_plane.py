@@ -9,7 +9,9 @@ from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
+from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
+from lychd.extensions.builtin.animator.exllamav3.connector import ExLlamaV3Connector
 from lychd.extensions.builtin.animator.tabby_auth import (
     TabbyAPIAuthSecretError,
     load_tabbyapi_auth_keys,
@@ -18,13 +20,6 @@ from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, request_json
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
-
-    from lychd.config.runes import RuneConfig
-    from lychd.domain.animation.animators import Animator
-    from lychd.domain.animation.connectors import Connector
-
-
-type RuntimeAnimator = Animator[Connector, RuneConfig]
 
 _HTTP_OK = 200
 _HTTP_SERVICE_UNAVAILABLE = 503
@@ -88,31 +83,24 @@ class TabbyAPIControlPlane:
     async def inspect_animator(self, animator: RuntimeAnimator) -> AnimatorLifecycle:
         """Inspect the TabbyAPI service backing one ExLlamaV3 animator."""
         connector = animator.connector
-        if getattr(connector, "kind", None) != "exllamav3":
-            msg = f"Animator '{animator.id}' is not backed by an ExLlamaV3 connector."
+        if not isinstance(connector, ExLlamaV3Connector):
+            msg = f"Animator '{animator.name}' is not backed by an ExLlamaV3 connector."
             raise TabbyAPIControlPlaneError(msg)
         return await self.inspect(base_url=connector.base_url)
 
     async def inspect(self, *, base_url: str) -> AnimatorLifecycle:
         """Read service health, model inventory, and the currently loaded model."""
-        lifecycle = AnimatorLifecycle(
-            runtime="exllamav3",
-            base_url=base_url,
-            mode="dynamic",
-            supports_router=True,
-        )
+        lifecycle = AnimatorLifecycle(supports_router=True)
 
         health = await self._request_json(base_url, "GET", "/health")
-        lifecycle.raw["health"] = health
         health_status = self._as_str(health.get("status"))
         if health_status != "healthy":
             lifecycle.health = "error"
-            lifecycle.raw["health_error"] = health.get("issues", "tabbyapi_unhealthy")
+            lifecycle.error = str(health.get("issues", "tabbyapi_unhealthy"))
             return lifecycle
         lifecycle.health = "ok"
 
         models = await self._request_json(base_url, "GET", "/v1/models")
-        lifecycle.raw["models"] = models
         lifecycle.available_models = self._model_ids(models)
 
         try:
@@ -120,18 +108,14 @@ class TabbyAPIControlPlane:
         except TabbyAPIControlPlaneError as exc:
             if exc.status != _HTTP_SERVICE_UNAVAILABLE or _NO_MODEL_DETAIL not in str(exc).lower():
                 raise
-            lifecycle.raw["current_model"] = None
         else:
-            lifecycle.raw["current_model"] = current
             active_model = self._as_str(current.get("id"))
             if not active_model:
                 msg = "TabbyAPI /v1/model returned HTTP 200 without a non-empty id."
                 raise TabbyAPIControlPlaneError(msg)
             lifecycle.active_model = active_model
-            lifecycle.loaded_models = [active_model]
-            lifecycle.total_slots = self._total_slots(current)
 
-        await self._apply_pending_load(lifecycle)
+        await self._apply_pending_load(lifecycle, base_url=base_url)
         return lifecycle
 
     async def load_model(self, base_url: str, model: str) -> bool:
@@ -183,20 +167,6 @@ class TabbyAPIControlPlane:
             with suppress(asyncio.CancelledError):
                 await task
         operation.task = None
-
-    async def unload_model(self, base_url: str, model: str) -> bool:
-        """Unload the named current model; never interrupt an ambiguous load."""
-        key = self._runtime_key(base_url)
-        operation = self._loads.get(key)
-        if operation is not None and not operation.stream_finished:
-            return False
-
-        lifecycle = await self.inspect(base_url=base_url)
-        if lifecycle.active_model != model:
-            return False
-        await self._request_json(base_url, "POST", "/v1/model/unload", allow_null=True)
-        self._loads.pop(key, None)
-        return True
 
     async def _drive_model_load(
         self,
@@ -344,17 +314,13 @@ class TabbyAPIControlPlane:
             raise TabbyAPIControlPlaneError(msg, ambiguous=True)
         return True
 
-    async def _apply_pending_load(self, lifecycle: AnimatorLifecycle) -> None:
-        key = self._runtime_key(lifecycle.base_url)
+    async def _apply_pending_load(self, lifecycle: AnimatorLifecycle, *, base_url: str) -> None:
+        key = self._runtime_key(base_url)
         operation = self._loads.get(key)
         if operation is None:
             return
 
-        lifecycle.raw["pending_model"] = operation.model_name
-        lifecycle.raw["load_stream_finished"] = operation.stream_finished
-        lifecycle.raw["load_ambiguous"] = operation.ambiguous
-        if operation.uncertainty is not None:
-            lifecycle.raw["load_uncertainty"] = operation.uncertainty
+        lifecycle.pending_model = operation.model_name
         if lifecycle.active_model == operation.model_name:
             task = operation.task
             if task is not None:
@@ -363,24 +329,23 @@ class TabbyAPIControlPlane:
                 with suppress(asyncio.CancelledError):
                     await task
             self._loads.pop(key, None)
-            lifecycle.raw.pop("pending_model", None)
+            lifecycle.pending_model = None
             return
         if operation.stream_finished:
             # The pinned stream reached a valid terminal event, but server truth
             # no longer contains the target. The process restarted or discarded
             # the load; no detached mutation remains to fence.
             self._loads.pop(key, None)
-            lifecycle.raw.pop("pending_model", None)
-            lifecycle.raw["load_reconciliation"] = "finished_stream_without_active_model"
+            lifecycle.pending_model = None
             return
         if operation.error is not None:
             lifecycle.health = "error"
-            lifecycle.raw["load_error"] = operation.error
+            lifecycle.error = operation.error
             return
         task = operation.task
         if operation.ambiguous and (task is None or task.done()):
             lifecycle.health = "error"
-            lifecycle.raw["load_error"] = (
+            lifecycle.error = (
                 f"{operation.uncertainty or 'TabbyAPI load outcome is ambiguous'} "
                 "Restart the caged Vessel to reset the runtime epoch safely."
             )
@@ -394,7 +359,6 @@ class TabbyAPIControlPlane:
         path: str,
         *,
         payload: Mapping[str, Any] | None = None,
-        allow_null: bool = False,
     ) -> dict[str, object]:
         try:
             return await request_json(
@@ -403,7 +367,6 @@ class TabbyAPIControlPlane:
                 payload=payload,
                 headers=self._authorization_headers(base_url),
                 timeout=self._timeout,
-                allow_null=allow_null,
             )
         except HttpJsonError as exc:
             msg = f"{method} {path} failed: {exc}"
@@ -461,18 +424,6 @@ class TabbyAPIControlPlane:
                 raise TabbyAPIControlPlaneError(msg)
             result.append(model_id)
         return result
-
-    def _total_slots(self, current: dict[str, object]) -> int | None:
-        parameters = current.get("parameters")
-        if not isinstance(parameters, dict):
-            return None
-        slots = cast("dict[object, object]", parameters).get("max_batch_size")
-        if slots is None:
-            return None
-        if not isinstance(slots, int) or isinstance(slots, bool) or slots <= 0:
-            msg = "TabbyAPI /v1/model parameters.max_batch_size must be a positive integer."
-            raise TabbyAPIControlPlaneError(msg)
-        return slots
 
     def _error_message(self, payload: dict[str, object]) -> str | None:
         error = payload.get("error")

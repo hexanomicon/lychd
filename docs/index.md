@@ -67,8 +67,9 @@ To master LychD, pass through four gates of knowledge:
 4. **[The Covenants](./adr/index.md) — the Canons of Construction.** Study the laws and
    architectural decisions that bind the skeleton of the daemon together.
 
-Lost? Unfold the [Map](./map.md). Building? Enter the
-[Composition Portfolio](./compositions/index.md).
+Lost? Unfold the [Map](./map.md). Wondering what LychD is meant to automate? Browse the
+[Composition Portfolio](./compositions/index.md). Wondering what works in this revision? Judge
+[State of Work](./state-of-the-work.md).
 
 !!! tip "The Tongue of the Construct"
     The Prophecy employs strict arcane terminology. Keep the [Lexicon](./lexicon/index.md) at hand

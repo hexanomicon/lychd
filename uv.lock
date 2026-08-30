@@ -863,7 +863,6 @@ container-test = [
 dev = [
     { name = "bump-my-version" },
     { name = "codespell" },
-    { name = "polyfactory" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -884,7 +883,6 @@ lint = [
     { name = "ruff" },
 ]
 test = [
-    { name = "polyfactory" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -928,7 +926,6 @@ container-test = [{ name = "testcontainers", extras = ["postgres"], specifier = 
 dev = [
     { name = "bump-my-version" },
     { name = "codespell", specifier = ">=2.4.1" },
-    { name = "polyfactory" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -947,7 +944,6 @@ lint = [
     { name = "ruff", specifier = ">=0.1.0" },
 ]
 test = [
-    { name = "polyfactory" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },

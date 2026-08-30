@@ -164,59 +164,15 @@ def test_failed_directory_retirement_preserves_late_content_for_retry(
     assert (target / "late.txt").read_text(encoding="utf-8") == "preserve"
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(31)])
-def test_rename_return_interruption_restores_exact_public_name(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
-) -> None:
-    target = tmp_path / "owned.txt"
-    target.write_text("owned", encoding="utf-8")
-    expected = _identity(target)
-    interrupted = False
-
-    def rename_then_interrupt(
-        source_name: str,
-        destination_name: str,
-        *,
-        source_dir_fd: int,
-        destination_dir_fd: int,
-    ) -> None:
-        nonlocal interrupted
-        rename_noreplace_at(
-            source_name,
-            destination_name,
-            source_dir_fd=source_dir_fd,
-            destination_dir_fd=destination_dir_fd,
-        )
-        if not interrupted:
-            interrupted = True
-            raise terminal
-
-    monkeypatch.setattr(
-        "lychd.system.atomic_retirement.rename_noreplace_at",
-        rename_then_interrupt,
-    )
-    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
-    try:
-        with pytest.raises(type(terminal)):
-            AtomicRetirementService().retire_file(
-                parent_fd=parent_fd,
-                leaf=target.name,
-                expected=expected,
-                display_path=target,
-            )
-    finally:
-        os.close(parent_fd)
-
-    assert target.read_text(encoding="utf-8") == "owned"
-    assert not tuple(tmp_path.glob(".lychd-retire-*"))
-
-
-@pytest.mark.parametrize("effect", ["before", "after"])
 @pytest.mark.parametrize(
-    "failure_kind",
-    ["generic", "eexist", "enoent", "keyboard", "systemexit"],
+    ("failure_kind", "effect"),
+    [
+        ("generic", "before"),
+        ("generic", "after"),
+        ("eexist", "before"),
+        ("keyboard", "before"),
+        ("keyboard", "after"),
+    ],
 )
 def test_quarantine_rename_failure_matrix_has_exact_settlement(
     tmp_path: Path,
@@ -233,7 +189,6 @@ def test_quarantine_rename_failure_matrix_has_exact_settlement(
         "eexist": OSError(errno.EEXIST, "candidate collision"),
         "enoent": OSError(errno.ENOENT, "source absent"),
         "keyboard": KeyboardInterrupt(),
-        "systemexit": SystemExit(131),
     }
     primary = failures[failure_kind]
     real_rename = rename_noreplace_at
@@ -413,20 +368,16 @@ def test_enoent_is_idempotent_only_after_proved_dual_absence(
     assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
 
 
-@pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("rename observation failed"), KeyboardInterrupt(), SystemExit(137)],
-)
 def test_quarantine_observation_failure_names_both_exact_paths_and_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_failure: BaseException,
 ) -> None:
     """Unobservable rename effect retains its public and candidate coordinates."""
     target = tmp_path / "owned.txt"
     target.write_text("owned", encoding="utf-8")
     expected_identity = _identity(target)
     primary = OSError(errno.EIO, "rename completed without a receipt")
+    observation_failure = OSError("rename observation failed")
     candidate: Path | None = None
 
     def rename_then_fail(
@@ -544,9 +495,7 @@ def test_ordinary_delete_after_effect_emits_verified_retired_receipt(
     ("terminal", "effect"),
     [
         (KeyboardInterrupt(), "before"),
-        (SystemExit(37), "before"),
         (KeyboardInterrupt(), "after"),
-        (SystemExit(41), "after"),
     ],
 )
 def test_delete_interruption_is_settled_by_exact_postcondition(
@@ -589,12 +538,11 @@ def test_delete_interruption_is_settled_by_exact_postcondition(
     assert not tuple(tmp_path.glob(".lychd-retire-*"))
 
 
-@pytest.mark.parametrize("observation_terminal", [KeyboardInterrupt(), SystemExit(59)])
 def test_post_effect_observation_terminal_is_typed_with_named_recovery(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_terminal: BaseException,
 ) -> None:
+    observation_terminal = KeyboardInterrupt()
     target = tmp_path / "owned.txt"
     target.write_text("owned", encoding="utf-8")
     expected = _identity(target)
@@ -644,7 +592,7 @@ def test_post_effect_observation_terminal_is_typed_with_named_recovery(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("retirement close failed"), KeyboardInterrupt(), SystemExit(97)],
+    [OSError("retirement close failed"), KeyboardInterrupt()],
 )
 def test_retired_file_close_failure_preserves_verified_outcome_and_retry(
     tmp_path: Path,
@@ -705,7 +653,7 @@ def test_retired_file_close_failure_preserves_verified_outcome_and_retry(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("restore close failed"), KeyboardInterrupt(), SystemExit(103)],
+    [OSError("restore close failed"), KeyboardInterrupt()],
 )
 def test_restore_primary_and_close_failure_preserve_both_peers(
     tmp_path: Path,

@@ -7,28 +7,8 @@ from pathlib import Path
 import pytest
 
 from lychd.system.atomic_paths import rename_noreplace_at
-from lychd.system.services.lifecycle import CreatedResources
-from lychd.system.services.privilege import PrivilegeService, initialize_registry
-
-
-def test_initialize_registry_creation(tmp_path: Path) -> None:
-    """Verify that initialize_registry creates the intent registry."""
-    signals_dir = tmp_path / "triggers"
-
-    initialize_registry(signals_dir=signals_dir)
-    assert signals_dir.exists()
-    assert signals_dir.is_dir()
-    assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o700
-
-
-def test_initialize_registry_idempotency(tmp_path: Path) -> None:
-    """Verify that initialize_registry identifies an existing registry."""
-    signals_dir = tmp_path / "triggers"
-    signals_dir.mkdir(mode=0o700)
-
-    initialize_registry(signals_dir=signals_dir)
-    assert signals_dir.exists()
-    assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o700
+from lychd.system.services.lifecycle.models import CreatedResources
+from lychd.system.services.privilege import PrivilegeService
 
 
 def test_initialize_registry_rejects_wrong_mode_without_changing_it(tmp_path: Path) -> None:
@@ -37,7 +17,7 @@ def test_initialize_registry_rejects_wrong_mode_without_changing_it(tmp_path: Pa
     signals_dir.mkdir(mode=0o755)
 
     with pytest.raises(RuntimeError, match="expected 0o700"):
-        initialize_registry(signals_dir=signals_dir)
+        PrivilegeService(signals_dir).initialize()
 
     assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o755
 
@@ -49,7 +29,7 @@ def test_initialize_registry_rejects_symlink(tmp_path: Path) -> None:
     signals_dir.symlink_to(target, target_is_directory=True)
 
     with pytest.raises(RuntimeError, match="Could not traverse managed layout directory"):
-        initialize_registry(signals_dir=signals_dir)
+        PrivilegeService(signals_dir).initialize()
 
 
 def test_initialize_registry_rejects_foreign_owner(
@@ -62,7 +42,7 @@ def test_initialize_registry_rejects_foreign_owner(
     monkeypatch.setattr("lychd.system.services.privilege.os.getuid", lambda: actual_uid + 1)
 
     with pytest.raises(RuntimeError, match="must be owned by uid"):
-        initialize_registry(signals_dir=signals_dir)
+        PrivilegeService(signals_dir).initialize()
 
 
 def test_initialize_registry_journals_exact_chain_once(tmp_path: Path) -> None:
@@ -81,6 +61,7 @@ def test_initialize_registry_journals_exact_chain_once(tmp_path: Path) -> None:
     assert {identity.path for identity in created.directory_identities} == set(created.directories)
     assert repeated == CreatedResources()
     assert journal == [created]
+    assert stat.S_IMODE(signals_dir.stat().st_mode) == 0o700
 
 
 def test_initialize_registry_does_not_adopt_racer_directory(

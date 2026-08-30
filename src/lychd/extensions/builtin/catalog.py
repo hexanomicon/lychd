@@ -12,7 +12,6 @@ class BuiltinExtension:
     """A built-in extension that may be selected in the Codex."""
 
     register_module: str
-    description: str
     dependencies: tuple[str, ...] = ()
 
 
@@ -20,39 +19,28 @@ BUILTIN_EXTENSIONS: Final = MappingProxyType(
     {
         "animator": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.register",
-            description="OpenAI-compatible portal and animator base schemas.",
         ),
         "animator/llamacpp": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.llamacpp.register",
-            description="llama.cpp local Soulstone runtime.",
             dependencies=("animator",),
         ),
         "animator/exllamav3": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.exllamav3.register",
-            description="Dynamic ExLlamaV3 Soulstone served by TabbyAPI.",
             dependencies=("animator",),
         ),
         "animator/vllm": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.vllm.register",
-            description="vLLM local Soulstone runtime.",
             dependencies=("animator",),
         ),
         "animator/sglang": BuiltinExtension(
             register_module="lychd.extensions.builtin.animator.sglang.register",
-            description="SGLang local Soulstone runtime.",
             dependencies=("animator",),
         ),
         "observability/phoenix": BuiltinExtension(
             register_module="lychd.extensions.builtin.observability.phoenix.register",
-            description="Optional legacy Phoenix telemetry Eye (not native Oculus).",
-        ),
-        "simulation": BuiltinExtension(
-            register_module="lychd.extensions.builtin.simulation.register",
-            description="Shadow simulation rune schema.",
         ),
         "delegation": BuiltinExtension(
             register_module="lychd.extensions.builtin.delegation.register",
-            description="Delegated-agent runtime catalogue and no-network reference adapter.",
         ),
     }
 )

@@ -11,7 +11,6 @@ import lychd.config.settings.root as settings_mod
 from lychd.config.settings.orchestration import OrchestrationSettings, SwitchingSettings
 from lychd.config.settings.root import Settings
 from lychd.config.settings.server import ServerJobsSettings
-from lychd.domain.cortex.engine import DEFAULT_ROUTING, RouteRule
 
 
 def test_orchestration_defaults() -> None:
@@ -21,15 +20,6 @@ def test_orchestration_defaults() -> None:
     assert orch.switching.min_priority_for_hard_swap == 40
     assert orch.switching.drain_timeout_s == 120.0
     assert orch.switching.systemctl_timeout_s == 120.0
-    assert orch.whim.idle_evict_after_s == 0
-    assert orch.whim.preload == []
-
-
-def test_default_routing_settings_equal_engine_default() -> None:
-    """The settings routing default MUST equal the code-side `DEFAULT_ROUTING` table."""
-    routing = OrchestrationSettings().routing
-    as_route_rules = {source: RouteRule(rule.queue, rule.priority) for source, rule in routing.items()}
-    assert as_route_rules == DEFAULT_ROUTING
 
 
 def test_orchestration_env_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -48,7 +38,7 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
     toml = tmp_path / "lychd.toml"
     toml.write_text(
         "[orchestration.switching]\n"
-        'policy = "evict-idle"\n'
+        'policy = "declared-conflicts"\n'
         "min_priority_for_hard_swap = 33\n"
         "systemctl_timeout_s = 9.5\n"
         "[server.jobs]\n"
@@ -64,10 +54,22 @@ def test_orchestration_toml_round_trip(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert settings.server.jobs.background_concurrency == 4
 
 
-@pytest.mark.parametrize("timeout_s", [0.0, -1.0, float("inf"), float("nan")])
-def test_systemctl_timeout_requires_a_finite_positive_budget(timeout_s: float) -> None:
+@pytest.mark.parametrize(
+    ("field_name", "timeout_s"),
+    [
+        ("drain_timeout_s", 0.0),
+        ("warmup_timeout_s", 0.0),
+        ("systemctl_timeout_s", 0.0),
+        ("reactor_ack_timeout_s", 0.0),
+        ("drain_timeout_s", -1.0),
+        ("drain_timeout_s", float("inf")),
+        ("drain_timeout_s", float("-inf")),
+        ("drain_timeout_s", float("nan")),
+    ],
+)
+def test_switching_timeouts_require_finite_positive_budgets(field_name: str, timeout_s: float) -> None:
     with pytest.raises(ValidationError):
-        SwitchingSettings(systemctl_timeout_s=timeout_s)
+        SwitchingSettings.model_validate({field_name: timeout_s})
 
 
 def test_v1_queue_topology_rejects_unimplemented_physical_queues() -> None:
@@ -90,27 +92,15 @@ def test_job_admin_ui_path_is_an_absolute_vessel_route() -> None:
         ServerJobsSettings(admin_ui_path="jobs")
 
 
-def test_unknown_switch_policy_fails_loudly_at_composition(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A bogus `switching.policy` fails at the composition root, naming the registered ones."""
-    import lychd.domain.web.altar_services as altar_mod
-    from lychd.config.runes.registry import RuneRegistry
-
-    bad = Settings()
-    bad.orchestration.switching.policy = "does-not-exist"
-    monkeypatch.setattr(altar_mod, "get_settings", lambda: bad)
-
-    with pytest.raises(ValueError, match="evict-idle"):
-        altar_mod.build_altar_services(
-            queues={},
-            runes=RuneRegistry(()),
-            runtime_adapters=[],
-            profile="memory",
-        )
+def test_switch_policy_names_are_closed_at_the_config_boundary() -> None:
+    assert SwitchingSettings(policy="evict-idle").policy == "evict-idle"
+    with pytest.raises(ValidationError):
+        SwitchingSettings.model_validate({"policy": "does-not-exist"})
 
 
 def test_missing_routed_queues_fail_before_runtime_publication(monkeypatch: pytest.MonkeyPatch) -> None:
     """A composition cannot persist a run whose configured physical queue is absent."""
-    import lychd.domain.web.altar_services as altar_mod
+    import lychd.interface.web.altar_services as altar_mod
     from lychd.config.runes.registry import RuneRegistry
 
     settings = Settings()

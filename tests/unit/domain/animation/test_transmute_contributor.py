@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import inspect
-
 import pytest
+from pydantic import ValidationError
 
 from lychd.config import QuadletConfig
 from lychd.config.runes.registry import RuneRegistry
@@ -30,28 +29,6 @@ def _transmuter(*contributors: QuadletContributor) -> Transmuter:
     return Transmuter(
         settings=get_settings(), runtime_planner=RuntimeAdapterRegistry(), contributors=list(contributors)
     )
-
-
-def test_transmute_all_has_no_extension_runes_param() -> None:
-    """P4: the legacy ``extension_runes`` parameter is gone; ``runes`` replaces it."""
-    params = inspect.signature(Transmuter.transmute_all).parameters
-    assert "extension_runes" not in params
-    assert "runes" in params
-
-
-def test_no_contributors_reproduces_core_only() -> None:
-    """A contributor-free physical compilation retains the exact core body."""
-    manifests = _transmuter().transmute_all([], runes=RuneRegistry([]))
-    pod = next(m for m in manifests if isinstance(m, QuadletPod))
-    assert len(pod.publish_ports) == 2
-    names = {m.container_name for m in manifests if isinstance(m, QuadletContainer)}
-    assert names == {"lychd-vessel", "lychd-phylactery", "lychd-migrate"}
-
-
-def test_runes_defaults_to_empty_registry() -> None:
-    """runes=None is tolerated (empty registry) -- no contributor finds a rune."""
-    manifests = _transmuter().transmute_all([])
-    assert any(isinstance(m, QuadletPod) for m in manifests)
 
 
 class _PortOnlyContributor:
@@ -115,7 +92,7 @@ def test_contribution_container_lands_after_core_before_stones() -> None:
     stone = GenericSoulstoneConfig(
         name="alpha",
         quadlet=QuadletConfig(image="registry.example/alpha:1"),
-        groups=[],
+        groups=(),
     )
     manifests = _transmuter(_ContainerContributor()).transmute_all([stone], runes=RuneRegistry([]))
     order = [
@@ -125,13 +102,6 @@ def test_contribution_container_lands_after_core_before_stones() -> None:
     phylactery_idx = order.index("QuadletContainer:lychd-phylactery")
     stone_idx = order.index("QuadletContainer:lychd-alpha")
     assert phylactery_idx < extra_idx < stone_idx
-
-
-def test_contribution_is_frozen_no_mutation_surface() -> None:
-    """§8.4: QuadletContribution is a frozen dataclass (structural identity guarantee)."""
-    contribution = QuadletContribution()
-    with pytest.raises((AttributeError, TypeError)):
-        contribution.pod_ports = ("1:1",)  # type: ignore[misc]
 
 
 def test_contributors_receive_isolated_deep_snapshots() -> None:
@@ -151,7 +121,8 @@ def test_contributors_receive_isolated_deep_snapshots() -> None:
             ctx: TransmutationContext,
         ) -> QuadletContribution:
             ctx.settings.server.port = original_port + 1
-            ctx.soulstones[0].concurrency.dedicated = False
+            with pytest.raises(ValidationError, match="frozen"):
+                ctx.soulstones[0].concurrency.dedicated = False
             return QuadletContribution()
 
     class Observer:
@@ -225,13 +196,3 @@ def test_transmutation_store_rejects_cross_provider_replay() -> None:
         context.transmutation.add_contributor(contributor)
     with context.provenance("two"), pytest.raises(ValueError, match="owned by 'one'"):
         context.transmutation.add_contributor(contributor)
-
-
-def test_bootstrap_assembly_seals_a_hand_built_context() -> None:
-    from lychd.extensions.host import AssembledExtensions
-
-    context = ExtensionContext()
-    AssembledExtensions(context=context, active_ids=("manual",))
-
-    with pytest.raises(RuntimeError, match="frozen after extension assembly"):
-        context.transmutation.add_contributor(_PortOnlyContributor())

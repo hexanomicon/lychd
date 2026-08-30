@@ -197,5 +197,6 @@ foreground latency under backfill; checkpoint/lease release bounds; no hard swap
 spare-capacity work; queue remapping without semantic drift; and exact recovery without duplicate
 effects.
 
-Until that evidence exists, current `runs`/`rites`, priority constants, Whim idle settings, and
-`perform_rite` must not be presented as this scheduler.
+Until that evidence exists, current `runs`/`rites`, priority constants, and Whim idle settings must
+not be presented as this scheduler. The former no-effect `perform_rite` placeholder has been
+removed.

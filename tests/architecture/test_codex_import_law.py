@@ -8,35 +8,33 @@
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
+
+from tests.architecture._python_imports import ImportRef, imported_modules, is_package
 
 _SRC = Path(__file__).resolve().parents[2] / "src" / "lychd"
 _CODEX_ROOT = _SRC / "domain" / "codex"
 _CORTEX_ROOT = _SRC / "domain" / "cortex"
 
-# The only in-repo packages the codex floor may import.
-_CODEX_ALLOWED_PREFIXES = ("lychd.db", "lychd.config")
+# The only outer modules the codex floor may import.
+_CODEX_ALLOWED_EXACT = {"lychd.db.models"}
+_CODEX_ALLOWED_PREFIXES = ("lychd.config",)
 
 
-def _lychd_imports(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    hits: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("lychd."):
-            hits.append(node.module)
-        elif isinstance(node, ast.Import):
-            hits.extend(alias.name for alias in node.names if alias.name.startswith("lychd."))
-    return hits
+def _lychd_imports(path: Path) -> list[ImportRef]:
+    return [ref for ref in imported_modules(path, package_root=_SRC) if ref.module.startswith("lychd.")]
 
 
 def test_codex_imports_only_db_and_config() -> None:
     offenders: dict[str, list[str]] = {}
     for path in _CODEX_ROOT.rglob("*.py"):
         bad = [
-            mod
-            for mod in _lychd_imports(path)
-            if not mod.startswith(_CODEX_ALLOWED_PREFIXES) and not mod.startswith("lychd.domain.codex")
+            ref.module
+            for ref in _lychd_imports(path)
+            if ref.module not in _CODEX_ALLOWED_EXACT
+            and ref.from_module not in _CODEX_ALLOWED_EXACT
+            and not any(is_package(ref.module, prefix) for prefix in _CODEX_ALLOWED_PREFIXES)
+            and not is_package(ref.module, "lychd.domain.codex")
         ]
         if bad:
             offenders[str(path.relative_to(_CODEX_ROOT))] = bad
@@ -46,7 +44,7 @@ def test_codex_imports_only_db_and_config() -> None:
 def test_cortex_does_not_import_codex() -> None:
     offenders: dict[str, list[str]] = {}
     for path in _CORTEX_ROOT.rglob("*.py"):
-        bad = [mod for mod in _lychd_imports(path) if mod.startswith("lychd.domain.codex")]
+        bad = [ref.module for ref in _lychd_imports(path) if is_package(ref.module, "lychd.domain.codex")]
         if bad:
             offenders[str(path.relative_to(_CORTEX_ROOT))] = bad
     assert offenders == {}, f"domain/cortex must not import domain/codex: {offenders}"

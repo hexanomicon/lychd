@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import shlex
-import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,7 +35,6 @@ from lychd.system.schemas import (
     QuadletContainer,
     QuadletPod,
     QuadletTarget,
-    SystemdService,
     podman_secret_source,
 )
 from lychd.system.unit_names import (
@@ -86,21 +84,6 @@ def _resolve_host_path(path: Path, *, stone_name: str) -> Path:
     except (OSError, RuntimeError) as exc:
         msg = f"Soulstone '{stone_name}' mount host path cannot be resolved safely: {path}"
         raise ValueError(msg) from exc
-
-
-def transmute_uncaged_vessel(settings: Settings) -> SystemdService:
-    """Build the uncaged vessel unit from settings.
-
-    Emits a :class:`SystemdService` model; writes nothing (pure domain). The
-    exec line boots the server directly on the host via the native ``lychd serve``
-    entrypoint, NOT a Quadlet.
-    """
-    exec_start = f"{Path(sys.prefix) / 'bin' / 'lychd'} serve --host 127.0.0.1 --port {settings.server.port}"
-    return SystemdService(
-        name="lychd-uncaged-vessel",
-        description="LychD Vessel (uncaged)",
-        exec_start=exec_start,
-    )
 
 
 @dataclass(frozen=True)
@@ -522,9 +505,13 @@ class Transmuter:
         )
 
         # 2. The Phylactery (Postgres)
+        # The pinned PostgreSQL 18 image stores PGDATA here. Bind that exact
+        # directory: binding its parent would replace the image's traversable
+        # /var/lib/postgresql permissions with the host's private 0700 mode,
+        # preventing the entrypoint's re-exec as the postgres image user.
         # Postgres keeps its image UID; :U maps bind ownership for that rootless
         # container identity while :Z applies the SELinux private label.
-        data_mount = f"{PATH_POSTGRESS_DATA_DIR}:/var/lib/postgresql/data:U,Z"
+        data_mount = f"{PATH_POSTGRESS_DATA_DIR}:/var/lib/postgresql/18/docker:U,Z"
         init_mount = f"{PATH_POSTGRES_ROOT_DIR / 'init_db.sh'}:/docker-entrypoint-initdb.d/10-lychd-init.sh:ro,Z"
         phylactery = QuadletContainer(
             description="The Phylactery (Postgres & PgVector)",

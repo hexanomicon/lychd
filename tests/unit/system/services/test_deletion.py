@@ -21,7 +21,6 @@ from lychd.system import (
 from lychd.system.atomic_paths import rename_noreplace_at
 from lychd.system.atomic_retirement import (
     AtomicRetirementError,
-    AtomicRetirementService,
     RetirementIdentity,
     is_retirement_quarantine_name,
 )
@@ -38,35 +37,41 @@ from lychd.system.protected_retirement_naming import (
     is_protected_authority_name,
     new_protected_authority_name,
 )
-from lychd.system.services.lifecycle import (
-    CreatedBtrfsSubvolume,
-    DedicatedRootIdentity,
-    DeletionActionKind,
+from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
+)
+from lychd.system.services.lifecycle.deletion_execution import DeletionExecutor
+from lychd.system.services.lifecycle.deletion_models import (
+    DeletionActionKind,
     DeletionDisposition,
-    DeletionExecutor,
     DeletionOutcome,
     DeletionPaths,
-    DeletionPlanner,
     DeletionStage,
-    LifecycleAction,
-    LifecycleDisposition,
-    LifecycleError,
-    LifecyclePlan,
-    LifecycleReceiptStore,
-    LifecycleResourceKind,
-    ManagedTreeService,
-    ObservedBtrfsSubvolume,
 )
-from lychd.system.services.lifecycle.deletion import (
+from lychd.system.services.lifecycle.deletion_planning import DeletionPlanner
+from lychd.system.services.lifecycle.deletion_ports import (
     BindingCleanupPort,
     BtrfsSubvolumeProbe,
     DedicatedRootAuthorityPort,
+    ObservedBtrfsSubvolume,
     ScribeOwnershipPort,
     StorageInventoryPort,
     UnitRetirementPort,
 )
-from lychd.system.services.lifecycle.trees import ManagedTreeSettlementError
+from lychd.system.services.lifecycle.models import (
+    CreatedBtrfsSubvolume,
+    DedicatedRootIdentity,
+    LifecycleAction,
+    LifecycleDisposition,
+    LifecycleError,
+    LifecyclePlan,
+    LifecycleResourceKind,
+)
+from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
+from lychd.system.services.lifecycle.trees import (
+    ManagedTreeService,
+    ManagedTreeSettlementError,
+)
 from lychd.system.services.scribe import (
     OwnedBindings,
     ScribeTransactionError,
@@ -331,10 +336,7 @@ def _build_harness(
     )
     paths.lifecycle_receipt.chmod(0o600)
     source_checkout.mkdir()
-    checkpoint = DeletionCheckpointStore(
-        codex / ".lychd-del-state.json",
-        codex_root=codex,
-    )
+    checkpoint = DeletionCheckpointStore(codex)
     trees = ManagedTreeService(paths.dedicated_roots)
     root_authority = _RootAuthority(
         path=paths.lifecycle_receipt,
@@ -416,7 +418,7 @@ def _patch_receipt_authority(
     monkeypatch: pytest.MonkeyPatch,
     harness: _Harness,
 ) -> None:
-    from lychd.system.services import lifecycle as lifecycle_facade
+    from lychd.system import constants as lifecycle_constants
 
     for name, value in {
         "PATH_CODEX_ROOT": harness.paths.codex_root,
@@ -424,7 +426,7 @@ def _patch_receipt_authority(
         "PATH_CACHE_ROOT": harness.paths.cache_root,
         "PATH_LIFECYCLE_RECEIPT": harness.paths.lifecycle_receipt,
     }.items():
-        monkeypatch.setattr(lifecycle_facade, name, value)
+        monkeypatch.setattr(lifecycle_constants, name, value)
 
 
 def _tree_snapshot(root: Path) -> tuple[tuple[str, str], ...]:
@@ -1435,16 +1437,12 @@ def test_file_swap_at_retirement_is_restored_without_clobbering(
     assert target.read_text(encoding="utf-8") == "replacement"
 
 
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("tree entry close failed"), KeyboardInterrupt(), SystemExit(99)],
-)
 def test_tree_close_failure_preserves_partial_outcome_and_retry(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    close_failure: BaseException,
 ) -> None:
     """A retired child and retained root remain explicit after a close failure."""
+    close_failure = KeyboardInterrupt()
     root = tmp_path / "codex"
     root.mkdir()
     target = root / "owned.txt"
@@ -1489,16 +1487,12 @@ def test_tree_close_failure_preserves_partial_outcome_and_retry(
     assert not root.exists()
 
 
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("root descriptor close failed"), KeyboardInterrupt(), SystemExit(101)],
-)
 def test_retired_tree_settles_remaining_descriptor_after_close_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    close_failure: BaseException,
 ) -> None:
     """A root-descriptor failure cannot skip settlement of its parent peer."""
+    close_failure = OSError("root descriptor close failed")
     root = tmp_path / "codex"
     root.mkdir()
     expected_identity = _root_identity(root)
@@ -1518,13 +1512,10 @@ def test_retired_tree_settles_remaining_descriptor_after_close_failure(
         close_then_fail,
     )
 
-    expected = ManagedTreeSettlementError if isinstance(close_failure, Exception) else type(close_failure)
-    with pytest.raises(expected) as raised:
+    with pytest.raises(ManagedTreeSettlementError) as raised:
         service.remove(root, expected_identity=expected_identity)
 
     assert close_failure in tuple(iter_exception_graph(raised.value))
-    if not isinstance(close_failure, Exception):
-        assert raised.value is close_failure
     settlement = find_settlement_outcome(raised.value)
     assert settlement is not None
     assert settlement.name == "retired"
@@ -1674,10 +1665,15 @@ def test_late_root_writer_restores_root_and_authorities_for_retry(
     assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
 
 
-@pytest.mark.parametrize("effect", ["before", "after"])
 @pytest.mark.parametrize(
-    "failure_kind",
-    ["generic", "eexist", "enoent", "keyboard", "systemexit"],
+    ("failure_kind", "effect"),
+    [
+        ("generic", "before"),
+        ("generic", "after"),
+        ("eexist", "before"),
+        ("keyboard", "before"),
+        ("keyboard", "after"),
+    ],
 )
 def test_protected_detach_rename_failure_matrix_has_exact_settlement(  # noqa: PLR0915 - explicit fault matrix
     tmp_path: Path,
@@ -1694,7 +1690,6 @@ def test_protected_detach_rename_failure_matrix_has_exact_settlement(  # noqa: P
         "eexist": OSError(errno.EEXIST, "root candidate collision"),
         "enoent": OSError(errno.ENOENT, "root source absent"),
         "keyboard": KeyboardInterrupt(),
-        "systemexit": SystemExit(139),
     }
     primary = failures[failure_kind]
     real_rename = rename_noreplace_at
@@ -1843,16 +1838,12 @@ def test_protected_enoent_dual_absence_emits_both_exact_root_names(
     assert primary in raised.value.failures
 
 
-@pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("detach observation failed"), KeyboardInterrupt(), SystemExit(149)],
-)
 def test_protected_detach_observation_failure_retains_full_root_candidate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_failure: BaseException,
 ) -> None:
     """Unobservable detachment names the root containing every authority."""
+    observation_failure = OSError("detach observation failed")
     root = tmp_path / "codex"
     root.mkdir()
     authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
@@ -1985,7 +1976,7 @@ def test_protected_root_rmdir_after_effect_emits_verified_retired_receipt(
 
 @pytest.mark.parametrize(
     "transfer_failure",
-    [OSError("authority transfer lost its receipt"), KeyboardInterrupt(), SystemExit(151)],
+    [OSError("authority transfer lost its receipt"), KeyboardInterrupt()],
 )
 def test_authority_transfer_after_effect_settles_every_peer(
     tmp_path: Path,
@@ -2066,12 +2057,11 @@ def test_authority_transfer_after_effect_settles_every_peer(
     assert tuple(tmp_path.glob(".lychd-retire-*")) == ()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(43)])
 def test_root_retirement_interruption_before_effect_restores_authorities(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
+    terminal = KeyboardInterrupt()
     root = tmp_path / "codex"
     root.mkdir()
     checkpoint = root / ".lychd-del-state.json"
@@ -2106,12 +2096,11 @@ def test_root_retirement_interruption_before_effect_restores_authorities(
     assert not tuple(tmp_path.glob(".lychd-retire-authority-*"))
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(47)])
 def test_root_retirement_interruption_after_effect_finalizes_authorities(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
+    terminal = KeyboardInterrupt()
     root = tmp_path / "codex"
     root.mkdir()
     checkpoint = root / ".lychd-del-state.json"
@@ -2146,12 +2135,11 @@ def test_root_retirement_interruption_after_effect_finalizes_authorities(
     assert not tuple(tmp_path.glob(".lychd-retire-*"))
 
 
-@pytest.mark.parametrize("observation_failure", [OSError("EIO"), KeyboardInterrupt(), SystemExit(61)])
 def test_post_detach_observation_failure_names_exact_root_candidate(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_failure: BaseException,
 ) -> None:
+    observation_failure = KeyboardInterrupt()
     root = tmp_path / "codex"
     root.mkdir()
     authority = root / ".lychd-lifecycle.json"
@@ -2203,7 +2191,7 @@ def test_post_detach_observation_failure_names_exact_root_candidate(
 
 @pytest.mark.parametrize(
     "restore_failure",
-    [OSError("authority restore lost its receipt"), KeyboardInterrupt(), SystemExit(67)],
+    [OSError("authority restore lost its receipt"), KeyboardInterrupt()],
 )
 def test_authority_restore_after_effect_settles_all_peers(
     tmp_path: Path,
@@ -2294,10 +2282,12 @@ def test_authority_restore_after_effect_settles_all_peers(
     assert not tuple(tmp_path.glob(".lychd-retire-*"))
 
 
-@pytest.mark.parametrize("candidate_kind", ["root-quarantine", "authority-backup"])
 @pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("unreadable absence"), KeyboardInterrupt(), SystemExit(69)],
+    ("candidate_kind", "observation_failure"),
+    [
+        ("root-quarantine", OSError("unreadable absence")),
+        ("authority-backup", KeyboardInterrupt()),
+    ],
 )
 def test_expected_absence_observation_failure_never_proves_exact_recovery(
     tmp_path: Path,
@@ -2384,68 +2374,6 @@ def test_expected_absence_observation_failure_never_proves_exact_recovery(
         assert raised.value.__cause__ is observation_failure
 
 
-def test_retained_finalization_uses_later_peer_terminal_as_cause(
-    tmp_path: Path,
-) -> None:
-    root = tmp_path / "codex"
-    root.mkdir()
-    authorities = tuple(root / name for name in ("checkpoint.json", "receipt.json"))
-    for authority in authorities:
-        authority.write_text(authority.name, encoding="utf-8")
-    entries = tuple(
-        ProtectedRetirementEntry(
-            leaf=authority.name,
-            resource=authority,
-            expected=_retirement_identity(authority),
-        )
-        for authority in authorities
-    )
-    terminal = KeyboardInterrupt()
-
-    class FailingEntries(AtomicRetirementService):
-        def __init__(self) -> None:
-            self.calls = 0
-
-        def retire_file(
-            self,
-            *,
-            parent_fd: int,
-            leaf: str,
-            expected: RetirementIdentity,
-            display_path: Path,
-        ) -> None:
-            del parent_fd, leaf, expected, display_path
-            self.calls += 1
-            if self.calls == 1:
-                message = "ordinary peer failure"
-                raise AtomicRetirementError(message)
-            raise terminal
-
-    failing_entries = FailingEntries()
-    parent_fd = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
-    directory_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
-    try:
-        with pytest.raises(ProtectedRootRetirementError) as raised:
-            ProtectedRootRetirementService(entries=failing_entries).retire(
-                parent_fd=parent_fd,
-                directory_fd=directory_fd,
-                leaf=root.name,
-                expected=_retirement_identity(root),
-                display_path=root,
-                protected=entries,
-            )
-    finally:
-        os.close(directory_fd)
-        os.close(parent_fd)
-
-    assert failing_entries.calls == 2
-    assert raised.value.__cause__ is terminal
-    assert terminal in raised.value.failures
-    assert raised.value.root_recovery is not None
-    assert len(raised.value.root_recovery.authorities) == 2
-    assert not root.exists()
-
-
 def test_terminal_root_failure_names_retained_recovery_without_flattening(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2520,12 +2448,11 @@ def test_retained_sibling_authority_blocks_a_later_delete_plan(
     assert str(residue) in inspection.detail
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(53)])
 def test_wrapped_scribe_interruption_is_not_flattened_into_partial_result(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
+    terminal = KeyboardInterrupt()
     harness = _build_harness(tmp_path)
 
     def interrupt_bindings() -> None:

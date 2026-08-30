@@ -1,30 +1,19 @@
-"""A2/A3: probe facts, the three-source merge, and the family-synthesis law."""
+"""Model-catalog admission, hint overlays, and family synthesis."""
 
 from __future__ import annotations
 
-# Catalog/control-plane white-box tests pin private merge invariants directly.
-# pyright: reportPrivateUsage=false
-import json
-from pathlib import Path
+import pytest
+from pydantic import ValidationError
 
 from lychd.domain.animation.capabilities import CapabilityFamily
-from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import (
     GenericSoulstoneConfig,
-    ModelCapabilityHints,
     ModelInfo,
-    ModelSurface,
+    OpenAIPortalConfig,
 )
 from lychd.domain.animation.services.adapters.catalog import (
-    ProbedModelFacts,
     capability_specs_from_model_infos,
-    hydrate_model_info,
-    synthesize_families,
 )
-from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane
-from lychd.extensions.builtin.animator.llamacpp.parser_models import facts_from_markers
-
-_FIXTURES = Path(__file__).resolve().parents[3] / "fixtures"
 
 
 def _soulstone(**overrides: object) -> GenericSoulstoneConfig:
@@ -33,79 +22,103 @@ def _soulstone(**overrides: object) -> GenericSoulstoneConfig:
     return GenericSoulstoneConfig.model_validate(payload)
 
 
-# --- synthesize_families: the two-axis law ---------------------------------
-
-
-def test_image_in_without_hints_is_chat_only() -> None:
-    info = ModelInfo(id="m", surface=ModelSurface.CHAT, modalities_in=["text", "image"])
-    families = synthesize_families(info, hints=None, probed=None)
-    assert families == [CapabilityFamily.CHAT]
-
-
-def test_explicit_vision_hint_wins_verbatim() -> None:
-    info = ModelInfo(id="m", surface=ModelSurface.CHAT, modalities_in=["text"])
-    families = synthesize_families(info, ModelCapabilityHints(families=[CapabilityFamily.VISION]), None)
-    assert families == [CapabilityFamily.VISION]
-
-
-def test_probed_embedding_synthesizes_embedding_family() -> None:
-    info = ModelInfo(id="m", surface=ModelSurface.CHAT, modalities_in=["text"])
-    families = synthesize_families(info, hints=None, probed=ProbedModelFacts(embedding=True))
-    assert CapabilityFamily.EMBEDDING in families
-
-
-def test_probed_rerank_synthesizes_rerank_family() -> None:
-    info = ModelInfo(id="m", surface=ModelSurface.CHAT, modalities_in=["text"])
-    families = synthesize_families(info, hints=None, probed=ProbedModelFacts(rerank=True))
-    assert CapabilityFamily.RERANK in families
-
-
-# --- hydrate_model_info: field-wise precedence + modality union ------------
-
-
-def test_probed_image_unions_with_profile_text() -> None:
-    from lychd.domain.animation.services.adapters.catalog import _DEFAULT_PROFILE
-
-    info = ModelInfo(id="m")
-    hydrated = hydrate_model_info(
-        info=info,
-        hints=None,
-        probed=ProbedModelFacts(modalities_in=("image",)),
-        profile=_DEFAULT_PROFILE,
+def test_animator_rune_nested_values_are_immutable() -> None:
+    stone = _soulstone(
+        groups=["primary"],
+        env_vars={"MODE": "safe"},
+        concurrency={"conflict_domains": ["gpu"]},
+        models=[
+            {
+                "id": "declared",
+                "path": "/models/declared",
+                "capabilities": {"modalities_in": ["text"]},
+            }
+        ],
     )
-    assert hydrated.modalities_in == ["text", "image"]
+
+    assert stone.groups == ("primary",)
+    assert stone.concurrency.conflict_domains == ("gpu",)
+    assert stone.models[0].capabilities is not None
+    assert stone.models[0].capabilities.modalities_in == ("text",)
+    with pytest.raises(TypeError, match="immutable"):
+        stone.env_vars["MODE"] = "forged"
+    with pytest.raises(ValidationError, match="frozen"):
+        stone.concurrency.dedicated = False
 
 
-def test_explicit_hint_modalities_replace() -> None:
-    from lychd.domain.animation.services.adapters.catalog import _DEFAULT_PROFILE
-
-    info = ModelInfo(id="m")
-    hydrated = hydrate_model_info(
-        info=info,
-        hints=ModelCapabilityHints(modalities_in=["text"]),
-        probed=ProbedModelFacts(modalities_in=("image",)),
-        profile=_DEFAULT_PROFILE,
-    )
-    assert hydrated.modalities_in == ["text"]
+@pytest.mark.parametrize(
+    ("schema", "payload"),
+    [
+        (
+            GenericSoulstoneConfig,
+            {
+                "name": "duplicates",
+                "quadlet": {"image": "img:latest"},
+                "runtime": "llamacpp",
+                "models": [
+                    {"id": "same", "path": "/models/one"},
+                    {"id": "same", "path": "/models/two"},
+                ],
+            },
+        ),
+        (
+            OpenAIPortalConfig,
+            {
+                "name": "duplicates",
+                "models": [{"id": "same"}, {"id": "same"}],
+            },
+        ),
+    ],
+)
+def test_animator_runes_reject_duplicate_model_ids(
+    schema: type[GenericSoulstoneConfig | OpenAIPortalConfig],
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError, match="models contains duplicate ids"):
+        schema.model_validate(payload)
 
 
 # --- capability_specs_from_model_infos: end-to-end two-axis + concurrency ---
 
 
-def test_two_axis_regression_image_in_is_chat_with_both_modalities() -> None:
+def test_explicit_family_and_modalities_flow_to_synthesized_spec() -> None:
+    soulstone = _soulstone(
+        models=[
+            {
+                "id": "m",
+                "path": "/models/m",
+                "capabilities": {
+                    "families": ["vision"],
+                    "modalities_in": ["text"],
+                },
+            }
+        ]
+    )
+
     specs = capability_specs_from_model_infos(
-        _soulstone(),
+        soulstone,
+        [ModelInfo(id="m", modalities_in=("image",))],
+    )
+
+    assert [(spec.family, spec.modalities_in) for spec in specs] == [(CapabilityFamily.VISION, ("text",))]
+
+
+def test_two_axis_regression_image_in_is_chat_with_both_modalities() -> None:
+    soulstone = _soulstone(
+        models=[
+            {
+                "id": "m",
+                "path": "/models/m",
+                "capabilities": {"modalities_in": ["text", "image"]},
+            }
+        ]
+    )
+    specs = capability_specs_from_model_infos(
+        soulstone,
         [ModelInfo(id="m")],
-        probed_by_id={"m": ProbedModelFacts(modalities_in=("image",))},
     )
     assert {spec.family for spec in specs} == {CapabilityFamily.CHAT}
-    assert specs[0].modalities_in == ["text", "image"]
-
-
-def test_concurrency_flows_from_soulstone_intent() -> None:
-    soulstone = _soulstone(concurrency={"dedicated": True, "persistent_resident": True})
-    specs = capability_specs_from_model_infos(soulstone, [ModelInfo(id="m")])
-    assert specs[0].concurrency.persistent_resident is True
+    assert specs[0].modalities_in == ("text", "image")
 
 
 def test_generation_overlay_chain_model_wins_over_soulstone_over_runtime() -> None:
@@ -131,60 +144,10 @@ def test_generation_overlay_soulstone_wins_over_runtime_when_no_model_overlay() 
     assert specs[0].generation_profile.max_tokens == 200
 
 
-def test_model_hint_unmatched_still_synthesizes_from_declaration() -> None:
+def test_declared_model_catalog_ignores_undeclared_discovery() -> None:
     soulstone = _soulstone(
-        models=[{"id": "ghost", "path": "/models/ghost", "capabilities": {"families": ["chat"]}}],
+        models=[{"id": "ghost", "path": "/models/ghost", "generation": {"max_tokens": 321}}],
     )
     specs = capability_specs_from_model_infos(soulstone, [ModelInfo(id="real")])
-    model_ids = {spec.model_id for spec in specs}
-    assert "ghost" in model_ids
-    assert "real" in model_ids
-
-
-# --- facts_from_markers: the marker table ----------------------------------
-
-
-def test_facts_from_markers_table() -> None:
-    assert facts_from_markers(["vision"]).modalities_in == ("image",)
-    assert facts_from_markers(["multimodal"]).modalities_in == ("image",)
-    assert facts_from_markers(["audio"]).modalities_in == ("audio",)
-    assert facts_from_markers(["embedding"]).embedding is True
-    assert facts_from_markers(["embeddings"]).embedding is True
-    assert facts_from_markers(["reranking"]).rerank is True
-    # completion / unknown markers never change anything and never raise.
-    assert facts_from_markers(["completion", "totally-unknown"]) == ProbedModelFacts()
-
-
-def test_audio_is_admission_only_never_a_family() -> None:
-    info = ModelInfo(id="m", modalities_in=["text", "audio"])
-    families = synthesize_families(info, hints=None, probed=facts_from_markers(["audio"]))
-    assert CapabilityFamily.CHAT in families
-    assert set(families) <= {CapabilityFamily.CHAT}
-
-
-# --- A2 integration: parse against the A0 fixture --------------------------
-
-
-def test_populate_router_models_reads_markers_from_fixture() -> None:
-    payload = json.loads((_FIXTURES / "llamacpp" / "models_response.json").read_text(encoding="utf-8"))
-    lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url="http://localhost:8080/v1", mode="router")
-
-    LlamaCppControlPlane()._populate_router_models(lifecycle, payload)
-
-    assert lifecycle.model_capabilities["qwen3-vl-8b"] == ["completion", "vision", "multimodal"]
-    assert lifecycle.available_models == ["qwen3-vl-8b", "bge-m3", "qwen3-8b"]
-    assert lifecycle.loaded_models == ["qwen3-vl-8b"]
-
-    facts = facts_from_markers(lifecycle.model_capabilities["qwen3-vl-8b"])
-    assert "image" in facts.modalities_in
-    assert facts_from_markers(lifecycle.model_capabilities["bge-m3"]).embedding is True
-
-
-def test_populate_router_models_tolerates_garbage() -> None:
-    lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url="http://localhost:8080/v1", mode="router")
-    payload: dict[str, object] = {"data": [{"id": "x", "capabilities": "not-a-list"}, {"id": "y"}, {"no-id": 1}]}
-
-    LlamaCppControlPlane()._populate_router_models(lifecycle, payload)
-
-    assert lifecycle.available_models == ["x", "y"]
-    assert lifecycle.model_capabilities == {}
+    assert {spec.model_id for spec in specs} == {"ghost"}
+    assert specs[0].generation_profile.max_tokens == 321

@@ -20,7 +20,7 @@ code-facing name and the compatibility spelling used by existing paths.
 | Name | Office |
 | --- | --- |
 | Composition | Reusable application capability owning domain records, judgment, effects, policies, projections, and a Pattern catalogue |
-| Product | Named professional or market package selecting Composition or Suite revisions, profiles, projections, and concrete use cases |
+| Product | Named professional or market package selecting Composition or Suite revisions, owner-qualified profiles, projections, and concrete use cases |
 | Pattern | One named executable-score lineage owned by a Composition |
 | Scroll | The mythic name for one immutable Pattern revision: the whole score, not one node |
 | Spell | One independently named semantic action contract: what a station may do |
@@ -208,6 +208,53 @@ Portable Spells and Scrolls arrive additively:
 
 No compatibility shim may present a v2 Python node as a canonical public Spell merely because its
 label resembles one.
+
+The first internal adapter for steps 2–3 has one deliberately private identity. For every
+executable v2 station it derives a Scroll-private contract from `(pattern_id, pattern_revision,
+manifest_digest, station_id, legacy_inline)`, places it under the station key and kind, and binds it
+to the manifest's exact `implementation_revision`, `checkpoint_schema`, and Python node fingerprint
+`module:qualname`. Contract, placement, and implementation identities remain separate and form a
+one-to-one set over executable stations. The declarative terminal maps to Graph `End` and is not
+adapted into a fictional Spell or implementation.
+
+That boot-derived `legacy_inline` Resolution Lock has a deterministic **internal-v0** digest. It is
+not JCS portable identity, a signature input, a public Spell contract, or proof of Python source
+equivalence. It changes when the exact local node binding changes without altering the frozen v2
+Pattern snapshot or digest. During this migration step the lock is used by the in-process exact
+revision lookup but is not stored on Run, exposed by Loom/Orb, or claimed as the future persisted
+Resolution Lock. Persisting and projecting it begins only with a new schema and migration under
+steps 4–5.
+
+### Configuration-to-casting spine (Designed)
+
+The extensibility path is one directional assembly, not runtime reflection:
+
+```text
+typed local configuration selection of exact registered refs and bounded policy
+→ explicitly selected shaped contribution stores
+→ one immutable contract / implementation / Scroll registry generation
+→ exact resolution and Resolution Lock
+→ registered Scroll-version adapter and Graph binding
+→ per-placement AgentSpec, Context contributions, and effect demands
+→ Run admission pins executable truth before queue publication
+```
+
+TOML may later select authority-qualified ids, exact revisions/digests, activation, placement
+policy, budgets, and registered Context projection profiles already admitted by the selected
+Extensions. It remains a local typed selector, not the portable Scroll identity owned by canonical
+JSON. It may not contain a Python module/class path, callable, Graph node or edge, arbitrary prompt,
+raw source material, credential, live Connector/grant, or fallback implementation. Registering a
+Rune schema, Spell contract, implementation, Scroll, adapter, AgentSpec, Context formatter, or
+effect handler is a separate shaped contribution; none implies another and duplicate or unresolved
+exact identity fails before activation.
+
+The Graph binder consumes only an admitted Scroll-version adapter and its exact lock. It never
+imports code named by configuration, scans packages for subclasses, or guesses an implementation
+from a similar label. Placement-specific Agent and Context assembly occurs after resolution so a
+Reader may receive an exact `structure` or `verbatim` projection without acquiring Writer tools,
+while a Writer must separately satisfy its declared effect and authority contract. The current
+source delivers only the fixed v2 registry plus the private `legacy_inline` boot adaptation; no
+TOML keys, portable stores, general lock persistence, or dynamic activation for this spine ship.
 
 ## Admission and ownership
 
@@ -432,28 +479,56 @@ verdict.
 
 ## Compositions, Products, Suites, and schedules
 
-Portfolio membership marks an accepted **Native Reference Composition**: a first-party supported
+Portfolio membership marks an accepted **Native Reference Composition**: a first-party maintained
 application contract and worked example. It does not prove executable delivery;
 [State of Work](../state-of-the-work.md) keeps the shared whole-system envelope, while a
 Composition mentions local delivery only when it materially changes how the contract is read.
 
+Portfolio acceptance is deliberately rare but not numerically capped. It requires durable reusable
+application truth with its own records, judgment, terminal outcomes, and recovery boundary; reuse
+of a mechanism or provider is insufficient. Two independently motivated Products or use cases are
+strong corroborating evidence, neither a necessary threshold nor proof by themselves. Portfolio
+acceptance remains distinct from runtime registration and from delivery.
+
+Editorial reader views may group accepted Compositions for discovery. They have no identifier,
+revision, records, authority, namespace, source-layout consequence, dependency meaning, delivery
+state, or runtime/Product selection role. A Composition may be discoverable through several views
+while retaining one canonical leaf.
+
 A **Product** gives a profession or market one named operator door. It pins eligible Composition
-or Suite revisions, service profiles, projections, supported use cases, defaults, and its customer
-and support envelope. A Product may use one Composition or coordinate several through a Suite; it
-does not become another workflow executor, merge member ownership, or convert packaging into
-authority. Deployment instantiates a Product under one operator's configuration without creating a
-new Product identity merely because its host, customer, or credentials differ.
+or Suite revisions, owner-qualified profiles, projections, supported use cases, defaults, and its
+customer and support envelope. A Product may use one Composition or coordinate several through a
+Suite; it does not become another workflow executor, merge member ownership, or convert packaging
+into authority. Deployment instantiates a Product under one operator's configuration without
+creating a new Product identity merely because its host, customer, or credentials differ.
+
+A **Product Revision** is one immutable version of that selection and promise. Changing an exact
+Composition or Suite pin, owner-qualified profile, projection, supported use case, default, or
+customer/support policy within the same stable operator promise creates a new Product Revision.
+A materially different profession, market, or operator promise requires a new Product identity.
+Neither a new Deployment nor presentation-only public copy changes the Product Revision.
 
 A Native Reference Composition may also publish an exact reference deployment profile without
 becoming a Product. Such a profile binds an implementation and acceptance target; it creates no
 service until Configuration selects a delivered registered revision and Containers admits its
 complete deployment manifest.
 
-Suite may coordinate separate Compositions
-with typed ArtifactRef/Intent handoffs, pinned revisions/correlation/ceilings/dependencies/partial
-completion, never merge ownership/secrets/Sigils/HitL/domain judgment. Suite execution is Designed:
-child identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/compensation/partial
-must be defined first.
+A Product or use-case study may expose an unresolved application-ownership need. Until that need
+resolves to an exact external authority or an accepted Composition revision, the Product must not
+claim the affected use case as supported and no Invocation depending on that missing truth may be
+admitted as a supported Product path. Product packaging never acquires the missing records,
+judgment, policy, consent, secrets, or effect authority in the meantime.
+
+An already-settled exact record, artifact, receipt, capability snapshot, Product co-packaging, or
+exact external precondition whose lifecycle the consumer cannot manage does not by itself create a
+Suite. A foreign reference grants no installation, availability, lifecycle, upgrade, credential,
+admission, or effect authority. Suite is required when one result must initiate or admit, await,
+retry, cancel, recover, correlate, or settle multiple Composition-owned Invocations. It pins member
+and Pattern revisions, typed ArtifactRef/Intent handoffs, correlation, ceilings, dependencies, and
+partial-completion law while never merging ownership, secrets, Sigils, HitL, or domain judgment.
+Suite execution is Designed: child
+identity/revision/closure/fan-out/join/budget/cancel/stasis/retry/effect/compensation/partial must be
+defined first.
 
 A Schedule makes one durable, deduplicated **Occurrence** for each firing and enters ordinary
 admission. Spellweaver owns calendar/event meaning, service class, temporal eligibility,

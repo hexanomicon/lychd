@@ -44,7 +44,6 @@ const pendingConsent: ConsentCardModel = {
   args: { target: "chat:local" },
   id: "consent-a",
   run_id: "run-a",
-  session_id: "session-a",
   state: "pending_consent",
   tool_name: "request_coven_swap",
   vision: "Change the active capability"

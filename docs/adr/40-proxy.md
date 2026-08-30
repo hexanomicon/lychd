@@ -31,15 +31,17 @@ Veil may share the Core host or manifest on an optional separate
 [Gateway Host](../sepulcher/gateway.md). The Gateway is a deployment trust role rather than another
 Extension Domain or Composition. **Home** places it on operator-controlled local iron and forwards
 only to an exact private Core backend. **Remote** places it off-site and may use one Tether peer and
-route to that same narrow backend. RPi and VPS are physical provider choices, not architectural
-identities.
+route to that same narrow backend. RPi and VPS are substrate and placement choices, not
+architectural identities.
 
 Both placements compile the same typed route contract and keep the same application authority
 behind it. The Gateway receives only edge certificates, route material, one backend service
 credential, optional tunnel material, and bounded transport evidence. Its firewall denies general
-LAN and arbitrary egress; the Core firewall accepts only the declared Gateway identity and backend
-flow. Same-host, Home, and Remote are selected by exact deployment profiles, never an `ingress`,
-`gateway`, `rpi`, or `vps` toggle.
+LAN and arbitrary egress only as defense in depth. Policy outside that host—a router/firewall,
+L3-switch ACL, or cloud-network rule—plus the receiving Core firewall enforces the public listener
+and exact declared Gateway identity and backend flow. It does not trust the Gateway host to preserve
+its own rules. Same-host, Home, and Remote are selected by exact deployment profiles, never an
+`ingress`, `gateway`, `rpi`, or `vps` toggle.
 
 ## Reach deployment edges
 

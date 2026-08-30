@@ -35,6 +35,11 @@ next node, and execution status; an `EndSnapshot` carries final state and Graph 
 grants, secrets, runtime dependencies, provider handles, events, and `AgentJob` truth stay
 elsewhere. It is declared state, neither process image nor effect receipt.
 
+Every workflow state that can request hardware carries a typed `hardware_resume_budget` in that
+checkpoint. Its total and per-capability counters therefore survive a durable park and a replacement
+GraphRunner; reconstructing a runner cannot reset them. Checkpoints written before this field decode
+with zero counters and cannot prove attempts that happened before the upgrade.
+
 Memory returns defensive copies. The Postgres adapter replaces one JSONB history document per Run,
 but no real Postgres consent-plus-checkpoint restart receipt proves that path.
 

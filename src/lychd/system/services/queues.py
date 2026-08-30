@@ -41,10 +41,6 @@ class CancellationSafePostgresRunQueue:
     def name(self) -> str:
         return str(self._queue.name)
 
-    def __getattr__(self, name: str) -> Any:
-        """Delegate non-cancellation queue operations unchanged."""
-        return getattr(self._queue, name)
-
     async def connect(self) -> None:
         """Connect SAQ and close a pool opened before a failed schema initialization."""
         try:
@@ -53,7 +49,7 @@ class CancellationSafePostgresRunQueue:
             cleanup_errors: list[BaseException] = []
             try:
                 await self._queue.disconnect()
-            except (Exception, asyncio.CancelledError) as exc:  # noqa: BLE001 - preserve cleanup evidence
+            except BaseException as exc:  # noqa: BLE001 - preserve terminal cleanup evidence
                 cleanup_errors.append(exc)
             if getattr(self._queue, "_manage_pool_lifecycle", False) and not getattr(
                 self._queue.pool,
@@ -62,7 +58,7 @@ class CancellationSafePostgresRunQueue:
             ):
                 try:
                     await self._queue.pool.close()
-                except (Exception, asyncio.CancelledError) as exc:  # noqa: BLE001 - preserve cleanup evidence
+                except BaseException as exc:  # noqa: BLE001 - preserve terminal cleanup evidence
                     cleanup_errors.append(exc)
             if cleanup_errors:
                 message = f"SAQ queue {self.name!r} failed to connect and clean up its partial pool."
@@ -78,6 +74,10 @@ class CancellationSafePostgresRunQueue:
 
     async def job(self, job_key: str, /) -> Any | None:
         return await self._queue.job(job_key)
+
+    async def info(self) -> Mapping[str, Any]:
+        """Return the queue-depth projection consumed by the local status API."""
+        return await self._queue.info()
 
     async def abort(self, job: Any, error: str, /, ttl: float = 5) -> None:
         """Request abort atomically and wait for an active worker's terminal ack."""
@@ -163,39 +163,48 @@ async def connect_run_queues(queues: Mapping[str, object]) -> tuple[ManagedRunQu
             managed = _require_managed_queue(name, queue)
             connected.append(managed)
             await managed.connect()
-    except BaseException:
-        await disconnect_run_queues(connected)
+    except BaseException as connect_error:
+        try:
+            await disconnect_run_queues(connected)
+        except BaseException as cleanup_error:  # noqa: BLE001 - preserve terminal rollback evidence
+            message = "SAQ queue connection failed and rollback was incomplete."
+            raise BaseExceptionGroup(message, [connect_error, cleanup_error]) from None
         raise
     return tuple(connected)
 
 
 async def disconnect_run_queues(queues: Sequence[ManagedRunQueue]) -> None:
     """Attempt every reverse-order disconnect and report any incomplete teardown."""
-    errors: list[Exception] = []
-    cancellations: list[asyncio.CancelledError] = []
+    failures: list[BaseException] = []
     for queue in reversed(queues):
-        cancellation, error = await _disconnect_queue_under_cancellation(queue)
+        cancellation, failure = await _disconnect_queue_under_cancellation(queue)
         if cancellation is not None:
-            cancellations.append(cancellation)
+            failures.append(cancellation)
             logger.warning("saq_queue_disconnect_cancelled", queue_name=queue.name)
-        if error is not None:
-            errors.append(error)
-            logger.error("saq_queue_disconnect_failed", queue_name=queue.name, error=str(error))
-    if cancellations and errors:
-        message = "SAQ queue disconnect was cancelled and one or more queues also failed."
-        raise BaseExceptionGroup(message, [*cancellations, *errors])
-    if cancellations:
-        raise cancellations[0]
-    if errors:
+        if failure is not None:
+            failures.append(failure)
+            logger.error("saq_queue_disconnect_failed", queue_name=queue.name, error=str(failure))
+    if len(failures) == 1:
+        raise failures[0]
+    if failures:
         message = "One or more SAQ queues failed to disconnect."
-        raise ExceptionGroup(message, errors)
+        raise BaseExceptionGroup(message, failures)
+
+
+async def _capture_disconnect(queue: ManagedRunQueue) -> BaseException | None:
+    """Turn every queue-owned failure into data so terminal errors cannot stop the sweep."""
+    try:
+        await queue.disconnect()
+    except BaseException as exc:  # noqa: BLE001 - terminal failures must not escape their task
+        return exc
+    return None
 
 
 async def _disconnect_queue_under_cancellation(
     queue: ManagedRunQueue,
-) -> tuple[asyncio.CancelledError | None, Exception | None]:
+) -> tuple[asyncio.CancelledError | None, BaseException | None]:
     """Finish one teardown before reporting caller or queue-task cancellation."""
-    task = asyncio.create_task(queue.disconnect(), name=f"lychd-disconnect-{queue.name}")
+    task = asyncio.create_task(_capture_disconnect(queue), name=f"lychd-disconnect-{queue.name}")
     cancellation: asyncio.CancelledError | None = None
     while True:
         try:
@@ -204,14 +213,6 @@ async def _disconnect_queue_under_cancellation(
             cancellation = cancellation or exc
             if not task.done():
                 continue
-            try:
-                task.result()
-            except asyncio.CancelledError as task_cancelled:
-                cancellation = cancellation or task_cancelled
-            except Exception as task_error:  # noqa: BLE001 - retain teardown error through the reverse sweep
-                return cancellation, task_error
-            return cancellation, None
-        except Exception as exc:  # noqa: BLE001 - retain teardown error through the reverse sweep
-            return cancellation, exc
+            return cancellation, task.result()
         else:
-            return cancellation, None
+            return cancellation, task.result()

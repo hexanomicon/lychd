@@ -79,7 +79,10 @@ closed rather than swallowing a sibling. It snapshots state and current node, ma
 AWAITING_HARDWARE, asks [Orchestrator](23-orchestrator.md) to
 converge, returns RUNNING, resumes persistence, and dispatches again. Default limits are eight
 hardware resumes per Run and three consecutive requests for one capability; exceeding either fails.
-The waiting run holds no lease and does not know whether convergence was a load, systemd swap, or no effect.
+The counters live in checkpointed Run state, so a durable park or replacement `GraphRunner` cannot
+reset the budget. A pre-budget legacy checkpoint decodes with zero counters because past attempts
+cannot be reconstructed retroactively. The waiting run holds no lease and does not know whether
+convergence was a load, systemd swap, or no effect.
 
 ## Live and Durable Stasis
 

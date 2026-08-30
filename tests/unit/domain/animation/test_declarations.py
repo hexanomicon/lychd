@@ -31,7 +31,6 @@ def test_extension_port_claims_shape_auto_hydration() -> None:
     )
 
     assert declarations.soulstones[0].port == 20001
-    assert declarations.reserved_ports["Phoenix Eye UI"] == 20000
 
 
 def test_core_and_extension_port_collision_has_one_fail_closed_policy() -> None:

@@ -33,13 +33,6 @@ class MountObservation:
     warning: str | None = None
 
     @property
-    def read_only(self) -> bool | None:
-        """Return the observed mount writability when findmnt supplied options."""
-        if not self.options:
-            return None
-        return "ro" in self.options
-
-    @property
     def btrfs_source_path(self) -> Path | None:
         """Map a Btrfs fs-root under an observed top-level mount.
 
@@ -75,7 +68,8 @@ class StorageInventoryService:
         """Describe an exact target and the filesystem currently covering it."""
         exists = os.path.lexists(target)
         mounted = os.path.ismount(target)
-        if self._findmnt is None:
+        findmnt_bin = self._findmnt
+        if findmnt_bin is None:
             return MountObservation(
                 target=target,
                 exists=exists,
@@ -84,7 +78,7 @@ class StorageInventoryService:
             )
 
         argv = (
-            self._findmnt,
+            findmnt_bin,
             "--json",
             "--target",
             str(target),
@@ -129,7 +123,11 @@ class StorageInventoryService:
         source = self._text(entry, "source")
         source_device = source.split("[", maxsplit=1)[0] if source else None
         filesystem_uuid = self._canonical_uuid(entry)
-        top_level = self._top_level_mount(source_device, filesystem_uuid) if source_device and filesystem_uuid else None
+        top_level = (
+            self._top_level_mount(source_device, filesystem_uuid, findmnt_bin=findmnt_bin)
+            if source_device and filesystem_uuid
+            else None
+        )
         options = tuple(part for part in (self._text(entry, "options") or "").split(",") if part)
         mount_target = self._path(entry, "target")
         mounted = mount_target == target
@@ -213,9 +211,11 @@ class StorageInventoryService:
         self,
         source_device: str,
         filesystem_uuid: str,
+        *,
+        findmnt_bin: str,
     ) -> Path | None:
         argv = (
-            self._findmnt or "findmnt",
+            findmnt_bin,
             "--json",
             "--source",
             source_device,

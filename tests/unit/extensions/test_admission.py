@@ -68,57 +68,28 @@ def test_rune_registration_rejects_unrelated_exact_anchor_owner() -> None:
     assert "'second'" in message
 
 
-def test_rune_registration_allows_declared_class_ancestry() -> None:
-    context = ExtensionContext()
-    with context.provenance("family"):
-        context.runes.add_schema(_AnchorFamily)
-        context.runes.add_schema(_AnchorLeaf)
-
-    assert context.runes.rune_schemas == (_AnchorFamily, _AnchorLeaf)
-
-
-def test_crypt_activation_id_cannot_impersonate_core_provenance(tmp_path: Path) -> None:
-    _write_crypt_register(
-        tmp_path,
-        "core",
-        """
-        from lychd.domain.cortex.operations import AGENT_RUN_OPERATION
-
-        def register(context):
-            context.run_operations.add(AGENT_RUN_OPERATION)
-        """,
-    )
-
-    with pytest.raises(ValueError, match="crypt:core") as exc_info:
-        ExtensionManager(builtins=[], crypt=["core"], crypt_root=tmp_path).assemble()
-
-    message = str(exc_info.value)
-    assert "'crypt:core'" in message
-    assert "registered by 'core'" in message
-
-
 def test_same_builtin_and_crypt_activation_ids_have_distinct_provenance(tmp_path: Path) -> None:
     _write_crypt_register(
         tmp_path,
-        "simulation",
+        "observability/phoenix",
         """
-        from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
+        from lychd.extensions.builtin.observability.phoenix.config import ObservabilityConfig
 
         def register(context):
-            context.runes.add_schema(ShadowSimulationConfig)
+            context.runes.add_schema(ObservabilityConfig)
         """,
     )
 
-    with pytest.raises(ValueError, match="crypt:simulation") as exc_info:
+    with pytest.raises(ValueError, match="crypt:observability/phoenix") as exc_info:
         ExtensionManager(
-            builtins=["simulation"],
-            crypt=["simulation"],
+            builtins=["observability/phoenix"],
+            crypt=["observability/phoenix"],
             crypt_root=tmp_path,
         ).assemble()
 
     message = str(exc_info.value)
-    assert "'crypt:simulation'" in message
-    assert "'builtin:simulation'" in message
+    assert "'crypt:observability/phoenix'" in message
+    assert "'builtin:observability/phoenix'" in message
 
 
 def test_crypt_module_names_are_injective_for_legal_activation_ids(tmp_path: Path) -> None:
@@ -186,7 +157,9 @@ def test_selected_crypt_register_is_a_package_with_relative_sibling_imports(tmp_
     ).assemble()
     relative_schema = next(schema for schema in context.runes.rune_schemas if schema.__name__ == "RelativeRune")
 
-    assert relative_schema.__module__.endswith(".schema")
+    instance = relative_schema.model_validate({})
+    assert type(instance) is relative_schema
+    assert relative_schema.anchor_dir(tmp_path) == tmp_path / "relative-rune"
 
 
 def test_failed_crypt_register_clears_its_synthetic_import_generation(tmp_path: Path) -> None:

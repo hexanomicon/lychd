@@ -8,7 +8,7 @@ from lychd.domain.animation.services.adapters.catalog import model_info_from_por
 from lychd.domain.animation.services.adapters.runtimes.shared import probe_openai_compatible_link
 from lychd.domain.animation.services.adapters.surfaces import (
     OpenAICompatibleConnector,
-    OpenAIPortal,
+    PortalAnimator,
     portal_link_default,
 )
 
@@ -41,19 +41,14 @@ def build_openai_portal(portal: PortalConfig) -> RuntimeAnimator:
 
     link = portal_link_default(base_url=base_url)
     connector = OpenAICompatibleConnector(
-        kind=f"portal:{provider}",
         link=link,
         base_url=base_url,
         model_infos=model_infos,
         default_model_id=model_infos[0].id if model_infos else None,
         api_key_secret_name=portal.api_key_secret_name,
         provider_name=provider,
-        metadata={
-            "provider_name": portal.provider_name,
-            "base_url": base_url,
-        },
     )
-    return OpenAIPortal(rune=portal, connector=connector)
+    return PortalAnimator(rune=portal, connector=connector)
 
 
 async def probe_openai_portal(animator: RuntimeAnimator) -> None:

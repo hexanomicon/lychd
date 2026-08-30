@@ -1,7 +1,7 @@
 """Web DI: pure `Provide` readers of the lifespan-built `AltarServices` (§TD-5).
 
-The one assembly site is `interface/web/lifespan.py`; `app.state.services` holds the
-`AltarServices` container. These providers only read it — no construction, no module
+`interface/web/altar_services.py` constructs the container and the lifespan publishes
+it on `app.state.services`. These providers only read it — no construction, no module
 globals. Removed keys vs the old slice: `graph_runner` (dead) and
 `context_orchestrator` (a graph-internal collaborator, not handler DI).
 """

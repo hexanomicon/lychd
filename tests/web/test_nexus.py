@@ -3,15 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from contextlib import suppress
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 import pytest
-
-_EXPORTED_OPENAPI = Path(__file__).resolve().parents[2] / "clients" / "web" / "openapi.json"
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -43,15 +39,8 @@ def test_board_lists_covens(altar_client: TestClient[Litestar]) -> None:
     assert any(row["capability_key"] == "chat:local" for _, rows in board["covens"] for row in rows)
     assert "portals" in board
     runtimes = response.json()["delegated_runtimes"]
-    assert [runtime["runtime_id"] for runtime in runtimes] == [
-        "reference",
-        "codex-cli",
-        "claude-code",
-        "opencode-go",
-        "openrouter",
-    ]
+    assert [runtime["runtime_id"] for runtime in runtimes] == ["reference"]
     assert runtimes[0]["runnable"] is True
-    assert all(runtime["runnable"] is False for runtime in runtimes[1:])
 
 
 def test_plan_is_json(altar_client: TestClient[Litestar]) -> None:
@@ -72,31 +61,45 @@ def test_plan_unknown_target_404(altar_client: TestClient[Litestar]) -> None:
     assert response.status_code == 404
 
 
-def test_swap_returns_accepted_ticket(altar_client: TestClient[Litestar]) -> None:
-    response = altar_client.post(
-        "/api/v1/nexus/swaps",
-        json={"request_id": "request-first", "target": "chat:local"},
-    )
-
-    assert response.status_code == 202
-    assert response.json()["ticket"]["state"] == "warming"
-    assert response.json()["ticket"]["target"] == "chat:local"
-
-
-def test_swap_status_settles(
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"request_id": "request-extra", "target": "chat:local", "unexpected": True},
+        {"request_id": "../traversal", "target": "chat:local"},
+        {"request_id": "", "target": "chat:local"},
+        {"request_id": " leading-space", "target": "chat:local"},
+    ],
+)
+def test_invalid_swap_identity_is_rejected_before_durable_claim_or_transition(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
+    payload: dict[str, object],
 ) -> None:
-    record = fake_services.tickets.open(
-        target="chat:local",
-        action_type="SOFT_SWAP",
-        total_metabolic_cost=1.0,
-        task=_completed_task(),
-    )
-    response = altar_client.get(f"/api/v1/nexus/swaps/{record.id}")
+    calls: list[tuple[str, str]] = []
 
-    assert response.status_code == 200
-    assert response.json()["ticket"]["state"] == "settled"
+    class ClaimProbe:
+        async def claim(self, *, request_id: str, target: str) -> Any:
+            calls.append((request_id, target))
+            pytest.fail("invalid input reached the durable claim boundary")
+
+    fake_services.swap_requests = ClaimProbe()
+
+    response = altar_client.post("/api/v1/nexus/swaps", json=payload)
+
+    assert response.status_code == 400
+    assert calls == []
+    assert fake_services.tickets.count == 0
+    assert fake_services.orchestrator.requests == []
+
+
+def test_swap_input_rules_are_published_by_runtime_openapi(
+    altar_client: TestClient[Litestar],
+) -> None:
+    schema = cast("dict[str, Any]", altar_client.get("/schema/openapi.json").json())
+    swap = schema["components"]["schemas"]["SwapIntent"]
+
+    assert swap["additionalProperties"] is False
+    assert swap["properties"]["request_id"]["pattern"] == r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"
 
 
 def test_swap_status_exposes_failure(
@@ -115,11 +118,9 @@ def test_swap_status_exposes_failure(
     assert response.json()["ticket"]["state"] == "failed"
 
 
-@pytest.mark.parametrize("last_event_id", ["0", "1", "99"])
 def test_terminal_ticket_stream_reconnect_preserves_endpoint_truth(
     altar_client: TestClient[Litestar],
     fake_services: SimpleNamespace,
-    last_event_id: str,
 ) -> None:
     record = fake_services.tickets.open(
         target="chat:local",
@@ -130,7 +131,7 @@ def test_terminal_ticket_stream_reconnect_preserves_endpoint_truth(
 
     stream = altar_client.get(
         f"/api/v1/nexus/swaps/{record.id}/events",
-        headers={"Last-Event-ID": last_event_id},
+        headers={"Last-Event-ID": "99"},
     )
     status = altar_client.get(f"/api/v1/nexus/swaps/{record.id}")
 
@@ -154,6 +155,8 @@ def test_transition_request_id_resolves_retained_ticket(
         json={"request_id": "request-resolve", "target": "chat:local"},
     )
     assert accepted.status_code == 202
+    assert accepted.json()["ticket"]["state"] == "warming"
+    assert accepted.json()["ticket"]["target"] == "chat:local"
     request_id = accepted.json()["ticket"]["request_id"]
 
     resolved = altar_client.get(f"/api/v1/nexus/transitions/{request_id}")
@@ -262,20 +265,3 @@ async def test_concurrent_capacity_is_reserved_before_durable_claim(
     assert second.status_code == 503
     assert set(second.json()) == {"status_code", "detail"}
     assert blocking.calls == ["request-race-first"]
-
-
-def test_swap_failure_responses_publish_the_framework_error_contract() -> None:
-    exported = json.loads(_EXPORTED_OPENAPI.read_text(encoding="utf-8"))
-    responses = exported["paths"]["/api/v1/nexus/swaps"]["post"]["responses"]
-
-    for status in ("409", "503"):
-        schema = responses[status]["content"]["application/json"]["schema"]
-        assert schema == {"$ref": "#/components/schemas/FrameworkError"}
-
-
-def test_swap_request_schema_matches_runtime_strictness() -> None:
-    exported = json.loads(_EXPORTED_OPENAPI.read_text(encoding="utf-8"))
-    schema = exported["components"]["schemas"]["SwapIntent"]
-
-    assert schema["additionalProperties"] is False
-    assert schema["properties"]["request_id"]["pattern"] == r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"

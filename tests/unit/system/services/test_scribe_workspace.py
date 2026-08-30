@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import stat
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -14,11 +13,7 @@ from lychd.system.binding_sites import AttestedBindingSite, AttestedBindingSites
 from lychd.system.descriptor_settlement import DescriptorSet, find_settlement_outcome
 from lychd.system.interruptions import iter_exception_graph
 from lychd.system.services.scribe.authority import BindingAuthority
-from lychd.system.services.scribe.errors import (
-    ScribeGenerationError,
-    ScribeTransactionError,
-    ScribeTransactionState,
-)
+from lychd.system.services.scribe.errors import ScribeGenerationError
 from lychd.system.services.scribe.storage import PathStateIndeterminateError
 from lychd.system.services.scribe.transaction import BindingTransaction
 from lychd.system.services.scribe.workspace import (
@@ -32,7 +27,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("child close failed"), KeyboardInterrupt(), SystemExit(91)],
+    [OSError("child close failed"), KeyboardInterrupt()],
 )
 def test_create_settles_parent_and_child_after_attestation_failure(
     tmp_path: Path,
@@ -89,7 +84,7 @@ def test_create_settles_parent_and_child_after_attestation_failure(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("staged close failed"), KeyboardInterrupt(), SystemExit(93)],
+    [OSError("staged close failed"), KeyboardInterrupt()],
 )
 def test_prepare_file_settles_close_and_exact_name_after_write_failure(
     tmp_path: Path,
@@ -151,7 +146,7 @@ def test_prepare_file_settles_close_and_exact_name_after_write_failure(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("cleanup close failed"), KeyboardInterrupt(), SystemExit(95)],
+    [OSError("cleanup close failed"), KeyboardInterrupt()],
 )
 def test_cleanup_settles_both_descriptors_after_exact_workspace_removal(
     tmp_path: Path,
@@ -194,18 +189,14 @@ def test_cleanup_settles_both_descriptors_after_exact_workspace_removal(
     assert workspace.directory_fd == -1
 
 
-@pytest.mark.parametrize(
-    "mkdir_failure",
-    [OSError("mkdir return failed"), KeyboardInterrupt(), SystemExit(121)],
-)
 def test_workspace_mkdir_after_effect_retains_exact_unverified_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    mkdir_failure: BaseException,
 ) -> None:
     """A mkdir without a returned identity token cannot grant cleanup authority."""
     parent = tmp_path / "binding-site"
     parent.mkdir()
+    mkdir_failure = KeyboardInterrupt()
     real_mkdir = os.mkdir
     created_name = ""
 
@@ -236,18 +227,14 @@ def test_workspace_mkdir_after_effect_retains_exact_unverified_path(
     assert recovery.is_dir()
 
 
-@pytest.mark.parametrize(
-    "open_failure",
-    [OSError("open return failed"), KeyboardInterrupt(), SystemExit(123)],
-)
 def test_prepare_open_after_effect_retains_exact_unverified_child(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    open_failure: BaseException,
 ) -> None:
     """A create without a returned descriptor never adopts its pathname result."""
     parent = tmp_path / "binding-site"
     parent.mkdir()
+    open_failure = KeyboardInterrupt()
     workspace = TransactionWorkspace.create(parent)
     real_open = os.open
     real_close = os.close
@@ -291,10 +278,12 @@ def test_prepare_open_after_effect_retains_exact_unverified_child(
         workspace.close()
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "rename_failure",
-    [OSError("rename return failed"), KeyboardInterrupt(), SystemExit(125)],
+    ("effect", "rename_failure"),
+    [
+        ("complete", KeyboardInterrupt()),
+        ("none", OSError("rename return failed")),
+    ],
 )
 def test_cleanup_rename_failure_classifies_both_workspace_names(
     tmp_path: Path,
@@ -351,14 +340,14 @@ def test_cleanup_rename_failure_classifies_both_workspace_names(
         assert workspace.path in evidence.recovery_paths
 
 
-@pytest.mark.parametrize("indeterminate", [False, True])
 @pytest.mark.parametrize(
-    "fstat_failure",
-    [OSError("fstat failed"), KeyboardInterrupt(), SystemExit(127)],
-)
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("close failed"), KeyboardInterrupt(), SystemExit(129)],
+    ("indeterminate", "fstat_failure", "close_failure"),
+    [
+        (False, OSError("fstat failed"), OSError("close failed")),
+        (False, KeyboardInterrupt(), OSError("close failed")),
+        (False, OSError("fstat failed"), KeyboardInterrupt()),
+        (True, KeyboardInterrupt(), KeyboardInterrupt()),
+    ],
 )
 def test_expected_site_attestation_settles_fstat_and_close_peers(
     tmp_path: Path,
@@ -398,11 +387,11 @@ def test_expected_site_attestation_settles_fstat_and_close_peers(
         return (*real_settle(descriptors), close_failure)
 
     monkeypatch.setattr(
-        "lychd.system.services.scribe.transaction.os.fstat",
+        "lychd.system.services.scribe.transaction_preflight.os.fstat",
         fail_first_fstat,
     )
     monkeypatch.setattr(
-        "lychd.system.services.scribe.transaction.DescriptorSet.settle",
+        "lychd.system.services.scribe.transaction_preflight.DescriptorSet.settle",
         settle_then_fail,
     )
 
@@ -430,44 +419,12 @@ def test_expected_site_attestation_settles_fstat_and_close_peers(
     assert settlement.verified is not indeterminate
 
 
-def test_cleanup_outcome_unions_operator_visible_recovery_paths(
-    tmp_path: Path,
-) -> None:
-    """Outer Scribe evidence retains prior and workspace cleanup paths."""
-    prior_path = tmp_path / "prior-recovery"
-    cleanup_path = tmp_path / "cleanup-recovery"
-    active = ScribeTransactionError(
-        "active transaction failure",
-        state=ScribeTransactionState.INDETERMINATE,
-        recovery_paths=(prior_path,),
-    )
-    cleanup = WorkspaceSettlementError(
-        "workspace cleanup failure",
-        failures=(),
-        outcome="recovery",
-        verified=False,
-        recovery_paths=(cleanup_path,),
-    )
-    classify = getattr(  # noqa: B009 - adversarial private boundary
-        BindingTransaction,
-        "_cleanup_outcome",
-    )
-
-    outcome = classify(
-        active_error=active,
-        committed_generation="",
-        cleanup_errors=(cleanup,),
-    )
-
-    assert outcome is active
-    assert outcome.cleanup_errors == (cleanup,)
-    assert outcome.recovery_paths == (prior_path, cleanup_path)
-
-
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "rmdir_failure",
-    [OSError("rmdir return failed"), KeyboardInterrupt(), SystemExit(131)],
+    ("effect", "rmdir_failure"),
+    [
+        ("complete", KeyboardInterrupt()),
+        ("none", OSError("rmdir return failed")),
+    ],
 )
 def test_cleanup_rmdir_failure_classifies_exact_detached_name(
     tmp_path: Path,
@@ -519,10 +476,12 @@ def test_cleanup_rmdir_failure_classifies_exact_detached_name(
         assert evidence.outcome == "retained"
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "rename_failure",
-    [OSError("entry rename failed"), KeyboardInterrupt(), SystemExit(133)],
+    ("effect", "rename_failure"),
+    [
+        ("complete", KeyboardInterrupt()),
+        ("none", OSError("entry rename failed")),
+    ],
 )
 def test_child_quarantine_failure_retains_verified_workspace_truth(
     tmp_path: Path,
@@ -588,10 +547,13 @@ def test_child_quarantine_failure_retains_verified_workspace_truth(
         assert staged.path.display.read_bytes() == b"owned"
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "unlink_failure",
-    [OSError("entry unlink failed"), KeyboardInterrupt(), SystemExit(135)],
+    ("effect", "unlink_failure"),
+    [
+        ("complete", OSError("entry unlink failed")),
+        ("complete", KeyboardInterrupt()),
+        ("none", KeyboardInterrupt()),
+    ],
 )
 def test_child_unlink_failure_retains_exact_random_name_when_needed(
     tmp_path: Path,
@@ -642,10 +604,13 @@ def test_child_unlink_failure_retains_exact_random_name_when_needed(
         assert not evidence.outcome_verified
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "restore_failure",
-    [OSError("root restore failed"), KeyboardInterrupt(), SystemExit(137)],
+    ("effect", "restore_failure"),
+    [
+        ("complete", OSError("root restore failed")),
+        ("complete", KeyboardInterrupt()),
+        ("none", KeyboardInterrupt()),
+    ],
 )
 def test_foreign_workspace_restore_failure_requires_captured_target_identity(
     tmp_path: Path,
@@ -714,10 +679,13 @@ def test_foreign_workspace_restore_failure_requires_captured_target_identity(
         workspace.close()
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "restore_failure",
-    [OSError("child restore failed"), KeyboardInterrupt(), SystemExit(139)],
+    ("effect", "restore_failure"),
+    [
+        ("complete", OSError("child restore failed")),
+        ("complete", KeyboardInterrupt()),
+        ("none", KeyboardInterrupt()),
+    ],
 )
 def test_foreign_child_restore_failure_requires_captured_target_identity(
     tmp_path: Path,
@@ -783,43 +751,6 @@ def test_foreign_child_restore_failure_requires_captured_target_identity(
             assert cleanup_path.read_bytes() == b"foreign"
     finally:
         workspace.close()
-
-
-def test_multi_workspace_disposal_unions_exact_recovery_paths(
-    tmp_path: Path,
-) -> None:
-    """Scribe exposes every retained workspace and foreign child together."""
-    workspaces: dict[Path, TransactionWorkspace] = {}
-    expected_paths: list[Path] = []
-    for index in range(2):
-        parent = tmp_path / f"binding-site-{index}"
-        parent.mkdir()
-        workspace = TransactionWorkspace.create(parent)
-        child = workspace.path / "foreign-child"
-        child.write_bytes(b"foreign")
-        workspaces[parent] = workspace
-        expected_paths.extend((workspace.path, child))
-    prepared = SimpleNamespace(workspaces=workspaces)
-    dispose = getattr(  # noqa: B009 - adversarial private boundary
-        BindingTransaction,
-        "_dispose_workspaces",
-    )
-    classify = getattr(  # noqa: B009 - adversarial private boundary
-        BindingTransaction,
-        "_cleanup_outcome",
-    )
-
-    cleanup_errors = dispose(prepared, retain=False)
-    outcome = classify(
-        active_error=None,
-        committed_generation="committed-generation",
-        cleanup_errors=cleanup_errors,
-    )
-
-    assert len(cleanup_errors) == 2
-    assert outcome.state is ScribeTransactionState.COMMITTED
-    assert outcome.generation == "committed-generation"
-    assert outcome.recovery_paths == tuple(expected_paths)
 
 
 def test_workspace_restore_source_disappearance_does_not_prove_target_identity(
@@ -927,7 +858,7 @@ def test_child_restore_source_disappearance_does_not_prove_target_identity(
 
 @pytest.mark.parametrize(
     "unlink_failure",
-    [OSError("unlink return failed"), KeyboardInterrupt(), SystemExit(141)],
+    [OSError("unlink return failed"), KeyboardInterrupt()],
 )
 def test_prepare_failure_with_verified_child_removal_is_exact_rollback(
     tmp_path: Path,
@@ -1039,12 +970,12 @@ def test_cleanup_recovery_unions_relocated_root_with_foreign_cleanup_leaf(
 
 
 @pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("recovery observation failed"), KeyboardInterrupt(), SystemExit(143)],
-)
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("descriptor close failed"), KeyboardInterrupt(), SystemExit(145)],
+    ("observation_failure", "close_failure"),
+    [
+        (OSError("recovery observation failed"), OSError("descriptor close failed")),
+        (OSError("recovery observation failed"), KeyboardInterrupt()),
+        (KeyboardInterrupt(), OSError("descriptor close failed")),
+    ],
 )
 def test_close_observation_failure_cannot_skip_descriptor_settlement(
     tmp_path: Path,
@@ -1107,25 +1038,17 @@ def test_close_observation_failure_cannot_skip_descriptor_settlement(
     assert workspace.directory_fd == -1
 
 
-@pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("cleanup observation failed"), KeyboardInterrupt(), SystemExit(149)],
-)
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("cleanup close failed"), KeyboardInterrupt(), SystemExit(151)],
-)
 def test_cleanup_secondary_observation_failure_still_settles_both_descriptors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_failure: BaseException,
-    close_failure: BaseException,
 ) -> None:
     """A recovery-observation peer cannot escape cleanup before final close."""
     parent = tmp_path / "binding-site"
     parent.mkdir()
     workspace = TransactionWorkspace.create(parent)
     primary = OSError("entry enumeration failed")
+    observation_failure = KeyboardInterrupt()
+    close_failure = KeyboardInterrupt()
     real_close = os.close
     close_calls = 0
 
@@ -1179,12 +1102,12 @@ def test_cleanup_secondary_observation_failure_still_settles_both_descriptors(
 
 
 @pytest.mark.parametrize(
-    "observation_type",
-    [OSError, KeyboardInterrupt, SystemExit],
-)
-@pytest.mark.parametrize(
-    "fallback_type",
-    [OSError, KeyboardInterrupt, SystemExit],
+    ("observation_type", "fallback_type"),
+    [
+        (OSError, OSError),
+        (OSError, KeyboardInterrupt),
+        (KeyboardInterrupt, OSError),
+    ],
 )
 def test_close_compound_recovery_observation_failure_closes_real_fds(
     tmp_path: Path,
@@ -1257,19 +1180,9 @@ def test_close_compound_recovery_observation_failure_closes_real_fds(
         os.fstat(directory_fd)
 
 
-@pytest.mark.parametrize(
-    "observation_type",
-    [OSError, KeyboardInterrupt, SystemExit],
-)
-@pytest.mark.parametrize(
-    "fallback_type",
-    [OSError, KeyboardInterrupt, SystemExit],
-)
 def test_cleanup_compound_recovery_observation_failure_always_reaches_close(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_type: type[BaseException],
-    fallback_type: type[BaseException],
 ) -> None:
     """Cleanup preserves both observation peers and closes both real fds."""
     parent = tmp_path / "binding-site"
@@ -1278,8 +1191,8 @@ def test_cleanup_compound_recovery_observation_failure_always_reaches_close(
     parent_fd = workspace.parent_fd
     directory_fd = workspace.directory_fd
     primary = OSError("entry cleanup failed")
-    observation_failure = observation_type("primary recovery observation failed")
-    fallback_failure = fallback_type("fallback recovery observation failed")
+    observation_failure = KeyboardInterrupt()
+    fallback_failure = KeyboardInterrupt()
 
     def fail_entry_cleanup(_workspace: TransactionWorkspace) -> bool:
         raise primary

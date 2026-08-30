@@ -9,9 +9,10 @@ import pytest
 from pydantic import Field
 
 from lychd.config import QuadletConfig
-from lychd.config.runes import ConfigWriter, RuneConfig
-from lychd.system.services.lifecycle import CreatedResources
-from lychd.system.services.publication import JournaledCreation
+from lychd.config.runes import RuneConfig
+from lychd.config.runes.writer import ConfigWriter
+from lychd.system.services.file_publication_transaction import JournaledCreation
+from lychd.system.services.lifecycle.models import CreatedResources
 
 
 class WriterRootConfig(RuneConfig):
@@ -136,25 +137,6 @@ def test_writer_renders_embedded_config_as_a_valid_toml_inline_table(tmp_path: P
     assert rune.quadlet.image == "<required:str>"
 
 
-def test_writer_legacy_callbacks_run_at_the_creation_commit_boundary(tmp_path: Path) -> None:
-    """Public path callbacks remain compatible while publication owns rollback."""
-    writer = ConfigWriter(runes_dir=tmp_path)
-    directory_batches: list[tuple[Path, ...]] = []
-    samples: list[Path] = []
-
-    directories = writer.initialize_anchors(
-        [WriterCustomTemplateConfig],
-        on_created=directory_batches.append,
-    )
-    created_samples = writer.inscribe_samples(
-        [WriterCustomTemplateConfig],
-        on_created=samples.append,
-    )
-
-    assert tuple(path for batch in directory_batches for path in batch) == tuple(directories)
-    assert samples == created_samples
-
-
 def test_writer_only_creates_leaf_samples(tmp_path: Path) -> None:
     """Branch samples are not created; leaf descendants still get samples."""
     writer = ConfigWriter(runes_dir=tmp_path)
@@ -167,18 +149,20 @@ def test_writer_only_creates_leaf_samples(tmp_path: Path) -> None:
     assert tmp_path / "writer" / "tree" / "writerparentconfig.toml" not in created
 
 
-def test_writer_keeps_parent_anchor_distinct_from_grandchild_anchor(tmp_path: Path) -> None:
-    """Branch samples are not created even when descendants have files."""
+def test_unadmitted_subclass_does_not_change_writer_leaf_ownership(tmp_path: Path) -> None:
+    """An imported child cannot alter the writer's admitted schema generation."""
     writer = ConfigWriter(runes_dir=tmp_path)
+    target = tmp_path / "writer" / "tree" / "writerparentconfig.toml"
 
-    writer.initialize_anchors([WriterParentConfig, WriterChildConfig, WriterGrandChildConfig])
-    grandchild_sample = tmp_path / "writer" / "tree" / "child" / "grandchild" / "writergrandchildconfig.toml"
-    grandchild_sample.parent.mkdir(parents=True, exist_ok=True)
-    grandchild_sample.write_text('marker = "g1"\nvalue = "child"\n', encoding="utf-8")
+    assert writer.planned_sample_paths([WriterParentConfig]) == [target]
+    assert writer.planned_path_descriptions([WriterParentConfig])[target] == (
+        "Generated inactive example; remove its marker before use."
+    )
 
+    writer.initialize_anchors([WriterParentConfig])
     created = writer.inscribe_samples([WriterParentConfig])
 
-    assert tmp_path / "writer" / "tree" / "writerparentconfig.toml" not in created
+    assert created == [target]
 
 
 def test_writer_preserves_and_never_journals_a_peer_sample(
@@ -217,7 +201,7 @@ def test_writer_preserves_and_never_journals_a_peer_sample(
         raise FileExistsError(destination)
 
     monkeypatch.setattr(
-        "lychd.system.services.publication.os.link",
+        "lychd.system.services.file_publication_transaction.os.link",
         install_peer_then_link,
     )
 

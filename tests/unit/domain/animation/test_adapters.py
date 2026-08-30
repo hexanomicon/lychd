@@ -6,48 +6,70 @@ from typing import cast
 import httpx
 import pytest
 import respx
+from pydantic import BaseModel, ValidationError
 
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
-from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import GenericSoulstoneConfig, ModelInfo, ModelSurface
+from lychd.domain.animation.lifecycle import AnimatorLifecycle
+from lychd.domain.animation.schemas import GenericSoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
+from lychd.domain.animation.services.adapters.runtimes.openai_compat import OpenAICompatibleRuntimeAdapter
 from lychd.domain.animation.services.adapters.surfaces import (
-    GenericSoulstone,
     OpenAICompatibleConnector,
-    OpenAICompatibleSoulstone,
 )
-from lychd.extensions.builtin.animator import LlamaCppSoulstoneConfig, SglangSoulstoneConfig, VllmSoulstoneConfig
-from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamaCppControlPlane, LlamaCppLifecycle
+from lychd.extensions.builtin.animator import (
+    ExLlamaV3SoulstoneConfig,
+    LlamaCppSoulstoneConfig,
+    SglangSoulstoneConfig,
+    VllmSoulstoneConfig,
+)
+from lychd.extensions.builtin.animator.llamacpp import LlamacppConnector, LlamaCppControlPlane
 from lychd.extensions.builtin.animator.runtimes import (
     LlamaCppRuntimeAdapter,
-    SglangRuntimeAdapter,
-    VllmRuntimeAdapter,
 )
+
+
+def _vllm_adapter() -> OpenAICompatibleRuntimeAdapter:
+    return OpenAICompatibleRuntimeAdapter(runtime="vllm", config_type=VllmSoulstoneConfig)
+
+
+def _sglang_adapter() -> OpenAICompatibleRuntimeAdapter:
+    return OpenAICompatibleRuntimeAdapter(runtime="sglang", config_type=SglangSoulstoneConfig)
 
 
 def _runtime_registry() -> RuntimeAdapterRegistry:
     """Build a registry wired with the builtin runtime adapters under test."""
     return RuntimeAdapterRegistry(
-        adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
+        adapters=[LlamaCppRuntimeAdapter(), _vllm_adapter(), _sglang_adapter()],
     )
 
 
-def test_runtime_adapter_selection_uses_exact_declared_owner() -> None:
-    class BroadAdapter(VllmRuntimeAdapter):
-        runtime = "broad"
+@pytest.mark.parametrize(
+    "schema",
+    [
+        LlamaCppSoulstoneConfig,
+        VllmSoulstoneConfig,
+        SglangSoulstoneConfig,
+        ExLlamaV3SoulstoneConfig,
+    ],
+)
+def test_concrete_soulstone_schema_rejects_foreign_runtime(schema: type[BaseModel]) -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        schema.model_validate({"name": "wrong-runtime", "runtime": "foreign"})
 
-    broad = BroadAdapter()
-    exact = VllmRuntimeAdapter()
-    registry = RuntimeAdapterRegistry(adapters=[broad, exact])
-    soulstone = VllmSoulstoneConfig.model_validate(
+    assert any(error["loc"] == ("runtime",) and error["type"] == "literal_error" for error in exc_info.value.errors())
+
+
+def test_generic_soulstone_keeps_open_runtime_selector() -> None:
+    stone = GenericSoulstoneConfig.model_validate(
         {
-            "name": "exact-vllm",
-            "model_path": "/models/exact.gguf",
+            "name": "custom-runtime",
+            "runtime": "extension-owned",
+            "quadlet": {"image": "example/runtime:latest"},
         }
     )
 
-    assert registry.adapter_for(soulstone) is exact
+    assert stone.runtime == "extension-owned"
 
 
 def _build_llamacpp_connector(soulstone: LlamaCppSoulstoneConfig) -> tuple[LlamacppConnector, RuntimePlan]:
@@ -77,32 +99,6 @@ def _build_sglang_connector(soulstone: SglangSoulstoneConfig) -> tuple[OpenAICom
     return connector, registry.plan(soulstone)
 
 
-def test_openai_compatible_model_inventory_is_detached_on_admission_and_read() -> None:
-    supplied = ModelInfo(
-        id="canonical",
-        modalities_in=["text"],
-        metadata={"provider": {"revision": "one"}},
-    )
-    connector = OpenAICompatibleConnector(
-        kind="portal:test",
-        link=Link(up=True),
-        base_url="http://127.0.0.1:8000/v1",
-        model_infos=(supplied,),
-    )
-
-    supplied.id = "forged-at-admission"
-    supplied.modalities_in.append("image")
-    first = connector.list_models()[0]
-    first.id = "forged-at-read"
-    first.modalities_in.append("audio")
-    first.metadata["provider"]["revision"] = "forged"
-
-    retained = connector.list_models()[0]
-    assert retained.id == "canonical"
-    assert retained.modalities_in == ["text"]
-    assert retained.metadata == {"provider": {"revision": "one"}}
-
-
 def test_llamacpp_single_mode_plan() -> None:
     soulstone = LlamaCppSoulstoneConfig.model_validate(
         {
@@ -112,12 +108,13 @@ def test_llamacpp_single_mode_plan() -> None:
     )
 
     connector, plan = _build_llamacpp_connector(soulstone)
+    specs = _runtime_registry().build_capability_specs(soulstone)
 
     assert connector.mode == "single"
     assert plan.exec_args[:2] == ["-m", "/models/qwen.gguf"]
     assert "--alias" in plan.exec_args
     assert "qwen" in plan.exec_args
-    assert [info.id for info in connector.list_models()] == ["qwen"]
+    assert {spec.model_id for spec in specs} == {"qwen"}
 
 
 def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
@@ -144,7 +141,7 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
     )
 
     connector, plan = _build_llamacpp_connector(soulstone)
-    model_ids = [info.id for info in connector.list_models()]
+    model_ids = {spec.model_id for spec in _runtime_registry().build_capability_specs(soulstone)}
 
     assert connector.mode == "router"
     # Without a models catalog the router query model falls back to the Soulstone name.
@@ -153,6 +150,25 @@ def test_llamacpp_router_mode_detects_preset_models(tmp_path: Path) -> None:
     assert "qwen3-150k" in model_ids
     assert "--models-preset" in plan.exec_args
     assert str(preset) in plan.exec_args
+
+
+def test_llamacpp_declared_models_filter_preset_inventory(tmp_path: Path) -> None:
+    preset = tmp_path / "models.ini"
+    preset.write_text(
+        "version = 1\n\n[*]\nc = 8192\n\n[discovered]\nmodel = /models/discovered.gguf\n",
+        encoding="utf-8",
+    )
+    soulstone = LlamaCppSoulstoneConfig.model_validate(
+        {
+            "name": "bounded-router",
+            "startup_mode": "router",
+            "models_preset": str(preset),
+            "models": [{"id": "declared", "path": "/models/declared.gguf"}],
+        }
+    )
+    specs = _runtime_registry().build_capability_specs(soulstone)
+
+    assert {spec.model_id for spec in specs} == {"declared"}
 
 
 def test_vllm_openai_compatible_plan() -> None:
@@ -175,14 +191,13 @@ def test_vllm_openai_compatible_plan() -> None:
         }
     )
 
-    connector, plan = _build_vllm_connector(soulstone)
+    _connector, plan = _build_vllm_connector(soulstone)
+    specs = _runtime_registry().build_capability_specs(soulstone)
 
-    assert connector.kind == "vllm"
-    assert [info.id for info in connector.list_models()] == ["glm-flash"]
+    assert {spec.model_id for spec in specs} == {"glm-flash"}
     assert plan.exec_args == exec_args
     assert "--ipc=host" not in plan.podman_args
-    assert connector.list_models()[0].supports_tools is True
-    assert connector.metadata["runtime"] == "vllm"
+    assert specs[0].supports_tools is True
 
 
 def test_vllm_model_uses_runtime_profile_capabilities() -> None:
@@ -196,15 +211,11 @@ def test_vllm_model_uses_runtime_profile_capabilities() -> None:
         }
     )
 
-    connector, _ = _build_vllm_connector(soulstone)
-    model = connector.list_models()[0]
+    model = _runtime_registry().build_capability_specs(soulstone)[0]
 
-    assert model.id == "vision-awq"
-    assert model.surface == ModelSurface.CHAT
-    assert model.modalities_in == ["text"]
-    assert model.modalities_out == ["text"]
+    assert model.model_id == "vision-awq"
+    assert model.modalities_in == ("text",)
     assert model.supports_tools is True
-    assert model.supports_streaming is True
 
 
 def test_sglang_openai_compatible_plan() -> None:
@@ -229,13 +240,12 @@ def test_sglang_openai_compatible_plan() -> None:
         }
     )
 
-    connector, plan = _build_sglang_connector(soulstone)
+    _connector, plan = _build_sglang_connector(soulstone)
+    specs = _runtime_registry().build_capability_specs(soulstone)
 
-    assert connector.kind == "sglang"
-    assert [info.id for info in connector.list_models()] == ["public-qwen"]
+    assert {spec.model_id for spec in specs} == {"public-qwen"}
     assert plan.exec_args == exec_args
     assert "--ipc=host" not in plan.podman_args
-    assert connector.metadata["runtime"] == "sglang"
 
 
 def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
@@ -259,7 +269,6 @@ def test_vllm_builds_capability_specs_with_concurrency_metadata() -> None:
     assert spec.model_id == "embedder-awq"
     assert spec.concurrency.dedicated is True
     assert spec.concurrency.persistent_resident is False
-    assert spec.metadata["runtime"] == "vllm"
 
 
 @pytest.mark.asyncio
@@ -272,7 +281,7 @@ async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.
             "port": 8000,
         }
     )
-    adapter = VllmRuntimeAdapter()
+    adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
     respx_mock.get("http://localhost:8000/v1/models").mock(
@@ -284,7 +293,6 @@ async def test_vllm_probe_warms_only_the_exact_observed_model(respx_mock: respx.
 
     assert [spec.model_id for spec in specs] == ["public-model-alias"]
     assert {state.phase for state in states} == {CapabilityPhase.WARM}
-    assert all(state.loaded_model_ids == ["public-model-alias"] for state in states)
 
 
 @pytest.mark.asyncio
@@ -296,7 +304,7 @@ async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_m
             "port": 8000,
         }
     )
-    adapter = VllmRuntimeAdapter()
+    adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
     respx_mock.get("http://localhost:8000/v1/models").mock(
@@ -307,10 +315,6 @@ async def test_vllm_probe_rejects_a_declared_model_absent_from_inventory(respx_m
 
     assert {state.phase for state in states} == {CapabilityPhase.ERROR}
     assert all(state.health == "model_missing" for state in states)
-    assert all(state.loaded_model_ids == [] for state in states)
-    activation = await adapter.activate_capability(runtime, adapter.build_capability_specs(soulstone)[0])
-    assert activation.phase is CapabilityPhase.ERROR
-    assert "absent from /models" in (activation.reason or "")
 
 
 @pytest.mark.asyncio
@@ -322,7 +326,7 @@ async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.
             "port": 8000,
         }
     )
-    adapter = VllmRuntimeAdapter()
+    adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
     respx_mock.get("http://localhost:8000/v1/models").mock(
@@ -334,11 +338,7 @@ async def test_vllm_probe_fails_closed_on_malformed_inventory(respx_mock: respx.
     assert runtime.connector.link.up is True
     assert {state.phase for state in states} == {CapabilityPhase.ERROR}
     assert all(state.health == "inventory_invalid" for state in states)
-    assert all(state.loaded_model_ids == [] for state in states)
     assert all("non-empty string id" in (state.reason or "") for state in states)
-    activation = await adapter.activate_capability(runtime, adapter.build_capability_specs(soulstone)[0])
-    assert activation.phase is CapabilityPhase.ERROR
-    assert "non-empty string id" in (activation.reason or "")
 
 
 @pytest.mark.asyncio
@@ -361,7 +361,7 @@ async def test_vllm_probe_bounds_live_model_inventory(
             "port": 8000,
         }
     )
-    adapter = VllmRuntimeAdapter()
+    adapter = _vllm_adapter()
     runtime = adapter.build_runtime(soulstone)
     assert runtime is not None
     connector = cast("OpenAICompatibleConnector", runtime.connector)
@@ -429,11 +429,8 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
     )
 
     class StubControlPlane:
-        async def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
-            return LlamaCppLifecycle(
-                runtime="llamacpp",
-                base_url="http://localhost:8080/v1",
-                mode="router",
+        async def inspect_animator(self, _animator: object) -> AnimatorLifecycle:
+            return AnimatorLifecycle(
                 health="ok",
                 supports_router=True,
                 active_model="/models/router-main.gguf",
@@ -453,13 +450,11 @@ async def test_llamacpp_router_probe_maps_dynamic_capability_state(tmp_path: Pat
     vision = next(spec for spec in specs if spec.model_id == "router-vision")
 
     # router-main is loaded + health ok ⇒ WARM; router-vision unloaded ⇒ ACTIVATABLE.
-    assert states[main.key].is_static is False
     assert states[main.key].phase is CapabilityPhase.WARM
     assert states[main.key].is_active is True
     assert states[vision.key].phase is CapabilityPhase.ACTIVATABLE
     assert states[vision.key].is_active is False
     assert states[vision.key].runtime_started is True
-    assert states[main.key].active_model_id == "router-main"
 
 
 @pytest.mark.asyncio
@@ -478,11 +473,8 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
     )
 
     class RejectingControlPlane:
-        async def inspect_animator(self, _animator: object) -> LlamaCppLifecycle:
-            return LlamaCppLifecycle(
-                runtime="llamacpp",
-                base_url="http://localhost:8080/v1",
-                mode="router",
+        async def inspect_animator(self, _animator: object) -> AnimatorLifecycle:
+            return AnimatorLifecycle(
                 health="ok",
                 supports_router=True,
                 available_models=["target"],
@@ -501,7 +493,6 @@ async def test_llamacpp_router_activation_reports_clean_load_rejection(tmp_path:
     result = await adapter.activate_capability(runtime, target)
 
     assert result.accepted is False
-    assert result.phase is CapabilityPhase.ACTIVATABLE
     assert result.reason == "router rejected model load"
 
 
@@ -517,9 +508,7 @@ def test_generic_runtime_does_not_assume_openai_compatible_surface() -> None:
 
     registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
-    assert isinstance(runtime, GenericSoulstone)
-    assert runtime.connector.kind == "generic:crawler"
-    # An unknown runtime is not assumed to be OpenAI-compatible and invents no specs.
+    assert runtime is None
     assert registry.build_capability_specs(soulstone) == []
 
 
@@ -536,22 +525,11 @@ def test_generic_runtime_supports_explicit_openai_compatible_surface() -> None:
 
     registry = _runtime_registry()
     runtime = registry.build_runtime(soulstone)
-    assert isinstance(runtime, OpenAICompatibleSoulstone)
-    assert runtime.connector.kind == "generic-openai-compatible"
-
-
-def test_generic_runtime_without_capability_hints_does_not_invent_chat() -> None:
-    soulstone = GenericSoulstoneConfig.model_validate(
-        {
-            "name": "sidecar",
-            "quadlet": {"image": "sidecar:latest"},
-            "runtime": "crawler",
-        }
-    )
-
-    registry = _runtime_registry()
-
-    assert registry.build_capability_specs(soulstone) == []
+    assert runtime is not None
+    assert isinstance(runtime.connector, OpenAICompatibleConnector)
+    specs = registry.build_capability_specs(soulstone)
+    assert [(spec.family, spec.model_id) for spec in specs] == [(CapabilityFamily.CHAT, "qwen")]
+    assert runtime.connector.get_model(model_id=specs[0].model_id).model_name == "qwen"
 
 
 def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
@@ -577,12 +555,10 @@ def test_llamacpp_resolve_infers_single_mode_and_alias_from_exec() -> None:
     )
 
     connector, _ = _build_llamacpp_connector(soulstone)
+    specs = _runtime_registry().build_capability_specs(soulstone)
     assert connector.mode == "single"
-    assert [info.id for info in connector.list_models()] == ["qwen-next-80b"]
-    assert connector.metadata["inferred_from"] == "exec"
-    assert connector.metadata["inferred_model_path"] == "/models/qwen-next-80b.gguf"
-    assert connector.metadata["inferred_n_ctx"] == 65536
-    assert connector.metadata["inferred_n_parallel"] == 4
+    assert {spec.model_id for spec in specs} == {"qwen-next-80b"}
+    assert {spec.generation_profile.max_context for spec in specs} == {65536}
 
 
 def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_path: Path) -> None:
@@ -614,12 +590,11 @@ def test_llamacpp_resolve_infers_router_and_catalog_from_exec_models_preset(tmp_
     )
 
     connector, _ = _build_llamacpp_connector(soulstone)
-    model_ids = [info.id for info in connector.list_models()]
+    model_ids = {spec.model_id for spec in _runtime_registry().build_capability_specs(soulstone)}
     assert connector.mode == "router"
     assert connector.router_query_model_id == "qwen-next-80b"
     assert "qwen-next-80b" in model_ids
     assert "qwen-next-7b" in model_ids
-    assert connector.metadata["models_preset"] == str(preset)
 
 
 def test_llamacpp_resolve_uses_env_when_no_exec_args() -> None:
@@ -630,18 +605,15 @@ def test_llamacpp_resolve_uses_env_when_no_exec_args() -> None:
                 "LLAMA_ARG_MODELS_PRESET": "/models/models.ini",
                 "LLAMA_ARG_ALIAS": "qwen-from-env",
                 "LLAMA_ARG_CTX_SIZE": "32768",
-                "LLAMA_ARG_N_PARALLEL": "2",
             },
         }
     )
 
     connector, _ = _build_llamacpp_connector(soulstone)
+    specs = _runtime_registry().build_capability_specs(soulstone)
     assert connector.mode == "router"
     assert connector.router_query_model_id == "qwen-from-env"
-    assert connector.metadata["inferred_from"] == "env_vars"
-    assert connector.metadata["models_preset"] == "/models/models.ini"
-    assert connector.metadata["inferred_n_ctx"] == 32768
-    assert connector.metadata["inferred_n_parallel"] == 2
+    assert {spec.generation_profile.max_context for spec in specs} == {32768}
 
 
 def test_llamacpp_plan_follows_inferred_router_mode_from_extra_args(tmp_path: Path) -> None:
@@ -681,15 +653,14 @@ def test_llamacpp_resolve_infers_n_predict_from_predict_alias() -> None:
         }
     )
 
-    connector, _ = _build_llamacpp_connector(soulstone)
-    effective_defaults = cast("dict[str, object]", connector.metadata["effective_defaults"])
-    assert effective_defaults["n_predict"] == 768
+    specs = _runtime_registry().build_capability_specs(soulstone)
+    assert {spec.generation_profile.max_tokens for spec in specs} == {768}
 
 
 def test_llamacpp_resolve_uses_single_model_section_when_provider_does_not_match(tmp_path: Path) -> None:
     preset = tmp_path / "models.ini"
     preset.write_text(
-        ("version = 1\n\n[*]\nc = 4096\n\n[qwen-next-80b]\nc = 65536\ntemp = 0.6\ntop-k = 64\n"),
+        ("version = 1\n\n[*]\nc = 4096\n\n[qwen-next-80b]\nc = 65536\ntemp = 0.6\n"),
         encoding="utf-8",
     )
 
@@ -701,28 +672,18 @@ def test_llamacpp_resolve_uses_single_model_section_when_provider_does_not_match
         }
     )
 
-    connector, _ = _build_llamacpp_connector(soulstone)
-    effective_defaults = cast("dict[str, object]", connector.metadata["effective_defaults"])
-    assert connector.metadata["preset_model_section"] == "qwen-next-80b"
-    assert effective_defaults["n_ctx"] == 65536
-    assert effective_defaults["temperature"] == 0.6
-    assert effective_defaults["top_k"] == 64
+    profiles = [spec.generation_profile for spec in _runtime_registry().build_capability_specs(soulstone)]
+    assert profiles
+    assert all(profile == profiles[0] for profile in profiles)
+    profile = profiles[0]
+    assert profile.max_context == 65536
+    assert profile.temperature == 0.6
 
 
 def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(tmp_path: Path) -> None:
     preset = tmp_path / "models.ini"
     preset.write_text(
-        (
-            "version = 1\n\n"
-            "[*]\n"
-            "c = 4096\n"
-            "temp = 0.55\n"
-            "top-k = 32\n\n"
-            "[qwen-next-80b]\n"
-            "c = 32768\n"
-            "temp = 0.7\n"
-            "top-k = 48\n"
-        ),
+        ("version = 1\n\n[*]\nc = 4096\ntemp = 0.55\n\n[qwen-next-80b]\nc = 32768\ntemp = 0.7\n"),
         encoding="utf-8",
     )
 
@@ -741,24 +702,9 @@ def test_llamacpp_resolve_effective_defaults_follow_cli_over_preset_precedence(t
         }
     )
 
-    connector, _ = _build_llamacpp_connector(soulstone)
-    effective = cast("dict[str, object]", connector.metadata["effective_defaults"])
-    assert effective["n_ctx"] == 131072
-    assert effective["temperature"] == 0.7
-    assert effective["top_k"] == 48
-
-
-def test_llamacpp_resolve_reports_exec_passthrough_diagnostics() -> None:
-    soulstone = LlamaCppSoulstoneConfig.model_validate(
-        {
-            "name": "diagnostics",
-            "exec": ["llama-server", "-m", "/models/qwen.gguf"],
-        }
-    )
-
-    connector, _ = _build_llamacpp_connector(soulstone)
-    diagnostics = cast("list[str]", connector.metadata["exec_diagnostics"])
-
-    assert connector.metadata["exec_passthrough"] is True
-    assert "exec_missing_host_flag" in diagnostics
-    assert "exec_missing_port_flag" in diagnostics
+    profiles = [spec.generation_profile for spec in _runtime_registry().build_capability_specs(soulstone)]
+    assert profiles
+    assert all(profile == profiles[0] for profile in profiles)
+    profile = profiles[0]
+    assert profile.max_context == 131072
+    assert profile.temperature == 0.7

@@ -8,7 +8,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
-from lychd.system.services.lifecycle import current_authority
+from lychd.system.services.lifecycle._authority import current_authority
 
 
 class HostTier(StrEnum):

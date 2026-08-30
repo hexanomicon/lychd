@@ -12,8 +12,8 @@ from lychd.config.runes import RuneConfig
 from lychd.config.runes.writer import ConfigWriter
 from lychd.config.settings import Settings, get_settings
 from lychd.system.constants import PATH_LYCHD_TOML, PATH_POSTGRES_ROOT_DIR, PATH_RUNE_TEMPLATES_DIR, PATH_RUNES_DIR
+from lychd.system.services.file_publication_transaction import JournaledCreation
 from lychd.system.services.lifecycle.models import CreatedResources
-from lychd.system.services.publication import JournaledCreation
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -34,7 +34,7 @@ def _render_default_settings_toml(settings: Settings) -> str:
         "# Optional built-ins: choose only what this machine needs.\n"
         '# Local llama.cpp: builtins = ["animator/llamacpp"]\n'
         '# Other choices: "animator/exllamav3", "animator/vllm", "animator/sglang",\n'
-        '#                "observability/phoenix", "simulation"\n'
+        '#                "observability/phoenix", "delegation"\n'
     )
     if extension_table not in content:
         msg = "Settings TOML did not contain the required [extensions] table."

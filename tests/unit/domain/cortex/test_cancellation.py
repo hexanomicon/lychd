@@ -24,10 +24,4 @@ async def test_begin_elects_one_writer_and_releases_waiters_on_finish() -> None:
     coordinator.finish("run-1")
     await waiter
     assert coordinator.active("run-1") is False
-
-
-@pytest.mark.asyncio
-async def test_wait_without_active_cancel_returns_immediately() -> None:
-    """A worker with an unrelated cancellation never parks on an absent writer."""
-    coordinator = RunCancellationCoordinator()
-    await coordinator.wait("run-1")
+    await asyncio.wait_for(coordinator.wait("run-1"), timeout=0.1)

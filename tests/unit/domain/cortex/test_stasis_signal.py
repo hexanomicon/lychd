@@ -15,7 +15,7 @@ from lychd.domain.delegation import DelegatedAgentJobRef, DelegatedAgentPending
 
 
 def test_extract_finds_direct_signal() -> None:
-    sig = HardwareTransitionRequired("chat:local", "local", None)
+    sig = HardwareTransitionRequired("chat:local")
     assert _extract_signal(sig, HardwareTransitionRequired) is sig
 
 
@@ -46,13 +46,13 @@ def test_extract_respects_suppressed_context() -> None:
 
 
 def test_extract_unwraps_single_signal_exception_group() -> None:
-    sig = HardwareTransitionRequired("chat:local", "local", None)
+    sig = HardwareTransitionRequired("chat:local")
     group = BaseExceptionGroup("mid-stream", [sig])
     assert _extract_signal(group, HardwareTransitionRequired) is sig
 
 
 def test_extract_refuses_mixed_exception_group() -> None:
-    sig = HardwareTransitionRequired("chat:local", "local", None)
+    sig = HardwareTransitionRequired("chat:local")
     group = BaseExceptionGroup("mid-stream", [ValueError("real failure"), sig])
 
     assert _extract_signal(group, HardwareTransitionRequired) is None

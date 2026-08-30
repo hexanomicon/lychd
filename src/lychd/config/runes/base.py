@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC
+from collections.abc import Sequence
 from pathlib import Path
 from re import Pattern
 from typing import Any, ClassVar, Final, Self
@@ -19,8 +20,7 @@ class RuneConfig(BaseModel, ABC):
     A rune is one validated TOML config document under
     ``lychd.system.constants.PATH_RUNES_DIR``. Subclasses define TOML fields;
     this base validates class-level placement metadata. Leaf ownership is
-    resolved when binding a source file, after import has revealed the subclass
-    topology.
+    resolved from the exact schema generation supplied to the loader or writer.
 
     ``RuneConfig`` does not import or discover extensions. Enabled extensions
     expose their rune subclasses through extension registration stores, usually from a
@@ -142,3 +142,25 @@ class RuneConfig(BaseModel, ABC):
             raise ValueError(msg)
         self._source_file = source_file
         return self
+
+
+def admitted_branch_schemas(
+    schemas: Sequence[type[RuneConfig]],
+) -> frozenset[type[RuneConfig]]:
+    """Return schemas with a descendant in the exact admitted generation.
+
+    Imported but unadmitted subclasses cannot change whether a schema owns TOML
+    files or only its namespace anchor.
+
+    Args:
+        schemas: Exact Rune schema generation admitted for one operation.
+
+    Returns:
+        Admitted schemas that have at least one admitted descendant.
+
+    """
+    return frozenset(
+        schema
+        for schema in schemas
+        if any(candidate is not schema and issubclass(candidate, schema) for candidate in schemas)
+    )

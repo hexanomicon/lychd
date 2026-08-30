@@ -22,6 +22,12 @@ restart; reclaiming a conflicting physical runtime remains an Orchestrator trans
 The current repository proves planning, discovery, capability derivation, and load/unload control.
 A real engine/GPU/model result remains [operator validation](../../../../state-of-the-work.md#llamacpp-integration).
 
+Control receipts are intentionally literal: load/unload succeeds only on JSON boolean `true`, not
+`1` or `"true"`, and a slot count rejects Python/JSON booleans even though they are integer-like.
+Known numeric preset keys use their canonical integer or floating type; boolean words are ignored
+rather than silently becoming `0` or `1`. Treat those refusals as malformed provider/configuration
+evidence, not as successful control.
+
 See [Soulstone Disciplines](../disciplines.md#iii-the-titan-llamacpp),
 [llama.cpp](https://github.com/ggml-org/llama.cpp), and the
 [repository support files](https://github.com/hexanomicon/lychd/tree/main/examples/llamacpp).

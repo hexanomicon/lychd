@@ -13,7 +13,7 @@ import hashlib
 import json
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from pydantic import BaseModel, ConfigDict
 from pydantic_ai import RunContext
@@ -47,10 +47,9 @@ CONSENT_EFFECT_REVISION_KEY: Final[str] = "lychd_effect_revision"
 
 @dataclass(frozen=True, slots=True)
 class PumpResult[OutputT]:
-    """One agent hop split into resumable history and its new durable suffix."""
+    """One agent hop's output and new durable message suffix."""
 
     output: OutputT
-    all_messages: list[Any]
     new_messages: list[Any]
 
 
@@ -108,11 +107,24 @@ __all__ = [
     "ConsentToolBindingChangedError",
     "PumpResult",
     "bind_consent_toolsets",
+    "bind_messages_to_logical_run",
     "is_single_approval",
     "new_step_id",
     "park_on_consent",
     "pump_agent_events",
 ]
+
+
+def bind_messages_to_logical_run(messages: Sequence[Any], run_id: str) -> list[Any]:
+    """Attach one LychD Run identity to serialized request/response messages."""
+    bound: list[Any] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            bound.append(message)
+            continue
+        payload = cast("dict[str, Any]", message)
+        bound.append({**payload, "run_id": run_id} if payload.get("kind") in {"request", "response"} else payload)
+    return bound
 
 
 def _tool_binding(capability_key: str, tool: ToolsetTool[Any]) -> ConsentToolBinding | None:
@@ -237,7 +249,6 @@ async def pump_agent_events[OutputT](
     result = result_event.result
     return PumpResult(
         output=result.output,
-        all_messages=list(ModelMessagesTypeAdapter.dump_python(result.all_messages(), mode="json")),
         new_messages=list(ModelMessagesTypeAdapter.dump_python(result.new_messages(), mode="json")),
     )
 

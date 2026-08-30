@@ -416,8 +416,6 @@ export interface components {
             };
             id: string;
             run_id: string;
-            /** @default  */
-            session_id: string;
             /**
              * @default pending_consent
              * @enum {string}

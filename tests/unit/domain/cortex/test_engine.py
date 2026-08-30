@@ -8,17 +8,29 @@ import asyncio
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from lychd.agents.router import Intent
-from lychd.agents.workflows import builtin_workflow_registry
+from lychd.agents.workflows import BRIDGE_CHAT, builtin_workflow_registry
 from lychd.domain.codex.schemas import ConsentView
-from lychd.domain.cortex.engine import QueueRouter, RunEngine, enqueue_run, run_job_key
+from lychd.domain.cortex.context import ContextOrchestrator
+from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine, enqueue_run, run_job_key
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
+
+_TEST_ROUTING = {
+    "default": RouteRule(queue="runs", priority=50),
+    "bridge": RouteRule(queue="runs", priority=70),
+    "cli": RouteRule(queue="runs", priority=50),
+    "rite": RouteRule(queue="rites", priority=20),
+}
+
+
+def _queue_router() -> QueueRouter:
+    return QueueRouter(routing=_TEST_ROUTING)
 
 
 @dataclass
@@ -225,7 +237,7 @@ def _engine() -> tuple[RunEngine, InMemoryRunLedger, dict[str, _FakeQueue]]:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues=queues,
         consents=_TestConsentAuthority(),
     )
@@ -251,12 +263,50 @@ class _BoundedSessionAdmissionLedger(InMemoryRunLedger):
 
 def test_queue_router_resolves_source_and_priority_override() -> None:
     """Bridge routes to runs@70; an explicit Intent.priority overrides the default."""
-    router = QueueRouter()
+    router = _queue_router()
     assert router.resolve(Intent(session_id="s", run_id="r", prompt="p", source="bridge")) == ("runs", 70)
     assert router.resolve(Intent(session_id="s", run_id="r", prompt="p", source="rite")) == ("rites", 20)
     assert router.resolve(Intent(session_id="s", run_id="r", prompt="p", source="weird")) == ("runs", 50)
     override = Intent(session_id="s", run_id="r", prompt="p", source="bridge", priority=5)
     assert router.resolve(override) == ("runs", 5)
+
+
+@pytest.mark.asyncio
+async def test_submit_rejects_invalid_routed_priority_before_durable_admission() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    queue = _FakeQueue()
+    engine = RunEngine(
+        ledger=ledger,
+        bus=InProcessEventBus(ledger=ledger),
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=101)}),
+        queues={"runs": queue},
+    )
+
+    with pytest.raises(ValueError, match="Priority must be between 0 and 100"):
+        await engine.submit(Intent(session_id="s", run_id="invalid-priority", prompt="p"))
+
+    assert await ledger.get("invalid-priority") is None
+    assert queue.enqueued == []
+
+
+@pytest.mark.asyncio
+async def test_submit_rejects_unavailable_routed_queue_before_durable_admission() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    queue = _FakeQueue()
+    engine = RunEngine(
+        ledger=ledger,
+        bus=InProcessEventBus(ledger=ledger),
+        workflows=builtin_workflow_registry(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="missing", priority=50)}),
+        queues={"runs": queue},
+    )
+
+    with pytest.raises(ValueError, match="Run queue 'missing' is not configured"):
+        await engine.submit(Intent(session_id="s", run_id="invalid-queue", prompt="p"))
+
+    assert await ledger.get("invalid-queue") is None
+    assert queue.enqueued == []
 
 
 @pytest.mark.asyncio
@@ -275,11 +325,7 @@ async def test_submit_routes_persists_and_enqueues() -> None:
     assert run.status is RunStatus.QUEUED
     assert run.queue_name == "runs"
     assert run.priority == 70  # bridge default
-    assert run.pattern_manifest["key"] == "bridge_chat"
-    assert run.pattern_manifest["revision"] == "1"
-    assert run.pattern_manifest["implementation_revision"] == "py.1"
-    assert run.pattern_manifest["entry_node"] == "weave_context"
-    assert len(str(run.pattern_manifest["digest"])) == 64
+    assert run.pattern_manifest == BRIDGE_CHAT.manifest.snapshot()
 
     assert len(queues["runs"].enqueued) == 1
     job = queues["runs"].enqueued[0]
@@ -436,7 +482,7 @@ async def test_exclusive_session_uses_bounded_nonterminal_ledger_query() -> None
         ledger=ledger,
         bus=InProcessEventBus(ledger=ledger),
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues=queues,
     )
 
@@ -495,34 +541,23 @@ async def test_idempotent_replay_repairs_held_custody_after_leader_compensation_
     assert [job["run_id"] for job in queues["runs"].enqueued] == [handle.run_id]
 
 
+@pytest.mark.parametrize(
+    "replay",
+    [
+        Intent(session_id="s", prompt="different offering", source="bridge", priority=60),
+        Intent(session_id="s", prompt="same offering", source="bridge", priority=61),
+    ],
+)
 @pytest.mark.asyncio
-async def test_idempotent_submit_rejects_payload_reuse() -> None:
+async def test_idempotent_submit_rejects_changed_admission(replay: Intent) -> None:
     engine, _ledger, _queues = _engine()
     await engine.submit(
-        Intent(session_id="s", prompt="first offering", source="bridge"),
+        Intent(session_id="s", prompt="same offering", source="bridge", priority=60),
         idempotency_key="bridge:s:req-conflict",
     )
 
     with pytest.raises(RunAdmissionConflictError):
-        await engine.submit(
-            Intent(session_id="s", prompt="different offering", source="bridge"),
-            idempotency_key="bridge:s:req-conflict",
-        )
-
-
-@pytest.mark.asyncio
-async def test_idempotent_submit_rejects_requested_priority_reuse() -> None:
-    engine, _ledger, _queues = _engine()
-    await engine.submit(
-        Intent(session_id="s", prompt="same offering", source="bridge", priority=60),
-        idempotency_key="bridge:s:req-priority-conflict",
-    )
-
-    with pytest.raises(RunAdmissionConflictError):
-        await engine.submit(
-            Intent(session_id="s", prompt="same offering", source="bridge", priority=61),
-            idempotency_key="bridge:s:req-priority-conflict",
-        )
+        await engine.submit(replay, idempotency_key="bridge:s:req-conflict")
 
 
 @pytest.mark.asyncio
@@ -559,11 +594,41 @@ async def test_idempotent_replay_loads_durable_admission_before_routing() -> Non
             message = "durable replay must not route again"
             raise AssertionError(message)
 
+    class _RejectEveryQueueResolution:
+        def resolve(self, _intent: Intent) -> None:
+            message = "durable replay must not resolve current queue topology"
+            raise AssertionError(message)
+
     engine.workflows = _RejectEveryRoute()
+    engine.queue_router = cast("Any", _RejectEveryQueueResolution())
+    engine.queues = {}
     replay = await engine.submit(intent, idempotency_key="bridge:s:req-stable-route")
 
     assert replay.run_id == first.run_id
     assert replay.workflow_name == first.workflow_name
+
+
+@pytest.mark.asyncio
+async def test_pending_idempotent_replay_survives_a_removed_durable_queue() -> None:
+    engine, ledger, _queues = _engine()
+    intent = Intent(session_id="s", prompt="retain stranded queue truth", source="bridge")
+    admitted, created = await ledger.create_idempotent(
+        intent,
+        idempotency_key="bridge:s:req-removed-queue",
+        workflow_name="bridge_chat",
+        pattern_manifest=builtin_workflow_registry().route(intent).manifest.snapshot(),
+        queue_name="retired-queue",
+        priority=70,
+    )
+    assert created is True
+    engine.queues = {}
+
+    replay = await engine.submit(intent, idempotency_key="bridge:s:req-removed-queue")
+
+    delivery = await ledger.get_delivery(admitted.run_id, enqueue_seq=0)
+    assert replay.run_id == admitted.run_id
+    assert delivery is not None
+    assert delivery.state is RunDeliveryState.PENDING
 
 
 @pytest.mark.asyncio
@@ -579,7 +644,7 @@ async def test_idempotent_replay_seeds_fresh_channel_after_durable_events() -> N
         ledger=ledger,
         bus=fresh_bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues=queues,
     )
 
@@ -601,7 +666,7 @@ async def test_terminal_idempotent_replay_does_not_mint_live_channel() -> None:
         ledger=ledger,
         bus=fresh_bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues=queues,
     )
 
@@ -827,7 +892,7 @@ async def test_submit_retains_delivery_when_broker_is_down() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues=queues,
     )
     channel = bus.open("efail")
@@ -857,7 +922,7 @@ async def test_submit_cancellation_during_enqueue_preserves_delivery() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     channel = bus.open("cancelled-publish")
@@ -897,7 +962,7 @@ async def test_cancel_fences_job_accepted_after_its_broker_probe() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     submit = asyncio.create_task(
@@ -926,7 +991,7 @@ async def test_submit_cancellation_cannot_interrupt_late_publication_fence() -> 
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     submit = asyncio.create_task(
@@ -960,7 +1025,7 @@ async def test_ambiguous_publish_error_cannot_fail_already_claimed_run() -> None
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     channel = bus.open("ambiguous")
@@ -998,6 +1063,74 @@ async def test_cancel_aborts_marks_cancelled_and_cleans_checkpoint() -> None:
 
 
 @pytest.mark.asyncio
+async def test_cancel_retries_failed_context_cleanup_without_leaking_its_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Terminal cancellation retries context cleanup and always discards stasis."""
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    bus = InProcessEventBus(ledger=ledger)
+    context = ContextOrchestrator(
+        registry=cast("Any", SimpleNamespace(list_capability_states=list)),
+    )
+    release_attempts: list[str] = []
+    warnings: list[tuple[str, dict[str, object]]] = []
+    sensitive_detail = "provider-token-must-not-reach-logs"
+
+    def release_context(run_id: str) -> None:
+        release_attempts.append(run_id)
+        if len(release_attempts) == 1:
+            raise RuntimeError(sensitive_detail)
+        context.release(run_id)
+
+    def record_warning(event: str, **fields: object) -> None:
+        warnings.append((event, fields))
+
+    monkeypatch.setattr("lychd.domain.cortex.engine.logger.warning", record_warning)
+    engine = RunEngine(
+        ledger=ledger,
+        bus=bus,
+        workflows=builtin_workflow_registry(),
+        queue_router=_queue_router(),
+        queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
+        release_context=release_context,
+    )
+    await engine.submit(Intent(session_id="s", run_id="cancel-parked", prompt="hi", source="bridge"))
+    assert await ledger.try_claim_run("cancel-parked", enqueue_seq=0) is True
+    await ledger.park_consent("cancel-parked", "consent-1")
+    context.assemble(
+        run_id="cancel-parked",
+        session_id="s",
+        query="hi",
+    )
+    await engine.stasis_store.replace("cancel-parked", [])
+    internals = cast("Any", context)
+    assert context.get("cancel-parked") is not None
+    assert len(internals._env_snapshots) == 1
+
+    await engine.cancel("cancel-parked")
+
+    run = await ledger.get("cancel-parked")
+    assert run is not None
+    assert run.status is RunStatus.CANCELLED
+    assert context.get("cancel-parked") is not None
+    assert not await engine.stasis_store.exists("cancel-parked")
+    assert warnings == [
+        (
+            "cancel_context_cleanup_failed",
+            {"run_id": "cancel-parked", "error_type": "RuntimeError"},
+        )
+    ]
+    assert sensitive_detail not in repr(warnings)
+
+    await engine.cancel("cancel-parked")
+
+    assert release_attempts == ["cancel-parked", "cancel-parked"]
+    assert context.get("cancel-parked") is None
+    assert len(internals._env_snapshots) == 0
+    assert len(internals._env_snapshot_key_by_run) == 0
+
+
+@pytest.mark.asyncio
 async def test_cancel_request_disconnect_cannot_interrupt_settlement() -> None:
     """Caller cancellation is propagated only after abort + durable CANCELLED finish."""
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
@@ -1007,7 +1140,7 @@ async def test_cancel_request_disconnect_cannot_interrupt_settlement() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     await engine.submit(Intent(session_id="s", run_id="cancel-shield", prompt="hi", source="bridge"))
@@ -1066,7 +1199,7 @@ async def test_concurrent_terminal_evidence_repairs_share_one_writer() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
     )
     await ledger.create(
@@ -1120,7 +1253,7 @@ async def test_cancelled_terminal_repair_leader_hands_off_to_its_follower() -> N
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
     )
     await ledger.create(
@@ -1178,7 +1311,7 @@ async def test_terminal_evidence_retry_starts_a_fresh_writer_generation() -> Non
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
     )
     await ledger.create(
@@ -1218,7 +1351,7 @@ async def test_cancel_failure_leaves_honest_cancelling_truth_for_retry() -> None
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
     await engine.submit(Intent(session_id="s", run_id="cancel-retry", prompt="hi", source="bridge"))
@@ -1257,7 +1390,7 @@ async def test_cancel_settles_the_runs_pending_consent_card() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
         consents=consents,
     )
@@ -1310,7 +1443,7 @@ async def test_cancel_sweeps_consent_created_while_parent_abort_settles() -> Non
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
         consents=consents,
     )
@@ -1339,7 +1472,7 @@ async def test_cancelled_retry_repairs_an_escaped_pending_consent() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
         consents=consents,
     )
@@ -1388,7 +1521,7 @@ async def test_delegate_cancelled_error_keeps_run_honestly_cancelling() -> None:
         ledger=ledger,
         bus=InProcessEventBus(ledger=ledger),
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
         delegates=delegates,  # type: ignore[arg-type]
     )
@@ -1418,7 +1551,7 @@ async def test_broker_abort_timeout_keeps_run_honestly_cancelling(
         ledger=ledger,
         bus=InProcessEventBus(ledger=ledger),
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": HangingQueue(), "rites": _FakeQueue()},
     )
     await engine.submit(Intent(session_id="s", run_id="cancel-timeout", prompt="hi", source="bridge"))
@@ -1472,7 +1605,7 @@ async def test_cancel_on_fresh_bus_continues_persisted_event_sequence() -> None:
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": _FakeQueue(), "rites": _FakeQueue()},
     )
 
@@ -1504,7 +1637,7 @@ async def test_startup_cancel_reconciliation_fences_a_late_cancelled_broker_job(
         ledger=ledger,
         bus=InProcessEventBus(ledger=ledger),
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=_queue_router(),
         queues={"runs": queue, "rites": _FakeQueue()},
     )
 
@@ -1527,7 +1660,7 @@ async def test_approve_seam_reenqueues_parked_run() -> None:
     await ledger.set_consent("run_p", "consent_1")
     _decide(engine, run_id="run_p", consent_id="consent_1")
 
-    await engine.approve("consent_1", approved=True)
+    await engine.resume_consent("consent_1")
 
     run = await ledger.get("run_p")
     assert run is not None
@@ -1549,7 +1682,7 @@ async def test_approve_refuses_a_parked_run_without_matching_decided_consent() -
     await ledger.set_status("run_pending", RunStatus.AWAITING_CONSENT)
     await ledger.set_consent("run_pending", "consent_pending")
 
-    await engine.approve("consent_pending", approved=True)
+    await engine.resume_consent("consent_pending")
 
     run = await ledger.get("run_pending")
     assert run is not None
@@ -1576,8 +1709,8 @@ async def test_double_approve_enqueues_the_resume_once() -> None:
     _decide(engine, run_id="run_d", consent_id="consent_d")
 
     await asyncio.gather(
-        engine.approve("consent_d", approved=True),
-        engine.approve("consent_d", approved=True),
+        engine.resume_consent("consent_d"),
+        engine.resume_consent("consent_d"),
     )
 
     run = await ledger.get("run_d")
@@ -1600,7 +1733,7 @@ async def test_approve_enqueue_failure_retains_exact_resume_delivery() -> None:
     _decide(engine, run_id="run_r", consent_id="consent_r")
 
     queues["runs"] = _FailingQueue()  # type: ignore[assignment]
-    await engine.approve("consent_r", approved=True)
+    await engine.resume_consent("consent_r")
 
     admitted = await ledger.get("run_r")
     assert admitted is not None
@@ -1630,7 +1763,7 @@ async def test_approve_cancellation_preserves_exact_resume_delivery() -> None:
     _decide(engine, run_id="run_cancel", consent_id="consent_cancel")
     queue = _CancellationQueue()
     queues["runs"] = queue  # type: ignore[assignment]
-    task = asyncio.create_task(engine.approve("consent_cancel", approved=True))
+    task = asyncio.create_task(engine.resume_consent("consent_cancel"))
     await queue.entered.wait()
 
     task.cancel()

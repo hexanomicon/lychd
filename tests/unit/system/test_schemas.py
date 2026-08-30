@@ -73,6 +73,73 @@ def test_quadlet_container_rejects_directive_and_specifier_injection(
         QuadletContainer.model_validate(payload)
 
 
+@pytest.mark.parametrize("name", ["../runtime", "runtime/sidecar", r"runtime\sidecar", "runtime..service"])
+def test_quadlet_container_rejects_unsafe_name_components(name: str) -> None:
+    with pytest.raises(ValueError, match="safe unit-name component"):
+        QuadletContainer(
+            description="safe",
+            image="registry.example/runtime:1",
+            container_name=name,
+        )
+
+
+@pytest.mark.parametrize(
+    ("model", "payload"),
+    [
+        (QuadletContainer, {"pod": ".."}),
+        (QuadletContainer, {"wants": ["safe.service", ".."]}),
+        (QuadletPod, {"pod_name": ".."}),
+        (QuadletPod, {"wanted_by": ["default.target", ".."]}),
+        (QuadletTarget, {"name": "logic", "description": "safe", "requires": [".."]}),
+    ],
+)
+def test_generated_manifests_reject_traversal_as_a_unit_reference(
+    model: type[QuadletContainer | QuadletPod | QuadletTarget],
+    payload: dict[str, object],
+) -> None:
+    if model is QuadletContainer:
+        payload = {
+            "description": "safe",
+            "image": "registry.example/runtime:1",
+            "container_name": "safe",
+            **payload,
+        }
+
+    with pytest.raises(ValueError, match="safe unit-name component"):
+        model.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("model", "payload"),
+    [
+        (
+            QuadletContainer,
+            {
+                "description": "safe",
+                "image": "registry.example/runtime:1",
+                "container_name": "safe",
+                "wants": ["same.service", "same.service"],
+            },
+        ),
+        (QuadletPod, {"wanted_by": ["default.target", "default.target"]}),
+        (
+            QuadletTarget,
+            {
+                "name": "logic",
+                "description": "safe",
+                "wants": ["lychd-animator-alpha.target", "lychd-animator-alpha.target"],
+            },
+        ),
+    ],
+)
+def test_generated_manifests_reject_duplicate_unit_references(
+    model: type[QuadletContainer | QuadletPod | QuadletTarget],
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(ValueError, match="must not contain duplicate units"):
+        model.model_validate(payload)
+
+
 @pytest.mark.parametrize(
     "spec",
     [
@@ -165,17 +232,8 @@ def test_quadlet_pod_rejects_duplicate_host_ports() -> None:
     ],
 )
 def test_quadlet_target_rejects_directive_and_escape_injection(payload: dict[str, object]) -> None:
-    with pytest.raises(ValueError, match="single-line|backslash|one safe unit name"):
+    with pytest.raises(ValueError, match="single-line|backslash|safe unit-name component"):
         QuadletTarget.model_validate(payload)
-
-
-def test_quadlet_target_rejects_duplicate_dependency_units() -> None:
-    with pytest.raises(ValueError, match="must not contain duplicate units"):
-        QuadletTarget(
-            name="logic",
-            description="safe",
-            wants=["lychd-animator-alpha.target", "lychd-animator-alpha.target"],
-        )
 
 
 def test_animator_and_coven_unit_names_have_one_canonical_spelling() -> None:

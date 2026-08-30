@@ -21,10 +21,8 @@ from lychd.system.services.file_publication_models import (
     FilePublication,
     PublicationRollbackError,
 )
-from lychd.system.services.layout_directories import (
-    DirectoryProvisioning,
-    DirectoryRollbackError,
-)
+from lychd.system.services.layout_directory_settlement import DirectoryRollbackError
+from lychd.system.services.layout_directory_transaction import DirectoryProvisioning
 from lychd.system.services.lifecycle.models import (
     CreatedResources,
     created_resources,
@@ -211,10 +209,10 @@ def stage_text_file(
 
     identity: FileIdentity | None = None
     try:
-        os.fchmod(descriptor, mode)
         metadata = os.fstat(descriptor)
         identity = settlement.identity(path=path, metadata=metadata)
         settlement.require_regular_file(metadata, path=path)
+        os.fchmod(descriptor, mode)
         stream = os.fdopen(descriptor, "w", encoding="utf-8")
         descriptors.transfer(descriptor)
         with stream:

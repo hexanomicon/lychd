@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, cast
 
-from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, WORKFLOW_REGISTRY, BuiltinWorkflowRegistry
+from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, BuiltinWorkflowRegistry
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from litestar import Litestar
     from litestar.testing import TestClient
 
-_NAME = WORKFLOW_REGISTRY.default.name
-_REVISION = WORKFLOW_REGISTRY.default.manifest.revision
+_NAME = BRIDGE_CHAT.name
+_REVISION = BRIDGE_CHAT.manifest.revision
 
 
 def test_catalogue_lists_registered_workflow(

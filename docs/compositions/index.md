@@ -14,6 +14,18 @@ container can all help a Composition, but none becomes one merely by being reusa
 [Product](#products-package-compositions) selects one or more Compositions for a concrete profession
 or market; a concrete use case states the job that Product helps its operator finish.
 
+Portfolio membership is design truth, not executable delivery. The Portfolio is the grand design
+LychD is approaching; the canonical [State of Work Portfolio
+boundary](../state-of-the-work.md#composition-portfolio-delivery) records what has entered matter.
+A leaf mentions delivery only where that fact changes how its contract should be read.
+
+| Your question | Continue with |
+| --- | --- |
+| What is LychD meant to automate? | browse the [Portfolio](#the-portfolio) and its Composition leaves |
+| Where should my new idea live? | [Choosing a Home](choosing-a-home.md) |
+| How do Products, dependencies, and Suites fit? | [Products and Suites](products-and-suites.md) |
+| What works in this revision? | [State of Work](../state-of-the-work.md) |
+
 ## The Composition test
 
 A page belongs in the Portfolio when all three answers are concrete:
@@ -28,21 +40,19 @@ A page belongs in the Portfolio when all three answers are concrete:
 | Term | Office |
 | --- | --- |
 | **Composition** | reusable application capability owning domain records, judgment, policies, projections, effects, and a Pattern catalogue |
-| **Product** | named professional or market package selecting one or more Compositions or Suites, profiles, projections, and concrete use cases |
-| **Native Reference Composition** | first-party supported reusable application contract and worked example |
+| **Product** | named professional or market package selecting one or more Compositions or Suites, owner-qualified profiles, projections, and concrete use cases |
+| **Product Revision** | immutable pin of that stable Product promise; changed pins, profiles, use cases, defaults, or support policy create a revision, while a materially different promise creates a Product identity |
+| **Use case** | one concrete class of operator job a Product promises to support; not a Pattern, Run, or deployment |
+| **owner-qualified `<kind>` profile** | a versioned specialization that names its owner and profile kind while preserving the same records, authority, recovery, and finish judgment |
+| **Native Reference Composition** | first-party maintained reusable application contract and worked example |
 | **Pattern** | one executable-score family owned by a Composition; each immutable revision is a Scroll |
 | **Scroll** | one whole immutable Pattern revision made of one or more Spell placements and their paths |
 | **Spell** | one independently named semantic action contract placed at a Scroll station; its name grants no capability or authority |
 | **Invocation** | one admitted Circle in which an exact Scroll may be cast |
 | **Casting** | the performance of that exact Scroll within the Invocation |
-| **Suite** | versioned coordination of separate Compositions through typed handoffs |
+| **Suite** | versioned live coordination of separate Composition-owned Invocations through typed handoffs |
+| **Deployment** | one configured installation of an exact Product revision for one operator |
 | **Extension** | a governed way for implementation to enter LychD; never an application by itself |
-
-Portfolio membership accepts a reusable application contract; it does not claim executable
-delivery. The Portfolio is the grand design LychD is approaching; the canonical
-[State of Work Portfolio boundary](../state-of-the-work.md#composition-portfolio-delivery) records
-what has entered matter. A leaf mentions delivery only where that fact changes how its contract
-should be read.
 
 When a native first-party Composition enters code, its authoritative records, policies, and finish
 judgment live under `src/lychd/compositions/<identity>/**`. A browser or Android projection lives
@@ -54,46 +64,65 @@ A Composition identity is a URL-safe key plus a separate revision, written here 
 
 ## The Portfolio
 
-| Composition | Representative outcomes |
-| --- | --- |
-| [Voidlight](voidlight/index.md) | an attributable visual asset package |
-| [Riffmaw](riffmaw/index.md) | an attributable sonic package and optional synchronization map |
-| [Foundry](foundry/index.md) | a reproducible, playtested local build candidate |
-| [Broadcast](broadcast/index.md) | a source-grounded local publication candidate |
-| [Wellbeing](wellbeing/index.md) | an editable eating-or-fitness plan, honest infeasibility, or confirmed check-in |
-| [Homestead](homestead/index.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
-| [Scavenger](scavenger/index.md) | an evidence-bound acquisition campaign, shortlist, bargain, commitment, parcel result, or diligence packet |
-| [Broker](broker/index.md) | a client answer grounded in current product knowledge, prepared act, human handoff, or exact blocker |
-| [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
-| [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
-| [Avatar](avatar/index.md) | one attributable Lich presentation projected into one or more separately admitted places, with honest partial settlement |
-| [Companion](companion/index.md) | one mobile Familiar form with a configurable client, local device session, and bounded LychD interaction |
-| [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
-| [Familiar](familiar/index.md) | one admitted physical body and bounded real-world task or presence that settles honestly |
+The first-party Portfolio is curated to grow more slowly than Products, use cases, profiles, and
+Deployments, but it is not a closed universe or a numerical target. The following **reader views**
+are non-exclusive ways into the same accepted Portfolio. They own no records, identity, namespace,
+dependency, admission, maturity, or runtime selection; every Composition retains one canonical
+leaf and may be linked from several views.
+
+| Reader view | Composition | Representative outcomes |
+| --- | --- | --- |
+| **Creative Works** | [Voidlight](voidlight/index.md) | an attributable visual asset package |
+| **Creative Works** | [Riffmaw](riffmaw/index.md) | an attributable sonic package and optional synchronization map |
+| **Creative Works** | [Foundry](foundry/index.md) | a reproducible, playtested local build candidate |
+| **Creative Works** | [Broadcast](broadcast/index.md) | a source-grounded local publication candidate |
+| **Stewardship & Acquisition** | [Wellbeing](wellbeing/index.md) | an editable eating-or-fitness plan, honest infeasibility, or confirmed check-in |
+| **Stewardship & Acquisition** | [Homestead](homestead/index.md) | a legible place or stores ledger, household provision result, bounded work order, or safely refused effect |
+| **Stewardship & Acquisition** | [Scavenger](scavenger/index.md) | an evidence-bound acquisition campaign, shortlist, bargain, commitment, parcel result, or diligence packet |
+| **Presence & Embodiment** | [Blockworld](blockworld/index.md) | one finite mission whose world effects are verified and recoverable |
+| **Presence & Embodiment** | [Reach](reach/index.md) | one bounded social turn, summon, or admitted presence effect |
+| **Presence & Embodiment** | [Avatar](avatar/index.md) | one attributable Lich presentation projected into separately admitted places, with honest partial settlement |
+| **Presence & Embodiment** | [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
+| **Presence & Embodiment** | [Familiar](familiar/index.md) | one admitted physical body and bounded real-world task or presence that settles honestly |
+| **Presence & Embodiment** | [Companion](companion/index.md) | one mobile Familiar form with a configurable client, local device session, and bounded LychD interaction |
+| **Professional Operations** | [Broker](broker/index.md) | a client answer grounded in current offer knowledge, prepared act, human handoff, or exact blocker |
 
 ## Candidate studies
 
 Candidate studies test the application boundary without entering the Portfolio or implying
 delivery. [Workshop](workshop/index.md) tests one evidence-driven technical-service capability;
-**Mechanic** is the first Product that packages its passenger-vehicle profile.
+**Mechanic** is the proposed first Product if Workshop is accepted into the Portfolio with that
+passenger-vehicle profile.
 
 Communion remains a bounded mobile interaction route inside [Companion](companion/index.md), not a
 separate Composition or Product. The first client target for Companion is native Android; the
 client projects Companion's contract without acquiring its records, policies, or effect authority.
 
+Use [Choosing a Home](choosing-a-home.md) before adding another candidate. Independent consumers
+are valuable evidence, not a numeric quota; mechanism reuse alone is not a new application owner.
+
 ## Products package Compositions
 
 A Product is the named thing an operator recognizes and a business can offer for a profession or
-market. It selects exact eligible Composition or Suite revisions, service profiles, projections,
-supported use cases, defaults, and a delivery and support envelope. `Voidlight` remains a
-Composition; a profession- or market-specific offer that packages its visual capability is a
-Product. `Mechanic`, for example, packages Workshop's passenger-vehicle service profile; if it also
-offers part sourcing, a Suite coordinates the typed handoff to Scavenger.
+market. It selects exact eligible Composition or Suite revisions, owner-qualified profiles,
+projections, supported use cases, defaults, and a delivery and support envelope. `Voidlight`
+remains a Composition; a profession- or market-specific **offer** that packages its visual
+capability is a Product, while a domain specialization may remain an owner-qualified profile when
+its records, authority, recovery, and finish judgment stay the same.
+
+`Mechanic` is proposed to package the Workshop candidate's passenger-vehicle service profile. A
+settled part requirement may cross to Scavenger without a Suite. A Suite is required only if
+Mechanic promises one live coordinated diagnostic-and-acquisition result with shared lifecycle and
+settlement.
 
 The Product owns that customer promise and packaging. It owns no Composition records, domain
 judgment, secrets, Sigils, consent, or effect authority, and it is not another scheduler or
 executor. A Suite remains the technical coordination contract when several Compositions must run;
 a deployment remains one configured installation of the Product. Neither is a synonym for Product.
+
+The complete assembly guide distinguishes use cases, owner-qualified profiles, deployments,
+projections, settled references, and live Suite coordination in [Products and
+Suites](products-and-suites.md).
 
 ## Reuse without a universal helper
 
@@ -124,11 +153,26 @@ admitted places; Reach retains each external social turn, Blockworld each persis
 and effect, and Spectre each VR Habitat, Encounter, and safe exit. Avatar coordinates presentation
 and projection settlement but receives no universal world, device, or body authority.
 
+## Relations are not inheritance
+
+Name the exact seam instead of declaring that one Composition broadly depends on another. Product
+co-packaging, an already-settled typed record or ArtifactRef, and an exact external precondition or
+capability snapshot do not create a Suite. A foreign reference grants no installation,
+availability, lifecycle, upgrade, credential, admission, or effect authority.
+
+Spectre can own a generic Encounter without Avatar. A Lich Encounter may take one exact admitted
+Avatar `ProjectionBinding@1` as an external precondition; Avatar still owns who and how appears,
+while Spectre owns the Habitat, participants, comfort, interruption, and safe exit. Companion
+requires a Familiar-backed device record while Familiar retains embodiment and stop law. These are
+exact boundaries, not parent-child ownership or circular installation dependencies.
+
 ## Suites do not dissolve their members
 
-A Suite pins eligible Composition and Pattern revisions, declares typed ArtifactRef or Intent
-handoffs, carries correlation and aggregate ceilings, and states partial-completion policy. It owns
-no member records, secrets, Sigils, provider grants, consent, or effect authority.
+A Suite is required when one result must initiate or admit, await, retry, cancel, recover,
+correlate, or settle multiple Composition-owned Invocations. It pins eligible Composition and
+Pattern revisions, declares typed ArtifactRef or Intent handoffs, carries correlation and aggregate
+ceilings, and states partial-completion policy. It owns no member records, secrets, Sigils, provider
+grants, consent, or effect authority.
 
 ```mermaid
 flowchart LR
@@ -146,9 +190,11 @@ flowchart LR
     P --> PC["Publication candidate"]
 ```
 
-The diagram is a designed handoff, not an executor. Spellweaver must still settle child identity,
-revision closure, budgets, cancellation, Stasis, retry, effect receipts, compensation, and honest
-partial completion before a Suite can run.
+The diagram is a designed handoff, not an executor. Each arrow may remain an independently settled
+typed reference. It becomes a Suite only when a Product promises one result that must coordinate
+the live Invocation lifecycles across those owners. In that case Spellweaver must first settle child
+identity, revision closure, budgets, cancellation, Stasis, retry, effect receipts, compensation,
+and honest partial completion.
 
 ## How a leaf should read
 
@@ -158,6 +204,7 @@ Every Composition leaf answers the same practical questions without reproducing 
   and stopping line;
 - one representative journey rather than a catalogue of imagined features;
 - the records and typed handoffs that make the result attributable;
+- each foreign relation as an exact settled reference, external precondition, or live Suite seam;
 - the few authority, privacy, effect, and recovery boundaries that shape this application;
 - a local delivery note only when present implementation materially changes interpretation; and
 - the smallest fixture that could prove the contract.
@@ -167,5 +214,9 @@ current source registry and Loom prove only the bounded material recorded in
 [State of Work](../state-of-the-work.md#loom-workflow-views); a live Portfolio store, application
 selection, Product selection, Suite execution, and scheduling remain designed.
 
-Continue with [Workflow](../adr/28-workflow.md), choose the Composition whose domain truth owns the
-work, then name the Product and concrete use case that present it.
+Choose the next road:
+
+- evaluating an application idea → [Choosing a Home](choosing-a-home.md);
+- packaging or connecting accepted owners → [Products and Suites](products-and-suites.md);
+- implementing a Composition → its leaf, then [Workflow](../adr/28-workflow.md); or
+- judging executable reality → [State of Work](../state-of-the-work.md).

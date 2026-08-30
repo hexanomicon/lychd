@@ -17,7 +17,7 @@ icon: material/console-line
 - Commands name operator intent rather than Litestar, systemd, Podman, database, queue, or worker
   topology. Click validates and renders; typed services retain authority.
 - One source-owned target vocabulary supplies observation, with a safely actuable subset for
-  lifecycle. Extensions provide inert operation metadata only beneath `run`.
+  lifecycle. A future extension-operation namespace must remain beneath a single host-owned verb.
 - A mutating `--dry-run` previews the same typed plan or request later admitted for effect.
 - Help and host-local rites do not need ASGI, Postgres, or a Vessel. Effects revalidate exact
   ownership while serialized, and only documented machine projections are stable.
@@ -36,7 +36,7 @@ The installed command is **`lychd`**. `PulseGroup` owns the closed grammar and t
 alias for `status`; `lychd --help` is its executable inventory. No `lych` alias is promised.
 Generated services and development machinery have hidden entrypoints, but hidden registration is
 not public compatibility. The root verbs are `init`, `bind`, `start`, `stop`, `status`/`st`,
-`logs`, `run`, and `del`; no snapshot, restore, selector shorthand, recovery, promotion, or
+`logs`, and `del`; no run-operation, snapshot, restore, selector shorthand, recovery, promotion, or
 consent spelling is reserved by the grammar.
 
 ### Inscribe, then bind
@@ -92,13 +92,11 @@ or Oculus evidence view.
 
 ### Admit work without ceding the language
 
-`lychd run [OPERATION]` is the sole extension execution namespace. Registration contributes inert,
-typed identity, inputs, authority/scope, mutation and consent characteristics, and progress/result
-shape. It never grants a Click callback or arbitrary host execution. The delivered production
-surface is catalogue and schema help; the default client refuses submission because no
-Ward-authenticated CLI admission route is wired. Test-injected clients prove an adapter seam, not
-production durability. Help does not imply a durable run, consent decision, or follow stream.
-If catalogue load fails, core help remains and reports the failure without constructing ASGI.
+A future host-owned run-operation verb may become the sole extension execution namespace.
+Registration would contribute inert, typed identity, inputs, authority/scope, mutation and consent
+characteristics, and progress/result shape; it must never grant an extension-owned Click callback
+or arbitrary host execution. No run-operation catalogue, schema help, injected client seam, or
+Ward-authenticated CLI admission route is delivered today.
 
 ### Delete only what the body can name
 

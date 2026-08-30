@@ -10,7 +10,6 @@ from lychd.cli.operator import logs, status
 from lychd.system.operator import (
     InventoryItem,
     InventoryReport,
-    JournalRead,
     ObservationState,
     OperatorTarget,
     SystemSummary,
@@ -57,13 +56,8 @@ def test_status_json_is_machine_readable(mocker: MockerFixture) -> None:
 
 
 def test_logs_command_emits_captured_content(mocker: MockerFixture) -> None:
-    read = JournalRead(
-        target=OperatorTarget.SYSTEM,
-        units=("lychd-vessel.service",),
-        content="hello\n",
-    )
     journal = mocker.Mock()
-    journal.read.return_value = read
+    journal.read.return_value = "hello\n"
     services = SimpleNamespace(journal=journal)
     mocker.patch("lychd.cli.operator.build_operator_services", return_value=services)
 

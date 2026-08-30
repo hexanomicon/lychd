@@ -1,8 +1,7 @@
 """`WorkflowServices` — the one shared graph DepsT (A5 §3).
 
 Retires the module-global singleton indirection.
-adw-kit's "one shared `GraphDeps` for all workflows keeps the worker generic",
-translated to LychD: a single frozen `WorkflowServices` is threaded as
+A single frozen `WorkflowServices` keeps the worker generic: it is threaded as
 `graph.iter(..., deps=services)` and read by every node via `ctx.deps.<port>`.
 Nothing here is loop- or process-bound except through the ports, so a future SAQ
 ghoul builds its own instance at worker startup.
@@ -49,8 +48,6 @@ class TurnLedgerPort(Protocol):
     async.
     """
 
-    async def add_turn(self, session_id: str, turn: Any) -> None: ...
-
     async def settle_agent_turn(
         self,
         session_id: str,
@@ -86,8 +83,6 @@ class ConsentLedgerPort(Protocol):
 
 class TransitionPort(Protocol):
     """The narrow slice of `OrchestratorManager` the consent tool needs."""
-
-    async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan: ...
 
     async def request_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan: ...
 
@@ -146,46 +141,11 @@ def default_sigil() -> Sigil:
     return default_local_sigil()
 
 
-def build_workflow_services(
-    *,
-    dispatcher: GrantPort,
-    orchestrator: TransitionPort,
-    context: ContextOrchestrator,
-    fragments: FragmentRegistry,
-    turns: Any,
-    consents: ConsentLedgerPort,
-    events: RunEventBus,
-    forge: AgentForge,
-    sigil_provider: Callable[[], Sigil] = default_sigil,
-    delegates: DelegatedAgentCoordinatorPort | None = None,
-) -> WorkflowServices:
-    """Assemble `WorkflowServices` from run-scoped service handles.
-
-    The graph parks into the SAME `consents` ledger the web reads (C3's one-record
-    rule). `turns` (a `SessionStore`) supplies the `TurnLedgerPort`. `events` is the
-    shared `RunEventBus`. The two ledger ports are threaded from DISTINCT sources — the
-    old single-`sessions` alias is gone.
-    """
-    return WorkflowServices(
-        dispatcher=dispatcher,
-        orchestrator=orchestrator,
-        context=context,
-        fragments=fragments,
-        turns=turns,
-        consents=consents,
-        events=events,
-        forge=forge,
-        sigil_provider=sigil_provider,
-        delegates=delegates,
-    )
-
-
 __all__ = [
     "ConsentLedgerPort",
     "GrantPort",
     "TransitionPort",
     "TurnLedgerPort",
     "WorkflowServices",
-    "build_workflow_services",
     "default_sigil",
 ]

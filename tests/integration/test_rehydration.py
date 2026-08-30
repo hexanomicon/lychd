@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_graph import BaseNode, End, FullStatePersistence, Graph, GraphRunContext
 from pydantic_graph.persistence import NodeSnapshot
 
@@ -23,13 +23,16 @@ from lychd.domain.animation.capabilities import (
 )
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
-from lychd.domain.cortex.graph_runner import GraphRunner
+from lychd.domain.cortex.graph_runner import GraphRunner, HardwareResumeBudget, StasisPolicy
 from lychd.domain.cortex.leases import LeaseLedger
+from lychd.domain.cortex.runs import ConsentPending, RunParked
+from lychd.domain.cortex.stasis import DurableStasisPhylactery, InMemoryStasisStore
 
 
 class MockState(BaseModel):
     data: str = "initial"
     warm: bool = False
+    hardware_resume_budget: HardwareResumeBudget = Field(default_factory=HardwareResumeBudget)
 
 
 MOCK_SPEC = CapabilitySpec(
@@ -67,8 +70,29 @@ class StasisNode(BaseNode[MockState, None, str]):
     async def run(self, ctx: GraphRunContext[MockState, None]) -> SuccessNode:
         if not ctx.state.warm:
             ctx.state.warm = True
-            raise HardwareTransitionRequired(MOCK_SPEC.key, MOCK_SPEC.animator_name)
+            raise HardwareTransitionRequired(MOCK_SPEC.key)
         return SuccessNode()
+
+
+@dataclass(frozen=True)
+class _ResumeDeps:
+    resumed: bool
+
+
+@dataclass
+class StasisAcrossDurableParkNode(BaseNode[MockState, _ResumeDeps, str]):
+    """Request hardware, park durably, then request the same hardware after re-entry."""
+
+    async def run(self, ctx: GraphRunContext[MockState, _ResumeDeps]) -> End[str]:
+        if not ctx.state.warm:
+            ctx.state.warm = True
+            raise HardwareTransitionRequired(MOCK_SPEC.key)
+        if not ctx.deps.resumed:
+            consent_id = "consent-1"
+            run_id = "run-1"
+            tool_name = "test-tool"
+            raise ConsentPending(consent_id, run_id, tool_name)
+        raise HardwareTransitionRequired(MOCK_SPEC.key)
 
 
 @dataclass
@@ -76,7 +100,11 @@ class LeaseAfterDrainRaceNode(BaseNode[MockState, Dispatcher, str]):
     """Acquire through the real Dispatcher after its first issue loses admission."""
 
     async def run(self, ctx: GraphRunContext[MockState, Dispatcher]) -> End[str]:
-        async with ctx.deps.lease_grant_key(MOCK_SPEC.key, holder="run:dispatch-race"):
+        async with ctx.deps.lease_grant(
+            family=CapabilityFamily.CHAT,
+            model_name=MOCK_SPEC.model_id,
+            run_id="dispatch-race",
+        ):
             return End("leased")
 
 
@@ -86,7 +114,6 @@ class DrainRaceRegistry:
     def __init__(self) -> None:
         self.state = CapabilityState(
             capability_key=MOCK_SPEC.key,
-            is_dynamic=False,
             phase=CapabilityPhase.WARM,
         )
         self.issue_started = asyncio.Event()
@@ -95,6 +122,9 @@ class DrainRaceRegistry:
 
     def get_capability(self, key: str) -> CapabilitySpec | None:
         return MOCK_SPEC if key == MOCK_SPEC.key else None
+
+    def list_capabilities(self) -> list[CapabilitySpec]:
+        return [MOCK_SPEC]
 
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self.state if key == MOCK_SPEC.key else None
@@ -126,7 +156,6 @@ class DrainRaceRegistry:
                 issued_at=datetime.now(UTC),
                 scope=scope,
             ),
-            generation=MOCK_SPEC.generation_profile,
             model=None,
         )
 
@@ -146,7 +175,7 @@ class ReopenAdmissionOrchestrator:
     ) -> None:
         _ = signal_priority
         self.calls.append(exception.capability_key)
-        self.leases.end_drain([exception.animator_name])
+        self.leases.end_drain([MOCK_SPEC.animator_name])
 
 
 class LychDTestPersistence(FullStatePersistence[MockState, str]):
@@ -155,7 +184,6 @@ class LychDTestPersistence(FullStatePersistence[MockState, str]):
     def __init__(self) -> None:
         super().__init__()
         self.job_id = "test-job"
-        self.mark_job_resumed_mock = AsyncMock()
 
     async def rehydrate_stasis(self, state: MockState, node: BaseNode[MockState, Any, str]) -> None:
         snapshot_id = node.get_snapshot_id()
@@ -166,9 +194,6 @@ class LychDTestPersistence(FullStatePersistence[MockState, str]):
                 return
 
         await self.snapshot_node(state, node)
-
-    async def mark_job_resumed(self, job_id: str) -> None:
-        await self.mark_job_resumed_mock(job_id)
 
 
 class FailingStasisPersistence(LychDTestPersistence):
@@ -197,11 +222,13 @@ class SimpleMockOrchestrator:
 
 
 @pytest.mark.asyncio
-async def test_graph_runner_native_rehydration_ritual() -> None:
-    """A graph resume returns its result without finalizing the caller-owned checkpoint."""
-    persistence = LychDTestPersistence()
+async def test_graph_runner_resume_preserves_caller_owned_durable_checkpoint() -> None:
+    """A successful resume does not delete the checkpoint before its caller commits Run truth."""
+    store = InMemoryStasisStore()
+    persistence = DurableStasisPhylactery(job_id="test-job", store=store)
     graph = Graph[MockState, None, str](nodes=[MockNode])
     await graph.initialize(MockNode(), state=MockState(data="frozen"), persistence=persistence)
+    assert await store.exists("test-job")
 
     runner = GraphRunner[MockState](
         orchestrator=SimpleMockOrchestrator(),
@@ -212,7 +239,7 @@ async def test_graph_runner_native_rehydration_ritual() -> None:
     result = await runner.resume_graph(graph)
 
     assert result == "done"
-    persistence.mark_job_resumed_mock.assert_not_called()
+    assert await store.exists("test-job")
 
 
 @pytest.mark.asyncio
@@ -248,6 +275,49 @@ async def test_graph_runner_stasis_and_reanimation_loop() -> None:
     first_wait = occurrences[0][0]
     assert occurrences[1][0] == first_wait
     assert occurrences[2][0] != first_wait  # retry/resume is a new logical occurrence
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [
+        pytest.param(StasisPolicy(max_resumes=1, max_same_key=8), id="total"),
+        pytest.param(StasisPolicy(max_resumes=8, max_same_key=1), id="same-capability"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_hardware_resume_budget_survives_durable_park_and_new_runner(policy: StasisPolicy) -> None:
+    store = InMemoryStasisStore()
+    graph = Graph[MockState, _ResumeDeps, str](nodes=[StasisAcrossDurableParkNode])
+    first_orchestrator = SimpleMockOrchestrator()
+    first_runner = GraphRunner[MockState](
+        orchestrator=first_orchestrator,
+        persistence=DurableStasisPhylactery(job_id="run-1", store=store),
+        signal_priority=50,
+        policy=policy,
+    )
+
+    parked = await first_runner.run_graph(
+        graph,
+        StasisAcrossDurableParkNode(),
+        MockState(),
+        deps=_ResumeDeps(resumed=False),
+    )
+
+    assert isinstance(parked, RunParked)
+    first_orchestrator.handle_transition_mock.assert_called_once()
+
+    second_orchestrator = SimpleMockOrchestrator()
+    second_runner = GraphRunner[MockState](
+        orchestrator=second_orchestrator,
+        persistence=DurableStasisPhylactery(job_id="run-1", store=store),
+        signal_priority=50,
+        policy=policy,
+    )
+
+    with pytest.raises(RuntimeError, match="after 2 transition"):
+        await second_runner.resume_graph(graph, deps=_ResumeDeps(resumed=True))
+
+    second_orchestrator.handle_transition_mock.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -306,6 +376,11 @@ async def test_graph_runner_threads_signal_priority_and_fires_stasis_callbacks()
     async def _exit() -> None:
         order.append("exit")
 
+    async def _transition(*_args: Any, **_kwargs: Any) -> None:
+        order.append("transition")
+
+    mock_orchestrator.handle_transition_mock.side_effect = _transition
+
     runner = GraphRunner[MockState](
         orchestrator=mock_orchestrator,
         persistence=persistence,
@@ -320,4 +395,4 @@ async def test_graph_runner_threads_signal_priority_and_fires_stasis_callbacks()
     _, kwargs = mock_orchestrator.handle_transition_mock.call_args
     assert kwargs["signal_priority"] == 42.0  # the run's priority, not the hardcoded 100.0
     # enter (RUNNING→AWAITING_HARDWARE) precedes the transition; exit (→RUNNING) follows it.
-    assert order == ["enter", "exit"]
+    assert order == ["enter", "transition", "exit"]

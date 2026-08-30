@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from textwrap import dedent
+from typing import cast
 
 from pydantic_ai.models.test import TestModel
 
 from lychd.config.runes.registry import load_rune_registry
 from lychd.config.settings.root import get_settings
-from lychd.domain.animation.schemas import CapabilityFamily
+from lychd.domain.animation.schemas import CapabilityFamily, SoulstoneConfig
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.services.declarations import compile_animator_declarations
 from lychd.domain.animation.services.registry import AnimatorRegistry
@@ -32,7 +33,9 @@ _REGISTER_SOURCE = dedent(
     from typing import ClassVar
 
     from pydantic_ai.models.test import TestModel
+    from pydantic_ai.toolsets import FunctionToolset
 
+    from lychd.agents.workflows.nodes import CONSENT_EFFECT_ID_KEY, CONSENT_EFFECT_REVISION_KEY
     from lychd.domain.animation.capabilities import (
         ActivationResult,
         CapabilityPhase,
@@ -40,7 +43,7 @@ _REGISTER_SOURCE = dedent(
         CapabilityState,
         SourceKind,
     )
-    from lychd.domain.animation.connectors import Connector, ModelConnector
+    from lychd.domain.animation.connectors import Connector, ModelConnector, ToolConnector
     from lychd.domain.animation.links import Link
     from lychd.domain.animation.schemas import CapabilityFamily, SoulstoneConfig
     from lychd.domain.animation.services.adapters.contracts import RuntimePlan, SoulstoneDefinition
@@ -55,15 +58,24 @@ _REGISTER_SOURCE = dedent(
         extra_modality: str
 
 
-    class AdversarialConnector(Connector, ModelConnector):
+    async def reveal_ciphertext(ciphertext: str):
+        return ciphertext
+
+
+    class AdversarialConnector(Connector, ModelConnector, ToolConnector):
         def __init__(self, model_id):
             self._model_id = model_id
             self._link = Link(up=True)
             self._model = TestModel()
-
-        @property
-        def kind(self):
-            return "crypt-conformance"
+            self._toolset = FunctionToolset(id="crypt-adversarial-tools")
+            self._toolset.add_function(
+                reveal_ciphertext,
+                requires_approval=True,
+                metadata={
+                    CONSENT_EFFECT_ID_KEY: "crypt.reveal-ciphertext",
+                    CONSENT_EFFECT_REVISION_KEY: "v1",
+                },
+            )
 
         @property
         def link(self):
@@ -73,13 +85,13 @@ _REGISTER_SOURCE = dedent(
         def base_url(self):
             return "crypt://adversarial"
 
-        def list_models(self):
-            return ()
-
         def get_model(self, *, model_id=None):
             if model_id != self._model_id:
                 raise ValueError(f"unexpected model request: {model_id}")
             return self._model
+
+        def get_toolsets(self):
+            return (self._toolset,)
 
 
     class AdversarialRuntimeAdapter:
@@ -110,11 +122,8 @@ _REGISTER_SOURCE = dedent(
                     family=CapabilityFamily.CHAT,
                     model_id=soulstone.capability_model_id,
                     modalities_in=["text", soulstone.extra_modality],
-                    modalities_out=["text"],
                     supports_tools=True,
-                    supports_streaming=False,
                     concurrency=soulstone.concurrency,
-                    metadata={"crypt_seal": soulstone.crypt_seal},
                 )
             ]
 
@@ -122,13 +131,9 @@ _REGISTER_SOURCE = dedent(
             return [
                 CapabilityState(
                     capability_key=spec.key,
-                    is_dynamic=spec.is_dynamic,
                     phase=CapabilityPhase.WARM,
                     health="crypt-ready",
-                    active_model_id=spec.model_id,
-                    loaded_model_ids=[spec.model_id],
                     checked_at=datetime.now(UTC),
-                    metadata={"observer": animator.connector.kind},
                 )
                 for spec in specs
             ]
@@ -136,13 +141,8 @@ _REGISTER_SOURCE = dedent(
         async def activate_capability(self, animator, spec):
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.WARM,
                 reason=f"{animator.name}:{spec.model_id} is already warm",
             )
-
-        def control_plane(self, animator):
-            return None
-
 
     def register(context):
         context.soulstones.add(
@@ -185,21 +185,16 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
         crypt=[_EXTENSION_ID],
         crypt_root=crypt_extensions,
     ).assemble()
-    extensions = AssembledExtensions(context=context, active_ids=(_EXTENSION_ID,))
+    extensions = AssembledExtensions(context=context)
 
-    assert len(extensions.soulstone_definitions) == 1
-    definition = extensions.soulstone_definitions[0]
-    assert context.soulstones.registrations[0].provider_id == "crypt:adversarial/vertical"
-    assert definition.rune_schema in extensions.rune_schemas
-    assert extensions.runtime_adapters == (definition.runtime_adapter,)
-    assert definition.rune_schema.__module__.startswith("lychd_crypt_extension_")
-    assert type(definition.runtime_adapter).__module__ == definition.rune_schema.__module__
+    rune_schema = next(schema for schema in extensions.rune_schemas if schema.__name__ == "AdversarialCryptRune")
+    runtime_adapter = extensions.runtime_adapters[0]
 
     runes = load_rune_registry(extensions, runes_dir)
-    loaded_rune = runes.one(definition.rune_schema)
+    loaded_rune = cast("SoulstoneConfig", runes.one(rune_schema))
     assert loaded_rune.source_file == rune_file
     assert loaded_rune.model_dump()["crypt_seal"] == "registered-outside-core"
-    assert definition.runtime_adapter.plan(loaded_rune).exec_args == [
+    assert runtime_adapter.plan(loaded_rune).exec_args == [
         "crypt-runtime",
         "--model",
         _MODEL_ID,
@@ -229,10 +224,6 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
     leases = LeaseLedger()
     dispatcher = Dispatcher(registry=registry, leases=leases)
 
-    resolved = dispatcher.resolve_intent("chat")
-    assert resolved.key == _CAPABILITY_KEY
-    assert resolved.metadata == {"crypt_seal": "registered-outside-core"}
-
     async def prove_dispatch() -> None:
         async with dispatcher.lease_grant(
             family=CapabilityFamily.CHAT,
@@ -241,11 +232,10 @@ def test_external_crypt_contributes_rune_adapter_capability_to_dispatcher(tmp_pa
             require_modalities=("ciphertext",),
             requires_tools=True,
         ) as grant:
-            assert grant.key == _CAPABILITY_KEY
+            assert grant.spec.key == _CAPABILITY_KEY
             assert grant.state.health == "crypt-ready"
-            assert grant.state.metadata == {"observer": "crypt-conformance"}
-            assert not hasattr(grant, "animator")
             assert isinstance(grant.model, TestModel)
+            assert [toolset.id for toolset in grant.toolsets] == ["crypt-adversarial-tools"]
             assert [(row.capability_key, row.holder) for row in leases.active()] == [
                 (_CAPABILITY_KEY, "run:crypt-conformance")
             ]

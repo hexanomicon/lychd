@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -10,18 +10,17 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelFormat, ModelInfo, SoulstoneConfig
+from lychd.domain.animation.schemas import ModelInfo, SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
-from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
+from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
-from lychd.domain.animation.services.adapters.surfaces import local_link_default
-from lychd.extensions.builtin.animator.exllamav3.connector import ExLlamaV3Connector, ExLlamaV3Soulstone
+from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator, local_link_default
+from lychd.extensions.builtin.animator.exllamav3.connector import ExLlamaV3Connector
 from lychd.extensions.builtin.animator.exllamav3.control_plane import (
     TabbyAPIControlPlane,
     TabbyAPIControlPlaneError,
 )
 from lychd.extensions.builtin.animator.soulstones import (
-    TABBYAPI_CONTRACT_REVISION,
     ExLlamaV3SoulstoneConfig,
     exllamav3_runtime_model_name,
 )
@@ -37,7 +36,7 @@ _TABBY_SHARED_MEMORY_BYTES = 8 * 1024**3
 class ExLlamaV3RuntimeAdapter:
     """Dynamic ExLlamaV3 runtime backed by the official TabbyAPI server."""
 
-    runtime: ClassVar[str] = "exllamav3"
+    runtime: str = "exllamav3"
 
     def __init__(self, control_plane: TabbyAPIControlPlane | None = None) -> None:
         """Initialize with an injectable control plane for contract tests."""
@@ -86,9 +85,8 @@ class ExLlamaV3RuntimeAdapter:
             default_model_id=stone.models[0].id,
             runtime_names=runtime_names,
             auth_secret_name=stone.auth_secret_name,
-            metadata=self._runtime_metadata(),
         )
-        return ExLlamaV3Soulstone(rune=stone, connector=connector)
+        return SoulstoneAnimator(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Publish every declared TabbyAPI model as a dynamic capability."""
@@ -97,8 +95,6 @@ class ExLlamaV3RuntimeAdapter:
         return capability_specs_from_model_infos(
             stone,
             self._model_infos(stone),
-            runtime_metadata=self._runtime_metadata(),
-            runtime_defaults={},
             is_dynamic=True,
             hints_by_id=hints,
         )
@@ -115,11 +111,10 @@ class ExLlamaV3RuntimeAdapter:
             lifecycle = await self._control_plane.inspect_animator(animator)
         except TabbyAPIControlPlaneError as exc:
             phase = CapabilityPhase.COLD if exc.unreachable else CapabilityPhase.ERROR
-            connector.set_link(Link(up=False, activatable=True, reason=str(exc), checked_at=checked_at))
+            connector.set_link(Link(up=False, reason=str(exc)))
             return [
                 CapabilityState(
                     capability_key=spec.key,
-                    is_dynamic=True,
                     phase=phase,
                     health="down" if phase is CapabilityPhase.COLD else "error",
                     reason=str(exc),
@@ -132,24 +127,14 @@ class ExLlamaV3RuntimeAdapter:
         connector.set_link(
             Link(
                 up=reachable,
-                activatable=True,
-                reason=None if reachable else str(lifecycle.raw.get("health_error") or "tabbyapi_unhealthy"),
-                checked_at=checked_at,
+                reason=None if reachable else lifecycle.error or "tabbyapi_unhealthy",
             )
         )
-        loaded_ids = [
-            model_id
-            for runtime_name in lifecycle.loaded_models
-            if (model_id := connector.model_id_for_runtime(runtime_name)) is not None
-        ]
-        active_model_id = connector.model_id_for_runtime(lifecycle.active_model)
         return [
             self._state_for_spec(
                 connector=connector,
                 lifecycle=lifecycle,
                 spec=spec,
-                loaded_ids=loaded_ids,
-                active_model_id=active_model_id,
                 checked_at=checked_at,
             )
             for spec in specs
@@ -160,7 +145,7 @@ class ExLlamaV3RuntimeAdapter:
         connector = cast("ExLlamaV3Connector", animator.connector)
         runtime_name = connector.runtime_model_name(spec.model_id)
         if runtime_name is None:
-            return ActivationResult(accepted=False, phase=CapabilityPhase.ERROR, reason="undeclared TabbyAPI model")
+            return ActivationResult(accepted=False, reason="undeclared TabbyAPI model")
 
         try:
             lifecycle = await self._control_plane.inspect_animator(animator)
@@ -171,15 +156,14 @@ class ExLlamaV3RuntimeAdapter:
             accepted = await self._control_plane.load_model(connector.base_url, runtime_name)
         except TabbyAPIControlPlaneError as exc:
             if exc.ambiguous:
-                return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING, reason=str(exc))
-            return ActivationResult(accepted=False, phase=CapabilityPhase.ERROR, reason=str(exc))
+                return ActivationResult(accepted=True, reason=str(exc))
+            return ActivationResult(accepted=False, reason=str(exc))
         if not accepted:
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.ACTIVATABLE,
                 reason="TabbyAPI rejected model load",
             )
-        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+        return ActivationResult(accepted=True)
 
     async def abandon_activation(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> None:
         """Cancel only the SSE observer; containment retains ambiguous server truth."""
@@ -196,26 +180,18 @@ class ExLlamaV3RuntimeAdapter:
         if lifecycle.health == "error":
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.ERROR,
-                reason=str(lifecycle.raw.get("load_error") or "tabbyapi_unhealthy"),
+                reason=lifecycle.error or "tabbyapi_unhealthy",
             )
         if lifecycle.active_model == runtime_name and lifecycle.health == "ok":
-            return ActivationResult(accepted=True, phase=CapabilityPhase.WARM)
+            return ActivationResult(accepted=True)
         if runtime_name not in lifecycle.available_models:
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.ERROR,
                 reason=f"declared model directory '{runtime_name}' is absent from /v1/models",
             )
-        if lifecycle.raw.get("pending_model") == runtime_name:
-            return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+        if lifecycle.pending_model == runtime_name:
+            return ActivationResult(accepted=True)
         return None
-
-    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
-        """Expose lifecycle inspection for ExLlamaV3 animators only."""
-        if getattr(animator.connector, "kind", None) != self.runtime:
-            return None
-        return self._control_plane
 
     def _state_for_spec(
         self,
@@ -223,26 +199,16 @@ class ExLlamaV3RuntimeAdapter:
         connector: ExLlamaV3Connector,
         lifecycle: AnimatorLifecycle,
         spec: CapabilitySpec,
-        loaded_ids: list[str],
-        active_model_id: str | None,
         checked_at: datetime,
     ) -> CapabilityState:
         runtime_name = connector.runtime_model_name(spec.model_id)
         phase, reason = self._phase_and_reason(lifecycle, runtime_name)
         return CapabilityState(
             capability_key=spec.key,
-            is_dynamic=True,
             phase=phase,
             health=lifecycle.health,
-            active_model_id=active_model_id,
-            loaded_model_ids=loaded_ids,
             reason=reason,
             checked_at=checked_at,
-            metadata={
-                **connector.metadata,
-                **dict(lifecycle.raw),
-                "tabby_model_name": runtime_name,
-            },
         )
 
     def _phase_and_reason(
@@ -254,7 +220,7 @@ class ExLlamaV3RuntimeAdapter:
         reason: str | None = "model_not_loaded"
         if lifecycle.health == "error":
             phase = CapabilityPhase.ERROR
-            reason = str(lifecycle.raw.get("load_error") or lifecycle.raw.get("health_error") or "tabbyapi_error")
+            reason = lifecycle.error or "tabbyapi_error"
         elif lifecycle.health not in _REACHABLE_HEALTH:
             phase, reason = CapabilityPhase.COLD, "runtime_unreachable"
         elif runtime_name is None:
@@ -263,7 +229,7 @@ class ExLlamaV3RuntimeAdapter:
             phase, reason = CapabilityPhase.ERROR, "declared_model_directory_missing"
         elif lifecycle.active_model == runtime_name and lifecycle.health == "ok":
             phase, reason = CapabilityPhase.WARM, None
-        elif lifecycle.raw.get("pending_model") == runtime_name and lifecycle.health == "loading":
+        elif lifecycle.pending_model == runtime_name and lifecycle.health == "loading":
             phase, reason = CapabilityPhase.WARMING, "model_loading"
         return phase, reason
 
@@ -271,30 +237,9 @@ class ExLlamaV3RuntimeAdapter:
         return tuple(
             ModelInfo(
                 id=model.id,
-                description=model.description,
-                metadata={
-                    "path": str(model.path),
-                    "format": self._model_format_value(model.format, stone.model_format),
-                    "tabby_model_name": exllamav3_runtime_model_name(model),
-                },
             )
             for model in stone.models
         )
-
-    def _model_format_value(
-        self,
-        model_format: ModelFormat | None,
-        default_format: ModelFormat | None,
-    ) -> str | None:
-        resolved = model_format or default_format
-        return resolved.value if resolved is not None else None
-
-    def _runtime_metadata(self) -> dict[str, object]:
-        return {
-            "runtime": self.runtime,
-            "server": "tabbyapi",
-            "server_contract_revision": TABBYAPI_CONTRACT_REVISION,
-        }
 
     def _narrow(self, soulstone: SoulstoneConfig) -> ExLlamaV3SoulstoneConfig:
         return require_runtime_soulstone(

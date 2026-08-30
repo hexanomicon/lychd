@@ -5,6 +5,7 @@ from pathlib import Path
 
 from lychd.system.host_foundation import (
     QUADLET_SOURCES_READINESS_KEY,
+    SYSTEMD_USER_READINESS_KEY,
     SYSTEMD_USER_UNITS_READINESS_KEY,
 )
 from lychd.system.host_tools import TrustedExecutable
@@ -24,6 +25,14 @@ class _Runner:
             returncode=0,
             stdout="257.5\n",
         )
+
+
+class _ExplodingRunner(_Runner):
+    def run(self, argv: tuple[str, ...], *, timeout_s: float) -> ProcessResult:
+        del argv
+        assert timeout_s == 3.0
+        message = "probe implementation failed"
+        raise RuntimeError(message)
 
 
 def _tools(systemctl: str) -> HostReadinessTools:
@@ -47,12 +56,10 @@ def _service(
     tmp_path: Path,
     *,
     runner: _Runner,
-    tools: HostReadinessTools | None = None,
     tools_factory: Callable[[], HostReadinessTools],
 ) -> HostReadinessService:
     return HostReadinessService(
         runner=runner,
-        tools=tools,
         tools_factory=tools_factory,
         postgres_data=tmp_path / "postgres" / "data",
         binding_sites=(
@@ -115,26 +122,15 @@ def test_production_inspection_rediscovers_one_tool_snapshot_per_call(
     ) in runner.calls
 
 
-def test_explicit_tools_remain_stable_across_inspections(tmp_path: Path) -> None:
-    runner = _Runner()
-    fixed = _tools("/fixed-systemctl")
-    discovery_calls = 0
-
-    def unexpected_discovery() -> HostReadinessTools:
-        nonlocal discovery_calls
-        discovery_calls += 1
-        return _tools("/unexpected-systemctl")
-
-    service = _service(
+def test_inspection_turns_unexpected_probe_failure_into_typed_evidence(tmp_path: Path) -> None:
+    tools = _tools("/systemctl")
+    inspection = _service(
         tmp_path,
-        runner=runner,
-        tools=fixed,
-        tools_factory=unexpected_discovery,
-    )
+        runner=_ExplodingRunner(),
+        tools_factory=lambda: tools,
+    ).inspect()
 
-    first = service.inspect()
-    second = service.inspect()
-
-    assert first.tools is fixed
-    assert second.tools is fixed
-    assert discovery_calls == 0
+    systemd = inspection.report.item(SYSTEMD_USER_READINESS_KEY)
+    assert systemd.required_for_bind
+    assert systemd.detail == "probe failed unexpectedly"
+    assert not inspection.report.ready_for_bind

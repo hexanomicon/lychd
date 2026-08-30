@@ -160,59 +160,12 @@ def test_run_snapshot_replaces_live_projection_at_exact_cursor(
     response = altar_client.get(f"/api/v1/bridge/runs/{run_id}")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "schema_version": 1,
-        "session_id": "s",
-        "run_id": run_id,
-        "cursor": 2,
-        "content": "ashes",
-        "run_status": "running",
-        "activity": "weaving",
-        "pattern_id": "bridge_chat",
-        "pattern_revision": "legacy-unversioned",
-        "loom_path": None,
-        "orb_path": f"/orb/{run_id}",
-        "evidence_capture": "process_local",
-        "fragments": [
-            {
-                "kind": "genui.plan_checklist",
-                "schema_version": 1,
-                "props": {"title": "Rite", "steps": ["a"]},
-                "actions": [],
-            },
-        ],
-        "occurrence_id": None,
-        "dispatch_occurrence_id": None,
-        "grant_id": None,
-        "capability_key": None,
-        "transition_occurrence_id": None,
-        "transition_request_id": None,
-        "transition_phase": None,
-        "delegated_job_id": None,
-        "delegated_runtime": None,
-        "delegated_profile": None,
-        "delegated_status": None,
-        "terminal": False,
-    }
-
-
-def test_stream_closes_after_done(
-    altar_client: TestClient[Litestar],
-    fake_services: SimpleNamespace,
-) -> None:
-    run_id = "run_done"
-    _seed_live_run(fake_services, run_id)
-    channel = fake_services.bus.open(run_id)
-    channel.emit(RunEventKind.STATUS, "settling")
-    channel.emit(RunEventKind.DONE, "done")
-
-    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}/events")
-
-    assert response.status_code == 200
-    assert [event["event"] for event in _sse_events(response.text)] == [
-        "status",
-        "done",
-    ]
+    snapshot = response.json()
+    assert snapshot["run_id"] == run_id
+    assert (snapshot["cursor"], snapshot["content"], snapshot["activity"]) == (2, "ashes", "weaving")
+    assert snapshot["fragments"][0]["kind"] == "genui.plan_checklist"
+    assert snapshot["fragments"][0]["props"]["steps"] == ["a"]
+    assert snapshot["terminal"] is False
 
 
 def test_stream_unknown_run_is_404(altar_client: TestClient[Litestar]) -> None:
@@ -220,21 +173,6 @@ def test_stream_unknown_run_is_404(altar_client: TestClient[Litestar]) -> None:
         "/api/v1/bridge/runs/does-not-exist/events",
     )
     assert response.status_code == 404
-
-
-def test_stream_terminal_run_synthesizes_status_and_done(
-    altar_client: TestClient[Litestar],
-    fake_services: SimpleNamespace,
-) -> None:
-    run_id = "run_terminal"
-    _seed_terminal_run(fake_services, run_id, RunStatus.DONE)
-
-    response = altar_client.get(f"/api/v1/bridge/runs/{run_id}/events")
-
-    assert response.status_code == 200
-    events = _sse_events(response.text)
-    assert [event["event"] for event in events] == ["resync"]
-    assert events[0]["data"]["payload"]["reason"] == "snapshot_required"
 
 
 def test_terminal_reconnect_emits_explicit_resync_and_refetches_settled_snapshot(

@@ -15,6 +15,7 @@ from lychd.domain.animation.capabilities import (
 from lychd.domain.animation.errors import ActivationTimeout, HardwareTransitionRequired
 from lychd.domain.animation.protocols import CapabilityRegistry, require_capability_record
 from lychd.domain.cortex.leases import AnimatorAdmission
+from lychd.domain.cortex.priority import validate_priority
 from lychd.domain.orchestration.actuator import (
     RuntimeActuationRestoredError,
     RuntimeCancellationRestoredError,
@@ -133,7 +134,7 @@ class OrchestratorManager:
                     "is_dynamic": spec.is_dynamic,
                     "phase": state.phase.value,
                     "model_id": spec.model_id,
-                    "is_static": state.is_static,
+                    "is_static": not spec.is_dynamic,
                     "is_active": state.is_active,
                     "is_available": state.is_available,
                     "warm": state.warm,
@@ -151,10 +152,17 @@ class OrchestratorManager:
         # A target-only refresh is insufficient: persistent residents start in
         # parallel at boot and an operator may also start a managed unit outside
         # this process.  Policy and the host stale-world fence must therefore see
-        # the same current peer set.  Keep the fan-out bounded so a large rune set
-        # cannot turn one dispatch into an unbounded probe burst.
+        # the same current peer set. The registry serializes probes under one lock,
+        # so refresh deterministically instead of creating fake parallel tasks.
         await self._refresh_lifecycle_managed_animators()
-        target, target_state = await self._get_capability_record(target_capability_key)
+        target = self.registry.get_capability(target_capability_key)
+        if target is None:
+            msg = f"Unknown capability: {target_capability_key}"
+            raise ValueError(msg)
+        target_state = self.registry.get_capability_state(target_capability_key)
+        if target_state is None:
+            msg = f"Capability state is unavailable for '{target_capability_key}'."
+            raise ValueError(msg)
 
         if target_state.warm:
             return TransitionPlan(
@@ -179,14 +187,13 @@ class OrchestratorManager:
                 action_type="SOFT_SWAP",
             )
 
-        decision = self._policy.solve(target, self.registry, self._leases)
+        decision = self._policy.solve(target, self.registry)
         return TransitionPlan(
             total_metabolic_cost=decision.metabolic_cost,
             evict_coven_ids=decision.evict_animator_names,
             launch_coven_ids=decision.launch_animator_names,
             action_type="HARD_SWAP",
             policy=self._policy.name,
-            reason=decision.reason,
         )
 
     async def handle_transition(
@@ -221,6 +228,7 @@ class OrchestratorManager:
         reflects post-predecessor reality — a stale plan computed against an older world
         can no longer evict the wrong animator and violate the Law of Exclusivity.
         """
+        priority = validate_priority(priority)
         trace = trace or TransitionTrace(target_capability_key=target_capability_key, priority=float(priority))
         self.transitions.record(trace)
         try:
@@ -420,7 +428,6 @@ class OrchestratorManager:
         try:
             try:
                 await self.worker_broker.pause_queues()
-                await self.worker_broker.broadcast_soft_stop()
                 drained = await self._leases.drained(
                     animator_names,
                     timeout=self._switching.drain_timeout_s,
@@ -431,7 +438,7 @@ class OrchestratorManager:
                 yield state
             finally:
                 # The claim gate must reopen on timeout, cancellation, or a
-                # failing soft-stop broadcast; otherwise all future runs wedge.
+                # failed drain; otherwise all future runs wedge.
                 if state.release_on_exit and self._contained_reason is None:
                     await self.worker_broker.unpause_queues()
         finally:
@@ -464,13 +471,8 @@ class OrchestratorManager:
                 if self.registry.get_soulstone_rune(spec.animator_name) is not None
             }
         )
-        limiter = asyncio.Semaphore(8)
-
-        async def refresh(animator_name: str) -> None:
-            async with limiter:
-                await self.registry.refresh_capability_states_for_animator(animator_name)
-
-        await asyncio.gather(*(refresh(name) for name in animator_names))
+        for animator_name in animator_names:
+            await self.registry.refresh_capability_states_for_animator(animator_name)
 
     def _is_animator_runtime_started(self, animator_name: str) -> bool:
         """Return whether a dynamic animator can converge without a host restart."""
@@ -496,7 +498,6 @@ class OrchestratorManager:
         except TimeoutError as exc:
             raise ActivationTimeout(
                 capability_key,
-                self.registry.get_capability_state(capability_key),
                 reason="target convergence exceeded the warm-up deadline",
             ) from exc
 

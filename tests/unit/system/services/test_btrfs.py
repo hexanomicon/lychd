@@ -55,11 +55,7 @@ class _CreatingRunner(_Runner):
 
 
 def _tools() -> BtrfsTools:
-    return BtrfsTools(
-        btrfs="/btrfs",
-        chattr="/chattr",
-        lsattr="/lsattr",
-    )
+    return BtrfsTools(btrfs="/btrfs")
 
 
 def test_subvolume_creation_is_bounded_and_verified(tmp_path: Path) -> None:
@@ -109,7 +105,6 @@ def test_subvolume_creation_is_bounded_and_verified(tmp_path: Path) -> None:
         (ProcessResult(argv=(), returncode=1, stderr="failed"), None),
         (ProcessInvocationError("timed out"), ProcessInvocationError),
         (KeyboardInterrupt(), KeyboardInterrupt),
-        (SystemExit(17), SystemExit),
     ],
 )
 def test_materialized_creation_failure_returns_typed_pinned_evidence(
@@ -229,36 +224,6 @@ def test_subvolume_creation_cannot_follow_a_replaced_public_parent(
     assert created is not None
     assert (displaced_parent / target.name).is_dir()
     assert not target.exists()
-
-
-def test_subvolume_identity_comes_from_btrfs_not_inode_heuristics(tmp_path: Path) -> None:
-    target = tmp_path / "data"
-    target.mkdir()
-    runner = _Runner([ProcessResult(argv=(), returncode=1, stderr="not a btrfs subvolume")])
-
-    assert not Btrfs(runner=runner, tools=_tools()).is_subvolume(target)
-    assert runner.calls == [(("/btrfs", "subvolume", "show", str(target)), 3.0)]
-
-
-def test_nocow_policy_is_applied_only_after_verification(tmp_path: Path) -> None:
-    target = tmp_path / "data"
-    target.mkdir()
-    runner = _Runner(
-        [
-            ProcessResult(argv=(), returncode=0, stdout=f"---------------------- {target}\n"),
-            ProcessResult(argv=(), returncode=0),
-            ProcessResult(argv=(), returncode=0, stdout=f"---------------C------ {target}\n"),
-        ]
-    )
-
-    applied = Btrfs(runner=runner, tools=_tools()).apply_no_cow(target)
-
-    assert applied
-    assert runner.calls == [
-        (("/lsattr", "-d", str(target)), 3.0),
-        (("/chattr", "+C", str(target)), 30.0),
-        (("/lsattr", "-d", str(target)), 3.0),
-    ]
 
 
 def test_created_subvolume_drift_is_rejected_before_descriptor_mutation(

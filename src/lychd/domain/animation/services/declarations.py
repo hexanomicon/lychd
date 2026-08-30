@@ -18,15 +18,8 @@ if TYPE_CHECKING:
 class AnimatorDeclarations:
     """One hydrated declaration snapshot shared by bind and live runtimes."""
 
-    runes: RuneRegistry
     soulstones: tuple[SoulstoneConfig, ...]
     portals: tuple[PortalConfig, ...]
-    port_reservations: tuple[tuple[str, int], ...]
-
-    @property
-    def reserved_ports(self) -> dict[str, int]:
-        """Return a detached mapping of the policy used for hydration."""
-        return dict(self.port_reservations)
 
 
 def compile_animator_declarations(
@@ -53,10 +46,8 @@ def compile_animator_declarations(
         ),
     ).hydrate_all(runes.all())
     return AnimatorDeclarations(
-        runes=runes,
         soulstones=tuple(soulstones),
         portals=tuple(portals),
-        port_reservations=tuple(reserved_ports.items()),
     )
 
 

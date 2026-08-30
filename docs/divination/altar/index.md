@@ -42,15 +42,16 @@ owns the complete boundary.
 - **[Bridge](./bridge.md)** carries conversation, consent, and settled result.
 - **[Orb](./orb.md)** opens one Run as retained ordered evidence; **scrying** is that inspection.
 - **[Nexus](./nexus.md)** makes capability readiness and physical transition legible.
-- **[Loom](./loom.md)** shows an exact Scroll/Pattern and its Spell placements: a declared score,
-  never an execution trace.
+- **[Loom](./loom.md)** shows an exact Scroll/Pattern and its declared stations, which become Spell
+  placements in the future; it is a declared score, never an execution trace.
 
 Each instrument may use a graph when it is the clearest answer, but none supplies a universal graph
 or domain model. A Loom edge permits; an Orb relation records; a Nexus relation reports what the
 Orchestrator observed. Loom and Orb may share framework-neutral snapshot, identity, intent, and
-semantic-projection mechanics while keeping distinct view models and renderers. Nexus remains a
-native control board unless a measured body-map requirement earns a separate read-only lens. The
-distinctions stay visible.
+semantic-projection mechanics while keeping distinct view models over the designed one shared DOM
+renderer adapter. They do not share one graph schema or collapse permitted score into observed
+evidence. Nexus remains a native control board unless a measured body-map requirement earns a
+separate read-only lens. The distinctions stay visible.
 
 ## Enter through the Bridge
 

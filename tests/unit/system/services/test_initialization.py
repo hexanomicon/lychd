@@ -4,23 +4,24 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import cast
-from unittest.mock import call
 
 import pytest
 from pytest_mock import MockerFixture
 
-from lychd.system.services.lifecycle import (
-    CreatedResources,
+from lychd.system.services.lifecycle.initialization import (
     InitializationExecutor,
     InitializationPlanner,
     InitializationRecorder,
+)
+from lychd.system.services.lifecycle.models import (
+    CreatedResources,
     LifecycleAction,
     LifecycleDisposition,
     LifecycleError,
     LifecyclePlan,
-    LifecycleReceiptStore,
     LifecycleResourceKind,
 )
+from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 
 
 def _init_plan(
@@ -95,11 +96,39 @@ def test_executor_consumes_exact_plan_and_verifies_convergence(
     ).execute(approved, effects=(effect,))
 
     assert all(action.disposition is LifecycleDisposition.PRESERVE for action in result.actions)
-    assert receipt.record.call_args_list == [
-        call(resources),
-        call(resources),
-    ]
+    receipt.record.assert_called_once_with(resources)
     receipt.seal_dedicated_roots.assert_called_once_with()
+
+
+def test_executor_rejects_an_effect_report_that_disagrees_with_its_journal(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    directory = tmp_path / "codex"
+    receipt_path = directory / ".lychd-lifecycle.json"
+    approved = _init_plan(
+        directory=directory,
+        receipt=receipt_path,
+        disposition=LifecycleDisposition.WOULD_CREATE,
+    )
+    planner = mocker.MagicMock(spec=InitializationPlanner)
+    planner.plan.return_value = approved
+    receipt = mocker.MagicMock(spec=LifecycleReceiptStore)
+    receipt.path = receipt_path
+    journaled = CreatedResources(directories=(directory,))
+
+    def dishonest_effect(record: InitializationRecorder) -> CreatedResources:
+        record(journaled)
+        return CreatedResources()
+
+    with pytest.raises(LifecycleError, match="disagrees"):
+        InitializationExecutor(
+            planner=cast("InitializationPlanner", planner),
+            receipt=cast("LifecycleReceiptStore", receipt),
+        ).execute(approved, effects=(dishonest_effect,))
+
+    receipt.record.assert_called_once_with(journaled)
+    receipt.seal_dedicated_roots.assert_not_called()
 
 
 @pytest.mark.parametrize(

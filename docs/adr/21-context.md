@@ -39,23 +39,24 @@ icon: material/text-box-multiple-outline
 | 5 | State | Governed complete Pydantic AI message groups. |
 | 6 | Query | Current request. |
 
-Layers 1–4 make the **Stable Floor**. Its `prefix_digest` witnesses ordered content known to
-LychD; it neither proves provider KV-cache reuse nor attention or latency improvement.
+Layers 1–4 make the **Stable Floor**. A designed `prefix_digest` witnesses ordered content known
+to LychD; it neither proves provider KV-cache reuse nor attention or latency improvement.
 
 ## Blocks and assembly
 
-Every Block has layer, key, text, and SHA-256 content hash. The orchestrator sorts stable blocks
-by `(layer, key)`, hashes ordered hashes into `prefix_digest`, then adds State and Query. The First
-One binds layer 1 as static instructions and its dynamic hook renders non-empty layers 2–4. State
+A complete designed Block has layer, key, text, and SHA-256 content hash, and the orchestrator
+derives `prefix_digest` from ordered stable blocks. The current `Block` carries layer, key, and text;
+the current `AssembledContext` exposes those blocks, bounded settled history, an indivisible
+continuation, query, and known active context window, but no content or prefix digest. The First One
+binds layer 1 as static instructions and its dynamic hook renders non-empty layers 2–4. State
 becomes model history and Query the user prompt, so the six-layer account does not duplicate them
 as instructions.
 
-`AssembledContext` exposes all blocks, digest, bounded settled history, an indivisible continuation
-when present, query, and known active context window. The run-id assembly cache lasts only for the
-process and releases after settlement. Layer 3 snapshots are shared by exact environment key while
-any referencing Run remains active; settlement releases that Run's leases and evicts a snapshot
-after its final reference. Durable conversation belongs to the session ledger and durable suspension
-to [Graph](./24-graph.md).
+The run-id assembly cache lasts only for the process and releases after terminal Run settlement,
+not when the session turn is written. Layer 3 snapshots are shared by exact environment key while
+any referencing Run remains active; terminal settlement releases that Run's leases and evicts a
+snapshot after its final reference. Durable conversation belongs to the session ledger and durable
+suspension to [Graph](./24-graph.md).
 
 ## Privatization and the Privacy Cut
 
@@ -91,12 +92,10 @@ candidate and terminal receipt. An independent local verifier emits `CutVerifica
 seals a `PrivacyCut@1` only when source, final candidate, plan, complete receipt chain, verifier
 verdict, policy, and expiry all match. Security alone admits the exact wire/export branch.
 
-Receipts retain digests, revisions, typed operations and safe category summaries—not raw spans,
-credentials, subject names, filenames, material-parent identities, or reversal data. The delivered
-first-slice `TransformationReceipt` still embeds its complete residual label in process and is
-therefore ineligible for persistence, export, or egress evidence until a secret-free projection
-exists. A Cut that destroys the identifiers, dependency relations, citations, or diagnostics
-needed for its declared task refuses that road rather than call privacy alone a success.
+Designed receipts retain digests, revisions, typed operations and safe category summaries—not raw
+spans, credentials, subject names, filenames, material-parent identities, or reversal data. A Cut
+that destroys the identifiers, dependency relations, citations, or diagnostics needed for its
+declared task refuses that road rather than call privacy alone a success.
 
 An irreversible Cut has no reversal map and promises no rehydration. A reversible Cut stores the
 map only through an encrypted local `PseudonymMapLease@1`: the map itself enters no prompt, log,
@@ -133,14 +132,11 @@ attachment are disabled; bounded buffers are zeroized; and traces, allocator dia
 support bundles exclude the map. Acceptance tests exercise crash and memory-pressure paths. Failure
 to prove this profile disables reversible Cuts rather than weakening the erasure claim.
 
-Current `Block` and `AssembledContext` carry labels and a conservative aggregate join. Present
-query, history, or continuation material without supplied lineage defaults to `restricted` and
-`local_only`; empty placeholders do not taint the call. A deterministic local Censor rebuilds
-bounded JSON-like values, redacts the first typed identifier set, and issues digest-, revision-,
-count-, residual-label-, and expiry-bound evidence that is explicitly ineligible for egress and
-claims no removed category. Governed SQL/tool/artifact source adapters, immutable end-to-end
-lineage, semantic Privacy Agent, secret-free receipt projection, Disclosure Plan, Cut Verification,
-pseudonym-map vault, sanitized Context branch, and trusted Egress Gate remain undelivered.
+Current `Block` and `AssembledContext` carry no labels or source-lineage records. Conservative
+aggregate labels, deterministic Censor, governed SQL/tool/artifact source adapters, immutable
+end-to-end lineage, transformation receipts, semantic Privacy Agent, secret-free receipt
+projection, Disclosure Plan, Cut Verification, pseudonym-map vault, sanitized Context branch, and
+trusted Egress Gate remain undelivered.
 
 ## Grant-aware rebinding
 
@@ -150,13 +146,13 @@ reassembles after grant acquisition. The resolved generation profile's `max_cont
 over the capability specification's discovered maximum.
 
 Environment records only granted capability key (or `none`) and sorted warm/active capability keys.
-Its key is `(session, capability binding, grant epoch)`, but the Bridge presently supplies neither
-grant id nor changing epoch: both paths use `0`. A later grant to the same binding can reuse an
-older warm-Coven snapshot while a referencing Run remains active. Same-key concurrent Runs share
-that frozen snapshot, and one Run's settlement cannot evict it from another; the final referencing
-settlement releases it. Fresh-grant rebinding remains a gap. VRAM, power, connectivity, and Sigil
-scope are absent; the Sigil belongs in [`LychDDeps`](./20-agents.md#run-dependencies), where tools
-can enforce it rather than prompt prose.
+Its key is `(session, capability binding, grant epoch)`. Bridge uses the Dispatcher-issued grant id
+as the epoch in both `Converse` and consent continuation, so every fresh grant observes a fresh
+warm-Coven snapshot even when it selects the same capability binding. Reassembly within the same
+grant remains byte-stable; exact same-key snapshots can be shared, one Run cannot evict another's
+lease, and the final referencing terminal settlement releases the snapshot. VRAM, power,
+connectivity, and Sigil scope are absent; the Sigil belongs in
+[`LychDDeps`](./20-agents.md#run-dependencies), where tools can enforce it rather than prompt prose.
 
 ## Governors
 
@@ -181,14 +177,57 @@ settled history under the new grant and provides its required continuation uncha
 provider's live objects and assumptions do not cross the park. ADR 25 owns consent record and
 verdict order; this ADR owns only field shape and budget after re-entry.
 
+## Typed Codex material projections (Designed)
+
+Layer 2 will accept only explicit, attributed material references selected for one Run and Spell
+placement. Each contribution binds an immutable artifact or contained workspace-relative source,
+its content digest, normalized file kind/media type, classification and lineage, required/optional
+status, byte/character budget, and an exact registered projection-profile revision. Typed local
+configuration may select only already registered projection profiles, rules, and bounds. The
+digest-bound material reference itself comes from the authorized Invocation or Scroll placement,
+not global TOML; neither path carries source bytes or raw prompt text.
+
+The first closed projection modes are `structure` and `verbatim`:
+
+- `structure` is a deterministic parser-owned view, not an Agent summary. A Python profile may
+  expose the module docstring, import facts, declared public symbols, class/function signatures,
+  and stable source locations only when its exact profile says so. Parser and projection revisions
+  participate in identity. Parse failure yields an explicit unavailable contribution or fails a
+  required placement; it never falls back to full text.
+- `verbatim` is an explicit request for exact decoded material under pinned encoding, newline, and
+  line-provenance rules plus hard byte and character bounds. Truncation is declared by the profile
+  and visible in the Block lineage, or the contribution refuses; it is never silently substituted
+  for `structure`.
+
+Rules are keyed by an admitted normalized file kind or media type, not by ambient package scans,
+environment inference, arbitrary globs, Python import paths, or caller-supplied formatter code.
+Content is read through the owning artifact/workspace boundary after digest and scope validation.
+The resulting Blocks remain ordered, labelled, and attributable at the exact placement that asked
+for them. A Reader projection grants no filesystem mutation; a Writer still needs a separate typed
+tool/effect contract and Sigil authority.
+
+Compression is also an explicit derived-material operation, never a hidden governor. A Compressor
+cannot rewrite Identity, omit the non-negotiable Stable Floor, or turn missing fit into an
+apparently complete answer. Its output is a new labelled Block and receipt linked to its sources,
+profile, budget, retained invariants, and declared omissions; the uncompressed attributed material
+remains owned by its source. If required material cannot fit without violating that contract,
+assembly fails before inference.
+
+Deterministic, non-model projection compaction may be part of an exact projection profile. Semantic
+model compression is different: it is a separately resolved `AgentSpec`/Posture and Spell placement
+with its own capability grant, typed result, budget, lineage, and explicit omissions. The
+`ContextOrchestrator` never hides a recursive model call inside a formatter. A semantic summary
+inherits its sources' privacy and instruction non-authority and cannot replace canonical source or
+history truth.
+
 ## Designed extensions
 
-Codex may later hydrate path-selected law/task material; Karma may admit governed Archive results;
+Codex may hydrate the typed material projections above; Karma may admit governed Archive results;
 exact tokenization may replace character estimation; measured policy may select corpus, retrieval,
 or iterative aggregation; richer Environment may record admitted hardware; and typed bounded
-formatters may gain explicit layer placement. No automatic CAG/RAG threshold, dataset ingestion,
-repository-path inference, quality-drift injector, prompt compressor, VRAM estimator, or formatter
-extension surface currently exists.
+formatters may gain explicit layer placement. No projection profile, automatic CAG/RAG threshold,
+dataset ingestion, repository-path inference, quality-drift injector, Compressor Agent, VRAM
+estimator, or formatter extension surface currently exists.
 
 ## Correspondence
 
@@ -204,14 +243,16 @@ is **Flux**. The image explains shape; hashes, budgets, groups, and focused test
 
 !!! failure "Negative"
     Character estimates can underuse a window; snapshots vanish after their final active Run or a
-    restart, snapshot epochs can go stale, and a stable prefix helps only when the provider actually
+    restart, process death loses the cache, and a stable prefix helps only when the provider actually
     supports it.
 
 ## Verification
 
 `tests/unit/domain/cortex/test_context.py` covers newest complete groups, grant-bound environment
 replacement, same-key sharing and release bounds, generation-window precedence, floor overflow,
-and continuation. Bridge graph and consent-resume tests cover two-stage assembly and re-entry.
+and continuation. Bridge graph tests prove grant-id epoch binding and retain Context through graph
+completion; worker tests prove release only after terminal Run settlement. Consent-resume tests cover
+two-stage assembly and re-entry.
 [State](../state-of-the-work.md) owns the public delivery boundary.
 
 The full Privacy Cut profile additionally requires governed-source lineage; direct, quasi-, and

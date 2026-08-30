@@ -11,7 +11,6 @@ from lychd.system.operator import (
     OperatorAuthorityError,
     OperatorControlService,
     OperatorError,
-    OperatorTarget,
     OperatorTargetResolver,
     OwnedUnit,
     OwnedUnitCatalog,
@@ -82,15 +81,6 @@ class _RetiringRunner(_Runner):
         return result
 
 
-class _Vessel:
-    def __init__(self) -> None:
-        self.calls: list[tuple[OperatorAction, OperatorTarget]] = []
-
-    def actuate(self, action: OperatorAction, target: OperatorTarget) -> str:
-        self.calls.append((action, target))
-        return "accepted"
-
-
 def _catalog(
     state: ObservationState,
     *,
@@ -116,7 +106,6 @@ def _control(
     inventory: _Inventory,
     runner: _Runner,
     *,
-    vessel: _Vessel | None = None,
     lock_factory: Callable[[], AbstractContextManager[object]] = nullcontext,
 ) -> OperatorControlService:
     typed_inventory = cast("OperatorInventoryService", inventory)
@@ -125,7 +114,6 @@ def _control(
         targets=OperatorTargetResolver(typed_inventory),
         runner=runner,
         systemctl_bin="/usr/bin/systemctl",
-        vessel=vessel,
         lock_factory=lock_factory,
     )
 
@@ -266,18 +254,6 @@ def test_active_vessel_without_authenticated_port_refuses_direct_stop() -> None:
     with pytest.raises(OperatorAuthorityError, match="authenticated lifecycle API"):
         control.execute(OperatorAction.STOP)
 
-    assert runner.calls == []
-
-
-def test_active_vessel_routes_to_injected_port_without_systemctl() -> None:
-    runner = _Runner()
-    vessel = _Vessel()
-    control = _control(_Inventory(_catalog(ObservationState.ACTIVE)), runner, vessel=vessel)
-
-    result = control.execute(OperatorAction.STOP)
-
-    assert result.authority is VesselAuthority.VESSEL
-    assert vessel.calls == [(OperatorAction.STOP, OperatorTarget.SYSTEM)]
     assert runner.calls == []
 
 

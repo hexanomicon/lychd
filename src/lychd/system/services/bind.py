@@ -49,7 +49,6 @@ class BindProgress:
     secret_reconciliation_indeterminate: bool = False
     binding_commit_state: BindingCommitState = BindingCommitState.NOT_ATTEMPTED
     binding_generation: str | None = None
-    systemd_reloaded: bool = False
 
     def __post_init__(self) -> None:
         """Forbid claiming a generation without a confirmed commit."""
@@ -140,9 +139,6 @@ class BindRequest:
     ) -> BindRequest:
         """Canonicalize caller-owned collections into deterministic intent."""
         core_names = tuple(sorted(core_secret_factories))
-        if len(core_names) != len(set(core_names)):  # pragma: no cover - Mapping law
-            msg = "Core secret names must be unique."
-            raise ValueError(msg)
         required = tuple(sorted(set(required_secret_names)))
         overlap = sorted(set(core_names) & set(required))
         if overlap:
@@ -189,7 +185,6 @@ class BindResult:
 
     created_secrets: tuple[str, ...]
     binding_generation: str
-    systemd_reloaded: bool
 
 
 class BindUseCase:
@@ -260,7 +255,6 @@ class BindUseCase:
         return BindResult(
             created_secrets=created,
             binding_generation=committed_generation,
-            systemd_reloaded=True,
         )
 
     @staticmethod
@@ -549,6 +543,5 @@ class BindUseCase:
             secret_reconciliation_indeterminate=progress.secret_reconciliation_indeterminate,
             binding_commit_state=progress.binding_commit_state,
             binding_generation=progress.binding_generation,
-            systemd_reloaded=progress.systemd_reloaded,
             error_type=type(error).__name__ if error is not None else None,
         )

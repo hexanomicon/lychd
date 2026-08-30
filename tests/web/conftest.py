@@ -33,6 +33,7 @@ from lychd.domain.web.tickets import TicketStore
 from lychd.extensions.manager import ExtensionManager
 from lychd.interface.web import AltarController, BridgeController, LoomController, NexusController, OrbController
 from lychd.interface.web.deps import web_dependencies
+from lychd.interface.web.openapi import StrictPydanticSchemaPlugin, build_openapi_config
 
 if TYPE_CHECKING:
     from lychd.domain.cortex.priority import Priority
@@ -88,13 +89,13 @@ class FakeRunEngine(RunEngine):
         self.admitted_keys: dict[str, str] = {}
         self.exclusive_session_submissions: list[bool] = []
         self.cancelled_runs: list[str] = []
-        # (consent_id, approved, verdict_seen_at_approve_time) — verdict-order proof.
-        self.approvals: list[tuple[str, bool, bool | None]] = []
+        # (consent_id, verdict_seen_at_resume_time) — verdict-order proof.
+        self.consent_resumptions: list[tuple[str, bool | None]] = []
 
-    async def approve(self, consent_id: str, *, approved: bool) -> None:
-        """Record the approve call + the verdict already visible in the ledger (ordering)."""
+    async def resume_consent(self, consent_id: str) -> None:
+        """Record the resume call and the already-durable verdict (ordering proof)."""
         seen = await self.consents.verdict(consent_id) if self.consents is not None else None
-        self.approvals.append((consent_id, approved, seen))
+        self.consent_resumptions.append((consent_id, seen))
 
     async def cancel(self, run_id: str, *, orphaned: bool = False) -> None:
         """Mirror idempotent terminal truth for Bridge controller tests."""
@@ -276,7 +277,6 @@ def fake_services() -> SimpleNamespace:
         dispatcher=None,
         orchestrator=FakeOrchestrator(),
         leases=LeaseLedger(),
-        context_orchestrator=None,
         fragments=fragments,
         bridge_sessions=sessions,
         consents=consents,
@@ -299,6 +299,8 @@ def altar_client(fake_services: SimpleNamespace) -> AsgiClient:
         route_handlers=[AltarController, BridgeController, NexusController, LoomController, OrbController],
         dependencies=web_dependencies,
         middleware=[sigil_auth_middleware()],  # the Ward: connection.user = settings Sigil (scopes ["*"])
+        openapi_config=build_openapi_config(title="LychD Test", version="test", use_handler_docstrings=True),
+        plugins=[StrictPydanticSchemaPlugin()],
         state=State(
             {
                 "services": fake_services,

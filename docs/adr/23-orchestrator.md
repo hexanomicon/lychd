@@ -62,6 +62,9 @@ immortal. Affected set means evictees plus launch targets.
 TransitionArbiter has one owner. It orders contenders by descending priority then FIFO; same
 capability/same priority joins one in-flight plan, different priorities do not. A hard swap below
 min_priority_for_hard_swap declines before effect; NO_OP and SOFT_SWAP are never threshold gated.
+A manual or internal transition request must carry canonical doctrine priority `0..100`; the
+manager rejects an out-of-range value before it records a trace or enters the arbiter, and the HTTP
+boundary rejects it during query validation.
 A warm/open fast path can return early, but every other plan is recomputed inside the arbiter after
 its predecessor settles. The arbiter reserves the exact capability/priority cohort before its
 owner begins asynchronous registry preflight; followers join that result without probing, while a
@@ -154,10 +157,10 @@ parks. Current process-local leases cannot prove that handoff.
 
 After semantic selection, a future policy may delay/decline delegated work for admitted physical
 or economic capacity, never rewrite task, choose provider, alter Graph, or manufacture capacity.
-ProviderCapacityPolicy is only a pure Partial seam: conservative/balanced/maximize never exceed
-the minimum authorized/provider/configured ceilings, disablement/cooldown stops admission, and
-unknown quota means at most one slot. No scheduler, observation, durable reservation/release,
-Provider Gate, or spend ledger is wired.
+A future `ProviderCapacityPolicy` must keep conservative/balanced/maximize behavior beneath the
+minimum authorized, provider, and configured ceilings; disablement or cooldown stops admission,
+and unknown quota cannot manufacture slots. No policy implementation, scheduler, observation,
+durable reservation/release, Provider Gate, or spend ledger is wired.
 
 ### 4. Swarm Lease Management
 

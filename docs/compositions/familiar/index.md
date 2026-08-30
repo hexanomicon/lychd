@@ -22,10 +22,10 @@ into all three without absorbing any of them.
 
 ```mermaid
 flowchart LR
-    A[Avatar · identity] --> S[Spectre · VR]
-    A --> B[Blockworld · game]
-    A --> F[Familiar · real world]
-    F --> C[Companion · mobile Familiar form]
+    A["Avatar · presentation"] -. "optional projection" .-> S["Spectre · VR"]
+    A -. "optional projection" .-> B["Blockworld · game"]
+    A -. "optional projection" .-> F["Familiar · real world"]
+    F -->|"embodiment foundation"| C["Companion · mobile Familiar form"]
 ```
 
 ## Contract
@@ -80,7 +80,7 @@ flowchart LR
 | **Bounded event** | `SpectreEncounter@1` | `blockworld.bounded_mission@1` | `familiar.bounded_mission@1` |
 | **Owns** | reference space, comfort, exit | inventory, lease, verified effects | safety envelope, geofence, observations |
 | **Protocol underneath** | OpenXR | Minecraft protocol | MAVLink / ROS2 via Legion |
-| **Avatar role** | `ProjectionBinding@1` into Habitat | `ProjectionBinding@1` into inhabitant | `ProjectionBinding@1` into body |
+| **Optional Avatar role** | `ProjectionBinding@1` into Habitat | `ProjectionBinding@1` into inhabitant | `ProjectionBinding@1` into body |
 
 Avatar never owns the realm. It owns _who appears_. The realm owns _where they appear and what
 happens there_. Familiar exists because real-world physics, safety, battery life, signal range,

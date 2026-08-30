@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeGuard, cast
 
-from lychd.system.secret_names import PODMAN_SECRET_NAME_PATTERN, is_valid_podman_secret_name
+from lychd.lib.json_objects import unique_json_object
+from lychd.system.secret_names import is_valid_podman_secret_name
 
-TABBY_AUTH_SECRET_NAME_PATTERN = PODMAN_SECRET_NAME_PATTERN
 _MIN_KEY_LENGTH = 32
 
 
@@ -45,7 +45,7 @@ def load_tabbyapi_auth_keys(secret_name: str) -> TabbyAPIAuthKeys:
         raise TabbyAPIAuthSecretError(msg) from exc
 
     try:
-        parsed: object = json.loads(raw, object_pairs_hook=_reject_duplicate_keys)
+        parsed: object = json.loads(raw, object_pairs_hook=unique_json_object)
     except json.JSONDecodeError as exc:
         msg = f"TabbyAPI auth secret '{secret_name}' must contain a JSON object."
         raise TabbyAPIAuthSecretError(msg) from exc
@@ -96,18 +96,7 @@ def _valid_key(value: object) -> TypeGuard[str]:
     )
 
 
-def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            msg = f"Duplicate JSON key '{key}' is not allowed in a TabbyAPI auth secret."
-            raise ValueError(msg)
-        result[key] = value
-    return result
-
-
 __all__ = [
-    "TABBY_AUTH_SECRET_NAME_PATTERN",
     "TabbyAPIAuthKeys",
     "TabbyAPIAuthSecretError",
     "is_valid_tabby_auth_secret_name",

@@ -73,7 +73,6 @@ test = [
   "pytest-xdist",
   "pytest-mock",
   "pytest-cov",
-  "polyfactory",
   "pytest-sugar",
   "respx",
   "selectolax",
@@ -114,6 +113,7 @@ path = "src/lychd/__about__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/.containerignore",
     "/Containerfile",
     "/LICENSE",
     "/Makefile",
@@ -124,6 +124,7 @@ include = [
     "/scripts",
     "/src",
     "/tests",
+    "/uv.lock",
 ]
 exclude = [
     "/.agents",

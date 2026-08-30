@@ -20,7 +20,7 @@ from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.codex.sigil import Sigil
 from lychd.domain.cortex.context import ContextOrchestrator
-from lychd.domain.cortex.engine import QueueRouter, RunEngine
+from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import InMemoryRunLedger
 from lychd.domain.cortex.runs import RunStatus
@@ -62,7 +62,7 @@ def _repair_engine(substrate: RunSubstrate) -> RunEngine:
         ledger=substrate.ledger,
         bus=substrate.bus,
         workflows=substrate.workflows,
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues={},
     )
 
@@ -300,7 +300,7 @@ async def test_reconcile_recovers_checkpointed_decided_consent_then_refires_it()
     engine = _RecordingEngine()
     result = await reconcile_consents({"run_substrate": substrate}, engine=engine)
     assert result == {"status": "reconciled", "count": 1, "probe_errors": 0}
-    assert engine.approvals == [(decision.consent_id, True)]
+    assert engine.consent_resumptions == [decision.consent_id]
 
 
 @pytest.mark.asyncio
@@ -419,10 +419,10 @@ async def test_reconcile_rejects_pending_consent_bound_to_older_checkpoint() -> 
 
 class _RecordingEngine:
     def __init__(self) -> None:
-        self.approvals: list[tuple[str, bool]] = []
+        self.consent_resumptions: list[str] = []
 
-    async def approve(self, consent_id: str, *, approved: bool) -> None:
-        self.approvals.append((consent_id, approved))
+    async def resume_consent(self, consent_id: str) -> None:
+        self.consent_resumptions.append(consent_id)
 
 
 @pytest.mark.asyncio
@@ -490,7 +490,7 @@ async def test_reconcile_consents_refires_decided_but_unenqueued(monkeypatch: py
     result: dict[str, Any] = await reconcile_consents({"run_substrate": substrate}, engine=engine)
 
     assert result == {"status": "reconciled", "count": 1, "probe_errors": 0}
-    assert engine.approvals == [(decision.consent_id, True)]  # only the decided one re-fired
+    assert engine.consent_resumptions == [decision.consent_id]  # only the decided one re-fired
     assert page_calls[0] == (None, 1)
     assert len(page_calls) == 3
     assert page_calls[1][0] is not None
@@ -523,7 +523,7 @@ async def test_reconcile_consents_uses_the_run_exact_owner_not_a_newer_row() -> 
 
     assert newer.consent_id != owner.consent_id
     assert result == {"status": "reconciled", "count": 1, "probe_errors": 0, "_revisit": False}
-    assert engine.approvals == [(owner.consent_id, True)]
+    assert engine.consent_resumptions == [owner.consent_id]
 
 
 @pytest.mark.asyncio
@@ -536,4 +536,4 @@ async def test_reconcile_consents_degrades_on_missing_authority_row() -> None:
     result = await reconcile_consents({"run_substrate": substrate}, engine=engine)
 
     assert result == {"status": "degraded", "count": 0, "probe_errors": 1}
-    assert engine.approvals == []
+    assert engine.consent_resumptions == []

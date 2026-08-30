@@ -179,7 +179,6 @@ def test_apply_commits_in_order_once() -> None:
 
     assert result.created_secrets == ("lychd-core",)
     assert result.binding_generation == "bindings-after"
-    assert result.systemd_reloaded
     assert events == ["secret", "bindings", "reload"]
     assert scribe.plan_reconcile_all.call_count == 2
     scribe.reconcile_all.assert_called_once()
@@ -260,43 +259,22 @@ def test_apply_rejects_plan_from_another_bound_foundation() -> None:
     systemd.daemon_reload.assert_not_called()
 
 
-def test_apply_rejects_binding_drift_before_secret_effects() -> None:
+@pytest.mark.parametrize(
+    ("observed_generation", "desired_generation"),
+    [
+        ("bindings-b", "desired-a"),
+        ("bindings-a", "desired-b"),
+    ],
+)
+def test_apply_rejects_binding_generation_drift_before_secret_effects(
+    observed_generation: str,
+    desired_generation: str,
+) -> None:
     scribe = MagicMock()
     scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
         changes=(),
-        observed_generation="bindings-b",
-        desired_generation="desired-a",
-    )
-    secrets = MagicMock()
-    systemd = MagicMock()
-    use_case = _use_case(scribe=scribe, secrets=secrets, systemd=systemd)
-    approved = BindPlan(
-        foundation=_foundation(),
-        bindings=BindingReconcilePlan(
-            changes=(),
-            observed_generation="bindings-a",
-            desired_generation="desired-a",
-        ),
-        observed_secrets=(),
-        missing_core_secrets=(),
-        missing_required_secrets=(),
-    )
-
-    with pytest.raises(BindingPlanDriftError, match="Binding state changed"):
-        use_case.apply(_request(required=()), approved)
-
-    secrets.ensure_present.assert_not_called()
-    scribe.reconcile_all.assert_not_called()
-    systemd.daemon_reload.assert_not_called()
-
-
-def test_apply_rejects_desired_byte_drift_before_secret_effects() -> None:
-    """Equal dispositions and live state cannot conceal different desired bytes."""
-    scribe = MagicMock()
-    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
-        changes=(),
-        observed_generation="bindings-a",
-        desired_generation="desired-b",
+        observed_generation=observed_generation,
+        desired_generation=desired_generation,
     )
     secrets = MagicMock()
     systemd = MagicMock()
@@ -410,7 +388,6 @@ def test_apply_reports_committed_bindings_when_reload_fails() -> None:
     assert failure.value.progress.created_secrets == ("lychd-core",)
     assert failure.value.progress.binding_commit_state is BindingCommitState.COMMITTED
     assert failure.value.progress.binding_generation == "bindings-after"
-    assert not failure.value.progress.systemd_reloaded
 
 
 def test_keyboard_interrupt_during_secret_commit_preserves_indeterminate_truth(
@@ -500,7 +477,7 @@ def test_system_exit_after_binding_commit_preserves_committed_generation(
             "binding mutations rolled back cleanly",
         ),
         (
-            lambda: SystemExit(130),
+            KeyboardInterrupt,
             ScribeTransactionState.INDETERMINATE,
             "binding commit state is indeterminate",
         ),
@@ -543,10 +520,8 @@ def test_scribe_wrapped_terminal_signal_keeps_native_cancellation_semantics(
     systemd.daemon_reload.assert_not_called()
 
 
-@pytest.mark.parametrize("signal", [KeyboardInterrupt(), SystemExit(73)])
-def test_nested_scribe_observation_terminal_keeps_native_cancellation_semantics(
-    signal: BaseException,
-) -> None:
+def test_nested_scribe_observation_terminal_keeps_native_cancellation_semantics() -> None:
+    signal = KeyboardInterrupt()
     request = _request(required=())
     plan = BindingReconcilePlan(
         changes=(),

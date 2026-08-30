@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from lychd.system.operator.models import ObservationState, OwnedUnit, OwnedUnitCatalog
 from lychd.system.operator.process import ProcessInvocationError, ProcessRunner
+from lychd.system.services.scribe.naming import runtime_unit_for_source
 
 if TYPE_CHECKING:
     from lychd.system.services.scribe import ScribeService
@@ -44,9 +44,7 @@ class OwnedUnitInventoryService:
 
         sources_by_unit: defaultdict[str, list[str]] = defaultdict(list)
         for source in (*bindings.quadlet_sources, *bindings.systemd_sources):
-            unit = self._unit_for_source(source)
-            if unit is not None:
-                sources_by_unit[unit].append(str(source))
+            sources_by_unit[runtime_unit_for_source(source.name)].append(str(source))
 
         units = tuple(
             self._observe_unit(name, tuple(sorted(sources_by_unit.get(name, ())))) for name in bindings.runtime_units
@@ -56,17 +54,6 @@ class OwnedUnitInventoryService:
             units=units,
             generation=bindings.generation,
         )
-
-    @staticmethod
-    def _unit_for_source(source: Path) -> str | None:
-        suffix = source.suffix
-        if suffix == ".container":
-            return f"{source.stem}.service"
-        if suffix == ".pod":
-            return f"{source.stem}-pod.service"
-        if suffix in {".target", ".service", ".path"}:
-            return source.name
-        return None
 
     def _observe_unit(self, unit: str, sources: tuple[str, ...]) -> OwnedUnit:
         if self._systemctl is None:

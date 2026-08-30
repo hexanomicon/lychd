@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
-
-_EXPORTED_OPENAPI = Path(__file__).resolve().parents[2] / "clients" / "web" / "openapi.json"
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -62,27 +58,43 @@ def test_altar_status_publishes_the_vessel_csrf_names(
     }
 
 
-@pytest.mark.parametrize(
-    ("path", "method"),
-    [
-        ("/api/v1/bridge/consents/{consent_id}/decision", "post"),
-        ("/api/v1/nexus/plan", "get"),
-        ("/api/v1/nexus/swaps", "post"),
-        ("/api/v1/nexus/swaps/{ticket_id}", "get"),
-        ("/api/v1/nexus/swaps/{ticket_id}/events", "get"),
-        ("/api/v1/nexus/transitions/{request_id}", "get"),
-        ("/api/v1/loom/{workflow}", "get"),
-        ("/api/v1/loom/source/workflows/{workflow}", "get"),
-        ("/api/v1/loom/{pattern_id}/{revision}", "get"),
-        ("/api/v1/loom/source/patterns/{pattern_id}/{revision}", "get"),
-        ("/api/v1/orb/runs/{run_id}", "get"),
-    ],
-)
-def test_not_found_operations_publish_the_framework_error_contract(path: str, method: str) -> None:
-    exported = json.loads(_EXPORTED_OPENAPI.read_text(encoding="utf-8"))
-    schema = exported["paths"][path][method]["responses"]["404"]["content"]["application/json"]["schema"]
+def test_every_explicit_error_operation_publishes_the_shared_framework_error(
+    altar_client: TestClient[Litestar],
+) -> None:
+    schema = cast("dict[str, Any]", altar_client.get("/schema/openapi.json").json())
+    expected = {
+        ("/api/v1/bridge/consents/{consent_id}/decision", "post", "404"),
+        ("/api/v1/bridge/runs/{run_id}", "get", "404"),
+        ("/api/v1/bridge/runs/{run_id}/cancel", "post", "404"),
+        ("/api/v1/bridge/runs/{run_id}/events", "get", "404"),
+        ("/api/v1/bridge/sessions/{session_id}", "get", "404"),
+        ("/api/v1/bridge/sessions/{session_id}/inspector", "get", "404"),
+        ("/api/v1/bridge/sessions/{session_id}/messages", "post", "404"),
+        ("/api/v1/loom/source/patterns/{pattern_id}/{revision}", "get", "404"),
+        ("/api/v1/loom/source/workflows/{workflow}", "get", "404"),
+        ("/api/v1/loom/{pattern_id}/{revision}", "get", "404"),
+        ("/api/v1/loom/{workflow}", "get", "404"),
+        ("/api/v1/nexus/plan", "get", "404"),
+        ("/api/v1/nexus/swaps", "post", "404"),
+        ("/api/v1/nexus/swaps", "post", "409"),
+        ("/api/v1/nexus/swaps", "post", "503"),
+        ("/api/v1/nexus/swaps/{ticket_id}", "get", "404"),
+        ("/api/v1/nexus/swaps/{ticket_id}/events", "get", "404"),
+        ("/api/v1/nexus/transitions/{request_id}", "get", "404"),
+        ("/api/v1/orb/runs/{run_id}", "get", "404"),
+    }
+    declared: set[tuple[str, str, str]] = set()
+    paths = cast("dict[str, dict[str, Any]]", schema["paths"])
+    for path, path_item in paths.items():
+        for method, operation in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            for status, response in operation["responses"].items():
+                response_schema = response.get("content", {}).get("application/json", {}).get("schema")
+                if response_schema == {"$ref": "#/components/schemas/FrameworkError"}:
+                    declared.add((path, method, status))
 
-    assert schema == {"$ref": "#/components/schemas/FrameworkError"}
+    assert declared == expected
 
 
 @pytest.mark.parametrize(
@@ -106,13 +118,14 @@ def test_unknown_api_is_not_swallowed_by_spa_fallback(
     assert altar_client.get("/api/v1/not-real").status_code == 404
 
 
-def test_validation_error_matches_the_exported_litestar_contract(
+def test_validation_error_returns_the_framework_contract(
     altar_client: TestClient[Litestar],
 ) -> None:
     response = altar_client.get("/api/v1/orb/runs/not-real?after_seq=not-an-integer")
-    exported = json.loads(_EXPORTED_OPENAPI.read_text(encoding="utf-8"))
-    operation = exported["paths"]["/api/v1/orb/runs/{run_id}"]["get"]
-    declared = operation["responses"]["400"]["content"]["application/json"]["schema"]
+    schema = cast("dict[str, Any]", altar_client.get("/schema/openapi.json").json())
+    declared = schema["paths"]["/api/v1/orb/runs/{run_id}"]["get"]["responses"]["400"]["content"]["application/json"][
+        "schema"
+    ]
 
     assert response.status_code == 400
     assert response.headers["content-type"].startswith("application/json")

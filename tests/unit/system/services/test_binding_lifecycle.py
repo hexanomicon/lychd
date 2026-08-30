@@ -8,10 +8,8 @@ from pathlib import Path
 import pytest
 
 from lychd.system.operator import ProcessResult
-from lychd.system.services.lifecycle import (
-    BindingLifecycleService,
-    LifecycleError,
-)
+from lychd.system.services.lifecycle.bindings import BindingLifecycleService
+from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.scribe import ScribeService
 
 
@@ -63,10 +61,11 @@ def _bound_service(
         output_dir=quadlet_dir,
         systemd_dir=systemd_dir,
     )
-    source = scribe.write_plain_unit(
-        "lychd-vessel.service",
-        "[Service]\nExecStart=/usr/bin/true\n",
+    scribe.reconcile_all(
+        [],
+        plain_units={"lychd-vessel.service": "[Service]\nExecStart=/usr/bin/true\n"},
     )
+    source = systemd_dir / "lychd-vessel.service"
     lifecycle = BindingLifecycleService(
         scribe,
         runner=runner,

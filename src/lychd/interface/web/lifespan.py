@@ -1,11 +1,12 @@
-"""`altar_services_lifespan` — the ONE web-layer assembly site (§TD-5).
+"""Application lifespan that owns Altar service assembly and publication (§TD-5).
 
-Builds one queue-bound `AltarServices`, warms the registry off the event loop,
+Builds one queue-bound `AltarServices` through the co-located assembly module, warms the registry off the event loop,
 reconciles durable startup state, publishes its process `RunSubstrate` (Topology A:
 the in-process ghoul shares this bus), stamps it on `app.state.services`, and drains
 on shutdown.
 
-This module is an application assembly root — importing `extensions.host` here is allowed.
+Together with ``app.py``, ``interface/web`` is the application composition boundary;
+importing ``extensions.host`` here is allowed.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
-from lychd.domain.web.altar_services import build_altar_services
+from lychd.interface.web.altar_services import build_altar_services
 from lychd.system.services.queues import (
     ManagedRunQueue,
     connect_run_queues,
@@ -201,13 +202,10 @@ async def _stop_in_process_workers(
 
 
 def _in_process_workers(app: Litestar) -> list[Any]:
-    """Resolve process-owned SAQ workers without requiring the plugin in focused apps."""
+    """Resolve the process-owned workers from the required SAQ plugin."""
     from litestar_saq import SAQPlugin
 
-    try:
-        plugin = app.plugins.get(SAQPlugin)
-    except (KeyError, LookupError):
-        return []
+    plugin = app.plugins.get(SAQPlugin)
     return [worker for worker in plugin.get_workers().values() if not worker.separate_process]
 
 

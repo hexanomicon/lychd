@@ -175,8 +175,8 @@ class RuntimeTopologyAttestor:
         registry: CapabilityRegistry,
         *,
         systemctl_bin: str,
+        owned_bindings_provider: Callable[[], OwnedBindings],
         systemctl_timeout_s: float = 120.0,
-        owned_bindings_provider: Callable[[], OwnedBindings] | None = None,
     ) -> None:
         """Bind to complete registry truth and an attested systemctl binary."""
         self._registry = registry
@@ -216,10 +216,6 @@ class RuntimeTopologyAttestor:
                 sources_by_unit=sources_by_unit,
             )
 
-    def validate_intent(self, intent: TransitionIntent) -> None:
-        """Validate declared conflict closure without querying systemd."""
-        self._validate_intent(intent, self._compile_expected_graph())
-
     def _compile_expected_graph(self) -> _ExpectedGraph:
         try:
             runes = tuple(self._registry.list_soulstone_runes())
@@ -234,9 +230,7 @@ class RuntimeTopologyAttestor:
         )
 
     def _attest_binding_ownership(self, expected: _ExpectedGraph) -> dict[str, str]:
-        """Bind loaded units to the exact Scribe receipt when production supplies it."""
-        if self._owned_bindings_provider is None:
-            return {}
+        """Bind loaded units to the exact Scribe receipt."""
         try:
             owned = self._owned_bindings_provider()
         except Exception as exc:
@@ -244,24 +238,6 @@ class RuntimeTopologyAttestor:
             raise RuntimePreconditionError(msg) from exc
         if not owned.receipt_present or owned.generation is None:
             msg = "Cannot attest runtime topology without a validated Scribe ownership receipt."
-            raise RuntimePreconditionError(msg)
-
-        expected_targets = expected.animator_targets | expected.coven_targets
-        owned_units = set(owned.runtime_units)
-        missing = sorted((expected_targets | expected.animator_services) - owned_units)
-        if missing:
-            msg = f"Scribe ownership receipt omits runtime topology units: {', '.join(missing)}."
-            raise RuntimePreconditionError(msg)
-        owned_topology_targets = {
-            unit
-            for unit in owned_units
-            if unit.startswith(("lychd-animator-", "lychd-coven-")) and unit.endswith(".target")
-        }
-        if owned_topology_targets != set(expected_targets):
-            msg = (
-                "Scribe ownership receipt has stale runtime topology targets: "
-                f"expected {sorted(expected_targets)}, observed {sorted(owned_topology_targets)}."
-            )
             raise RuntimePreconditionError(msg)
 
         from lychd.system.services.scribe.naming import runtime_unit_for_source
@@ -273,6 +249,24 @@ class RuntimeTopologyAttestor:
                 msg = f"Scribe ownership maps multiple sources to runtime unit {unit_name}."
                 raise RuntimePreconditionError(msg)
             sources_by_unit[unit_name] = str(source)
+
+        expected_targets = expected.animator_targets | expected.coven_targets
+        missing = sorted((expected_targets | expected.animator_services) - sources_by_unit.keys())
+        if missing:
+            msg = f"Scribe ownership receipt omits runtime topology units: {', '.join(missing)}."
+            raise RuntimePreconditionError(msg)
+        owned_topology_targets = {
+            unit
+            for unit in sources_by_unit
+            if unit.startswith(("lychd-animator-", "lychd-coven-")) and unit.endswith(".target")
+        }
+        if owned_topology_targets != set(expected_targets):
+            msg = (
+                "Scribe ownership receipt has stale runtime topology targets: "
+                f"expected {sorted(expected_targets)}, observed {sorted(owned_topology_targets)}."
+            )
+            raise RuntimePreconditionError(msg)
+
         return sources_by_unit
 
     async def _attest_loaded_target_set(self, expected: _ExpectedGraph) -> None:
@@ -454,7 +448,7 @@ class RuntimeTopologyAttestor:
         )
         RuntimeTopologyAttestor._require_source(
             snapshot,
-            expected_source=sources_by_unit.get(unit_name),
+            expected_source=sources_by_unit[unit_name],
             plain_target=True,
         )
         # Requires=service is forward from this target, so its reverse appears
@@ -585,7 +579,7 @@ class RuntimeTopologyAttestor:
         )
         RuntimeTopologyAttestor._require_source(
             snapshot,
-            expected_source=sources_by_unit.get(unit_name),
+            expected_source=sources_by_unit[unit_name],
             plain_target=False,
         )
 
@@ -635,7 +629,7 @@ class RuntimeTopologyAttestor:
             )
         RuntimeTopologyAttestor._require_source(
             snapshot,
-            expected_source=sources_by_unit.get(unit_name),
+            expected_source=sources_by_unit[unit_name],
             plain_target=True,
         )
 
@@ -661,12 +655,10 @@ class RuntimeTopologyAttestor:
     def _require_source(
         snapshot: _UnitSnapshot,
         *,
-        expected_source: str | None,
+        expected_source: str,
         plain_target: bool,
     ) -> None:
         """Tie each loaded fragment to its exact receipt-owned source."""
-        if expected_source is None:
-            return
         if plain_target:
             if snapshot.fragment_path != expected_source or snapshot.unit_file_state != "static":
                 msg = (

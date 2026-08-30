@@ -27,7 +27,7 @@ from lychd.agents.the_first_one import default_forge
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.cortex.context import ContextOrchestrator
-from lychd.domain.cortex.engine import QueueRouter, RunEngine
+from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 from lychd.domain.cortex.events import InProcessEventBus
 from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
@@ -130,7 +130,7 @@ def _kinds(bus: InProcessEventBus, run_id: str) -> list[str]:
 
 @pytest.mark.asyncio
 async def test_scenario1_parks_with_s4_emit_ordering() -> None:
-    substrate, ledger, bus, sessions, _orch = _substrate(FunctionModel(stream_function=_park_then_settle))
+    substrate, ledger, bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
     await _seed(ledger, sessions, "run_1")
 
     order: list[str] = []
@@ -170,6 +170,7 @@ async def test_scenario1_parks_with_s4_emit_ordering() -> None:
     # S4: the CONSENT event fires only AFTER set_status(AWAITING_CONSENT).
     assert "status:awaiting_consent" in order
     assert order.index("status:awaiting_consent") < order.index("emit:consent")
+    assert orch.calls == []
 
 
 async def _park(substrate: RunSubstrate, run_id: str) -> str:
@@ -352,92 +353,49 @@ async def test_scenario3_refuse_resumes_without_orchestrator_call() -> None:
     assert [str(e.kind) for e in channel._replay].count("done") == 1
 
 
+@pytest.mark.parametrize(
+    ("capability_key", "toolset_id", "effect_revision", "changed_schema"),
+    [
+        pytest.param("chat:replacement", None, "test-v1", False, id="capability"),
+        pytest.param(None, "replacement-transition", "test-v1", False, id="toolset"),
+        pytest.param(None, "test-coven-transition", "test-v2", False, id="effect-revision"),
+        pytest.param(None, "test-coven-transition", "test-v1", True, id="schema"),
+    ],
+)
 @pytest.mark.asyncio
-async def test_approved_resume_rejects_capability_substitution() -> None:
+async def test_approved_resume_rejects_binding_drift(
+    capability_key: str | None,
+    toolset_id: str | None,
+    effect_revision: str,
+    *,
+    changed_schema: bool,
+) -> None:
+    run_id = f"run_{capability_key or toolset_id}_{effect_revision}_{changed_schema}"
     substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
-    await _seed(substrate.ledger, sessions, "run_capability_drift")
-    consent_id = await _park(substrate, "run_capability_drift")
-    dispatcher = substrate.dispatcher
-    assert isinstance(dispatcher, FakeDispatcher)
-    dispatcher.key = "chat:replacement"
-
-    result = await _resume(substrate, "run_capability_drift", consent_id, approved=True)
-
-    assert result["status"] == "done"
-    assert orch.calls == []
-    turn = await sessions.settled_turn_for_run("run_capability_drift")
-    assert turn is not None
-    assert "fresh consent" in turn.content.lower()
-
-
-@pytest.mark.asyncio
-async def test_approved_resume_rejects_same_name_tool_substitution() -> None:
-    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
-    await _seed(substrate.ledger, sessions, "run_tool_drift")
-    consent_id = await _park(substrate, "run_tool_drift")
+    await _seed(substrate.ledger, sessions, run_id)
+    consent_id = await _park(substrate, run_id)
     executed: list[str] = []
     dispatcher = substrate.dispatcher
     assert isinstance(dispatcher, FakeDispatcher)
-    dispatcher.toolsets = (_replacement_toolset(toolset_id="replacement-transition", executed=executed),)
+    if capability_key is not None:
+        dispatcher.key = capability_key
+    else:
+        assert toolset_id is not None
+        dispatcher.toolsets = (
+            _replacement_toolset(
+                toolset_id=toolset_id,
+                executed=executed,
+                changed_schema=changed_schema,
+                effect_revision=effect_revision,
+            ),
+        )
 
-    result = await _resume(substrate, "run_tool_drift", consent_id, approved=True)
+    result = await _resume(substrate, run_id, consent_id, approved=True)
 
     assert result["status"] == "done"
     assert orch.calls == []
     assert executed == []
-    turn = await sessions.settled_turn_for_run("run_tool_drift")
-    assert turn is not None
-    assert "fresh consent" in turn.content.lower()
-
-
-@pytest.mark.asyncio
-async def test_approved_resume_rejects_same_schema_new_effect_revision() -> None:
-    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
-    await _seed(substrate.ledger, sessions, "run_effect_drift")
-    consent_id = await _park(substrate, "run_effect_drift")
-    executed: list[str] = []
-    dispatcher = substrate.dispatcher
-    assert isinstance(dispatcher, FakeDispatcher)
-    dispatcher.toolsets = (
-        _replacement_toolset(
-            toolset_id="test-coven-transition",
-            executed=executed,
-            effect_revision="test-v2",
-        ),
-    )
-
-    result = await _resume(substrate, "run_effect_drift", consent_id, approved=True)
-
-    assert result["status"] == "done"
-    assert orch.calls == []
-    assert executed == []
-    turn = await sessions.settled_turn_for_run("run_effect_drift")
-    assert turn is not None
-    assert "fresh consent" in turn.content.lower()
-
-
-@pytest.mark.asyncio
-async def test_approved_resume_rejects_tool_schema_change() -> None:
-    substrate, _ledger, _bus, sessions, orch = _substrate(FunctionModel(stream_function=_park_then_settle))
-    await _seed(substrate.ledger, sessions, "run_schema_drift")
-    consent_id = await _park(substrate, "run_schema_drift")
-    executed: list[str] = []
-    dispatcher = substrate.dispatcher
-    assert isinstance(dispatcher, FakeDispatcher)
-    dispatcher.toolsets = (
-        _replacement_toolset(
-            toolset_id="test-coven-transition",
-            executed=executed,
-            changed_schema=True,
-        ),
-    )
-
-    result = await _resume(substrate, "run_schema_drift", consent_id, approved=True)
-
-    assert result["status"] == "done"
-    assert orch.calls == []
-    assert executed == []
-    turn = await sessions.settled_turn_for_run("run_schema_drift")
+    turn = await sessions.settled_turn_for_run(run_id)
     assert turn is not None
     assert "fresh consent" in turn.content.lower()
 
@@ -513,18 +471,16 @@ async def test_scenario4_chained_rounds_hit_bottleneck() -> None:
     assert "round limit" in turn.content.lower()
 
 
-# --- Scenario 5: durable restart-resume — verdict lands, seq continues, no lost Steps
+# --- Scenario 5: fresh runtime reconstruction — verdict lands, seq continues
 
 
 @pytest.mark.asyncio
-async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
-    """Park → simulate restart (fresh bus/substrate, carried ledger+consents+stasis) → resume.
+async def test_fresh_runtime_reconstruction_resumes_with_continuing_sequence() -> None:
+    """Park, rebuild runtime objects over retained stores, then resume.
 
-    The R1 keystone: the resumed run seeds its FRESH channel via `ledger.next_seq`, so Step
-    seqs continue strictly across the restart — no re-collided, silently-shed Step rows.
+    The resumed run seeds its fresh channel via `ledger.next_seq`, so Step seqs
+    continue strictly across reconstruction without colliding or dropping rows.
     """
-    import asyncio
-
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     consents = InMemoryConsentLedger()
     orch = FakeOrchestrator()
@@ -561,11 +517,11 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     assert await stasis_store.exists("run_5")  # the durable checkpoint really survives
     session = next(iter(sessions._sessions.values()))
     assert session.message_history == []  # parked work is not completed conversation history
-    await asyncio.sleep(0.05)  # let the ledger tee drain the pre-park Step rows
+    await bus1.wait_persisted("run_5")
     pre_seqs = [e.seq for e in ledger.events("run_5")]
     assert pre_seqs  # some Step rows persisted before the park
 
-    # RESTART: a fresh bus + substrate; the ledger + consents + checkpoint store carry over.
+    # Rebuild the process-local bus/substrate over the retained test stores.
     bus2 = InProcessEventBus(ledger=ledger)
     sub2 = _mk_substrate(bus2, sessions)
 
@@ -581,7 +537,7 @@ async def test_scenario5_durable_restart_resume_seq_continuing() -> None:
     assert any(call[0] == "request" for call in orch.calls)  # the approved tool body ran
     assert len(session.message_history) >= 4
     assert {message.get("run_id") for message in session.message_history} == {"run_5"}
-    await asyncio.sleep(0.05)  # let the resume-hop tee drain
+    await bus2.wait_persisted("run_5")
     all_seqs = [e.seq for e in ledger.events("run_5")]
     # R1: NO lost Step rows — the fresh channel continued the seq, never re-collided at 0.
     assert len(all_seqs) == len(set(all_seqs)), f"duplicate Step seqs (lost rows): {all_seqs}"
@@ -622,10 +578,12 @@ class _RecordingQueue:
 
     def __init__(self) -> None:
         self.enqueued: list[dict[str, Any]] = []
+        self.enqueued_event = asyncio.Event()
 
     async def enqueue(self, job_or_func: str, /, **kwargs: Any) -> Any:
         _ = job_or_func
         self.enqueued.append(kwargs)
+        self.enqueued_event.set()
 
     async def job(self, job_key: str, /) -> Any:
         _ = job_key
@@ -650,7 +608,7 @@ async def test_preflip_verdict_is_not_lost() -> None:
 
     Simulate the Bridge PAGE-RENDER approve landing in the pre-flip window: the instant
     `park_on_consent` commits the consent row (while the run is still RUNNING), the Magus
-    approves. `engine.approve` would no-op then (row not yet AWAITING_CONSENT). Without
+    approves. `engine.resume_consent` would no-op then (row not yet AWAITING_CONSENT). Without
     the fix the run stays AWAITING_CONSENT forever; with it, `perform_run` re-reads the
     verdict after the flip, wins the same CAS admission gate, and enqueues the resume.
     """
@@ -661,7 +619,7 @@ async def test_preflip_verdict_is_not_lost() -> None:
 
     # The graph parks with a PENDING verdict (AwaitConsent raises); `perform_run` then
     # Hook the atomic park boundary and land the Magus's verdict just before the
-    # Run flips. `engine.approve` would still no-op in this window.
+    # Run flips. `engine.resume_consent` would still no-op in this window.
     orig_park_consent = ledger.park_consent
 
     async def decide_then_park_consent(run_id: str, consent_id: str) -> None:
@@ -835,7 +793,7 @@ async def test_runtime_consent_relay_recovers_failed_post_park_decision_probe() 
                 ledger=ledger,
                 bus=substrate.bus,
                 workflows=substrate.workflows,
-                queue_router=QueueRouter(),
+                queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
                 queues=substrate.queues,
                 consents=substrate.consents,
             ),
@@ -844,10 +802,7 @@ async def test_runtime_consent_relay_recovers_failed_post_park_decision_probe() 
             interval_s=0.001,
         )
     )
-    for _ in range(100):
-        if queue.enqueued:
-            break
-        await asyncio.sleep(0.001)
+    await asyncio.wait_for(queue.enqueued_event.wait(), timeout=1.0)
     stop.set()
     await relay
 
@@ -855,50 +810,6 @@ async def test_runtime_consent_relay_recovers_failed_post_park_decision_probe() 
     assert run is not None
     assert run.status is RunStatus.QUEUED
     assert len(queue.enqueued) == 1
-
-
-@pytest.mark.asyncio
-async def test_consent_relay_fairly_retries_multiple_degraded_pages(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
-    calls: list[tuple[datetime, str] | None] = []
-    stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "consent-page-1")
-    second_page_end = (datetime.now(UTC), "consent-page-2")
-
-    async def fake_page(
-        _substrate: Any,
-        _engine: Any,
-        *,
-        after: tuple[datetime, str] | None,
-    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
-        calls.append(after)
-        call = len(calls)
-        if call == 1:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 2:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 3:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, second_page_end)
-        if call == 4:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 5:
-            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
-        stop.set()
-        return ({"status": "reconciled", "count": 1, "probe_errors": 0}, second_page_end)
-
-    monkeypatch.setattr("lychd.ghouls.runs._reconcile_consent_page", fake_page)
-
-    await relay_consents(
-        engine=object(),
-        substrate=object(),
-        stop=stop,
-        interval_s=0.001,
-    )
-
-    assert calls == [None, None, first_page_end, None, second_page_end, first_page_end]
 
 
 # --- stasis lost: resume with the checkpoint gone → honest FAILED, never a silent re-run

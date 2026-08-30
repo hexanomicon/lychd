@@ -20,7 +20,7 @@ spends another machine to separate the exposed surface. Gateway is **Designed**;
 
 | Gateway may hold | Gateway must not hold |
 | --- | --- |
-| edge certificates, compiled Veil routes, firewall intent, one backend service credential, optional Tether key, bounded transport evidence | Phylactery or database authority, private Context, provider or application credentials, Sigils, corpus, Podman or systemd control, a general LAN route |
+| edge certificates, compiled Veil routes, local defense-in-depth firewall intent, one backend service credential, optional Tether key, bounded transport evidence | Phylactery or database authority, private Context, provider or application credentials, Sigils, corpus, Podman or systemd control, a general LAN route, an ingress-derived host-administration channel |
 
 The public road is exact:
 
@@ -29,19 +29,23 @@ client -> admitted listener -> Veil -> authenticated exact backend -> Ward and a
 ```
 
 Every route closes host, port, path, method, protocol, limits, backend identity, and authentication
-precondition. The Core firewall accepts the backend path only from the admitted Gateway identity;
-the Gateway cannot initiate arbitrary LAN or Internet traffic. IPv4 and IPv6 obey the same policy,
-and host administration uses a separate route and credential. Forwarded bytes remain hostile:
-possession or compromise of the Gateway cannot mint caller identity, a Sigil, consent, or effect
-authority behind the route.
+precondition. The Gateway occupies a separately enforced network zone. Policy controlled outside
+that host—a router/firewall, L3-switch ACL, or cloud-network rule—plus the receiving Core firewall
+allows only the public listener and exact backend flow. A local Gateway firewall is defense in
+depth, not proof of that boundary. IPv4 and IPv6 obey the same policy, and host administration uses
+a separately governed infrastructure route and credential unavailable to the public or backend
+workload. Forwarded bytes remain hostile: possession or compromise of the Gateway cannot mint
+caller identity, a Sigil, consent, or effect authority behind the route.
 
 ## Home
 
-**Home** places the Gateway on operator-controlled iron, such as a Raspberry Pi, between the home
-router and one exact Core backend. The router forwards only the admitted public listener to Home;
-Home may reach only the named Core address and port; the Core accepts that port only from Home.
-All other Home-to-LAN forwarding and non-required egress are denied, and management is admitted
-separately.
+**Home** places the Gateway on operator-controlled iron, such as a Raspberry Pi, inside a dedicated
+DMZ/VLAN or another physically separate routed segment. An external router/firewall or L3-switch
+ACL forwards only the admitted public listener to Home and permits that zone to reach only the
+named Core address and port; the Core accepts that port only from Home. All other Home-to-LAN paths
+and non-required egress are denied outside the Gateway itself, and management is admitted
+separately. A VLAN without inter-zone enforcement, or a Raspberry Pi with an unrestricted LAN or
+alternative route, does not satisfy Home.
 
 Home keeps edge custody local and adds no rented control plane. It shares the household's power,
 uplink, public-address exposure, and upstream denial-of-service limit. Tether is unnecessary when

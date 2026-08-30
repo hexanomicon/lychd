@@ -8,8 +8,7 @@ from importlib.machinery import ModuleSpec
 from pathlib import Path
 from types import ModuleType
 
-from lychd.config.settings.extensions import ExtensionSettings, extension_id_parts
-from lychd.config.settings.root import get_settings
+from lychd.config.settings.extensions import extension_id_parts
 from lychd.extensions.builtin.catalog import builtin_register_module, builtin_registration_order
 from lychd.extensions.context import ExtensionContext, ExtensionRegistrationContext
 from lychd.system.constants import PATH_EXTENSIONS_DIR
@@ -34,12 +33,6 @@ class ExtensionManager:
         self._builtins = list(builtins)
         self._crypt = list(crypt)
         self._crypt_root = crypt_root or PATH_EXTENSIONS_DIR
-
-    @classmethod
-    def from_settings(cls, settings: ExtensionSettings | None = None) -> ExtensionManager:
-        """Build an extension manager from active settings."""
-        active = settings or get_settings().extensions
-        return cls(builtins=active.builtins, crypt=active.crypt)
 
     def assemble(self) -> ExtensionContext:
         """Import selected extensions and return their registered contributions.
@@ -69,13 +62,9 @@ class ExtensionManager:
         return context
 
     def _register_builtin(self, activation_id: str, context: ExtensionRegistrationContext) -> None:
-        module_path = self._builtin_register_module(activation_id)
+        module_path = builtin_register_module(activation_id)
         module = importlib.import_module(module_path)
         self._call_register(module, activation_id, context)
-
-    def _builtin_register_module(self, extension_id: str) -> str:
-        """Resolve a selected built-in id to its required register module."""
-        return builtin_register_module(extension_id)
 
     def _register_crypt(self, activation_id: str, context: ExtensionRegistrationContext) -> None:
         module_path = self._crypt_module_path(activation_id)
@@ -109,16 +98,12 @@ class ExtensionManager:
 
     def _crypt_module_path(self, extension_id: str) -> Path:
         """Resolve the selected Crypt extension register shim path without scanning."""
-        register_py = self._crypt_root.joinpath(*self._extension_id_parts(extension_id), "register.py")
+        register_py = self._crypt_root.joinpath(*extension_id_parts(extension_id), "register.py")
         if register_py.exists():
             return register_py
 
         msg = f"Crypt extension '{extension_id}' was selected but no register shim exists at '{register_py}'."
         raise ValueError(msg)
-
-    def _extension_id_parts(self, extension_id: str) -> tuple[str, ...]:
-        """Return validated extension id path parts."""
-        return extension_id_parts(extension_id)
 
     def _load_module(self, module_path: Path, activation_id: str) -> ModuleType:
         """Load one selected shim in an isolated package namespace.

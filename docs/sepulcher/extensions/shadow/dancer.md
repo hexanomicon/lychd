@@ -11,9 +11,9 @@ One source Intent forks beneath a declared Lens. **Dancer** is [Shadow's](./inde
 office: it makes several alternatives legible from the same starting point, preserving what each
 assumes and requires while favoring none of them.
 
-Dancer is **Designed**. The built-in `simulation` Rune supplies configuration only; no Dancer path
-runs. [State of Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while
-[ADR 31](../../../adr/31-simulation.md) owns the design.
+Dancer is **Designed**. No simulation Rune or schema ships, and no Dancer path runs. [State of
+Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while [ADR
+31](../../../adr/31-simulation.md) owns the design.
 
 ## One bounded fork
 

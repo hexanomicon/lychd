@@ -9,8 +9,6 @@ a real Postgres:
   idempotent same-target concurrent write is benign.
 - Seq fidelity: `append_event` persists `RunEvent.seq` VERBATIM as `Step.seq`
   (no insert-time allocation), so Step order equals emit order (Orb evidence).
-- Factory wire compatibility: plain `json` and versioned `jsonb` both round-trip through the
-  production asyncpg codec hook.
 """
 # The ordinary contributor gate omits the optional container-test group; the whole module is
 # importorskip'd there. SQLAlchemy Table vs FromClause noise on create_all remains locally ignored.
@@ -33,17 +31,13 @@ import pytest_asyncio
 
 pytest.importorskip("testcontainers", reason="optional disposable PostgreSQL receipt")
 
-from sqlalchemy import JSON, bindparam, cast, select
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.engine import make_url
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from testcontainers.community.postgres import PostgresContainer
 
 from lychd.agents.router import Intent
-from lychd.config.settings.server import DatabaseSettings
 from lychd.db.delegation import DbDelegatedAgentJobStore
-from lychd.db.factory import create_db_engine
 from lychd.db.models import (
     Consent,
     DelegatedAgentEventRecord,
@@ -53,6 +47,8 @@ from lychd.db.models import (
     Session,
     Step,
 )
+from lychd.db.sessions import DbBridgeSessionStore
+from lychd.domain.artifacts import ArtifactRef
 from lychd.domain.cortex.events import InProcessEventBus, RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import DbRunLedger, RunAdmissionConflictError
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
@@ -61,9 +57,9 @@ from lychd.domain.delegation.models import (
     DelegatedAgentJobStatus,
     DelegatedAgentProfile,
     DelegatedAgentRequest,
+    DelegatedAgentResult,
 )
 from lychd.domain.web.schemas import BridgeTurn
-from lychd.domain.web.sessions import DbBridgeSessionStore
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -102,6 +98,29 @@ async def _seed(ledger: DbRunLedger, run_id_hint: str = "") -> str:
     intent = Intent(session_id="s", run_id=run_id_hint or None, prompt="p", source="bridge")
     run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
     return run.run_id
+
+
+async def _wait_until_session_writer_is_lock_blocked(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """Wait for PostgreSQL—not a timing guess—to report the production writer blocked."""
+    query = text(
+        """
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_stat_activity
+            WHERE datname = current_database()
+              AND wait_event_type = 'Lock'
+              AND query ILIKE '%FOR UPDATE%'
+              AND query ILIKE '%session%'
+        )
+        """
+    )
+    async with asyncio.timeout(5):
+        while True:
+            async with session_factory() as observer:
+                if await observer.scalar(query):
+                    return
 
 
 @pytest.mark.asyncio
@@ -146,6 +165,54 @@ async def test_nonterminal_session_query_is_filtered_and_bounded(
 
 
 @pytest.mark.asyncio
+async def test_session_listing_uses_stable_newest_first_database_order(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    older = datetime(2026, 1, 1, tzinfo=UTC)
+    newer = older + timedelta(seconds=1)
+    rows = (
+        Session(
+            id=UUID(int=3),
+            title="older-high-id",
+            sigil_name="magus",
+            meta={"turns": []},
+            message_history=[],
+            created_at=older,
+            updated_at=older,
+        ),
+        Session(
+            id=UUID(int=1),
+            title="newer-low-id",
+            sigil_name="magus",
+            meta={"turns": []},
+            message_history=[],
+            created_at=newer,
+            updated_at=newer,
+        ),
+        Session(
+            id=UUID(int=2),
+            title="newer-high-id",
+            sigil_name="magus",
+            meta={"turns": []},
+            message_history=[],
+            created_at=newer,
+            updated_at=newer,
+        ),
+    )
+    async with pg_factory() as session:
+        session.add_all(rows)
+        await session.commit()
+
+    listed = await DbBridgeSessionStore(pg_factory, sigil_name="magus").list_sessions()
+
+    assert [record.title for record in listed] == [
+        "newer-high-id",
+        "newer-low-id",
+        "older-high-id",
+    ]
+
+
+@pytest.mark.asyncio
 async def test_delegated_job_limit_selects_newest_suffix_in_creation_order(
     pg_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -179,6 +246,64 @@ async def test_delegated_job_limit_selects_newest_suffix_in_creation_order(
     assert await store.jobs_for_run(run_id, limit=0) == ()
 
 
+@pytest.mark.asyncio
+async def test_delegated_artifact_references_survive_postgres_create_and_adoption(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    run_id = await _seed(DbRunLedger(session_factory=pg_factory))
+    input_artifact = ArtifactRef(
+        artifact_id="input-artifact",
+        digest=f"sha256:{'a' * 64}",
+        media_type="text/plain",
+        size=12,
+        classification="internal",
+    )
+    output_artifact = ArtifactRef(
+        artifact_id="output-artifact",
+        digest=f"sha256:{'b' * 64}",
+        media_type="application/json",
+        size=24,
+        classification="private",
+    )
+    request = DelegatedAgentRequest(
+        request_id="artifact-request",
+        run_id=run_id,
+        step_id="artifact-step",
+        runtime="reference",
+        profile=DelegatedAgentProfile.READ,
+        prompt="inspect artifacts",
+        input_artifacts=(input_artifact,),
+    )
+    ref = DelegatedAgentJobRef(
+        job_id="artifact-job",
+        request_id=request.request_id,
+        run_id=run_id,
+        runtime=request.runtime,
+        profile=request.profile,
+    )
+    store = DbDelegatedAgentJobStore(pg_factory)
+    await store.create(request, ref)
+    await store.transition(ref.job_id, DelegatedAgentJobStatus.ADMITTED)
+    await store.transition(ref.job_id, DelegatedAgentJobStatus.PREPARING)
+    await store.transition(ref.job_id, DelegatedAgentJobStatus.RUNNING)
+    await store.adopt(
+        ref.job_id,
+        DelegatedAgentResult(
+            job_id=ref.job_id,
+            status=DelegatedAgentJobStatus.SUCCEEDED,
+            output="done",
+            artifacts=(output_artifact,),
+        ),
+    )
+
+    restored = await DbDelegatedAgentJobStore(pg_factory).get(ref.job_id)
+
+    assert restored is not None
+    assert restored.request.input_artifacts == (input_artifact,)
+    assert restored.result is not None
+    assert restored.result.artifacts == (output_artifact,)
+
+
 async def _park_decided_consent(
     ledger: DbRunLedger,
     session_factory: async_sessionmaker[AsyncSession],
@@ -206,41 +331,6 @@ async def _park_decided_consent(
     consent_id = str(consent.id)
     await ledger.park_consent(run_id, consent_id)
     return consent_id
-
-
-@pytest.mark.asyncio
-async def test_factory_json_and_jsonb_binary_codecs_round_trip(
-    pg_url: str,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The factory's distinct wire codecs both survive a real PostgreSQL round trip."""
-    url = make_url(pg_url)
-    monkeypatch.setenv("LYCHD_DB_PASSWORD", url.password or "")
-    settings = DatabaseSettings(
-        host=url.host or "localhost",
-        port=url.port or 5432,
-        user=url.username or "postgres",
-        database=url.database or "postgres",
-        pool_size=1,
-        max_overflow=0,
-    )
-    engine = create_db_engine(settings)
-    payload = {"name": "LychD", "nested": {"depth": 2}}
-    try:
-        async with engine.connect() as connection:
-            plain = await connection.scalar(
-                select(cast(bindparam("plain_payload", type_=JSON), JSON)),
-                {"plain_payload": payload},
-            )
-            binary = await connection.scalar(
-                select(cast(bindparam("jsonb_payload", type_=JSONB), JSONB)),
-                {"jsonb_payload": payload},
-            )
-    finally:
-        await engine.dispose()
-
-    assert plain == payload
-    assert binary == payload
 
 
 @pytest.mark.asyncio
@@ -723,7 +813,7 @@ async def test_cancel_election_fences_the_current_delivery_generation(
 @pytest.mark.asyncio
 async def test_cancel_after_completion_is_benign(pg_factory: async_sessionmaker[AsyncSession]) -> None:
     """A cancel observing settled DONE is a benign no-op, not a 500."""
-    from lychd.domain.cortex.engine import QueueRouter
+    from lychd.domain.cortex.engine import QueueRouter, RouteRule
     from lychd.domain.cortex.engine import RunEngine as CortexRunEngine
 
     ledger = DbRunLedger(session_factory=pg_factory)
@@ -747,7 +837,7 @@ async def test_cancel_after_completion_is_benign(pg_factory: async_sessionmaker[
         ledger=ledger,
         bus=InProcessEventBus(ledger=ledger),
         workflows=None,
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues={"runs": _Queue()},
     )
 
@@ -817,28 +907,97 @@ async def test_append_event_persists_seq_verbatim(pg_factory: async_sessionmaker
 
     ledger = DbRunLedger(session_factory=pg_factory)
     run_id = await _seed(ledger)
-    for seq, kind in ((0, RunEventKind.STATUS), (1, RunEventKind.NODE), (2, RunEventKind.DONE)):
+    for seq, kind in ((4, RunEventKind.STATUS), (9, RunEventKind.NODE), (20, RunEventKind.DONE)):
         await ledger.append_event(RunEvent(run_id=run_id, seq=seq, kind=kind, data="x"))
 
     async with pg_factory() as session:
         from uuid import UUID
 
         rows = (await session.execute(select(Step.seq).where(Step.run_id == UUID(run_id)).order_by(Step.seq))).scalars()
-        assert list(rows) == [0, 1, 2]  # verbatim, ordered
+        assert list(rows) == [4, 9, 20]
 
 
 @pytest.mark.asyncio
-async def test_concurrent_session_turn_appends_are_not_lost(
+async def test_session_turn_append_serializes_on_the_real_row_lock(
     pg_factory: async_sessionmaker[AsyncSession],
 ) -> None:
-    """Concurrent writers serialize on the Session row and retain every JSONB turn."""
     store = DbBridgeSessionStore(pg_factory, sigil_name="magus")
-    bridge_session = await store.create_session(title="concurrent")
-    turns = [BridgeTurn(role="agent", content=f"turn-{index}") for index in range(16)]
+    bridge_session = await store.create_session(title="locked append")
 
-    await asyncio.gather(*(store.add_turn(bridge_session.id, turn) for turn in turns))
+    async with pg_factory() as blocker, blocker.begin():
+        row = await blocker.scalar(select(Session).where(Session.id == UUID(bridge_session.id)).with_for_update())
+        assert row is not None
+        row.meta = {"kept": True, "turns": []}
+        await blocker.flush()
+        writer = asyncio.create_task(
+            store.add_turn(
+                bridge_session.id,
+                BridgeTurn(role="agent", content="retained", run_id="run-lock"),
+            )
+        )
+        await _wait_until_session_writer_is_lock_blocked(pg_factory)
 
+    await writer
     persisted = await store.get_session(bridge_session.id)
     assert persisted is not None
-    assert {turn.content for turn in persisted.turns} == {turn.content for turn in turns}
-    assert len(persisted.turns) == len(turns)
+    assert [turn.content for turn in persisted.turns] == ["retained"]
+    async with pg_factory() as session:
+        meta = await session.scalar(select(Session.meta).where(Session.id == UUID(bridge_session.id)))
+    assert meta is not None
+    assert meta["kept"] is True
+
+
+@pytest.mark.asyncio
+async def test_session_settlement_is_locked_and_atomic_in_postgresql(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    store = DbBridgeSessionStore(pg_factory, sigil_name="magus")
+    bridge_session = await store.create_session(title="atomic settlement")
+
+    async with pg_factory() as blocker, blocker.begin():
+        row = await blocker.scalar(select(Session).where(Session.id == UUID(bridge_session.id)).with_for_update())
+        assert row is not None
+        row.meta = {"kept": True, "turns": []}
+        row.message_history = [{"kind": "baseline"}]
+        await blocker.flush()
+        writer = asyncio.create_task(
+            store.settle_agent_turn(
+                bridge_session.id,
+                BridgeTurn(role="agent", content="settled", run_id="run-settled"),
+                new_messages=[{"kind": "response"}],
+            )
+        )
+        await _wait_until_session_writer_is_lock_blocked(pg_factory)
+
+    await writer
+    settled = await store.get_session(bridge_session.id)
+    assert settled is not None
+    assert [turn.content for turn in settled.turns] == ["settled"]
+    assert settled.message_history == [{"kind": "baseline"}, {"kind": "response"}]
+
+    async with pg_factory() as session:
+        await session.execute(
+            text(
+                """
+                ALTER TABLE session ADD CONSTRAINT reject_test_partial_settlement CHECK (
+                    NOT (
+                        meta @> '{"turns":[{"run_id":"run-fail"}]}'::jsonb
+                        AND message_history @> '[{"kind":"fail"}]'::jsonb
+                    )
+                )
+                """
+            )
+        )
+        await session.commit()
+
+    with pytest.raises(IntegrityError):
+        await store.settle_agent_turn(
+            bridge_session.id,
+            BridgeTurn(role="agent", content="must-roll-back", run_id="run-fail"),
+            new_messages=[{"kind": "fail"}],
+        )
+
+    unchanged = await store.get_session(bridge_session.id)
+    assert unchanged is not None
+    assert [turn.content for turn in unchanged.turns] == ["settled"]
+    assert unchanged.message_history == [{"kind": "baseline"}, {"kind": "response"}]

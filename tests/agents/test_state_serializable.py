@@ -21,7 +21,7 @@ from pydantic_core import to_jsonable_python
 from pydantic_graph import BaseNode, End, Graph
 
 from lychd.agents.router import Intent
-from lychd.agents.workflows import builtin_workflow_registry
+from lychd.agents.workflows import BRIDGE_CHAT, DELEGATED_RITE, builtin_workflow_registry
 from lychd.agents.workflows.base import (
     Gate,
     PatternEdge,
@@ -51,6 +51,19 @@ def test_every_workflow_state_round_trips() -> None:
         state.model_json_schema()
         restored = type(state).model_validate_json(state.model_dump_json())
         assert restored == state
+
+
+@pytest.mark.parametrize(
+    ("workflow", "expected_digest"),
+    [
+        (BRIDGE_CHAT, "e23ba8136df95af26744f1c9eee6ba28ae74a3de4578e9769a775d9985b9d163"),
+        (DELEGATED_RITE, "83958866654c06a62276b3894a117cac0a69fa97553451ec59b038c8f64f89ca"),
+    ],
+)
+def test_builtin_pattern_v2_digests_are_frozen(workflow: Workflow, expected_digest: str) -> None:
+    assert workflow.manifest.schema_version == 2
+    assert workflow.manifest.digest == expected_digest
+    assert workflow.manifest.snapshot()["digest"] == expected_digest
 
 
 @pytest.mark.asyncio
@@ -98,6 +111,11 @@ class _PlainNode(BaseNode[BridgeChatState, None, None]):
 class _SecondPlainNode(BaseNode[BridgeChatState, None, None]):
     async def run(self, ctx: Any) -> End[None]:  # noqa: ARG002
         return End(None)
+
+
+def test_pattern_terminal_remains_declarative() -> None:
+    with pytest.raises(ValueError, match="must remain declarative"):
+        PatternNode(key="end", label="End", kind="terminal", implementation=_PlainNode)
 
 
 def _run() -> RunRecord:
@@ -152,20 +170,24 @@ def _workflow_for(node: type[BaseNode[Any, Any, Any]]) -> Workflow:
     )
 
 
-def test_gate_workflow_selects_durable() -> None:
-    workflow = _workflow_for(_GateNode)
-    assert workflow.durable is True  # derived from the Gate node at construction
+@pytest.mark.parametrize(
+    ("node", "durable", "phylactery_type"),
+    [
+        (_GateNode, True, DurableStasisPhylactery),
+        (_PlainNode, False, LiveStasisPhylactery),
+    ],
+)
+def test_workflow_stasis_tier_follows_gate_presence(
+    node: type[BaseNode[Any, Any, Any]],
+    *,
+    durable: bool,
+    phylactery_type: type[object],
+) -> None:
+    workflow = _workflow_for(node)
+    assert workflow.durable is durable
     substrate = SimpleNamespace(stasis_store=InMemoryStasisStore())
     phy = _phylactery_for(_run(), workflow, substrate)  # type: ignore[arg-type]
-    assert isinstance(phy, DurableStasisPhylactery)
-
-
-def test_linear_workflow_selects_live() -> None:
-    workflow = _workflow_for(_PlainNode)
-    assert workflow.durable is False
-    substrate = SimpleNamespace(stasis_store=InMemoryStasisStore())
-    phy = _phylactery_for(_run(), workflow, substrate)  # type: ignore[arg-type]
-    assert isinstance(phy, LiveStasisPhylactery)
+    assert isinstance(phy, phylactery_type)
 
 
 def test_pattern_rejects_duplicate_binding_for_non_start_graph_node() -> None:
@@ -258,43 +280,36 @@ def test_workflow_rejects_start_node_outside_its_graph() -> None:
         )
 
 
-def test_pattern_rejects_edge_missing_from_executable_graph() -> None:
-    with pytest.raises(ValueError, match=r"topology differs.*missing=\[\('node', 'end'\)\]"):
-        Workflow(
-            name="missing-edge",
-            title="missing-edge",
-            description="",
-            trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode,), name="missing-edge"),
-            start_node=_PlainNode,
-            make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
-            manifest=PatternManifest(
-                key="missing-edge",
-                revision="1",
-                implementation_revision="py.test.1",
-                checkpoint_schema="test-v1",
-                entry_node="node",
-                nodes=(
-                    PatternNode(key="node", label="Node", implementation=_PlainNode),
-                    PatternNode(key="end", label="End", kind="terminal"),
-                ),
-                edges=(),
+@pytest.mark.parametrize(
+    ("name", "edges", "match"),
+    [
+        ("missing-edge", (), r"topology differs.*missing=\[\('node', 'end'\)\]"),
+        (
+            "extra-edge",
+            (
+                PatternEdge(key="node-to-end", source="node", target="end"),
+                PatternEdge(key="invented-loop", source="node", target="node"),
             ),
-        )
-
-
-def test_pattern_rejects_edge_invented_by_manifest() -> None:
-    with pytest.raises(ValueError, match=r"topology differs.*extra=\[\('node', 'node'\)\]"):
+            r"topology differs.*extra=\[\('node', 'node'\)\]",
+        ),
+    ],
+)
+def test_pattern_edges_must_match_executable_graph(
+    name: str,
+    edges: tuple[PatternEdge, ...],
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
         Workflow(
-            name="extra-edge",
-            title="extra-edge",
+            name=name,
+            title=name,
             description="",
             trigger=Trigger(hint="", match=lambda _intent: True),
-            graph=Graph(nodes=(_PlainNode,), name="extra-edge"),
+            graph=Graph(nodes=(_PlainNode,), name=name),
             start_node=_PlainNode,
             make_state=lambda _intent: BridgeChatState(session_id="s", run_id="r", prompt="p"),
             manifest=PatternManifest(
-                key="extra-edge",
+                key=name,
                 revision="1",
                 implementation_revision="py.test.1",
                 checkpoint_schema="test-v1",
@@ -303,10 +318,7 @@ def test_pattern_rejects_edge_invented_by_manifest() -> None:
                     PatternNode(key="node", label="Node", implementation=_PlainNode),
                     PatternNode(key="end", label="End", kind="terminal"),
                 ),
-                edges=(
-                    PatternEdge(key="node-to-end", source="node", target="end"),
-                    PatternEdge(key="invented-loop", source="node", target="node"),
-                ),
+                edges=edges,
             ),
         )
 

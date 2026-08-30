@@ -1,8 +1,7 @@
 """The A3 §2 phase decision table + lease lifecycle (wave3 keel K3).
 
 Drives ``Dispatcher._grant_for_spec`` through every observed-phase row against a
-controllable fake registry that honours the ``CapabilityRegistry`` grant surface
-(``issue_grant``/``activate_capability``/``await_warm``/``refresh_capability_state``).
+controllable fake registry that honours the ``CapabilityRegistry`` reads and grant issue surface.
 The HTR row asserts the truth seam: no lease is registered when a transition is
 required (a parked run holds no lease).
 """
@@ -18,14 +17,12 @@ import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import aclosing
 from datetime import UTC, datetime
-from types import SimpleNamespace
 from typing import Any, cast
 from uuid import uuid4
 
 import pytest
 
 from lychd.domain.animation.capabilities import (
-    ActivationResult,
     CapabilityGrant,
     CapabilityPhase,
     CapabilitySpec,
@@ -33,7 +30,6 @@ from lychd.domain.animation.capabilities import (
     GrantLease,
 )
 from lychd.domain.animation.errors import CapabilityUnavailable
-from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.cortex.dispatcher import Dispatcher, HardwareTransitionRequired
@@ -65,9 +61,6 @@ class FakeRegistry:
         self,
         *,
         phase: CapabilityPhase,
-        activatable: bool = True,
-        activate_accepted: bool = True,
-        await_warm_raises: Exception | None = None,
         reason: str | None = None,
         refresh_phase: CapabilityPhase | None = None,
         dedicated: bool = True,
@@ -81,18 +74,13 @@ class FakeRegistry:
             model_id="main",
             is_dynamic=True,
             concurrency=ConcurrencyIntent(dedicated=dedicated),
-            modalities_in=["text"],
+            modalities_in=("text",),
         )
         self.state = CapabilityState(
             capability_key=_KEY,
-            is_dynamic=True,
             phase=phase,
             reason=reason,
         )
-        self._link = Link(up=(phase is CapabilityPhase.WARM), activatable=activatable, estimated_ready_ms=1500)
-        self._runtime = SimpleNamespace(id="router", connector=SimpleNamespace(link=self._link))
-        self._activate_accepted = activate_accepted
-        self._await_warm_raises = await_warm_raises
         self._refresh_phase = refresh_phase
         self.calls: list[str] = []
 
@@ -105,27 +93,10 @@ class FakeRegistry:
     def get_capability_state(self, key: str) -> CapabilityState | None:
         return self.state if key == _KEY else None
 
-    def get_runtime(self, name: str) -> Any | None:
-        return self._runtime if name == "router" else None
-
     async def refresh_capability_state(self, key: str) -> CapabilityState | None:
         self.calls.append("refresh")
         if self._refresh_phase is not None:
-            self.state.phase = self._refresh_phase
-        return self.state
-
-    async def activate_capability(self, key: str) -> ActivationResult:
-        self.calls.append("activate")
-        if not self._activate_accepted:
-            return ActivationResult(accepted=False, phase=self.state.phase, reason="rejected")
-        self.state.phase = CapabilityPhase.WARMING
-        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
-
-    async def await_warm(self, key: str, *, timeout_s: float = 120.0, interval_s: float = 0.75) -> CapabilityState:
-        self.calls.append("await_warm")
-        if self._await_warm_raises is not None:
-            raise self._await_warm_raises
-        self.state.phase = CapabilityPhase.WARM
+            self.state = self.state.model_copy(update={"phase": self._refresh_phase})
         return self.state
 
     async def issue_grant(self, key: str, *, holder: str, scope: str = "step") -> CapabilityGrant:
@@ -134,7 +105,6 @@ class FakeRegistry:
             spec=self.spec,
             state=self.state,
             lease=GrantLease(grant_id=uuid4().hex, holder=holder, issued_at=datetime.now(UTC)),
-            generation=self.spec.generation_profile,
             model=object(),
             toolsets=(),
         )
@@ -164,7 +134,7 @@ async def test_warm_row_issues_grant_directly() -> None:
     registry = FakeRegistry(phase=CapabilityPhase.WARM)
     dispatcher, leases = _dispatcher(registry)
 
-    async with dispatcher.lease_grant_key(_KEY, holder="run:1") as grant:
+    async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1") as grant:
         assert grant.spec.key == _KEY
         assert leases.active(animator_name="router")  # held inside the CM
 
@@ -233,7 +203,11 @@ async def test_drain_racing_grant_issue_becomes_hardware_transition() -> None:
     dispatcher, leases = _dispatcher(registry)
 
     async def _lease() -> None:
-        async with dispatcher.lease_grant_key(_KEY, holder="run:race"):
+        async with dispatcher.lease_grant(
+            family=CapabilityFamily.CHAT,
+            model_name="main",
+            run_id="race",
+        ):
             pytest.fail("a grant must not enter after its animator starts draining")
 
     lease_task = asyncio.create_task(_lease())
@@ -245,76 +219,28 @@ async def test_drain_racing_grant_issue_becomes_hardware_transition() -> None:
         await lease_task
 
     assert exc_info.value.capability_key == _KEY
-    assert exc_info.value.animator_name == "router"
     assert isinstance(exc_info.value.__cause__, LeaseAdmissionClosed)
     assert leases.active() == []
 
 
+@pytest.mark.parametrize(
+    "phase",
+    [CapabilityPhase.COLD, CapabilityPhase.ACTIVATABLE, CapabilityPhase.WARMING],
+)
 @pytest.mark.asyncio
-async def test_activatable_row_signals_orchestrator_without_mutating_runtime() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE)
-    dispatcher, leases = _dispatcher(registry)
-
-    with pytest.raises(HardwareTransitionRequired):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
-            pass
-
-    assert "activate" not in registry.calls
-    assert "await_warm" not in registry.calls
-    assert "issue_grant" not in registry.calls
-    assert leases.active() == []
-
-
-@pytest.mark.asyncio
-async def test_activatable_row_does_not_attempt_a_rejected_activation() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.ACTIVATABLE, activate_accepted=False)
-    dispatcher, _ = _dispatcher(registry)
-
-    with pytest.raises(HardwareTransitionRequired):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
-            pass
-
-    assert "activate" not in registry.calls
-
-
-@pytest.mark.asyncio
-async def test_warming_row_signals_orchestrator_without_waiting() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.WARMING)
-    dispatcher, leases = _dispatcher(registry)
-
-    with pytest.raises(HardwareTransitionRequired):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
-            pass
-
-    assert "activate" not in registry.calls
-    assert "await_warm" not in registry.calls
-    assert "issue_grant" not in registry.calls
-    assert leases.active() == []
-
-
-@pytest.mark.asyncio
-async def test_cold_activatable_row_raises_htr_and_registers_no_lease() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.COLD, activatable=True)
+async def test_owned_non_warm_row_requires_transition_without_mutation(
+    phase: CapabilityPhase,
+) -> None:
+    registry = FakeRegistry(phase=phase)
     dispatcher, leases = _dispatcher(registry)
 
     with pytest.raises(HardwareTransitionRequired) as exc_info:
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+        async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1"):
             pass
 
     assert exc_info.value.capability_key == _KEY
-    assert exc_info.value.animator_name == "router"
-    assert exc_info.value.estimated_ready_ms == 1500
-    assert leases.active() == []  # THE truth seam: a parked run holds no lease
-
-
-@pytest.mark.asyncio
-async def test_cold_link_flag_does_not_override_lifecycle_ownership() -> None:
-    registry = FakeRegistry(phase=CapabilityPhase.COLD, activatable=False, reason="no gpu")
-    dispatcher, _ = _dispatcher(registry)
-
-    with pytest.raises(HardwareTransitionRequired):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
-            pass
+    assert registry.calls == ["refresh"]
+    assert leases.active() == []
 
 
 @pytest.mark.asyncio
@@ -323,7 +249,7 @@ async def test_shared_non_warm_row_raises_capability_unavailable() -> None:
     dispatcher, _ = _dispatcher(registry)
 
     with pytest.raises(CapabilityUnavailable, match="not lifecycle-managed"):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+        async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1"):
             pass
 
 
@@ -333,7 +259,7 @@ async def test_error_row_raises_capability_unavailable() -> None:
     dispatcher, _ = _dispatcher(registry)
 
     with pytest.raises(CapabilityUnavailable):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+        async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1"):
             pass
 
 
@@ -343,7 +269,7 @@ async def test_unknown_row_refreshes_once_then_unavailable() -> None:
     dispatcher, _ = _dispatcher(registry)
 
     with pytest.raises(CapabilityUnavailable):
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+        async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1"):
             pass
 
     assert registry.calls.count("refresh") == 1
@@ -356,7 +282,7 @@ async def test_lease_released_after_exception_inside_cm_body() -> None:
     dispatcher, leases = _dispatcher(registry)
 
     async def _explode() -> None:
-        async with dispatcher.lease_grant_key(_KEY, holder="run:1"):
+        async with dispatcher.lease_grant(family=CapabilityFamily.CHAT, model_name="main", run_id="1"):
             assert leases.active(animator_name="router")
             raise _BoomError
 

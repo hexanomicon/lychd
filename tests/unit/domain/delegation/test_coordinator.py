@@ -16,7 +16,6 @@ from lychd.domain.delegation import (
     DelegatedAgentProfile,
     DelegatedAgentRequest,
     DelegatedAgentResult,
-    DelegatedAgentRuntime,
     IllegalDelegatedAgentTransitionError,
     InMemoryDelegatedAgentJobStore,
 )
@@ -88,18 +87,6 @@ def _reference_projection_count(runtime: ReferenceDelegatedAgentRuntime) -> int:
     return len(cast("dict[str, object]", vars(runtime)["_jobs"]))
 
 
-def test_fake_adapter_conforms_to_runtime_port() -> None:
-    assert isinstance(FakeDelegatedAgentRuntime(), DelegatedAgentRuntime)
-
-
-def test_typed_contracts_round_trip_with_artifact_refs() -> None:
-    request = _request()
-    restored = DelegatedAgentRequest.model_validate_json(request.model_dump_json())
-
-    assert restored == request
-    assert restored.input_artifacts[0].modality == "binary"
-
-
 @pytest.mark.asyncio
 async def test_terminal_store_transition_requires_result_adoption() -> None:
     store = InMemoryDelegatedAgentJobStore()
@@ -136,6 +123,61 @@ async def test_concurrent_submit_starts_one_external_job() -> None:
     assert all(event.kind is DelegatedAgentEventKind.STATUS_CHANGED for event in events)
     correlated = await coordinator.jobs_for_run("run-1")
     assert [job.ref for job in correlated] == [first]
+    assert _coordinator_lock_count(coordinator) == 0
+
+
+@pytest.mark.parametrize("operation", ["adopt", "cancel"])
+@pytest.mark.asyncio
+async def test_job_lifecycle_operations_wait_for_submit_acceptance(operation: str) -> None:
+    """No terminal operation can cross a still-unacknowledged runtime start."""
+
+    @dataclass
+    class _BlockingRuntime(FakeDelegatedAgentRuntime):
+        start_entered: asyncio.Event = field(default_factory=asyncio.Event)
+        release_start: asyncio.Event = field(default_factory=asyncio.Event)
+
+        async def start(self, request: DelegatedAgentRequest, job: DelegatedAgentJobRef) -> None:
+            self.starts.append(request)
+            assert job.request_id == request.request_id
+            self.start_entered.set()
+            await self.release_start.wait()
+
+    store = InMemoryDelegatedAgentJobStore()
+    runtime = _BlockingRuntime()
+    coordinator = DelegatedAgentCoordinator(runtimes={runtime.name: runtime}, store=store)
+    request = _request(request_id=f"submit-race-{operation}")
+    submission = asyncio.create_task(coordinator.submit(request))
+    await asyncio.wait_for(runtime.start_entered.wait(), timeout=1)
+    visible = await store.get_by_request(request.request_id)
+    assert visible is not None
+
+    if operation == "adopt":
+        lifecycle = asyncio.create_task(
+            coordinator.adopt(
+                visible.ref.job_id,
+                DelegatedAgentResult(
+                    job_id=visible.ref.job_id,
+                    status=DelegatedAgentJobStatus.SUCCEEDED,
+                    output="accepted then completed",
+                ),
+            )
+        )
+    else:
+        lifecycle = asyncio.create_task(coordinator.cancel(visible.ref.job_id))
+
+    await asyncio.sleep(0)
+    assert not lifecycle.done()
+    assert runtime.cancellations == []
+
+    runtime.release_start.set()
+    ref = await submission
+    assert await lifecycle is True
+
+    settled = await coordinator.get(ref.job_id)
+    assert settled is not None
+    expected = DelegatedAgentJobStatus.SUCCEEDED if operation == "adopt" else DelegatedAgentJobStatus.CANCELLED
+    assert settled.status is expected
+    assert runtime.cancellations == ([] if operation == "adopt" else [ref.job_id])
     assert _coordinator_lock_count(coordinator) == 0
 
 

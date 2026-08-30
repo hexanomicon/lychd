@@ -151,12 +151,12 @@ def _inscribe_conflicting_targets(
     beta_name: str,
 ) -> None:
     """Render production targets from two real Soulstones sharing one domain."""
-    shared_gpu = ConcurrencyIntent(conflict_domains=["proof-gpu"])
+    shared_gpu = ConcurrencyIntent(conflict_domains=("proof-gpu",))
     soulstones = tuple(
         GenericSoulstoneConfig(
             name=name,
             quadlet=QuadletConfig(image="example/runtime"),
-            groups=[],
+            groups=(),
             concurrency=shared_gpu,
         )
         for name in (alpha_name, beta_name)
@@ -165,7 +165,7 @@ def _inscribe_conflicting_targets(
         settings=get_settings(),
         runtime_planner=RuntimeAdapterRegistry(),
     ).transmute_all(soulstones)
-    ScribeService(output_dir=quadlet_dir, systemd_dir=generated_dir).generate_all(manifests)
+    ScribeService(output_dir=quadlet_dir, systemd_dir=generated_dir).reconcile_all(manifests, plain_units={})
 
 
 def _manager_environment(root: Path, generated_dir: Path, harness_dir: Path) -> dict[str, str]:

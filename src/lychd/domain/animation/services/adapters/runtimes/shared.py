@@ -6,10 +6,8 @@ centralizing repeated type-guard and connector construction logic.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import cast
 
-from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase, CapabilitySpec
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import (
@@ -40,18 +38,14 @@ def build_openai_connector(
     *,
     soulstone: SoulstoneConfig,
     runtime: str,
-    kind: str | None = None,
-    metadata: dict[str, object] | None = None,
 ) -> OpenAICompatibleConnector:
     """Build a standard OpenAI-compatible connector for a local runtime."""
     model_infos = model_infos_from_soulstone(soulstone)
     return OpenAICompatibleConnector(
-        kind=kind or runtime,
         link=local_link_default(runtime=runtime),
         base_url=resolved_soulstone_base_url(soulstone),
         model_infos=model_infos,
         default_model_id=default_model_id_for_soulstone(soulstone, model_infos),
-        metadata=metadata,
     )
 
 
@@ -125,9 +119,7 @@ async def probe_openai_compatible_link(
 
     return Link(
         up=up,
-        activatable=True,
         reason=reason,
-        checked_at=datetime.now(UTC),
     )
 
 
@@ -164,39 +156,8 @@ def _parse_openai_model_inventory(payload: dict[str, object]) -> tuple[str, ...]
     return tuple(model_ids)
 
 
-def fixed_openai_activation_result(
-    connector: OpenAICompatibleConnector,
-    spec: CapabilitySpec,
-) -> ActivationResult:
-    """Reject activation while preserving the exact observed fixed-runtime phase."""
-    reason = "fixed capability; lifecycle owned by unit"
-    if not connector.link.up:
-        return ActivationResult(accepted=False, phase=CapabilityPhase.COLD, reason=reason)
-    if connector.inventory_error is not None:
-        return ActivationResult(
-            accepted=False,
-            phase=CapabilityPhase.ERROR,
-            reason=connector.inventory_error,
-        )
-    observed_model_ids = connector.observed_model_ids
-    if observed_model_ids is None:
-        return ActivationResult(
-            accepted=False,
-            phase=CapabilityPhase.ERROR,
-            reason="fixed capability inventory is unverified",
-        )
-    if spec.model_id not in observed_model_ids:
-        return ActivationResult(
-            accepted=False,
-            phase=CapabilityPhase.ERROR,
-            reason=f"declared model {spec.model_id!r} is absent from /models",
-        )
-    return ActivationResult(accepted=False, phase=CapabilityPhase.WARM, reason=reason)
-
-
 __all__ = [
     "build_openai_connector",
-    "fixed_openai_activation_result",
     "probe_openai_compatible_link",
     "require_runtime_soulstone",
     "resolved_soulstone_base_url",

@@ -2,14 +2,13 @@
 
 Importing this module performs NO I/O and resolves NO secrets: every config
 object is produced by a ``build_*`` factory called from the application assembly root
-(``AppInit.on_app_init``) or from a SAQ worker startup hook.
+(``AppInit.on_app_init``).
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from advanced_alchemy.extensions.litestar import (
     AlembicAsyncConfig,
@@ -17,7 +16,6 @@ from advanced_alchemy.extensions.litestar import (
     SQLAlchemyAsyncConfig,
 )
 from litestar.config.allowed_hosts import AllowedHostsConfig
-from litestar.config.compression import CompressionConfig
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
 from litestar_saq import QueueConfig, SAQConfig
@@ -63,7 +61,7 @@ def build_db_config(settings: Settings) -> SQLAlchemyAsyncConfig:
     )
 
 
-def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> SAQConfig:
+def build_saq_config(settings: Settings) -> SAQConfig:
     """Build the Ghoul-queue (SAQ) config: the ``runs`` + ``rites`` queues (A4-U4).
 
     Topology A (v1, F1 hardening): ``separate_process=False`` on BOTH queues is the
@@ -79,14 +77,8 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
     ``runs`` carries interactive graph runs; ``rites`` carries background rites.
     Both register `perform_run` so rite-routed intents (`source="rite"` → ``rites``)
     are claimable. Startup owns reconciliation because it supplies the boot cutoff;
-    it is deliberately not a broker-callable task. ``extra_tasks`` still extends
-    the rite task list (Wave-1 contract).
+    it is deliberately not a broker-callable task.
     """
-    rite_tasks = [
-        "lychd.ghouls.runs.perform_run",
-        "lychd.ghouls.rites.perform_rite",
-        *extra_tasks,
-    ]
     return SAQConfig(
         web_enabled=settings.server.jobs.admin_ui_enabled,
         web_path=settings.server.jobs.admin_ui_path,
@@ -98,15 +90,13 @@ def build_saq_config(settings: Settings, *, extra_tasks: Sequence[str] = ()) -> 
                 tasks=["lychd.ghouls.runs.perform_run"],
                 concurrency=settings.server.jobs.interactive_concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
-                startup=worker_startup,
             ),
             QueueConfig(
                 name="rites",
                 dsn=database_saq_dsn(settings.server.database),
-                tasks=rite_tasks,
+                tasks=["lychd.ghouls.runs.perform_run"],
                 concurrency=settings.server.jobs.background_concurrency,
                 separate_process=False,  # Topology A: run on the web loop, share the RunEventBus.
-                startup=worker_startup,
             ),
         ],
     )
@@ -150,22 +140,3 @@ def build_csrf_config(settings: Settings) -> CSRFConfig:
         cookie_name=settings.server.web.csrf_cookie_name,
         cookie_secure=settings.server.web.csrf_cookie_secure,
     )
-
-
-def build_compression_config(settings: Settings) -> CompressionConfig:  # noqa: ARG001
-    """Build the gzip compression config."""
-    return CompressionConfig(backend="gzip")
-
-
-async def worker_startup(ctx: dict[str, Any]) -> None:
-    """Topology-A worker startup: no per-worker construction (F1/S7).
-
-    Under Topology A the worker runs *in the web process on the web loop*
-    (`separate_process=False`), so there are no forked children to build a fresh
-    engine/session-factory/extensions for — those live on the shared process and
-    the run collaborators are read from the ONE `RunSubstrate` the web lifespan
-    (`altar_services_lifespan`) publishes via `set_run_substrate`. `perform_run`
-    reads that memo through `_substrate(ctx)`. This hook is retained only as the
-    documented seam; it deliberately does nothing.
-    """
-    _ = ctx

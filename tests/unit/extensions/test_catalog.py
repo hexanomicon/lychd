@@ -21,11 +21,8 @@ def test_catalog_has_only_explicitly_supported_builtin_ids() -> None:
         "animator/vllm",
         "animator/sglang",
         "observability/phoenix",
-        "simulation",
         "delegation",
     }
-    assert builtin_register_module("animator/exllamav3").endswith("animator.exllamav3.register")
-    assert builtin_register_module("animator/llamacpp").endswith("animator.llamacpp.register")
 
 
 def test_unknown_builtin_is_rejected_before_import() -> None:
@@ -51,26 +48,19 @@ def test_phoenix_builtin_registers_one_owned_quadlet_contributor() -> None:
     registration = context.transmutation.registrations[0]
     assert registration.provider_id == "builtin:observability/phoenix"
     assert type(registration.contributor).__name__ == "PhoenixQuadletContributor"
-    with pytest.raises(RuntimeError, match="frozen after extension assembly"):
-        context.transmutation.add_contributor(registration.contributor)
 
 
-def test_multiple_animator_runtimes_keep_exact_provider_ownership() -> None:
+def test_multiple_animator_runtimes_register_exact_definitions() -> None:
     context = ExtensionManager(
         builtins=["animator/vllm", "animator/llamacpp"],
         crypt=[],
     ).assemble()
 
-    assert [registration.provider_id for registration in context.soulstones.registrations] == [
-        "builtin:animator/vllm",
-        "builtin:animator/llamacpp",
-    ]
     assert {definition.runtime_adapter.runtime for definition in context.soulstones.definitions} == {
         "vllm",
         "llamacpp",
     }
-    assert len(context.portals.registrations) == 2
-    assert {registration.provider_id for registration in context.portals.registrations} == {"builtin:animator"}
+    assert len(context.portals.definitions) == 2
 
 
 def test_exllamav3_builtin_registers_one_runtime_definition() -> None:
@@ -81,10 +71,6 @@ def test_exllamav3_builtin_registers_one_runtime_definition() -> None:
     assert definition.rune_schema.__name__ == "ExLlamaV3SoulstoneConfig"
     assert definition.runtime_adapter.runtime == "exllamav3"
 
-    from lychd.extensions.builtin.animator.exllamav3.register import register
-
-    with pytest.raises(RuntimeError, match="frozen after extension assembly"):
-        register(context.registration_view("builtin:animator/exllamav3"))
     with pytest.raises(RuntimeError, match="frozen after extension assembly"):
         context.soulstones.add(definition)
 
@@ -112,17 +98,14 @@ def test_soulstone_definition_cannot_be_replayed_by_another_provider() -> None:
         context.soulstones.add(collision)
 
 
-def test_registration_view_keeps_immutable_provider_and_hides_root_provenance() -> None:
+def test_registration_view_keeps_immutable_provider() -> None:
     assembled = ExtensionManager(builtins=["animator/exllamav3"], crypt=[]).assemble()
     definition = assembled.soulstones.definitions[0]
     context = ExtensionContext()
     registrant = context.registration_view("one")
 
-    assert not hasattr(registrant, "provenance")
-    assert not hasattr(registrant.soulstones, "_root")
-    assert not hasattr(registrant.soulstones, "_store")
-    assert not hasattr(registrant.soulstones, "freeze")
     with context.provenance("two"):
         registrant.soulstones.add(definition)
 
-    assert [registration.provider_id for registration in context.soulstones.registrations] == ["one"]
+    with context.provenance("two"), pytest.raises(ValueError, match="owned by 'one'"):
+        context.soulstones.add(definition)

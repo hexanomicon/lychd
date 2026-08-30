@@ -20,6 +20,7 @@ from lychd.system.operator.models import (
 )
 from lychd.system.operator.storage import StorageInventoryService
 from lychd.system.operator.units import OwnedUnitInventoryService
+from lychd.system.unit_names import animator_service_unit
 
 if TYPE_CHECKING:
     from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
@@ -90,8 +91,8 @@ class ConfiguredAnimatorDeclarations:
             DeclaredAnimator(
                 name=stone.name,
                 kind="soulstone",
-                runtime=stone.runtime_name,
-                unit_name=f"{stone.service_name}.service",
+                runtime=stone.runtime,
+                unit_name=animator_service_unit(stone.name),
             )
             for stone in declarations.soulstones
         )
@@ -161,7 +162,8 @@ class OperatorInventoryService:
         elif selector is OperatorTarget.BINDINGS:
             items = self._binding_items(catalog)
         else:
-            items = self._run_items(catalog)
+            message = f"Unsupported operator inventory selector: {selector!r}"
+            raise ValueError(message)
         return InventoryReport(
             selector=selector,
             summary=summary,
@@ -403,24 +405,6 @@ class OperatorInventoryService:
                 attributes=(("generation", catalog.generation or ""),),
             ),
             *OperatorInventoryService._service_items(catalog),
-        )
-
-    @staticmethod
-    def _run_items(catalog: OwnedUnitCatalog) -> tuple[InventoryItem, ...]:
-        vessel = OperatorInventoryService._vessel_unit(catalog)
-        if vessel is not None and vessel.state is ObservationState.INACTIVE:
-            state = ObservationState.INACTIVE
-            detail = "Vessel is stopped"
-        else:
-            state = ObservationState.UNKNOWN
-            detail = "durable run inventory requires the future Vessel status projection"
-        return (
-            InventoryItem(
-                category=OperatorTarget.RUNS,
-                name="runs",
-                state=state,
-                detail=detail,
-            ),
         )
 
     def _mount_item(self, path: Path, *, name: str) -> InventoryItem:

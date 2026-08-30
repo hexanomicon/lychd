@@ -27,7 +27,13 @@ multi-worker and reload configuration. The launcher and `create_app()` call one 
 which rejects server-visible worker/reload variables and detectable direct Litestar/Granian
 arguments. Listener authority resolves explicit `--port`, then `LITESTAR_PORT`, `GRANIAN_PORT`,
 and the configured server port; the native launcher publishes that result before Litestar loads
-the application, and Host admission consumes the same value. The run-event bus, cancellation
+the application, and Host admission consumes the same value. Native `lychd serve` likewise accepts
+only `127.0.0.1` or `::1` from `--host`/`-H`, `LITESTAR_HOST`, or `GRANIAN_HOST`, defaulting to
+`127.0.0.1`, and publishes that host before delegation. File-descriptor and UNIX-domain-socket
+arguments or Litestar environment overrides are refused: otherwise they would bypass the owned
+TCP host rather than refine it. The caged image's intentional internal
+Granian `0.0.0.0` listener is a distinct topology behind generated loopback-only host publication;
+it does not authorize the native bootstrap listener to widen. The run-event bus, cancellation
 coordinator, services, and SAQ workers are process-local. This is a correctness boundary, not a
 scalability claim or permission to use another launcher.
 

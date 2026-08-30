@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -50,8 +51,8 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEmitter
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunDeliveryRecord, RunRecord
+    from lychd.domain.cortex.stasis import PhylacteryProtocol
     from lychd.domain.cortex.substrate import RunSubstrate
-    from lychd.extensions.protocols import PhylacteryProtocol
 
 logger = structlog.get_logger()
 
@@ -97,16 +98,8 @@ def _phylactery_for(run: RunRecord, workflow: Workflow, substrate: RunSubstrate)
 
 
 async def _await_claim_gate(substrate: RunSubstrate) -> None:
-    """Park on the broker's claim gate while intake is paused for a transition.
-
-    Drain honesty is the LeaseLedger's; pausing merely stops NEW runs from claiming
-    while a physical transition is in flight. The gate lives on the production
-    `GhoulBroker`; narrow test fakes may expose none, so the wait is skipped then.
-    """
-    broker = getattr(substrate.orchestrator, "worker_broker", None)
-    gate = getattr(broker, "claim_gate", None)
-    if gate is not None:
-        await gate.wait()
+    """Park while runtime mutation has closed admission to new run claims."""
+    await substrate.orchestrator.worker_broker.claim_gate.wait()
 
 
 def _require_claimed_delivery(
@@ -252,17 +245,16 @@ async def _perform_run(  # noqa: C901, PLR0911, PLR0912, PLR0915 - honest fresh/
             # silently-shed Step rows). Seed BEFORE any emitter opens the channel.
             substrate.bus.open(run_id, from_seq=await ledger.next_seq(run_id))
         emitter = substrate.bus.emitter(run_id)
-        from lychd.agents.workflows.base import pattern_snapshot_is_valid
+        from lychd.agents.workflows import resolve_pinned_workflow
 
         pinned_key = str(run.pattern_manifest.get("key", ""))
         pinned_revision = str(run.pattern_manifest.get("revision", ""))
-        workflow = substrate.workflows.get_revision(pinned_key, pinned_revision)
-        if (
-            not pattern_snapshot_is_valid(run.pattern_manifest)
-            or pinned_key != run.workflow_name
-            or workflow is None
-            or run.pattern_manifest != workflow.manifest.snapshot()
-        ):
+        workflow = resolve_pinned_workflow(
+            substrate.workflows,
+            workflow_name=run.workflow_name,
+            snapshot=run.pattern_manifest,
+        )
+        if workflow is None:
             await settle_terminal(
                 RunStatus.FAILED,
                 error=(f"pinned Pattern unavailable: {pinned_key or run.workflow_name}@{pinned_revision or 'unknown'}"),
@@ -565,12 +557,12 @@ async def _commit_consent_park(
     """Commit the consent park, then close the pre-flip verdict race (F1).
 
     S4 order: persist consent + durable path + status, THEN emit CONSENT last, so a
-    verdict arriving on the SSE-event path can never beat the `engine.approve` guard.
+    verdict arriving on the SSE-event path can never beat the `engine.resume_consent` guard.
     But the Bridge PAGE-RENDER path exposes the (already-committed) consent row before
     no-op (row still RUNNING) and stranded the run AWAITING_CONSENT forever. Guard it:
     once we are AWAITING_CONSENT, re-read the verdict and, if already decided, win the
     SAME atomic admission CAS and enqueue the resume ourselves. Exactly one of {this,
-    `engine.approve`} wins the CAS — no double-enqueue (F4).
+    `engine.resume_consent`} wins the CAS — no double-enqueue (F4).
     """
     await ledger.park_consent(run_id, parked.consent_id)
     emitter.consent(parked.consent_id, tool_name=parked.tool_name)
@@ -648,7 +640,7 @@ async def _commit_delegate_park(
                 substrate.queues,
                 ledger,
                 run,
-                job_id=parked.job.job_id,
+                job=job,
             ):
                 return {
                     "status": RunStatus.QUEUED.value,
@@ -1041,13 +1033,19 @@ class _RelayPageScheduler:
         self.retry_set.add(page_after)
 
 
-async def relay_run_deliveries(
-    ctx: dict[str, Any],
+_RelayCursor = tuple[datetime, str] | None
+_RelayPage = Callable[[_RelayCursor], Awaitable[tuple[dict[str, Any], _RelayCursor]]]
+
+
+async def _run_relay_loop(
     *,
+    page: _RelayPage,
     stop: asyncio.Event,
-    interval_s: float = DELIVERY_RELAY_INTERVAL_S,
+    interval_s: float,
+    failure_event: str,
+    degraded_event: str,
 ) -> None:
-    """Advance the delivery sweep while fairly revisiting every blocked page."""
+    """Run the shared fair-page retry policy for a bounded reconciliation relay."""
     pages = _RelayPageScheduler()
     while not stop.is_set():
         with suppress(TimeoutError):
@@ -1056,28 +1054,44 @@ async def relay_run_deliveries(
             return
         page_after, retrying = pages.take()
         try:
-            result, next_cursor = await _flush_run_delivery_page(
-                _substrate(ctx),
-                after=page_after,
-                refuse_held=False,
-            )
+            result, next_cursor = await page(page_after)
         except Exception as exc:
-            logger.exception("run_delivery_relay_failed", error=str(exc))
+            logger.exception(failure_event, error=str(exc))
             pages.failed(page_after, retrying=retrying)
             continue
         degraded = result["status"] == "degraded"
-        needs_retry = degraded or bool(result.get("_revisit", False))
         pages.completed(
             page_after,
             retrying=retrying,
             next_cursor=next_cursor,
-            revisit=needs_retry,
+            revisit=degraded or bool(result.get("_revisit", False)),
         )
         if degraded:
-            logger.warning(
-                "run_delivery_relay_degraded",
-                probe_errors=result["probe_errors"],
-            )
+            logger.warning(degraded_event, probe_errors=result["probe_errors"])
+
+
+async def relay_run_deliveries(
+    ctx: dict[str, Any],
+    *,
+    stop: asyncio.Event,
+    interval_s: float = DELIVERY_RELAY_INTERVAL_S,
+) -> None:
+    """Advance the delivery sweep while fairly revisiting every blocked page."""
+
+    async def page(after: _RelayCursor) -> tuple[dict[str, Any], _RelayCursor]:
+        return await _flush_run_delivery_page(
+            _substrate(ctx),
+            after=after,
+            refuse_held=False,
+        )
+
+    await _run_relay_loop(
+        page=page,
+        stop=stop,
+        interval_s=interval_s,
+        failure_event="run_delivery_relay_failed",
+        degraded_event="run_delivery_relay_degraded",
+    )
 
 
 async def relay_delegated_runs(
@@ -1087,28 +1101,17 @@ async def relay_delegated_runs(
     interval_s: float = DELEGATE_RELAY_INTERVAL_S,
 ) -> None:
     """Refresh delegated waits while fairly retrying every degraded page."""
-    pages = _RelayPageScheduler()
-    while not stop.is_set():
-        with suppress(TimeoutError):
-            await asyncio.wait_for(stop.wait(), timeout=interval_s)
-        if stop.is_set():
-            return
-        page_after, retrying = pages.take()
-        try:
-            result, next_cursor = await _reconcile_delegate_page(engine, after=page_after)
-        except Exception as exc:
-            logger.exception("delegate_relay_failed", error=str(exc))
-            pages.failed(page_after, retrying=retrying)
-            continue
-        needs_retry = result["status"] == "degraded" or bool(result.get("_revisit", False))
-        pages.completed(
-            page_after,
-            retrying=retrying,
-            next_cursor=next_cursor,
-            revisit=needs_retry,
-        )
-        if result["status"] == "degraded":
-            logger.warning("delegate_relay_degraded", probe_errors=result["probe_errors"])
+
+    async def page(after: _RelayCursor) -> tuple[dict[str, Any], _RelayCursor]:
+        return await _reconcile_delegate_page(engine, after=after)
+
+    await _run_relay_loop(
+        page=page,
+        stop=stop,
+        interval_s=interval_s,
+        failure_event="delegate_relay_failed",
+        degraded_event="delegate_relay_degraded",
+    )
 
 
 async def _reconcile_delegate_page(
@@ -1380,15 +1383,15 @@ async def _fence_orphaned_job(substrate: RunSubstrate, run: RunRecord) -> bool:
     return True
 
 
-class ConsentApprover(Protocol):
+class ConsentResumer(Protocol):
     """The narrow slice of `RunEngine` `reconcile_consents` needs."""
 
-    async def approve(self, consent_id: str, *, approved: bool) -> None: ...
+    async def resume_consent(self, consent_id: str) -> None: ...
 
 
 async def _reconcile_consent_page(
     substrate: RunSubstrate,
-    engine: ConsentApprover,
+    engine: ConsentResumer,
     *,
     after: tuple[datetime, str] | None,
     limit: int | None = None,
@@ -1417,7 +1420,7 @@ async def _reconcile_consent_page(
             if view.status == "pending":
                 revisit = True
                 continue
-            await engine.approve(view.id, approved=(view.status == "granted"))
+            await engine.resume_consent(view.id)
             refired += 1
         except Exception as exc:
             logger.exception(
@@ -1438,14 +1441,14 @@ async def _reconcile_consent_page(
     )
 
 
-async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentApprover) -> dict[str, Any]:
+async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentResumer) -> dict[str, Any]:
     """Re-fire verdicts recorded while the process was down (B10, design §1.4).
 
-    A crash between `ConsentService.grant/deny` and `engine.approve` leaves a decided
+    A crash between `ConsentService.grant/deny` and `engine.resume_consent` leaves a decided
     consent row with no enqueue. This sweep re-fires the verdict of each Run's exact
     persisted Consent owner; still-pending owners are left alone. An AWAITING_CONSENT
     Run without that exact Consent row is corrupt durable state and degrades startup
-    rather than being silently accepted. Idempotent via `approve`'s
+    rather than being silently accepted. Idempotent via `resume_consent`'s
     AWAITING_CONSENT status guard. `"expired"` counts as
     decided-denied (refusal-resumes). Startup requires one clean full sweep; the
     lifespan-owned runtime relay repeats bounded pages afterward.
@@ -1478,38 +1481,23 @@ async def reconcile_consents(ctx: dict[str, Any], *, engine: ConsentApprover) ->
 
 async def relay_consents(
     *,
-    engine: ConsentApprover,
+    engine: ConsentResumer,
     substrate: RunSubstrate,
     stop: asyncio.Event,
     interval_s: float = CONSENT_RELAY_INTERVAL_S,
 ) -> None:
     """Re-fire decided consent waits while fairly retrying degraded pages."""
-    pages = _RelayPageScheduler()
-    while not stop.is_set():
-        with suppress(TimeoutError):
-            await asyncio.wait_for(stop.wait(), timeout=interval_s)
-        if stop.is_set():
-            return
-        page_after, retrying = pages.take()
-        try:
-            result, next_cursor = await _reconcile_consent_page(
-                substrate,
-                engine,
-                after=page_after,
-            )
-        except Exception as exc:
-            logger.exception("consent_relay_failed", error=str(exc))
-            pages.failed(page_after, retrying=retrying)
-            continue
-        needs_retry = result["status"] == "degraded" or bool(result.get("_revisit", False))
-        pages.completed(
-            page_after,
-            retrying=retrying,
-            next_cursor=next_cursor,
-            revisit=needs_retry,
-        )
-        if result["status"] == "degraded":
-            logger.warning("consent_relay_degraded", probe_errors=result["probe_errors"])
+
+    async def page(after: _RelayCursor) -> tuple[dict[str, Any], _RelayCursor]:
+        return await _reconcile_consent_page(substrate, engine, after=after)
+
+    await _run_relay_loop(
+        page=page,
+        stop=stop,
+        interval_s=interval_s,
+        failure_event="consent_relay_failed",
+        degraded_event="consent_relay_degraded",
+    )
 
 
 def _predates_boot(run: RunRecord, boot_cutoff: datetime | None) -> bool:

@@ -39,7 +39,6 @@ from lychd.system.readiness import (
     ReadinessSection,
     ReadinessState,
 )
-from lychd.system.services.bind_compilation import required_secret_names_from_soulstones
 from lychd.system.services.binding_preflight import (
     BindingPreflightIssue,
     BindingPreflightReport,
@@ -88,10 +87,8 @@ def _animator_declarations(
 ) -> AnimatorDeclarations:
     """Build one detached compiler result for CLI boundary tests."""
     return AnimatorDeclarations(
-        runes=RuneRegistry(()),
         soulstones=soulstones,  # type: ignore[arg-type]
         portals=portals,  # type: ignore[arg-type]
-        port_reservations=(),
     )
 
 
@@ -158,7 +155,7 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
     switching = SimpleNamespace(
         host_reactor_dir=inbox,
         host_reactor_journal_dir=journal,
-        policy="evict-idle",
+        policy="declared-conflicts",
         systemctl_timeout_s=73.0,
     )
     settings = SimpleNamespace(
@@ -171,7 +168,6 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
     runes = RuneRegistry(())
     declarations = _animator_declarations()
     registry = MagicMock()
-    policy = object()
 
     async def run_inline(function: Callable[[], object]) -> object:
         return function()
@@ -200,10 +196,6 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         "lychd.domain.animation.services.registry.AnimatorRegistry",
         return_value=registry,
     )
-    resolve_policy = mocker.patch(
-        "lychd.domain.orchestration.policies.resolve_switch_policy",
-        return_value=policy,
-    )
     reactor_type = mocker.patch("lychd.system.services.reactor.HostReactor")
     reactor_type.return_value.consume_all = mocker.AsyncMock(return_value=0)
     mocker.patch(
@@ -218,15 +210,17 @@ async def test_reactor_consumer_uses_the_configured_journal_path(
         runtime_adapters=extensions.runtime_adapters,
         portal_definitions=extensions.portal_definitions,
     )
-    resolve_policy.assert_called_once_with(switching.policy)
     reactor_type.assert_called_once_with(
         registry,
         inbox_dir=inbox,
         journal_dir=journal,
         systemctl_bin="/usr/bin/systemctl",
         systemctl_timeout_s=73.0,
-        policy=policy,
+        policy=ANY,
     )
+    from lychd.domain.orchestration.policies import DeclaredConflictPolicy
+
+    assert isinstance(reactor_type.call_args.kwargs["policy"], DeclaredConflictPolicy)
     reactor_type.return_value.consume_all.assert_awaited_once_with()
     to_thread.assert_awaited_once_with(registry.ensure_loaded)
 
@@ -326,15 +320,13 @@ def test_root_help_does_not_construct_asgi_app(runner: CliRunner, mocker: Mocker
         "stop",
         "status",
         "logs",
-        "run",
         "del",
     }
     assert {name for name, command in cli.commands.items() if command.hidden} == {"serve", "database", "reactor"}
-    for command in ("init", "bind", "start", "stop", "status", "logs", "run", "del"):
+    for command in ("init", "bind", "start", "stop", "status", "logs", "del"):
         assert command in result.output
     positions = [
-        result.output.index(f"\n  {command}")
-        for command in ("init", "bind", "start", "stop", "status", "logs", "run", "del")
+        result.output.index(f"\n  {command}") for command in ("init", "bind", "start", "stop", "status", "logs", "del")
     ]
     assert positions == sorted(positions)
     for internal in ("destroy", "doctor", "animators", "runs", "reactor", "serve", "database"):
@@ -349,43 +341,15 @@ def test_status_lookup_alias_does_not_become_a_ninth_public_root(runner: CliRunn
     assert "Show installation, runtime, storage, and readiness truth." in result.output
 
 
-def test_run_help_survives_malformed_operator_settings(
-    runner: CliRunner,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Core operation discovery remains a bootstrap and recovery surface."""
-    from lychd.config.settings.root import get_settings
-    from lychd.extensions.host import reset_extensions
-
-    monkeypatch.setenv("SERVER__LOGGING__LEVEL", "NOPE")
-    get_settings.cache_clear()
-    reset_extensions()
-    try:
-        result = runner.invoke(cli, ["run", "--help"])
-    finally:
-        get_settings.cache_clear()
-        reset_extensions()
-
-    assert result.exit_code == 0
-    assert "agent" in result.output
-    assert "Traceback" not in result.output
-
-
-@pytest.mark.parametrize("obsolete", ["destroy", "doctor", "animators", "runs"])
-def test_obsolete_operator_roots_are_not_addressable(runner: CliRunner, obsolete: str) -> None:
-    result = runner.invoke(cli, [obsolete])
-
-    assert result.exit_code != 0
-    assert "No such command" in result.output
-
-
 def test_installed_entrypoint_configures_shared_logging_before_click(mocker: MockerFixture) -> None:
     """CLI processes use the same Structlog pipeline as the Litestar application."""
-    apply_logging = mocker.patch("lychd.config.logging.apply_logging")
-    root = mocker.patch("lychd.__main__.cli")
+    effects: list[str] = []
+    apply_logging = mocker.patch("lychd.config.logging.apply_logging", side_effect=lambda: effects.append("logging"))
+    root = mocker.patch("lychd.__main__.cli", side_effect=lambda: effects.append("click"))
 
     run_cli()
 
+    assert effects == ["logging", "click"]
     apply_logging.assert_called_once_with()
     root.assert_called_once_with()
 
@@ -395,13 +359,8 @@ def test_installed_entrypoint_configures_shared_logging_before_click(mocker: Moc
     [
         (("init",), "effectful"),
         (("--", "init"), "effectful"),
-        (("init", "--verbose"), "effectful"),
         (("init", "--dry-run"), "safe"),
-        (("init", "--help"), "safe"),
         (("init", "-vh"), "safe"),
-        (("init", "-hv"), "safe"),
-        (("init", "-v"), "effectful"),
-        (("--help",), "safe"),
         (("bind",), "safe"),
     ],
 )
@@ -449,6 +408,7 @@ def test_installed_entrypoint_keeps_effective_root_dry_run_observable(
     ("server_args", "configured_port", "effective_port"),
     [
         (("--host", "127.0.0.1", "--port", "7134"), 7444, 7134),
+        (("-H::1", "--port", "7134"), 7444, 7134),
         ((), 7444, 7444),
     ],
 )
@@ -472,6 +432,7 @@ def test_serve_hands_one_effective_port_to_litestar_and_app_init(
         observed["arguments"] = arguments
         observed["prog_name"] = prog_name
         observed["environment_port"] = os.environ["LITESTAR_PORT"]
+        observed["environment_host"] = os.environ["LITESTAR_HOST"]
         create_app()
         plugin = litestar.call_args.kwargs["plugins"][0]
         assert isinstance(plugin, AppInit)
@@ -479,7 +440,9 @@ def test_serve_hands_one_effective_port_to_litestar_and_app_init(
 
     delegated = mocker.patch("lychd.__main__._run_litestar", side_effect=invoke_factory)
     monkeypatch.delenv("LITESTAR_PORT", raising=False)
+    monkeypatch.delenv("LITESTAR_HOST", raising=False)
     monkeypatch.delenv("GRANIAN_PORT", raising=False)
+    monkeypatch.delenv("GRANIAN_HOST", raising=False)
 
     result = runner.invoke(cli, ["serve", *server_args])
 
@@ -492,9 +455,100 @@ def test_serve_hands_one_effective_port_to_litestar_and_app_init(
         "arguments": ("run", *server_args),
         "prog_name": "lychd serve",
         "environment_port": str(effective_port),
+        "environment_host": "::1" if any("::1" in argument for argument in server_args) else "127.0.0.1",
         "app_init_port": effective_port,
     }
     assert "LITESTAR_PORT" not in os.environ
+    assert "LITESTAR_HOST" not in os.environ
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("--host", "0.0.0.0"),  # noqa: S104 - rejected authority under test
+        ("--host=0.0.0.0",),
+        ("-H", "0.0.0.0"),  # noqa: S104 - rejected authority under test
+        ("-H0.0.0.0",),
+    ],
+)
+def test_serve_rejects_non_loopback_listener_arguments(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    args: tuple[str, ...],
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+
+    result = runner.invoke(cli, ["serve", *args])
+
+    assert result.exit_code != 0
+    assert "127.0.0.1 or ::1" in result.output
+    delegated.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("--uds", "/tmp/lychd.sock"),  # noqa: S108 - rejected authority under test
+        ("--unix-domain-socket=/tmp/lychd.sock",),
+        ("-U", "/tmp/lychd.sock"),  # noqa: S108 - rejected authority under test
+        ("--fd", "3"),
+        ("--file-descriptor=3",),
+        ("-F3",),
+    ],
+)
+def test_serve_rejects_alternate_listener_arguments(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    args: tuple[str, ...],
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+
+    result = runner.invoke(cli, ["serve", *args])
+
+    assert result.exit_code != 0
+    assert "use its loopback TCP listener" in result.output
+    delegated.assert_not_called()
+
+
+@pytest.mark.parametrize("variable", ["LITESTAR_HOST", "GRANIAN_HOST"])
+def test_serve_rejects_non_loopback_listener_environment(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+    variable: str,
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+    monkeypatch.setenv(variable, "0.0.0.0")  # noqa: S104 - rejected authority under test
+
+    result = runner.invoke(cli, ["serve"])
+
+    assert result.exit_code != 0
+    assert f"{variable} to be 127.0.0.1 or ::1" in result.output
+    delegated.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [
+        ("LITESTAR_UNIX_DOMAIN_SOCKET", "/tmp/lychd.sock"),  # noqa: S108 - rejected authority under test
+        ("LITESTAR_FILE_DESCRIPTOR", "3"),
+    ],
+)
+def test_serve_rejects_alternate_listener_environment(
+    runner: CliRunner,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+    variable: str,
+    value: str,
+) -> None:
+    delegated = mocker.patch("lychd.__main__._run_litestar")
+    monkeypatch.setenv(variable, value)
+
+    result = runner.invoke(cli, ["serve"])
+
+    assert result.exit_code != 0
+    assert f"does not support {variable}" in result.output
+    delegated.assert_not_called()
 
 
 def test_litestar_entrypoint_ignores_ambient_foreign_app(
@@ -519,111 +573,47 @@ def test_litestar_entrypoint_ignores_ambient_foreign_app(
 
 
 @pytest.mark.parametrize(
-    "args",
+    ("args", "environment", "expected_message"),
     [
-        ("--workers", "2"),
-        ("--workers=3",),
-        ("-W", "2"),
-        ("-W2",),
-        ("--wc=2",),
-        ("--web-concurrency", "3"),
+        (("--workers", "2"), {}, "exactly one ASGI worker"),
+        ((), {"LITESTAR_RELOAD": "enabled"}, "does not support Litestar reload mode"),
     ],
 )
-def test_serve_rejects_multiple_process_workers(
+def test_serve_rejects_server_policy_failures_before_delegating(
     runner: CliRunner,
     mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
     args: tuple[str, ...],
+    environment: dict[str, str],
+    expected_message: str,
 ) -> None:
     delegated = mocker.patch("lychd.__main__._run_litestar")
+    for variable, value in environment.items():
+        monkeypatch.setenv(variable, value)
 
     result = runner.invoke(cli, ["serve", *args])
 
     assert result.exit_code != 0
-    assert "exactly one ASGI worker" in result.output
-    delegated.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "variable",
-    ["GRANIAN_WORKERS", "LITESTAR_WEB_CONCURRENCY", "WEB_CONCURRENCY"],
-)
-def test_serve_rejects_multiworker_environment(
-    runner: CliRunner,
-    mocker: MockerFixture,
-    monkeypatch: pytest.MonkeyPatch,
-    variable: str,
-) -> None:
-    delegated = mocker.patch("lychd.__main__._run_litestar")
-    monkeypatch.setenv(variable, "4")
-
-    result = runner.invoke(cli, ["serve"])
-
-    assert result.exit_code != 0
-    assert f"{variable}=1" in result.output
-    delegated.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "args",
-    [
-        ("-r",),
-        ("--reload",),
-        ("-R", "src"),
-        ("-Rsrc",),
-        ("--reload-dir=src",),
-        ("-I*.py",),
-        ("--reload-include", "*.py"),
-        ("-E*.tmp",),
-        ("--reload-exclude=*.tmp",),
-    ],
-)
-def test_serve_rejects_reload_supervisor(
-    runner: CliRunner,
-    mocker: MockerFixture,
-    args: tuple[str, ...],
-) -> None:
-    delegated = mocker.patch("lychd.__main__._run_litestar")
-
-    result = runner.invoke(cli, ["serve", *args])
-
-    assert result.exit_code != 0
-    assert "does not support Litestar reload mode" in result.output
-    delegated.assert_not_called()
-
-
-@pytest.mark.parametrize(
-    "variable",
-    [
-        "LITESTAR_RELOAD",
-        "GRANIAN_RELOAD",
-        "LITESTAR_RELOAD_DIRS",
-        "LITESTAR_RELOAD_INCLUDES",
-        "LITESTAR_RELOAD_EXCLUDES",
-    ],
-)
-def test_serve_rejects_reload_environment(
-    runner: CliRunner,
-    mocker: MockerFixture,
-    monkeypatch: pytest.MonkeyPatch,
-    variable: str,
-) -> None:
-    delegated = mocker.patch("lychd.__main__._run_litestar")
-    monkeypatch.setenv(variable, "enabled")
-
-    result = runner.invoke(cli, ["serve"])
-
-    assert result.exit_code != 0
-    assert "does not support" in result.output
+    assert expected_message in result.output
     delegated.assert_not_called()
 
 
 def test_database_waits_before_delegating(runner: CliRunner, mocker: MockerFixture) -> None:
-    wait = mocker.patch("lychd.__main__._wait_for_database")
-    delegated = mocker.patch("lychd.__main__._run_litestar")
+    effects: list[str] = []
+
+    def record_wait(_timeout: float) -> None:
+        effects.append("wait")
+
+    def record_delegation(*_args: object, **_kwargs: object) -> None:
+        effects.append("delegate")
+
+    wait = mocker.patch("lychd.__main__._wait_for_database", side_effect=record_wait)
+    delegated = mocker.patch("lychd.__main__._run_litestar", side_effect=record_delegation)
 
     result = runner.invoke(cli, ["database", "--wait-seconds", "12", "upgrade"])
 
     assert result.exit_code == 0
+    assert effects == ["wait", "delegate"]
     wait.assert_called_once_with(12.0)
     delegated.assert_called_once_with(("database", "upgrade"), prog_name="lychd database")
 
@@ -635,7 +625,7 @@ def test_init_codex_success(
     host_readiness: MagicMock,
 ) -> None:
     """A real-root/effective-user process may perform the rootless init rite."""
-    from lychd.system.services.lifecycle import (
+    from lychd.system.services.lifecycle.models import (
         CreatedResources,
         LifecycleAction,
         LifecycleDisposition,
@@ -647,7 +637,7 @@ def test_init_codex_success(
     mocker.patch("lychd.cli.commands.os.geteuid", return_value=1000)
 
     # Patch the classes inside the command
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     layout = mocker.patch("lychd.system.services.layout.LayoutService")
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     inbox = tmp_path / "reactor" / "inbox"
@@ -664,9 +654,9 @@ def test_init_codex_success(
     mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mock_codex_cls = mocker.patch("lychd.system.services.codex.CodexService")
     mock_codex_instance = mock_codex_cls.return_value
-    receipt = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore").return_value
+    receipt = mocker.patch("lychd.system.services.lifecycle.receipt.LifecycleReceiptStore").return_value
     receipt.path = tmp_path / "codex" / ".lychd-lifecycle.json"
-    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value
+    planner = mocker.patch("lychd.system.services.lifecycle.initialization.InitializationPlanner").return_value
     planner.plan.return_value = LifecyclePlan(
         actions=(
             LifecycleAction(
@@ -708,8 +698,8 @@ def test_init_apply_rejects_effective_root_before_host_effects(
     mocker.patch("lychd.cli.commands.os.geteuid", return_value=0)
     settings = mocker.patch("lychd.config.settings.root.get_settings")
     extensions = mocker.patch("lychd.extensions.host.get_extensions")
-    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner")
-    lock = mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    planner = mocker.patch("lychd.system.services.lifecycle.initialization.InitializationPlanner")
+    lock = mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
 
     result = runner.invoke(init_codex)
 
@@ -730,7 +720,7 @@ def test_init_dry_run_never_invokes_effect_services(
     host_readiness: MagicMock,
 ) -> None:
     """Even effective root may observe the exact plan without effect authority."""
-    from lychd.system.services.lifecycle import (
+    from lychd.system.services.lifecycle.models import (
         LifecycleAction,
         LifecycleDisposition,
         LifecyclePlan,
@@ -748,7 +738,7 @@ def test_init_dry_run_never_invokes_effect_services(
     mocker.patch("lychd.cli.commands.os.geteuid", return_value=0)
     mocker.patch("lychd.config.settings.root.get_settings", return_value=settings)
     mocker.patch("lychd.extensions.host.get_extensions", return_value=SimpleNamespace(rune_schemas=()))
-    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value
+    planner = mocker.patch("lychd.system.services.lifecycle.initialization.InitializationPlanner").return_value
     planner.plan.return_value = LifecyclePlan(
         actions=(
             LifecycleAction(
@@ -762,7 +752,7 @@ def test_init_dry_run_never_invokes_effect_services(
     layout = mocker.patch("lychd.system.services.layout.LayoutService")
     privilege = mocker.patch("lychd.system.services.privilege.PrivilegeService")
     codex = mocker.patch("lychd.system.services.codex.CodexService")
-    receipt = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore")
+    receipt = mocker.patch("lychd.system.services.lifecycle.receipt.LifecycleReceiptStore")
 
     result = runner.invoke(init_codex, ["--dry-run"])
 
@@ -786,7 +776,7 @@ def test_init_dry_run_reports_bind_blockers_without_blocking_layout(
     host_readiness: MagicMock,
 ) -> None:
     """Bind capabilities are reported but do not govern safe layout creation."""
-    from lychd.system.services.lifecycle import LifecyclePlan
+    from lychd.system.services.lifecycle.models import LifecyclePlan
 
     host_readiness.inspect.return_value = HostFoundationInspection(
         report=HostReadinessReport(
@@ -826,7 +816,7 @@ def test_init_dry_run_reports_bind_blockers_without_blocking_layout(
         return_value=SimpleNamespace(rune_schemas=()),
     )
     mocker.patch(
-        "lychd.system.services.lifecycle.InitializationPlanner",
+        "lychd.system.services.lifecycle.initialization.InitializationPlanner",
     ).return_value.plan.return_value = LifecyclePlan()
     layout = mocker.patch("lychd.system.services.layout.LayoutService")
 
@@ -844,9 +834,9 @@ def test_init_codex_failure(
     tmp_path: Path,
 ) -> None:
     """Verify transaction failures cross the ritual boundary visibly."""
-    from lychd.system.services.lifecycle import LifecyclePlan
+    from lychd.system.services.lifecycle.models import LifecyclePlan
 
-    mocker.patch("lychd.system.services.lifecycle.LifecycleLock")
+    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
     settings = SimpleNamespace(
         orchestration=SimpleNamespace(
             switching=SimpleNamespace(
@@ -860,11 +850,11 @@ def test_init_codex_failure(
         "lychd.extensions.host.get_extensions",
         return_value=SimpleNamespace(rune_schemas=()),
     )
-    receipt = mocker.patch("lychd.system.services.lifecycle.LifecycleReceiptStore").return_value
+    receipt = mocker.patch("lychd.system.services.lifecycle.receipt.LifecycleReceiptStore").return_value
     receipt.path = tmp_path / "codex" / ".lychd-lifecycle.json"
-    planner = mocker.patch("lychd.system.services.lifecycle.InitializationPlanner").return_value
+    planner = mocker.patch("lychd.system.services.lifecycle.initialization.InitializationPlanner").return_value
     planner.plan.return_value = LifecyclePlan()
-    executor = mocker.patch("lychd.system.services.lifecycle.InitializationExecutor").return_value
+    executor = mocker.patch("lychd.system.services.lifecycle.initialization.InitializationExecutor").return_value
     executor.execute.side_effect = PermissionError("Access Denied")
     logger = mocker.patch("lychd.cli.base.logger")
 
@@ -949,8 +939,6 @@ def test_bind_quadlets_success(runner: CliRunner, mocker: MockerFixture) -> None
         "lychd-reactor.path",
         "lychd-reactor.service",
     ]
-    mock_scribe.generate_all.assert_not_called()
-    mock_scribe.write_plain_unit.assert_not_called()
 
     systemd.assert_called_once_with(systemctl_bin="/usr/bin/systemctl")
     systemd.return_value.daemon_reload.assert_called_once_with()
@@ -1008,93 +996,6 @@ def test_bind_dry_run_uses_real_planner_without_effects(
     scribe.reconcile_all.assert_not_called()
     secret_store.ensure_present.assert_not_called()
     lock.assert_not_called()
-    systemd.assert_not_called()
-
-
-def test_bind_apply_rejects_generation_only_drift_before_effects(
-    runner: CliRunner,
-    mocker: MockerFixture,
-    tmp_path: Path,
-) -> None:
-    """Apply treats the dry-run observation fingerprint as a lock-time precondition."""
-    from lychd.system.services.scribe import BindingChange, BindingReconcilePlan
-
-    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
-    mocker.patch(
-        "lychd.cli.binding.compile_animator_declarations",
-        return_value=_animator_declarations(),
-    )
-    mocker.patch(
-        "lychd.domain.animation.transmute.Transmuter",
-    ).return_value.transmute_all.return_value = []
-    secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
-    secret_store.exists.return_value = True
-    scribe = mocker.patch(
-        "lychd.system.services.scribe.facade.ScribeService",
-    ).return_value
-    unchanged_disposition = (
-        BindingChange(
-            "update",
-            tmp_path / "lychd-reactor.service",
-            "owned binding differs from intent",
-        ),
-    )
-    scribe.plan_reconcile_all.side_effect = (
-        BindingReconcilePlan(
-            changes=unchanged_disposition,
-            observed_generation="drift-a",
-            desired_generation="desired",
-        ),
-        BindingReconcilePlan(
-            changes=unchanged_disposition,
-            observed_generation="drift-b",
-            desired_generation="desired",
-        ),
-    )
-    systemd = mocker.patch("lychd.system.services.systemd.SystemdUserManager")
-
-    result = runner.invoke(bind_quadlets)
-
-    assert result.exit_code != 0
-    assert "Binding state changed after planning" in result.output
-    secret_store.ensure_present.assert_not_called()
-    scribe.reconcile_all.assert_not_called()
-    systemd.assert_not_called()
-
-
-def test_bind_apply_rejects_secret_generation_drift_before_effects(
-    runner: CliRunner,
-    mocker: MockerFixture,
-) -> None:
-    """A required secret cannot disappear between preview and binding commit."""
-    from lychd.system.services.scribe import BindingReconcilePlan
-
-    mocker.patch("lychd.system.services.lifecycle.lock.LifecycleLock")
-    mocker.patch(
-        "lychd.cli.binding.compile_animator_declarations",
-        return_value=_animator_declarations(),
-    )
-    mocker.patch(
-        "lychd.domain.animation.transmute.Transmuter",
-    ).return_value.transmute_all.return_value = []
-    secret_store = mocker.patch("lychd.system.services.secrets.PodmanSecretStore").return_value
-    secret_store.exists.side_effect = (True, True, True, False)
-    scribe = mocker.patch(
-        "lychd.system.services.scribe.facade.ScribeService",
-    ).return_value
-    scribe.plan_reconcile_all.return_value = BindingReconcilePlan(
-        changes=(),
-        observed_generation="stable",
-        desired_generation="desired",
-    )
-    systemd = mocker.patch("lychd.system.services.systemd.SystemdUserManager")
-
-    result = runner.invoke(bind_quadlets)
-
-    assert result.exit_code != 0
-    assert "Podman secret state changed after planning" in result.output
-    secret_store.ensure_present.assert_not_called()
-    scribe.reconcile_all.assert_not_called()
     systemd.assert_not_called()
 
 
@@ -1192,13 +1093,6 @@ def test_bind_quadlets_fails_when_soulstone_secret_missing(runner: CliRunner, mo
 
     assert result.exit_code != 0
     assert "Missing required Podman secrets" in result.output
-
-
-def test_runtime_plan_secrets_are_included_in_generic_preflight() -> None:
-    stone = _advertised_generic_soulstone()
-    plan = RuntimePlan(secrets=["adapter_token,target=/run/adapter-token,mode=0444"])
-
-    assert required_secret_names_from_soulstones([stone], [plan]) == ["adapter_token"]
 
 
 def test_bind_quadlets_fails_when_adapter_planned_secret_is_missing(

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import copy
-from contextlib import asynccontextmanager, suppress
+from contextlib import AbstractAsyncContextManager, asynccontextmanager, suppress
 from datetime import UTC, datetime
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import pydantic
 from pydantic_graph import exceptions
@@ -29,8 +29,48 @@ __all__ = [
     "DurableStasisPhylactery",
     "InMemoryStasisStore",
     "LiveStasisPhylactery",
+    "PhylacteryProtocol",
     "StasisStore",
 ]
+
+
+@runtime_checkable
+class PhylacteryProtocol(Protocol):
+    """Persistence contract for graph state and resumable jobs."""
+
+    job_id: str
+
+    async def snapshot_node(self, state: Any, next_node: Any) -> None:
+        """Commit the current state and next node to persistence."""
+        ...
+
+    async def snapshot_node_if_new(self, snapshot_id: str, state: Any, next_node: Any) -> None:
+        """Commit a node only when its snapshot id is not already present."""
+        ...
+
+    async def snapshot_end(self, state: Any, end: Any) -> None:
+        """Commit the final state to persistence."""
+        ...
+
+    async def load_next(self) -> NodeSnapshot[Any, Any] | None:
+        """Retrieve the next created snapshot for rehydration."""
+        ...
+
+    async def load_all(self) -> list[Any]:
+        """Load the complete snapshot history required by Pydantic Graph."""
+        ...
+
+    def record_run(self, snapshot_id: str) -> AbstractAsyncContextManager[None]:
+        """Record one node run while preserving suspension signals."""
+        ...
+
+    async def rehydrate_stasis(self, state: Any, node: Any) -> None:
+        """Update suspended state and reset it for pickup."""
+        ...
+
+    def set_graph_types(self, graph: Any) -> None:
+        """Set graph types for serialization."""
+        ...
 
 
 class StasisStore(Protocol):

@@ -18,6 +18,7 @@ from lychd.agents.deps import LychDDeps
 from lychd.domain.animation.services.registry import AnimatorRegistry
 from lychd.domain.codex.schemas import ConsentDecision
 from lychd.domain.cortex.events import RunChannel, RunChannelSnapshot, RunEmitter, RunEvent
+from lychd.domain.orchestration.broker import GhoulBroker
 from lychd.domain.orchestration.schema import TransitionPlan
 
 if TYPE_CHECKING:
@@ -35,7 +36,6 @@ class FakeGrant:
     model: Any
     toolsets: tuple[Any, ...] = ()
     settings: Any = None
-    key: str = "chat:test"
     spec: Any = field(
         default_factory=lambda: SimpleNamespace(
             key="chat:test",
@@ -43,10 +43,10 @@ class FakeGrant:
             family=SimpleNamespace(value="chat"),
             model_id="test-model",
             max_context=4096,
+            generation_profile=SimpleNamespace(max_context=8192, max_tokens=512),
         )
     )
     state: Any = field(default_factory=lambda: SimpleNamespace(phase=SimpleNamespace(value="warm")))
-    generation: Any = field(default_factory=lambda: SimpleNamespace(max_context=8192, max_tokens=512))
     lease: Any = field(default_factory=lambda: SimpleNamespace(grant_id="grant-test"))
 
     def model_settings(self) -> Any:
@@ -82,26 +82,17 @@ class FakeDispatcher:
         # The graph deliberately consumes only the grant surface represented by
         # ``FakeGrant``.  The cast keeps that test double honest at the concrete
         # production seam without constructing live animator/model handles.
-        yield cast(
-            "CapabilityGrant",
-            FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings, key=self.key),
-        )
+        grant = FakeGrant(model=self.model, toolsets=self.toolsets, settings=self.settings)
+        grant.spec.key = self.key
+        yield cast("CapabilityGrant", grant)
 
 
 @dataclass
 class FakeOrchestrator:
-    """`TransitionPort` fake: records calculate/request calls for assertions."""
+    """`TransitionPort` fake: records transition requests for assertions."""
 
     calls: list[tuple[str, ...]] = field(default_factory=list)
-
-    async def calculate_transition_plan(self, target_capability_key: str) -> TransitionPlan:
-        self.calls.append(("calculate", target_capability_key))
-        return TransitionPlan(
-            total_metabolic_cost=0.0,
-            evict_coven_ids=[],
-            launch_coven_ids=[],
-            action_type="NO_OP",
-        )
+    worker_broker: GhoulBroker = field(default_factory=GhoulBroker)
 
     async def request_transition(self, target_capability_key: str, priority: Priority) -> TransitionPlan:
         self.calls.append(("request", target_capability_key, str(priority)))

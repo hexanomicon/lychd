@@ -6,13 +6,11 @@ systemd user dir -- for BOTH transmutation scenarios. The committed fixtures
 make every intentional lifecycle-unit addition, removal, or routing change
 reviewable.
 
-Regenerate with ``LYCHD_REGEN_GOLDEN=1`` after an INTENTIONAL change.
 """
 
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,10 +26,9 @@ if TYPE_CHECKING:
     from lychd.system.schemas import QuadletBase
 
 GOLDEN_DIR = Path(__file__).parents[2] / "fixtures" / "golden" / "quadlets"
-_REGEN = os.getenv("LYCHD_REGEN_GOLDEN") == "1"
 
 
-def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
+def _transmute(*, phoenix_active: bool, phoenix_name: str = "phoenix") -> list[QuadletBase]:
     from lychd.config.runes.registry import RuneRegistry
     from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig
     from lychd.extensions.builtin.observability.phoenix.config import PhoenixSettings
@@ -42,25 +39,25 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
         GenericSoulstoneConfig(
             name="alpha",
             quadlet=QuadletConfig(image="registry.example/alpha:1"),
-            groups=["logic"],
-            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+            groups=("logic",),
+            concurrency=ConcurrencyIntent(conflict_domains=("gpu",)),
         ),
         GenericSoulstoneConfig(
             name="beta",
             quadlet=QuadletConfig(image="registry.example/beta:1"),
-            groups=["logic"],
-            concurrency=ConcurrencyIntent(conflict_domains=[]),
+            groups=("logic",),
+            concurrency=ConcurrencyIntent(conflict_domains=()),
         ),
         GenericSoulstoneConfig(
             name="gamma",
             quadlet=QuadletConfig(image="registry.example/gamma:1"),
-            groups=[],
-            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+            groups=(),
+            concurrency=ConcurrencyIntent(conflict_domains=("gpu",)),
         ),
         GenericSoulstoneConfig(
             name="resident",
             quadlet=QuadletConfig(image="registry.example/resident:1"),
-            groups=[],
+            groups=(),
             concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
         ),
     ]
@@ -69,7 +66,7 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
         runtime_planner=RuntimeAdapterRegistry(),
         contributors=[PhoenixQuadletContributor()],
     )
-    runes = RuneRegistry([PhoenixSettings()] if phoenix_active else [])
+    runes = RuneRegistry([PhoenixSettings(name=phoenix_name)] if phoenix_active else [])
     return transmuter.transmute_all(soulstones, runes=runes)
 
 
@@ -79,7 +76,7 @@ def _write_and_collect(manifests: list[QuadletBase], tmp_path: Path) -> dict[str
     quadlet_dir.mkdir()
     systemd_dir.mkdir()
     scribe = ScribeService(output_dir=quadlet_dir, systemd_dir=systemd_dir)
-    scribe.generate_all(manifests)
+    scribe.reconcile_all(manifests, plain_units={})
     return {
         "quadlet": sorted(p.name for p in quadlet_dir.iterdir() if p.is_file() and not p.name.startswith(".")),
         "systemd": sorted(p.name for p in systemd_dir.iterdir() if p.is_file() and not p.name.startswith(".")),
@@ -99,26 +96,14 @@ def test_bind_fileset_parity(scenario: str, tmp_path: Path) -> None:
     existing: dict[str, dict[str, list[str]]] = {}
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
-    if _REGEN:
-        existing[scenario] = actual
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(existing, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    assert scenario in existing, f"Missing bind file-set golden for '{scenario}'; regen with LYCHD_REGEN_GOLDEN=1."
+    assert scenario in existing, f"Missing bind file-set golden for '{scenario}'."
     assert actual == existing[scenario]
 
 
-def test_target_split_routing(tmp_path: Path) -> None:
-    """§8.2 — .target files land in the systemd dir, containers/pods in the Quadlet dir."""
-    manifests = _transmute(phoenix_active=True)
+def test_phoenix_safe_custom_name_reaches_quadlet_filename(tmp_path: Path) -> None:
+    name = "phoenix-eye.v2"
+    manifests = _transmute(phoenix_active=True, phoenix_name=name)
+
     result = _write_and_collect(manifests, tmp_path)
-    assert "lychd.pod" in result["quadlet"]
-    assert "lychd-phoenix.container" in result["quadlet"]
-    assert all(name.endswith((".container", ".pod")) for name in result["quadlet"])
-    assert result["systemd"] == [
-        "lychd-animator-alpha.target",
-        "lychd-animator-beta.target",
-        "lychd-animator-gamma.target",
-        "lychd-animator-resident.target",
-        "lychd-coven-logic.target",
-    ]
+
+    assert "lychd-phoenix-eye.v2.container" in result["quadlet"]

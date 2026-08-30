@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 
 from lychd.system.binding_sites import BindingSites
 from lychd.system.schemas import QuadletBase
@@ -18,10 +17,7 @@ from lychd.system.services.scribe.models import (
     OwnershipManifest,
     SitePlan,
 )
-from lychd.system.services.scribe.naming import (
-    GENERATED_SYSTEMD_SUFFIXES,
-    encode_plain_units,
-)
+from lychd.system.services.scribe.naming import encode_plain_units
 from lychd.system.services.scribe.rendering import BindingRenderer
 from lychd.system.services.scribe.storage import capture_path_state
 
@@ -62,39 +58,6 @@ class BindingPlanner:
         self._renderer = renderer
         self._authority = authority
 
-    def generated(self, manifests: Sequence[QuadletBase]) -> BindingWriteSet:
-        """Plan generated units while preserving independently managed plain units."""
-        base = self._observe_base()
-        previous = base.ownership
-        quadlet_files, systemd_files = self._renderer.render_generated(manifests)
-        previous_targets = frozenset(
-            name for name in previous.systemd if Path(name).suffix in GENERATED_SYSTEMD_SUFFIXES
-        )
-        preserved_plain_units = set(previous.systemd) - set(previous_targets)
-        next_ownership = OwnershipManifest(
-            version=1,
-            quadlet=tuple(sorted(quadlet_files)),
-            systemd=tuple(sorted(preserved_plain_units | set(systemd_files))),
-        )
-        return BindingWriteSet(
-            plans=(
-                SitePlan(
-                    directory=self._sites.quadlet,
-                    owned_names=frozenset(previous.quadlet),
-                    previous_names=frozenset(previous.quadlet),
-                    files=quadlet_files,
-                ),
-                SitePlan(
-                    directory=self._sites.systemd_user,
-                    owned_names=frozenset(previous.systemd),
-                    previous_names=previous_targets,
-                    files=systemd_files,
-                ),
-            ),
-            ownership=next_ownership,
-            base=base,
-        )
-
     def complete(
         self,
         manifests: Sequence[QuadletBase],
@@ -125,34 +88,6 @@ class BindingPlanner:
                     owned_names=frozenset(previous.systemd),
                     previous_names=frozenset(previous.systemd),
                     files=systemd_files,
-                ),
-            ),
-            ownership=next_ownership,
-            base=base,
-        )
-
-    def plain_unit(self, filename: str, file: Mapping[str, bytes]) -> BindingWriteSet:
-        """Plan replacement of one plain user unit while preserving every peer."""
-        base = self._observe_base()
-        previous = base.ownership
-        next_ownership = OwnershipManifest(
-            version=1,
-            quadlet=tuple(sorted(previous.quadlet)),
-            systemd=tuple(sorted({*previous.systemd, filename})),
-        )
-        return BindingWriteSet(
-            plans=(
-                SitePlan(
-                    directory=self._sites.quadlet,
-                    owned_names=frozenset(previous.quadlet),
-                    previous_names=frozenset(),
-                    files={},
-                ),
-                SitePlan(
-                    directory=self._sites.systemd_user,
-                    owned_names=frozenset(previous.systemd),
-                    previous_names=frozenset({filename}) if filename in previous.systemd else frozenset(),
-                    files=file,
                 ),
             ),
             ownership=next_ownership,

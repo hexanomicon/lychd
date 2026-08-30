@@ -27,15 +27,3 @@ __all__ = [
     "ScribeTransactionError",
     "ScribeTransactionState",
 ]
-
-# Re-exported classes retain the historical public module identity for repr,
-# introspection, and serialized references.
-BindingChange.__module__ = __name__
-BindingReconcilePlan.__module__ = __name__
-OwnedBindings.__module__ = __name__
-ScribeConflictError.__module__ = __name__
-ScribeGenerationError.__module__ = __name__
-ScribeOwnershipError.__module__ = __name__
-ScribeService.__module__ = __name__
-ScribeTransactionError.__module__ = __name__
-ScribeTransactionState.__module__ = __name__

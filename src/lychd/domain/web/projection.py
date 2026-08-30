@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from pydantic import ValidationError
 
+from lychd.domain.codex.schemas import CENSORED_VALUE
 from lychd.domain.web.contracts import RunEventEnvelope
 from lychd.domain.web.fragments import ValidatedFragment
 from lychd.domain.web.schemas import ConsentCard, SwapTicket
@@ -132,7 +133,12 @@ class EventProjector:
 
     def consent_card_view(self, view: ConsentView) -> ConsentCard:
         """Build the Seat-of-Consent view-model from a `ConsentView` (status-mapped)."""
-        vision = str(view.args.get("reason") or "This action requires the Magus's consent before it may proceed.")
+        reason = view.args.get("reason")
+        vision = (
+            reason
+            if isinstance(reason, str) and reason != CENSORED_VALUE
+            else "This action requires the Magus's consent before it may proceed."
+        )
         state: Any = _CONSENT_STATE.get(view.status, "refused")
         return ConsentCard(
             id=view.id,

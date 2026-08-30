@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import cast
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -11,24 +10,25 @@ from lychd.domain.animation.capabilities import (
     CapabilityState,
 )
 from lychd.domain.animation.links import Link
-from lychd.domain.animation.schemas import ModelInfo, SoulstoneConfig
-from lychd.domain.animation.services.adapters.catalog import capability_specs_from_model_infos
+from lychd.domain.animation.schemas import SoulstoneConfig
+from lychd.domain.animation.services.adapters.catalog import (
+    capability_specs_from_model_infos,
+    default_model_id_for_soulstone,
+    model_infos_from_soulstone,
+)
 from lychd.domain.animation.services.adapters.contracts import (
     LISTEN_HOST,
-    AnimatorControlPlane,
     RuntimeAnimator,
     RuntimePlan,
 )
 from lychd.domain.animation.services.adapters.runtimes.shared import require_runtime_soulstone
-from lychd.domain.animation.services.adapters.surfaces import local_link_default
-from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector, LlamacppSoulstone
+from lychd.domain.animation.services.adapters.surfaces import SoulstoneAnimator, local_link_default
+from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector
 from lychd.extensions.builtin.animator.llamacpp.control_plane import LlamaCppControlPlane, LlamaCppControlPlaneError
-from lychd.extensions.builtin.animator.llamacpp.parser import LlamaCppCommandParser, LlamaCppRuntimeInference
+from lychd.extensions.builtin.animator.llamacpp.parser_cli import LlamaCppCliInferenceParser
+from lychd.extensions.builtin.animator.llamacpp.parser_models import LlamaCppRuntimeInference
 from lychd.extensions.builtin.animator.llamacpp.runtime import LlamaCppDescriptor, LlamaCppRuntimePlanner
 from lychd.extensions.builtin.animator.soulstones import LlamaCppSoulstoneConfig
-
-if TYPE_CHECKING:
-    from lychd.domain.animation.lifecycle import AnimatorLifecycle
 
 _REACHABLE_HEALTH = {"ok", "loading"}
 
@@ -36,24 +36,16 @@ _REACHABLE_HEALTH = {"ok", "loading"}
 class LlamaCppRuntimeAdapter:
     """llama.cpp planner and runtime animator factory."""
 
-    runtime: ClassVar[str] = "llamacpp"
+    runtime: str = "llamacpp"
 
     def __init__(
         self,
-        parser: LlamaCppCommandParser | None = None,
-        planner: LlamaCppRuntimePlanner | None = None,
         control_plane: LlamaCppControlPlane | None = None,
     ) -> None:
-        """Initialize adapter with optional parser/planner overrides."""
-        self._parser = parser or LlamaCppCommandParser()
-        self._planner = planner or LlamaCppRuntimePlanner()
+        """Initialize the runtime adapter and its control plane."""
+        self._parser = LlamaCppCliInferenceParser()
+        self._planner = LlamaCppRuntimePlanner()
         self._control_plane = control_plane or LlamaCppControlPlane()
-
-    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
-        """Expose the llama.cpp lifecycle control plane for llama.cpp animators."""
-        if getattr(animator.connector, "kind", None) != "llamacpp":
-            return None
-        return self._control_plane
 
     def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Build llama.cpp runtime handle with control-plane metadata attached."""
@@ -63,17 +55,17 @@ class LlamaCppRuntimeAdapter:
             runtime=self.runtime,
         )
         descriptor = self._describe_runtime(stone)
+        model_infos = model_infos_from_soulstone(stone, discovered=descriptor.model_infos)
         base_url = str(stone.base_url) if stone.base_url is not None else f"http://localhost:{stone.port}/v1"
         connector = LlamacppConnector(
             link=local_link_default(runtime=self.runtime),
             base_url=base_url,
-            model_infos=descriptor.model_infos,
-            default_model_id=descriptor.default_model_id,
+            model_infos=model_infos,
+            default_model_id=default_model_id_for_soulstone(stone, model_infos),
             mode=descriptor.mode,
             router_query_model_id=descriptor.router_query_model_id,
-            metadata=descriptor.metadata,
         )
-        return LlamacppSoulstone(rune=stone, connector=connector)
+        return SoulstoneAnimator(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs for llama.cpp single or router runtimes."""
@@ -86,15 +78,10 @@ class LlamaCppRuntimeAdapter:
         hints_by_id = {model.id: model.capabilities for model in stone.models if model.capabilities is not None}
         # Operator-declared [[models]] ARE the catalog when present (matched, no
         # spurious name-fallback spec); otherwise fall back to runtime discovery.
-        model_infos = (
-            tuple(ModelInfo(id=model.id, description=model.description) for model in stone.models)
-            if stone.models
-            else descriptor.model_infos
-        )
+        model_infos = model_infos_from_soulstone(stone, discovered=descriptor.model_infos)
         return capability_specs_from_model_infos(
             stone,
             model_infos,
-            runtime_metadata=descriptor.metadata,
             runtime_defaults=self._runtime_defaults(descriptor),
             is_dynamic=descriptor.mode == "router",
             hints_by_id=hints_by_id,
@@ -113,17 +100,15 @@ class LlamaCppRuntimeAdapter:
         """
         connector = cast("LlamacppConnector", animator.connector)
         mode = getattr(connector, "mode", "single")
-        is_dynamic = mode == "router"
         checked_at = datetime.now(UTC)
 
         try:
             lifecycle = await self._control_plane.inspect_animator(animator)
         except LlamaCppControlPlaneError as exc:
-            connector.set_link(Link(up=False, activatable=True, reason=str(exc), checked_at=checked_at))
+            connector.set_link(Link(up=False, reason=str(exc)))
             return [
                 CapabilityState(
                     capability_key=spec.key,
-                    is_dynamic=is_dynamic,
                     phase=CapabilityPhase.ERROR,
                     health="error",
                     reason=str(exc),
@@ -134,30 +119,25 @@ class LlamaCppRuntimeAdapter:
 
         health = lifecycle.health
         reachable = health in _REACHABLE_HEALTH or lifecycle.supports_router
-        health_error = lifecycle.raw.get("health_error")
+        health_error = lifecycle.error
         connector.set_link(
             Link(
                 up=health in _REACHABLE_HEALTH,
-                activatable=True,
                 reason=None
                 if health in _REACHABLE_HEALTH
                 else (str(health_error) if health_error else "runtime_unreachable"),
-                checked_at=checked_at,
             )
         )
 
         loaded_ids = list(lifecycle.loaded_models)
-        active_model = self._normalize_active_model_id(lifecycle, specs)
         return [
             self._state_for_spec(
                 spec=spec,
                 mode=mode,
-                is_dynamic=is_dynamic,
                 health=health,
                 reachable=reachable,
                 loaded_ids=loaded_ids,
-                active_model=active_model,
-                raw=dict(lifecycle.raw),
+                health_error=str(health_error) if health_error else None,
                 checked_at=checked_at,
             )
             for spec in specs
@@ -168,12 +148,10 @@ class LlamaCppRuntimeAdapter:
         *,
         spec: CapabilitySpec,
         mode: str,
-        is_dynamic: bool,
         health: str,
         reachable: bool,
         loaded_ids: list[str],
-        active_model: str | None,
-        raw: dict[str, object],
+        health_error: str | None,
         checked_at: datetime,
     ) -> CapabilityState:
         phase = self._phase_for(
@@ -185,21 +163,17 @@ class LlamaCppRuntimeAdapter:
         )
         reason: str | None = None
         if phase is CapabilityPhase.ERROR:
-            reason = str(raw.get("health_error") or "runtime_error")
+            reason = health_error or "runtime_error"
         elif phase is CapabilityPhase.ACTIVATABLE:
             reason = "model_not_loaded"
         elif phase is CapabilityPhase.COLD:
             reason = "runtime_unreachable"
         return CapabilityState(
             capability_key=spec.key,
-            is_dynamic=is_dynamic,
             phase=phase,
             health=health,
-            active_model_id=active_model,
-            loaded_model_ids=loaded_ids,
             reason=reason,
             checked_at=checked_at,
-            metadata=raw,
         )
 
     def _phase_for(
@@ -229,7 +203,6 @@ class LlamaCppRuntimeAdapter:
         if getattr(connector, "mode", "single") != "router":
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.WARM if connector.link.up else CapabilityPhase.COLD,
                 reason="fixed capability; lifecycle owned by unit",
             )
 
@@ -238,19 +211,17 @@ class LlamaCppRuntimeAdapter:
             if spec.model_id not in lifecycle.available_models:
                 return ActivationResult(
                     accepted=False,
-                    phase=CapabilityPhase.COLD,
                     reason="model not in /models",
                 )
             accepted = await self._control_plane.load_model(connector.base_url, spec.model_id)
             if not accepted:
                 return ActivationResult(
                     accepted=False,
-                    phase=CapabilityPhase.ACTIVATABLE,
                     reason="router rejected model load",
                 )
         except LlamaCppControlPlaneError as exc:
-            return ActivationResult(accepted=False, phase=CapabilityPhase.ERROR, reason=str(exc))
-        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+            return ActivationResult(accepted=False, reason=str(exc))
+        return ActivationResult(accepted=True)
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Plan llama.cpp command args from passthrough or managed fields."""
@@ -281,65 +252,35 @@ class LlamaCppRuntimeAdapter:
             soulstone=soulstone,
             inferred=inferred,
             mode=mode,
-            parser=self._parser,
         )
 
     def _infer_runtime(self, soulstone: LlamaCppSoulstoneConfig) -> LlamaCppRuntimeInference:
         """Infer runtime metadata from command/extra args and env vars."""
         cmd_inference = LlamaCppRuntimeInference()
         if soulstone.exec:
-            cmd_inference = self._parser.infer_args(list(soulstone.exec), source="exec")
+            cmd_inference = self._parser.infer_args(list(soulstone.exec))
         elif soulstone.extra_args:
-            cmd_inference = self._parser.infer_args(list(soulstone.extra_args), source="extra_args")
+            cmd_inference = self._parser.infer_args(list(soulstone.extra_args))
 
         env_inference = self._parser.infer_env(soulstone.env_vars)
         return self._parser.merge(primary=cmd_inference, secondary=env_inference)
 
     def _runtime_defaults(self, descriptor: LlamaCppDescriptor) -> dict[str, object]:
         """Translate llama.cpp planner defaults into shared generation-profile keys."""
-        effective = descriptor.metadata.get("effective_defaults", {})
-        if not isinstance(effective, Mapping):
-            return {}
-        effective_defaults = cast("Mapping[str, object]", effective)
-
         defaults: dict[str, object] = {}
-        n_ctx = effective_defaults.get("n_ctx")
+        n_ctx = descriptor.generation_defaults.get("n_ctx")
         if isinstance(n_ctx, int):
             defaults["max_context"] = n_ctx
-        n_predict = effective_defaults.get("n_predict")
+        n_predict = descriptor.generation_defaults.get("n_predict")
         if isinstance(n_predict, int):
             defaults["max_tokens"] = n_predict
-        top_k = effective_defaults.get("top_k")
-        if isinstance(top_k, int):
-            defaults["top_k"] = top_k
-        top_p = effective_defaults.get("top_p")
+        top_p = descriptor.generation_defaults.get("top_p")
         if isinstance(top_p, int | float):
             defaults["top_p"] = float(top_p)
-        temperature = effective_defaults.get("temperature")
+        temperature = descriptor.generation_defaults.get("temperature")
         if isinstance(temperature, int | float):
             defaults["temperature"] = float(temperature)
-        reasoning_format = effective_defaults.get("reasoning_format")
-        if isinstance(reasoning_format, str):
-            defaults["reasoning_format"] = reasoning_format
         return defaults
-
-    def _normalize_active_model_id(self, lifecycle: AnimatorLifecycle, specs: list[CapabilitySpec]) -> str | None:
-        """Map lifecycle active model payloads back onto capability model ids."""
-        active_model = lifecycle.active_model
-        if not isinstance(active_model, str) or not active_model:
-            return lifecycle.loaded_models[0] if lifecycle.loaded_models else None
-
-        for spec in specs:
-            metadata_path = spec.metadata.get("path")
-            if isinstance(metadata_path, str) and metadata_path == active_model:
-                return spec.model_id
-            if isinstance(metadata_path, str):
-                metadata_stem = metadata_path.rsplit("/", maxsplit=1)[-1].removesuffix(".gguf")
-                if metadata_stem == spec.model_id:
-                    return spec.model_id
-            if active_model.rsplit("/", maxsplit=1)[-1].removesuffix(".gguf") == spec.model_id:
-                return spec.model_id
-        return active_model
 
 
 __all__ = ["LlamaCppRuntimeAdapter"]

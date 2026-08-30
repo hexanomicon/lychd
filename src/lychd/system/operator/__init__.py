@@ -4,7 +4,6 @@ from lychd.system.operator.composition import OperatorServices, build_operator_s
 from lychd.system.operator.control import (
     ControlResult,
     OperatorControlService,
-    VesselControlPort,
 )
 from lychd.system.operator.inventory import (
     AnimatorDeclarationProvider,
@@ -12,7 +11,7 @@ from lychd.system.operator.inventory import (
     OperatorInventoryService,
     OperatorPaths,
 )
-from lychd.system.operator.journal import JournalRead, JournalService
+from lychd.system.operator.journal import JournalService
 from lychd.system.operator.models import (
     DeclaredAnimator,
     InventoryItem,
@@ -52,7 +51,6 @@ __all__ = [
     "DescriptorProcessRunner",
     "InventoryItem",
     "InventoryReport",
-    "JournalRead",
     "JournalService",
     "MountObservation",
     "MountTreeObservation",
@@ -79,6 +77,5 @@ __all__ = [
     "SystemSummary",
     "UnitRetirementPlan",
     "VesselAuthority",
-    "VesselControlPort",
     "build_operator_services",
 ]

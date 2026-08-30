@@ -9,8 +9,9 @@ import pytest
 import respx
 from pydantic import ValidationError
 
-from lychd.config.runes import ConfigLoader, RuneConfig
+from lychd.config.runes import RuneConfig
 from lychd.config.runes.extension import RuneConfigStore
+from lychd.config.runes.loader import ConfigLoader
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily, CapabilityPhase
@@ -19,13 +20,12 @@ from lychd.domain.animation.extension import PortalStore
 from lychd.domain.animation.links import Link
 from lychd.domain.animation.schemas import (
     AnimatorConfig,
-    OpenAICompatibleProvider,
     OpenAIPortalConfig,
     PortalConfig,
 )
 from lychd.domain.animation.services.adapters.contracts import PortalDefinition, RuntimeAnimator
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
-from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector, OpenAIPortal
+from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
 from lychd.domain.animation.services.declarations import (
     AnimatorDeclarations,
     compile_animator_declarations,
@@ -35,8 +35,6 @@ from lychd.domain.cortex.dispatcher import Dispatcher
 from lychd.domain.cortex.leases import LeaseLedger
 from lychd.extensions.builtin.animator.register import build_openai_portal, probe_openai_portal
 from lychd.extensions.context import ExtensionContext
-from lychd.extensions.host import AssembledExtensions
-from lychd.lib.http import run_sync
 
 _PORTAL_SCHEMAS: list[type[RuneConfig]] = [
     AnimatorConfig,
@@ -69,8 +67,7 @@ def _portal_declarations(runes_dir: Path) -> AnimatorDeclarations:
 def test_portal_zero_models_yields_zero_specs() -> None:
     portal = OpenAIPortalConfig.model_validate({"name": "empty"})
     adapters = RuntimeAdapterRegistry(portal_definitions=[_OPENAI_PORTAL])
-    runtime = adapters.build_runtime(portal)
-    assert adapters.build_capability_specs(portal, runtime) == []
+    assert adapters.build_capability_specs(portal) == []
 
 
 def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
@@ -83,7 +80,6 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
                     "id": "gpt-5.2",
                     "capabilities": {
                         "supports_tools": True,
-                        "supports_streaming": False,
                         "modalities_in": ["text", "image"],
                     },
                     "generation": {"max_tokens": 4096},
@@ -92,7 +88,7 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
         }
     )
     adapters = RuntimeAdapterRegistry(portal_definitions=[_OPENAI_PORTAL])
-    specs = adapters.build_capability_specs(portal, adapters.build_runtime(portal))
+    specs = adapters.build_capability_specs(portal)
 
     assert len(specs) == 1
     spec = specs[0]
@@ -100,28 +96,9 @@ def test_portal_synthesizes_static_chat_spec_with_overlay() -> None:
     assert spec.family == CapabilityFamily.CHAT
     assert spec.is_dynamic is False
     assert spec.supports_tools is True
-    assert spec.supports_streaming is False
     assert "image" in spec.modalities_in
     assert spec.generation_profile.max_tokens == 4096
     assert spec.generation_profile.temperature == 0.5
-
-
-@pytest.mark.parametrize("provider", list(OpenAICompatibleProvider))
-def test_openai_portal_factory_is_total_for_every_schema_valid_alias(
-    provider: OpenAICompatibleProvider,
-) -> None:
-    portal = OpenAIPortalConfig.model_validate(
-        {
-            "name": f"portal-{provider.value}",
-            "provider_name": provider.value,
-            "base_url": "https://provider.test/v1",
-        }
-    )
-
-    runtime = build_openai_portal(portal)
-
-    assert isinstance(runtime, OpenAIPortal)
-    assert runtime.connector.kind == f"portal:{provider.value}"
 
 
 def test_openai_portal_schema_rejects_alias_without_factory_support() -> None:
@@ -132,6 +109,33 @@ def test_openai_portal_schema_rejects_alias_without_factory_support() -> None:
                 "provider_name": "not-a-provider",
             }
         )
+
+
+@pytest.mark.parametrize(
+    ("base_url", "message"),
+    [
+        ("https://user:secret@provider.test/v1", "embedded credentials"),
+        ("https://provider.test/v1?region=eu", "query or fragment"),
+        ("https://provider.test/v1?", "query or fragment"),
+        ("https://provider.test/v1#models", "query or fragment"),
+        ("https://provider.test/v1#", "query or fragment"),
+        ("https://provider.test:0/v1", "port must be between"),
+    ],
+)
+def test_portal_base_url_must_be_a_composable_endpoint_root(base_url: str, message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        OpenAIPortalConfig.model_validate({"name": "invalid-root", "base_url": base_url})
+
+
+def test_portal_base_url_allows_provider_prefix_paths() -> None:
+    portal = OpenAIPortalConfig.model_validate(
+        {
+            "name": "prefix",
+            "base_url": "https://provider.test/v1beta/openai/",
+        }
+    )
+
+    assert str(portal.base_url) == "https://provider.test/v1beta/openai/"
 
 
 # --- opt-in probe (respx: no surprise egress) ------------------------------
@@ -160,9 +164,6 @@ def test_probe_false_portal_performs_no_http(tmp_path: Path) -> None:
     state = registry.list_capability_states()[0]
     assert state.phase is CapabilityPhase.UNKNOWN
     assert state.health == "unverified"
-    activation = run_sync(registry.activate_capability(state.capability_key))
-    assert activation.phase is CapabilityPhase.UNKNOWN
-    assert activation.reason == "portal reachability not probed"
 
 
 @respx.mock
@@ -191,7 +192,6 @@ def test_probe_true_portal_exercises_live_probe(tmp_path: Path) -> None:
     state = registry.list_capability_states()[0]
     assert state.phase is CapabilityPhase.ERROR
     assert state.health == "model_missing"
-    assert state.loaded_model_ids == []
 
 
 @respx.mock
@@ -216,16 +216,10 @@ def test_probe_true_portal_separates_live_link_from_invalid_inventory(tmp_path: 
     )
     registry.load()
 
-    animator = registry.get_runtime("invalid-inventory")
-    assert animator is not None
-    assert animator.connector.link.up is True
     state = registry.list_capability_states()[0]
     assert state.phase is CapabilityPhase.ERROR
     assert state.health == "inventory_invalid"
     assert "non-empty string id" in (state.reason or "")
-    activation = run_sync(registry.activate_capability(state.capability_key))
-    assert activation.phase is CapabilityPhase.ERROR
-    assert "non-empty string id" in (activation.reason or "")
 
 
 @respx.mock
@@ -255,7 +249,6 @@ def test_probe_true_requires_the_exact_portal_probe_strategy(tmp_path: Path) -> 
         registry.load()
 
     assert respx.calls.call_count == 0
-    assert registry.is_loaded is False
 
 
 def test_failed_initial_probe_leaves_registry_retryable_and_unpublished(tmp_path: Path) -> None:
@@ -271,17 +264,15 @@ def test_failed_initial_probe_leaves_registry_retryable_and_unpublished(tmp_path
     )
     attempts = 0
 
-    async def flaky_probe(animator: object) -> None:
+    async def flaky_probe(animator: RuntimeAnimator) -> None:
         nonlocal attempts
         attempts += 1
         if attempts == 1:
             message = "probe failed once"
             raise RuntimeError(message)
-        runtime = animator
-        assert isinstance(runtime, OpenAIPortal)
-        connector = runtime.connector
+        connector = animator.connector
         assert isinstance(connector, OpenAICompatibleConnector)
-        connector.set_link(Link(up=True, activatable=False))
+        connector.set_link(Link(up=True))
 
     registry = AnimatorRegistry(
         declarations=_portal_declarations(runes_dir),
@@ -298,13 +289,44 @@ def test_failed_initial_probe_leaves_registry_retryable_and_unpublished(tmp_path
     with pytest.raises(RuntimeError, match="probe failed once"):
         registry.load()
 
-    assert registry.is_loaded is False
-
     registry.load()
 
-    assert registry.is_loaded is True
     assert attempts == 2
     assert registry.list_capability_states()[0].warm is True
+
+
+def test_successful_registry_generation_cannot_be_hot_reloaded(tmp_path: Path) -> None:
+    runes_dir = tmp_path / "runes"
+    _write(
+        runes_dir / "animator" / "portals" / "openai" / "stable.toml",
+        """
+        name = "stable"
+        [[models]]
+        id = "gpt-x"
+        """,
+    )
+    factory_calls = 0
+
+    def counting_factory(portal: PortalConfig) -> RuntimeAnimator:
+        nonlocal factory_calls
+        factory_calls += 1
+        return build_openai_portal(portal)
+
+    registry = AnimatorRegistry(
+        declarations=_portal_declarations(runes_dir),
+        runtime_adapters=[],
+        portal_definitions=[
+            PortalDefinition(
+                rune_schema=OpenAIPortalConfig,
+                factory=counting_factory,
+            )
+        ],
+    )
+    registry.load()
+    with pytest.raises(RuntimeError, match="generation is already loaded"):
+        registry.load()
+
+    assert factory_calls == 1
 
 
 # --- factory inversion + store discipline ----------------------------------
@@ -348,16 +370,6 @@ def test_register_adds_portal_schema_exactly_once() -> None:
     register(registration)  # idempotent across the per-runtime register() fan-in
 
     assert context.runes.rune_schemas.count(OpenAIPortalConfig) == 1
-
-
-def test_assembled_extensions_surface_builtin_portal_definition() -> None:
-    context = ExtensionContext()
-    from lychd.extensions.builtin.animator.register import register
-
-    register(context.registration_view("builtin:animator"))
-    assembled = AssembledExtensions(context=context, active_ids=())
-
-    assert _OPENAI_PORTAL in assembled.portal_definitions
 
 
 # --- mechanical hydration + dispatch quarantine -----------------------------
@@ -415,10 +427,3 @@ async def test_portal_hydrates_but_dispatch_remains_quarantined(
     with pytest.raises(CapabilityUnavailable, match="portal egress admission"):
         async with dispatcher.lease_grant(family="chat", model_name="gpt-5.2", run_id="r1"):
             pytest.fail("portal dispatch must remain quarantined")
-
-    with pytest.raises(CapabilityUnavailable, match="portal egress admission"):
-        async with dispatcher.lease_grant_key(
-            "openai-main:chat:gpt-5.2",
-            holder="test:direct-key",
-        ):
-            pytest.fail("direct portal dispatch must remain quarantined")

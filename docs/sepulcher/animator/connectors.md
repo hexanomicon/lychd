@@ -96,6 +96,11 @@ A probe may downgrade or invalidate a declaration. It may not invent an interfac
 profile, dialect, model, language, or permission. Portal probes make no payload egress and grant no
 later egress authority.
 
+For a Soulstone with a non-empty `[[models]]` catalogue, the catalogue is the exact connector
+allowlist. Undeclared discoveries never become selectable, the first declared id is the
+deterministic default, and a requested/default id outside a non-empty catalogue is refused rather
+than replaced by a runtime fallback.
+
 ## Durable job handoff
 
 A live connector handle never enters Graph state. Before any local or remote asynchronous effect is

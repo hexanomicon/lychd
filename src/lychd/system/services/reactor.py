@@ -12,7 +12,6 @@ from uuid import uuid4
 import structlog
 
 from lychd.domain.animation.capabilities import CapabilityPhase, CapabilityState
-from lychd.domain.cortex.leases import LeaseLedger
 from lychd.domain.orchestration.actuator import (
     RuntimeActuationRestoredError,
     RuntimeCancellationRestoredError,
@@ -21,10 +20,10 @@ from lychd.domain.orchestration.actuator import (
     build_compensation_intent,
     capability_config_generation,
 )
-from lychd.domain.orchestration.policies import SwitchPolicy, resolve_switch_policy
+from lychd.domain.orchestration.policies import DeclaredConflictPolicy, SwitchPolicy
 from lychd.system.constants import PATH_REACTOR_INBOX_DIR, PATH_REACTOR_JOURNAL_DIR
 from lychd.system.schemas import systemd_environment_assignment
-from lychd.system.services.runtime import SystemdRuntimeActuator
+from lychd.system.services.runtime import SystemdRuntimeActuator, validate_reactor_boundaries
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -36,7 +35,6 @@ if TYPE_CHECKING:
     from lychd.domain.animation.schemas import SoulstoneConfig
 
 logger = structlog.get_logger()
-_DIRECTORY_MODE = 0o700
 _INTENT_MODE = 0o600
 _MAX_INTENT_BYTES = 64 * 1024
 _MAX_REJECTION_DETAIL = 2048
@@ -75,7 +73,6 @@ class _ExpectedStateView:
         phase = CapabilityPhase.WARM if spec.animator_name in self._expected_active else CapabilityPhase.COLD
         return CapabilityState(
             capability_key=key,
-            is_dynamic=spec.is_dynamic,
             phase=phase,
             health="intent-projection",
         )
@@ -152,7 +149,6 @@ class HostReactor:
                 registry,
                 systemctl_bin=systemctl_bin,
                 systemctl_timeout_s=systemctl_timeout_s,
-                observe_systemd=True,
             )
         if lock_factory is None:
             from lychd.system.services.lifecycle.lock import LifecycleLock
@@ -162,7 +158,7 @@ class HostReactor:
         self._inbox_dir = inbox_dir
         self._journal_dir = journal_dir
         self._actuator = actuator
-        self._policy = policy or resolve_switch_policy("declared-conflicts")
+        self._policy = policy or DeclaredConflictPolicy()
         self._lock_factory = lock_factory
 
     async def consume_all(self) -> int:
@@ -172,8 +168,7 @@ class HostReactor:
 
     async def _consume_all_locked(self) -> int:
         """Consume all work while excluding every peer lifecycle mutation."""
-        self._validate_directory(self._inbox_dir, label="inbox")
-        self._validate_directory(self._journal_dir, label="journal")
+        validate_reactor_boundaries(self._inbox_dir, self._journal_dir)
         self._require_no_containment()
 
         processed, errors, mutation_fenced = await self._recover_claimed_batch()
@@ -423,7 +418,7 @@ class HostReactor:
         self._validate_known_animators(intent)
         target = self._resolve_policy_target(intent)
         view = _ExpectedStateView(self._registry, set(intent.expected_active_animators))
-        decision = self._policy.solve(target, view, LeaseLedger())
+        decision = self._policy.solve(target, view)
         expected_evict = tuple(sorted(decision.evict_animator_names))
         expected_launch = tuple(sorted(decision.launch_animator_names))
         if (
@@ -437,24 +432,8 @@ class HostReactor:
             raise RuntimeError(msg)
 
     def _resolve_policy_target(self, intent: TransitionIntent) -> CapabilitySpec:
-        """Resolve the exact target, with an unambiguous legacy-journal fallback."""
+        """Resolve the exact capability authorized by the transition intent."""
         specs = self._registry.list_capabilities()
-        if intent.target_capability_key is None:
-            legacy = sorted(
-                (spec for spec in specs if spec.animator_name == intent.target_animator),
-                key=lambda spec: spec.key,
-            )
-            if len(legacy) == 1:
-                return legacy[0]
-            if len(legacy) > 1:
-                msg = (
-                    "legacy transition omits target_capability_key, but target animator "
-                    f"'{intent.target_animator}' has multiple configured capabilities"
-                )
-                raise RuntimeError(msg)
-            msg = f"target animator has no configured capability: {intent.target_animator}"
-            raise RuntimeError(msg)
-
         target = next(
             (spec for spec in specs if spec.key == intent.target_capability_key),
             None,
@@ -580,16 +559,6 @@ class HostReactor:
         finally:
             temporary.unlink(missing_ok=True)
         self._fsync_directory(self._journal_dir)
-
-    @staticmethod
-    def _validate_directory(path: Path, *, label: str) -> None:
-        if path.is_symlink() or not path.is_dir():
-            msg = f"Host Reactor {label} is not a real directory: {path}"
-            raise RuntimeError(msg)
-        metadata = path.stat()
-        if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != _DIRECTORY_MODE:
-            msg = f"Host Reactor {label} must be owned by uid {os.getuid()} with mode 0o700: {path}"
-            raise RuntimeError(msg)
 
     @staticmethod
     def _fsync_directory(path: Path) -> None:

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from litestar import Controller, Request, Response, get, post
 from litestar.di import NamedDependency
-from litestar.params import FromQuery
+from litestar.exceptions import ServiceUnavailableException
+from litestar.params import FromQuery, QueryParameter
 from litestar.status_codes import HTTP_202_ACCEPTED, HTTP_409_CONFLICT
 
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.cortex.leases import LeaseLedger
-from lychd.domain.cortex.priority import PRIORITY_MAX
+from lychd.domain.cortex.priority import PRIORITY_MAX, PRIORITY_MIN
 from lychd.domain.cortex.substrate import get_run_substrate
 from lychd.domain.orchestration.arbiter import TransitionDeclined
 from lychd.domain.orchestration.manager import OrchestratorManager
@@ -78,7 +79,7 @@ class OrchestratorController(Controller):
         self,
         orchestrator: NamedDependency[OrchestratorManager],
         target: FromQuery[str],
-        priority: FromQuery[int] = PRIORITY_MAX,
+        priority: Annotated[int, QueryParameter(ge=PRIORITY_MIN, le=PRIORITY_MAX)] = PRIORITY_MAX,
     ) -> TransitionPlan:
         """Manually trigger the transition path for one capability key.
 
@@ -96,29 +97,28 @@ class OrchestratorController(Controller):
         """Report live SAQ queue depths + the current lease rows (drain-truth view).
 
         Queues are read from the published `RunSubstrate` (zero substrate injection —
-        the F1 lesson): a bare test client with no substrate reports none. Missing
-        ``Queue.info()`` keys tolerate to zeros; ``paused`` reflects the broker's
-        claim gate.
+        the F1 lesson). Missing or unreadable queue truth fails explicitly instead
+        of being projected as an empty healthy queue.
         """
         paused = bool(getattr(getattr(orchestrator, "worker_broker", None), "paused", False))
         queue_rows: list[dict[str, Any]] = []
         try:
             substrate = get_run_substrate()
-        except RuntimeError:
-            substrate = None
-        if substrate is not None:
-            for name, queue in substrate.queues.items():
-                info: dict[str, Any] = {}
-                try:
-                    info = dict(await cast("Any", queue).info())
-                except Exception:  # noqa: BLE001 - offline queue tolerates to zeros
-                    info = {}
-                queue_rows.append(
-                    {
-                        "name": name,
-                        "depth": int(info.get("queued", 0)),
-                        "active": int(info.get("active", 0)),
-                        "paused": paused,
-                    }
-                )
+        except RuntimeError as exc:
+            raise ServiceUnavailableException(detail="Run substrate is unavailable.") from exc
+        for name, queue in substrate.queues.items():
+            try:
+                info = dict(await cast("Any", queue).info())
+                queued = int(info["queued"])
+                active = int(info["active"])
+            except Exception as exc:
+                raise ServiceUnavailableException(detail=f"Queue {name!r} status is unavailable.") from exc
+            queue_rows.append(
+                {
+                    "name": name,
+                    "depth": queued,
+                    "active": active,
+                    "paused": paused,
+                }
+            )
         return {"queues": queue_rows, "leases": [_lease_row_json(row) for row in leases.active()]}

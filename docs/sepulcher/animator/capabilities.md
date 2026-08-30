@@ -157,7 +157,17 @@ quality ranking unless a separately admitted policy supplies comparable evidence
 
 Dispatcher never starts, stops, loads, evicts, submits an effect, or waits on a provider job.
 [Orchestrator](../../adr/23-orchestrator.md) owns readiness convergence. The interface owner or
-Worker invokes the granted surface. A waiting Graph holds no live grant.
+Worker invokes the granted surface. A waiting Graph holds no live grant. Runtime models and
+toolsets are bound only while issuing an admitted grant. Capability, specification, and state
+reads expose detached declarations and observations. The retained `get_runtime()` lookup is an
+control-plane-internal runtime handle; it is neither a model/toolset bind nor a second public grant
+route.
+
+One loaded `AnimatorRegistry` is one sealed process generation. Successful loading is one-shot;
+changing declarations, runtime adapters, or exact Portal definitions requires constructing a new
+application generation rather than mutating the live registry underneath admitted Runs. A failed
+staged first load publishes nothing and remains retryable; it does not leave a partly sealed
+catalogue.
 
 Immediate calls retain a scoped process-local lease only during use. Every asynchronous effect,
 local or remote, must persist `ServiceJobAttempt@1` before first submit so timeout or process death

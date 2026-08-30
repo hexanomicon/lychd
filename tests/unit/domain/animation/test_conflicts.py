@@ -29,11 +29,11 @@ def _stone(
     return GenericSoulstoneConfig(
         name=name,
         quadlet=QuadletConfig(image="example/runtime"),
-        groups=groups or [],
+        groups=tuple(groups or ()),
         concurrency=ConcurrencyIntent(
             dedicated=dedicated,
             persistent_resident=resident,
-            conflict_domains=domains,
+            conflict_domains=None if domains is None else tuple(domains),
         ),
     )
 
@@ -59,10 +59,6 @@ def test_omission_is_a_wildcard_during_partial_migration() -> None:
     assert topology.neighbors_for("gpu-zero") == ("legacy",)
     assert topology.neighbors_for("gpu-one") == ("legacy",)
     assert topology.neighbors_for("coexistent") == ()
-
-
-def test_explicit_empty_conflict_domains_declares_coexistence() -> None:
-    assert ConcurrencyIntent(conflict_domains=[]).resolved_conflict_domains == ()
 
 
 def test_every_soulstone_requires_canonical_capability_coverage() -> None:
@@ -119,7 +115,7 @@ def test_unmanaged_or_resident_omission_resolves_empty(intent: dict[str, object]
 )
 def test_conflict_domain_labels_are_unique_safe_slugs(domains: list[str]) -> None:
     with pytest.raises(ValidationError, match="conflict_domains"):
-        ConcurrencyIntent(conflict_domains=domains)
+        ConcurrencyIntent(conflict_domains=tuple(domains))
 
 
 def test_topology_projects_undirected_neighbors_and_one_lexical_edge() -> None:
@@ -132,7 +128,6 @@ def test_topology_projects_undirected_neighbors_and_one_lexical_edge() -> None:
         ]
     )
 
-    assert topology.domains_for("reasoner") == ("gpu-0", "gpu-1")
     assert topology.neighbors_for("reasoner") == ("speech", "vision")
     assert topology.neighbors_for("vision") == ("reasoner",)
     assert topology.neighbors_for("embedder") == ()

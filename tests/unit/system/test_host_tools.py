@@ -11,7 +11,7 @@ import pytest
 from lychd.system.host_tools import (
     trusted_executable,
     trusted_host_tool,
-    trusted_podman_user_generator,
+    trusted_podman_user_generator_executable,
 )
 
 
@@ -24,19 +24,28 @@ def _always_root_controlled(
     return True
 
 
-def test_trusted_host_tool_rejects_user_controlled_path(
+def test_trusted_host_tool_rejects_executable_below_untrusted_ancestor(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An executable below a user-writable ancestor never gains host authority."""
     executable = tmp_path / "systemctl"
     executable.write_text("#!/bin/sh\n", encoding="utf-8")
     executable.chmod(0o755)
+    resolved = executable.resolve(strict=True)
 
     def user_tool(_name: str) -> str:
         return str(executable)
 
+    def only_executable_is_trusted(
+        path: Path,
+        *,
+        metadata: os.stat_result | None = None,
+    ) -> bool:
+        _ = metadata
+        return path == resolved
+
     monkeypatch.setattr("lychd.system.host_tools.shutil.which", user_tool)
+    monkeypatch.setattr("lychd.system.host_tools._root_controlled", only_executable_is_trusted)
 
     assert trusted_host_tool("systemctl", fallbacks=()) is None
 
@@ -191,11 +200,12 @@ def test_user_generator_honors_directory_priority(
         _always_root_controlled,
     )
 
-    selected = trusted_podman_user_generator(
+    selected = trusted_podman_user_generator_executable(
         search_paths=(high, low),
     )
 
-    assert selected == str((high / "podman-user-generator").resolve(strict=True))
+    assert selected is not None
+    assert selected.path == str((high / "podman-user-generator").resolve(strict=True))
 
 
 @pytest.mark.parametrize("mask", ["empty", "dev-null"])
@@ -221,4 +231,4 @@ def test_user_generator_honors_higher_priority_masks(
         _always_root_controlled,
     )
 
-    assert trusted_podman_user_generator(search_paths=(high, low)) is None
+    assert trusted_podman_user_generator_executable(search_paths=(high, low)) is None

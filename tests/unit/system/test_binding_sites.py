@@ -14,39 +14,25 @@ from lychd.system.binding_sites import (
 )
 
 
-def test_sticky_ancestor_owned_by_nobody_is_not_trusted(
+def _directory_metadata(*, mode: int, uid: int) -> os.stat_result:
+    return os.stat_result((stat.S_IFDIR | mode, 1, 1, 1, uid, uid, 0, 0, 0, 0))
+
+
+@pytest.mark.parametrize(
+    ("target", "ancestor_mode", "ancestor_uid"),
+    [
+        (Path("/untrusted-sticky/site"), 0o1777, 65534),
+        (Path("/foreign-parent/site"), 0o755, 2000),
+    ],
+)
+def test_untrusted_ancestor_owner_blocks_binding_site(
     monkeypatch: pytest.MonkeyPatch,
+    target: Path,
+    ancestor_mode: int,
+    ancestor_uid: int,
 ) -> None:
-    """Sticky protection does not constrain the directory's own untrusted owner."""
-    target = Path("/untrusted-sticky/site")
-    target_metadata = os.stat_result(
-        (
-            stat.S_IFDIR | 0o700,
-            1,
-            1,
-            1,
-            1000,
-            1000,
-            0,
-            0,
-            0,
-            0,
-        )
-    )
-    ancestor_metadata = os.stat_result(
-        (
-            stat.S_IFDIR | 0o1777,
-            1,
-            1,
-            1,
-            65534,
-            65534,
-            0,
-            0,
-            0,
-            0,
-        )
-    )
+    target_metadata = _directory_metadata(mode=0o700, uid=1000)
+    ancestor_metadata = _directory_metadata(mode=ancestor_mode, uid=ancestor_uid)
 
     def no_symlink(_path: Path) -> None:
         return None
@@ -67,76 +53,6 @@ def test_sticky_ancestor_owned_by_nobody_is_not_trusted(
     monkeypatch.setattr("lychd.system.binding_sites.os.path.lexists", lexists)
     monkeypatch.setattr("lychd.system.binding_sites.os.access", accessible)
     monkeypatch.setattr(Path, "lstat", lstat)
-
-    inspection = inspect_binding_site(target, current_uid=1000)
-
-    assert inspection.state is BindingSiteState.BLOCKED
-    assert "writable ancestor is not trusted" in inspection.detail
-
-
-def test_foreign_owned_private_ancestor_is_not_trusted(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """A foreign owner can chmod or replace descendants despite mode 0755."""
-    target = Path("/foreign-parent/site")
-    target_metadata = os.stat_result(
-        (
-            stat.S_IFDIR | 0o700,
-            1,
-            1,
-            1,
-            1000,
-            1000,
-            0,
-            0,
-            0,
-            0,
-        )
-    )
-    foreign_parent_metadata = os.stat_result(
-        (
-            stat.S_IFDIR | 0o755,
-            1,
-            1,
-            1,
-            2000,
-            2000,
-            0,
-            0,
-            0,
-            0,
-        )
-    )
-
-    def no_symlink(_path: Path) -> None:
-        return None
-
-    def lexists(_path: object) -> bool:
-        return True
-
-    def accessible(_path: Path, _mode: int) -> bool:
-        return True
-
-    def lstat(path: Path) -> os.stat_result:
-        return target_metadata if path == target else foreign_parent_metadata
-
-    monkeypatch.setattr(
-        "lychd.system.binding_sites.path_has_symlink_component",
-        no_symlink,
-    )
-    monkeypatch.setattr(
-        "lychd.system.binding_sites.os.path.lexists",
-        lexists,
-    )
-    monkeypatch.setattr(
-        "lychd.system.binding_sites.os.access",
-        accessible,
-    )
-    monkeypatch.setattr(
-        Path,
-        "lstat",
-        lstat,
-    )
 
     inspection = inspect_binding_site(target, current_uid=1000)
 

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from lychd.lib.json_objects import unique_json_object
 from lychd.system.services.scribe.errors import ScribeOwnershipError
 from lychd.system.services.scribe.models import (
     BindingWriteSet,
@@ -24,17 +25,6 @@ AUTHORITY_MODE = 0o600
 ABSENT_AUTHORITY_BYTES = b"\0absent-authority"
 
 
-def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    """Reject duplicate JSON keys instead of silently accepting the last one."""
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            msg = f"Duplicate ownership manifest key: {key!r}."
-            raise ValueError(msg)
-        result[key] = value
-    return result
-
-
 class BindingAuthority:
     """Read and validate the exact receipt that grants replacement authority."""
 
@@ -46,10 +36,6 @@ class BindingAuthority:
     def path(self) -> Path:
         """Return the hidden authority receipt path."""
         return self._output_dir / OWNERSHIP_FILENAME
-
-    def load(self) -> OwnershipManifest:
-        """Load a validated receipt, or an empty manifest when none exists."""
-        return self.snapshot()[1]
 
     def snapshot(self) -> tuple[bytes, OwnershipManifest]:
         """Return exact authority bytes and the manifest parsed from those bytes."""
@@ -68,7 +54,7 @@ class BindingAuthority:
     def parse(content: bytes) -> OwnershipManifest:
         """Parse one already authority-checked manifest byte sequence."""
         decoded = content.decode("utf-8")
-        raw = json.loads(decoded, object_pairs_hook=_unique_json_object)
+        raw = json.loads(decoded, object_pairs_hook=unique_json_object)
         return OwnershipManifest.model_validate(raw)
 
     def read(self) -> bytes:
@@ -88,22 +74,6 @@ class BindingAuthority:
         )
         return state.content
 
-    def validate_path(self) -> None:
-        """Validate the live receipt after an atomic replacement."""
-        try:
-            state = capture_path_state(self.path)
-        except OSError as exc:
-            msg = f"Scribe ownership manifest is unavailable: {self.path}."
-            raise ScribeOwnershipError(msg) from exc
-        if state is None:
-            msg = f"Scribe ownership manifest is unavailable: {self.path}."
-            raise ScribeOwnershipError(msg)
-        self.validate_metadata(
-            self.path,
-            mode=state.mode,
-            user_id=state.user_id,
-        )
-
     @staticmethod
     def validate_metadata(path: Path, *, mode: int, user_id: int) -> None:
         """Validate receipt authority from one pinned metadata observation."""
@@ -118,14 +88,6 @@ class BindingAuthority:
         if permission_mode != AUTHORITY_MODE:
             msg = f"Scribe ownership manifest must have mode 0600; found {permission_mode:04o}: {path}."
             raise ScribeOwnershipError(msg)
-
-    @staticmethod
-    def _validate_stat(path: Path, manifest_stat: os.stat_result) -> None:
-        BindingAuthority.validate_metadata(
-            path,
-            mode=manifest_stat.st_mode,
-            user_id=manifest_stat.st_uid,
-        )
 
     @staticmethod
     def encode(ownership: OwnershipManifest) -> bytes:

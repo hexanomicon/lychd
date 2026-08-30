@@ -12,8 +12,7 @@ from litestar.openapi.datastructures import ResponseSpec
 from litestar.params import FromPath, QueryParameter
 from litestar.status_codes import HTTP_404_NOT_FOUND
 
-from lychd.agents.workflows import WorkflowRegistry
-from lychd.agents.workflows.base import pattern_snapshot_is_valid
+from lychd.agents.workflows import WorkflowRegistry, resolve_pinned_workflow
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.web.contracts import FrameworkError, OrbRunSnapshot
 from lychd.domain.web.orb import build_orb_snapshot
@@ -47,15 +46,13 @@ class OrbController(Controller):
         if record is None:
             raise NotFoundException(detail="Unknown run.")
         manifest = record.pattern_manifest
-        pattern = workflows.get_revision(
-            str(manifest.get("key") or record.workflow_name),
-            str(manifest.get("revision") or "legacy-unversioned"),
-        )
         loom_available = (
-            pattern_snapshot_is_valid(manifest)
-            and manifest.get("key") == record.workflow_name
-            and pattern is not None
-            and manifest == pattern.manifest.snapshot()
+            resolve_pinned_workflow(
+                workflows,
+                workflow_name=record.workflow_name,
+                snapshot=manifest,
+            )
+            is not None
         )
         return await build_orb_snapshot(
             state.services.ledger,

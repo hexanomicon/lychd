@@ -19,22 +19,22 @@ from lychd.cli.host_topology import (
     display_path,
     path_children,
 )
-from lychd.system.services.lifecycle import (
+from lychd.system.services.lifecycle.deletion_composition import build_deletion_services
+from lychd.system.services.lifecycle.deletion_models import (
     DELETION_STAGE_ORDER,
     DeletionAction,
     DeletionDisposition,
     DeletionOutcome,
     DeletionPlan,
     DeletionResult,
-    LifecycleError,
-    build_deletion_services,
 )
+from lychd.system.services.lifecycle.models import LifecycleError
 
 if TYPE_CHECKING:
     from rich.text import Text
     from rich.tree import Tree
 
-    from lychd.system.services.lifecycle import PrivilegedHandoff
+    from lychd.system.services.lifecycle.deletion_models import PrivilegedHandoff
 
 logger = structlog.get_logger(__name__)
 

@@ -25,7 +25,7 @@ class RoutingRule(SettingsSection):
 class SwitchingSettings(SettingsSection):
     """Hard-swap and Host Reactor policy."""
 
-    policy: str = "declared-conflicts"
+    policy: Literal["declared-conflicts", "evict-idle"] = "declared-conflicts"
     """Default conflict policy used when a requested runtime needs a hardware transition."""
     actuator: Literal["systemd", "host-reactor"] = "host-reactor"
     """Transition executor: caged Host Reactor by default, direct systemd only for development."""
@@ -33,13 +33,13 @@ class SwitchingSettings(SettingsSection):
     """Owner-only Host Reactor inbox; its sibling journal is derived automatically."""
     min_priority_for_hard_swap: int = Field(default=40, ge=0, le=100)
     """Lowest request priority allowed to trigger a disruptive hard runtime swap."""
-    drain_timeout_s: float = Field(default=120.0, gt=0)
+    drain_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
     """Maximum seconds to wait for active work to reach a safe transition boundary."""
-    warmup_timeout_s: float = Field(default=180.0, gt=0)
+    warmup_timeout_s: float = Field(default=180.0, gt=0, allow_inf_nan=False)
     """Maximum seconds to wait for a newly activated runtime to become usable."""
     systemctl_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
     """Maximum seconds for each trusted systemctl client process to respond."""
-    reactor_ack_timeout_s: float = Field(default=120.0, gt=0)
+    reactor_ack_timeout_s: float = Field(default=120.0, gt=0, allow_inf_nan=False)
     """Maximum seconds for the Host Reactor to claim an inbox transition intent."""
 
     @staticmethod
@@ -79,15 +79,6 @@ class SwitchingSettings(SettingsSection):
         return self.host_reactor_dir.parent / "journal"
 
 
-class WhimSettings(SettingsSection):
-    """Idle eviction and preload policy."""
-
-    idle_evict_after_s: int = 0
-    """Idle seconds before an eligible runtime is evicted; zero disables idle eviction."""
-    preload: list[str] = Field(default_factory=list)
-    """Runtime identifiers to preload before a request needs them."""
-
-
 def _default_routing_settings() -> dict[str, RoutingRule]:
     return {
         "default": RoutingRule(queue="runs", priority=50),
@@ -104,8 +95,6 @@ class OrchestrationSettings(SettingsSection):
     """Mapping from intent source to its queue and default priority."""
     switching: SwitchingSettings = Field(default_factory=SwitchingSettings)
     """Hardware-transition and Host Reactor policy."""
-    whim: WhimSettings = Field(default_factory=WhimSettings)
-    """Idle-eviction and preload policy."""
 
     @model_validator(mode="before")
     @classmethod

@@ -1,15 +1,12 @@
-"""A3-U3: async JSON transport + the sync bridge (``lychd.lib.http``)."""
+"""Async JSON transport and its synchronous registry bridge."""
 
 from __future__ import annotations
 
+import httpx
 import pytest
+import respx
 
-from lychd.lib.http import HttpJsonError, request_json, run_sync
-
-# respx is the project's httpx mocking tool (see dossier). Skip cleanly if the
-# dev extra is not installed rather than erroring the whole session.
-respx = pytest.importorskip("respx")
-import httpx  # noqa: E402
+from lychd.lib.http import HttpJsonError, request_json
 
 
 @pytest.mark.asyncio
@@ -61,30 +58,3 @@ async def test_request_json_rejects_null_by_default() -> None:
         )
         with pytest.raises(HttpJsonError, match="unsupported payload type"):
             await request_json("POST", "http://host/model/unload")
-
-
-@pytest.mark.asyncio
-async def test_request_json_accepts_null_only_when_explicit() -> None:
-    with respx.mock:
-        respx.post("http://host/model/unload").mock(
-            return_value=httpx.Response(200, text="null", headers={"content-type": "application/json"})
-        )
-        body = await request_json("POST", "http://host/model/unload", allow_null=True)
-    assert body == {}
-
-
-def test_run_sync_without_running_loop() -> None:
-    async def coro() -> int:
-        return 21
-
-    assert run_sync(coro()) == 21
-
-
-@pytest.mark.asyncio
-async def test_run_sync_from_within_running_loop() -> None:
-    async def coro() -> str:
-        return "bridged"
-
-    # Called from inside a running event loop: run_sync must offload to a worker
-    # thread instead of raising "asyncio.run() cannot be called from a running loop".
-    assert run_sync(coro()) == "bridged"

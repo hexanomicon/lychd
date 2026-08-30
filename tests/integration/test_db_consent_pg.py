@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import AsyncIterator, Iterator
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
@@ -26,6 +27,7 @@ from testcontainers.community.postgres import PostgresContainer
 from lychd.db.models import CodexPreauthorization, Consent, Run, Session
 from lychd.domain.codex.ledger import CodexConsentLedger
 from lychd.domain.codex.runes import CodexPreauthRune
+from lychd.domain.codex.schemas import CENSORED_VALUE
 from lychd.domain.codex.services import PREAUTH_DIGEST_PAYLOAD_KEY, ConsentService, PreauthService
 from lychd.domain.codex.sigil import Sigil
 
@@ -213,6 +215,79 @@ async def test_run_cancellation_settles_pending_consent_durably(
 
 
 @pytest.mark.asyncio
+async def test_consent_payload_is_censored_before_postgres_storage(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    run_id = await _run_id(pg_factory)
+    ledger = CodexConsentLedger(session_factory=pg_factory)
+    sentinel = "durable-secret-sentinel"
+    args = {
+        "authorization": sentinel,
+        "nested": {"unknown": sentinel},
+        "items": [sentinel],
+    }
+    async with pg_factory() as session:
+        session.add(
+            _preauth_row(
+                "raw-argument-match",
+                constraints={"args": {"authorization": [sentinel]}},
+            )
+        )
+        await session.commit()
+
+    decision = await ledger.park(
+        run_id=run_id,
+        tool_name="request_coven_swap",
+        tool_call_id="call-censor",
+        call_ids=("call-censor",),
+        args=args,
+        sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+    )
+    assert decision.status == "granted"
+    assert decision.preauth_slug == "raw-argument-match"
+
+    async with pg_factory() as session:
+        payload = await session.scalar(select(Consent.payload).where(Consent.id == UUID(decision.consent_id)))
+    assert isinstance(payload, dict)
+    assert payload["args"] == dict.fromkeys(args, CENSORED_VALUE)
+    assert sentinel not in json.dumps(payload)
+    view = await ledger.get(decision.consent_id)
+    assert view is not None
+    assert view.args == dict.fromkeys(args, CENSORED_VALUE)
+
+
+@pytest.mark.asyncio
+async def test_legacy_raw_consent_payload_is_censored_at_the_read_boundary(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    run_id = await _run_id(pg_factory)
+    ledger = CodexConsentLedger(session_factory=pg_factory)
+    sentinel = "legacy-secret-sentinel"
+    raw_args = {
+        "reason": sentinel,
+        "authorization": sentinel,
+        "nested": {"unknown": sentinel},
+    }
+    async with pg_factory() as session:
+        row = Consent(
+            run_id=UUID(run_id),
+            tool_name="legacy_tool",
+            tool_call_id="legacy-call",
+            payload={"args": raw_args},
+            status="pending",
+        )
+        session.add(row)
+        await session.commit()
+        consent_id = str(row.id)
+
+    view = await ledger.get(consent_id)
+
+    assert view is not None
+    assert view.args == dict.fromkeys(raw_args, CENSORED_VALUE)
+    assert sentinel not in json.dumps(view.args)
+
+
+@pytest.mark.asyncio
 async def test_malformed_consent_read_identity_is_absent(
     pg_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -288,6 +363,32 @@ async def test_preauth_use_rolls_back_when_consent_insert_fails(
         consent_count = await session.scalar(select(func.count()).select_from(Consent))
     assert uses == 1
     assert consent_count == 1
+
+
+@pytest.mark.asyncio
+async def test_concurrent_preauth_consumers_cannot_overdraw_one_use(
+    pg_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    async with pg_factory() as session:
+        session.add(_preauth_row("single-use", max_uses=1))
+        await session.commit()
+
+    async def consume() -> CodexPreauthorization | None:
+        async with pg_factory() as session:
+            return await PreauthService(session=session).match_and_consume(
+                sigil=Sigil(name="magus", scopes=frozenset({"*"})),
+                tool_name="request_coven_swap",
+                payload={},
+            )
+
+    consumed = await asyncio.gather(consume(), consume())
+
+    assert sum(row is not None for row in consumed) == 1
+    async with pg_factory() as session:
+        uses = await session.scalar(
+            select(CodexPreauthorization.uses).where(CodexPreauthorization.slug == "single-use")
+        )
+    assert uses == 1
 
 
 @pytest.mark.asyncio
@@ -586,21 +687,24 @@ async def test_preauth_verdict_rejects_noncurrent_authority(
         expires_at=expires_at,
     )
 
-    if invalidity == "expired":
-        await asyncio.sleep(1.1)
-    else:
-        async with pg_factory() as session:
-            if invalidity == "missing":
-                await session.execute(
-                    delete(CodexPreauthorization).where(CodexPreauthorization.slug == f"invalid-{invalidity}")
-                )
-            else:
-                await session.execute(
-                    update(CodexPreauthorization)
-                    .where(CodexPreauthorization.slug == f"invalid-{invalidity}")
-                    .values(enabled=False)
-                )
-            await session.commit()
+    async with pg_factory() as session:
+        if invalidity == "missing":
+            await session.execute(
+                delete(CodexPreauthorization).where(CodexPreauthorization.slug == f"invalid-{invalidity}")
+            )
+        elif invalidity == "disabled":
+            await session.execute(
+                update(CodexPreauthorization)
+                .where(CodexPreauthorization.slug == f"invalid-{invalidity}")
+                .values(enabled=False)
+            )
+        else:
+            await session.execute(
+                update(CodexPreauthorization)
+                .where(CodexPreauthorization.slug == f"invalid-{invalidity}")
+                .values(expires_at=datetime.now(UTC) - timedelta(seconds=1))
+            )
+        await session.commit()
 
     assert await ledger.verdict(consent_id) is False
 

@@ -11,12 +11,11 @@ icon: material/shield-link-variant-outline
 It may eventually appear as a LychD-managed WireGuard service or as an attachment to an externally
 managed private network.
 
-Its state is **Partial, inert foundation**. Immutable public interface/peer intent,
-secret-reference validation, bounded endpoint and route validation, revision fencing, and retained
-revocation tombstones now exist as pure Domain code. No Rune, VPN provider, live interface,
-enrollment, peer registry, key generation or rotation effect, network health, reconciliation
-adapter, or revocation effect ships. Generated deployment remains IPv4-loopback-only; the
-Extension port grammar accepts only
+Its state is **Designed**. Public interface and peer intent, secret-reference validation, bounded
+endpoint and route validation, revision fencing, and retained revocation tombstones are accepted
+law, not delivered Domain code. No Tether contract, Rune, VPN provider, live interface, enrollment,
+peer registry, key generation or rotation effect, network health, reconciliation adapter, or
+revocation effect ships. Generated deployment remains IPv4-loopback-only; the Extension port grammar accepts only
 `127.0.0.1:<host>:<container>` and rejects UDP. Remote, proxied, tunneled, and untrusted-browser
 use is unsupported. Keep the Vessel on the same host, and do not tunnel or port-forward the
 current Altar. [State of Work](../../state-of-the-work.md#vpn-tether) owns that boundary.
@@ -40,9 +39,9 @@ network.
 The Codex may retain stable peer identity, public key, allowed addresses and routes, endpoint and
 keepalive policy, enabled or revoked state, and creation or rotation metadata. Private and
 preshared keys stay within the secret boundary; they never enter ordinary documentation, logs, QR
-history, or public peer records. Future typed operations beneath `lychd run` may generate, admit,
-inspect, revoke, rotate, or export a short-lived client configuration or QR projection without
-adding a root CLI verb.
+history, or public peer records. Future typed operations under a host-owned run-operation verb may
+generate, admit, inspect, revoke, rotate, or export a short-lived client configuration or QR
+projection without adding a root CLI verb.
 
 ## Reach attachment
 

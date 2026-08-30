@@ -1,88 +1,76 @@
-"""AgentForge / AgentSpec / build_agent / build_local_model (A5 §4, FINAL C6)."""
+"""Production model-routing behavior."""
 
 from __future__ import annotations
 
+import asyncio
+import json
 from dataclasses import replace
-from typing import Any, cast
-from unittest.mock import AsyncMock
+from typing import cast
 
+import httpx
 import pytest
-from openai._types import Omit
-from pydantic_ai.messages import ModelRequest
-from pydantic_ai.models import ModelRequestParameters
+import respx
+from pydantic_ai.messages import ModelMessage, ModelRequest
+from pydantic_ai.models import ModelRequestParameters, override_allow_model_requests
 from pydantic_ai.models.openai import OpenAIChatModel, OpenAIResponsesModel
 from pydantic_ai.profiles.openai import OpenAIModelProfile
 from pydantic_ai.toolsets import FunctionToolset
 
-from lychd.agents.factory import AgentForge, build_local_model
-from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, build_the_first_one, default_forge
+from lychd.agents.deps import LychDDeps
+from lychd.agents.factory import AgentSpec, build_agent
+from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC, default_forge
 
 
-def _function_tool_names(agent: object) -> list[str]:
-    """Return the names of every function tool bound on the agent."""
-    names: list[str] = []
-    for toolset in agent.toolsets:  # type: ignore[attr-defined]
-        if isinstance(toolset, FunctionToolset):
-            names.extend(toolset.tools.keys())
-    return names
-
-
-def test_forge_caches_per_spec() -> None:
-    """A forge returns the same agent instance for an identical spec (cache hit)."""
+def test_forge_caches_by_complete_specification() -> None:
     forge = default_forge()
+
     first = forge.agent_for(THE_FIRST_ONE_SPEC)
-    second = forge.agent_for(THE_FIRST_ONE_SPEC)
-    assert first is second
+
+    assert forge.agent_for(THE_FIRST_ONE_SPEC) is first
+    assert forge.agent_for(replace(THE_FIRST_ONE_SPEC, max_tokens=1024)) is not first
 
 
-def test_forge_distinct_specs_distinct_agents() -> None:
-    """A changed spec is a distinct cache key -> a distinct agent."""
+def test_forge_rejects_an_unregistered_agent_name() -> None:
     forge = default_forge()
-    short_spec = replace(THE_FIRST_ONE_SPEC, max_tokens=1024)
-    forge.register(short_spec.name, build_the_first_one)
-    assert forge.agent_for(THE_FIRST_ONE_SPEC) is not forge.agent_for(short_spec)
+
+    with pytest.raises(KeyError, match="No agent builder registered"):
+        forge.agent_for(replace(THE_FIRST_ONE_SPEC, name="unknown"))
 
 
-def test_minimal_spec_binds_no_lifecycle_tool() -> None:
-    """The default First One has no in-lease hardware transition capability."""
-    agent = build_the_first_one(THE_FIRST_ONE_SPEC)
-    assert "request_coven_swap" not in _function_tool_names(agent)
-
-
-def test_forge_unknown_spec_raises() -> None:
-    """`agent_for` on an unregistered spec name fails loudly."""
-    forge = AgentForge()
-    with pytest.raises(KeyError):
-        forge.agent_for(THE_FIRST_ONE_SPEC)
-
-
-def test_build_local_model_uses_base_url() -> None:
-    """`build_local_model` constructs an OpenAIChatModel at the given base_url (no network)."""
-    model = build_local_model(model_id="qwen", base_url="http://localhost:8080/v1")
-    assert isinstance(model, OpenAIChatModel)
-    assert str(model.client.base_url).rstrip("/") == "http://localhost:8080/v1"
-
-
-def test_reference_and_local_connector_share_compat_profile() -> None:
-    """Reference and local runtime connector build the same compatibility profile.
-
-    Portals deliberately retain their provider/model profile instead.
-    """
-    from lychd.domain.animation.links import Link
-    from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
-    from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
-
-    reference = build_local_model(model_id="qwen", base_url="http://localhost:8080/v1")
-    assert reference.profile is LOCAL_COMPAT_PROFILE
-
-    connector = OpenAICompatibleConnector(
-        kind="openai_compat",
-        link=Link(up=True, activatable=False),
-        base_url="http://localhost:8080/v1",
-        default_model_id="qwen",
+def test_agent_construction_omits_mutating_toolset_without_write_authority() -> None:
+    spec = AgentSpec(
+        name="boundary",
+        instructions_key="boundary",
+        instructions="boundary",
+        output_types=(str,),
+        toolset_names=("writer",),
     )
-    production = connector.get_model()
-    assert production.profile is LOCAL_COMPAT_PROFILE
+
+    def writer() -> FunctionToolset[LychDDeps]:
+        return FunctionToolset(id="writer")
+
+    read_only = build_agent(spec, toolset_factories={"writer": writer}, mutating=frozenset({"writer"}))
+    writable = build_agent(
+        replace(spec, writes=True),
+        toolset_factories={"writer": writer},
+        mutating=frozenset({"writer"}),
+    )
+
+    assert all(getattr(toolset, "id", None) != "writer" for toolset in read_only.toolsets)
+    assert any(getattr(toolset, "id", None) == "writer" for toolset in writable.toolsets)
+
+
+def test_agent_construction_rejects_an_unknown_declared_toolset() -> None:
+    spec = AgentSpec(
+        name="boundary",
+        instructions_key="boundary",
+        instructions="boundary",
+        output_types=(str,),
+        toolset_names=("missing",),
+    )
+
+    with pytest.raises(KeyError, match="no registered factory"):
+        build_agent(spec, toolset_factories={})
 
 
 def test_provider_connector_retains_model_profile() -> None:
@@ -91,8 +79,7 @@ def test_provider_connector_retains_model_profile() -> None:
     from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
 
     connector = OpenAICompatibleConnector(
-        kind="portal:openai",
-        link=Link(up=True, activatable=False),
+        link=Link(up=True),
         base_url="https://api.openai.com/v1",
         default_model_id="gpt-5.2",
         provider_name="openai",
@@ -107,25 +94,24 @@ def test_provider_connector_retains_model_profile() -> None:
 
 
 @pytest.mark.parametrize(
-    ("provider_name", "model_id", "expected_system", "expected_transformer"),
+    ("provider_name", "model_id", "expected_system"),
     [
-        ("openai", "gpt-5.2", "openai", "OpenAIJsonSchemaTransformer"),
-        ("google-gemini", "gemini-2.5-pro", "google-gla", "GoogleJsonSchemaTransformer"),
-        ("openrouter", "anthropic/claude-sonnet-4", "openrouter", "AnthropicJsonSchemaTransformer"),
-        ("litellm", "google/gemini-2.5-pro", "litellm", "GoogleJsonSchemaTransformer"),
-        ("ollama", "qwen3:8b", "ollama", "InlineDefsJsonSchemaTransformer"),
-        ("openai-compatible", "qwen3:8b", "openai", "InlineDefsJsonSchemaTransformer"),
+        ("openai", "gpt-5.2", "openai"),
+        ("google-gemini", "gemini-2.5-pro", "google-gla"),
+        ("openrouter", "anthropic/claude-sonnet-4", "openrouter"),
+        ("litellm", "google/gemini-2.5-pro", "litellm"),
+        ("ollama", "qwen3:8b", "ollama"),
+        ("openai-compatible", "qwen3:8b", "openai"),
     ],
 )
 def test_portal_factory_routes_provider_profile(
     provider_name: str,
     model_id: str,
     expected_system: str,
-    expected_transformer: str,
 ) -> None:
+    from lychd.domain.animation.connectors import ModelConnector
     from lychd.domain.animation.model_factory import LOCAL_COMPAT_PROFILE
     from lychd.domain.animation.schemas import OpenAIPortalConfig
-    from lychd.domain.animation.services.adapters.surfaces import OpenAIPortal
     from lychd.extensions.builtin.animator.register import build_openai_portal
 
     portal = OpenAIPortalConfig.model_validate(
@@ -138,12 +124,10 @@ def test_portal_factory_routes_provider_profile(
     )
     runtime = build_openai_portal(portal)
 
-    assert isinstance(runtime, OpenAIPortal)
+    assert isinstance(runtime.connector, ModelConnector)
     model = runtime.connector.get_model(model_id=model_id)
     assert isinstance(model, OpenAIChatModel)
     assert model.system == expected_system
-    assert model.profile.json_schema_transformer is not None
-    assert model.profile.json_schema_transformer.__name__ == expected_transformer
     assert (model.profile is LOCAL_COMPAT_PROFILE) is (provider_name == "openai-compatible")
 
 
@@ -165,8 +149,8 @@ def test_openrouter_rejects_unqualified_model_id_when_portal_is_built() -> None:
 
 
 def test_portal_factory_preserves_declared_responses_surface_at_hydration() -> None:
-    from lychd.domain.animation.schemas import ModelSurface, OpenAIPortalConfig
-    from lychd.domain.animation.services.adapters.surfaces import OpenAIPortal
+    from lychd.domain.animation.connectors import ModelConnector
+    from lychd.domain.animation.schemas import OpenAIPortalConfig
     from lychd.extensions.builtin.animator.register import build_openai_portal
 
     portal = OpenAIPortalConfig.model_validate(
@@ -183,8 +167,7 @@ def test_portal_factory_preserves_declared_responses_surface_at_hydration() -> N
 
     runtime = build_openai_portal(portal)
 
-    assert isinstance(runtime, OpenAIPortal)
-    assert runtime.connector.list_models()[0].surface is ModelSurface.RESPONSES
+    assert isinstance(runtime.connector, ModelConnector)
     assert isinstance(runtime.connector.get_model(), OpenAIResponsesModel)
 
 
@@ -212,47 +195,68 @@ def test_chat_only_provider_alias_rejects_responses_when_portal_is_built(provide
 
 
 @pytest.mark.asyncio
-async def test_provider_profile_filters_payload_while_generic_compat_preserves_it() -> None:
+async def test_provider_profile_filters_payload_while_generic_compat_preserves_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from lychd.domain.animation.links import Link
     from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleConnector
 
-    request = [ModelRequest.user_text_prompt("hello")]
+    request: list[ModelMessage] = [ModelRequest.user_text_prompt("hello")]
     request_parameters = ModelRequestParameters()
 
     portal = OpenAICompatibleConnector(
-        kind="portal:openai",
-        link=Link(up=True, activatable=False),
-        base_url="https://api.openai.com/v1",
+        link=Link(up=True),
+        base_url="http://provider.test/v1",
         default_model_id="gpt-5.2",
         provider_name="openai",
     ).get_model()
     assert isinstance(portal, OpenAIChatModel)
-    portal_create = AsyncMock(return_value=object())
-    cast("Any", portal.client.chat.completions).create = portal_create
-    await cast("Any", portal)._completions_create(
-        messages=request,
-        stream=False,
-        model_settings={"temperature": 0.4},
-        model_request_parameters=request_parameters,
-    )
+    monkeypatch.setattr(portal.client, "_platform", "Linux")
 
     local = OpenAICompatibleConnector(
-        kind="openai_compat",
-        link=Link(up=True, activatable=False),
-        base_url="http://localhost:8080/v1",
+        link=Link(up=True),
+        base_url="http://local.test/v1",
         default_model_id="gpt-5.2",
     ).get_model()
     assert isinstance(local, OpenAIChatModel)
-    local_create = AsyncMock(return_value=object())
-    cast("Any", local.client.chat.completions).create = local_create
-    await cast("Any", local)._completions_create(
-        messages=request,
-        stream=False,
-        model_settings={"temperature": 0.4},
-        model_request_parameters=request_parameters,
-    )
+    monkeypatch.setattr(local.client, "_platform", "Linux")
 
-    assert portal_create.await_args is not None
-    assert local_create.await_args is not None
-    assert isinstance(portal_create.await_args.kwargs["temperature"], Omit)
-    assert local_create.await_args.kwargs["temperature"] == 0.4
+    response = {
+        "id": "chatcmpl-test",
+        "object": "chat.completion",
+        "created": 0,
+        "model": "gpt-5.2",
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "ok"},
+                "finish_reason": "stop",
+            }
+        ],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+    }
+    payloads: dict[str, dict[str, object]] = {}
+
+    def capture_provider(request: httpx.Request) -> httpx.Response:
+        payloads["provider"] = cast("dict[str, object]", json.loads(request.content))
+        return httpx.Response(200, json=response)
+
+    def capture_local(request: httpx.Request) -> httpx.Response:
+        payloads["local"] = cast("dict[str, object]", json.loads(request.content))
+        return httpx.Response(200, json=response)
+
+    with (
+        override_allow_model_requests(True),  # noqa: FBT003 - third-party positional API
+        respx.mock(assert_all_called=True, assert_all_mocked=True) as router,
+    ):
+        router.post("http://provider.test/v1/chat/completions").mock(side_effect=capture_provider)
+        router.post("http://local.test/v1/chat/completions").mock(side_effect=capture_local)
+        async with asyncio.timeout(2):
+            await portal.request(request, {"temperature": 0.4}, request_parameters)
+            await local.request(request, {"temperature": 0.4}, request_parameters)
+
+    portal_payload = payloads["provider"]
+    local_payload = payloads["local"]
+    assert portal_payload["messages"] == local_payload["messages"] == [{"role": "user", "content": "hello"}]
+    assert "temperature" not in portal_payload
+    assert local_payload["temperature"] == 0.4

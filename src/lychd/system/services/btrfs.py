@@ -49,16 +49,12 @@ class BtrfsTools:
     """Trusted filesystem executables used by the preparation service."""
 
     btrfs: str | None
-    chattr: str | None
-    lsattr: str | None
 
     @classmethod
     def discover(cls) -> BtrfsTools:
         """Resolve tools without accepting user-controlled executables."""
         return cls(
             btrfs=trusted_host_tool("btrfs"),
-            chattr=trusted_host_tool("chattr"),
-            lsattr=trusted_host_tool("lsattr"),
         )
 
 
@@ -118,8 +114,6 @@ class Btrfs:
         self._runner = runner or SubprocessRunner()
         selected = tools or BtrfsTools.discover()
         self.btrfs_bin: Final = selected.btrfs
-        self.chattr_bin: Final = selected.chattr
-        self.lsattr_bin: Final = selected.lsattr
 
     def create_subvolume(
         self,
@@ -218,47 +212,6 @@ class Btrfs:
             subvolume_id=observation.subvolume_id,
         )
         return observation
-
-    def apply_no_cow(self, path: Path) -> bool:  # noqa: PLR0911 - every policy refusal is explicit
-        """Apply and verify ``+C`` inheritance on an empty directory.
-
-        On Btrfs this policy affects newly created file extents beneath the
-        directory. It does not retroactively convert existing PostgreSQL data.
-        """
-        if self.chattr_bin is None or self.lsattr_bin is None:
-            logger.info("layout_nocow_tools_unavailable", path=str(path))
-            return False
-        if self.is_nocow(path):
-            return True
-        try:
-            populated = any(path.iterdir())
-        except OSError as exc:
-            logger.warning(
-                "nocow_directory_unreadable",
-                path=str(path),
-                error_type=type(exc).__name__,
-            )
-            return False
-        if populated:
-            logger.warning("nocow_skipped_not_empty", path=str(path))
-            return False
-
-        result = self._run(
-            (self.chattr_bin, "+C", str(path)),
-            timeout_s=_MUTATION_TIMEOUT_SECONDS,
-        )
-        if result is None or result.returncode != 0:
-            logger.info(
-                "nocow_unsupported",
-                path=str(path),
-                detail=self._result_detail(result),
-            )
-            return False
-        if not self.is_nocow(path):
-            logger.warning("nocow_verification_failed", path=str(path))
-            return False
-        logger.info("nocow_applied", path=str(path))
-        return True
 
     def prepare_created_subvolume(
         self,
@@ -399,10 +352,6 @@ class Btrfs:
             True,  # noqa: FBT003 - fcntl exposes mutate_flag as positional-only
         )
 
-    def is_subvolume(self, path: Path) -> bool:
-        """Ask Btrfs to prove that ``path`` is a live subvolume root."""
-        return self.inspect_subvolume(path) is not None
-
     def inspect_subvolume(
         self,
         path: Path,
@@ -440,19 +389,6 @@ class Btrfs:
         if result is None or result.returncode != 0:
             return None
         return parse_subvolume_show(result.stdout)
-
-    def is_nocow(self, path: Path) -> bool:
-        """Return whether ``lsattr`` verifies the directory ``+C`` flag."""
-        if self.lsattr_bin is None or not path.exists():
-            return False
-        result = self._run(
-            (self.lsattr_bin, "-d", str(path)),
-            timeout_s=_PROBE_TIMEOUT_SECONDS,
-        )
-        if result is None or result.returncode != 0:
-            return False
-        fields = result.stdout.split()
-        return bool(fields) and "C" in fields[0]
 
     def _run(
         self,

@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
-from lychd.domain.animation.schemas.model_info import ModelSurface
 
 
 class SourceKind(StrEnum):
@@ -43,7 +42,7 @@ class CapabilityPhase(StrEnum):
 class CapabilitySpec(BaseModel):
     """Synthesized capability declaration for one animator/runtime/model binding."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     key: str = Field(min_length=1)
     animator_name: str = Field(min_length=1)
@@ -51,18 +50,14 @@ class CapabilitySpec(BaseModel):
     source_kind: SourceKind
     family: CapabilityFamily
     model_id: str = Field(min_length=1)
-    surface: ModelSurface | None = None
     # The most operationally important model fact — promoted to a real field (a metadata
     # key read by domain code must be a field). Overlaid by generation_profile.max_context.
     max_context: int | None = None
-    modalities_in: list[str] = Field(default_factory=list)
-    modalities_out: list[str] = Field(default_factory=list)
+    modalities_in: tuple[str, ...] = Field(default_factory=tuple)
     supports_tools: bool | None = None
-    supports_streaming: bool | None = None
     generation_profile: GenerationProfile = Field(default_factory=GenerationProfile)
     is_dynamic: bool = False
     concurrency: ConcurrencyIntent = Field(default_factory=ConcurrencyIntent)
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _enforce_portal_invariants(self) -> CapabilitySpec:
@@ -82,32 +77,19 @@ class CapabilitySpec(BaseModel):
 
 
 class CapabilityState(BaseModel):
-    """Observed live state for a synthesized capability.
+    """Observed live state for a synthesized capability."""
 
-    ``phase`` is the canonical field; the historical booleans are derived
-    properties so existing Dispatcher/OrchestratorManager read-sites keep
-    compiling while probe producers migrate to the phase model (A3-U4).
-    """
-
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     capability_key: str = Field(min_length=1)
-    is_dynamic: bool
     phase: CapabilityPhase
     health: str = "unknown"
-    active_model_id: str | None = None
-    loaded_model_ids: list[str] = Field(default_factory=list)
     reason: str | None = None
     checked_at: datetime | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property
     def warm(self) -> bool:
         return self.phase is CapabilityPhase.WARM
-
-    @property
-    def is_static(self) -> bool:
-        return not self.is_dynamic
 
     @property
     def is_active(self) -> bool:
@@ -130,16 +112,9 @@ class CapabilityState(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class ActivationResult:
-    """Outcome of a runtime-native capability activation request (A3-U4 §2).
-
-    ``accepted`` reports whether the runtime took the activation request;
-    ``phase`` is the capability phase observed immediately after the request;
-    ``reason`` explains a rejection (e.g. a non-dynamic capability whose
-    warmth is owned by the animator unit, not an in-runtime load).
-    """
+    """Outcome of a runtime-native capability activation request."""
 
     accepted: bool
-    phase: CapabilityPhase
     reason: str | None = None
 
 
@@ -154,72 +129,24 @@ class GrantLease:
     expires_at: datetime | None = None  # None = until released/superseded
 
 
-@dataclass(frozen=True, init=False)
+@dataclass(frozen=True, slots=True)
 class CapabilityGrant:
-    """Canonical dispatch handoff for one granted capability (spec-00-FINAL C1).
+    """Canonical immutable dispatch handoff plus intentionally live call handles."""
 
-    Carries only admitted live call handles while keeping the issued spec/state snapshots private.
-    Accessors return defensive copies, so a consumer cannot rewrite the grant's
-    capability identity or observed issue-time truth through nested mutable fields.
-    """
-
-    _spec: CapabilitySpec
-    _state: CapabilityState
-    _lease: GrantLease
-    _generation: GenerationProfile
-    _model: Model | None
-    _toolsets: tuple[AbstractToolset[Any], ...]
-
-    def __init__(
-        self,
-        *,
-        spec: CapabilitySpec,
-        state: CapabilityState,
-        lease: GrantLease,
-        generation: GenerationProfile,
-        model: Model | None,
-        toolsets: tuple[AbstractToolset[Any], ...] = (),
-    ) -> None:
-        """Seal detached value snapshots beside the intentionally live handles."""
-        object.__setattr__(self, "_spec", spec.model_copy(deep=True))
-        object.__setattr__(self, "_state", state.model_copy(deep=True))
-        object.__setattr__(self, "_lease", lease)
-        object.__setattr__(self, "_generation", generation.model_copy(deep=True))
-        object.__setattr__(self, "_model", model)
-        object.__setattr__(self, "_toolsets", tuple(toolsets))
-
-    @property
-    def spec(self) -> CapabilitySpec:
-        """Return a detached copy of the issued capability declaration."""
-        return self._spec.model_copy(deep=True)
-
-    @property
-    def state(self) -> CapabilityState:
-        """Return a detached copy of the issue-time observation."""
-        return self._state.model_copy(deep=True)
-
-    @property
-    def lease(self) -> GrantLease:
-        return self._lease
-
-    @property
-    def generation(self) -> GenerationProfile:
-        return self._generation
-
-    @property
-    def model(self) -> Model | None:
-        return self._model
-
-    @property
-    def toolsets(self) -> tuple[AbstractToolset[Any], ...]:
-        return self._toolsets
-
-    @property
-    def key(self) -> str:
-        return self._spec.key
+    spec: CapabilitySpec
+    state: CapabilityState
+    lease: GrantLease
+    model: Model | None
+    toolsets: tuple[AbstractToolset[Any], ...] = ()
 
     def model_settings(self) -> ModelSettings | None:
         """Bridge the resolved generation profile to pydantic-ai ModelSettings."""
-        from lychd.domain.animation.services.binder import generation_to_model_settings
-
-        return generation_to_model_settings(self.generation)
+        profile = self.spec.generation_profile
+        settings: ModelSettings = {}
+        if profile.max_tokens is not None:
+            settings["max_tokens"] = profile.max_tokens
+        if profile.temperature is not None:
+            settings["temperature"] = profile.temperature
+        if profile.top_p is not None:
+            settings["top_p"] = profile.top_p
+        return settings or None

@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
 from contextlib import suppress
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
@@ -25,12 +25,7 @@ import structlog
 
 from lychd.domain.cortex.admission import RunAdmissionCoordinator
 from lychd.domain.cortex.cancellation import RunCancellationCoordinator
-from lychd.domain.cortex.priority import (
-    PRIORITY_BACKGROUND,
-    PRIORITY_DEFAULT,
-    PRIORITY_INTERACTIVE,
-    saq_wire_priority,
-)
+from lychd.domain.cortex.priority import saq_wire_priority, validate_priority
 from lychd.domain.cortex.runs import TERMINAL_STATUSES, RunDeliveryState, RunHandle, RunStatus
 from lychd.lib.asyncio import complete_under_cancellation
 
@@ -39,11 +34,10 @@ if TYPE_CHECKING:
     from lychd.domain.cortex.events import RunEventBus
     from lychd.domain.cortex.ledger import RunLedger
     from lychd.domain.cortex.runs import RunRecord
-    from lychd.domain.delegation.models import DelegatedAgentResult
+    from lychd.domain.delegation.models import DelegatedAgentJob
     from lychd.domain.delegation.ports import DelegatedAgentCoordinatorPort
 
 __all__ = [
-    "DEFAULT_ROUTING",
     "QueueRouter",
     "RouteRule",
     "RunEngine",
@@ -235,10 +229,21 @@ async def admit_delegate_resume(
     ledger: RunLedger,
     run: RunRecord,
     *,
-    job_id: str,
+    job: DelegatedAgentJob,
 ) -> bool:
-    """Admit and publish only the job that owns the current delegated wait."""
-    admit_task = asyncio.ensure_future(ledger.try_admit_delegate(run.run_id, job_id=job_id))
+    """Admit and publish only the terminal job that owns the current wait."""
+    from lychd.domain.cortex.ledger import DelegateAdmissionEvidence
+
+    if job.result is None:
+        return False
+    job_id = job.ref.job_id
+    evidence = DelegateAdmissionEvidence(
+        job_id=job_id,
+        run_id=job.request.run_id,
+        status=job.status,
+        result=job.result,
+    )
+    admit_task = asyncio.ensure_future(ledger.try_admit_delegate(run.run_id, job_id=job_id, evidence=evidence))
     try:
         enqueue_seq = await asyncio.shield(admit_task)
     except asyncio.CancelledError:
@@ -353,21 +358,6 @@ class RouteRule:
     priority: int
 
 
-# [orchestration.routing] — intent source → (queue, default priority 0..100).
-# Agent 7 wires TOML loading of this shape; these are the doctrine defaults (A4 §0).
-#
-# Priority direction (R9): doctrine keeps HIGHER = more important everywhere these
-# numbers are read or tuned (bridge=70 is hotter than cli=50). saq's postgres queue,
-# however, dequeues `ORDER BY priority ASC` (lowest number first), so the doctrine
-# number is INVERTED once, in `saq_wire_priority`. Keep these numbers intuitive here.
-DEFAULT_ROUTING: dict[str, RouteRule] = {
-    "default": RouteRule(queue="runs", priority=PRIORITY_DEFAULT),
-    "bridge": RouteRule(queue="runs", priority=PRIORITY_INTERACTIVE),
-    "cli": RouteRule(queue="runs", priority=PRIORITY_DEFAULT),
-    "rite": RouteRule(queue="rites", priority=PRIORITY_BACKGROUND),
-}
-
-
 @dataclass(frozen=True)
 class QueueRouter:
     """Resolve `(queue_name, priority)` for an intent from the routing table.
@@ -376,13 +366,13 @@ class QueueRouter:
     default; an unknown source falls back to the ``default`` rule.
     """
 
-    routing: Mapping[str, RouteRule] = field(default_factory=lambda: dict(DEFAULT_ROUTING))
+    routing: Mapping[str, RouteRule]
 
     def resolve(self, intent: Intent) -> tuple[str, int]:
         """Return ``(queue_name, priority)`` for ``intent``."""
         rule = self.routing.get(intent.source) or self.routing["default"]
         priority = intent.priority if intent.priority is not None else rule.priority
-        return rule.queue, priority
+        return rule.queue, validate_priority(priority)
 
 
 class RunEngine:
@@ -394,6 +384,7 @@ class RunEngine:
     """
 
     __slots__ = (
+        "_release_context",
         "_terminal_repairs",
         "admissions",
         "bus",
@@ -420,6 +411,7 @@ class RunEngine:
         stasis_store: Any | None = None,
         delegates: DelegatedAgentCoordinatorPort | None = None,
         consents: ConsentAuthority | None = None,
+        release_context: Callable[[str], None] | None = None,
     ) -> None:
         """Bind the already-constructed run collaborators."""
         self.ledger = ledger
@@ -432,6 +424,7 @@ class RunEngine:
         self._terminal_repairs = RunAdmissionCoordinator()
         self.delegates = delegates
         self.consents = consents
+        self._release_context = release_context
         if stasis_store is None:
             from lychd.domain.cortex.stasis import InMemoryStasisStore
 
@@ -543,6 +536,9 @@ class RunEngine:
 
         workflow = self.workflows.route(intent)
         queue_name, priority = self.queue_router.resolve(intent)
+        if queue_name not in self.queues:
+            msg = f"Run queue {queue_name!r} is not configured."
+            raise ValueError(msg)
         create_task = asyncio.ensure_future(
             self._create_run_admission(
                 intent,
@@ -796,7 +792,7 @@ class RunEngine:
             try:
                 await self._ensure_cancelled_evidence(run_id)
             finally:
-                await self._cleanup_cancelled_checkpoint(run_id)
+                await self._cleanup_cancelled_resources(run_id)
             return
         if run.status in TERMINAL_STATUSES:
             return
@@ -825,7 +821,7 @@ class RunEngine:
             try:
                 await self._ensure_cancelled_evidence(elected.run_id)
             finally:
-                await self._cleanup_cancelled_checkpoint(elected.run_id)
+                await self._cleanup_cancelled_resources(elected.run_id)
         finally:
             self.cancellations.finish(leader.run_id)
 
@@ -877,8 +873,17 @@ class RunEngine:
             msg = f"Cancellation containment failed for Run {run.run_id!r}."
             raise RuntimeError(msg) from errors[0]
 
-    async def _cleanup_cancelled_checkpoint(self, run_id: str) -> None:
-        """Best-effort checkpoint cleanup after terminal cancellation truth."""
+    async def _cleanup_cancelled_resources(self, run_id: str) -> None:
+        """Best-effort context and checkpoint cleanup after terminal truth."""
+        if self._release_context is not None:
+            try:
+                self._release_context(run_id)
+            except Exception as exc:  # noqa: BLE001 - terminal truth is already committed
+                logger.warning(
+                    "cancel_context_cleanup_failed",
+                    run_id=run_id,
+                    error_type=type(exc).__name__,
+                )
         try:
             await self._discard_stasis_checkpoint(run_id)
         except Exception as exc:  # terminal truth is already committed
@@ -888,19 +893,17 @@ class RunEngine:
                 error=str(exc),
             )
 
-    async def approve(self, consent_id: str, *, approved: bool) -> None:
-        """Consent verdict seam (C3): admit the parked run for a resume hop.
+    async def resume_consent(self, consent_id: str) -> None:
+        """Admit the parked run for a consent-resume hop.
 
         Both verdicts re-enqueue (AWAITING_CONSENT → QUEUED); the resume hop reads the
-        verdict from the ConsentLedger (never a payload). ``approved`` is kept for the
-        seam signature + logging only — the row IS the durable verdict.
+        verdict from the ConsentLedger. The row is the sole durable verdict authority.
 
         The AWAITING_CONSENT → QUEUED edge is the SINGLE admission gate (F1/F4):
         `try_admit_consent` is an atomic CAS, so a double-click / replayed CLI, and a
         race against `perform_run`'s post-flip re-check, resolve to exactly one enqueue.
         A call that does not win the CAS (not parked, already admitted, terminal) no-ops.
         """
-        _ = approved
         if self.consents is None:
             return
         run = await self.ledger.get_by_consent(consent_id)
@@ -913,12 +916,6 @@ class RunEngine:
             run,
             consent_id=consent_id,
         )
-
-    async def adopt_delegate(self, job_id: str, result: DelegatedAgentResult) -> bool:
-        """Adopt a terminal delegated result, then publish one durable graph resume."""
-        delegates = self._require_delegates()
-        await delegates.adopt(job_id, result)
-        return await self.resume_delegate(job_id)
 
     async def resume_delegate(self, job_id: str) -> bool:
         """Publish a resume only after the coordinator holds terminal job truth.
@@ -936,7 +933,7 @@ class RunEngine:
         run = await self.ledger.get(job.request.run_id)
         if run is None:
             return False
-        return await admit_delegate_resume(self.queues, self.ledger, run, job_id=job_id)
+        return await admit_delegate_resume(self.queues, self.ledger, run, job=job)
 
     async def _enqueue(self, run: RunRecord) -> None:
         """Enqueue `perform_run` for the run on its physical queue (unique key)."""

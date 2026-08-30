@@ -13,6 +13,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
+from lychd.lib.json_objects import unique_json_object
 from lychd.system.services.lifecycle._authority import LifecycleAuthority, current_authority
 from lychd.system.services.lifecycle.models import (
     CreatedBtrfsSubvolume,
@@ -158,17 +159,6 @@ class _LifecycleReceipt(BaseModel):
         return self
 
 
-def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    """Reject duplicate JSON keys instead of accepting the final value."""
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            msg = f"Duplicate lifecycle receipt key: {key!r}."
-            raise ValueError(msg)
-        result[key] = value
-    return result
-
-
 class LifecycleReceiptStore:
     """Read, validate, update, and consume initialization ownership."""
 
@@ -190,7 +180,7 @@ class LifecycleReceiptStore:
             msg = f"Lifecycle receipt exceeds {_MAX_RECEIPT_BYTES} bytes: {self.path}"
             raise LifecycleError(msg)
         try:
-            raw = json.loads(content, object_pairs_hook=_unique_json_object)
+            raw = json.loads(content, object_pairs_hook=unique_json_object)
             receipt = _LifecycleReceipt.model_validate(raw)
         except (UnicodeError, ValueError, TypeError, ValidationError) as exc:
             msg = f"Invalid lifecycle receipt at {self.path}: {exc}"

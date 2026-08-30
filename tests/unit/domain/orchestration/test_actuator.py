@@ -11,6 +11,7 @@ def _forward_intent() -> TransitionIntent:
         transition_id="a" * 32,
         config_generation="sha256:" + "b" * 64,
         target_animator="vision",
+        target_capability_key="vision:default",
         evict_animators=("chat", "coding"),
         launch_animators=("vision",),
         expected_active_animators=("chat", "coding", "resident"),
@@ -36,6 +37,7 @@ def test_compensation_can_represent_inverse_of_pure_launch() -> None:
         transition_id="c" * 32,
         config_generation="sha256:" + "d" * 64,
         target_animator="vision",
+        target_capability_key="vision:default",
         launch_animators=("vision",),
     )
 

@@ -90,7 +90,7 @@ class DeletionPaths:
     source_checkout: Path | None = None
 
     @classmethod
-    def current(cls, *, source_checkout: Path | None = None) -> DeletionPaths:
+    def current(cls) -> DeletionPaths:
         """Read one canonical lifecycle-authority snapshot."""
         from lychd.system.services.lifecycle._authority import current_authority
 
@@ -101,7 +101,6 @@ class DeletionPaths:
             cache_root=authority.cache_root,
             postgres_data=authority.postgres_data,
             lifecycle_receipt=authority.lifecycle_receipt,
-            source_checkout=source_checkout,
         )
 
     @property

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any
 
-from lychd.domain.codex.schemas import ConsentView
+from lychd.domain.codex.schemas import CENSORED_VALUE, ConsentView
 from lychd.domain.codex.sigil import Sigil
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ def _park(fake_services: SimpleNamespace, run_id: str = "run_x") -> str:
             tool_name="request_coven_swap",
             tool_call_id="c1",
             call_ids=("c1",),
-            args={"reason": "swap"},
+            args={"reason": "operator requested swap", "opaque": "never-expose-this-value"},
             sigil=Sigil(name="magus", scopes=frozenset({"*"})),
         )
         return decision.consent_id
@@ -56,12 +56,14 @@ def test_consent_verdict_commits_before_resume(
 
     assert response.status_code == 200
     assert response.json()["consent"]["state"] == "consented"
+    assert response.json()["consent"]["args"] == {
+        "reason": CENSORED_VALUE,
+        "opaque": CENSORED_VALUE,
+    }
+    assert response.json()["consent"]["vision"] == "This action requires the Magus's consent before it may proceed."
     assert response.json()["pending_count"] == 0
     assert _verdict(fake_services, consent_id) is True
-    approvals = fake_services.run_engine.approvals
-    assert len(approvals) == 1
-    assert approvals[0][0] == consent_id
-    assert approvals[0][2] is True
+    assert fake_services.run_engine.consent_resumptions == [(consent_id, True)]
 
 
 def test_consent_retry_replays_the_authoritative_first_verdict(
@@ -81,9 +83,9 @@ def test_consent_retry_replays_the_authoritative_first_verdict(
     assert again.status_code == 200
     assert again.json()["consent"]["state"] == "refused"
     assert _verdict(fake_services, consent_id) is False
-    assert fake_services.run_engine.approvals == [
-        (consent_id, False, False),
-        (consent_id, False, False),
+    assert fake_services.run_engine.consent_resumptions == [
+        (consent_id, False),
+        (consent_id, False),
     ]
 
 

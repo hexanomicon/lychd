@@ -44,7 +44,7 @@ class LlamaCppCliInferenceParser:
         "--models-preset",
     }
 
-    def infer_args(self, args: list[str], *, source: str) -> LlamaCppRuntimeInference:
+    def infer_args(self, args: list[str]) -> LlamaCppRuntimeInference:
         """Infer runtime metadata from explicit CLI args."""
         if not args:
             return LlamaCppRuntimeInference()
@@ -59,14 +59,9 @@ class LlamaCppCliInferenceParser:
             models_dir=self._as_str(options.get("--models-dir")),
             models_preset=self._as_str(options.get("--models-preset")),
             n_ctx=self._as_int(options.get("--ctx-size")),
-            n_parallel=self._as_int(options.get("--parallel")),
             n_predict=self._as_int(options.get("--n-predict")),
             temperature=self._as_float(options.get("--temp")),
-            top_k=self._as_int(options.get("--top-k")),
             top_p=self._as_float(options.get("--top-p")),
-            min_p=self._as_float(options.get("--min-p")),
-            reasoning_format=self._as_str(options.get("--reasoning-format")),
-            source=source,
         )
 
     def infer_env(self, env: dict[str, str]) -> LlamaCppRuntimeInference:
@@ -97,14 +92,9 @@ class LlamaCppCliInferenceParser:
             models_dir=env.get("LLAMA_ARG_MODELS_DIR"),
             models_preset=env.get("LLAMA_ARG_MODELS_PRESET"),
             n_ctx=self._as_int(env.get("LLAMA_ARG_CTX_SIZE")),
-            n_parallel=self._as_int(env.get("LLAMA_ARG_N_PARALLEL")),
             n_predict=self._as_int(env.get("LLAMA_ARG_N_PREDICT")),
             temperature=self._as_float(env.get("LLAMA_ARG_TEMPERATURE")),
-            top_k=self._as_int(env.get("LLAMA_ARG_TOP_K")),
             top_p=self._as_float(env.get("LLAMA_ARG_TOP_P")),
-            min_p=self._as_float(env.get("LLAMA_ARG_MIN_P")),
-            reasoning_format=env.get("LLAMA_ARG_THINK"),
-            source="env_vars",
         )
 
     def merge(
@@ -121,38 +111,10 @@ class LlamaCppCliInferenceParser:
             models_dir=primary.models_dir or secondary.models_dir,
             models_preset=primary.models_preset or secondary.models_preset,
             n_ctx=primary.n_ctx if primary.n_ctx is not None else secondary.n_ctx,
-            n_parallel=primary.n_parallel if primary.n_parallel is not None else secondary.n_parallel,
             n_predict=primary.n_predict if primary.n_predict is not None else secondary.n_predict,
             temperature=primary.temperature if primary.temperature is not None else secondary.temperature,
-            top_k=primary.top_k if primary.top_k is not None else secondary.top_k,
             top_p=primary.top_p if primary.top_p is not None else secondary.top_p,
-            min_p=primary.min_p if primary.min_p is not None else secondary.min_p,
-            reasoning_format=primary.reasoning_format or secondary.reasoning_format,
-            source=primary.source or secondary.source,
         )
-
-    def inspect_exec_args(self, args: list[str]) -> list[str]:
-        """Return non-fatal diagnostics for explicit exec passthrough usage."""
-        if not args:
-            return []
-
-        options = self._parse_cli_options(args)
-        diagnostics: list[str] = []
-
-        has_host = "--host" in options
-        has_port = "--port" in options
-        has_single_source = any(key in options for key in self._SINGLE_SOURCE_FLAGS)
-        has_router_source = any(key in options for key in self._ROUTER_FLAGS)
-
-        if not has_host:
-            diagnostics.append("exec_missing_host_flag")
-        if not has_port:
-            diagnostics.append("exec_missing_port_flag")
-        if not has_single_source and not has_router_source:
-            diagnostics.append("exec_missing_model_or_router_source")
-        if has_single_source and has_router_source:
-            diagnostics.append("exec_mixes_single_and_router_flags")
-        return diagnostics
 
     def _parse_cli_options(self, args: list[str]) -> dict[str, str | bool]:
         options: dict[str, str | bool] = {}

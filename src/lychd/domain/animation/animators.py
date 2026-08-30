@@ -30,13 +30,8 @@ class Animator[C: Connector, R: RuneConfig](ABC, Runic[R]):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Return the animator identity (also the default stable id)."""
+        """Return the stable animator identity."""
         ...
-
-    @property
-    def id(self) -> str:
-        """Return a stable runtime id (defaults to ``name``)."""
-        return self.name
 
     @property
     @abstractmethod

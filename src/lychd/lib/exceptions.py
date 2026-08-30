@@ -20,10 +20,7 @@ if TYPE_CHECKING:
     from litestar.connection import Request
     from litestar.response import Response
 
-__all__ = (
-    "ApplicationError",
-    "HealthCheckConfigurationError",
-)
+__all__ = ("ApplicationError",)
 
 
 class ApplicationError(Exception):
@@ -51,12 +48,6 @@ class ApplicationError(Exception):
     def __str__(self) -> str:
         """Return the string representation of the exception."""
         return " ".join((*self.args, self.detail)).strip()
-
-
-class MissingDependencyError(ApplicationError, ImportError): ...
-
-
-class HealthCheckConfigurationError(ApplicationError): ...
 
 
 def exception_to_http_response(

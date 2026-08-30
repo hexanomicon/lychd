@@ -7,7 +7,6 @@ import json
 import stat
 from collections.abc import Iterator
 from contextlib import contextmanager
-from threading import Event
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, call
@@ -38,11 +37,22 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
+@pytest.fixture(autouse=True)
+def run_runtime_file_io_inline(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Exercise the file boundary without depending on the runner's thread pool."""
+
+    async def inline(function: object, /, *args: object, **kwargs: object) -> object:
+        return function(*args, **kwargs)  # type: ignore[operator]
+
+    monkeypatch.setattr("lychd.system.services.runtime.asyncio.to_thread", inline)
+
+
 def _intent() -> TransitionIntent:
     return TransitionIntent(
         transition_id="a" * 32,
         config_generation="sha256:" + "b" * 64,
         target_animator="vision",
+        target_capability_key="vision:default",
         evict_animators=("chat",),
         launch_animators=("vision",),
         expected_active_animators=("chat",),
@@ -54,6 +64,7 @@ def _recovery_intent() -> TransitionIntent:
         transition_id="d" * 32,
         config_generation="sha256:" + "e" * 64,
         target_animator="new",
+        target_capability_key="new:default",
         evict_animators=("old-a", "old-b"),
         launch_animators=("new",),
         expected_active_animators=("old-a", "old-b"),
@@ -116,10 +127,6 @@ async def _wait_until_exists(path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_host_reactor_publishes_one_atomic_restricted_intent(tmp_path: Path, mocker: MockerFixture) -> None:
-    async def inline(function: object, *args: object) -> object:
-        return function(*args)  # type: ignore[operator]
-
-    mocker.patch("lychd.system.services.runtime.asyncio.to_thread", side_effect=inline)
     mocker.patch("lychd.system.services.runtime._ACK_POLL_SECONDS", 0.001)
     inbox, journal = _secure_reactor_dirs(tmp_path)
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
@@ -142,11 +149,7 @@ async def test_host_reactor_publishes_one_atomic_restricted_intent(tmp_path: Pat
 
 
 @pytest.mark.asyncio
-async def test_host_reactor_requires_preprovisioned_directory(tmp_path: Path, mocker: MockerFixture) -> None:
-    async def inline(function: object, *args: object) -> object:
-        return function(*args)  # type: ignore[operator]
-
-    mocker.patch("lychd.system.services.runtime.asyncio.to_thread", side_effect=inline)
+async def test_host_reactor_requires_preprovisioned_directory(tmp_path: Path) -> None:
     journal = tmp_path / "journal"
     journal.mkdir(mode=0o700)
     journal.chmod(0o700)
@@ -157,42 +160,45 @@ async def test_host_reactor_requires_preprovisioned_directory(tmp_path: Path, mo
 
 
 @pytest.mark.asyncio
-async def test_host_reactor_surfaces_terminal_rejection(tmp_path: Path) -> None:
-    inbox, journal = _secure_reactor_dirs(tmp_path)
-    rejected = journal / f"{_intent().transition_id}.rejected.json"
-    rejected.write_text('{"status":"rejected"}\n', encoding="utf-8")
-    rejected.chmod(0o600)
-    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
+async def test_host_reactor_rejects_symlinked_boundary_parent(tmp_path: Path) -> None:
+    real_root = tmp_path / "real"
+    real_root.mkdir()
+    inbox, journal = _secure_reactor_dirs(real_root)
+    linked_root = tmp_path / "linked"
+    linked_root.symlink_to(real_root, target_is_directory=True)
+    actuator = HostReactorRuntimeActuator(
+        linked_root / inbox.name,
+        linked_root / journal.name,
+        ack_timeout_s=1,
+    )
 
-    with pytest.raises(RuntimeError, match="rejected transition"):
+    with pytest.raises(RuntimeError, match="does not exist safely"):
         await actuator.apply(_intent())
 
-    assert list(inbox.iterdir()) == []
 
-
+@pytest.mark.parametrize(
+    ("suffix", "error_type", "match", "content"),
+    [
+        ("rejected", RuntimeError, "rejected transition", '{"status":"rejected"}\n'),
+        ("declined", RuntimePreconditionError, "declined transition", "{}\n"),
+        ("restored", RuntimeActuationRestoredError, "restored its prior runtime world", "{}\n"),
+    ],
+)
 @pytest.mark.asyncio
-async def test_host_reactor_surfaces_safe_precondition_decline(tmp_path: Path) -> None:
+async def test_host_reactor_surfaces_terminal_outcome(
+    tmp_path: Path,
+    suffix: str,
+    error_type: type[Exception],
+    match: str,
+    content: str,
+) -> None:
     inbox, journal = _secure_reactor_dirs(tmp_path)
-    declined = journal / f"{_intent().transition_id}.declined.json"
-    declined.write_text("{}\n", encoding="utf-8")
-    declined.chmod(0o600)
+    outcome = journal / f"{_intent().transition_id}.{suffix}.json"
+    outcome.write_text(content, encoding="utf-8")
+    outcome.chmod(0o600)
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
 
-    with pytest.raises(RuntimePreconditionError, match="declined transition"):
-        await actuator.apply(_intent())
-
-    assert list(inbox.iterdir()) == []
-
-
-@pytest.mark.asyncio
-async def test_host_reactor_surfaces_verified_prior_world_restoration(tmp_path: Path) -> None:
-    inbox, journal = _secure_reactor_dirs(tmp_path)
-    restored = journal / f"{_intent().transition_id}.restored.json"
-    restored.write_text("{}\n", encoding="utf-8")
-    restored.chmod(0o600)
-    actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
-
-    with pytest.raises(RuntimeActuationRestoredError, match="restored its prior runtime world"):
+    with pytest.raises(error_type, match=match):
         await actuator.apply(_intent())
 
     assert list(inbox.iterdir()) == []
@@ -268,17 +274,18 @@ async def test_host_reactor_cancellation_fences_inflight_atomic_publish(
     inbox, journal = _secure_reactor_dirs(tmp_path)
     actuator = HostReactorRuntimeActuator(inbox, journal, ack_timeout_s=1)
     original_write = actuator._write_atomic
-    started = Event()
-    release = Event()
+    started = asyncio.Event()
+    release = asyncio.Event()
 
-    def delayed_write(intent: TransitionIntent) -> None:
-        started.set()
-        assert release.wait(timeout=2)
-        original_write(intent)
+    async def controlled_offload(function: object, /, *args: object, **kwargs: object) -> object:
+        if function == original_write:
+            started.set()
+            await release.wait()
+        return function(*args, **kwargs)  # type: ignore[operator]
 
-    mocker.patch.object(actuator, "_write_atomic", side_effect=delayed_write)
+    mocker.patch("lychd.system.services.runtime.asyncio.to_thread", side_effect=controlled_offload)
     apply_task = asyncio.create_task(actuator.apply(_intent()))
-    assert await asyncio.to_thread(started.wait, 2)
+    await asyncio.wait_for(started.wait(), timeout=1)
 
     apply_task.cancel()
     release.set()
@@ -475,7 +482,6 @@ async def test_direct_systemd_does_not_misclassify_post_entry_lock_failure() -> 
     actuator = SystemdRuntimeActuator(
         SimpleNamespace(),  # type: ignore[arg-type]
         systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
         lock_factory=_exit_failure_lock,
     )
     actuator._apply_locked = AsyncMock()
@@ -505,7 +511,6 @@ def _observing_actuator(*names: str, systemctl_timeout_s: float = 120.0) -> Syst
         _runtime_registry(*names),  # type: ignore[arg-type]
         systemctl_bin="/usr/bin/systemctl",
         systemctl_timeout_s=systemctl_timeout_s,
-        observe_systemd=True,
     )
     actuator._topology_attestor.attest = AsyncMock()
     actuator._pending_relevant_jobs = AsyncMock(return_value=())
@@ -596,6 +601,7 @@ async def test_systemd_actuator_removes_failed_coexisting_launch_during_compensa
         transition_id="2" * 32,
         config_generation="sha256:" + "3" * 64,
         target_animator="vision",
+        target_capability_key="vision:default",
         launch_animators=("vision",),
         expected_active_animators=("old",),
     )
@@ -745,6 +751,7 @@ async def test_systemd_compensation_without_launch_stops_target_once() -> None:
         rollback_of="e" * 32,
         config_generation="sha256:" + "1" * 64,
         target_animator="vision",
+        target_capability_key="vision:default",
         evict_animators=("vision",),
         expected_active_animators=("vision",),
     )
@@ -834,7 +841,6 @@ async def test_host_systemd_world_observes_targets_and_services_for_every_soulst
     actuator = SystemdRuntimeActuator(
         registry,  # type: ignore[arg-type]
         systemctl_bin="/usr/bin/systemctl",
-        observe_systemd=True,
     )
 
     world = await actuator._observe_runtime_world()

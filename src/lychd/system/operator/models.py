@@ -17,7 +17,6 @@ class OperatorTarget(StrEnum):
     STORAGE = "storage"
     CONFIG = "config"
     BINDINGS = "bindings"
-    RUNS = "runs"
 
 
 class ObservationState(StrEnum):

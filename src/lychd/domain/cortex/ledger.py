@@ -27,6 +27,11 @@ from lychd.domain.cortex.runs import (
     RunStatus,
     can_transition,
 )
+from lychd.domain.delegation.models import (
+    TERMINAL_DELEGATED_AGENT_STATUSES,
+    DelegatedAgentJobStatus,
+    DelegatedAgentResult,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy import CursorResult
@@ -38,6 +43,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ConsentAdmissionEvidence",
     "DbRunLedger",
+    "DelegateAdmissionEvidence",
     "InMemoryRunLedger",
     "RunAdmissionConflictError",
     "RunLedger",
@@ -60,6 +66,21 @@ class ConsentAdmissionEvidence:
     decided_at: datetime
 
 
+@dataclass(frozen=True, kw_only=True)
+class DelegateAdmissionEvidence:
+    """Terminal delegated-job truth required by the non-durable Run adapter.
+
+    PostgreSQL re-reads the canonical job row under the Run transaction. The
+    loop-confined adapter instead receives the exact immutable job projection that
+    the delegation coordinator validated immediately before the admission CAS.
+    """
+
+    job_id: str
+    run_id: str
+    status: DelegatedAgentJobStatus
+    result: DelegatedAgentResult
+
+
 class RunAdmissionConflictError(ValueError):
     """An idempotency identity was replayed with a different durable intent."""
 
@@ -77,7 +98,6 @@ def _assert_idempotent_replay(record: RunRecord, intent: Intent) -> None:
         or record.source != intent.source
         or record.sigil_name != intent.sigil_name
         or record.sigil_scopes != intent.sigil_scopes
-        or record.content != intent.content
         or record.requested_priority != intent.priority
     ):
         msg = "Run admission idempotency key was reused with a different intent."
@@ -90,7 +110,6 @@ def _intent_payload(intent: Intent, *, idempotency_key: str | None = None) -> di
         "session_id": intent.session_id,
         "run_id": intent.run_id,
         "prompt": intent.prompt,
-        "content": [part.model_dump(mode="json") for part in intent.content],
         "source": intent.source,
         "sigil_name": intent.sigil_name,
         "sigil_scopes": sorted(intent.sigil_scopes),
@@ -278,7 +297,7 @@ class RunLedger(Protocol):
         ...
 
     async def get_by_consent(self, consent_id: str) -> RunRecord | None:
-        """Return the run parked on ``consent_id`` (feeds `engine.approve`)."""
+        """Return the run parked on ``consent_id`` (feeds `engine.resume_consent`)."""
         ...
 
     async def try_admit_consent(
@@ -291,7 +310,7 @@ class RunLedger(Protocol):
         """Atomically admit a parked run and allocate its next enqueue sequence.
 
         The SINGLE resume-admission gate (F1/F4): returns the new sequence iff THIS
-        caller performed the transition. Concurrent approves, and an `engine.approve`
+        caller performed the transition. Concurrent resumes, and an `engine.resume_consent`
         racing `perform_run`'s post-flip re-check, all funnel here so exactly one
         sequence is allocated and enqueued. ``consent_id`` must own the current wait
         so a historical verdict cannot advance a later gate. The in-memory adapter
@@ -300,8 +319,14 @@ class RunLedger(Protocol):
         """
         ...
 
-    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
-        """Admit only the completed job that owns the current delegated wait."""
+    async def try_admit_delegate(
+        self,
+        run_id: str,
+        *,
+        job_id: str,
+        evidence: DelegateAdmissionEvidence | None = None,
+    ) -> int | None:
+        """Admit only the terminal-evidenced job that owns the current wait."""
         ...
 
 
@@ -476,7 +501,6 @@ class InMemoryRunLedger:
             prompt=intent.prompt,
             sigil_name=intent.sigil_name,
             sigil_scopes=intent.sigil_scopes,
-            content=intent.content,
             requested_priority=intent.priority,
         )
         stored = _copy_run_record(record)
@@ -838,10 +862,25 @@ class InMemoryRunLedger:
         )
         return record.enqueue_seq
 
-    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
-        """CAS the matching delegated wait to QUEUED and allocate one resume sequence."""
+    async def try_admit_delegate(
+        self,
+        run_id: str,
+        *,
+        job_id: str,
+        evidence: DelegateAdmissionEvidence | None = None,
+    ) -> int | None:
+        """CAS a terminal-evidenced delegated wait to one QUEUED resume hop."""
         record = self._require(run_id)
-        if record.status is not RunStatus.AWAITING_DELEGATE or record.delegated_job_id != job_id:
+        if (
+            evidence is None
+            or evidence.job_id != job_id
+            or evidence.run_id != run_id
+            or evidence.status not in TERMINAL_DELEGATED_AGENT_STATUSES
+            or evidence.result.job_id != job_id
+            or evidence.result.status is not evidence.status
+            or record.status is not RunStatus.AWAITING_DELEGATE
+            or record.delegated_job_id != job_id
+        ):
             return None
         _apply_status(record, RunStatus.QUEUED, error=None)
         record.enqueue_seq += 1
@@ -971,18 +1010,15 @@ class DbRunLedger:
         as a UUID (it always does once `DbBridgeSessionStore` mints UUID ids); otherwise
         leave it NULL. The FK is for joins; the `intent` JSONB stays the Intent record.
         """
-        from advanced_alchemy.exceptions import DuplicateKeyError
         from sqlalchemy.exc import IntegrityError
 
         from lychd.db.models import Run, RunDelivery
-        from lychd.domain.cortex.services import RunService
 
         try:
             session_fk: UUID | None = UUID(intent.session_id)
         except ValueError:
             session_fk = None
         async with self._session_factory() as session:
-            svc = RunService(session=session)
             row_data: dict[str, Any] = {
                 "workflow_name": workflow_name,
                 "pattern_manifest": pattern_manifest or _legacy_pattern_manifest(workflow_name),
@@ -998,10 +1034,9 @@ class DbRunLedger:
             if run_id is not None:
                 row_data["id"] = run_id
             try:
-                row = await svc.create(
-                    Run(**row_data),
-                    auto_commit=False,
-                )
+                row = Run(**row_data)
+                session.add(row)
+                await session.flush()
                 session.add(
                     RunDelivery(
                         run_id=row.id,
@@ -1013,7 +1048,7 @@ class DbRunLedger:
                     )
                 )
                 await session.commit()
-            except (DuplicateKeyError, IntegrityError) as exc:
+            except IntegrityError as exc:
                 await session.rollback()
                 if run_id is None or idempotency_key is None:
                     raise
@@ -1122,15 +1157,14 @@ class DbRunLedger:
 
     async def get(self, run_id: str) -> RunRecord | None:
         """Return the run record for ``run_id`` (a UUID string), or ``None``."""
-        from lychd.domain.cortex.services import RunService
+        from lychd.db.models import Run
 
         try:
             row_id = UUID(run_id)
         except ValueError:
             return None
         async with self._session_factory() as session:
-            svc = RunService(session=session)
-            row = await svc.get_one_or_none(id=row_id)
+            row = await session.get(Run, row_id)
             return self._to_record(row) if row is not None else None
 
     # One bounded re-read is enough for the single-process writer topology.
@@ -1148,12 +1182,10 @@ class DbRunLedger:
         from sqlalchemy import update
 
         from lychd.db.models import Run, RunDelivery
-        from lychd.domain.cortex.services import RunService
 
         async with self._session_factory() as session:
-            svc = RunService(session=session)
             for _ in range(self._CAS_RETRIES + 1):
-                row = await svc.get_one_or_none(id=UUID(run_id))
+                row = await session.get(Run, UUID(run_id))
                 if row is None:
                     msg = f"Unknown run: {run_id}"
                     raise KeyError(msg)
@@ -1204,12 +1236,14 @@ class DbRunLedger:
                 # the retry lands it; if illegal, `_apply_status` raises on the re-read;
                 # if the fresh row already IS the target, the top-of-loop check returns.
             # Retries exhausted (the row kept moving under us): rule on the fresh truth.
-            await self._raise_on_lost_cas(svc, run_id, status)
+            await self._raise_on_lost_cas(session, run_id, status)
 
     @staticmethod
-    async def _raise_on_lost_cas(svc: Any, run_id: str, target: RunStatus) -> None:
+    async def _raise_on_lost_cas(session: AsyncSession, run_id: str, target: RunStatus) -> None:
         """Re-read the fresh truth and rule on it after the bounded CAS retry ran out."""
-        fresh = await svc.get_one_or_none(id=UUID(run_id))
+        from lychd.db.models import Run
+
+        fresh = await session.get(Run, UUID(run_id))
         current = RunStatus(str(fresh.status)) if fresh is not None else None
         if current is target:
             return  # a concurrent writer reached the same target — benign
@@ -1551,12 +1585,10 @@ class DbRunLedger:
         if event.kind is RunEventKind.TOKEN:
             return
         from lychd.db.models import Step
-        from lychd.domain.cortex.services import StepService
 
         node_key = event.data if event.kind is RunEventKind.NODE else None
         async with self._session_factory() as session:
-            svc = StepService(session=session)
-            await svc.create(
+            session.add(
                 Step(
                     id=UUID(event.event_id),
                     run_id=UUID(event.run_id),
@@ -1569,9 +1601,9 @@ class DbRunLedger:
                         "occurred_at": event.ts.isoformat(),
                     },
                     node_key=node_key,
-                ),
-                auto_commit=True,
+                )
             )
+            await session.commit()
 
     @property
     def evidence_capture(self) -> str:
@@ -1831,17 +1863,21 @@ class DbRunLedger:
             )
             return record.enqueue_seq
 
-    async def try_admit_delegate(self, run_id: str, *, job_id: str) -> int | None:
+    async def try_admit_delegate(
+        self,
+        run_id: str,
+        *,
+        job_id: str,
+        evidence: DelegateAdmissionEvidence | None = None,
+    ) -> int | None:
         """Lock the exact owner and require a shape-valid terminal result."""
         from pydantic import ValidationError
         from sqlalchemy import select
 
         from lychd.db.models import DelegatedAgentJobRecord, Run, RunDelivery
-        from lychd.domain.delegation.models import (
-            TERMINAL_DELEGATED_AGENT_STATUSES,
-            DelegatedAgentJobStatus,
-            DelegatedAgentResult,
-        )
+        from lychd.domain.delegation.models import TERMINAL_DELEGATED_AGENT_STATUSES
+
+        _ = evidence  # the database re-establishes this truth under its own lock
 
         async with self._session_factory() as session, session.begin():
             row = await session.scalar(select(Run).where(Run.id == UUID(run_id)).with_for_update())
@@ -1906,7 +1942,6 @@ class DbRunLedger:
                 "session_id": str(intent.get("session_id", "")),
                 "run_id": intent.get("run_id"),
                 "prompt": str(intent.get("prompt", "")),
-                "content": intent.get("content", ()),
                 "source": str(intent.get("source", "bridge")),
                 "sigil_name": str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
                 "sigil_scopes": scopes,
@@ -1925,7 +1960,6 @@ class DbRunLedger:
             prompt=str(intent.get("prompt", "")),
             sigil_name=str(intent.get("sigil_name", row.sigil_name)),  # type: ignore[attr-defined]
             sigil_scopes=scopes,
-            content=parsed_intent.content,
             requested_priority=parsed_intent.priority,
             attempt=int(row.attempt),  # type: ignore[attr-defined]
             enqueue_seq=int(row.enqueue_seq),  # type: ignore[attr-defined]

@@ -15,7 +15,6 @@ temperature = 0.7
 [[models]]
 id = "qwen3-vl-8b"
 path = "/models/qwen3-vl-8b"
-description = "Multimodal chat model (image-in enriches the CHAT admission filter)."
 
 [models.capabilities]
 modalities_in = ["text", "image"]
@@ -24,7 +23,6 @@ supports_tools = true
 [[models]]
 id = "bge-m3"
 path = "/models/bge-m3"
-description = "Embedding model (explicit family)."
 
 [models.capabilities]
 families = ["embedding"]
@@ -32,7 +30,6 @@ families = ["embedding"]
 [[models]]
 id = "the-eye"
 path = "/models/the-eye"
-description = "Explicit VISION capability (the Eye)."
 
 [models.capabilities]
 families = ["vision"]

@@ -4,15 +4,15 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_graph import BaseNode, End, Graph
 from pydantic_graph.persistence import BaseStatePersistence
 
 from lychd.domain.animation.errors import HardwareTransitionRequired
 from lychd.domain.cortex.execution_context import bind_occurrence, reset_occurrence
 from lychd.domain.cortex.runs import ConsentPending, RunParked
+from lychd.domain.cortex.stasis import PhylacteryProtocol
 from lychd.domain.delegation.signals import DelegatedAgentParked, DelegatedAgentPending
-from lychd.extensions.protocols import PhylacteryProtocol
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -23,10 +23,53 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, kw_only=True)
 class StasisPolicy:
-    """Convergence bounds for the stasis retry loop (was ad-hoc locals)."""
+    """Convergence bounds evaluated against one Run's checkpoint-owned counters."""
 
     max_resumes: int = 8  # total transition retries per run
     max_same_key: int = 3  # identical-capability convergence bound
+
+
+class HardwareResumeBudget(BaseModel):
+    """Checkpoint-owned hardware-resume counters for one Run."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    total_resumes: int = Field(default=0, ge=0)
+    same_capability_key: str | None = Field(default=None, min_length=1)
+    same_capability_resumes: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def _validate_counter_shape(self) -> HardwareResumeBudget:
+        has_same_key = self.same_capability_key is not None
+        has_same_count = self.same_capability_resumes > 0
+        if has_same_key != has_same_count or (self.total_resumes > 0) != has_same_count:
+            msg = "Hardware-resume totals, capability key, and consecutive count must describe the same history."
+            raise ValueError(msg)
+        if self.same_capability_resumes > self.total_resumes:
+            msg = "Consecutive hardware resumes cannot exceed total hardware resumes."
+            raise ValueError(msg)
+        return self
+
+    def advance(self, capability_key: str) -> HardwareResumeBudget:
+        """Return the next immutable budget observation for one transition request."""
+        same_capability_resumes = self.same_capability_resumes + 1 if capability_key == self.same_capability_key else 1
+        return HardwareResumeBudget(
+            total_resumes=self.total_resumes + 1,
+            same_capability_key=capability_key,
+            same_capability_resumes=same_capability_resumes,
+        )
+
+
+class _HardwareResumeCheckpoint(Protocol):
+    hardware_resume_budget: HardwareResumeBudget
+
+
+def _require_hardware_resume_checkpoint(state: BaseModel) -> _HardwareResumeCheckpoint:
+    budget = getattr(state, "hardware_resume_budget", None)
+    if not isinstance(budget, HardwareResumeBudget):
+        msg = "Graph workflow state must declare a typed hardware_resume_budget checkpoint field."
+        raise TypeError(msg)
+    return cast("_HardwareResumeCheckpoint", state)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -213,11 +256,8 @@ class GraphRunner[StateT: BaseModel]:
         state: StateT | None = None,
         deps: Any = None,
     ) -> Any:
-        """Execute the graph loop and handle stasis signals iteratively."""
+        """Execute the graph loop with checkpoint-owned stasis convergence state."""
         current_is_resume = is_resume
-        resume_count = 0
-        repeated_key: str | None = None
-        repeated_count = 0
 
         while True:
             if not current_is_resume:
@@ -307,12 +347,13 @@ class GraphRunner[StateT: BaseModel]:
                     if signal:
                         from lychd.domain.orchestration.schema import TransitionTrace
 
-                        resume_count += 1
-                        if signal.capability_key == repeated_key:
-                            repeated_count += 1
-                        else:
-                            repeated_key, repeated_count = signal.capability_key, 1
-                        if resume_count > self._policy.max_resumes or repeated_count > self._policy.max_same_key:
+                        checkpoint_state = _require_hardware_resume_checkpoint(graph_run.state)
+                        budget = checkpoint_state.hardware_resume_budget.advance(signal.capability_key)
+                        checkpoint_state.hardware_resume_budget = budget
+                        if (
+                            budget.total_resumes > self._policy.max_resumes
+                            or budget.same_capability_resumes > self._policy.max_same_key
+                        ):
                             if active_node is not None and occurrence_id is not None:
                                 self._node_event(
                                     occurrence_id=occurrence_id,
@@ -321,7 +362,7 @@ class GraphRunner[StateT: BaseModel]:
                                 )
                             msg = (
                                 f"Stasis did not converge for capability '{signal.capability_key}' after "
-                                f"{resume_count} transition(s); aborting the run."
+                                f"{budget.total_resumes} transition(s); aborting the run."
                             )
                             raise RuntimeError(msg) from signal
                         trace = TransitionTrace(

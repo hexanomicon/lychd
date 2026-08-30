@@ -26,10 +26,8 @@ from lychd.system.services.btrfs import (
     BtrfsCreationState,
     BtrfsSubvolumeObservation,
 )
-from lychd.system.services.layout_directories import (
-    DirectoryProvisioning,
-    require_existing_directory,
-)
+from lychd.system.services.layout_directory_transaction import DirectoryProvisioning
+from lychd.system.services.layout_directory_traversal import require_existing_directory
 from lychd.system.services.lifecycle.models import (
     CreatedBtrfsSubvolume,
     CreatedResources,
@@ -58,39 +56,23 @@ class _SubvolumeAttempt:
     in_flight: bool = False
 
 
-class Layout:
+class LayoutService:
     """Create missing layout paths without adopting existing host resources."""
 
     def __init__(
         self,
         paths: tuple[Path, ...] | list[Path] | None = None,
-        *,
-        layout: tuple[Path, ...] | list[Path] | None = None,
     ) -> None:
         """Initialize the layout orchestrator with defined architectural paths.
 
         Args:
             paths: System directories to manage. Defaults to HOST_LAYOUT constant.
-            layout: Legacy alias for paths retained for older call sites.
 
         """
-        if paths is not None and layout is not None:
-            msg = "Use either paths or layout, not both."
-            raise ValueError(msg)
-
-        selected_paths = layout if layout is not None else paths
-        self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if selected_paths is None else tuple(selected_paths)
+        self.paths: Final[tuple[Path, ...]] = HOST_LAYOUT if paths is None else tuple(paths)
         self.btrfs: Final[Btrfs] = Btrfs()
 
     def initialize(
-        self,
-        *,
-        on_created: Callable[[CreatedResources], None] | None = None,
-    ) -> CreatedResources:
-        """Synchronize the physical layout using the public CLI-facing API."""
-        return self.mkdirs(on_created=on_created)
-
-    def mkdirs(
         self,
         *,
         on_created: Callable[[CreatedResources], None] | None = None,
@@ -171,7 +153,7 @@ class Layout:
             path=str(path),
             mode="0700",
         )
-        return Layout._provisioned_path(directories)
+        return LayoutService._provisioned_path(directories)
 
     def _provision_postgres(
         self,
@@ -256,7 +238,7 @@ class Layout:
             return None
         require_existing_directory(path)
         logger.info("layout_path_raced_preserved", path=str(path))
-        return Layout._provisioned_path(directories)
+        return LayoutService._provisioned_path(directories)
 
     def _settle_failed_provision(
         self,
@@ -404,6 +386,3 @@ class Layout:
             ),
             hint="Inspect the retained target before retrying initialization.",
         )
-
-
-LayoutService = Layout

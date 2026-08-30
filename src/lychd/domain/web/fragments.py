@@ -14,7 +14,7 @@ import structlog
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 if TYPE_CHECKING:
-    from lychd.agents.workflows.bridge_chat import FragmentCall
+    from lychd.agents.outputs import FragmentCall
 
 logger = structlog.get_logger()
 
@@ -79,17 +79,9 @@ class FragmentRegistry:
         """Initialize the registry from a key -> `FragmentDef` mapping."""
         self._defs: dict[str, FragmentDef] = dict(defs or {})
 
-    def register(self, definition: FragmentDef) -> None:
-        """Register (or replace) one fragment definition by key."""
-        self._defs[definition.key] = definition
-
     def get(self, key: str) -> FragmentDef | None:
         """Return the definition for `key`, or `None` if unregistered."""
         return self._defs.get(key)
-
-    def keys(self) -> tuple[str, ...]:
-        """Return the registered fragment keys in insertion order."""
-        return tuple(self._defs)
 
     def validate_calls(self, calls: list[FragmentCall]) -> list[ValidatedFragment]:
         """Validate fragment calls; drop-and-log unknown keys and invalid params."""

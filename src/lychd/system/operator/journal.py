@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from lychd.system.operator.models import OperatorError, OperatorTarget
 from lychd.system.operator.process import ProcessInvocationError, ProcessRunner
 from lychd.system.operator.targets import OperatorTargetResolver
@@ -11,15 +9,6 @@ from lychd.system.operator.targets import OperatorTargetResolver
 _JOURNAL_TIMEOUT_SECONDS = 10.0
 _DEFAULT_LINES = 100
 _MAX_LINES = 10_000
-
-
-@dataclass(frozen=True)
-class JournalRead:
-    """Captured log text and the exact units used to obtain it."""
-
-    target: OperatorTarget
-    units: tuple[str, ...]
-    content: str
 
 
 class JournalService:
@@ -42,7 +31,7 @@ class JournalService:
         target: OperatorTarget = OperatorTarget.SYSTEM,
         *,
         lines: int = _DEFAULT_LINES,
-    ) -> JournalRead:
+    ) -> str:
         """Read a bounded tail for exact owned units."""
         if not 1 <= lines <= _MAX_LINES:
             message = f"lines must be between 1 and {_MAX_LINES}"
@@ -71,4 +60,4 @@ class JournalService:
             detail = result.stderr.strip() or f"exit {result.returncode}"
             message = f"journalctl failed: {detail}"
             raise OperatorError(message)
-        return JournalRead(target=target, units=units, content=result.stdout)
+        return result.stdout

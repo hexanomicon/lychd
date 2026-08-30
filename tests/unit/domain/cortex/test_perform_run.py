@@ -35,6 +35,7 @@ from lychd.domain.web.sessions import BridgeSessionStore
 from lychd.ghouls.runs import (
     _DeliveryFlushOutcome,
     _flush_run_delivery_page,
+    _run_relay_loop,
     flush_run_deliveries,
     perform_run,
     reconcile_runs,
@@ -211,6 +212,33 @@ async def test_perform_run_happy_path_trail_and_terminal_done() -> None:
     settled = [t for t in session_rec.turns if t.state == "settled"]
     assert settled
     assert settled[0].content == "risen"
+    assert substrate.context.get("run_1") is None
+
+
+@pytest.mark.asyncio
+async def test_perform_run_waits_for_the_runtime_claim_gate() -> None:
+    """A paused real broker prevents the durable QUEUED→RUNNING claim."""
+    model = TestModel(custom_output_args={"answer": "risen", "fragments": []}, call_tools=[])
+    substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))
+    await _seed_run(ledger, sessions, "gated")
+    broker = substrate.orchestrator.worker_broker
+    await broker.pause_queues()
+
+    task = asyncio.create_task(perform_run({"run_substrate": substrate}, run_id="gated"))
+    await asyncio.sleep(0)
+
+    parked = await ledger.get("gated")
+    assert parked is not None
+    assert parked.status is RunStatus.QUEUED
+    assert substrate.leases.active() == []
+    assert not task.done()
+
+    await broker.unpause_queues()
+    result = await task
+    assert result["status"] == "done"
+    settled = await ledger.get("gated")
+    assert settled is not None
+    assert settled.status is RunStatus.DONE
 
 
 @pytest.mark.asyncio
@@ -308,7 +336,15 @@ async def test_durable_delivery_mode_overrides_broker_payload(
 async def test_perform_run_executes_pinned_old_revision_after_active_revision_changes() -> None:
     model = TestModel(custom_output_args={"answer": "risen", "fragments": []}, call_tools=[])
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=model))
-    bridge_v2 = replace(BRIDGE_CHAT, manifest=replace(BRIDGE_CHAT.manifest, revision="2"))
+
+    def reject_v2_execution(_intent: Intent) -> Any:
+        pytest.fail("the active v2 workflow must not execute a run pinned to v1")
+
+    bridge_v2 = replace(
+        BRIDGE_CHAT,
+        make_state=reject_v2_execution,
+        manifest=replace(BRIDGE_CHAT.manifest, revision="2"),
+    )
     substrate.workflows = BuiltinWorkflowRegistry(
         workflows=(BRIDGE_CHAT, bridge_v2, DELEGATED_RITE),
         active_revisions=((BRIDGE_CHAT.name, "2"), (DELEGATED_RITE.name, "1")),
@@ -595,7 +631,7 @@ async def test_cleanup_failure_cannot_hide_committed_failed_terminal(
 async def test_api_abort_cancellation_wins_over_worker_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     """An abort-triggered CancelledError waits for durable CANCELLED, never writes FAILED."""
     import lychd.ghouls.runs as runs_mod
-    from lychd.domain.cortex.engine import QueueRouter, RunEngine
+    from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
 
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
     await _seed_run(ledger, sessions, "api-cancel")
@@ -634,7 +670,7 @@ async def test_api_abort_cancellation_wins_over_worker_failure(monkeypatch: pyte
         ledger=ledger,
         bus=substrate.bus,
         workflows=substrate.workflows,
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues=substrate.queues,
         cancellations=substrate.cancellations,
         stasis_store=substrate.stasis_store,
@@ -819,39 +855,15 @@ async def test_perform_run_unknown_workflow_emits_terminal_and_closes() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "case",
-    [
-        "invalid_checksum",
-        "drifted_snapshot",
-        "implementation_drift",
-        "unavailable_revision",
-        "mismatched_identity",
-    ],
-)
-async def test_perform_run_fails_honestly_when_pinned_pattern_is_unavailable(
-    case: str,
-) -> None:
-    """A worker never executes against corrupt, drifted, or unavailable Pattern law."""
+async def test_perform_run_fails_honestly_when_pinned_implementation_drifted() -> None:
+    """A worker never substitutes code that differs from the admitted Pattern snapshot."""
     substrate, ledger, sessions = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
-    await _seed_run(ledger, sessions, f"pattern-{case}")
+    await _seed_run(ledger, sessions, "pattern-implementation-drift")
     # Deliberately corrupt canonical storage through the adapter's private seam;
     # public reads are detached snapshots, as they are with PostgreSQL.
-    run = ledger._require(f"pattern-{case}")
-
-    if case == "invalid_checksum":
-        run.pattern_manifest["digest"] = "0" * 64
-    elif case == "drifted_snapshot":
-        run.pattern_manifest["nodes"][0]["label"] = "Drifted station"
-        _redigest_pattern(run.pattern_manifest)
-    elif case == "implementation_drift":
-        run.pattern_manifest["implementation_revision"] = "py.0"
-        _redigest_pattern(run.pattern_manifest)
-    elif case == "unavailable_revision":
-        run.pattern_manifest["revision"] = "unavailable"
-        _redigest_pattern(run.pattern_manifest)
-    else:
-        run.pattern_manifest = DELEGATED_RITE.manifest.snapshot()
+    run = ledger._require("pattern-implementation-drift")
+    run.pattern_manifest["implementation_revision"] = "py.0"
+    _redigest_pattern(run.pattern_manifest)
 
     channel = substrate.bus.open(run.run_id)
     result = await perform_run({"run_substrate": substrate}, run_id=run.run_id)
@@ -873,7 +885,7 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
     dropped by the channel's closed-guard — so the channel carries a single terminal
     (DONE carrying the CANCELLED status) and the row stays CANCELLED.
     """
-    from lychd.domain.cortex.engine import QueueRouter, RunEngine
+    from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine
     from lychd.ghouls.runs import _settle_terminal
 
     class _CancelQueue:
@@ -902,7 +914,7 @@ async def test_cancel_racing_completion_yields_one_terminal_and_cancelled() -> N
         ledger=ledger,
         bus=substrate.bus,
         workflows=substrate.workflows,
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues={"runs": _CancelQueue()},
     )
     await engine.cancel("race")
@@ -1248,171 +1260,78 @@ async def test_delivery_page_isolates_one_exception_and_advances_later_rows(
 
 
 @pytest.mark.asyncio
-async def test_delivery_relay_retries_a_degraded_page_without_stalling_the_sweep(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
+async def test_relay_loop_fairly_alternates_forward_progress_with_deduplicated_retries() -> None:
     calls: list[tuple[datetime, str] | None] = []
     stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "page-1-end")
+    first = (datetime.now(UTC), "page-1")
+    second = (datetime.now(UTC), "page-2")
+    third = (datetime.now(UTC), "page-3")
+    fourth = (datetime.now(UTC), "page-4")
+    degraded = {"status": "degraded", "count": 0, "probe_errors": 1}
+    reconciled = {"status": "reconciled", "count": 0, "probe_errors": 0}
+    outcomes: list[tuple[dict[str, Any], tuple[datetime, str] | None]] = [
+        (degraded, first),
+        (degraded, first),
+        (degraded, second),
+        (degraded, first),
+        (reconciled, None),
+        (reconciled, second),
+        (degraded, third),
+        (reconciled, None),
+        (reconciled, fourth),
+        (reconciled, None),
+    ]
 
-    async def fake_page(
-        *_args: Any,
-        after: tuple[datetime, str] | None,
-        **_kwargs: Any,
-    ) -> tuple[dict[str, int | str], tuple[datetime, str]]:
+    async def page(after: tuple[datetime, str] | None) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
         calls.append(after)
-        if len(calls) == 3:
+        if len(calls) == len(outcomes):
             stop.set()
-        return (
-            {"status": "degraded", "count": 0, "probe_errors": 1},
-            first_page_end,
-        )
+        return outcomes[len(calls) - 1]
 
-    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
-    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
-
-    await relay_run_deliveries(
-        {"run_substrate": substrate},
+    await _run_relay_loop(
+        page=page,
         stop=stop,
         interval_s=0.001,
+        failure_event="test_relay_failed",
+        degraded_event="test_relay_degraded",
     )
 
-    assert calls == [None, None, first_page_end]
+    assert calls == [None, None, first, None, second, first, None, None, third, fourth]
 
 
 @pytest.mark.asyncio
-async def test_delivery_relay_revisits_a_held_page_after_release(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
+async def test_relay_loop_retains_failed_revisit_and_propagates_cancellation() -> None:
     calls: list[tuple[datetime, str] | None] = []
-    stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "held-page-end")
+    first = (datetime.now(UTC), "page-1")
+    second = (datetime.now(UTC), "page-2")
 
-    async def fake_page(
-        *_args: Any,
-        after: tuple[datetime, str] | None,
-        **_kwargs: Any,
-    ) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
-        calls.append(after)
-        if len(calls) == 1:
-            return (
-                {
-                    "status": "reconciled",
-                    "count": 0,
-                    "probe_errors": 0,
-                    "_revisit": True,
-                },
-                first_page_end,
-            )
-        if len(calls) == 2:
-            return (
-                {
-                    "status": "reconciled",
-                    "count": 0,
-                    "probe_errors": 0,
-                    "_revisit": False,
-                },
-                first_page_end,
-            )
-        stop.set()
-        return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
-
-    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
-    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
-
-    await relay_run_deliveries(
-        {"run_substrate": substrate},
-        stop=stop,
-        interval_s=0.001,
-    )
-
-    assert calls == [None, None, first_page_end]
-
-
-@pytest.mark.asyncio
-async def test_delivery_relay_retry_exception_does_not_stall_the_sweep(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
-    calls: list[tuple[datetime, str] | None] = []
-    stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "page-1-end")
-
-    async def fake_page(
-        *_args: Any,
-        after: tuple[datetime, str] | None,
-        **_kwargs: Any,
-    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
-        calls.append(after)
-        if len(calls) == 2:
-            message = "retry page unavailable"
-            raise RuntimeError(message)
-        if len(calls) == 3:
-            stop.set()
-            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
-        return (
-            {"status": "degraded", "count": 0, "probe_errors": 1},
-            first_page_end,
-        )
-
-    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
-    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
-
-    await relay_run_deliveries(
-        {"run_substrate": substrate},
-        stop=stop,
-        interval_s=0.001,
-    )
-
-    assert calls == [None, None, first_page_end]
-
-
-@pytest.mark.asyncio
-async def test_delivery_relay_fairly_retries_multiple_blocked_pages(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
-    calls: list[tuple[datetime, str] | None] = []
-    stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "page-1-end")
-    second_page_end = (datetime.now(UTC), "page-2-end")
-
-    async def fake_page(
-        *_args: Any,
-        after: tuple[datetime, str] | None,
-        **_kwargs: Any,
-    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
+    async def page(after: tuple[datetime, str] | None) -> tuple[dict[str, Any], tuple[datetime, str] | None]:
         calls.append(after)
         call = len(calls)
         if call == 1:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+            return (
+                {"status": "reconciled", "count": 0, "probe_errors": 0, "_revisit": True},
+                first,
+            )
         if call == 2:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
+            message = "retry page unavailable"
+            raise RuntimeError(message)
         if call == 3:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, second_page_end)
+            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, second)
         if call == 4:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 5:
             return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
-        stop.set()
-        return ({"status": "reconciled", "count": 1, "probe_errors": 0}, second_page_end)
+        raise asyncio.CancelledError
 
-    monkeypatch.setattr("lychd.ghouls.runs._flush_run_delivery_page", fake_page)
-    substrate, _, _ = _substrate(dispatcher=FakeDispatcher(model=TestModel()))
+    with pytest.raises(asyncio.CancelledError):
+        await _run_relay_loop(
+            page=page,
+            stop=asyncio.Event(),
+            interval_s=0.001,
+            failure_event="test_relay_failed",
+            degraded_event="test_relay_degraded",
+        )
 
-    await relay_run_deliveries(
-        {"run_substrate": substrate},
-        stop=stop,
-        interval_s=0.001,
-    )
-
-    assert calls == [None, None, first_page_end, None, second_page_end, first_page_end]
+    assert calls == [None, None, first, None, second]
 
 
 @pytest.mark.asyncio

@@ -17,29 +17,23 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from polyfactory.factories.pydantic_factory import ModelFactory
 
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.schemas import ConcurrencyIntent, GenericSoulstoneConfig, SoulstoneConfig
 from lychd.domain.animation.services.adapters.contracts import RuntimePlan
 from lychd.domain.animation.services.adapters.registry import RuntimeAdapterRegistry
 from lychd.domain.animation.transmute import Transmuter
+from lychd.system.host_tools import trusted_podman_user_generator_executable
 from lychd.system.services.scribe import ScribeService
 from lychd.system.unit_names import animator_service_unit, animator_target_unit, coven_target_unit
 
 if TYPE_CHECKING:
     from lychd.system.schemas import QuadletBase
 
-_QUADLET_GENERATOR = Path("/usr/libexec/podman/quadlet")
 
-
-class SoulstoneFactory(ModelFactory[GenericSoulstoneConfig]):
-    """Factory for generating valid concrete Soulstone config instances."""
-
-    __model__ = GenericSoulstoneConfig
-    groups: list[str] = []  # noqa: RUF012 - deterministic valid declaration
-    concurrency: ConcurrencyIntent = ConcurrencyIntent()
-    volumes: list[str] = []  # noqa: RUF012 - override the instance attribute
+def _stone(*, name: str, **overrides: object) -> GenericSoulstoneConfig:
+    """Build one deterministic Soulstone and let production defaults fill the rest."""
+    return GenericSoulstoneConfig.model_validate({"name": name, "quadlet": {"image": "example/runtime"}, **overrides})
 
 
 def _inscribe(manifests: list[QuadletBase], tmp_path: Path) -> tuple[Path, Path]:
@@ -49,7 +43,7 @@ def _inscribe(manifests: list[QuadletBase], tmp_path: Path) -> tuple[Path, Path]
     output_dir.mkdir()
     systemd_dir.mkdir()
     scribe = ScribeService(output_dir=output_dir, systemd_dir=systemd_dir)
-    scribe.generate_all(manifests)
+    scribe.reconcile_all(manifests, plain_units={})
     return output_dir, systemd_dir
 
 
@@ -61,7 +55,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
     read-only law lost.
     """
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    stone = SoulstoneFactory.build(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
+    stone = _stone(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     content = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8")
@@ -82,7 +76,7 @@ def test_f2_control_plane_mounts_render_options_and_do_not_leak(tmp_path: Path) 
 def test_container_user_is_scoped_to_vessel_and_soulstones(tmp_path: Path) -> None:
     """Host identity is explicit for agent containers, never forced on Postgres."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    stone = SoulstoneFactory.build(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
+    stone = _stone(name="hermes", quadlet={"image": "ollama/ollama"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     vessel = (output_dir / "lychd-vessel.container").read_text(encoding="utf-8").splitlines()
@@ -128,7 +122,7 @@ def test_f3_exec_and_env_are_systemd_quoted_not_html_escaped(tmp_path: Path) -> 
             )
 
     transmuter = Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner())
-    stone = SoulstoneFactory.build(name="qwen", quadlet={"image": "vllm/vllm-openai:latest"}, groups=[])
+    stone = _stone(name="qwen", quadlet={"image": "vllm/vllm-openai:latest"}, groups=[])
 
     output_dir, _ = _inscribe(transmuter.transmute_all([stone]), tmp_path)
     content = (output_dir / "lychd-qwen.container").read_text(encoding="utf-8")
@@ -141,9 +135,11 @@ def test_f3_exec_and_env_are_systemd_quoted_not_html_escaped(tmp_path: Path) -> 
     assert env_line == ('Environment="UPSTREAM_URL=http://x/y?a=1&b=2 label=\\"two words\\" token=$${HOST_TOKEN}"')
 
 
-@pytest.mark.skipif(not _QUADLET_GENERATOR.is_file(), reason="Podman Quadlet generator is unavailable")
 def test_real_quadlet_generator_preserves_literal_environment_and_command_boundary(tmp_path: Path) -> None:
     """Exercise the real generator after LychD's source-level boundary validation."""
+    generator = trusted_podman_user_generator_executable()
+    if generator is None:
+        pytest.skip("Podman Quadlet generator is unavailable")
 
     class StubRuntimePlanner:
         def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
@@ -153,7 +149,7 @@ def test_real_quadlet_generator_preserves_literal_environment_and_command_bounda
                 env_overrides={"LITERAL": "${HOST_TOKEN}"},
             )
 
-    stone = SoulstoneFactory.build(name="generator", quadlet={"image": "example/runtime"})
+    stone = _stone(name="generator", quadlet={"image": "example/runtime"})
     output_dir, _ = _inscribe(
         Transmuter(settings=get_settings(), runtime_planner=StubRuntimePlanner()).transmute_all([stone]),
         tmp_path,
@@ -167,7 +163,7 @@ def test_real_quadlet_generator_preserves_literal_environment_and_command_bounda
     )
 
     result = subprocess.run(  # noqa: S603 - pinned local system generator, no shell
-        [str(_QUADLET_GENERATOR), "-dryrun", "-user"],
+        [generator.path, "-dryrun", "-user"],
         check=False,
         capture_output=True,
         env=environment,
@@ -185,13 +181,13 @@ def test_f4_wanted_by_reflects_concurrency(tmp_path: Path) -> None:
     """F4: dedicated stones must NOT be WantedBy=default.target; persistent residents must be."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
-    dedicated = SoulstoneFactory.build(
+    dedicated = _stone(
         name="loner",
         quadlet={"image": "ollama/ollama"},
         groups=[],
         concurrency=ConcurrencyIntent(dedicated=True),
     )
-    resident = SoulstoneFactory.build(
+    resident = _stone(
         name="resident",
         quadlet={"image": "ollama/ollama"},
         groups=[],
@@ -213,26 +209,26 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
     """F1: Coven aggregates compose explicit compatible Animator gates."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
 
-    compatible = ConcurrencyIntent(conflict_domains=[])
-    alpha = SoulstoneFactory.build(
+    compatible = ConcurrencyIntent(conflict_domains=())
+    alpha = _stone(
         name="alpha",
         quadlet={"image": "ollama/ollama"},
         groups=["logic"],
         concurrency=compatible,
     )
-    beta = SoulstoneFactory.build(
+    beta = _stone(
         name="beta",
         quadlet={"image": "ollama/ollama"},
         groups=["logic"],
         concurrency=compatible,
     )
-    gamma = SoulstoneFactory.build(
+    gamma = _stone(
         name="gamma",
         quadlet={"image": "ollama/ollama"},
         groups=["creative"],
         concurrency=compatible,
     )
-    delta = SoulstoneFactory.build(
+    delta = _stone(
         name="delta",
         quadlet={"image": "ollama/ollama"},
         groups=["creative"],
@@ -277,9 +273,9 @@ def test_f1_coven_units_routed_and_referenced(tmp_path: Path) -> None:
 def test_conflict_domain_renders_one_reciprocal_ordered_edge(tmp_path: Path) -> None:
     """Each physical conflict pair renders once, on the lexical higher endpoint."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    gpu = ConcurrencyIntent(conflict_domains=["gpu"])
-    alpha = SoulstoneFactory.build(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
-    gamma = SoulstoneFactory.build(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gpu = ConcurrencyIntent(conflict_domains=("gpu",))
+    alpha = _stone(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gamma = _stone(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
 
     output_dir, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
     alpha_target = (systemd_dir / animator_target_unit("alpha")).read_text(encoding="utf-8").splitlines()
@@ -297,9 +293,9 @@ def test_conflict_domain_renders_one_reciprocal_ordered_edge(tmp_path: Path) -> 
 def test_systemd_analyze_accepts_compiled_conflict_graph(tmp_path: Path) -> None:
     """Ask systemd itself to reject requirement or ordering cycles."""
     transmuter = Transmuter(settings=get_settings(), runtime_planner=RuntimeAdapterRegistry())
-    gpu = ConcurrencyIntent(conflict_domains=["gpu"])
-    alpha = SoulstoneFactory.build(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
-    gamma = SoulstoneFactory.build(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gpu = ConcurrencyIntent(conflict_domains=("gpu",))
+    alpha = _stone(name="alpha", quadlet={"image": "example/runtime"}, concurrency=gpu)
+    gamma = _stone(name="gamma", quadlet={"image": "example/runtime"}, concurrency=gpu)
     _, systemd_dir = _inscribe(transmuter.transmute_all([gamma, alpha]), tmp_path)
 
     (systemd_dir / "lychd-pod.service").write_text(

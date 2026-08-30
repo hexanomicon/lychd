@@ -83,7 +83,9 @@ The built-in `animator` extension contributes `runes/animator/portals/openai/` a
 `runes/animator/portals/google-gemini/`. Both speak an OpenAI-shaped HTTP interface, while the
 connector selects the declared provider's model-profile resolver. Selecting an `animator/*`
 runtime also registers the shared Portal base. Another interface needs an extension-owned Rune
-schema and connector factory.
+schema and connector factory. Registering a schema alone is deliberately inert: runtime and
+capability construction require one exact `PortalDefinition` for that concrete schema. There is no
+anonymous OpenAI-compatible fallback.
 
 ### 2. Seal one credential
 
@@ -124,7 +126,10 @@ max_tokens = 4096
 
 The `openai` leaf supplies provider identity and its default URL. Override `base_url` only for an
 OpenAI-compatible endpoint. A Portal with no `[[models]]` blocks contributes no capability; LychD
-does not infer or download a provider catalogue.
+does not infer or download a provider catalogue. The endpoint is a root: an existing path prefix is
+kept when `/models` is appended, while embedded credentials, query or fragment state, port zero,
+and out-of-range ports fail validation. Model ids are unique; duplicates fail before registry
+construction.
 
 Portal models use the Pydantic AI profile selected by provider alias and model id, so settings
 known to be unsupported are omitted rather than forced onto the request. OpenRouter, LiteLLM, and
@@ -176,7 +181,7 @@ secret policy.
 | `name` | required | Animator identity and capability-key prefix. |
 | `description` | `""` | Operator note. |
 | `provider_name` | provider leaf | Connector identity. |
-| `base_url` | provider leaf | HTTP(S) endpoint root. |
+| `base_url` | provider leaf | HTTP(S) endpoint root without credentials, query, fragment, or invalid port. |
 | `api_key_secret_name` | `null` | One option-free Podman secret name, never its value. |
 | `models` | `[]` | Explicit declarations; empty means zero capabilities. |
 | `generation` | `null` | Portal-wide generation overlay. |

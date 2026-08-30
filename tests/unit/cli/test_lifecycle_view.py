@@ -4,16 +4,14 @@ from io import StringIO
 
 from rich.console import Console
 
-from lychd.cli import lifecycle_view
 from lychd.cli.lifecycle_view import render_lifecycle_plan
 from lychd.system.constants import (
     PATH_CODEX_ROOT,
     PATH_POSTGRESS_DATA_DIR,
     PATH_SYSTEMD_CONFIG_DIR,
-    PATH_SYSTEMD_UNITS_DIR,
     PATH_SYSTEMD_USER_UNITS_DIR,
 )
-from lychd.system.services.lifecycle import (
+from lychd.system.services.lifecycle.models import (
     LifecycleAction,
     LifecycleDisposition,
     LifecyclePlan,
@@ -131,71 +129,3 @@ def test_external_mount_and_blocker_details_remain_visible_by_default() -> None:
     assert "symlink component is not trusted: /tmp/link" in output
     assert "1 external mount" in output
     assert "1 blocked" in output
-
-
-def test_path_color_implicitly_encodes_disposition() -> None:
-    target = PATH_CODEX_ROOT / "lychd.toml"
-    created = LifecycleAction(
-        LifecycleDisposition.WOULD_CREATE,
-        LifecycleResourceKind.FILE,
-        str(target),
-        "generated file is absent with mode 0600",
-    )
-
-    created_label = lifecycle_view._path_label(  # pyright: ignore[reportPrivateUsage]
-        ["lychd.toml"],
-        actions=(created,),
-        path_descriptions={target: "Primary operator settings."},
-    )
-    styled_segments = [(created_label.plain[span.start : span.end], str(span.style)) for span in created_label.spans]
-
-    assert styled_segments == [
-        ("lychd.toml", "bold cyan"),
-        (" — ", "dim"),
-        ("Primary operator settings.", "white"),
-        (" · ", "dim"),
-        ("mode 0600", "dim"),
-    ]
-
-    existing = LifecycleAction(
-        LifecycleDisposition.PRESERVE,
-        LifecycleResourceKind.FILE,
-        str(target),
-        "generated file already matches",
-    )
-    existing_label = lifecycle_view._path_label(  # pyright: ignore[reportPrivateUsage]
-        ["lychd.toml"],
-        actions=(existing,),
-        path_descriptions={target: "Primary operator settings."},
-    )
-
-    assert [(existing_label.plain[span.start : span.end], str(span.style)) for span in existing_label.spans] == [
-        ("lychd.toml", "bold green"),
-        (" — ", "dim"),
-        ("Primary operator settings.", "white"),
-    ]
-
-
-def test_shared_anchor_color_is_distinct_from_its_lifecycle_state() -> None:
-    created = LifecycleAction(
-        LifecycleDisposition.WOULD_CREATE,
-        LifecycleResourceKind.DIRECTORY,
-        str(PATH_SYSTEMD_UNITS_DIR),
-        "managed directory is absent",
-    )
-
-    label = lifecycle_view._path_label(  # pyright: ignore[reportPrivateUsage]
-        ["containers", "systemd"],
-        actions=(created,),
-        path_descriptions={PATH_SYSTEMD_UNITS_DIR: "Shared Podman Quadlet directory."},
-        shared_anchor=True,
-    )
-    styled_segments = [(label.plain[span.start : span.end], str(span.style)) for span in label.spans]
-
-    assert styled_segments == [
-        ("containers/systemd", "bold bright_blue"),
-        (" — ", "dim"),
-        ("Shared Podman Quadlet directory.", "white"),
-        (" · ", "dim"),
-        ("will create", "cyan"),
-    ]

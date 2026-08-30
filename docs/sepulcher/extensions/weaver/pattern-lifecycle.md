@@ -38,6 +38,19 @@ revoked, or unauthorized placement instead of substituting a similar name or new
 future Loom may show the absence only in an inert resolution report; an unresolved placement never
 enters an executable Graph.
 
+Boot assembly derives an internal `legacy_inline` resolution for each executable current station;
+the declarative terminal remains Graph `End`, not a Spell. This private lock fingerprints the
+Python node binding so a comparison can detect change while leaving the frozen v2 manifest snapshot
+and digest untouched. It is not
+persisted on Run, portable, configurable from TOML, or exposed by Loom/Orb, and therefore does not
+pretend that the portable Spell catalogue has shipped.
+
+Future configuration follows the closed spine in [ADR 28](../../../adr/28-workflow.md#configuration-to-casting-spine-designed):
+TOML selects exact registered identities and bounded policy only. Never place import paths, node
+classes, graph edges, prompts, source bytes, credentials, or live handles in a Scroll selector.
+Unknown ids and missing exact revisions are refusal, not cues for package scanning or nearest-name
+fallback.
+
 The catalogue is immutable after construction. It rejects duplicate `(key, revision)` pairs,
 requires an explicit active revision when one name has alternatives, requires explicit non-default
 route precedence, and names its default. Its two current source-defined manifests are
@@ -47,10 +60,10 @@ route precedence, and names its default. Its two current source-defined manifest
 
 ??? example "The fixed registry in source"
     ```python
-    --8<-- "src/lychd/agents/workflows/__init__.py:222:232"
+    --8<-- "src/lychd/agents/workflows/__init__.py:239:249"
     ```
 
-    [Open the owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py#L222-L232)
+    [Open the owning registry source](https://github.com/hexanomicon/lychd/blob/main/src/lychd/agents/workflows/__init__.py#L239-L249)
 
 ## Admission happens once
 

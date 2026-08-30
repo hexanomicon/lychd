@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from lychd.system.services.scribe.naming import (
     QUADLET_SUFFIXES,
     SYSTEMD_SUFFIXES,
+    runtime_unit_for_source,
     validate_owned_filename,
 )
 
@@ -27,7 +28,7 @@ class OwnershipManifest(BaseModel):
 
     @model_validator(mode="after")
     def validate_entries(self) -> OwnershipManifest:
-        """Validate uniqueness, namespace, and supported binding kinds."""
+        """Validate source names and their one-to-one runtime-unit projection."""
         if len(set(self.quadlet)) != len(self.quadlet) or len(set(self.systemd)) != len(self.systemd):
             msg = "The Scribe ownership manifest contains duplicate filenames."
             raise ValueError(msg)
@@ -35,6 +36,22 @@ class OwnershipManifest(BaseModel):
             validate_owned_filename(filename, suffixes=QUADLET_SUFFIXES, site="quadlet")
         for filename in self.systemd:
             validate_owned_filename(filename, suffixes=SYSTEMD_SUFFIXES, site="systemd")
+
+        runtime_sources: dict[str, str] = {}
+        runtime_source_names = (
+            *(filename for filename in self.quadlet if Path(filename).suffix in {".container", ".pod"}),
+            *self.systemd,
+        )
+        for filename in runtime_source_names:
+            runtime_unit = runtime_unit_for_source(filename)
+            previous = runtime_sources.get(runtime_unit)
+            if previous is not None:
+                msg = (
+                    "The Scribe ownership manifest maps multiple sources to runtime unit "
+                    f"{runtime_unit!r}: {previous!r} and {filename!r}."
+                )
+                raise ValueError(msg)
+            runtime_sources[runtime_unit] = filename
         return self
 
 

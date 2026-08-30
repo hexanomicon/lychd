@@ -33,7 +33,7 @@ class OperatorTargetResolver:
             raise OperatorTargetError(owned.warning)
         if target in {OperatorTarget.SYSTEM, OperatorTarget.SERVICES}:
             return tuple(unit.name for unit in owned.units)
-        if target in {OperatorTarget.WORKERS, OperatorTarget.RUNS}:
+        if target is OperatorTarget.WORKERS:
             vessel = owned.select(_VESSEL_UNITS)
             if len(vessel) > 1:
                 message = "Both caged and uncaged Vessel units are owned; target is ambiguous."

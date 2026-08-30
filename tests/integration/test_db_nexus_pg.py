@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator, Iterator
 from typing import TYPE_CHECKING, cast
 
@@ -51,11 +52,16 @@ async def test_request_admission_survives_ledger_reconstruction(
     first_process = DbSwapRequestLedger(pg_factory)
     second_process = DbSwapRequestLedger(pg_factory)
 
-    first = await first_process.claim(request_id="request-restart", target="chat:first")
-    repeat = await second_process.claim(request_id="request-restart", target="chat:first")
-    conflict = await second_process.claim(request_id="request-restart", target="chat:second")
+    claims = await asyncio.gather(
+        first_process.claim(request_id="request-race", target="chat:first"),
+        second_process.claim(request_id="request-race", target="chat:second"),
+    )
 
-    assert first.created is True
-    assert repeat.created is False
-    assert conflict.created is False
-    assert conflict.target == "chat:first"
+    assert sum(claim.created for claim in claims) == 1
+    winner = next(claim.target for claim in claims if claim.created)
+    assert {claim.target for claim in claims} == {winner}
+
+    reconstructed = DbSwapRequestLedger(pg_factory)
+    replay = await reconstructed.claim(request_id="request-race", target="chat:third")
+    assert replay.created is False
+    assert replay.target == winner

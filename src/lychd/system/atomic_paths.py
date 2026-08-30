@@ -5,10 +5,8 @@ from __future__ import annotations
 import ctypes
 import errno
 import os
-from pathlib import Path
 from typing import Protocol, cast
 
-_AT_FDCWD = -100
 _RENAME_NOREPLACE = 1
 _RENAME_EXCHANGE = 2
 
@@ -53,36 +51,6 @@ def _load_renameat2() -> _RenameAt2 | None:
 _RENAMEAT2 = _load_renameat2()
 
 
-def rename_exchange(source: Path, destination: Path) -> None:
-    """Atomically exchange two absolute pathnames."""
-    source_bytes = _absolute_path(source, parameter="source")
-    destination_bytes = _absolute_path(destination, parameter="destination")
-    _invoke_renameat2(
-        source_dir_fd=_AT_FDCWD,
-        source=source_bytes,
-        destination_dir_fd=_AT_FDCWD,
-        destination=destination_bytes,
-        flags=_RENAME_EXCHANGE,
-        source_display=str(source),
-        destination_display=str(destination),
-    )
-
-
-def rename_noreplace(source: Path, destination: Path) -> None:
-    """Atomically rename an absolute pathname only when the target is absent."""
-    source_bytes = _absolute_path(source, parameter="source")
-    destination_bytes = _absolute_path(destination, parameter="destination")
-    _invoke_renameat2(
-        source_dir_fd=_AT_FDCWD,
-        source=source_bytes,
-        destination_dir_fd=_AT_FDCWD,
-        destination=destination_bytes,
-        flags=_RENAME_NOREPLACE,
-        source_display=str(source),
-        destination_display=str(destination),
-    )
-
-
 def rename_exchange_at(
     source_name: str,
     destination_name: str,
@@ -123,18 +91,6 @@ def rename_noreplace_at(
         source_display=source_name,
         destination_display=destination_name,
     )
-
-
-def _absolute_path(path: Path, *, parameter: str) -> bytes:
-    """Encode one absolute ``Path`` without resolving or following it."""
-    if not path.is_absolute():
-        message = f"{parameter} must be absolute."
-        raise ValueError(message)
-    encoded = os.fsencode(path)
-    if b"\0" in encoded:
-        message = f"{parameter} cannot contain a null byte."
-        raise ValueError(message)
-    return encoded
 
 
 def _relative_name(name: str, *, parameter: str) -> bytes:
@@ -191,8 +147,6 @@ def _invoke_renameat2(
 
 
 __all__ = (
-    "rename_exchange",
     "rename_exchange_at",
-    "rename_noreplace",
     "rename_noreplace_at",
 )

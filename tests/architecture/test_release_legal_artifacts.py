@@ -4,6 +4,8 @@ import json
 import tomllib
 from pathlib import Path
 
+from lychd.__about__ import __version__
+
 ROOT = Path(__file__).parents[2]
 
 
@@ -16,6 +18,7 @@ def test_delivery_clients_are_project_roots_outside_python_source() -> None:
 
 def test_python_distributions_declare_every_project_notice() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    notices = (ROOT / "THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
 
     assert project["project"]["license"] == "MPL-2.0"
     assert set(project["project"]["license-files"]) == {
@@ -26,6 +29,7 @@ def test_python_distributions_declare_every_project_notice() -> None:
 
     sdist_includes = set(project["tool"]["hatch"]["build"]["targets"]["sdist"]["include"])
     assert {
+        "/.containerignore",
         "/Containerfile",
         "/LICENSE",
         "/Makefile",
@@ -33,7 +37,37 @@ def test_python_distributions_declare_every_project_notice() -> None:
         "/clients/web",
         "/scripts",
         "/src",
+        "/uv.lock",
     } <= sdist_includes
+    assert "Advanced Alchemy 1.8.0" in notices
+    assert "Copyright (c) 2024 Litestar Organization" in notices
+    assert "Alembic 1.17.2" in notices
+    assert "Copyright 2009-2025 Michael Bayer." in notices
+
+
+def test_container_build_context_is_podman_native_and_strictly_bounded() -> None:
+    assert not (ROOT / "compose.yaml").exists()
+    assert not (ROOT / ".dockerignore").exists()
+
+    ignore_lines = [
+        line
+        for raw_line in (ROOT / ".containerignore").read_text(encoding="utf-8").splitlines()
+        if (line := raw_line.strip()) and not line.startswith("#")
+    ]
+    assert ignore_lines[0] == "**"
+    assert set(ignore_lines[1:]) == {
+        "!.containerignore",
+        "!Containerfile",
+        "!LICENSE",
+        "!README.md",
+        "!THIRD_PARTY_NOTICES.md",
+        "!pyproject.toml",
+        "!uv.lock",
+        "!scripts/",
+        "!scripts/generate_python_third_party_notices.py",
+        "!src/",
+        "!src/**",
+    }
 
 
 def test_version_bump_is_review_only_and_has_one_real_version_owner() -> None:
@@ -41,8 +75,8 @@ def test_version_bump_is_review_only_and_has_one_real_version_owner() -> None:
     about = (ROOT / "src" / "lychd" / "__about__.py").read_text(encoding="utf-8")
     bump = project["tool"]["bumpversion"]
 
-    assert '__version__ = "0.0.2"' in about
-    assert bump["current_version"] == "0.0.2"
+    assert f'__version__ = "{__version__}"' in about
+    assert bump["current_version"] == __version__
     assert bump["commit"] is False
     assert bump["tag"] is False
     assert {entry["filename"] for entry in bump["files"]} == {

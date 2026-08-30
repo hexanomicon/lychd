@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from lychd.system.operator.inventory import AnimatorDeclarationProvider
     from lychd.system.operator.storage import StorageInventoryService
     from lychd.system.operator.units import OwnedUnitInventoryService
-    from lychd.system.services.lifecycle import LifecycleReceiptStore
+    from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 
 
 class _Receipt:

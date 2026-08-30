@@ -6,9 +6,7 @@ propagates out of `graph.iter()` for `GraphRunner` to catch and resolve — that
 Live Stasis, and no node handles hardware.
 
 No module-level mutable state: every collaborator is read from `ctx.deps`
-(a `WorkflowServices`), threaded in as `graph.iter(..., deps=services)`. The
-typed outputs (`BridgeReply`, `FragmentCall`, `Bottleneck`) live in
-`lychd.agents.outputs` and are re-exported here for backward-compatible imports.
+(a `WorkflowServices`), threaded in as `graph.iter(..., deps=services)`.
 """
 
 from __future__ import annotations
@@ -30,8 +28,8 @@ from pydantic_ai.usage import UsageLimits
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
 from lychd.agents.deps import LychDDeps
-from lychd.agents.outputs import Bottleneck, BridgeReply, FragmentCall
-from lychd.agents.services import WorkflowServices, default_sigil
+from lychd.agents.outputs import Bottleneck, BridgeReply
+from lychd.agents.services import WorkflowServices
 from lychd.agents.the_first_one import THE_FIRST_ONE_SPEC
 from lychd.agents.workflows.base import Gate, PatternEdge, PatternManifest, PatternNode, Trigger, Workflow
 from lychd.agents.workflows.nodes import (
@@ -39,12 +37,14 @@ from lychd.agents.workflows.nodes import (
     ConsentToolBinding,
     ConsentToolBindingChangedError,
     bind_consent_toolsets,
+    bind_messages_to_logical_run,
     is_single_approval,
     new_step_id,
     park_on_consent,
     pump_agent_events,
 )
 from lychd.domain.cortex.context import ContextBudgetExceededError
+from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.cortex.priority import PRIORITY_DEFAULT
 from lychd.domain.cortex.runs import ConsentPending
 
@@ -53,20 +53,14 @@ if TYPE_CHECKING:
     from lychd.agents.services import TurnLedgerPort
     from lychd.domain.web.fragments import FragmentRegistry, ValidatedFragment
 
-# Re-exported for backward-compatible imports (domain/web/fragments,
-# interface/web/bridge) without re-introducing the old import cycle.
 __all__ = [
     "BRIDGE_CHAT",
     "BRIDGE_CHAT_GRAPH",
     "AwaitConsent",
-    "Bottleneck",
     "BridgeChatState",
-    "BridgeReply",
     "Converse",
-    "FragmentCall",
     "ProjectReply",
     "WeaveContext",
-    "default_sigil",
 ]
 
 
@@ -82,9 +76,9 @@ class BridgeChatState(BaseModel):
     run_id: str
     prompt: str
     priority: int = PRIORITY_DEFAULT
+    hardware_resume_budget: HardwareResumeBudget = Field(default_factory=HardwareResumeBudget)
     history: list[Any] = Field(default_factory=list)
     new_messages: list[Any] = Field(default_factory=list)
-    prefix_digest: str | None = None
     reply: BridgeReply | None = None
     pending_consent_id: str | None = None
     bottleneck: Bottleneck | None = None
@@ -123,23 +117,11 @@ def _fallback_reply(state: BridgeChatState) -> BridgeReply:
     return BridgeReply(answer="The turn settled without a reply.")
 
 
-def _bind_logical_run(messages: list[Any], run_id: str) -> list[Any]:
-    """Bind every serialized message hop to one completed LychD turn identity."""
-    bound: list[Any] = []
-    for message in messages:
-        if not isinstance(message, dict):
-            bound.append(message)
-            continue
-        payload = cast("dict[str, Any]", message)
-        bound.append({**payload, "run_id": run_id} if payload.get("kind") in {"request", "response"} else payload)
-    return bound
-
-
 def _usage_limits(context_window: int | None, grant: Any) -> UsageLimits | None:
     """Build the grant-bounded usage policy and enable pre-counting when supported."""
     if context_window is None:
         return None
-    output_reserve = getattr(grant.generation, "max_tokens", None) or THE_FIRST_ONE_SPEC.max_tokens or 0
+    output_reserve = grant.spec.generation_profile.max_tokens or THE_FIRST_ONE_SPEC.max_tokens or 0
     if output_reserve >= context_window:
         msg = (
             f"Output reserve {output_reserve} leaves no input budget inside the {context_window}-token context window."
@@ -158,10 +140,9 @@ async def settle_turn(
     validated: list[ValidatedFragment],
     *,
     turns: TurnLedgerPort,
-    context: Any,
     fragments: FragmentRegistry,
 ) -> None:
-    """Atomically settle visible reply + completed model history, then release context."""
+    """Atomically settle the visible reply and completed model-history suffix."""
     from lychd.domain.web.schemas import BridgeTurn
 
     new_messages = state.new_messages
@@ -171,7 +152,7 @@ async def settle_turn(
             ModelResponse(parts=[TextPart(reply.answer)]),
         ]
         new_messages = list(ModelMessagesTypeAdapter.dump_python(synthetic, mode="json"))
-    new_messages = _bind_logical_run(new_messages, state.run_id)
+    new_messages = bind_messages_to_logical_run(new_messages, state.run_id)
     await turns.settle_agent_turn(
         state.session_id,
         BridgeTurn(
@@ -183,7 +164,6 @@ async def settle_turn(
         ),
         new_messages=new_messages,
     )
-    context.release(state.run_id)
 
 
 # ---------------------------------------------------------------------------
@@ -205,7 +185,6 @@ class WeaveContext(BaseNode[BridgeChatState, WorkflowServices]):
             query=ctx.state.prompt,
             history=await _session_history(ctx.state.session_id, ctx.deps.turns),
         )
-        ctx.state.prefix_digest = assembled.prefix_digest
         ctx.state.history = assembled.state_window
         return Converse()
 
@@ -235,8 +214,8 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 query=ctx.state.prompt,
                 history=ctx.state.history,
                 grant=grant,
+                grant_epoch=grant.lease.grant_id,
             )
-            ctx.state.prefix_digest = assembled.prefix_digest
             ctx.state.history = assembled.state_window
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
             deps = LychDDeps(
@@ -250,7 +229,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 priority=ctx.state.priority,
             )
             emit.status("thinking")
-            bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.key)
+            bound_toolset = bind_consent_toolsets(grant.toolsets, capability_key=grant.spec.key)
             pumped = await pump_agent_events(
                 agent,
                 build_user_prompt(ctx.state),
@@ -285,7 +264,7 @@ class Converse(BaseNode[BridgeChatState, WorkflowServices]):
                 binding,
             )  # S4: records the row; does NOT emit
             return AwaitConsent()
-        ctx.state.reply = output if isinstance(output, BridgeReply) else None
+        ctx.state.reply = output
         return ProjectReply()
 
 
@@ -324,8 +303,8 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
                 history=ctx.state.history,
                 continuation=continuation,
                 grant=grant,
+                grant_epoch=grant.lease.grant_id,
             )
-            ctx.state.prefix_digest = assembled.prefix_digest
             ctx.state.history = assembled.state_window
             history = ModelMessagesTypeAdapter.validate_python(assembled.model_history())
             agent = ctx.deps.forge.agent_for(THE_FIRST_ONE_SPEC)
@@ -343,7 +322,7 @@ class AwaitConsent(Gate, BaseNode[BridgeChatState, WorkflowServices]):
             try:
                 bound_toolset = bind_consent_toolsets(
                     grant.toolsets,
-                    capability_key=grant.key,
+                    capability_key=grant.spec.key,
                     expected=expected_binding,
                     require_expected=True,
                 )
@@ -417,7 +396,6 @@ class ProjectReply(BaseNode[BridgeChatState, WorkflowServices, BridgeReply]):
             reply,
             validated,
             turns=ctx.deps.turns,
-            context=ctx.deps.context,
             fragments=ctx.deps.fragments,
         )
         return End(reply)

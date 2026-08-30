@@ -17,6 +17,7 @@ from lychd.domain.orchestration.actuator import (
     RuntimePreconditionError,
     TransitionIntent,
 )
+from lychd.system.path_safety import path_has_symlink_component
 from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.systemctl_process import (
     SystemctlClientTimeoutError,
@@ -36,6 +37,7 @@ __all__ = [
     "HostReactorRuntimeActuator",
     "SystemdRuntimeActuator",
     "build_runtime_actuator",
+    "validate_reactor_boundaries",
     "wait_for_host_reactor_idle",
 ]
 
@@ -68,7 +70,7 @@ class _ObservedRuntimeWorld:
 
 def _validate_reactor_directory(path: Path, *, label: str) -> None:
     """Require one owner-only, non-symlink Reactor boundary directory."""
-    if path.is_symlink() or not path.is_dir():
+    if path_has_symlink_component(path) is not None or not path.is_dir():
         msg = f"Host Reactor {label} directory does not exist safely: {path}"
         raise RuntimeError(msg)
     metadata = path.stat()
@@ -78,7 +80,7 @@ def _validate_reactor_directory(path: Path, *, label: str) -> None:
         raise RuntimeError(msg)
 
 
-def _validate_reactor_boundaries(intents_dir: Path, journal_dir: Path) -> None:
+def validate_reactor_boundaries(intents_dir: Path, journal_dir: Path) -> None:
     """Validate the paired writable-inbox/read-only-journal trust boundary."""
     _validate_reactor_directory(intents_dir, label="intent")
     _validate_reactor_directory(journal_dir, label="journal")
@@ -93,7 +95,6 @@ class SystemdRuntimeActuator:
         *,
         systemctl_bin: str,
         systemctl_timeout_s: float = 120.0,
-        observe_systemd: bool = False,
         lock_factory: Callable[[], AbstractContextManager[object]] | None = None,
     ) -> None:
         """Initialize against registry truth and an injected attested executable.
@@ -108,7 +109,6 @@ class SystemdRuntimeActuator:
         self._registry = registry
         self._systemctl = systemctl_bin
         self._systemctl_timeout_s = validate_systemctl_timeout(systemctl_timeout_s)
-        self._observe_systemd = observe_systemd
         self._lock_factory = lock_factory
         from lychd.system.services.runtime_topology import RuntimeTopologyAttestor
         from lychd.system.services.scribe import ScribeService
@@ -129,15 +129,14 @@ class SystemdRuntimeActuator:
     async def _apply_locked(self, intent: TransitionIntent) -> None:
         """Observe and mutate only after the configured lifecycle authority is held."""
         try:
-            if self._observe_systemd:
-                await self._topology_attestor.attest(intent)
-                pending = await self._pending_relevant_jobs(intent)
-                if pending:
-                    message = (
-                        f"Transition '{intent.transition_id}' found in-flight systemd jobs before "
-                        f"any effect: {', '.join(pending)}."
-                    )
-                    raise RuntimePreconditionError(message)
+            await self._topology_attestor.attest(intent)
+            pending = await self._pending_relevant_jobs(intent)
+            if pending:
+                message = (
+                    f"Transition '{intent.transition_id}' found in-flight systemd jobs before "
+                    f"any effect: {', '.join(pending)}."
+                )
+                raise RuntimePreconditionError(message)
             world = await self._observe_runtime_world()
         except SystemctlClientTimeoutError as exc:
             message = (
@@ -184,9 +183,6 @@ class SystemdRuntimeActuator:
 
     async def _recover_locked(self, intent: TransitionIntent) -> None:
         """Recover one transaction while its effect authority remains exclusive."""
-        if not self._observe_systemd:
-            msg = "Host transition recovery requires direct systemd state observation."
-            raise RuntimeError(msg)
         await self._await_relevant_jobs_quiescent(intent)
         await self._topology_attestor.attest(intent)
         world = await self._observe_runtime_world()
@@ -222,9 +218,6 @@ class SystemdRuntimeActuator:
             # exact pre-world before preserving cancellation semantics.
             with suppress(Exception):
                 await self._await_task_terminal(transaction_task)
-            if not self._observe_systemd:
-                await self._compensate_unobserved(intent)
-                raise
             restoration_task = asyncio.create_task(self._compensate_after_interruption(intent))
             await self._await_task_terminal(restoration_task)
             message = f"Cancelled transition '{intent.transition_id}' restored its exact prior runtime world."
@@ -237,22 +230,10 @@ class SystemdRuntimeActuator:
         action, units = self._physical_request(intent)
         try:
             returncode = await self._run_systemctl(action, units)
-        except Exception as exc:  # subprocess creation/transport failure
-            if self._observe_systemd:
-                await self._settle_observed_transaction(intent, command_error=exc)
-                return
-            await self._compensate_unobserved(intent)
-            message = f"Transition '{intent.transition_id}' could not submit its systemd transaction."
-            raise RuntimeError(message) from exc
-
-        if self._observe_systemd:
-            await self._settle_observed_transaction(intent, returncode=returncode)
+        except Exception as exc:  # noqa: BLE001 - settled systemd state remains authoritative
+            await self._settle_observed_transaction(intent, command_error=exc)
             return
-        if returncode != 0:
-            await self._compensate_unobserved(intent)
-            msg = f"Transition '{intent.transition_id}' failed: systemctl returned {returncode} for {' '.join(units)}."
-            raise RuntimeError(msg)
-        await self._refresh_affected(intent)
+        await self._settle_observed_transaction(intent, returncode=returncode)
 
     @staticmethod
     async def _await_task_terminal(task: asyncio.Task[None]) -> None:
@@ -310,23 +291,20 @@ class SystemdRuntimeActuator:
 
     async def _compensate_after_interruption(self, intent: TransitionIntent) -> None:
         """Restore the exact pre-world after caller cancellation."""
-        if self._observe_systemd:
-            await self._await_relevant_jobs_quiescent(intent)
-            observed = await self._observe_runtime_world()
-            if observed.is_exact(self._expected_world(intent)):
-                return
-            restored, _, compensation_error = await self._restore_expected(
-                intent,
-                observed=observed,
-            )
-            if not restored.is_exact(self._expected_world(intent)):
-                msg = (
-                    f"Cancelled transition '{intent.transition_id}' could not restore its prior "
-                    f"runtime world: observed {restored}."
-                )
-                raise RuntimeError(msg) from compensation_error
+        await self._await_relevant_jobs_quiescent(intent)
+        observed = await self._observe_runtime_world()
+        if observed.is_exact(self._expected_world(intent)):
             return
-        await self._compensate_unobserved(intent)
+        restored, _, compensation_error = await self._restore_expected(
+            intent,
+            observed=observed,
+        )
+        if not restored.is_exact(self._expected_world(intent)):
+            msg = (
+                f"Cancelled transition '{intent.transition_id}' could not restore its prior "
+                f"runtime world: observed {restored}."
+            )
+            raise RuntimeError(msg) from compensation_error
 
     async def _restore_expected(
         self,
@@ -376,28 +354,6 @@ class SystemdRuntimeActuator:
             "stop",
             tuple(self._require_runtime_target(name) for name in candidates),
         )
-
-    async def _compensate_unobserved(self, intent: TransitionIntent) -> None:
-        """Best-effort compensation for narrow non-observing test/development use."""
-        try:
-            expected = self._expected_world(intent)
-            if expected:
-                request = (
-                    "start",
-                    tuple(self._require_runtime_target(name) for name in expected),
-                )
-            else:
-                request = (
-                    "stop",
-                    tuple(self._require_runtime_target(name) for name in sorted(intent.launch_animators)),
-                )
-            await self._run_systemctl(*request)
-        finally:
-            await self._refresh_affected(intent)
-
-    async def _refresh_affected(self, intent: TransitionIntent) -> None:
-        for animator_name in sorted({*intent.evict_animators, *intent.launch_animators}):
-            await self._registry.refresh_capability_states_for_animator(animator_name)
 
     def _physical_request(self, intent: TransitionIntent) -> tuple[str, tuple[str, ...]]:
         if intent.launch_animators:
@@ -491,36 +447,19 @@ class SystemdRuntimeActuator:
         )
 
     async def _observe_runtime_world(self) -> _ObservedRuntimeWorld:
-        if self._observe_systemd:
-            reserved: list[str] = []
-            running: list[str] = []
-            from lychd.system.unit_names import animator_service_unit, animator_target_unit
+        reserved: list[str] = []
+        running: list[str] = []
+        from lychd.system.unit_names import animator_service_unit, animator_target_unit
 
-            for soulstone in sorted(self._registry.list_soulstone_runes(), key=lambda item: item.name):
-                animator_name = soulstone.name
-                target_active = await self._unit_is_active(animator_target_unit(animator_name))
-                service_active = await self._unit_is_active(animator_service_unit(animator_name))
-                if target_active:
-                    reserved.append(animator_name)
-                if service_active:
-                    running.append(animator_name)
-            return _ObservedRuntimeWorld(tuple(reserved), tuple(running))
-        active = tuple(
-            sorted(
-                {
-                    spec.animator_name
-                    for spec in self._registry.list_capabilities()
-                    if self._registry.get_soulstone_rune(spec.animator_name) is not None
-                    and (state := self._registry.get_capability_state(spec.key)) is not None
-                    and state.runtime_started
-                }
-            )
-        )
-        return _ObservedRuntimeWorld(active, active)
-
-    async def _active_animators(self) -> tuple[str, ...]:
-        """Compatibility view of exact active target reservations."""
-        return (await self._observe_runtime_world()).reserved_animators
+        for soulstone in sorted(self._registry.list_soulstone_runes(), key=lambda item: item.name):
+            animator_name = soulstone.name
+            target_active = await self._unit_is_active(animator_target_unit(animator_name))
+            service_active = await self._unit_is_active(animator_service_unit(animator_name))
+            if target_active:
+                reserved.append(animator_name)
+            if service_active:
+                running.append(animator_name)
+        return _ObservedRuntimeWorld(tuple(reserved), tuple(running))
 
     async def _unit_is_active(self, unit_name: str) -> bool:
         process = await asyncio.create_subprocess_exec(
@@ -567,7 +506,7 @@ class HostReactorRuntimeActuator:
 
     async def apply(self, intent: TransitionIntent) -> None:
         """Durably publish, then hold the manager barrier through host completion."""
-        await asyncio.to_thread(_validate_reactor_boundaries, self._intents_dir, self._journal_dir)
+        await asyncio.to_thread(validate_reactor_boundaries, self._intents_dir, self._journal_dir)
         terminal = self._terminal_status(intent.transition_id)
         if self._resolve_terminal(terminal, intent.transition_id):
             return
@@ -607,7 +546,7 @@ class HostReactorRuntimeActuator:
             raise
 
     def _write_atomic(self, intent: TransitionIntent) -> None:
-        _validate_reactor_boundaries(self._intents_dir, self._journal_dir)
+        validate_reactor_boundaries(self._intents_dir, self._journal_dir)
         target = self._intents_dir / f"{intent.transition_id}.json"
         temporary = self._intents_dir / f".{intent.transition_id}.tmp"
         payload = json.dumps(intent.model_dump(mode="json"), sort_keys=True, separators=(",", ":")) + "\n"
@@ -724,7 +663,7 @@ async def wait_for_host_reactor_idle(settings: SwitchingSettings) -> None:
     deadline = asyncio.get_running_loop().time() + settings.reactor_ack_timeout_s
     inbox = settings.host_reactor_dir
     journal = settings.host_reactor_journal_dir
-    await asyncio.to_thread(_validate_reactor_boundaries, inbox, journal)
+    await asyncio.to_thread(validate_reactor_boundaries, inbox, journal)
     while any(inbox.glob("*.json")) or any(journal.glob("*.processing.json")) or any(journal.glob("*.contained.json")):
         if asyncio.get_running_loop().time() >= deadline:
             msg = "Host Reactor still has unfinished transition work; refusing to open run admission."
@@ -752,7 +691,6 @@ def build_runtime_actuator(
             registry,
             systemctl_bin=systemctl_bin,
             systemctl_timeout_s=settings.systemctl_timeout_s,
-            observe_systemd=True,
             lock_factory=lock_factory,
         )
     if settings.actuator == "host-reactor":

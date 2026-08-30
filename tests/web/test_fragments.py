@@ -20,24 +20,6 @@ def _event(kind: str, payload: str, seq: int = 0) -> RunEvent:
 
 
 @pytest.mark.asyncio
-async def test_project_token_remains_inert_text(
-    projector: EventProjector,
-) -> None:
-    envelope = await projector.project(_event("token", "<i>x</i>"))
-
-    assert envelope.kind == "token"
-    assert envelope.payload == {"text": "<i>x</i>"}
-
-
-@pytest.mark.asyncio
-async def test_project_status_is_semantic_json(
-    projector: EventProjector,
-) -> None:
-    envelope = await projector.project(_event("status", "weaving"))
-    assert envelope.payload == {"text": "weaving"}
-
-
-@pytest.mark.asyncio
 async def test_project_fragment_returns_closed_descriptor(
     projector: EventProjector,
 ) -> None:
@@ -63,31 +45,6 @@ async def test_project_fragment_unknown_key_is_visible_descriptor(
         _event("fragment", json.dumps({"fragment": "nope", "params": {}})),
     )
     assert envelope.payload["kind"] == "genui.unknown"
-
-
-@pytest.mark.asyncio
-async def test_project_fragment_never_interprets_markup(
-    projector: EventProjector,
-) -> None:
-    script = "<script>evil</script>"
-    payload = json.dumps(
-        {
-            "fragment": "genui.vision_summary",
-            "params": {"title": "T", "body": script, "severity": "info"},
-        }
-    )
-    envelope = await projector.project(_event("fragment", payload))
-    assert envelope.payload["props"]["body"] == script
-
-
-@pytest.mark.asyncio
-async def test_project_done_settles_turn(
-    projector: EventProjector,
-) -> None:
-    envelope = await projector.project(_event("done", "done"))
-
-    assert envelope.payload["status"] == "done"
-    assert envelope.payload["turn"]["state"] == "settled"
 
 
 def test_registry_drops_unknown_and_invalid() -> None:

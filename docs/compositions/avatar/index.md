@@ -28,9 +28,9 @@ and right to refuse.
 
 Avatar owns the assembled presentation profile, allowed Morphe, projection membership and epochs,
 semantic synchronization policy, per-projection admission and lifecycle references, degradation and
-fallback judgment, and aggregate settlement. It does not own the Lich, Persona, Context, raw media,
-source assets, provider sessions, target-world state, locomotion, manipulation, or consequential
-effects.
+fallback judgment, and evaluation of its own binding set from attributed target results. It does
+not own the Lich, Persona, Context, raw media, source assets, provider sessions, target-world state,
+locomotion, manipulation, or consequential effects.
 
 ## Records, selection, and projection epochs
 
@@ -41,7 +41,7 @@ meeting never rewrites identity or invents continuity elsewhere.
 | --- | --- | --- |
 | `AvatarProfile@1` | one immutable Persona revision plus the eligible visual, voice, motion, language, disclosure, provenance, licence, and fallback envelope | eligibility and defaults, not one live body, target, session, or claim that every eligible facet was rendered |
 | `MorpheBinding@1` | one immutable selection from that envelope for an audience, target class, purpose, time window, and disclosure posture | presentation selection inside one Persona boundary, not a mutation of the profile or a second identity |
-| `AvatarPresence@1` | one declared multi-projection purpose, required and optional members, synchronization mode, aggregate ceilings, and settlement policy | correlation of projections, not shared Context, indivisible attention, or target authority |
+| `AvatarPresence@1` | one declared multi-projection purpose, required and optional Avatar-owned binding references, presentation-synchronization intent, Avatar-local ceilings, and a policy for evaluating attributed target results | passive grouping and judgment over Avatar bindings, not initiation, admission, waiting, cancellation, retry, recovery, or lifecycle correlation of target-owned Invocations; live coordination belongs to a Suite |
 | `ProjectionBinding@1` | one independently admitted target epoch pinning the profile, optional Morphe, target and capability receipt, participants, consent, disclosure, fallback, stop conditions, and attributed terminal result | membership in the Avatar presence, not ownership of the target's world, device, Invocation, provider session, or effects |
 
 The profile is therefore an **eligible presentation envelope**. A Morphe is one pinned selection
@@ -57,9 +57,11 @@ sources and disclosure are explicit. Earlier records remain immutable and attrib
 
 Each target opens and settles its own local work. A Spectre Encounter, Blockworld mission, Reach
 turn, room display, or embodied controller may receive the same attributed semantic act, but each
-retains a distinct Context, authority, chronology, observation, and result. Avatar correlates the
-bindings named by `AvatarPresence@1`; it never turns them into one universal session or proof of
-one continuous field of attention.
+retains a distinct Context, authority, chronology, observation, and result. Avatar groups its own
+bindings and may consume attributed target results after they arrive; it never initiates, admits,
+awaits, cancels, retries, or recovers those target Invocations. A Product requiring that shared
+lifecycle needs a Suite. Neither passive grouping nor a Suite proves one universal session or one
+continuous field of attention.
 
 ## One Lich, many projections
 
@@ -69,14 +71,17 @@ Persona revision to any number of independently admitted `ProjectionBinding@1` r
 
 A presence may use two closed modes:
 
-- **mirrored** — one attributed semantic act is requested across several projections, with a
-  separate delivery or effect receipt from each target;
-- **parallel** — each projection opens its own bounded Invocation with the same Persona revision
-  but distinct Context, authority, outcome, and attribution.
+- **mirrored** — one attributed semantic act is declared for presentation across separately
+  admitted targets, each of which acts and returns a delivery or effect receipt under its own
+  owner;
+- **parallel** — each target may open its own bounded Invocation with the same Persona revision but
+  distinct Context, authority, outcome, and attribution; Avatar binds presentation without
+  operating those Invocations.
 
 Parallel projections do not prove one indivisible field of attention. A projection may join,
-degrade, refuse, disconnect, or finish without inventing the state of another. Global completion
-means only that the declared aggregate policy has settled every member honestly.
+degrade, refuse, disconnect, or finish without inventing the state of another. An AvatarPresence
+`completed` judgment means only that its declared policy can evaluate every required binding from
+the attributed results made available to Avatar.
 
 | Aggregate result | Meaning |
 | --- | --- |
@@ -84,6 +89,10 @@ means only that the declared aggregate policy has settled every member honestly.
 | **partial** | the declared policy permits the exact settled subset and names every absent, refused, interrupted, or still-running member |
 | **refused** | the presence or one policy-required binding failed admission before it could begin |
 | **unresolved** | a required target outcome remains unknown or cannot be reconciled without guessing |
+
+These are AvatarPresence judgments over attributed results already made available to Avatar, not
+control of the target work. If one coordinator must wait for, cancel, retry, recover, or jointly
+settle Spectre, Blockworld, Reach, or Familiar Invocations, that coordinator is a Suite.
 
 ## Morphe changes presentation, not identity
 
@@ -115,11 +124,12 @@ voice and likeness use retain their own consent, licence, provenance, disclosure
    recovery; Avatar settles that VR binding epoch only from Spectre's attributed result. The
    Blockworld binding and mission may continue because no VR event grants or removes world
    authority.
-6. If recovery is accepted, Spectre re-admits capabilities and Avatar opens a fresh VR binding
-   epoch under the recovered facts. If recovery is refused, the VR member remains interrupted.
-   Avatar waits for or stops the Blockworld member according to the declared aggregate policy, then
-   reports the presence as completed, partial, refused, or unresolved without inventing shared
-   target state or uninterrupted embodiment.
+6. If recovery is accepted, Spectre independently re-admits capabilities and Avatar may open a
+   fresh VR binding epoch under the recovered facts. If recovery is refused, the VR member remains
+   interrupted. Avatar neither waits for nor stops the Blockworld Invocation; it evaluates the
+   attributed results available to its own bindings and reports completed, partial, refused, or
+   unresolved without inventing shared target state. A Product that promises coordinated wait,
+   stop, or recovery must use a Suite.
 
 ## Target truth stays local
 

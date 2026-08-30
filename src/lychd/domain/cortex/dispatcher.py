@@ -55,8 +55,6 @@ class Dispatcher:
         priority: int = 50,
         require_modalities: tuple[str, ...] = (),
         requires_tools: bool = False,
-        # WAVE7-S10: `require_warm: bool = False` lands here (Wave 7 K4).
-        # Params stay KW-ONLY so that addition is non-breaking.
     ) -> AsyncIterator[CapabilityGrant]:
         """Lease a scoped grant for the resolved family/model/modality request.
 
@@ -76,7 +74,7 @@ class Dispatcher:
                 from lychd.domain.cortex.execution_context import current_occurrence_id
 
                 self._events.emitter(run_id).dispatch(
-                    grant.key,
+                    grant.spec.key,
                     animator=grant.spec.animator_name,
                     family=grant.spec.family.value,
                     model_id=grant.spec.model_id,
@@ -84,26 +82,6 @@ class Dispatcher:
                     occurrence_id=current_occurrence_id() or "",
                     grant_id=grant.lease.grant_id,
                 )
-            yield grant
-        finally:
-            self._leases.release(grant.lease.grant_id)
-
-    @asynccontextmanager
-    async def lease_grant_key(
-        self,
-        key: str,
-        *,
-        holder: str,
-        priority: int = 50,
-    ) -> AsyncIterator[CapabilityGrant]:
-        """Key-addressed lease form (CLI, tests, orchestrator manual paths)."""
-        spec = self._registry.get_capability(key)
-        if spec is None:
-            msg = f"Unknown capability: {key}"
-            raise ValueError(msg)
-        grant = await self._grant_for_spec(spec, holder=holder)
-        self._acquire_or_park(grant, priority=priority)
-        try:
             yield grant
         finally:
             self._leases.release(grant.lease.grant_id)
@@ -148,11 +126,7 @@ class Dispatcher:
 
     def _transition_required(self, spec: CapabilitySpec) -> HardwareTransitionRequired:
         """Build the canonical handle-free signal for one managed capability."""
-        return HardwareTransitionRequired(
-            spec.key,
-            spec.animator_name,
-            self._estimated_ready_ms(spec),
-        )
+        return HardwareTransitionRequired(spec.key)
 
     async def _drive_to_grant(self, spec: CapabilitySpec, *, holder: str) -> CapabilityGrant:
         _spec, state = await require_capability_record(self._registry, spec.key)
@@ -179,24 +153,6 @@ class Dispatcher:
         # ``require_capability_record`` already performed the one admitted refresh.
         # UNKNOWN after that observation settles unavailable without a probe loop.
         raise CapabilityUnavailable(spec.key, state.reason or "capability phase unknown")
-
-    def _estimated_ready_ms(self, spec: CapabilitySpec) -> int | None:
-        """Read an optional estimate without making link presence an admission condition."""
-        animator = self._registry.get_runtime(spec.animator_name)
-        if animator is None:
-            return None
-        link = getattr(getattr(animator, "connector", None), "link", None)
-        estimate = getattr(link, "estimated_ready_ms", None)
-        return estimate if isinstance(estimate, int) else None
-
-    def resolve_intent(self, intent_type: str) -> CapabilitySpec:
-        """Resolve a semantic intent into one canonical capability spec (Nexus/status read)."""
-        return self._resolve_spec(
-            intent_type,
-            model_name=None,
-            require_modalities=(),
-            requires_tools=False,
-        )
 
     def _resolve_spec(
         self,

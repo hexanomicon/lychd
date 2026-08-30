@@ -8,13 +8,15 @@ import pytest
 from pytest_mock import MockerFixture
 
 from lychd.app import AppInit, create_app
-from lychd.interface.server_policy import evaluate_server_runtime_policy
+from lychd.interface.server_policy import ServerRuntimePolicyError, evaluate_server_runtime_policy
 
 _POLICY_ENVIRONMENT_KEYS = (
+    "GRANIAN_HOST",
     "GRANIAN_PORT",
     "GRANIAN_RELOAD",
     "GRANIAN_WORKERS",
     "LITESTAR_WEB_CONCURRENCY",
+    "LITESTAR_HOST",
     "LITESTAR_PORT",
     "LITESTAR_RELOAD",
     "LITESTAR_RELOAD_DIRS",
@@ -30,83 +32,65 @@ def _clear_policy_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize(
-    "variable",
-    ["GRANIAN_WORKERS", "LITESTAR_WEB_CONCURRENCY", "WEB_CONCURRENCY"],
+    ("environment", "arguments", "expected_message"),
+    [
+        ({"GRANIAN_WORKERS": "2"}, (), "GRANIAN_WORKERS=1"),
+        ({"LITESTAR_WEB_CONCURRENCY": "2"}, (), "LITESTAR_WEB_CONCURRENCY=1"),
+        ({"WEB_CONCURRENCY": "2"}, (), "WEB_CONCURRENCY=1"),
+        ({}, ("--workers", "2"), "exactly one ASGI worker"),
+        ({}, ("--workers=3",), "exactly one ASGI worker"),
+        ({}, ("-W", "2"), "exactly one ASGI worker"),
+        ({}, ("-W2",), "exactly one ASGI worker"),
+        ({}, ("--wc=2",), "exactly one ASGI worker"),
+        ({}, ("--web-concurrency", "3"), "exactly one ASGI worker"),
+        ({"LITESTAR_RELOAD": "enabled"}, (), "does not support Litestar reload mode"),
+        ({"GRANIAN_RELOAD": "enabled"}, (), "does not support Granian reload mode"),
+        ({"LITESTAR_RELOAD_DIRS": "enabled"}, (), "does not support LITESTAR_RELOAD_DIRS"),
+        ({"LITESTAR_RELOAD_INCLUDES": "enabled"}, (), "does not support LITESTAR_RELOAD_INCLUDES"),
+        ({"LITESTAR_RELOAD_EXCLUDES": "enabled"}, (), "does not support LITESTAR_RELOAD_EXCLUDES"),
+        ({}, ("-r",), "does not support Litestar reload mode"),
+        ({}, ("--reload",), "does not support Litestar reload mode"),
+        ({}, ("-R", "src"), "does not support Litestar reload mode"),
+        ({}, ("-Rsrc",), "does not support Litestar reload mode"),
+        ({}, ("--reload-dir=src",), "does not support Litestar reload mode"),
+        ({}, ("-I*.py",), "does not support Litestar reload mode"),
+        ({}, ("--reload-include", "*.py"), "does not support Litestar reload mode"),
+        ({}, ("-E*.tmp",), "does not support Litestar reload mode"),
+        ({}, ("--reload-exclude=*.tmp",), "does not support Litestar reload mode"),
+    ],
 )
-def test_app_factory_rejects_every_server_worker_environment(
-    monkeypatch: pytest.MonkeyPatch,
-    variable: str,
+def test_runtime_policy_rejects_every_multiworker_and_reload_spelling(
+    environment: dict[str, str],
+    arguments: tuple[str, ...],
+    expected_message: str,
 ) -> None:
-    _clear_policy_environment(monkeypatch)
-    monkeypatch.setenv(variable, "2")
-
-    with pytest.raises(RuntimeError, match=rf"{variable}=1"):
-        create_app()
+    with pytest.raises(ServerRuntimePolicyError, match=expected_message):
+        evaluate_server_runtime_policy(
+            environment=environment,
+            server_arguments=arguments,
+        )
 
 
 @pytest.mark.parametrize(
-    "arguments",
+    ("environment", "arguments", "expected_message"),
     [
-        ["--workers", "2"],
-        ["--workers=2"],
-        ["--wc=2"],
-        ["--web-concurrency", "2"],
-        ["-W2"],
+        ({"GRANIAN_WORKERS": "2"}, (), "GRANIAN_WORKERS=1"),
+        ({}, ("--reload",), "does not support Litestar reload mode"),
     ],
 )
-def test_app_factory_rejects_direct_server_cli_multiworker_arguments(
+def test_app_factory_translates_detected_server_policy_failures(
     monkeypatch: pytest.MonkeyPatch,
-    arguments: list[str],
+    environment: dict[str, str],
+    arguments: tuple[str, ...],
+    expected_message: str,
 ) -> None:
     _clear_policy_environment(monkeypatch)
+    for variable, value in environment.items():
+        monkeypatch.setenv(variable, value)
     monkeypatch.setattr(sys, "argv", ["/venv/bin/litestar", "run", *arguments])
     monkeypatch.setattr(sys, "orig_argv", ["python"])
 
-    with pytest.raises(RuntimeError, match="exactly one ASGI worker"):
-        create_app()
-
-
-@pytest.mark.parametrize(
-    "variable",
-    [
-        "LITESTAR_RELOAD",
-        "LITESTAR_RELOAD_DIRS",
-        "LITESTAR_RELOAD_INCLUDES",
-        "LITESTAR_RELOAD_EXCLUDES",
-        "GRANIAN_RELOAD",
-    ],
-)
-def test_app_factory_rejects_reload_environment(
-    monkeypatch: pytest.MonkeyPatch,
-    variable: str,
-) -> None:
-    _clear_policy_environment(monkeypatch)
-    monkeypatch.setenv(variable, "enabled")
-
-    with pytest.raises(RuntimeError, match="does not support"):
-        create_app()
-
-
-@pytest.mark.parametrize(
-    "arguments",
-    [
-        ["--reload"],
-        ["-r"],
-        ["--reload-dir=src"],
-        ["-Rsrc"],
-        ["--reload-include", "*.py"],
-        ["-E*.tmp"],
-    ],
-)
-def test_app_factory_rejects_direct_server_reload_arguments(
-    monkeypatch: pytest.MonkeyPatch,
-    arguments: list[str],
-) -> None:
-    _clear_policy_environment(monkeypatch)
-    monkeypatch.setattr(sys, "argv", ["/venv/bin/litestar", "run", *arguments])
-    monkeypatch.setattr(sys, "orig_argv", ["python"])
-
-    with pytest.raises(RuntimeError, match="does not support Litestar reload mode"):
+    with pytest.raises(RuntimeError, match=expected_message):
         create_app()
 
 
@@ -130,26 +114,22 @@ def test_runtime_policy_accepts_one_worker_and_resolves_direct_granian_port() ->
     )
 
     assert policy.listener_port == 8000
+    assert policy.listener_host is None
 
 
-def test_runtime_policy_reads_litestar_selected_port_from_environment() -> None:
+@pytest.mark.parametrize(
+    ("variable", "port"),
+    [("LITESTAR_PORT", 9000), ("GRANIAN_PORT", 8000)],
+)
+def test_runtime_policy_reads_selected_port_from_environment(variable: str, port: int) -> None:
     policy = evaluate_server_runtime_policy(
-        environment={"LITESTAR_PORT": "9000"},
+        environment={variable: str(port)},
         argv=["python"],
         original_argv=["python"],
     )
 
-    assert policy.listener_port == 9000
-
-
-def test_runtime_policy_reads_granian_selected_port_from_environment() -> None:
-    policy = evaluate_server_runtime_policy(
-        environment={"GRANIAN_PORT": "8000"},
-        argv=["python"],
-        original_argv=["python"],
-    )
-
-    assert policy.listener_port == 8000
+    assert policy.listener_port == port
+    assert policy.listener_host is None
 
 
 def test_runtime_policy_falls_back_to_configured_listener_port() -> None:
@@ -160,10 +140,21 @@ def test_runtime_policy_falls_back_to_configured_listener_port() -> None:
     )
 
     assert policy.listener_port == 7444
+    assert policy.listener_host == "127.0.0.1"
 
 
-@pytest.mark.parametrize("variable", ["LITESTAR_RELOAD", "GRANIAN_RELOAD"])
-@pytest.mark.parametrize("value", ["", "0", "false", "FALSE", "no", "off"])
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [
+        ("LITESTAR_RELOAD", ""),
+        ("LITESTAR_RELOAD", "0"),
+        ("LITESTAR_RELOAD", "false"),
+        ("LITESTAR_RELOAD", "FALSE"),
+        ("LITESTAR_RELOAD", "no"),
+        ("LITESTAR_RELOAD", "off"),
+        ("GRANIAN_RELOAD", "false"),
+    ],
+)
 def test_runtime_policy_accepts_explicitly_disabled_reload_environment(
     variable: str,
     value: str,

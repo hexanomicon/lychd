@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 from lychd.config.runes.extension import RuneConfigStore
 from lychd.domain.animation.extension import PortalStore, SoulstoneStore
 from lychd.domain.animation.transmute import TransmutationStore
-from lychd.domain.cortex.operations import AGENT_RUN_OPERATION, RunOperationStore
-from lychd.extensions.base import ExtensionStore
 from lychd.extensions.delegation import DelegatedRuntimeStore
 
 if TYPE_CHECKING:
@@ -18,20 +16,7 @@ if TYPE_CHECKING:
     from lychd.config.runes.base import RuneConfig
     from lychd.domain.animation.services.adapters.contracts import PortalDefinition, SoulstoneDefinition
     from lychd.domain.animation.transmute import QuadletContributor
-    from lychd.domain.cortex.operations import RunOperationSpec
     from lychd.extensions.delegation import DelegatedRuntimeDefinition
-
-
-class VesselStore(ExtensionStore):
-    """Reserved store for web/API contributions.
-
-    Keep this intentionally empty until route, middleware, auth, and event-hook
-    bundles have a stable shape. The important boundary is that Vessel
-    registration is not flattened onto ExtensionContext.
-    """
-
-    # Future shape, deliberately not active yet: HTTP routes, middleware,
-    # event hooks, and auth policies should arrive as shaped sub-stores/bundles.
 
 
 class RuneRegistrationStore(Protocol):
@@ -64,17 +49,6 @@ class DelegatedRuntimeRegistrationStore(Protocol):
     def add(self, definition: DelegatedRuntimeDefinition) -> None: ...
 
 
-class RunOperationRegistrationStore(Protocol):
-    """Extension-visible Run-operation contribution surface."""
-
-    def add(self, spec: RunOperationSpec) -> None: ...
-
-
-@dataclass(frozen=True, slots=True)
-class VesselRegistrationStore:
-    """Reserved extension surface with no admitted contribution methods yet."""
-
-
 @dataclass(frozen=True, slots=True)
 class _ContributionStoreView:
     """Expose only provider-bound contribution callables named by the host."""
@@ -96,9 +70,7 @@ class ExtensionRegistrationContext:
     soulstones: SoulstoneRegistrationStore
     portals: PortalRegistrationStore
     transmutation: TransmutationRegistrationStore
-    vessel: VesselRegistrationStore
     delegated_runtimes: DelegatedRuntimeRegistrationStore
-    run_operations: RunOperationRegistrationStore
 
     def __init__(self, root: ExtensionContext, provider_id: str) -> None:
         """Bind every shaped contribution store to ``provider_id``."""
@@ -126,16 +98,10 @@ class ExtensionRegistrationContext:
             "transmutation",
             cast("TransmutationRegistrationStore", bound(root.transmutation, "add_contributor")),
         )
-        object.__setattr__(self, "vessel", VesselRegistrationStore())
         object.__setattr__(
             self,
             "delegated_runtimes",
             cast("DelegatedRuntimeRegistrationStore", bound(root.delegated_runtimes, "add")),
-        )
-        object.__setattr__(
-            self,
-            "run_operations",
-            cast("RunOperationRegistrationStore", bound(root.run_operations, "add")),
         )
 
 
@@ -153,13 +119,8 @@ class ExtensionContext:
         self.soulstones = SoulstoneStore(self.runes, current_provider=current_provider)
         self.portals = PortalStore(self.runes, current_provider=current_provider)
         self.transmutation = TransmutationStore(current_provider=current_provider)
-        self.vessel = VesselStore()
         self.delegated_runtimes = DelegatedRuntimeStore(
             current_provider=lambda: self.current_extension_id,
-        )
-        self.run_operations = RunOperationStore(
-            current_provider=lambda: self.current_extension_id,
-            core_operations=(AGENT_RUN_OPERATION,),
         )
 
     def freeze(self) -> None:
@@ -169,9 +130,7 @@ class ExtensionContext:
             self.soulstones,
             self.portals,
             self.transmutation,
-            self.vessel,
             self.delegated_runtimes,
-            self.run_operations,
         ):
             store.freeze()
 

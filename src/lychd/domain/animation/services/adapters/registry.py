@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from lychd.domain.animation.capabilities import (
     ActivationResult,
@@ -21,19 +21,13 @@ from lychd.domain.animation.schemas import (
 from lychd.domain.animation.services.adapters.catalog import model_info_from_portal_model, synthesize_families
 from lychd.domain.animation.services.adapters.contracts import (
     ActivationObserver,
+    CapabilityActivator,
     PortalDefinition,
     RuntimeAnimator,
     RuntimePlan,
     SoulstoneRuntimeAdapter,
 )
 from lychd.domain.animation.services.adapters.runtimes.generic import GenericRuntimeAdapter
-from lychd.domain.animation.services.adapters.runtimes.shared import fixed_openai_activation_result
-from lychd.domain.animation.services.adapters.surfaces import (
-    GenericPortal,
-    OpenAICompatibleConnector,
-    PassiveConnector,
-    portal_link_default,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -52,12 +46,7 @@ class RuntimeAdapterRegistry:
         *,
         portal_definitions: Sequence[PortalDefinition] | None = None,
     ) -> None:
-        """Initialize active runtime adapters plus generic fallback.
-
-        Portal definitions are injected by the composition root (the OpenAI
-        definition is an extension, no longer a domain-side default); the passive
-        fallback applies only when no extension owns the exact Rune schema.
-        """
+        """Initialize active runtime adapters and exact Portal definitions."""
         self._fallback: SoulstoneRuntimeAdapter = GenericRuntimeAdapter()
         self._adapters: dict[str, SoulstoneRuntimeAdapter] = {}
         for adapter in adapters or ():
@@ -72,30 +61,19 @@ class RuntimeAdapterRegistry:
             self._adapters[runtime] = adapter
         self._portal_definitions: dict[type[PortalConfig], PortalDefinition] = {}
         for definition in portal_definitions or ():
-            self.register_portal_definition(definition)
+            existing = self._portal_definitions.get(definition.rune_schema)
+            if existing is not None:
+                msg = f"Portal schema {definition.rune_schema.__name__} already has a runtime definition."
+                raise ValueError(msg)
+            self._portal_definitions[definition.rune_schema] = definition
 
-    def register_portal_definition(self, definition: PortalDefinition) -> None:
-        """Register the sole runtime factory allowed to claim one Rune schema."""
-        existing = self._portal_definitions.get(definition.rune_schema)
-        if existing is not None:
-            msg = f"Portal schema {definition.rune_schema.__name__} already has a runtime definition."
-            raise ValueError(msg)
-        self._portal_definitions[definition.rune_schema] = definition
-
-    def adapter_for(self, soulstone: SoulstoneConfig) -> SoulstoneRuntimeAdapter:
+    def _adapter_for(self, soulstone: SoulstoneConfig) -> SoulstoneRuntimeAdapter:
         """Return the adapter that owns the exact declared Soulstone runtime key."""
-        return self._adapters.get(soulstone.runtime_name, self._fallback)
-
-    def adapter_for_animator(self, animator: RuntimeAnimator) -> SoulstoneRuntimeAdapter | None:
-        """Return the runtime adapter backing a resolved soulstone animator."""
-        rune = animator.rune
-        if isinstance(rune, PortalConfig):
-            return None
-        return self.adapter_for(rune)
+        return self._adapters.get(soulstone.runtime, self._fallback)
 
     def plan(self, soulstone: SoulstoneConfig) -> RuntimePlan:
         """Build a host-facing runtime plan for a Soulstone."""
-        adapter = self.adapter_for(soulstone)
+        adapter = self._adapter_for(soulstone)
         return adapter.plan(soulstone)
 
     def build_runtime(self, rune: SoulstoneConfig | PortalConfig) -> RuntimeAnimator | None:
@@ -103,23 +81,19 @@ class RuntimeAdapterRegistry:
         if isinstance(rune, PortalConfig):
             return self._build_portal_runtime(rune)
 
-        return self.adapter_for(rune).build_runtime(rune)
-
-    def runtime_factory(self, rune: SoulstoneConfig | PortalConfig) -> RuntimeAnimator | None:
-        """Adapter-compatible callable used by ``AnimatorRegistry`` factories."""
-        return self.build_runtime(rune)
+        return self._adapter_for(rune).build_runtime(rune)
 
     def build_capability_specs(
         self,
         rune: SoulstoneConfig | PortalConfig,
-        animator: RuntimeAnimator | None = None,
     ) -> list[CapabilitySpec]:
         """Build capability specs for either a Soulstone Rune or Portal Rune."""
         if isinstance(rune, PortalConfig):
-            runtime = animator or self._build_portal_runtime(rune)
-            return self._build_portal_capability_specs(rune, runtime)
+            if type(rune) not in self._portal_definitions:
+                return []
+            return self._build_portal_capability_specs(rune)
 
-        adapter = self.adapter_for(rune)
+        adapter = self._adapter_for(rune)
         return adapter.build_capability_specs(rune)
 
     async def probe_capability_states(
@@ -132,28 +106,29 @@ class RuntimeAdapterRegistry:
         if isinstance(rune, PortalConfig):
             return await self._probe_portal_capability_states(animator, specs)
 
-        adapter = self.adapter_for(rune)
+        adapter = self._adapter_for(rune)
         return await adapter.probe_capability_states(animator, specs)
 
     async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
         """Delegate runtime-specific capability activation when supported."""
-        rune = animator.rune
-        if isinstance(rune, PortalConfig):
-            if not rune.probe:
-                return ActivationResult(
-                    accepted=False,
-                    phase=CapabilityPhase.UNKNOWN,
-                    reason="portal reachability not probed",
-                )
-            if isinstance(animator.connector, OpenAICompatibleConnector):
-                return fixed_openai_activation_result(animator.connector, spec)
+        if not spec.is_dynamic:
             return ActivationResult(
                 accepted=False,
-                phase=CapabilityPhase.WARM if animator.connector.link.up else CapabilityPhase.COLD,
                 reason="fixed capability; lifecycle owned by unit",
             )
+        rune = animator.rune
+        if isinstance(rune, PortalConfig):
+            return ActivationResult(
+                accepted=False,
+                reason="portal capabilities cannot be activated locally",
+            )
 
-        adapter = self.adapter_for(rune)
+        adapter = self._adapter_for(rune)
+        if not isinstance(adapter, CapabilityActivator):
+            return ActivationResult(
+                accepted=False,
+                reason=f"runtime {rune.runtime!r} has no capability activation contract",
+            )
         return await adapter.activate_capability(animator, spec)
 
     async def abandon_activation(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> None:
@@ -161,37 +136,21 @@ class RuntimeAdapterRegistry:
         rune = animator.rune
         if isinstance(rune, PortalConfig):
             return
-        adapter = self.adapter_for(rune)
+        adapter = self._adapter_for(rune)
         if isinstance(adapter, ActivationObserver):
             await adapter.abandon_activation(animator, spec)
 
-    def _build_portal_runtime(self, portal: PortalConfig) -> RuntimeAnimator:
-        """Resolve a Portal by exact schema ownership, then passive fallback."""
+    def _build_portal_runtime(self, portal: PortalConfig) -> RuntimeAnimator | None:
+        """Resolve a Portal only through its exact registered schema owner."""
         definition = self._portal_definitions.get(type(portal))
-        if definition is not None:
-            return definition.factory(portal)
+        return definition.factory(portal) if definition is not None else None
 
-        return self._build_passive_portal(portal)
-
-    def _build_passive_portal(self, portal: PortalConfig) -> RuntimeAnimator:
-        """Build readiness-only portal runtime when no factory matches provider."""
-        provider = portal.provider_name.strip().lower()
-        base_url = str(portal.base_url) if portal.base_url is not None else ""
-        link = portal_link_default(base_url=base_url)
-        connector = PassiveConnector(
-            kind=f"portal:{provider}",
-            link=link,
-            base_url=base_url,
-        )
-        return GenericPortal(rune=portal, connector=connector)
-
-    def _build_portal_capability_specs(self, portal: PortalConfig, runtime: RuntimeAnimator) -> list[CapabilitySpec]:
+    def _build_portal_capability_specs(self, portal: PortalConfig) -> list[CapabilitySpec]:
         """Synthesize capability specs from a Portal's declared ``[[models]]``.
 
         Zero declared models ⇒ zero specs (reachable but unadvertised). Families
         are synthesized under the two-axis law (probe facts are absent at synthesis).
         """
-        _ = runtime
         provider = portal.provider_name.strip().lower()
         specs: list[CapabilitySpec] = []
         for model in portal.models:
@@ -206,19 +165,15 @@ class RuntimeAdapterRegistry:
                     source_kind=SourceKind.PORTAL,
                     family=family,
                     model_id=model.id,
-                    surface=info.surface,
                     max_context=info.max_context,
-                    modalities_in=list(info.modalities_in),
-                    modalities_out=list(info.modalities_out),
+                    modalities_in=info.modalities_in,
                     supports_tools=info.supports_tools,
-                    supports_streaming=info.supports_streaming,
                     generation_profile=generation,
                     is_dynamic=False,
                     # A Portal is remote: LychD does not own its lifecycle (ADR-22).
                     concurrency=ConcurrencyIntent(dedicated=False),
-                    metadata={"provider_name": provider},
                 )
-                for family in synthesize_families(info, hints, None)
+                for family in synthesize_families(info, hints)
             )
         return specs
 
@@ -258,15 +213,12 @@ class RuntimeAdapterRegistry:
             spec_phase = phase
             spec_health = health
             reason = None if up else link.reason
-            loaded_model_ids = [spec.model_id] if phase is CapabilityPhase.WARM else []
             if probed and up and inventory_error is not None:
-                loaded_model_ids = []
                 spec_phase = CapabilityPhase.ERROR
                 spec_health = "inventory_invalid"
                 reason = str(inventory_error)
             elif probed and up and observed_model_ids is not None:
                 model_present = spec.model_id in observed_model_ids
-                loaded_model_ids = [spec.model_id] if model_present else []
                 if not model_present:
                     spec_phase = CapabilityPhase.ERROR
                     spec_health = "model_missing"
@@ -274,14 +226,10 @@ class RuntimeAdapterRegistry:
             states.append(
                 CapabilityState(
                     capability_key=spec.key,
-                    is_dynamic=False,
                     phase=spec_phase,
                     health=spec_health,
-                    active_model_id=spec.model_id if spec_phase is CapabilityPhase.WARM else None,
-                    loaded_model_ids=loaded_model_ids,
                     reason=reason,
                     checked_at=checked_at,
-                    metadata=cast("dict[str, object]", getattr(connector, "metadata", {})),
                 )
             )
         return states

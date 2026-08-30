@@ -1,0 +1,13 @@
+# Podman build context allowlist. Keep this aligned with Containerfile inputs.
+**
+!.containerignore
+!Containerfile
+!LICENSE
+!README.md
+!THIRD_PARTY_NOTICES.md
+!pyproject.toml
+!uv.lock
+!scripts/
+!scripts/generate_python_third_party_notices.py
+!src/
+!src/**

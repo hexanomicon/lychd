@@ -2,25 +2,11 @@
 
 from __future__ import annotations
 
-# Projection white-box test pins the private state reduction table.
-# pyright: reportPrivateUsage=false
 from typing import Any, cast
 
-from lychd.domain.web.schemas import _coven_state, build_nexus_board
+import pytest
 
-
-def test_s9_awaited_mapping() -> None:
-    # The S9 row: a dynamic (is_dynamic=True) capability observed ACTIVATABLE is "awaited".
-    assert _coven_state(is_dynamic=True, phase="activatable") == "awaited"
-    # A non-dynamic one there shouldn't occur; degrade honestly to "cold".
-    assert _coven_state(is_dynamic=False, phase="activatable") == "cold"
-    # The rest of the table.
-    assert _coven_state(is_dynamic=True, phase="warm") == "active"
-    assert _coven_state(is_dynamic=False, phase="warm") == "active"
-    assert _coven_state(is_dynamic=True, phase="warming") == "warming"
-    assert _coven_state(is_dynamic=True, phase="cold") == "cold"
-    assert _coven_state(is_dynamic=False, phase="unknown") == "cold"
-    assert _coven_state(is_dynamic=True, phase="error") == "fault"
+from lychd.domain.web.schemas import build_nexus_board
 
 
 class _FakeOrchestrator:
@@ -57,19 +43,24 @@ def _status(**overrides: Any) -> dict[str, Any]:
     return base
 
 
-def test_build_nexus_board_projects_the_awaited_row() -> None:
+@pytest.mark.parametrize(
+    ("phase", "mode", "expected"),
+    [
+        ("activatable", "dynamic", "awaited"),
+        ("activatable", "static", "cold"),
+        ("warm", "dynamic", "active"),
+        ("warming", "dynamic", "warming"),
+        ("error", "dynamic", "fault"),
+        ("unknown", "static", "cold"),
+    ],
+)
+def test_build_nexus_board_projects_capability_state(
+    phase: str,
+    mode: str,
+    expected: str,
+) -> None:
     board = build_nexus_board(
-        cast("Any", _FakeOrchestrator([_status()])),
+        cast("Any", _FakeOrchestrator([_status(phase=phase, is_dynamic=mode == "dynamic")])),
         cast("Any", _FakeRegistry()),
     )
-    row = board.covens[0][1][0]
-    assert row.state == "awaited"
-
-
-def test_no_enum_leaks_to_templates() -> None:
-    # The projector consumes the string phase / bool is_dynamic keys, never enum objects.
-    board = build_nexus_board(
-        cast("Any", _FakeOrchestrator([_status(phase="warm", is_active=True, warm=True)])),
-        cast("Any", _FakeRegistry()),
-    )
-    assert board.covens[0][1][0].state == "active"
+    assert board.covens[0][1][0].state == expected

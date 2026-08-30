@@ -7,9 +7,8 @@ import pytest
 
 import lychd.config.settings.root as settings_module
 from lychd.config.settings.root import Settings, get_settings
-from lychd.extensions.builtin.simulation.config import ShadowSimulationConfig
 from lychd.system.services.codex import CodexService
-from lychd.system.services.lifecycle import CreatedResources
+from lychd.system.services.lifecycle.models import CreatedResources
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -40,62 +39,42 @@ def codex_service(codex_paths: dict[str, Path]) -> CodexService:
         toml_path=codex_paths["toml"],
         runes_path=codex_paths["runes"],
         postgres_root_path=codex_paths["postgres"],
-        rune_schemas=[ShadowSimulationConfig],
+        rune_schemas=[],
     )
 
 
-def test_inscribe_structure(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:
-    """Verify codex initialization creates primary files and configurable samples."""
+def test_lychd_toml_is_valid_and_round_trips_through_settings(
+    codex_service: CodexService,
+    codex_paths: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     codex_service.inscribe()
 
-    assert codex_paths["root"].exists()
-    assert codex_paths["runes"].exists()
-    assert codex_paths["toml"].exists()
-    assert (codex_paths["postgres"] / "init_db.sh").exists()
-    assert codex_paths["toml"].stat().st_mode & 0o777 == 0o600
-
-    # Runtime-supplied configurable sample should exist after inscription.
-    assert (codex_paths["runes"] / "simulation" / "shadowsimulationconfig.toml").exists()
-
-
-def test_lychd_toml_validity(codex_service: CodexService, codex_paths: dict[str, Path]) -> None:
-    """Verify lychd.toml content matches Settings defaults."""
-    codex_service.inscribe()
-
-    content = tomllib.loads(codex_paths["toml"].read_text(encoding="utf-8"))
+    toml_path = codex_paths["toml"]
+    assert toml_path.stat().st_mode & 0o777 == 0o600
+    content = tomllib.loads(toml_path.read_text(encoding="utf-8"))
     settings = get_settings()
 
     assert "server" in content
     assert content["server"]["port"] == settings.server.port
     assert content["server"]["web"]["name"] == "lychd"
+    assert "host" not in content["server"]
+    assert "reload" not in content["server"]
+    assert "keep_alive" not in content["server"]
+    assert "url" not in content["server"]["web"]
     assert content["server"]["database"]["database"] == settings.server.database.database
     assert content["orchestration"]["switching"]["policy"] == settings.orchestration.switching.policy
-    assert content["orchestration"]["whim"]["idle_evict_after_s"] == settings.orchestration.whim.idle_evict_after_s
-    assert content["orchestration"]["whim"]["preload"] == settings.orchestration.whim.preload
     assert content["extensions"]["builtins"] == []
 
-    rendered = codex_paths["toml"].read_text(encoding="utf-8")
+    rendered = toml_path.read_text(encoding="utf-8")
     assert "# Local llama.cpp:" in rendered
     assert "# Other choices:" in rendered
-
-
-def test_lychd_toml_round_trips_through_settings(
-    codex_service: CodexService,
-    codex_paths: dict[str, Path],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The generated nested tables must survive a second Settings parse."""
-    codex_service.inscribe()
-    toml_path = codex_paths["toml"]
-    content = tomllib.loads(toml_path.read_text(encoding="utf-8"))
 
     monkeypatch.setattr(settings_module, "PATH_LYCHD_TOML", toml_path)
     reparsed = Settings()
 
     assert reparsed.model_dump(mode="json", exclude_none=True) == content
     assert reparsed.orchestration.switching.policy == "declared-conflicts"
-    assert reparsed.orchestration.whim.idle_evict_after_s == 0
-    assert reparsed.orchestration.whim.preload == []
 
 
 def test_init_db_script_creates_only_extension_database(
@@ -134,5 +113,4 @@ def test_inscribe_returns_the_same_exact_batches_sent_to_the_journal(
 
     assert resources == CreatedResources.combine(*journal)
     assert resources.files
-    assert resources.directories
     assert {identity.path for identity in resources.directory_identities} == set(resources.directories)

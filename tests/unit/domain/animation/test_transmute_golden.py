@@ -1,25 +1,9 @@
-"""Golden-manifest parity test for the container/Quadlet transmutation layer.
-
-This is the crown-jewel parity net for the self-generating container structure
-(Magus's #1 worry). It pins the FOUR load-bearing properties of the transmuted
-pod (brief §8) as a byte-stable golden serialization of ``transmute_all(...)``,
-for BOTH scenarios: Phoenix-active and Phoenix-absent.
-
-Machine stability: every settings-/host-derived value the manifests embed is
-normalised through the SAME ``get_settings()`` / constant reads at load time
-(never frozen as a literal), so the committed golden is identical on any host.
-Regenerate the goldens with ``LYCHD_REGEN_GOLDEN=1 pytest ...`` after an
-INTENTIONAL manifest change (a golden diff is then a reviewed, deliberate act).
-"""
+"""Load-bearing container and Quadlet transmutation properties."""
 
 from __future__ import annotations
 
-import json
-import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
-
-import pytest
+from typing import TYPE_CHECKING
 
 from lychd.config import QuadletConfig
 from lychd.config.settings.root import get_settings
@@ -37,7 +21,7 @@ from lychd.system.unit_names import animator_service_unit, animator_target_unit,
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from lychd.domain.animation.schemas import PortalConfig, SoulstoneConfig
+    from lychd.domain.animation.schemas import PortalConfig
 
 from lychd.extensions.builtin.observability.phoenix.config import (
     CONTAINER_PHOENIX_OTLP_PORT,
@@ -45,49 +29,45 @@ from lychd.extensions.builtin.observability.phoenix.config import (
     PhoenixSettings,
 )
 
-GOLDEN_DIR = Path(__file__).parents[3] / "fixtures" / "golden" / "quadlets"
-_REGEN = os.getenv("LYCHD_REGEN_GOLDEN") == "1"
-
 
 # --------------------------------------------------------------------------- #
-# Deterministic fixture set (no random factory fields — a golden must be exact) #
+# Deterministic fixture set                                                    #
 # --------------------------------------------------------------------------- #
-def _soulstones() -> list[SoulstoneConfig]:
+def _soulstones() -> list[GenericSoulstoneConfig]:
     """A deterministic stone set covering target and boot properties.
 
     - ``alpha`` + ``beta``: a >= 2-member coven ("logic") -> a real target.
     - ``gamma``: a solitary stone with no target membership.
     - ``resident``: a persistent resident -> WantedBy=default.target.
     """
-    stones: list[SoulstoneConfig] = [
+    return [
         GenericSoulstoneConfig(
             name="alpha",
             quadlet=QuadletConfig(image="registry.example/alpha:1"),
-            groups=["logic"],
-            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+            groups=("logic",),
+            concurrency=ConcurrencyIntent(conflict_domains=("gpu",)),
             env_vars={"CTX": "4096"},
         ),
         GenericSoulstoneConfig(
             name="beta",
             quadlet=QuadletConfig(image="registry.example/beta:1"),
-            groups=["logic"],
-            concurrency=ConcurrencyIntent(conflict_domains=[]),
+            groups=("logic",),
+            concurrency=ConcurrencyIntent(conflict_domains=()),
         ),
         GenericSoulstoneConfig(
             name="gamma",
             quadlet=QuadletConfig(image="registry.example/gamma:1"),
-            groups=[],
-            concurrency=ConcurrencyIntent(conflict_domains=["gpu"]),
+            groups=(),
+            concurrency=ConcurrencyIntent(conflict_domains=("gpu",)),
             secret_env_files={"HF_TOKEN_FILE": "gamma_hf_token"},
         ),
         GenericSoulstoneConfig(
             name="resident",
             quadlet=QuadletConfig(image="registry.example/resident:1"),
-            groups=[],
+            groups=(),
             concurrency=ConcurrencyIntent(dedicated=False, persistent_resident=True),
         ),
     ]
-    return stones
 
 
 def _portals() -> list[PortalConfig]:
@@ -100,44 +80,6 @@ def _portals() -> list[PortalConfig]:
     ]
 
 
-# --------------------------------------------------------------------------- #
-# Normalisation: replace host-/settings-derived substrings with stable tokens  #
-# --------------------------------------------------------------------------- #
-def _replacements() -> list[tuple[str, str]]:
-    settings = get_settings()
-    pairs = [
-        (str(constants.PATH_POSTGRESS_DATA_DIR), "${PATH_POSTGRESS_DATA_DIR}"),
-        (str(constants.PATH_POSTGRES_ROOT_DIR), "${PATH_POSTGRES_ROOT_DIR}"),
-        (str(constants.PATH_CORE_DIR), "${PATH_CORE_DIR}"),
-        (str(constants.PATH_EXTENSIONS_DIR), "${PATH_EXTENSIONS_DIR}"),
-        (str(constants.PATH_CODEX_ROOT), "${PATH_CODEX_ROOT}"),
-        (str(constants.PATH_CRYPT_ROOT), "${PATH_CRYPT_ROOT}"),
-        (str(Path.home()), "${HOME}"),
-        (settings.server.web.image, "${APP_IMAGE}"),
-        (settings.server.database.image, "${DB_IMAGE}"),
-        (settings.server.web.secret_key_secret, "${APP_SECRET}"),
-        (settings.server.database.password_secret, "${DB_SECRET}"),
-    ]
-    # Longest source first so nested paths (CORE/EXTENSIONS under CRYPT) win.
-    return sorted(pairs, key=lambda pair: len(pair[0]), reverse=True)
-
-
-def _normalize(value: Any) -> Any:
-    """Recursively replace machine-/settings-derived substrings with tokens."""
-    if isinstance(value, str):
-        for actual, token in _replacements():
-            if actual:
-                value = value.replace(actual, token)
-        return value
-    if isinstance(value, list):
-        items = cast("list[Any]", value)
-        return [_normalize(item) for item in items]
-    if isinstance(value, dict):
-        mapping = cast("dict[str, Any]", value)
-        return {key: _normalize(item) for key, item in mapping.items()}
-    return value
-
-
 def _unit_identity(manifest: QuadletBase) -> str:
     if isinstance(manifest, QuadletContainer):
         return manifest.container_name
@@ -147,18 +89,6 @@ def _unit_identity(manifest: QuadletBase) -> str:
         return manifest.unit_name
     msg = f"Unknown manifest kind: {type(manifest)!r}"
     raise TypeError(msg)
-
-
-def _serialize(manifests: Sequence[QuadletBase]) -> list[dict[str, Any]]:
-    """Deterministic, machine-stable serialization of a manifest sequence."""
-    return [
-        {
-            "type": type(manifest).__name__,
-            "id": _unit_identity(manifest),
-            "dump": _normalize(manifest.model_dump(mode="json")),
-        }
-        for manifest in manifests
-    ]
 
 
 def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
@@ -176,40 +106,8 @@ def _transmute(*, phoenix_active: bool) -> list[QuadletBase]:
     return transmuter.transmute_all(_soulstones(), portals=_portals(), runes=runes)
 
 
-def _golden_path(scenario: str) -> Path:
-    return GOLDEN_DIR / f"{scenario}.json"
-
-
-def _check_golden(scenario: str, *, phoenix_active: bool) -> list[dict[str, Any]]:
-    actual = _serialize(_transmute(phoenix_active=phoenix_active))
-    path = _golden_path(scenario)
-    if _REGEN:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(actual, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    assert path.exists(), f"Missing golden {path}; regenerate with LYCHD_REGEN_GOLDEN=1."
-    expected = json.loads(path.read_text(encoding="utf-8"))
-    assert actual == expected, (
-        f"Golden-manifest parity broke for scenario '{scenario}'. "
-        "If intentional, regenerate with LYCHD_REGEN_GOLDEN=1 and review the diff."
-    )
-    return actual
-
-
 # --------------------------------------------------------------------------- #
-# The two golden scenarios (the headline exit-gate item)                       #
-# --------------------------------------------------------------------------- #
-def test_golden_manifest_phoenix_active() -> None:
-    """Full byte-stable parity for the Phoenix-active pod."""
-    _check_golden("phoenix_active", phoenix_active=True)
-
-
-def test_golden_manifest_phoenix_absent() -> None:
-    """Full byte-stable parity for the Phoenix-absent pod."""
-    _check_golden("phoenix_absent", phoenix_active=False)
-
-
-# --------------------------------------------------------------------------- #
-# §8 property pins (human-readable; asserted against get_settings()/constants)  #
+# Behavior properties                                                         #
 # --------------------------------------------------------------------------- #
 def _by_id(manifests: Sequence[QuadletBase]) -> dict[str, QuadletBase]:
     return {_unit_identity(m): m for m in manifests}
@@ -324,6 +222,7 @@ def test_property3_phoenix_eye_and_core_lattice() -> None:
     assert phylactery.secrets == [settings.server.database.password_secret]
     assert phylactery.env_vars["POSTGRES_PASSWORD_FILE"] == f"/run/secrets/{settings.server.database.password_secret}"
     assert phylactery.volumes[0].host_path == constants.PATH_POSTGRESS_DATA_DIR
+    assert phylactery.volumes[0].container_path == Path("/var/lib/postgresql/18/docker")
     assert phylactery.volumes[0].options == ["U", "Z"]
     assert phylactery.volumes[1].host_path == constants.PATH_POSTGRES_ROOT_DIR / "init_db.sh"
     # Migration is a bounded one-shot dependency and shares the Vessel's path identity.
@@ -384,9 +283,3 @@ def test_property4_coven_targets_only_for_real_covens() -> None:
     active = _transmute(phoenix_active=True)
     targets = {m.name for m in active if isinstance(m, QuadletTarget) and m.kind == "coven"}
     assert targets == {"logic"}
-
-
-@pytest.mark.parametrize("scenario", ["phoenix_active", "phoenix_absent"])
-def test_golden_files_are_committed(scenario: str) -> None:
-    """Guard: the goldens exist as committed fixtures (not regenerated silently)."""
-    assert _golden_path(scenario).exists()

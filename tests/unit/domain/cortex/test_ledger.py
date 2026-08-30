@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from lychd.agents.router import ArtifactContent, ArtifactRef, Intent
+from lychd.agents.router import Intent
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.ledger import ConsentAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import IllegalRunTransitionError, RunDeliveryState, RunStatus
@@ -39,7 +39,7 @@ def test_profile_switch_selects_ledger_impl(monkeypatch: pytest.MonkeyPatch) -> 
     """H5/S3: the persistence profile selects the RunLedger impl (DB-free construction)."""
     monkeypatch.setenv("LYCHD_DB_PASSWORD", "test-db-password")
     from lychd.domain.cortex.ledger import DbRunLedger
-    from lychd.domain.web.altar_services import _build_run_ledger
+    from lychd.interface.web.altar_services import _build_run_ledger
 
     assert isinstance(_build_run_ledger("memory"), InMemoryRunLedger)
     # `postgres` builds the durable ledger; constructing a session factory opens no
@@ -63,54 +63,22 @@ async def test_create_persists_queued_run() -> None:
     assert run.sigil_scopes == frozenset({"runs:submit"})
     assert run.to_intent().sigil_name == "operator"
     assert run.to_intent().sigil_scopes == frozenset({"runs:submit"})
-    assert run.to_intent().content == run.content
 
 
+@pytest.mark.parametrize("advisory_run_id", ["client-corr-id", None])
 @pytest.mark.asyncio
-async def test_create_preserves_artifact_references_without_embedding_blob_data() -> None:
-    ledger = InMemoryRunLedger(honor_intent_run_id=True)
-    artifact = ArtifactRef(
-        artifact_id="image-1",
-        digest="sha256:" + "a" * 64,
-        media_type="image/png",
-        size=123,
-        classification="private",
-    )
-    intent = _intent().model_copy(update={"content": (ArtifactContent(artifact=artifact),)})
-
-    run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
-
-    assert run.to_intent().required_modalities == ("image",)
-    assert run.to_intent().content[0].model_dump(mode="json")["artifact"]["digest"] == artifact.digest
-    fetched = await ledger.get("run_1")
-    assert fetched == run
-    assert fetched is not run
-
-
-@pytest.mark.asyncio
-async def test_create_always_mints_canonical_id_ignoring_intent_run_id() -> None:
-    """R4/S3: by default the ledger ALWAYS mints (mirrors DbRunLedger); intent.run_id is advisory only."""
-    ledger = InMemoryRunLedger()  # no test seam → production behavior
-    run = await ledger.create(_intent("client-corr-id"), workflow_name="bridge_chat", queue_name="runs", priority=70)
-    assert run.run_id != "client-corr-id"  # the advisory field was NOT adopted as identity
-    assert run.run_id  # a real id was minted
-    fetched = await ledger.get(run.run_id)
-    assert fetched == run
-    assert fetched is not run
-    assert (await ledger.get("client-corr-id")) is None
-
-
-@pytest.mark.asyncio
-async def test_create_mints_canonical_id_when_intent_run_id_is_none() -> None:
-    """S3: with no advisory intent.run_id, the ledger assigns the canonical run identity."""
+async def test_create_always_mints_a_canonical_id(advisory_run_id: str | None) -> None:
+    """Production storage never adopts the optional caller correlation id."""
     ledger = InMemoryRunLedger()
-    intent = Intent(session_id="sess_1", prompt="hello", source="bridge")  # run_id defaults None
+    intent = Intent(session_id="sess_1", run_id=advisory_run_id, prompt="hello", source="bridge")
     run = await ledger.create(intent, workflow_name="bridge_chat", queue_name="runs", priority=70)
-    assert run.run_id  # a real id was minted
-    assert run.run_id != "None"
+    assert run.run_id
+    assert run.run_id != advisory_run_id
     fetched = await ledger.get(run.run_id)
     assert fetched == run
     assert fetched is not run
+    if advisory_run_id is not None:
+        assert await ledger.get(advisory_run_id) is None
 
 
 @pytest.mark.asyncio
@@ -592,7 +560,7 @@ async def test_next_seq_tracks_persisted_history() -> None:
 
 @pytest.mark.asyncio
 async def test_list_by_status_and_get_by_consent() -> None:
-    """list_by_status feeds reconcile; get_by_consent feeds engine.approve."""
+    """list_by_status feeds reconcile; get_by_consent feeds engine.resume_consent."""
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     await ledger.create(_intent("a"), workflow_name="bridge_chat", queue_name="runs", priority=50)
     await ledger.create(_intent("b"), workflow_name="bridge_chat", queue_name="runs", priority=50)

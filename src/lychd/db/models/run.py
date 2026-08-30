@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class Run(UUIDAuditBase):
-    """One workflow execution. THE durable run substrate (adw-kit Part 2.2/2.4 pattern)."""
+    """One workflow execution and the durable run substrate."""
 
     __tablename__ = "run"
     __table_args__ = (

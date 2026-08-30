@@ -8,10 +8,10 @@ adapters use, but it has no network, subprocess, workspace, or credential author
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelRequest, ModelResponse, TextPart
 from pydantic_graph import BaseNode, End, Graph, GraphRunContext
 
@@ -24,7 +24,8 @@ from lychd.agents.workflows.base import (
     Trigger,
     Workflow,
 )
-from lychd.domain.cortex.priority import PRIORITY_DEFAULT
+from lychd.agents.workflows.nodes import bind_messages_to_logical_run
+from lychd.domain.cortex.graph_runner import HardwareResumeBudget
 from lychd.domain.delegation.models import (
     TERMINAL_DELEGATED_AGENT_STATUSES,
     DelegatedAgentJobStatus,
@@ -53,7 +54,7 @@ class DelegatedRiteState(BaseModel):
     session_id: str
     run_id: str
     prompt: str
-    priority: int = PRIORITY_DEFAULT
+    hardware_resume_budget: HardwareResumeBudget = Field(default_factory=HardwareResumeBudget)
     request_id: str = ""
     job_id: str | None = None
     reply: str | None = None
@@ -124,13 +125,6 @@ class ProjectDelegatedReply(BaseNode[DelegatedRiteState, WorkflowServices, str])
             ],
             mode="json",
         )
-        bound_messages: list[Any] = []
-        for message in cast("list[Any]", messages):
-            payload = cast("dict[str, Any]", message) if isinstance(message, dict) else {}
-            if payload.get("kind") in {"request", "response"}:
-                bound_messages.append({**payload, "run_id": ctx.state.run_id})
-            else:
-                bound_messages.append(message)
         await ctx.deps.turns.settle_agent_turn(
             ctx.state.session_id,
             BridgeTurn(
@@ -139,7 +133,7 @@ class ProjectDelegatedReply(BaseNode[DelegatedRiteState, WorkflowServices, str])
                 run_id=ctx.state.run_id,
                 state="settled",
             ),
-            new_messages=bound_messages,
+            new_messages=bind_messages_to_logical_run(messages, ctx.state.run_id),
         )
         ctx.deps.events.emitter(ctx.state.run_id).status("settling")
         return End(reply)
@@ -156,7 +150,6 @@ def _make_state(intent: Any) -> DelegatedRiteState:
         session_id=intent.session_id,
         run_id=intent.run_id or "",
         prompt=intent.prompt,
-        priority=intent.priority if intent.priority is not None else PRIORITY_DEFAULT,
         request_id=str(uuid4()),
     )
 

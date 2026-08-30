@@ -1,4 +1,4 @@
-"""The semantic event plane: RunEvent JSON round-trip, channel replay + gap ruling."""
+"""The semantic event plane: channel replay and gap ruling."""
 # White-box assertions read RunChannel._replay directly.
 # pyright: reportPrivateUsage=false
 
@@ -16,16 +16,6 @@ from lychd.domain.cortex.events import InProcessEventBus, RunChannel, RunEvent, 
 async def _next_event(source: AsyncIterator[RunEvent]) -> RunEvent:
     """Adapt an async-iterator awaitable to the coroutine required by create_task."""
     return await anext(source)
-
-
-def test_run_event_json_round_trips() -> None:
-    """A RunEvent survives model_dump_json → model_validate_json intact (PostgresEventBus)."""
-    event = RunEvent(run_id="r1", seq=3, kind=RunEventKind.TOKEN, data="<b>x</b>", meta={"level": "info"})
-    restored = RunEvent.model_validate_json(event.model_dump_json())
-    assert restored == event
-    assert restored.kind is RunEventKind.TOKEN
-    assert restored.data == "<b>x</b>"
-    assert restored.meta == {"level": "info"}
 
 
 @pytest.mark.asyncio

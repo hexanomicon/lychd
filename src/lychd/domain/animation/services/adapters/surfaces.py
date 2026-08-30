@@ -18,46 +18,12 @@ if TYPE_CHECKING:
     from pydantic_ai.toolsets import AbstractToolset
 
 
-class PassiveConnector(Connector, ToolConnector):
-    """Connector with readiness and optional toolsets."""
-
-    def __init__(
-        self,
-        *,
-        kind: str,
-        link: Link,
-        base_url: str = "",
-        toolsets: Sequence[AbstractToolset] = (),
-    ) -> None:
-        """Store readiness-only connector metadata."""
-        self._kind = kind
-        self._link = link
-        self._base_url = base_url
-        self._toolsets = tuple(toolsets)
-
-    @property
-    def kind(self) -> str:
-        return self._kind
-
-    @property
-    def link(self) -> Link:
-        return self._link
-
-    @property
-    def base_url(self) -> str:
-        return self._base_url
-
-    def get_toolsets(self) -> Sequence[AbstractToolset]:
-        return self._toolsets
-
-
 class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
     """OpenAI-compatible connector backed by Pydantic AI OpenAI model/provider."""
 
     def __init__(
         self,
         *,
-        kind: str,
         link: Link,
         base_url: str,
         model_infos: Sequence[ModelInfo] = (),
@@ -66,25 +32,18 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         default_surface: ModelSurface = ModelSurface.CHAT,
         provider_name: str = "openai-compatible",
         toolsets: Sequence[AbstractToolset] = (),
-        metadata: dict[str, object] | None = None,
     ) -> None:
         """Store readiness, base URL, models, auth, profile policy, and toolsets."""
-        self._kind = kind
         self._link = link
         self._base_url = base_url
-        self._model_infos = tuple(model.model_copy(deep=True) for model in model_infos)
+        self._model_infos = tuple(model_infos)
         self._default_model_id = default_model_id
         self._api_key_secret_name = api_key_secret_name
         self._default_surface = default_surface
         self._provider_name = provider_name
         self._toolsets = tuple(toolsets)
-        self._metadata = dict(metadata or {})
         self._observed_model_ids: tuple[str, ...] | None = None
         self._inventory_error: str | None = None
-
-    @property
-    def kind(self) -> str:
-        return self._kind
 
     @property
     def link(self) -> Link:
@@ -97,13 +56,6 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
     @property
     def base_url(self) -> str:
         return self._base_url
-
-    @property
-    def metadata(self) -> dict[str, object]:
-        return dict(self._metadata)
-
-    def list_models(self) -> Sequence[ModelInfo]:
-        return tuple(model.model_copy(deep=True) for model in self._model_infos)
 
     @property
     def observed_model_ids(self) -> tuple[str, ...] | None:
@@ -152,15 +104,14 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         return self._toolsets
 
     def _select_model_id(self, requested: str | None) -> str:
-        if requested:
-            return requested
-        if self._default_model_id:
-            return self._default_model_id
-        if self._model_infos:
-            return self._model_infos[0].id
-
-        msg = f"Connector '{self.kind}' cannot hydrate a model because no default or requested model id was provided."
-        raise ValueError(msg)
+        selected = requested or self._default_model_id or (self._model_infos[0].id if self._model_infos else None)
+        if selected is None:
+            msg = f"{type(self).__name__} cannot hydrate a model because no default or requested model id was provided."
+            raise ValueError(msg)
+        if self._model_infos and all(info.id != selected for info in self._model_infos):
+            msg = f"{type(self).__name__} cannot hydrate undeclared model id {selected!r}."
+            raise ValueError(msg)
+        return selected
 
     def _provider_model_id(self, selected_model_id: str) -> str:
         """Translate a stable capability id into the provider-facing model id."""
@@ -205,14 +156,7 @@ class OpenAICompatibleConnector(Connector, ModelConnector, ToolConnector):
         return value
 
 
-class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
-    """Concrete generic Soulstone runtime with immutable rune + connector references.
-
-    Extensions may subclass this for connector typing (e.g. llama.cpp) but the
-    base is fully usable on its own; per-runtime Soulstone subclasses are no longer
-    domain types (spec §5).
-    """
-
+class _ConfiguredAnimator[C: Connector, R: SoulstoneConfig | PortalConfig]:
     def __init__(self, *, rune: R, connector: C) -> None:
         """Store immutable rune and connector references."""
         self._rune = rune
@@ -231,49 +175,24 @@ class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](Soulstone[C, R]):
         return self._connector
 
 
-class PortalAnimator[C: Connector, R: PortalConfig](Portal[C, R]):
+class SoulstoneAnimator[C: Connector, R: SoulstoneConfig](
+    _ConfiguredAnimator[C, R],
+    Soulstone[C, R],
+):
+    """Concrete Soulstone runtime with immutable rune and connector references."""
+
+
+class PortalAnimator[C: Connector, R: PortalConfig](
+    _ConfiguredAnimator[C, R],
+    Portal[C, R],
+):
     """Concrete generic Portal runtime with immutable rune + connector references."""
-
-    def __init__(self, *, rune: R, connector: C) -> None:
-        """Store immutable rune + connector references."""
-        self._rune = rune
-        self._connector = connector
-
-    @property
-    def rune(self) -> R:
-        return self._rune
-
-    @property
-    def name(self) -> str:
-        return self._rune.name
-
-    @property
-    def connector(self) -> C:
-        return self._connector
-
-
-class GenericSoulstone(SoulstoneAnimator[Connector, SoulstoneConfig]):
-    """Fallback local animator when no runtime-specific connector exists yet."""
-
-
-class OpenAICompatibleSoulstone(SoulstoneAnimator[OpenAICompatibleConnector, SoulstoneConfig]):
-    """Local Soulstone exposing an OpenAI-compatible connector surface."""
-
-
-class GenericPortal(PortalAnimator[Connector, PortalConfig]):
-    """Fallback Portal runtime when provider-specific connector is not implemented."""
-
-
-class OpenAIPortal(PortalAnimator[OpenAICompatibleConnector, PortalConfig]):
-    """Portal runtime using an OpenAI-compatible connector surface."""
 
 
 def local_link_default(*, runtime: str) -> Link:
     """Build a default local-runtime link prior to active probing."""
     return Link(
         up=False,
-        activatable=True,
-        estimated_ready_ms=None,
         reason=f"{runtime} runtime not probed/started",
     )
 
@@ -281,17 +200,12 @@ def local_link_default(*, runtime: str) -> Link:
 def portal_link_default(*, base_url: str) -> Link:
     """Build an unverified passive link; a configured URL is not reachability proof."""
     if base_url:
-        return Link(up=False, activatable=False, reason="portal reachability not probed")
-    return Link(up=False, activatable=False, reason="portal base_url missing")
+        return Link(up=False, reason="portal reachability not probed")
+    return Link(up=False, reason="portal base_url missing")
 
 
 __all__ = [
-    "GenericPortal",
-    "GenericSoulstone",
     "OpenAICompatibleConnector",
-    "OpenAICompatibleSoulstone",
-    "OpenAIPortal",
-    "PassiveConnector",
     "PortalAnimator",
     "SoulstoneAnimator",
     "local_link_default",

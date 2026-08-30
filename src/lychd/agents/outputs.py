@@ -1,8 +1,8 @@
-"""Typed agent outputs as a first-class module (A5 §2).
+"""Typed agent outputs shared without coupling agents to workflow modules.
 
 Outputs are *structures*, never prose to parse. `THE_FIRST_ONE` outputs
-`BridgeReply | DeferredToolRequests`; every future agent spec goes through the
-same typed-output gate. These types live here (not in `bridge_chat`) so
+`BridgeReply | DeferredToolRequests`; agent specs pass through the same
+typed-output gate. These types live here (not in `bridge_chat`) so
 `the_first_one` can import `BridgeReply` without importing the workflow module —
 that is what breaks the historical `the_first_one`<->`bridge_chat` cycle.
 """
@@ -35,16 +35,4 @@ class Bottleneck(BaseModel):
     detail: str
 
 
-class ConsentPointer(BaseModel):
-    """What a parked turn projects while awaiting the Magus (A5 §2).
-
-    The honest consent-resume path (a `ConsentPending` signal + `AwaitConsent`
-    node) landed in Wave 4; this type keeps the projected shape stable.
-    """
-
-    consent_id: str
-    tool_name: str
-    summary: str
-
-
-__all__ = ["Bottleneck", "BridgeReply", "ConsentPointer", "FragmentCall"]
+__all__ = ["Bottleneck", "BridgeReply", "FragmentCall"]

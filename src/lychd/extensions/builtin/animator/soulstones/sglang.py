@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from pydantic import Field
 
 from lychd.config import QuadletConfig
-from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
+from lychd.domain.animation.schemas import SoulstoneConfig
 
 
 class SglangSoulstoneConfig(SoulstoneConfig):
@@ -31,11 +31,5 @@ exec = ["-m", "sglang.launch_server", "--port", "8011", "--model-path", "/models
 [quadlet]
 image = "lmsysorg/sglang:latest"
 """
-    runtime: str = "sglang"
+    runtime: Literal["sglang"] = "sglang"  # pyright: ignore[reportIncompatibleVariableOverride]
     quadlet: QuadletConfig = Field(default_factory=lambda: QuadletConfig(image="lmsysorg/sglang:latest"))
-    model_format: ModelFormat | None = ModelFormat.AWQ
-
-    # Legacy runes may retain these fields. They are accepted as inert inputs;
-    # pod members never receive host IPC or host networking flags.
-    ipc_host: bool = False
-    network_host: bool = False

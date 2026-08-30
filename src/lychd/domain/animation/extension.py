@@ -13,7 +13,7 @@ from lychd.extensions.base import ExtensionStore
 
 
 @dataclass(frozen=True, slots=True)
-class RegisteredSoulstoneDefinition:
+class _RegisteredSoulstoneDefinition:
     """One Soulstone definition with host-assigned extension provenance."""
 
     provider_id: str
@@ -21,7 +21,7 @@ class RegisteredSoulstoneDefinition:
 
 
 @dataclass(frozen=True, slots=True)
-class RegisteredPortalDefinition:
+class _RegisteredPortalDefinition:
     """One Portal definition with host-assigned extension provenance."""
 
     provider_id: str
@@ -36,12 +36,7 @@ class SoulstoneStore(ExtensionStore):
         super().__init__()
         self._runes = runes
         self._current_provider = current_provider or (lambda: "direct")
-        self._registrations: list[RegisteredSoulstoneDefinition] = []
-
-    @property
-    def registrations(self) -> tuple[RegisteredSoulstoneDefinition, ...]:
-        """Registered definitions with exact provider ownership."""
-        return tuple(self._registrations)
+        self._registrations: list[_RegisteredSoulstoneDefinition] = []
 
     @property
     def definitions(self) -> tuple[SoulstoneDefinition, ...]:
@@ -98,7 +93,7 @@ class SoulstoneStore(ExtensionStore):
                 )
                 raise ValueError(msg)
         self._runes.add_schema(definition.rune_schema)
-        self._registrations.append(RegisteredSoulstoneDefinition(provider_id=provider_id, definition=definition))
+        self._registrations.append(_RegisteredSoulstoneDefinition(provider_id=provider_id, definition=definition))
 
 
 class PortalStore(ExtensionStore):
@@ -109,12 +104,7 @@ class PortalStore(ExtensionStore):
         super().__init__()
         self._runes = runes
         self._current_provider = current_provider or (lambda: "direct")
-        self._registrations: list[RegisteredPortalDefinition] = []
-
-    @property
-    def registrations(self) -> tuple[RegisteredPortalDefinition, ...]:
-        """Registered definitions with exact provider ownership."""
-        return tuple(self._registrations)
+        self._registrations: list[_RegisteredPortalDefinition] = []
 
     @property
     def definitions(self) -> tuple[PortalDefinition, ...]:
@@ -144,4 +134,4 @@ class PortalStore(ExtensionStore):
                 )
                 raise ValueError(msg)
         self._runes.add_schema(definition.rune_schema)
-        self._registrations.append(RegisteredPortalDefinition(provider_id=provider_id, definition=definition))
+        self._registrations.append(_RegisteredPortalDefinition(provider_id=provider_id, definition=definition))

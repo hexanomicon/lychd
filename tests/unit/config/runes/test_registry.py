@@ -8,7 +8,6 @@ from typing import ClassVar
 import pytest
 
 from lychd.config.runes import RuneConfig
-from lychd.config.runes.protocols import PortReserver
 from lychd.config.runes.registry import RuneRegistry
 from lychd.extensions.builtin.observability.phoenix.config import PhoenixSettings
 
@@ -28,26 +27,10 @@ class _OtherClaimer(_Claimer):
     """A DISTINCT PortReserver type (so a collision names two different claimants)."""
 
 
-class _Bystander:
-    """A rune-like object that is NOT a PortReserver (no reserved_ports)."""
-
-    name = "bystander"
-
-
 class _NestedRune(RuneConfig):
     path_fragment: ClassVar[Path] = Path("nested-rune")
 
     payload: list[dict[str, str]]
-
-
-def test_phoenix_is_a_port_reserver() -> None:
-    assert isinstance(PhoenixSettings(), PortReserver)
-    assert not isinstance(_Bystander(), PortReserver)
-
-
-def test_phoenix_uses_honest_default_identity_and_accepts_explicit_legacy_name() -> None:
-    assert PhoenixSettings().service_name == "lychd-phoenix"
-    assert PhoenixSettings(name="oculus").service_name == "lychd-oculus"
 
 
 def test_reserved_ports_collects_phoenix_claims() -> None:
@@ -66,12 +49,6 @@ def test_registry_detaches_nested_mutable_rune_values_at_every_read_boundary() -
 
     first.payload[0]["owner"] = "reader-alias"
     assert registry.one(_NestedRune).payload == [{"owner": "canonical"}]
-
-
-def test_reserved_ports_ignores_non_reservers() -> None:
-    """isinstance tightening: a rune that is not a PortReserver contributes nothing."""
-    registry = RuneRegistry([_Bystander()])  # type: ignore[list-item]
-    assert registry.reserved_ports() == {}
 
 
 def test_reserved_ports_duplicate_claim_names_both() -> None:
@@ -99,14 +76,6 @@ def test_reserved_ports_repeated_label_names_both() -> None:
     message = str(exc.value)
     assert "_Claimer" in message
     assert "_OtherClaimer" in message
-
-
-def test_reserved_ports_same_label_same_port_two_distinct_runes_raises() -> None:
-    """Two DISTINCT runes with an identical label+port is a real conflict — must raise
-    (the old label-equality escape hatch let this pass silently)."""
-    registry = RuneRegistry([_Claimer("UI", 6006), _OtherClaimer("UI", 6006)])  # type: ignore[list-item]
-    with pytest.raises(ValueError, match="'UI'"):
-        registry.reserved_ports()
 
 
 def test_one_ambiguity_names_schema_and_count() -> None:

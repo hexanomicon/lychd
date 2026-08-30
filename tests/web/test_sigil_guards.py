@@ -29,7 +29,7 @@ async def write_handler(request: Request[Any, Any, Any]) -> dict[str, object]:
 
 
 def _client(monkeypatch: pytest.MonkeyPatch, sigil: Sigil) -> AsgiClient:
-    monkeypatch.setattr(mw_mod, "local_sigil", lambda: sigil)
+    monkeypatch.setattr(mw_mod, "default_local_sigil", lambda: sigil)
     app = Litestar(route_handlers=[read_handler, write_handler], middleware=[sigil_auth_middleware()])
     return AsgiClient(app)
 

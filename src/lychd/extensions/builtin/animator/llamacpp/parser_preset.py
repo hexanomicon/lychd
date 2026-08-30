@@ -3,10 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Final
 
-from lychd.extensions.builtin.animator.llamacpp.parser_models import (
-    LlamaCppPresetDefaults,
-    LlamaCppPresetDocument,
-)
+from lychd.extensions.builtin.animator.llamacpp.parser_models import LlamaCppPresetDocument
 from lychd.system.constants import PATH_CODEX_ROOT
 
 
@@ -18,11 +15,6 @@ class LlamaCppPresetParser:
         "ctx-size": "n_ctx",
         "n_ctx": "n_ctx",
         "llama_arg_ctx_size": "n_ctx",
-        "np": "n_parallel",
-        "parallel": "n_parallel",
-        "n-parallel": "n_parallel",
-        "n_parallel": "n_parallel",
-        "llama_arg_n_parallel": "n_parallel",
         "n-predict": "n_predict",
         "predict": "n_predict",
         "n": "n_predict",
@@ -31,21 +23,13 @@ class LlamaCppPresetParser:
         "temp": "temperature",
         "temperature": "temperature",
         "llama_arg_temperature": "temperature",
-        "top-k": "top_k",
-        "top_k": "top_k",
-        "llama_arg_top_k": "top_k",
         "top-p": "top_p",
         "top_p": "top_p",
         "llama_arg_top_p": "top_p",
-        "min-p": "min_p",
-        "min_p": "min_p",
-        "llama_arg_min_p": "min_p",
-        "reasoning-format": "reasoning_format",
-        "llama_arg_think": "reasoning_format",
     }
     _PRESET_MODEL_KEYS: Final[set[str]] = {"model", "m", "llama_arg_model"}
-    _TRUE_VALUES: Final[set[str]] = {"1", "on", "true", "enabled", "yes"}
-    _FALSE_VALUES: Final[set[str]] = {"0", "off", "false", "disabled", "no"}
+    _INTEGER_KEYS: Final[set[str]] = {"n_ctx", "n_predict"}
+    _FLOAT_KEYS: Final[set[str]] = {"temperature", "top_p"}
 
     def parse_preset_defaults(
         self,
@@ -54,11 +38,11 @@ class LlamaCppPresetParser:
         model_provider: str | None,
         model_path: str | None,
         preset: LlamaCppPresetDocument | None = None,
-    ) -> LlamaCppPresetDefaults:
+    ) -> dict[str, object]:
         """Parse known defaults from global and matching model sections."""
         document = preset or self.load_preset(path)
         if document.error is not None:
-            return LlamaCppPresetDefaults(values={})
+            return {}
 
         sections = document.sections
         global_defaults = self._extract_known_preset_values(sections.get("*", {}))
@@ -68,7 +52,7 @@ class LlamaCppPresetParser:
             model_path=model_path,
         )
         model_defaults = self._extract_known_preset_values(sections.get(model_section, {})) if model_section else {}
-        return LlamaCppPresetDefaults(values={**global_defaults, **model_defaults}, model_section=model_section)
+        return {**global_defaults, **model_defaults}
 
     def load_preset(self, path: str) -> LlamaCppPresetDocument:
         """Load and parse a preset file into section maps."""
@@ -113,23 +97,25 @@ class LlamaCppPresetParser:
             canonical = self._PRESET_KEY_MAP.get(raw_key.strip().lower())
             if canonical is None:
                 continue
-            parsed = self._coerce_preset_value(raw_value)
-            result[canonical] = parsed
+            parsed = self._coerce_preset_value(canonical, raw_value)
+            if parsed is not None:
+                result[canonical] = parsed
         return result
 
-    def _coerce_preset_value(self, value: str) -> object:
+    def _coerce_preset_value(self, canonical: str, value: str) -> int | float | str | None:
+        """Parse a known preset value according to its canonical field type."""
         cleaned = value.strip()
-        lowered = cleaned.lower()
-        if lowered in self._TRUE_VALUES:
-            return True
-        if lowered in self._FALSE_VALUES:
-            return False
-        try:
-            if any(char in cleaned for char in (".", "e", "E")):
+        if canonical in self._INTEGER_KEYS:
+            try:
+                return int(cleaned)
+            except ValueError:
+                return None
+        if canonical in self._FLOAT_KEYS:
+            try:
                 return float(cleaned)
-            return int(cleaned)
-        except ValueError:
-            return cleaned
+            except ValueError:
+                return None
+        return cleaned
 
     def _select_model_section(
         self,

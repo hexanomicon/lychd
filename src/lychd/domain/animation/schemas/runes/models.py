@@ -13,29 +13,26 @@ from lychd.domain.animation.schemas.shared import ModelFormat
 class ModelCapabilityHints(BaseModel):
     """Optional connector-facing capability hints for runtime model summaries."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
-    families: list[CapabilityFamily] | None = None
+    families: tuple[CapabilityFamily, ...] | None = None
     surface: ModelSurface | None = None
-    modalities_in: list[str] | None = None
-    modalities_out: list[str] | None = None
+    modalities_in: tuple[str, ...] | None = None
     supports_tools: bool | None = None
-    supports_streaming: bool | None = None
 
 
 class LocalModelConfig(BaseModel):
     """Local model declaration owned by a Soulstone-style runtime.
 
-    This models a local artifact/runtime slot (path + optional format + metadata).
+    This models a local artifact/runtime slot (path + optional format).
     It does *not* include connector/provider strings or endpoint URIs. Those are
     runtime connector concerns resolved later.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     id: str = Field(min_length=1, description="Stable local model id within the Soulstone.")
     path: Path = Field(description="Folder path containing the local model artifact(s).")
-    description: str | None = None
     format: ModelFormat | None = Field(default=None, description="Model weight format.")
     generation: GenerationProfile | None = Field(
         default=None,
@@ -45,17 +42,6 @@ class LocalModelConfig(BaseModel):
         default=None,
         description="Optional model-level capability hints (surface/modalities/tool support).",
     )
-    tags: list[str] = Field(default_factory=list)
-
-
-class LocalLLMModelConfig(LocalModelConfig):
-    """Local LLM model declaration.
-
-    This subclass makes the modality intent explicit without forcing all future
-    local model declarations (vision, audio, embeddings) into one optional-field
-    soup. Additional capability-specific local model subclasses can be added
-    alongside this class.
-    """
 
 
 class PortalModelConfig(BaseModel):
@@ -66,10 +52,9 @@ class PortalModelConfig(BaseModel):
     optional capability hints, and an optional per-model generation overlay.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     id: str = Field(min_length=1, description="Provider-facing model id routed by this Portal.")
-    description: str | None = None
     capabilities: ModelCapabilityHints | None = Field(
         default=None,
         description="Optional model-level capability hints (surface/modalities/tool support).",

@@ -64,14 +64,9 @@ class ConflictTopology:
     minimum-membership law.
     """
 
-    domains_by_animator: Mapping[str, tuple[str, ...]]
     neighbors_by_animator: Mapping[str, tuple[str, ...]]
     coven_members: Mapping[str, tuple[str, ...]]
     oriented_edges: tuple[tuple[str, str], ...]
-
-    def domains_for(self, animator_name: str) -> tuple[str, ...]:
-        """Return the resolved exclusive-domain memberships for one Animator."""
-        return self.domains_by_animator.get(animator_name, ())
 
     def neighbors_for(self, animator_name: str) -> tuple[str, ...]:
         """Return every exact conflict neighbor in lexical order."""
@@ -165,7 +160,6 @@ def build_conflict_topology(declarations: Iterable[ConflictDeclaration]) -> Conf
     coven_members = {group: members for group, members in coven_members.items() if len(members) >= MIN_COVEN_MEMBERS}
 
     return ConflictTopology(
-        domains_by_animator=MappingProxyType(domains_by_animator),
         neighbors_by_animator=MappingProxyType(neighbors_by_animator),
         coven_members=MappingProxyType(coven_members),
         oriented_edges=oriented_edges,

@@ -132,6 +132,10 @@ uses guarded UPDATE RETURNING for budget consumption and commits a consumed use 
 row in one transaction. ZTE requires non-empty constraints, expiry, and max_uses; standard may still
 be broader.
 
+A named argument constraint requires that argument to be present. Absence never aliases an explicit
+JSON `null`, even when `null` is itself an allowed value; otherwise an omitted authority-bearing
+field could satisfy policy accidentally.
+
 Preauthorization is Magus policy, never model confidence. Startup reconciles the complete Rune-owned
 set in one transaction: same-slug rows retain usage and a manual disable, changed policy fields are
 replaced, and absent Rune-owned rows are disabled. PostgreSQL startup fails closed when this sync

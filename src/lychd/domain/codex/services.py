@@ -89,10 +89,10 @@ def _require_rune_owned_preauthorizations(rows: Iterable[CodexPreauthorization])
 
 
 def row_to_view(row: Consent) -> ConsentView:
-    """Map a `Consent` ORM row to its read-model."""
+    """Map a row to a fail-closed view, including legacy or externally seeded data."""
     payload: dict[str, Any] = dict(row.payload) if row.payload else {}
     raw_args = payload.get("args", {})
-    args: dict[str, Any] = cast("dict[str, Any]", raw_args) if isinstance(raw_args, dict) else {}
+    args = censor(cast("dict[str, Any]", raw_args)) if isinstance(raw_args, dict) else {}
     return ConsentView(
         id=str(row.id),
         run_id=str(row.run_id),
@@ -258,7 +258,7 @@ class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
         auto_commit: bool = True,
     ) -> Consent:
         """Persist a consent row: auto-granted when a preauth consumed it, else pending."""
-        stored = {"args": censor(payload), "call_ids": list(call_ids)}
+        stored: dict[str, Any] = {"args": censor(payload), "call_ids": list(call_ids)}
         granted = preauth is not None
         if preauth is not None:
             stored[PREAUTH_DIGEST_PAYLOAD_KEY] = preauth_authorization_digest(preauth)
@@ -312,8 +312,3 @@ class ConsentService(SQLAlchemyAsyncRepositoryService[Consent]):
     async def pending_count(self) -> int:
         """Return the number of consents still awaiting a verdict."""
         return await self.count(Consent.status == "pending")
-
-    async def pending_for_run(self, run_id: str) -> ConsentView | None:
-        """Return the run's still-pending consent, or None."""
-        row = await self.get_one_or_none(run_id=UUID(run_id), status="pending")
-        return row_to_view(row) if row is not None else None

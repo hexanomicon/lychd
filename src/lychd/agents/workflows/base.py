@@ -93,19 +93,25 @@ class DelegatedAgentNode:
     """
 
 
+type PatternNodeKind = Literal["step", "gate", "delegate", "terminal"]
+
+
 @dataclass(frozen=True, kw_only=True)
 class PatternNode:
     """One stable semantic station in an immutable Weaver Pattern revision."""
 
     key: str
     label: str
-    kind: Literal["step", "gate", "delegate", "terminal"] = "step"
+    kind: PatternNodeKind = "step"
     implementation: type[Any] | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         """Require renderer-independent identity and an implementation for executable stations."""
         if not self.key or not self.label:
             msg = "Pattern nodes require non-empty keys and labels."
+            raise ValueError(msg)
+        if self.kind == "terminal" and self.implementation is not None:
+            msg = f"Terminal Pattern node '{self.key}' must remain declarative."
             raise ValueError(msg)
         if self.kind != "terminal" and self.implementation is None:
             msg = f"Executable Pattern node '{self.key}' requires an implementation."

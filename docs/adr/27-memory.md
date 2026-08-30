@@ -22,11 +22,10 @@ training eligibility. Run/Step ledgers, traces, checkpoints, Personas, one-call 
 Soulforge corpora stay distinct and cite by stable ref.
 
 !!! warning "Delivery boundary"
-    Current material includes a narrow Karma row plus an effect-free `CandidateArchivePort` and
-    loop-local adapter for attributed raw candidates, attempt-bound derivatives,
-    anti-reingestion identities, and finite attempt-fenced processing state. There is no production PostgreSQL adapter, runtime ingestion,
-    namespace authorization, promotion law, embedding/retrieval/index, Curator, or non-empty Karma
-    context. State owns the boundary.
+    Current material includes a narrow Karma row only. `CandidateArchivePort`, intake adapters,
+    processing state, production PostgreSQL Archive, runtime ingestion, namespace authorization,
+    promotion, embedding/retrieval/index, Curator, and non-empty Karma context are not delivered.
+    State owns the boundary.
 
 ## Framework boundary and Memori
 
@@ -38,19 +37,11 @@ it grants no runtime or schema authority.
 
 LychD does not adopt transparent LLM-client interception, retain every conversation, automatically
 extract claims, or inject recall into every prompt. Those conveniences cross Archive's admission,
-privacy, correction, and Context authority. The delivered first seam is a narrow LychD-owned
-`CandidateArchivePort`: it admits attributed raw candidates and separately identified derivatives,
-preserves source lineage and anti-reingestion identity, and exposes bounded processing state.
-Retry increments a monotonic attempt; stale settlement and derivatives from an older attempt are
-refused. A derivative cannot predate its raw source observation, and ordinary reads expose it only
-while its source is `PROCESSING` or `PROCESSED` at that exact current attempt. Retrying or failing
-the source therefore hides old derivatives and refuses their idempotent replay. A new current
-attempt for the same raw source may replace an older attempt's derivation key with new,
-current-attempt output; the key remains permanently bound to that raw-source lineage and cannot
-migrate after the old output becomes stale. Stale identity therefore does not permanently poison
-the source's semantic retry key. Its
-only adapter is volatile, loop-local memory with no runtime wiring. Embeddings, recall, curation,
-promotion, RAG injection, and training remain later consumers with their own evidence.
+privacy, correction, and Context authority. A future LychD-owned `CandidateArchivePort` must admit
+attributed raw candidates and separately identified derivatives, preserve source lineage and
+anti-reingestion identity, and expose bounded processing state. The exact retry and stale-write
+rules remain design requirements. Embeddings, recall, curation, promotion, RAG injection, and
+training remain later consumers with their own evidence.
 
 ## The Archive record
 

@@ -24,11 +24,4 @@ PATH_ALTAR_NOTICES: Final[Path] = PATH_ALTAR_PUBLIC_DIR / "THIRD_PARTY_NOTICES.t
 
 # APP SETTINGS
 
-DB_SESSION_DEPENDENCY_KEY: Final[str] = "db_session"
-DTO_INFO_KEY: Final[str] = "info"
-DEFAULT_PAGINATION_SIZE: Final[int] = 20
 CACHE_EXPIRATION: Final[int] = 60
-HEALTH_ENDPOINT: Final[str] = "/health"
-SITE_INDEX: Final[str] = "/"
-OPENAPI_SCHEMA: Final[str] = "/schema"
-ENCRYPTION_KEY_LENGTH: Final[int] = 32

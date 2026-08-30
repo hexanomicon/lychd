@@ -1,4 +1,4 @@
-"""The semantic run-event plane (A4-U2, spec-00-FINAL C2).
+"""The semantic run-event plane.
 
 The canonical `RunEvent` is a frozen, JSON-round-trippable pydantic model — events
 are *semantic* (the web `EventProjector` validates inert JSON; agents emit raw data). `RunChannel`
@@ -8,7 +8,7 @@ own the run→channel bookkeeping that used to squat in `BridgeSessionStore`, an
 bus's emitter tees every non-`TOKEN` event into the `RunLedger` (tokens are too
 chatty for Step rows; settled text lands on the session turn).
 
-Topology A (v1): one process, one event loop — the in-process ghoul (`perform_run`)
+The current topology is one process and one event loop: the in-process ghoul (`perform_run`)
 and the SSE handler share this bus instance, so streaming survives byte-for-byte.
 The `RunEvent` schema is deliberately JSON-serializable so a future
 `PostgresEventBus` (LISTEN/NOTIFY) slots in behind `RunEventBus` without touching
@@ -378,7 +378,7 @@ class RunEmitter:
 
     `emit` is the primitive; the semantic helpers (`status`/`token`/`fragment`/…)
     are byte-shaped for the `EventProjector`. Tokens are emitted raw text — the client
-    is the sole escaper (spec-00-FINAL C2).
+    is the sole escaper.
     """
 
     channel: RunChannel
@@ -426,7 +426,7 @@ class RunEmitter:
     def consent(self, consent_id: str, *, tool_name: str = "") -> RunEvent:
         """Emit a parked consent as `{"consent_id": ..., "tool_name": ...}` JSON.
 
-        The consent record is written BEFORE this event (spec-00-FINAL C2/C3).
+        The consent record is written before this projection event.
         """
         return self.emit(RunEventKind.CONSENT, json.dumps({"consent_id": consent_id, "tool_name": tool_name}))
 

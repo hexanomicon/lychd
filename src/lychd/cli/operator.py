@@ -85,7 +85,7 @@ def stop(target: str) -> None:
 def logs(target: str, *, lines: int) -> None:
     """Render one bounded, non-following journal tail."""
     try:
-        read = build_operator_services().journal.read(_target(target), lines=lines)
+        content = build_operator_services().journal.read(_target(target), lines=lines)
     except (OperatorError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
-    click.echo(read.content, nl=not read.content.endswith("\n"))
+    click.echo(content, nl=not content.endswith("\n"))

@@ -14,7 +14,6 @@ from lychd.domain.animation.capabilities import (
     SourceKind,
 )
 from lychd.domain.animation.schemas.capability_family import CapabilityFamily
-from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.cortex.leases import AnimatorAdmission, LeaseAdmissionClosed, LeaseLedger
 
 
@@ -29,14 +28,12 @@ def _grant(*, grant_id: str, animator_name: str = "titan") -> CapabilityGrant:
     )
     state = CapabilityState(
         capability_key=spec.key,
-        is_dynamic=False,
         phase=CapabilityPhase.WARM,
     )
     return CapabilityGrant(
         spec=spec,
         state=state,
         lease=GrantLease(grant_id=grant_id, holder="run:r1", issued_at=datetime.now(UTC)),
-        generation=GenerationProfile(),
         model=None,
     )
 

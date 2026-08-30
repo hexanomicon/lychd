@@ -7,7 +7,8 @@ from typing import Any
 
 import pytest
 
-from lychd.config.runes import ConfigLoader, RuneConfig
+from lychd.config.runes import RuneConfig
+from lychd.config.runes.loader import ConfigLoader
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
 from lychd.domain.animation.capabilities import CapabilityFamily
@@ -20,6 +21,7 @@ from lychd.domain.animation.schemas import (
     SoulstoneConfig,
 )
 from lychd.domain.animation.services.adapters.contracts import PortalDefinition
+from lychd.domain.animation.services.adapters.runtimes.openai_compat import OpenAICompatibleRuntimeAdapter
 from lychd.domain.animation.services.declarations import (
     compile_animator_declarations,
 )
@@ -30,11 +32,7 @@ from lychd.extensions.builtin.animator import (
     VllmSoulstoneConfig,
 )
 from lychd.extensions.builtin.animator.register import build_openai_portal
-from lychd.extensions.builtin.animator.runtimes import (
-    LlamaCppRuntimeAdapter,
-    SglangRuntimeAdapter,
-    VllmRuntimeAdapter,
-)
+from lychd.extensions.builtin.animator.runtimes import LlamaCppRuntimeAdapter
 from lychd.lib.http import HttpJsonError
 
 _REF_RUNES = Path(__file__).resolve().parents[3] / "fixtures" / "runes"
@@ -84,7 +82,11 @@ def _reference_registry() -> AnimatorRegistry:
             runes=RuneRegistry(ConfigLoader(_REF_RUNES).load_all(_SCHEMAS)),
             core_reserved_ports={},
         ),
-        runtime_adapters=[LlamaCppRuntimeAdapter(), VllmRuntimeAdapter(), SglangRuntimeAdapter()],
+        runtime_adapters=[
+            LlamaCppRuntimeAdapter(),
+            OpenAICompatibleRuntimeAdapter(runtime="vllm", config_type=VllmSoulstoneConfig),
+            OpenAICompatibleRuntimeAdapter(runtime="sglang", config_type=SglangSoulstoneConfig),
+        ],
         portal_definitions=_PORTAL_DEFINITIONS,
     )
 

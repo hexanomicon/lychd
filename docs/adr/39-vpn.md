@@ -17,9 +17,9 @@ application role, Sigil, capability, nor permission to a named object or effect.
 
 The Tether may manifest a rootless service with only the network capability it needs and explicit
 UDP publication. Interface name, listen port, address space, DNS behaviour, routes, and peer limits
-are Rune-owned configuration, not hard-coded topology. Typed operations beneath `lychd run` may
-generate a keypair, admit, inspect, revoke, rotate, or export a short-lived client configuration
-or QR projection; it adds no root CLI verb.
+are Rune-owned configuration, not hard-coded topology. Typed operations under a future host-owned
+run-operation verb may generate a keypair, admit, inspect, revoke, rotate, or export a short-lived
+client configuration or QR projection; it adds no root CLI verb.
 
 If that service is projected through Quadlet, its future Rune may embed the code-level
 `QuadletConfig` value under `quadlet`. That does not rename Tether to a kind of Stone, make it an

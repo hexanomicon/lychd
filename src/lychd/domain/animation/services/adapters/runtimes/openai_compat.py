@@ -10,10 +10,9 @@ extension types, keeping the domain-owns-contracts law intact.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, ClassVar, cast
+from typing import TYPE_CHECKING, cast
 
 from lychd.domain.animation.capabilities import (
-    ActivationResult,
     CapabilityPhase,
     CapabilityState,
 )
@@ -21,7 +20,6 @@ from lychd.domain.animation.schemas import SoulstoneConfig
 from lychd.domain.animation.services.adapters.catalog import capability_specs_from_soulstone
 from lychd.domain.animation.services.adapters.runtimes.shared import (
     build_openai_connector,
-    fixed_openai_activation_result,
     probe_openai_compatible_link,
     require_runtime_soulstone,
 )
@@ -29,7 +27,7 @@ from lychd.domain.animation.services.adapters.surfaces import OpenAICompatibleCo
 
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilitySpec
-    from lychd.domain.animation.services.adapters.contracts import AnimatorControlPlane, RuntimeAnimator, RuntimePlan
+    from lychd.domain.animation.services.adapters.contracts import RuntimeAnimator, RuntimePlan
 
 _INFERENCE_SHARED_MEMORY_BYTES = 8 * 1024**3
 
@@ -40,18 +38,16 @@ class OpenAICompatibleRuntimeAdapter:
     Always non-dynamic (``is_dynamic=False``): the server binds its port only after
     a model is loaded, but a declared capability is WARM only when the validated
     live ``/models`` inventory contains that exact model id.
-    Subclasses set two class attributes; hooks may be overridden as needed.
+    Runtime identity and the exact Rune schema are explicit registration facts.
     """
 
-    runtime: ClassVar[str] = "openai_compatible"
-    config_type: ClassVar[type[SoulstoneConfig]] = SoulstoneConfig
+    def __init__(self, *, runtime: str, config_type: type[SoulstoneConfig]) -> None:
+        """Bind one runtime key to its exact accepted Soulstone schema."""
+        self.runtime = runtime
+        self._config_type = config_type
 
     def _narrow(self, soulstone: SoulstoneConfig) -> SoulstoneConfig:
-        return require_runtime_soulstone(soulstone, expected_type=self.config_type, runtime=self.runtime)
-
-    def runtime_metadata(self) -> dict[str, object]:
-        """Adapter-owned metadata surfaced on connector/capability records."""
-        return {"runtime": self.runtime}
+        return require_runtime_soulstone(soulstone, expected_type=self._config_type, runtime=self.runtime)
 
     def podman_args(self, stone: SoulstoneConfig) -> list[str]:
         """Return no namespace overrides; every Soulstone joins the shared LychD pod."""
@@ -73,7 +69,7 @@ class OpenAICompatibleRuntimeAdapter:
     def build_runtime(self, soulstone: SoulstoneConfig) -> RuntimeAnimator | None:
         """Build a runtime handle with an OpenAI-compatible connector surface."""
         stone = self._narrow(soulstone)
-        connector = build_openai_connector(soulstone=stone, runtime=self.runtime, metadata=self.runtime_metadata())
+        connector = build_openai_connector(soulstone=stone, runtime=self.runtime)
         return SoulstoneAnimator(rune=stone, connector=connector)
 
     def build_capability_specs(self, soulstone: SoulstoneConfig) -> list[CapabilitySpec]:
@@ -81,8 +77,6 @@ class OpenAICompatibleRuntimeAdapter:
         stone = self._narrow(soulstone)
         return capability_specs_from_soulstone(
             stone,
-            runtime_metadata=self.runtime_metadata(),
-            runtime_defaults={},
             is_dynamic=False,
         )
 
@@ -120,27 +114,13 @@ class OpenAICompatibleRuntimeAdapter:
             states.append(
                 CapabilityState(
                     capability_key=spec.key,
-                    is_dynamic=False,
                     phase=phase,
                     health=health,
-                    active_model_id=spec.model_id if phase is CapabilityPhase.WARM else None,
-                    loaded_model_ids=[spec.model_id] if phase is CapabilityPhase.WARM else [],
                     reason=reason,
                     checked_at=checked_at,
-                    metadata=connector.metadata,
                 )
             )
         return states
-
-    async def activate_capability(self, animator: RuntimeAnimator, spec: CapabilitySpec) -> ActivationResult:
-        """Report that non-dynamic runtimes expose no in-runtime activation (unit-owned)."""
-        connector = cast("OpenAICompatibleConnector", animator.connector)
-        return fixed_openai_activation_result(connector, spec)
-
-    def control_plane(self, animator: RuntimeAnimator) -> AnimatorControlPlane | None:
-        """Return ``None``; non-dynamic OpenAI-compatible runtimes have no control plane."""
-        _ = animator
-        return None
 
 
 __all__ = ["OpenAICompatibleRuntimeAdapter"]

@@ -27,10 +27,9 @@ separate project candidates under pinned bases, but it neither becomes the engin
 the selected game's scene, rules, playtest, or build.
 
 !!! warning "Delivery boundary"
-    Shadow is **Designed**. Current source supplies only `ShadowSimulationConfig` with `mode` and
-    bounded `max_timelines`: no Pattern, branch store, search provider, workspace manager, Tomb,
-    Reaper, Vision contract, evaluation integration, or promotion path. [State of
-    Work](../state-of-the-work.md#shadow-simulation) owns delivery.
+    Shadow is **Designed**. No simulation Rune or schema, Pattern, branch store, search provider,
+    workspace manager, Tomb, Reaper, Vision contract, evaluation integration, or promotion path
+    ships. [State of Work](../state-of-the-work.md#shadow-simulation) owns delivery.
 
 ## Records and branch law
 

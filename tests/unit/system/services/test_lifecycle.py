@@ -9,18 +9,18 @@ from typing import TypedDict
 
 import pytest
 
-from lychd.system.services import lifecycle
-from lychd.system.services.lifecycle import (
+from lychd.system import constants as lifecycle_constants
+from lychd.system.services.lifecycle.initialization import InitializationPlanner
+from lychd.system.services.lifecycle.lock import LifecycleLock
+from lychd.system.services.lifecycle.models import (
     CreatedBtrfsSubvolume,
     CreatedDirectory,
     CreatedResources,
-    InitializationPlanner,
     LifecycleDisposition,
     LifecycleError,
-    LifecycleLock,
-    LifecycleReceiptStore,
     LifecycleResourceKind,
 )
+from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 
 _SUBVOLUME_UUID = "12345678-1234-5678-1234-567812345678"
 
@@ -86,7 +86,7 @@ def isolated_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> IsolatedR
         "HOST_LAYOUT": host_layout,
     }
     for name, value in replacements.items():
-        monkeypatch.setattr(lifecycle, name, value)
+        monkeypatch.setattr(lifecycle_constants, name, value)
 
     return {
         "base": tmp_path,
@@ -586,15 +586,16 @@ def test_default_lifecycle_lock_contends_across_different_tmpdir_environments(
     codex_root = tmp_path / "codex"
     other_tmp = tmp_path / "other-tmp"
     other_tmp.mkdir()
-    monkeypatch.setattr(lifecycle, "PATH_CODEX_ROOT", codex_root)
+    monkeypatch.setattr(lifecycle_constants, "PATH_CODEX_ROOT", codex_root)
     lock = LifecycleLock()
     script = """
 import os
 from pathlib import Path
-from lychd.system.services import lifecycle
-from lychd.system.services.lifecycle import LifecycleError, LifecycleLock
+from lychd.system import constants as lifecycle_constants
+from lychd.system.services.lifecycle.lock import LifecycleLock
+from lychd.system.services.lifecycle.models import LifecycleError
 
-lifecycle.PATH_CODEX_ROOT = Path(os.environ["LYCHD_TEST_CODEX_ROOT"])
+lifecycle_constants.PATH_CODEX_ROOT = Path(os.environ["LYCHD_TEST_CODEX_ROOT"])
 try:
     with LifecycleLock():
         pass
@@ -667,4 +668,9 @@ def test_anticipated_scribe_removals_unblock_empty_only_binding_anchors(
 
     assert blocked.blockers
     assert joined.blockers == ()
-    assert quadlets in joined.removal_paths
+    assert any(
+        action.disposition is LifecycleDisposition.WOULD_REMOVE
+        and action.kind is LifecycleResourceKind.DIRECTORY
+        and action.target == str(quadlets)
+        for action in joined.actions
+    )

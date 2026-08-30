@@ -32,10 +32,10 @@ instrument and scrying its use. Phoenix, Logfire, OpenTelemetry collector, or an
 be an external Eye; names never change ownership.
 
 !!! warning "Exact implementation state"
-    Structured logging and bounded Orb exist at State scopes. Native Oculus is Designed: telemetry
-    adapter is dormant, with no ingestion, trace/metric store, retention, health query,
-    cross-process bus, resource telemetry, or multi-Run query. Optional Phoenix only contributes
-    service; application export is unproved.
+    Structured logging and bounded Orb exist at State scopes. Native Oculus is Designed, with no
+    telemetry adapter, ingestion, trace/metric store, retention, health query, cross-process bus,
+    resource telemetry, or multi-Run query. Optional Phoenix only contributes service; application
+    export is unproved.
 
 ### 1. Evidence Ownership and Correlation
 
@@ -58,7 +58,7 @@ correlation only; trace context never authenticates or authorizes.
 | --- | --- | --- |
 | Run events | in-process, 256 replay, best-effort non-token Step tee | observation |
 | Logs | Structlog/stdlib human or JSON stderr | diagnostic, not audit |
-| Traces | dormant Logfire/OTel; focused test disables headers/bodies | no ingest/export/retention/read |
+| Traces | no producer or export adapter | no ingest/export/retention/read |
 | Metrics | no producer/registry/store/query | Designed |
 | Orb | bounded selected-Run projection | read-only |
 

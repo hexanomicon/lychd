@@ -11,18 +11,11 @@ It is used by the bind ritual so Codex/runes can stay reference-only
 
 from __future__ import annotations
 
-from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.process import (
     InputProcessRunner,
     ProcessInvocationError,
     ProcessResult,
     SubprocessRunner,
-)
-from lychd.system.podman import (
-    format_podman_version,
-    minimum_podman_version_text,
-    parse_podman_version,
-    podman_version_supported,
 )
 
 _PODMAN_PROBE_TIMEOUT_SECONDS = 5.0
@@ -40,16 +33,12 @@ class PodmanSecretStore:
 
     def __init__(
         self,
-        podman_bin: str | None = None,
+        podman_bin: str,
         *,
         runner: InputProcessRunner | None = None,
     ) -> None:
-        """Resolve Podman and bind every command to one bounded process port."""
-        resolved = podman_bin or trusted_host_tool("podman")
-        if resolved is None:
-            msg = "Podman is required for secret provisioning but no trusted host executable was found."
-            raise PodmanSecretStoreError(msg)
-        self._podman = resolved
+        """Bind every command to the preflight-attested Podman executable."""
+        self._podman = podman_bin
         self._runner = runner or SubprocessRunner()
 
     def exists(self, name: str) -> bool:
@@ -66,29 +55,6 @@ class PodmanSecretStore:
         detail = self._detail(result)
         msg = f"Could not inspect Podman secret {name!r}: {detail}"
         raise PodmanSecretStoreError(msg)
-
-    def require_quadlet_version(self) -> None:
-        """Fail unless Podman supports `.pod` Quadlets and their `ShmSize=` key."""
-        result = self._run(
-            (self._podman, "--version"),
-            timeout_s=_PODMAN_PROBE_TIMEOUT_SECONDS,
-            operation="determine Podman version",
-        )
-        if result.returncode != 0:
-            detail = self._detail(result)
-            msg = f"Could not determine Podman version: {detail}"
-            raise PodmanSecretStoreError(msg)
-        version = parse_podman_version(f"{result.stdout}\n{result.stderr}")
-        if version is None:
-            msg = f"Could not parse Podman version from: {result.stdout.strip()!r}"
-            raise PodmanSecretStoreError(msg)
-        if not podman_version_supported(version):
-            minimum = minimum_podman_version_text()
-            msg = (
-                f"Podman >= {minimum} is required for LychD .pod Quadlets with "
-                f"ShmSize; found {format_podman_version(version)}"
-            )
-            raise PodmanSecretStoreError(msg)
 
     def create(self, name: str, value: str) -> None:
         """Create or replace a Podman secret from stdin.

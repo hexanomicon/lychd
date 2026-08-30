@@ -15,20 +15,24 @@ from lychd.system.operator.process import (
     ProcessResult,
 )
 from lychd.system.operator.storage import MountObservation, MountTreeObservation
-from lychd.system.services.lifecycle import (
-    BtrfsSubvolumeIdentity,
-    CreatedBtrfsSubvolume,
-    DeletionActionKind,
+from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
+)
+from lychd.system.services.lifecycle.deletion_models import (
+    BtrfsSubvolumeIdentity,
+    DeletionActionKind,
     DeletionDisposition,
     DeletionPaths,
     DeletionPlan,
+)
+from lychd.system.services.lifecycle.deletion_ports import (
     ObservedBtrfsSubvolume,
 )
 from lychd.system.services.lifecycle.deletion_storage import (
     CommandBtrfsSubvolumeProbe,
     DeletionStoragePlanner,
 )
+from lychd.system.services.lifecycle.models import CreatedBtrfsSubvolume
 
 _SUBVOLUME_UUID = "12345678-1234-5678-1234-567812345678"
 _OTHER_SUBVOLUME_UUID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
@@ -162,10 +166,7 @@ def _unmounted_planner(
     )
     subvolumes = _SubvolumeEvidence(paths.postgres_data, observation)
     initialized = _InitializedSubvolumes(authority)
-    checkpoint = DeletionCheckpointStore(
-        paths.codex_root / ".lychd-del-state.json",
-        codex_root=paths.codex_root,
-    )
+    checkpoint = DeletionCheckpointStore(paths.codex_root)
     planner = DeletionStoragePlanner(
         paths=paths,
         storage=storage,
@@ -261,10 +262,7 @@ def test_unmounted_subvolume_maps_covering_home_root_under_top_level_mount(
             ),
         ),
         initialized_subvolumes=_InitializedSubvolumes(authority),
-        checkpoint=DeletionCheckpointStore(
-            codex / ".lychd-del-state.json",
-            codex_root=codex,
-        ),
+        checkpoint=DeletionCheckpointStore(codex),
         umount_bin="/usr/bin/umount",
         btrfs_bin="/usr/bin/btrfs",
         sudo_bin="/usr/bin/sudo",
@@ -435,10 +433,7 @@ def test_checkpoint_must_match_current_phylactery_authority(
         postgres_data=current_target,
         lifecycle_receipt=codex / ".lychd-lifecycle.json",
     )
-    checkpoint = DeletionCheckpointStore(
-        codex / ".lychd-del-state.json",
-        codex_root=codex,
-    )
+    checkpoint = DeletionCheckpointStore(codex)
     stale_identity = BtrfsSubvolumeIdentity(
         mount_target=tmp_path / "former-crypt" / "postgres" / "data",
         top_level_mount=tmp_path,
@@ -477,10 +472,7 @@ def test_checkpoint_and_plan_fingerprint_persist_subvolume_uuid(
 ) -> None:
     codex = tmp_path / "codex"
     codex.mkdir()
-    checkpoint = DeletionCheckpointStore(
-        codex / ".lychd-del-state.json",
-        codex_root=codex,
-    )
+    checkpoint = DeletionCheckpointStore(codex)
     identity = BtrfsSubvolumeIdentity(
         mount_target=tmp_path / "crypt" / "postgres" / "data",
         top_level_mount=tmp_path,

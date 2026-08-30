@@ -44,59 +44,61 @@ def _item(
     )
 
 
-def test_optional_hardening_does_not_block_bind_foundation() -> None:
-    report = HostReadinessReport(
-        items=(
-            _item("systemd", ReadinessState.VERIFIED, required=True),
-            _item("podman", ReadinessState.VERIFIED, required=True),
-            _item("selinux", ReadinessState.OPTIONAL, required=False),
-            _item("btrfs", ReadinessState.DEGRADED, required=False),
-        )
-    )
-
-    assert report.ready_for_bind
-    assert report.ready_after_init
-
-
-def test_planned_required_site_is_ready_only_after_initialization() -> None:
-    report = HostReadinessReport(
-        items=(
-            _item("systemd", ReadinessState.VERIFIED, required=True),
-            _item("quadlet-site", ReadinessState.PLANNED, required=True),
-        )
-    )
-
-    assert not report.ready_for_bind
-    assert report.ready_after_init
-
-
-def test_blocked_required_foundation_cannot_be_repaired_by_init() -> None:
-    report = HostReadinessReport(
-        items=(
-            _item("systemd", ReadinessState.BLOCKED, required=True),
-            _item("quadlet-site", ReadinessState.PLANNED, required=True),
-        )
-    )
-
-    assert not report.ready_for_bind
-    assert not report.ready_after_init
-
-
-def test_arbitrary_planned_foundation_is_not_init_repairable() -> None:
-    report = HostReadinessReport(
-        items=(
-            HostReadinessItem(
-                key="future-host-law",
-                label="future host law",
-                section=ReadinessSection.FOUNDATION,
-                state=ReadinessState.PLANNED,
-                detail="planned",
-                required_for_bind=True,
+@pytest.mark.parametrize(
+    ("items", "ready_for_bind", "ready_after_init"),
+    [
+        (
+            (
+                _item("systemd", ReadinessState.VERIFIED, required=True),
+                _item("podman", ReadinessState.VERIFIED, required=True),
+                _item("selinux", ReadinessState.OPTIONAL, required=False),
+                _item("btrfs", ReadinessState.DEGRADED, required=False),
             ),
-        )
-    )
+            True,
+            True,
+        ),
+        (
+            (
+                _item("systemd", ReadinessState.VERIFIED, required=True),
+                _item("quadlet-site", ReadinessState.PLANNED, required=True),
+            ),
+            False,
+            True,
+        ),
+        (
+            (
+                _item("systemd", ReadinessState.BLOCKED, required=True),
+                _item("quadlet-site", ReadinessState.PLANNED, required=True),
+            ),
+            False,
+            False,
+        ),
+        (
+            (
+                HostReadinessItem(
+                    key="future-host-law",
+                    label="future host law",
+                    section=ReadinessSection.FOUNDATION,
+                    state=ReadinessState.PLANNED,
+                    detail="planned",
+                    required_for_bind=True,
+                ),
+            ),
+            False,
+            False,
+        ),
+    ],
+)
+def test_bind_readiness_depends_only_on_required_verified_or_repairable_items(
+    items: tuple[HostReadinessItem, ...],
+    *,
+    ready_for_bind: bool,
+    ready_after_init: bool,
+) -> None:
+    report = HostReadinessReport(items=items)
 
-    assert not report.ready_after_init
+    assert report.ready_for_bind is ready_for_bind
+    assert report.ready_after_init is ready_after_init
 
 
 def _tools() -> HostReadinessTools:
@@ -160,7 +162,7 @@ def test_foundation_refinement_uses_named_gates_not_report_order(
 ) -> None:
     inspection = HostFoundationInspection(
         report=HostReadinessReport(
-            items=_verified_binding_gates(tmp_path),
+            items=tuple(reversed(_verified_binding_gates(tmp_path))),
         ),
         tools=_tools(),
     )

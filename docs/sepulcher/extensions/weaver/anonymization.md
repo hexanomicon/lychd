@@ -13,13 +13,11 @@ privacy lineage through the Pattern and creates a new sanitized branch before re
 Cut; [Security](../../../adr/09-security.md#portal-privatization-and-egress) owns declassification
 and refusal; this page owns the journey through the score.
 
-!!! warning "Foundation delivered; egress still closed"
-    Context Blocks now carry Privatization Labels, conservative aggregate joins, and restricted
-    defaults for present material without lineage. A deterministic local Censor can rebuild
-    bounded JSON-like values and issue non-authorizing transformation evidence. It is not the
-    semantic Privacy Agent, verified Privacy Cut, sanitized provider branch, or Portal Egress Gate.
-    Portal declarations and probes remain observable, but Dispatcher still quarantines both family
-    and direct-key Portal dispatch.
+!!! warning "Designed; egress remains closed"
+    Context Blocks do not yet carry Privatization Labels or conservative aggregate joins, and no
+    deterministic local Censor is delivered. The Privacy Agent, verified Privacy Cut, sanitized
+    provider branch, and Portal Egress Gate are also undelivered. Portal declarations and probes
+    remain observable, but Dispatcher still quarantines both family and direct-key Portal dispatch.
 
 ## The leverage of a local boundary
 
@@ -91,11 +89,12 @@ source or its derivatives as public. Pseudonymized material remains private whil
 likely linkage route exists; private code may be an authorized sanitized disclosure without ever
 becoming anonymous.
 
-Deterministic work runs first. The delivered first slice rebuilds bounded JSON-like values and
-redacts secret-shaped fields, JWTs, PEM private keys, emails, telephones, IPv4 addresses, and UUIDs
-with typed placeholders. Bank and payment identifiers, IPv6, long numeric ids, suspicious
-high-entropy strings, normalization policy, and semantic combinations remain future detector work.
-Typed placeholders matter: an amount, date, telephone, and order id do not carry the same meaning.
+Deterministic work runs first in the designed sequence. A future Censor rebuilds bounded JSON-like
+values and redacts secret-shaped fields, JWTs, PEM private keys, emails, telephones, IPv4 addresses,
+and UUIDs with typed placeholders. No such Censor is delivered today. Bank and payment identifiers,
+IPv6, long numeric ids, suspicious high-entropy strings, normalization policy, and semantic
+combinations remain later detector work. Typed placeholders matter: an amount, date, telephone,
+and order id do not carry the same meaning.
 
 A local Privacy Agent handles semantic and quasi-identifiers that rules may miss. It can say
 “this combination still identifies a household” and propose a narrower representation. It cannot

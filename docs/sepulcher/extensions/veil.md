@@ -39,8 +39,10 @@ Veil may share the Core host or run on an optional separate
 ingress boundary onto operator-controlled local iron or an off-site host respectively. They do not
 create another Extension Domain or application authority. Home uses an exact local backend road;
 Remote may add one Tether peer and route. In both, the Core accepts only the declared Gateway
-identity and port, while the Gateway receives no general LAN route, database, Context, Sigil,
-provider credential, or host-control path.
+identity and port. Policy outside the Gateway host—a router/firewall, L3-switch ACL, or cloud-network
+rule—plus the receiving Core firewall enforces that narrow zone; local Gateway rules are defense in
+depth. The Gateway receives no general LAN route, database, Context, Sigil, provider credential, or
+host-control path.
 
 ## Reach route profiles
 

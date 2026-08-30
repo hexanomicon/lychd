@@ -69,32 +69,25 @@ def init_codex(
     from lychd.system.readiness import HostReadinessService
     from lychd.system.services.codex import CodexService
     from lychd.system.services.layout import LayoutService
-    from lychd.system.services.lifecycle import (
-        CreatedResources,
-        InitializationExecutor,
-        InitializationPlanner,
-        InitializationRecorder,
-        LifecycleLock,
-        LifecycleReceiptStore,
-    )
+    from lychd.system.services.lifecycle import initialization, lock, models, receipt
     from lychd.system.services.privilege import PrivilegeService
 
     console = get_console()
-    lock = nullcontext() if dry_run else LifecycleLock()
-    with lock:
+    lifecycle_lock = nullcontext() if dry_run else lock.LifecycleLock()
+    with lifecycle_lock:
         settings = get_settings()
         extensions = get_extensions()
         schemas = list(extensions.rune_schemas)
         writer = ConfigWriter(runes_dir=PATH_RUNES_DIR)
-        receipt = LifecycleReceiptStore()
-        planner = InitializationPlanner(
+        receipt_store = receipt.LifecycleReceiptStore()
+        planner = initialization.InitializationPlanner(
             reactor_directories=(
                 settings.orchestration.switching.host_reactor_dir,
                 settings.orchestration.switching.host_reactor_journal_dir,
             ),
             anchor_paths=tuple(schema.anchor_dir(PATH_RUNES_DIR) for schema in schemas),
             sample_paths=writer.planned_sample_paths(schemas),
-            receipt_store=receipt,
+            receipt_store=receipt_store,
         )
         readiness_service = HostReadinessService()
         readiness = readiness_service.inspect()
@@ -111,13 +104,13 @@ def init_codex(
             console.print("\n[bold green]✓ Initialization plan is safe.[/] [dim]No LychD-managed changes made.[/]")
             return
 
-        def establish_layout(record: InitializationRecorder) -> CreatedResources:
+        def establish_layout(record: initialization.InitializationRecorder) -> models.CreatedResources:
             console.print("[dim]  Establishing the XDG Trinity (Codex, Crypt, Forge) + Btrfs...[/]")
             return LayoutService().initialize(on_created=record)
 
-        def establish_reactor(record: InitializationRecorder) -> CreatedResources:
+        def establish_reactor(record: initialization.InitializationRecorder) -> models.CreatedResources:
             console.print("[dim]  Performing the Rite of Signaling (Intent Registry)...[/]")
-            return CreatedResources.combine(
+            return models.CreatedResources.combine(
                 *(
                     PrivilegeService(signals_dir).initialize(on_created=record)
                     for signals_dir in (
@@ -127,13 +120,13 @@ def init_codex(
                 )
             )
 
-        def inscribe_codex(record: InitializationRecorder) -> CreatedResources:
+        def inscribe_codex(record: initialization.InitializationRecorder) -> models.CreatedResources:
             console.print("[dim]  Inscribing the Prime Directive (lychd.toml)...[/]")
             return CodexService(rune_schemas=schemas).inscribe(on_created=record)
 
-        InitializationExecutor(
+        initialization.InitializationExecutor(
             planner=planner,
-            receipt=receipt,
+            receipt=receipt_store,
         ).execute(
             plan,
             effects=(

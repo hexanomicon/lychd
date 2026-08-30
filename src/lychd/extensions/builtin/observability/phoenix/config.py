@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import ClassVar, Final
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from lychd.config import QuadletConfig
 from lychd.config.runes import RuneConfig
+from lychd.system.schemas import validate_unit_name_component
 
 PORT_PHOENIX_UI: Final[int] = 6006
 PORT_PHOENIX_OTLP: Final[int] = 4317
@@ -51,6 +52,12 @@ image = "docker.io/arize-ai/phoenix:latest"
     host: str = Field(default="localhost", description="Host used when presenting Phoenix URLs.")
     ui_port: int = Field(default=PORT_PHOENIX_UI, ge=1, le=65535, description="Host port for the Phoenix UI.")
     otlp_port: int = Field(default=PORT_PHOENIX_OTLP, ge=1, le=65535, description="Host port for OTLP ingestion.")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        """Keep the operator identity safe for its generated unit filename."""
+        return validate_unit_name_component(value, field_name="PhoenixSettings.name")
 
     def reserved_ports(self) -> dict[str, int]:
         """Host port claims (satisfies ``config.runes.protocols.PortReserver``)."""

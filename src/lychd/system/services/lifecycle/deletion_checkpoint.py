@@ -12,10 +12,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 
+from lychd.lib.json_objects import unique_json_object
 from lychd.system.services.lifecycle.deletion_models import (
     BTRFS_FIRST_FREE_OBJECTID,
     BtrfsSubvolumeIdentity,
-    DeletionPaths,
 )
 from lychd.system.services.lifecycle.models import LifecycleError
 from lychd.system.services.lifecycle.paths import (
@@ -99,31 +99,16 @@ class _CheckpointDocument(BaseModel):
     identity: _CheckpointIdentity
 
 
-def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    """Reject duplicate checkpoint keys."""
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            msg = f"Duplicate deletion checkpoint key: {key!r}."
-            raise ValueError(msg)
-        result[key] = value
-    return result
-
-
 class DeletionCheckpointStore:
     """Persist storage identity across an operator-performed privileged handoff."""
 
     def __init__(
         self,
-        path: Path | None = None,
-        *,
-        codex_root: Path | None = None,
+        codex_root: Path,
     ) -> None:
         """Bind the checkpoint to the dedicated Codex."""
-        if codex_root is None:
-            codex_root = DeletionPaths.current().codex_root
         self.codex_root = codex_root
-        self.path = path or codex_root / ".lychd-del-state.json"
+        self.path = codex_root / ".lychd-del-state.json"
         self._validate_location()
 
     @property
@@ -137,7 +122,7 @@ class DeletionCheckpointStore:
             return None
         content = self._read()
         try:
-            raw = json.loads(content, object_pairs_hook=_unique_json_object)
+            raw = json.loads(content, object_pairs_hook=unique_json_object)
             document = _CheckpointDocument.model_validate(raw)
         except (UnicodeError, ValueError, TypeError, ValidationError) as exc:
             msg = f"Invalid deletion checkpoint at {self.path}: {exc}"

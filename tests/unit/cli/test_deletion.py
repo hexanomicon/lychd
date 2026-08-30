@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 from lychd.cli.deletion import delete_installation
 from lychd.system.constants import PATH_POSTGRESS_DATA_DIR
-from lychd.system.services.lifecycle import (
+from lychd.system.services.lifecycle.deletion_models import (
     DeletionAction,
     DeletionActionKind,
     DeletionDisposition,
@@ -85,15 +85,16 @@ def test_del_dry_run_renders_every_stage_without_effects(
     services = _services(mocker, plan=plan)
 
     result = CliRunner().invoke(delete_installation, ["--dry-run"])
+    rendered = " ".join(result.output.split())
 
     assert result.exit_code == 0
-    assert "DELETION PLAN" in result.output
-    assert "FILESYSTEM" in result.output
-    assert "WOULD APPLY" in result.output
-    assert "HOST — paths outside the canonical XDG tiers" in result.output
-    assert plan.actions[0].detail in result.output
-    assert "PRESERVE" in result.output
-    assert "No changes made." in result.output
+    assert "DELETION PLAN" in rendered
+    assert "FILESYSTEM" in rendered
+    assert "WOULD APPLY" in rendered
+    assert "HOST — paths outside the canonical XDG tiers" in rendered
+    assert plan.actions[0].detail in rendered
+    assert "PRESERVE" in rendered
+    assert "No changes made." in rendered
     services.executor.execute.assert_not_called()
 
 

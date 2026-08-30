@@ -9,7 +9,6 @@ from lychd.config.settings.orchestration import (
     OrchestrationSettings,
     RoutingRule,
     SwitchingSettings,
-    WhimSettings,
 )
 from lychd.config.settings.root import Settings, SettingsSnapshot, get_settings
 from lychd.config.settings.server import (
@@ -32,6 +31,5 @@ __all__ = (
     "SettingsSnapshot",
     "SwitchingSettings",
     "WebSettings",
-    "WhimSettings",
     "get_settings",
 )

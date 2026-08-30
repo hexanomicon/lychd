@@ -53,21 +53,10 @@ loop, Tomb executor, verified package promotion, compatibility gate, rollback co
 self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns that
 delivery boundary.
 
-The first delivered seam is deliberately inert: immutable contracts and a process-local state
-machine bind an exact Git base and source-tree digest, path roots, budgets, tool and network declarations, quarantined
-artifact metadata, custody, deterministic verification receipts, compatibility evidence, and an
-explicit human review. It performs no filesystem, command, network, database, VCS, or promotion
-effect. Its terminal product is only an idempotent `PromotionRequest(inert=True)` addressed to the
-named owner, which must revalidate and implement any future effect through its own boundary.
-Candidate, custody, verification, and review timestamps must form a possible chronology; timestamps
-remain recorded assertions, not trusted-clock or signer proof.
-
-Set-like `WorkPacket` inputs, effects, compatibility evidence, tool pins, and verification checks
-are canonicalized before hashing, so transport order cannot create a second semantic packet. The
-evidence manifest and promotion request each bind a `RecordBinding` to the full immutable
-`CandidateArtifact` digest, including changed paths and declared effects, rather than only to its
-artifact bytes. Candidate, custody, verification, compatibility, review, and promotion record ids
-share one semantic collision domain; an id cannot be replayed as a different record kind.
+No Creation contract or state-machine implementation is delivered. Immutable request, candidate,
+custody, verification, compatibility, review, and promotion records below are accepted design; the
+current route remains ordinary operator-controlled development and review. Their names do not
+imply that a workspace, executor, evidence store, or promotion effect exists.
 
 ### Admission and candidate identity
 

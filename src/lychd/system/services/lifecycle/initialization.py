@@ -37,13 +37,9 @@ class InitializationPlanner:
         reactor_directories: Sequence[Path],
         anchor_paths: Sequence[Path],
         sample_paths: Sequence[Path],
-        receipt_store: LifecycleReceiptStore | None = None,
+        receipt_store: LifecycleReceiptStore,
     ) -> None:
         """Capture the assembled initialization topology."""
-        if receipt_store is None:
-            from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
-
-            receipt_store = LifecycleReceiptStore()
         self._reactor_directories = tuple(reactor_directories)
         self._anchor_paths = tuple(anchor_paths)
         self._sample_paths = tuple(sample_paths)
@@ -185,7 +181,7 @@ class InitializationExecutor:
             msg = f"Initialization plan does not contain the exact lifecycle receipt authority: {self._receipt.path}"
             raise LifecycleError(msg)
 
-        def record(resources: CreatedResources) -> None:
+        def validate(resources: CreatedResources) -> None:
             unexpected_directories = set(resources.directories) - allowed_directories
             unexpected_files = set(resources.files) - allowed_files
             unexpected_subvolumes = {
@@ -202,12 +198,22 @@ class InitializationExecutor:
                 )
                 msg = "Initialization attempted an unplanned creation: " + ", ".join(str(path) for path in unexpected)
                 raise LifecycleError(msg)
-            self._receipt.record(resources)
+
+        def recorder_for(batches: list[CreatedResources]) -> InitializationRecorder:
+            def record(resources: CreatedResources) -> None:
+                validate(resources)
+                self._receipt.record(resources)
+                batches.append(resources)
+
+            return record
 
         for effect in effects:
-            # The callback journals every successful batch immediately. Recording
-            # the returned aggregate again also verifies the effect's public report.
-            record(effect(record))
+            batches: list[CreatedResources] = []
+            reported = effect(recorder_for(batches))
+            journaled = CreatedResources.combine(*batches)
+            if reported != journaled:
+                msg = "Initialization effect report disagrees with its journaled creation batches."
+                raise LifecycleError(msg)
 
         preseal_plan = self._planner.plan()
         self._require_preseal_convergence(preseal_plan)

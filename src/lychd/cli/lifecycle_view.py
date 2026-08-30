@@ -20,16 +20,45 @@ from lychd.cli.host_topology import (
     display_path,
     path_children,
 )
-from lychd.system.services.lifecycle import (
+from lychd.system.services.lifecycle.models import (
     LifecycleAction,
     LifecycleDisposition,
     LifecycleResourceKind,
 )
 
+_PATH_DESCRIPTIONS: Final = {
+    "PATH_XDG_DATA_HOME": "Shared XDG root for the Crypt.",
+    "PATH_XDG_CONFIG_HOME": "Shared XDG root for the Codex and Binding.",
+    "PATH_XDG_CACHE_HOME": "Shared XDG root for the Forge.",
+    "PATH_CODEX_ROOT": "LychD settings and typed Runes.",
+    "PATH_LYCHD_TOML": "Primary settings loaded before Rune documents.",
+    "PATH_LIFECYCLE_RECEIPT": "Receipt governing later `lychd del` authority.",
+    "PATH_RUNES_DIR": "Typed TOML intent and inactive examples.",
+    "PATH_ANIMATOR_DIR": "Local and remote capability endpoints.",
+    "PATH_SOULSTONES_DIR": "Local container-backed capability runtimes.",
+    "PATH_PORTALS_DIR": "Remote capability endpoints.",
+    "PATH_CRYPT_ROOT": "Persistent LychD data and workspaces.",
+    "PATH_TRIGGERS_DIR": "Vessel-to-host Reactor exchange.",
+    "PATH_REACTOR_INBOX_DIR": "Owner-only Host Reactor intent queue.",
+    "PATH_REACTOR_JOURNAL_DIR": "Host Reactor outcomes exposed read-only to the Vessel.",
+    "PATH_POSTGRES_ROOT_DIR": "PostgreSQL bootstrap and live Phylactery storage.",
+    "PATH_POSTGRESS_DATA_DIR": "Live PostgreSQL data within the Phylactery.",
+    "PATH_POSTGRESS_SNAPSHOTS_DIR": "Reserved recovery-snapshot shelf.",
+    "PATH_LAB_DIR": "Operator workspace mounted read-write.",
+    "PATH_EXTENSIONS_DIR": "Selected private extension source.",
+    "PATH_CORE_DIR": "Reserved read-only core source.",
+    "PATH_CACHE_ROOT": "Rebuildable LychD cache.",
+    "PATH_ASSEMBLY_DIR": "Reserved disposable assembly staging.",
+    "PATH_CONTAINERS_CONFIG_DIR": "Shared Podman configuration root.",
+    "PATH_SYSTEMD_UNITS_DIR": "Shared Quadlet source site.",
+    "PATH_SYSTEMD_CONFIG_DIR": "Shared systemd user-configuration root.",
+    "PATH_SYSTEMD_USER_UNITS_DIR": "Shared plain user-unit site.",
+}
+
 if TYPE_CHECKING:
     from rich.console import Console
 
-    from lychd.system.services.lifecycle import LifecyclePlan
+    from lychd.system.services.lifecycle.models import LifecyclePlan
 
 _HOST_DESCRIPTION: Final = "Resources outside the canonical XDG tiers."
 _PATH_STYLES: Final = {
@@ -59,7 +88,6 @@ def render_lifecycle_plan(
 ) -> None:
     """Render an exact plan, adding source-owned path prose only when verbose."""
     from lychd.system import constants
-    from lychd.system.attribute_docs import path_attribute_summaries
 
     topology = HostTopology.current()
     descriptions: dict[Path, str] = {}
@@ -71,7 +99,10 @@ def render_lifecycle_plan(
             constants.PATH_XDG_CONFIG_HOME,
             constants.PATH_XDG_DATA_HOME,
         }
-        descriptions.update(path_attribute_summaries(constants, include=static_paths))
+        for name, description in _PATH_DESCRIPTIONS.items():
+            path = getattr(constants, name)
+            if path in static_paths:
+                descriptions[path] = description
         canonical_roots = {
             HostTier.CODEX: constants.PATH_XDG_CONFIG_HOME,
             HostTier.CRYPT: constants.PATH_XDG_DATA_HOME,

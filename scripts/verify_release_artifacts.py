@@ -193,6 +193,7 @@ def _verify_sdist_files(
     source_root: Path,
 ) -> None:
     expected_files = {
+        ".containerignore": (source_root / ".containerignore").read_bytes(),
         "LICENSE": (source_root / "LICENSE").read_bytes(),
         "THIRD_PARTY_NOTICES.md": (source_root / "THIRD_PARTY_NOTICES.md").read_bytes(),
         "clients/web/static/THIRD_PARTY_NOTICES.txt": (
@@ -236,6 +237,7 @@ def _verify_sdist(sdist: Path, revision: str, version: str, source_root: Path) -
             raise ReleaseArtifactError(message)
         root = roots.pop()
         for relative in (
+            ".containerignore",
             "Containerfile",
             "LICENSE",
             "Makefile",
@@ -249,6 +251,7 @@ def _verify_sdist(sdist: Path, revision: str, version: str, source_root: Path) -
             "scripts/verify_release_artifacts.py",
             "scripts/verify_release_source.py",
             "src/lychd/public/THIRD_PARTY_NOTICES.txt",
+            "uv.lock",
         ):
             member = f"{root}/{relative}"
             if member not in names:

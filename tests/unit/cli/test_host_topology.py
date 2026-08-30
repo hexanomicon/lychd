@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from lychd.cli.host_topology import HostTier, HostTopology
-from lychd.system.services import lifecycle
+from lychd.system import constants as lifecycle_constants
 
 
 def test_topology_uses_the_planners_patchable_authority(
@@ -17,11 +17,11 @@ def test_topology_uses_the_planners_patchable_authority(
     cache_root = tmp_path / "cache" / "lychd"
     quadlets = tmp_path / "config" / "containers" / "systemd"
     user_units = tmp_path / "config" / "systemd" / "user"
-    monkeypatch.setattr(lifecycle, "PATH_CODEX_ROOT", config_root)
-    monkeypatch.setattr(lifecycle, "PATH_CRYPT_ROOT", data_root)
-    monkeypatch.setattr(lifecycle, "PATH_CACHE_ROOT", cache_root)
-    monkeypatch.setattr(lifecycle, "PATH_SYSTEMD_UNITS_DIR", quadlets)
-    monkeypatch.setattr(lifecycle, "PATH_SYSTEMD_USER_UNITS_DIR", user_units)
+    monkeypatch.setattr(lifecycle_constants, "PATH_CODEX_ROOT", config_root)
+    monkeypatch.setattr(lifecycle_constants, "PATH_CRYPT_ROOT", data_root)
+    monkeypatch.setattr(lifecycle_constants, "PATH_CACHE_ROOT", cache_root)
+    monkeypatch.setattr(lifecycle_constants, "PATH_SYSTEMD_UNITS_DIR", quadlets)
+    monkeypatch.setattr(lifecycle_constants, "PATH_SYSTEMD_USER_UNITS_DIR", user_units)
 
     topology = HostTopology.current()
 

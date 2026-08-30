@@ -6,7 +6,7 @@ from typing import Any
 
 import structlog
 
-from lychd.config.runes.base import RuneConfig
+from lychd.config.runes.base import RuneConfig, admitted_branch_schemas
 from lychd.config.runes.markers import SAMPLE_MARKER
 from lychd.system.constants import PATH_RUNES_DIR
 
@@ -36,16 +36,12 @@ class ConfigLoader:
             Validated rune instances bound to their source filenames.
 
         Raises:
-            ValueError: If TOML parsing, branch-file enforcement, identity
-                validation, or Pydantic model validation fails.
+            ValueError: If TOML parsing, branch-file enforcement, or Pydantic
+                model validation fails.
 
         """
         loaded: list[RuneConfig] = []
-        branch_schemas = {
-            schema
-            for schema in schemas
-            if any(candidate is not schema and issubclass(candidate, schema) for candidate in schemas)
-        }
+        branch_schemas = admitted_branch_schemas(schemas)
 
         for cls in schemas:
             loaded.extend(self._load_class_instances(cls, is_branch=cls in branch_schemas))
@@ -65,8 +61,7 @@ class ConfigLoader:
             Validated instances for ``cls``.
 
         Raises:
-            ValueError: If a branch rune owns TOML files, or if payload/identity
-                validation fails.
+            ValueError: If a branch rune owns TOML files or payload validation fails.
 
         """
         files = self._candidate_files(cls)
@@ -84,11 +79,10 @@ class ConfigLoader:
             if self._is_generated_sample(file_path):
                 logger.debug("skipping_sample_rune", schema=cls.__name__, path=str(file_path))
                 continue
-            payload = self._read_payload(file_path, cls)
+            payload = self._read_payload(file_path)
             instance = cls.model_validate(payload).bind_source_file(file_path)
             instances.append(instance)
 
-        self._assert_unique_identity(files)
         return instances
 
     def _candidate_files(self, cls: type[RuneConfig]) -> list[Path]:
@@ -121,21 +115,17 @@ class ConfigLoader:
             raise ValueError(msg) from exc
         return False
 
-    def _read_payload(self, file_path: Path, cls: type[RuneConfig]) -> dict[str, Any]:
-        """Read one TOML payload and enforce rune envelope rules.
+    def _read_payload(self, file_path: Path) -> dict[str, Any]:
+        """Read one TOML payload.
 
         Args:
             file_path: TOML file to read.
-            cls: Rune class used to decide whether legacy envelope keys are
-                allowed.
 
         Returns:
             Parsed TOML payload with string keys.
 
         Raises:
-            ValueError: If the file is unreadable, malformed, or uses a legacy
-                ``[model]`` envelope for a rune class that does not declare a
-                ``model`` field.
+            ValueError: If the file is unreadable or malformed.
 
         """
         try:
@@ -147,47 +137,4 @@ class ConfigLoader:
             msg = f"Could not read '{file_path}'."
             raise ValueError(msg) from exc
 
-        content: dict[str, Any] = {str(k): v for k, v in parsed.items()}
-        if "model" in content and isinstance(content["model"], dict) and "model" not in cls.model_fields:
-            msg = (
-                f"File '{file_path}' uses legacy '[model]' envelope syntax. "
-                "Rune payload must be written at TOML top level."
-            )
-            raise ValueError(msg)
-
-        return content
-
-    def _assert_unique_identity(self, files: list[Path]) -> None:
-        """Reject duplicate identities after path normalization.
-
-        Args:
-            files: Candidate TOML files for that rune class.
-
-        Raises:
-            ValueError: If two files derive the same rune-local identity.
-
-        """
-        seen: set[str] = set()
-
-        for file_path in files:
-            identity = self._instance_id_from_path(file_path)
-            if identity in seen:
-                msg = f"Duplicate identity detected: '{identity}'."
-                raise ValueError(msg)
-            seen.add(identity)
-
-    def _instance_id_from_path(self, file_path: Path) -> str:
-        """Derive a stable instance identity from a TOML path.
-
-        Args:
-            file_path: TOML file path under this loader's rune root.
-
-        Returns:
-            Rune-root-relative path without the TOML suffix.
-
-        Raises:
-            ValueError: If ``file_path`` is outside this loader's rune root.
-
-        """
-        rel = file_path.relative_to(self._runes_dir)
-        return str(rel.with_suffix(""))
+        return {str(k): v for k, v in parsed.items()}

@@ -22,7 +22,7 @@ interpreter crash kills the Vessel.
 | Queue | Default source | Registered work |
 | --- | --- | --- |
 | `runs` | Bridge and CLI workflows | `perform_run` |
-| `rites` | background workflow intents | `perform_run` plus no-effect `perform_rite` |
+| `rites` | background workflow intents | `perform_run` |
 
 These are physical delivery lanes, not Spellweaver service classes. A future `foreground`,
 `deadline_windowed`, or `spare_capacity` admission may be delivered through either lane or another
@@ -307,9 +307,10 @@ Before an effectful runtime is admitted, its contract must also distinguish a de
 start from a post-transmission ambiguous failure; a generic exception after an effect may have
 escaped is not proof that the job failed or stopped.
 
-There is no Rite registry: `perform_rite` is a logged no-effect placeholder, and background work
-on `rites` is ordinary `perform_run` execution. Any future registry needs typed identifiers,
-extension provenance, payload schema, authorization, idempotency, queue policy, and settlement.
+There is no Rite registry or Rite handler. The former no-effect `perform_rite` placeholder has been
+removed, and background work on `rites` is ordinary `perform_run` execution. Any future registry
+needs typed identifiers, extension provenance, payload schema, authorization, idempotency, queue
+policy, and settlement.
 
 ## Consequences
 

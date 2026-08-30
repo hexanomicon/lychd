@@ -13,9 +13,9 @@ import pytest
 from lychd.agents.router import Intent
 from lychd.agents.workflows import builtin_workflow_registry
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
-from lychd.domain.cortex.engine import QueueRouter, RunEngine, enqueue_run
+from lychd.domain.cortex.engine import QueueRouter, RouteRule, RunEngine, enqueue_run
 from lychd.domain.cortex.events import InProcessEventBus, RunEventKind
-from lychd.domain.cortex.ledger import InMemoryRunLedger
+from lychd.domain.cortex.ledger import DelegateAdmissionEvidence, InMemoryRunLedger
 from lychd.domain.cortex.runs import RunDeliveryState, RunStatus
 from lychd.domain.delegation import (
     DelegatedAgentCoordinator,
@@ -30,7 +30,6 @@ from lychd.extensions.builtin.delegation.reference import ReferenceDelegatedAgen
 from lychd.ghouls.runs import (
     _commit_delegate_park,
     _reconcile_delegate_page,
-    relay_delegated_runs,
 )
 
 if TYPE_CHECKING:
@@ -113,9 +112,62 @@ def _engine(
         ledger=ledger,
         bus=bus,
         workflows=builtin_workflow_registry(),
-        queue_router=QueueRouter(),
+        queue_router=QueueRouter(routing={"default": RouteRule(queue="runs", priority=50)}),
         queues={"runs": queue},
         delegates=coordinator,
+    )
+
+
+@pytest.mark.asyncio
+async def test_memory_delegate_admission_requires_matching_terminal_evidence() -> None:
+    ledger = InMemoryRunLedger(honor_intent_run_id=True)
+    await _seed_running(ledger, "run-evidence")
+    await ledger.park_delegate("run-evidence", "job-evidence")
+    result = DelegatedAgentResult(
+        job_id="job-evidence",
+        status=DelegatedAgentJobStatus.SUCCEEDED,
+        output="done",
+    )
+
+    assert await ledger.try_admit_delegate("run-evidence", job_id="job-evidence") is None
+    assert (
+        await ledger.try_admit_delegate(
+            "run-evidence",
+            job_id="job-evidence",
+            evidence=DelegateAdmissionEvidence(
+                job_id="job-evidence",
+                run_id="another-run",
+                status=DelegatedAgentJobStatus.SUCCEEDED,
+                result=result,
+            ),
+        )
+        is None
+    )
+    assert (
+        await ledger.try_admit_delegate(
+            "run-evidence",
+            job_id="job-evidence",
+            evidence=DelegateAdmissionEvidence(
+                job_id="job-evidence",
+                run_id="run-evidence",
+                status=DelegatedAgentJobStatus.SUCCEEDED,
+                result=result,
+            ),
+        )
+        == 1
+    )
+    assert (
+        await ledger.try_admit_delegate(
+            "run-evidence",
+            job_id="job-evidence",
+            evidence=DelegateAdmissionEvidence(
+                job_id="job-evidence",
+                run_id="run-evidence",
+                status=DelegatedAgentJobStatus.SUCCEEDED,
+                result=result,
+            ),
+        )
+        is None
     )
 
 
@@ -139,8 +191,9 @@ async def test_terminal_delegate_result_admits_exactly_one_resume_hop() -> None:
         output="done",
     )
 
-    assert await engine.adopt_delegate(ref.job_id, result) is True
-    assert await engine.adopt_delegate(ref.job_id, result) is False
+    assert await coordinator.adopt(ref.job_id, result) is True
+    assert await engine.resume_delegate(ref.job_id) is True
+    assert await engine.resume_delegate(ref.job_id) is False
 
     run = await ledger.get("run-1")
     assert run is not None
@@ -251,48 +304,6 @@ async def test_delegate_page_revisits_a_clean_unfinished_job() -> None:
 
 
 @pytest.mark.asyncio
-async def test_delegate_relay_fairly_retries_multiple_degraded_pages(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from datetime import UTC, datetime
-
-    calls: list[tuple[datetime, str] | None] = []
-    stop = asyncio.Event()
-    first_page_end = (datetime.now(UTC), "delegate-page-1")
-    second_page_end = (datetime.now(UTC), "delegate-page-2")
-
-    async def fake_page(
-        _engine: Any,
-        *,
-        after: tuple[datetime, str] | None,
-    ) -> tuple[dict[str, int | str], tuple[datetime, str] | None]:
-        calls.append(after)
-        call = len(calls)
-        if call == 1:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 2:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 3:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, second_page_end)
-        if call == 4:
-            return ({"status": "degraded", "count": 0, "probe_errors": 1}, first_page_end)
-        if call == 5:
-            return ({"status": "reconciled", "count": 0, "probe_errors": 0}, None)
-        stop.set()
-        return ({"status": "reconciled", "count": 1, "probe_errors": 0}, second_page_end)
-
-    monkeypatch.setattr("lychd.ghouls.runs._reconcile_delegate_page", fake_page)
-
-    await relay_delegated_runs(
-        engine=object(),
-        stop=stop,
-        interval_s=0.001,
-    )
-
-    assert calls == [None, None, first_page_end, None, second_page_end, first_page_end]
-
-
-@pytest.mark.asyncio
 async def test_delegate_resume_enqueue_failure_retains_exact_durable_hop() -> None:
     ledger = InMemoryRunLedger(honor_intent_run_id=True)
     bus = InProcessEventBus(ledger=ledger)
@@ -311,7 +322,8 @@ async def test_delegate_resume_enqueue_failure_retains_exact_durable_hop() -> No
         output="done",
     )
 
-    assert await engine.adopt_delegate(ref.job_id, result) is True
+    assert await coordinator.adopt(ref.job_id, result) is True
+    assert await engine.resume_delegate(ref.job_id) is True
     admitted = await ledger.get("run-2")
     assert admitted is not None
     assert admitted.status is RunStatus.QUEUED
@@ -572,7 +584,8 @@ async def test_old_terminal_job_cannot_resume_a_newer_delegate_wait_for_same_run
         status=DelegatedAgentJobStatus.SUCCEEDED,
         output="first done",
     )
-    assert await engine.adopt_delegate(first.job_id, settled) is True
+    assert await coordinator.adopt(first.job_id, settled) is True
+    assert await engine.resume_delegate(first.job_id) is True
     assert await ledger.try_claim_run("run-6", enqueue_seq=1) is True
 
     second = await _delegated_job(

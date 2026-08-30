@@ -12,33 +12,13 @@ if TYPE_CHECKING:
     from lychd.domain.orchestration.manager import OrchestratorManager
 
 TurnRole = Literal["user", "agent"]
-# Internal turn state written by the graph; mapped to the frozen run-state
-# `data-state` vocabulary (queued/streaming/consent/done/failed) by `run_data_state`.
 TurnState = Literal["settled", "streaming", "pending_consent", "consented", "refused", "failed"]
-# Capability `data-state` vocabulary (spec-web-design §5). `_coven_state` maps the
-# phase-by-is_dynamic table (S9); "warm" stays reserved vocabulary (Wave 6 W6-a may refine).
+# Capability `data-state` vocabulary. `_coven_state` maps the canonical
+# phase-by-is_dynamic table; "warm" remains distinct from active residency.
 CovenState = Literal["active", "warm", "awaited", "warming", "cold", "fault"]
 ConsentState = Literal["pending_consent", "consented", "refused", "cancelled"]
-# Swap-ticket trio (spec-web-design §5): warming → settled → failed.
+# Swap-ticket trio: warming → settled → failed.
 TicketState = Literal["warming", "settled", "failed"]
-
-# Frozen run-state `data-state` vocabulary (spec-00-FINAL C5 / spec-web-design §5).
-_RUN_DATA_STATE: dict[str, str] = {
-    "settled": "done",
-    "done": "done",
-    "failed": "failed",
-    "streaming": "streaming",
-    "queued": "queued",
-    "consent": "consent",
-    "pending_consent": "consent",
-    "consented": "done",
-    "refused": "done",
-}
-
-
-def run_data_state(turn_state: str) -> str:
-    """Map an internal turn/run state to the frozen run `data-state` token."""
-    return _RUN_DATA_STATE.get(turn_state, "done")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -63,7 +43,6 @@ class ConsentCard:
     args: dict[str, Any]
     vision: str
     state: ConsentState = "pending_consent"
-    session_id: str = ""  # emitted as a data- attribute only; nothing in src reads it
 
 
 @dataclass(frozen=True, kw_only=True)

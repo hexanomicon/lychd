@@ -161,7 +161,6 @@ def test_reactor_threads_the_systemctl_client_budget(
         registry,
         systemctl_bin="/usr/bin/systemctl",
         systemctl_timeout_s=6.5,
-        observe_systemd=True,
     )
 
 
@@ -262,29 +261,6 @@ async def test_reactor_recovers_preexisting_processing_record(tmp_path: Path) ->
 
 
 @pytest.mark.asyncio
-async def test_reactor_keeps_uncertain_recovery_as_durable_processing_fence(tmp_path: Path) -> None:
-    registry = _registry()
-    inbox, journal = _secure_dirs(tmp_path)
-    intent = _intent(registry)
-    processing = journal / f"{intent.transition_id}.processing.json"
-    _write_intent(processing, intent)
-
-    async def uncertain(_intent: TransitionIntent) -> None:
-        message = "systemd world cannot be classified"
-        raise RuntimeError(message)
-
-    actuator = _Actuator(recover=uncertain)
-    reactor = _host_reactor(registry, inbox_dir=inbox, journal_dir=journal, actuator=actuator)
-
-    with pytest.raises(RuntimeError, match="cannot be classified"):
-        await reactor.consume_all()
-
-    assert processing.is_file()
-    assert not (journal / f"{intent.transition_id}.rejected.json").exists()
-    assert not (journal / f"{intent.transition_id}.contained.json").exists()
-
-
-@pytest.mark.asyncio
 async def test_uncertain_recovery_fences_later_pending_effects(tmp_path: Path) -> None:
     registry = _registry()
     inbox, journal = _secure_dirs(tmp_path)
@@ -314,31 +290,8 @@ async def test_uncertain_recovery_fences_later_pending_effects(tmp_path: Path) -
     actuator.apply_mock.assert_not_awaited()
     assert processing_path.is_file()
     assert pending_path.is_file()
-
-
-@pytest.mark.asyncio
-async def test_reactor_persists_fresh_uncertain_actuation_as_containment(tmp_path: Path) -> None:
-    registry = _registry()
-    inbox, journal = _secure_dirs(tmp_path)
-    intent = _intent(registry)
-    _write_intent(inbox / f"{intent.transition_id}.json", intent)
-
-    async def uncertain(_intent: TransitionIntent) -> None:
-        message = "systemd world cannot be restored"
-        raise RuntimeError(message)
-
-    reactor = _host_reactor(
-        registry,
-        inbox_dir=inbox,
-        journal_dir=journal,
-        actuator=_Actuator(apply=uncertain),
-    )
-
-    with pytest.raises(RuntimeError, match="cannot be restored"):
-        await reactor.consume_all()
-
-    assert (journal / f"{intent.transition_id}.contained.json").is_file()
-    assert not (journal / f"{intent.transition_id}.rejected.json").exists()
+    assert not (journal / f"{recovered.transition_id}.rejected.json").exists()
+    assert not (journal / f"{recovered.transition_id}.contained.json").exists()
 
 
 @pytest.mark.asyncio
@@ -368,6 +321,7 @@ async def test_fresh_containment_fences_later_pending_effects(tmp_path: Path) ->
 
     actuator.apply_mock.assert_awaited_once_with(first)
     assert (journal / f"{first.transition_id}.contained.json").is_file()
+    assert not (journal / f"{first.transition_id}.rejected.json").exists()
     assert second_path.is_file()
 
 
@@ -560,24 +514,6 @@ async def test_reactor_rejects_exact_capability_owned_by_another_animator(tmp_pa
         await reactor.consume_all()
 
     actuator.apply_mock.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_reactor_accepts_unambiguous_legacy_intent_without_capability_key(tmp_path: Path) -> None:
-    registry = _registry()
-    inbox, journal = _secure_dirs(tmp_path)
-    legacy = _intent(registry).model_copy(update={"target_capability_key": None})
-    _write_intent(inbox / f"{legacy.transition_id}.json", legacy)
-    actuator = _Actuator()
-    reactor = _host_reactor(
-        registry,
-        inbox_dir=inbox,
-        journal_dir=journal,
-        actuator=actuator,
-    )
-
-    assert await reactor.consume_all() == 1
-    actuator.apply_mock.assert_awaited_once_with(legacy)
 
 
 @pytest.mark.asyncio

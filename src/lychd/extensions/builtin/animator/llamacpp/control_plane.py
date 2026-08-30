@@ -1,24 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
+from lychd.domain.animation.animators import RuntimeAnimator
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
+from lychd.extensions.builtin.animator.llamacpp.connector import LlamacppConnector
 from lychd.lib.http import DEFAULT_TIMEOUT_SECONDS, HttpJsonError, request_json
 
-if TYPE_CHECKING:
-    from lychd.config.runes import RuneConfig
-    from lychd.domain.animation.animators import Animator
-    from lychd.domain.animation.connectors import Connector
-
-
-type RuntimeAnimator = Animator[Connector, RuneConfig]
 _HTTP_SERVICE_UNAVAILABLE = 503
-
-# Back-compat alias: the control plane now returns the runtime-neutral domain DTO
-# (spec §5). ``LlamaCppLifecycle`` remains importable for one release.
-LlamaCppLifecycle = AnimatorLifecycle
 
 
 class LlamaCppControlPlaneError(RuntimeError):
@@ -39,8 +30,7 @@ class LlamaCppControlPlane:
     - an explicit ``(base_url, mode, model_id)`` target.
 
     All I/O is async httpx (A3-U3: no blocking ``urlopen``). Endpoint logic
-    (``/health`` / ``/props`` / ``/models`` / ``/models/load`` / ``/models/unload``)
-    is preserved verbatim.
+    (``/health`` / ``/models`` / ``/models/load``) is kept behind this boundary.
     """
 
     def __init__(self, *, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> None:
@@ -50,17 +40,17 @@ class LlamaCppControlPlane:
     async def inspect_animator(self, animator: RuntimeAnimator) -> AnimatorLifecycle:
         """Inspect llama.cpp runtime state for a runtime animator.
 
-        The animator must expose a connector with ``kind == 'llamacpp'`` and the
-        connector must publish ``mode`` and optional ``router_query_model_id``.
+        The animator must expose a llama.cpp connector with ``mode`` and optional
+        ``router_query_model_id``.
         """
         connector = animator.connector
-        if getattr(connector, "kind", None) != "llamacpp":
-            msg = f"Animator '{animator.id}' is not backed by a llama.cpp connector."
+        if not isinstance(connector, LlamacppConnector):
+            msg = f"Animator '{animator.name}' is not backed by a llama.cpp connector."
             raise LlamaCppControlPlaneError(msg)
 
         mode = getattr(connector, "mode", None)
         if mode not in {"single", "router"}:
-            msg = f"llama.cpp connector on animator '{animator.id}' does not expose a valid mode."
+            msg = f"llama.cpp connector on animator '{animator.name}' does not expose a valid mode."
             raise LlamaCppControlPlaneError(msg)
 
         model_id = getattr(connector, "router_query_model_id", None)
@@ -71,54 +61,37 @@ class LlamaCppControlPlane:
         )
 
     async def inspect(self, *, base_url: str, mode: str, model_id: str | None = None) -> AnimatorLifecycle:
-        """Inspect runtime state from llama.cpp health/props/models endpoints."""
-        lifecycle = AnimatorLifecycle(runtime="llamacpp", base_url=base_url, mode=mode)
+        """Inspect runtime state from llama.cpp health and router-model endpoints."""
+        lifecycle = AnimatorLifecycle()
 
         model_query = model_id if mode == "router" else None
 
         try:
             health = await self._request_json(base_url, "GET", "/health", query=self._query_model(model_query))
-            lifecycle.raw["health"] = health
             lifecycle.health = self._coerce_health(health)
         except LlamaCppControlPlaneError as exc:
-            lifecycle.raw["health_error"] = str(exc)
+            lifecycle.error = str(exc)
             # llama.cpp reports an in-progress model load as HTTP 503 with a
             # JSON error body. This is readiness, not a stopped runtime. Match
             # only the explicit loading signal; unrelated 503s stay unknown.
             if exc.status == _HTTP_SERVICE_UNAVAILABLE and "loading model" in str(exc).lower():
                 lifecycle.health = "loading"
 
-        try:
-            props = await self._request_json(base_url, "GET", "/props", query=self._query_model(model_query))
-            lifecycle.raw["props"] = props
-            lifecycle.sleeping = self._as_bool(props.get("is_sleeping"))
-            lifecycle.total_slots = self._as_int(props.get("total_slots"))
-            lifecycle.active_model = self._as_str(props.get("model_path"))
-        except LlamaCppControlPlaneError as exc:
-            lifecycle.raw["props_error"] = str(exc)
-
         if mode == "router":
             try:
                 models = await self._request_json(base_url, "GET", "/models")
-                lifecycle.raw["models"] = models
                 lifecycle.supports_router = True
                 self._populate_router_models(lifecycle, models)
             except LlamaCppControlPlaneError as exc:
-                lifecycle.raw["models_error"] = str(exc)
+                lifecycle.error = str(exc)
 
         return lifecycle
 
     async def load_model(self, base_url: str, model: str) -> bool:
-        """Request router to load a model by id."""
+        """Request router to load a model, accepting only a literal JSON ``true`` receipt."""
         payload = {"model": model}
         response = await self._request_json(base_url, "POST", "/models/load", payload=payload)
-        return bool(response.get("success"))
-
-    async def unload_model(self, base_url: str, model: str) -> bool:
-        """Request router to unload a model by id."""
-        payload = {"model": model}
-        response = await self._request_json(base_url, "POST", "/models/unload", payload=payload)
-        return bool(response.get("success"))
+        return response.get("success") is True
 
     async def _request_json(
         self,
@@ -181,10 +154,6 @@ class LlamaCppControlPlane:
                 continue
             available.append(model_id)
 
-            markers = self._extract_markers(entry_map)
-            if markers:
-                lifecycle.model_capabilities[model_id] = markers
-
             status = entry_map.get("status")
             status_map = self._as_map(status)
             if status_map is not None and self._as_str(status_map.get("value")) == "loaded":
@@ -193,27 +162,10 @@ class LlamaCppControlPlane:
         lifecycle.available_models = available
         lifecycle.loaded_models = loaded
 
-    def _extract_markers(self, entry_map: dict[str, object]) -> list[str]:
-        """Read tolerant capability markers from one ``/models`` entry (absent → empty)."""
-        raw = entry_map.get("capabilities")
-        if not isinstance(raw, list):
-            return []
-        return [str(item) for item in cast("list[object]", raw) if isinstance(item, str) and item.strip()]
-
     def _query_model(self, model: str | None) -> dict[str, str] | None:
         if model is None:
             return None
         return {"model": model}
-
-    def _as_bool(self, value: object) -> bool | None:
-        if isinstance(value, bool):
-            return value
-        return None
-
-    def _as_int(self, value: object) -> int | None:
-        if isinstance(value, int):
-            return value
-        return None
 
     def _as_str(self, value: object) -> str | None:
         if isinstance(value, str):

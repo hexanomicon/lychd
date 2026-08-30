@@ -8,7 +8,7 @@ import pytest
 
 from lychd.domain.codex.ledger import InMemoryConsentLedger
 from lychd.domain.codex.runes import CodexPreauthRune
-from lychd.domain.codex.schemas import censor, constraints_admit
+from lychd.domain.codex.schemas import CENSORED_VALUE, censor, constraints_admit
 from lychd.domain.codex.sigil import Sigil
 
 
@@ -19,26 +19,18 @@ def _sigil(name: str = "magus") -> Sigil:
 # -- censor -----------------------------------------------------------------
 
 
-def test_censor_scrubs_secret_shaped_keys() -> None:
+def test_censor_retains_names_but_never_guesses_that_values_are_safe() -> None:
     payload = {
         "api_key": "sk-123",
-        "password": "hunter2",
-        "access_token": "t",
-        "credential_blob": "c",
-        "reason": "please",
-        "nested": {"secret_value": "x", "safe": "ok"},
-        "items": [{"token": "y"}, "plain"],
+        "authorization": "Bearer opaque-sentinel",
+        "cookie": "opaque-sentinel",
+        "session": "opaque-sentinel",
+        "private_value": "opaque-sentinel",
+        "reason": "password=opaque-sentinel",
+        "nested": {"unfamiliar": "opaque-sentinel"},
+        "items": ["opaque-sentinel"],
     }
-    censored = censor(payload)
-    assert censored["api_key"] == "‹censored›"  # noqa: RUF001
-    assert censored["password"] == "‹censored›"  # noqa: RUF001, S105
-    assert censored["access_token"] == "‹censored›"  # noqa: RUF001, S105
-    assert censored["credential_blob"] == "‹censored›"  # noqa: RUF001
-    assert censored["reason"] == "please"
-    assert censored["nested"]["secret_value"] == "‹censored›"  # noqa: RUF001, S105
-    assert censored["nested"]["safe"] == "ok"
-    assert censored["items"][0]["token"] == "‹censored›"  # noqa: RUF001, S105
-    assert censored["items"][1] == "plain"
+    assert censor(payload) == dict.fromkeys(payload, CENSORED_VALUE)
 
 
 # -- constraints_admit (fail-closed) ----------------------------------------
@@ -56,6 +48,28 @@ def test_constraints_args_allowlist() -> None:
     constraints = {"args": {"capability_key": ["chat:local", "chat:remote"]}}
     assert constraints_admit(constraints, {"capability_key": "chat:local"}) is True
     assert constraints_admit(constraints, {"capability_key": "chat:evil"}) is False
+
+
+def test_constraints_args_distinguish_explicit_null_from_absence() -> None:
+    constraints = {"args": {"mode": [None]}}
+    assert constraints_admit(constraints, {"mode": None}) is True
+    assert constraints_admit(constraints, {}) is False
+
+
+@pytest.mark.parametrize(
+    ("allowed", "lookalike"),
+    [
+        (1, True),
+        (1, 1.0),
+        (True, 1),
+        ({"enabled": 1}, {"enabled": True}),
+        ([1], [True]),
+    ],
+)
+def test_constraints_args_reject_python_equality_lookalikes(allowed: object, lookalike: object) -> None:
+    constraints = {"args": {"value": [allowed]}}
+    assert constraints_admit(constraints, {"value": allowed}) is True
+    assert constraints_admit(constraints, {"value": lookalike}) is False
 
 
 def test_constraints_path_prefixes() -> None:
@@ -113,18 +127,21 @@ def _preauth(**kw: object) -> CodexPreauthRune:
 
 @pytest.mark.asyncio
 async def test_preauth_auto_grants() -> None:
-    ledger = InMemoryConsentLedger(preauths=[_preauth()])
+    ledger = InMemoryConsentLedger(preauths=[_preauth(constraints={"args": {"capability_key": ["chat:local"]}})])
     decision = await ledger.park(
         run_id="r1",
         tool_name="request_coven_swap",
         tool_call_id="c1",
         call_ids=("c1",),
-        args={"reason": "why"},
+        args={"capability_key": "chat:local", "opaque": "never-persist-this-value"},
         sigil=_sigil(),
     )
     assert decision.status == "granted"
     assert decision.preauth_slug == "p"
     assert await ledger.verdict(decision.consent_id) is True
+    view = await ledger.get(decision.consent_id)
+    assert view is not None
+    assert view.args == {"capability_key": CENSORED_VALUE, "opaque": CENSORED_VALUE}
 
 
 @pytest.mark.asyncio
@@ -196,6 +213,30 @@ async def test_park_pending_then_decide() -> None:
     again = await ledger.decide(decision.consent_id, approved=False, decided_by="other")
     assert again is not None
     assert again.status == "granted"
+
+
+@pytest.mark.asyncio
+async def test_consent_views_detach_argument_maps_from_store_truth() -> None:
+    ledger = InMemoryConsentLedger()
+    args = {"nested": {"values": ["kept"]}}
+    decision = await ledger.park(
+        run_id="r-detached",
+        tool_name="request_coven_swap",
+        tool_call_id="c-detached",
+        call_ids=("c-detached",),
+        args=args,
+        sigil=_sigil(),
+    )
+
+    args["nested"]["values"].append("caller-write")
+    first = await ledger.get(decision.consent_id)
+    assert first is not None
+    assert first.args == {"nested": CENSORED_VALUE}
+
+    first.args["nested"] = "read-view-write"
+    second = await ledger.get(decision.consent_id)
+    assert second is not None
+    assert second.args == {"nested": CENSORED_VALUE}
 
 
 @pytest.mark.asyncio

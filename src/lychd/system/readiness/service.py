@@ -48,7 +48,6 @@ class HostReadinessService:
         self,
         *,
         runner: ProcessRunner | None = None,
-        tools: HostReadinessTools | None = None,
         tools_factory: ToolsFactory = HostReadinessTools.discover,
         postgres_data: Path = PATH_POSTGRESS_DATA_DIR,
         binding_sites: tuple[tuple[str, str, Path], ...] | None = None,
@@ -58,7 +57,6 @@ class HostReadinessService:
     ) -> None:
         """Retain dependencies used to assemble one fresh immutable snapshot."""
         self._runner = runner or SubprocessRunner()
-        self._injected_tools = tools
         self._tools_factory = tools_factory
         self._postgres_data = postgres_data
         self._binding_sites = binding_sites or (
@@ -79,7 +77,7 @@ class HostReadinessService:
 
     def inspect(self) -> HostFoundationInspection:
         """Discover tools, run one bounded probe graph, and return its snapshot."""
-        tools = self._injected_tools if self._injected_tools is not None else self._tools_factory()
+        tools = self._tools_factory()
         probes = self._build_probes(tools)
         with ThreadPoolExecutor(
             max_workers=len(probes),

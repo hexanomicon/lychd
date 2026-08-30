@@ -66,7 +66,7 @@ def _stone(name: str, *, conflict_domains: list[str]) -> GenericSoulstoneConfig:
     return GenericSoulstoneConfig(
         name=name,
         quadlet=QuadletConfig(image=f"example/{name}:latest"),
-        concurrency=ConcurrencyIntent(conflict_domains=conflict_domains),
+        concurrency=ConcurrencyIntent(conflict_domains=tuple(conflict_domains)),
     )
 
 
@@ -87,6 +87,7 @@ def _intent(*, evict_animators: tuple[str, ...] = ("alpha",)) -> TransitionInten
         transition_id="a" * 32,
         config_generation="sha256:" + "b" * 64,
         target_animator="beta",
+        target_capability_key="beta:default",
         evict_animators=evict_animators,
         launch_animators=("beta",),
         expected_active_animators=("alpha",),
@@ -166,22 +167,21 @@ def _show_payload(properties: dict[str, str]) -> bytes:
     return ("".join(f"{name}={properties[name]}\n" for name in _SHOW_PROPERTIES)).encode()
 
 
-def _owned_pair_bindings(tmp_path: Path, *, stale_target: bool = False) -> OwnedBindings:
+def _owned_bindings(
+    tmp_path: Path,
+    *animator_names: str,
+    stale_target: bool = False,
+) -> OwnedBindings:
     quadlet = tmp_path / "quadlet"
     systemd = tmp_path / "systemd"
-    quadlet_sources = tuple(quadlet / f"lychd-{name}.container" for name in ("alpha", "beta"))
-    systemd_sources = tuple(
-        systemd / f"lychd-animator-{name}.target"
-        for name in (("alpha", "beta", "removed") if stale_target else ("alpha", "beta"))
-    )
+    quadlet_sources = tuple(quadlet / f"lychd-{name}.container" for name in animator_names)
+    target_names = (*animator_names, *(("removed",) if stale_target else ()))
+    systemd_sources = tuple(systemd / f"lychd-animator-{name}.target" for name in target_names)
     runtime_units = tuple(
         sorted(
             {
-                "lychd-alpha.service",
-                "lychd-beta.service",
-                "lychd-animator-alpha.target",
-                "lychd-animator-beta.target",
-                *(("lychd-animator-removed.target",) if stale_target else ()),
+                *(f"lychd-{name}.service" for name in animator_names),
+                *(f"lychd-animator-{name}.target" for name in target_names),
             }
         )
     )
@@ -194,8 +194,12 @@ def _owned_pair_bindings(tmp_path: Path, *, stale_target: bool = False) -> Owned
     )
 
 
-def _attach_owned_sources(graph: dict[str, dict[str, str]], tmp_path: Path) -> None:
-    for animator_name in ("alpha", "beta"):
+def _attach_owned_sources(
+    graph: dict[str, dict[str, str]],
+    tmp_path: Path,
+    *animator_names: str,
+) -> None:
+    for animator_name in animator_names:
         service = graph[animator_service_unit(animator_name)]
         service["SourcePath"] = str(tmp_path / "quadlet" / f"lychd-{animator_name}.container")
         service["FragmentPath"] = f"/run/user/1000/systemd/generator/lychd-{animator_name}.service"
@@ -260,22 +264,7 @@ def _mock_systemctl_show(
 
 
 @pytest.mark.asyncio
-async def test_exact_loaded_conflict_graph_passes(mocker: MockerFixture) -> None:
-    stones = [
-        _stone("alpha", conflict_domains=["gpu-0"]),
-        _stone("beta", conflict_domains=["gpu-0"]),
-    ]
-    graph = _exact_pair_graph()
-    subprocess, observed_units = _mock_systemctl_show(mocker, graph)
-
-    await RuntimeTopologyAttestor(_registry(stones), systemctl_bin=_SYSTEMCTL).attest(_intent())
-
-    assert observed_units == sorted(graph)
-    assert subprocess.await_count == len(graph) + 2
-
-
-@pytest.mark.asyncio
-async def test_attestation_binds_loaded_sources_to_scribe_receipt(
+async def test_exact_loaded_graph_is_bound_to_scribe_sources(
     tmp_path: Path,
     mocker: MockerFixture,
 ) -> None:
@@ -284,14 +273,17 @@ async def test_attestation_binds_loaded_sources_to_scribe_receipt(
         _stone("beta", conflict_domains=["gpu-0"]),
     ]
     graph = _exact_pair_graph()
-    _attach_owned_sources(graph, tmp_path)
-    _mock_systemctl_show(mocker, graph)
+    _attach_owned_sources(graph, tmp_path, "alpha", "beta")
+    subprocess, observed_units = _mock_systemctl_show(mocker, graph)
 
     await RuntimeTopologyAttestor(
         _registry(stones),
         systemctl_bin=_SYSTEMCTL,
-        owned_bindings_provider=lambda: _owned_pair_bindings(tmp_path),
+        owned_bindings_provider=lambda: _owned_bindings(tmp_path, "alpha", "beta"),
     ).attest(_intent())
+
+    assert observed_units == sorted(graph)
+    assert subprocess.await_count == len(graph) + 2
 
 
 @pytest.mark.asyncio
@@ -311,40 +303,53 @@ async def test_attestation_rejects_stale_scribe_target_before_systemd(
         await RuntimeTopologyAttestor(
             _registry(stones),
             systemctl_bin=_SYSTEMCTL,
-            owned_bindings_provider=lambda: _owned_pair_bindings(tmp_path, stale_target=True),
+            owned_bindings_provider=lambda: _owned_bindings(
+                tmp_path,
+                "alpha",
+                "beta",
+                stale_target=True,
+            ),
         ).attest(_intent())
 
     subprocess.assert_not_awaited()
 
 
+@pytest.mark.parametrize(
+    ("unit_name", "property_name", "observed", "match"),
+    [
+        (animator_target_unit("beta"), "NeedDaemonReload", "yes", r"beta\.target requires daemon-reload"),
+        (
+            animator_service_unit("alpha"),
+            "DropInPaths",
+            "/home/operator/.config/systemd/user/lychd-alpha.service.d/override.conf",
+            r"alpha\.service is altered by drop-ins",
+        ),
+    ],
+)
 @pytest.mark.asyncio
-async def test_attestation_rejects_unit_needing_daemon_reload(mocker: MockerFixture) -> None:
+async def test_attestation_rejects_unloaded_runtime_overrides(
+    tmp_path: Path,
+    mocker: MockerFixture,
+    unit_name: str,
+    property_name: str,
+    observed: str,
+    match: str,
+) -> None:
     stones = [
         _stone("alpha", conflict_domains=["gpu-0"]),
         _stone("beta", conflict_domains=["gpu-0"]),
     ]
     graph = _exact_pair_graph()
-    graph[animator_target_unit("beta")]["NeedDaemonReload"] = "yes"
+    graph[unit_name][property_name] = observed
+    _attach_owned_sources(graph, tmp_path, "alpha", "beta")
     _mock_systemctl_show(mocker, graph)
 
-    with pytest.raises(RuntimePreconditionError, match=r"beta\.target requires daemon-reload"):
-        await RuntimeTopologyAttestor(_registry(stones), systemctl_bin=_SYSTEMCTL).attest(_intent())
-
-
-@pytest.mark.asyncio
-async def test_attestation_rejects_loaded_drop_in(mocker: MockerFixture) -> None:
-    stones = [
-        _stone("alpha", conflict_domains=["gpu-0"]),
-        _stone("beta", conflict_domains=["gpu-0"]),
-    ]
-    graph = _exact_pair_graph()
-    graph[animator_service_unit("alpha")]["DropInPaths"] = (
-        "/home/operator/.config/systemd/user/lychd-alpha.service.d/override.conf"
-    )
-    _mock_systemctl_show(mocker, graph)
-
-    with pytest.raises(RuntimePreconditionError, match=r"alpha\.service is altered by drop-ins"):
-        await RuntimeTopologyAttestor(_registry(stones), systemctl_bin=_SYSTEMCTL).attest(_intent())
+    with pytest.raises(RuntimePreconditionError, match=match):
+        await RuntimeTopologyAttestor(
+            _registry(stones),
+            systemctl_bin=_SYSTEMCTL,
+            owned_bindings_provider=lambda: _owned_bindings(tmp_path, "alpha", "beta"),
+        ).attest(_intent())
 
 
 @pytest.mark.parametrize(
@@ -378,6 +383,7 @@ async def test_attestation_rejects_loaded_drop_in(mocker: MockerFixture) -> None
 )
 @pytest.mark.asyncio
 async def test_attestation_rejects_missing_or_tampered_managed_relation(
+    tmp_path: Path,
     mocker: MockerFixture,
     unit_name: str,
     property_name: str,
@@ -389,14 +395,22 @@ async def test_attestation_rejects_missing_or_tampered_managed_relation(
     ]
     graph = _exact_pair_graph()
     graph[unit_name][property_name] = observed
+    _attach_owned_sources(graph, tmp_path, "alpha", "beta")
     _mock_systemctl_show(mocker, graph)
 
     with pytest.raises(RuntimePreconditionError, match=rf"{unit_name}\.{property_name}"):
-        await RuntimeTopologyAttestor(_registry(stones), systemctl_bin=_SYSTEMCTL).attest(_intent())
+        await RuntimeTopologyAttestor(
+            _registry(stones),
+            systemctl_bin=_SYSTEMCTL,
+            owned_bindings_provider=lambda: _owned_bindings(tmp_path, "alpha", "beta"),
+        ).attest(_intent())
 
 
 @pytest.mark.asyncio
-async def test_conflict_closure_mismatch_is_rejected_before_systemd_query(mocker: MockerFixture) -> None:
+async def test_conflict_closure_mismatch_is_rejected_before_systemd_query(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
     stones = [
         _stone("alpha", conflict_domains=["gpu-0"]),
         _stone("beta", conflict_domains=["gpu-0"]),
@@ -407,34 +421,53 @@ async def test_conflict_closure_mismatch_is_rejected_before_systemd_query(mocker
         transition_id="a" * 32,
         config_generation="sha256:" + "b" * 64,
         target_animator="beta",
+        target_capability_key="beta:default",
         evict_animators=("alpha", "gamma"),
         launch_animators=("beta",),
         expected_active_animators=("alpha", "gamma"),
     )
 
     with pytest.raises(RuntimePreconditionError, match="conflict closure is stale"):
-        await RuntimeTopologyAttestor(_registry(stones), systemctl_bin=_SYSTEMCTL).attest(intent)
+        await RuntimeTopologyAttestor(
+            _registry(stones),
+            systemctl_bin=_SYSTEMCTL,
+            owned_bindings_provider=lambda: _owned_bindings(tmp_path, "alpha", "beta", "gamma"),
+        ).attest(intent)
 
     subprocess.assert_not_awaited()
 
 
-def test_stop_only_compensation_is_validated_as_typed_inverse() -> None:
+@pytest.mark.asyncio
+async def test_stop_only_compensation_is_accepted_by_public_attestation(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
     stone = _stone("beta", conflict_domains=[])
     forward = TransitionIntent(
         transition_id="c" * 32,
         config_generation="sha256:" + "d" * 64,
         target_animator="beta",
+        target_capability_key="beta:default",
         launch_animators=("beta",),
     )
 
-    RuntimeTopologyAttestor(
+    graph: dict[str, dict[str, str]] = {}
+    _add_coexistent_animator(graph, "beta")
+    _attach_owned_sources(graph, tmp_path, "beta")
+    _mock_systemctl_show(mocker, graph)
+
+    await RuntimeTopologyAttestor(
         _registry([stone]),
         systemctl_bin=_SYSTEMCTL,
-    ).validate_intent(build_compensation_intent(forward))
+        owned_bindings_provider=lambda: _owned_bindings(tmp_path, "beta"),
+    ).attest(build_compensation_intent(forward))
 
 
 @pytest.mark.asyncio
-async def test_attestation_covers_capability_empty_soulstones(mocker: MockerFixture) -> None:
+async def test_attestation_covers_capability_empty_soulstones(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
     stones = [
         _stone("alpha", conflict_domains=["gpu-0"]),
         _stone("beta", conflict_domains=["gpu-0"]),
@@ -443,11 +476,13 @@ async def test_attestation_covers_capability_empty_soulstones(mocker: MockerFixt
     capabilities = Mock(side_effect=AssertionError("topology must not be capability-derived"))
     graph = _exact_pair_graph()
     _add_coexistent_animator(graph, "silent")
+    _attach_owned_sources(graph, tmp_path, "alpha", "beta", "silent")
     _, observed_units = _mock_systemctl_show(mocker, graph)
 
     await RuntimeTopologyAttestor(
         _registry(stones, list_capabilities=capabilities),
         systemctl_bin=_SYSTEMCTL,
+        owned_bindings_provider=lambda: _owned_bindings(tmp_path, "alpha", "beta", "silent"),
     ).attest(_intent())
 
     capabilities.assert_not_called()

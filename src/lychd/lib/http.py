@@ -3,9 +3,8 @@
 This module homes the single async JSON transport used by the llama.cpp control
 plane and the OpenAI-compatible reachability probe (A3-U3: kills the blocking
 stdlib ``urlopen`` calls). It also provides ``run_sync`` — a small,
-transitional bridge that lets the still-synchronous registry surface (consumed
-by the Dispatcher/OrchestratorManager) drive the new async primitives until the
-agents builder migrates those call sites to ``await``.
+transitional bridge that lets the still-synchronous registry surface drive the
+async probe primitives.
 """
 
 from __future__ import annotations
@@ -41,7 +40,6 @@ async def request_json(
     payload: Mapping[str, Any] | None = None,
     headers: Mapping[str, str] | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,  # noqa: ASYNC109 - httpx owns the request timeout natively
-    allow_null: bool = False,
 ) -> dict[str, object]:
     """Issue an async JSON request and normalize the response into a dict.
 
@@ -87,24 +85,12 @@ async def request_json(
         return {str(key): value for key, value in mapping.items()}
     if isinstance(parsed, list):
         return {"data": cast("list[object]", parsed)}
-    if parsed is None and allow_null:
-        return {}
-
     msg = f"{method} {url} returned unsupported payload type: {type(parsed)}"
     raise HttpJsonError(msg)
 
 
 def run_sync[T](coro: Coroutine[Any, Any, T]) -> T:
-    """Run a coroutine to completion from synchronous code.
-
-    When no event loop is running (startup thread, CLI, tests) this uses
-    ``asyncio.run``. When a loop is already running (a synchronous registry
-    method invoked from an async Dispatcher/Orchestrator path) the coroutine is
-    executed on a dedicated worker-thread loop so the call still returns a value
-    without ``asyncio.run`` complaining about a running loop. This is the
-    transitional shim flagged in the platform contract; it blocks the caller for
-    the duration of the request exactly as the old ``urlopen`` code did.
-    """
+    """Run a coroutine from synchronous registry code, including under an active loop."""
     try:
         asyncio.get_running_loop()
     except RuntimeError:

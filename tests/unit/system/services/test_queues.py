@@ -64,6 +64,22 @@ class _PartialConnectQueue:
         self.disconnect_calls += 1
 
 
+class _TerminalCleanupPool(_PartiallyOpenedPool):
+    async def close(self) -> None:
+        self.close_calls += 1
+        raise SystemExit(91)
+
+
+class _TerminalCleanupQueue(_PartialConnectQueue):
+    def __init__(self) -> None:
+        super().__init__()
+        self.pool = _TerminalCleanupPool()
+
+    async def disconnect(self) -> None:
+        self.disconnect_calls += 1
+        raise KeyboardInterrupt
+
+
 @dataclass
 class _Job:
     key: str = "run:r:0"
@@ -123,6 +139,23 @@ async def test_failed_connect_closes_pool_even_when_saq_disconnect_is_a_noop() -
 
 
 @pytest.mark.asyncio
+async def test_failed_connect_preserves_terminal_cleanup_peers_and_attempts_pool_close() -> None:
+    queue = _TerminalCleanupQueue()
+    guarded = CancellationSafePostgresRunQueue(queue)
+
+    with pytest.raises(BaseExceptionGroup) as raised:
+        await guarded.connect()
+
+    assert [type(error) for error in raised.value.exceptions] == [
+        RuntimeError,
+        KeyboardInterrupt,
+        SystemExit,
+    ]
+    assert queue.disconnect_calls == 1
+    assert queue.pool.close_calls == 1
+
+
+@pytest.mark.asyncio
 async def test_abort_is_atomic_noop_for_terminal_job() -> None:
     queue = _PostgresQueueDouble(Status.COMPLETE)
     guarded = CancellationSafePostgresRunQueue(queue)
@@ -145,7 +178,7 @@ async def test_abort_finishes_queued_job_without_worker_ack() -> None:
 
 
 @pytest.mark.asyncio
-async def test_abort_waits_for_active_worker_ack() -> None:
+async def test_abort_guards_and_updates_inside_one_explicit_transaction() -> None:
     queue = _PostgresQueueDouble(Status.ACTIVE)
     guarded = CancellationSafePostgresRunQueue(queue)
     job = _Job(status=Status.ACTIVE, refresh_to=Status.ABORTED)
@@ -154,15 +187,6 @@ async def test_abort_waits_for_active_worker_ack() -> None:
 
     assert queue.updated == [Status.ABORTING]
     assert job.status is Status.ABORTED
-
-
-@pytest.mark.asyncio
-async def test_abort_guards_and_updates_inside_one_explicit_transaction() -> None:
-    queue = _PostgresQueueDouble(Status.ACTIVE)
-    guarded = CancellationSafePostgresRunQueue(queue)
-
-    await guarded.abort(_Job(), "cancel")
-
     assert queue.pool.acquired.transaction_entries == 1
     assert queue.transaction_observations == [
         ("get_job_status", True),

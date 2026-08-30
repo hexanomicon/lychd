@@ -2,7 +2,7 @@
 
 The module-level side effect below forbids every real model request across the
 whole suite: no test may call out to a soulstone. All agent behaviour is driven
-by `TestModel`/`FunctionModel` (Part 2.1 / 5.A, adopted verbatim from adw-kit).
+by `TestModel`/`FunctionModel` under this process-wide request guard.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def make_services(
     orchestrator: FakeOrchestrator,
     toolsets: tuple[object, ...] = (),
 ) -> WorkflowServices:
-    """Assemble `WorkflowServices` from fakes + a real forge/context/fragments.
+    """Assemble `WorkflowServices` from fakes + the real agent/context/fragments.
 
     The dispatcher hands back a grant carrying `model` (a TestModel) and
     `toolsets`; `context` and `fragments` are the real collaborators.

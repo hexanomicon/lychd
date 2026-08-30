@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from pydantic import Field
 
 from lychd.config import QuadletConfig
-from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
+from lychd.domain.animation.schemas import SoulstoneConfig
 
 
 class VllmSoulstoneConfig(SoulstoneConfig):
@@ -62,15 +62,5 @@ exec = [
 [quadlet]
 image = "vllm/vllm-openai:nightly"
 """
-    runtime: str = "vllm"
+    runtime: Literal["vllm"] = "vllm"  # pyright: ignore[reportIncompatibleVariableOverride]
     quadlet: QuadletConfig = Field(default_factory=lambda: QuadletConfig(image="vllm/vllm-openai:latest"))
-    model_format: ModelFormat | None = ModelFormat.AWQ
-
-    ipc_host: bool = Field(
-        default=False,
-        description="Deprecated compatibility input; host IPC is never emitted for a pod member.",
-    )
-    network_host: bool = Field(
-        default=False,
-        description="Deprecated compatibility input; host networking is never emitted for a pod member.",
-    )

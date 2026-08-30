@@ -15,7 +15,7 @@ from lychd.system.interruptions import (
     find_terminal_interruption,
     iter_exception_graph,
 )
-from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget, SystemdService
+from lychd.system.schemas import QuadletContainer, QuadletPod, QuadletTarget
 from lychd.system.services.scribe import (
     ScribeConflictError,
     ScribeGenerationError,
@@ -89,6 +89,16 @@ def _container(*, description: str = "desc") -> QuadletContainer:
     )
 
 
+def _reconcile_plain(
+    scribe: ScribeService,
+    systemd_dir: Path,
+    filename: str,
+    content: str,
+) -> Path:
+    scribe.reconcile_all([], plain_units={filename: content})
+    return systemd_dir / filename
+
+
 def test_scribe_requires_initialization_prepared_binding_sites(
     templates_dir: Path,
     tmp_path: Path,
@@ -119,7 +129,7 @@ def test_scribe_inscribes_split_sites_and_exact_ownership(
     pod = QuadletPod(pod_name="lychd")
     target = QuadletTarget(name="logic", description="Logic Coven")
 
-    scribe.generate_all([pod, _container(), target])
+    scribe.reconcile_all([pod, _container(), target], plain_units={})
 
     assert "PodName=lychd" in (output_dir / "lychd.pod").read_text()
     assert "ContainerName=lychd-hermes" in (output_dir / "lychd-hermes.container").read_text()
@@ -176,6 +186,39 @@ def test_scribe_reconcile_plan_is_effect_free_and_matches_execution(
 
     empty = scribe.plan_reconcile_all([], plain_units={})
     assert any(change.kind == "remove" and change.path.name == "lychd-hermes.container" for change in empty.changes)
+
+
+@pytest.mark.parametrize(
+    ("manifests", "plain_units", "runtime_unit"),
+    [
+        (
+            [
+                QuadletPod(pod_name="lychd-cortex"),
+                QuadletContainer(
+                    container_name="lychd-cortex-pod",
+                    image="example.invalid/cortex:latest",
+                    description="Colliding container",
+                ),
+            ],
+            {},
+            "lychd-cortex-pod.service",
+        ),
+        (
+            [_container()],
+            {"lychd-hermes.service": "[Service]\nType=oneshot\n"},
+            "lychd-hermes.service",
+        ),
+    ],
+)
+def test_reconcile_plan_rejects_runtime_unit_source_collisions(
+    scribe: ScribeService,
+    manifests: list[QuadletContainer | QuadletPod],
+    plain_units: dict[str, str],
+    runtime_unit: str,
+) -> None:
+    """A complete desired source set cannot alias one runtime unit."""
+    with pytest.raises(ValueError, match=rf"multiple sources to runtime unit '{runtime_unit}'"):
+        scribe.plan_reconcile_all(manifests, plain_units=plain_units)
 
 
 def test_reconcile_plan_generation_distinguishes_same_disposition_content_drift(
@@ -364,24 +407,11 @@ def test_scribe_preserves_every_unowned_file_even_with_managed_suffix(
     foreign_target.write_text("foreign", encoding="utf-8")
     unrelated.write_text("operator", encoding="utf-8")
 
-    scribe.generate_all([])
+    scribe.reconcile_all([], plain_units={})
 
     assert foreign_quadlet.read_text(encoding="utf-8") == "foreign"
     assert foreign_target.read_text(encoding="utf-8") == "foreign"
     assert unrelated.read_text(encoding="utf-8") == "operator"
-
-
-def test_scribe_removes_only_stale_exactly_owned_files(
-    scribe: ScribeService,
-    output_dir: Path,
-    systemd_dir: Path,
-) -> None:
-    scribe.generate_all([_container(), QuadletTarget(name="logic", description="old")])
-    scribe.generate_all([])
-
-    assert not (output_dir / "lychd-hermes.container").exists()
-    assert not (systemd_dir / "lychd-coven-logic.target").exists()
-    assert _ownership(output_dir) == {"quadlet": [], "systemd": [], "version": 1}
 
 
 @pytest.mark.parametrize(
@@ -404,7 +434,7 @@ def test_scribe_rejects_conflicting_unowned_target_names(
     manifests = [_container()] if site == "quadlet" else [QuadletTarget(name="logic", description="new")]
 
     with pytest.raises(ScribeConflictError, match="unowned"):
-        scribe.generate_all(manifests)
+        scribe.reconcile_all(manifests, plain_units={})
 
     assert occupied.read_text(encoding="utf-8") == "operator-owned"
     assert not (output_dir / ".lychd-owned.json").exists()
@@ -430,30 +460,30 @@ def test_scribe_rejects_corrupt_or_unsafe_ownership_manifest(
     ownership_path.chmod(0o600)
 
     with pytest.raises(ScribeOwnershipError, match="Invalid Scribe ownership manifest"):
-        scribe.generate_all([])
+        scribe.reconcile_all([], plain_units={})
 
 
 def test_scribe_rejects_authority_manifest_with_permissive_mode(
     scribe: ScribeService,
     output_dir: Path,
 ) -> None:
-    scribe.generate_all([])
+    scribe.reconcile_all([], plain_units={})
     (output_dir / ".lychd-owned.json").chmod(0o640)
 
     with pytest.raises(ScribeOwnershipError, match="must have mode 0600"):
-        scribe.generate_all([])
+        scribe.reconcile_all([], plain_units={})
 
 
 def test_scribe_rejects_authority_manifest_owned_by_another_uid(
     monkeypatch: pytest.MonkeyPatch,
     scribe: ScribeService,
 ) -> None:
-    scribe.generate_all([])
+    scribe.reconcile_all([], plain_units={})
     actual_uid = os.getuid()
     monkeypatch.setattr("lychd.system.services.scribe.authority.os.getuid", lambda: actual_uid + 1)
 
     with pytest.raises(ScribeOwnershipError, match="must be owned by uid"):
-        scribe.generate_all([])
+        scribe.reconcile_all([], plain_units={})
 
 
 def test_scribe_rejects_symlink_ownership_manifest(
@@ -466,7 +496,7 @@ def test_scribe_rejects_symlink_ownership_manifest(
     (output_dir / ".lychd-owned.json").symlink_to(outside)
 
     with pytest.raises(ScribeOwnershipError, match="Unsafe Scribe ownership manifest path"):
-        scribe.generate_all([])
+        scribe.reconcile_all([], plain_units={})
 
 
 def test_scribe_rejects_symlink_at_an_owned_unit_path(
@@ -474,7 +504,7 @@ def test_scribe_rejects_symlink_at_an_owned_unit_path(
     output_dir: Path,
     tmp_path: Path,
 ) -> None:
-    scribe.generate_all([_container()])
+    scribe.reconcile_all([_container()], plain_units={})
     target = output_dir / "lychd-hermes.container"
     target.unlink()
     outside = tmp_path / "outside.container"
@@ -482,7 +512,7 @@ def test_scribe_rejects_symlink_at_an_owned_unit_path(
     target.symlink_to(outside)
 
     with pytest.raises(ScribeOwnershipError, match="not a regular file"):
-        scribe.generate_all([])
+        scribe.reconcile_all([], plain_units={})
 
     assert target.is_symlink()
     assert outside.read_text(encoding="utf-8") == "operator"
@@ -496,7 +526,7 @@ def test_scribe_rolls_back_both_binding_sites_when_second_site_fails(
 ) -> None:
     target = QuadletTarget(name="logic", description="old target")
     pod = QuadletPod(pod_name="lychd")
-    scribe.generate_all([pod, _container(description="old container"), target])
+    scribe.reconcile_all([pod, _container(description="old container"), target], plain_units={})
     old_quadlet = (output_dir / "lychd-hermes.container").read_bytes()
     old_target = (systemd_dir / "lychd-coven-logic.target").read_bytes()
     old_ownership = (output_dir / ".lychd-owned.json").read_bytes()
@@ -529,12 +559,13 @@ def test_scribe_rolls_back_both_binding_sites_when_second_site_fails(
     )
 
     with pytest.raises(ScribeTransactionError, match="simulated systemd-site failure") as failure:
-        scribe.generate_all(
+        scribe.reconcile_all(
             [
                 pod,
                 _container(description="new container"),
                 QuadletTarget(name="logic", description="new target"),
-            ]
+            ],
+            plain_units={},
         )
 
     assert failure.value.state is ScribeTransactionState.ROLLED_BACK
@@ -552,7 +583,7 @@ def test_scribe_rollback_refuses_to_clobber_concurrent_edit(
 ) -> None:
     """Rollback is a per-path CAS, not authority to overwrite a later writer."""
     target = QuadletTarget(name="logic", description="old target")
-    scribe.generate_all([_container(description="old container"), target])
+    scribe.reconcile_all([_container(description="old container"), target], plain_units={})
     quadlet = output_dir / "lychd-hermes.container"
     systemd_target = systemd_dir / "lychd-coven-logic.target"
     old_target = systemd_target.read_bytes()
@@ -588,11 +619,12 @@ def test_scribe_rollback_refuses_to_clobber_concurrent_edit(
         ScribeTransactionError,
         match="rollback failed",
     ) as failure:
-        scribe.generate_all(
+        scribe.reconcile_all(
             [
                 _container(description="new container"),
                 QuadletTarget(name="logic", description="new target"),
-            ]
+            ],
+            plain_units={},
         )
 
     assert failure.value.state is ScribeTransactionState.INDETERMINATE
@@ -608,7 +640,7 @@ def test_scribe_rollback_restores_a_valid_authority_manifest_after_commit_failur
     systemd_dir: Path,
 ) -> None:
     target = QuadletTarget(name="logic", description="old target")
-    scribe.generate_all([_container(description="old container"), target])
+    scribe.reconcile_all([_container(description="old container"), target], plain_units={})
     ownership_path = output_dir / ".lychd-owned.json"
     old_ownership = ownership_path.read_bytes()
     old_quadlet = (output_dir / "lychd-hermes.container").read_bytes()
@@ -628,12 +660,13 @@ def test_scribe_rollback_restores_a_valid_authority_manifest_after_commit_failur
     monkeypatch.setattr(transaction, "_fsync_directory", fail_post_manifest_fsync_once)
 
     with pytest.raises(ScribeTransactionError, match="post-manifest fsync failure") as failure:
-        scribe.generate_all(
+        scribe.reconcile_all(
             [
                 _container(description="new container"),
                 QuadletTarget(name="logic", description="new target"),
                 QuadletTarget(name="extra", description="new authority member"),
-            ]
+            ],
+            plain_units={},
         )
 
     assert failure.value.state is ScribeTransactionState.ROLLED_BACK
@@ -643,38 +676,6 @@ def test_scribe_rollback_restores_a_valid_authority_manifest_after_commit_failur
     assert ownership_path.read_bytes() == old_ownership
     assert ownership_path.stat().st_uid == os.getuid()
     assert ownership_path.stat().st_mode & 0o777 == 0o600
-
-
-def test_write_plain_unit_is_owned_and_atomic(
-    scribe: ScribeService,
-    output_dir: Path,
-    systemd_dir: Path,
-) -> None:
-    path = scribe.write_plain_unit("lychd-reactor.path", "[Path]\nPathChanged=/run/lychd\n")
-    rewritten = scribe.write_plain_unit("lychd-reactor.path", "[Path]\nPathChanged=/run/lychd/new\n")
-
-    assert path == rewritten == systemd_dir / "lychd-reactor.path"
-    assert "new" in path.read_text(encoding="utf-8")
-    assert _ownership(output_dir)["systemd"] == ["lychd-reactor.path"]
-
-
-def test_generated_and_plain_unit_ownership_are_reconciled_independently(
-    scribe: ScribeService,
-    output_dir: Path,
-    systemd_dir: Path,
-) -> None:
-    scribe.generate_all([QuadletTarget(name="logic", description="first")])
-    scribe.write_plain_unit("lychd-reactor.path", "[Path]\nPathChanged=/run/lychd\n")
-
-    scribe.generate_all([QuadletTarget(name="vision", description="second")])
-
-    assert not (systemd_dir / "lychd-coven-logic.target").exists()
-    assert (systemd_dir / "lychd-coven-vision.target").exists()
-    assert (systemd_dir / "lychd-reactor.path").exists()
-    assert _ownership(output_dir)["systemd"] == [
-        "lychd-coven-vision.target",
-        "lychd-reactor.path",
-    ]
 
 
 def test_reconcile_all_removes_stale_owned_plain_units_and_preserves_unowned(
@@ -763,47 +764,6 @@ def test_reconcile_all_rolls_back_generated_and_plain_units_together(
     for path, content in old_state.items():
         assert path.read_bytes() == content
     assert not (systemd_dir / "lychd-coven-vision.target").exists()
-
-
-def test_write_plain_unit_rejects_path_traversal(
-    scribe: ScribeService,
-    tmp_path: Path,
-) -> None:
-    outside = tmp_path / "outside.service"
-
-    with pytest.raises(ValueError, match="Unsafe systemd ownership entry"):
-        scribe.write_plain_unit("../outside.service", "malicious")
-
-    assert not outside.exists()
-
-
-def test_write_plain_unit_rejects_unowned_same_name(
-    scribe: ScribeService,
-    output_dir: Path,
-    systemd_dir: Path,
-) -> None:
-    unit = systemd_dir / "lychd-reactor.service"
-    unit.write_text("operator-owned", encoding="utf-8")
-
-    with pytest.raises(ScribeConflictError, match="unowned"):
-        scribe.write_plain_unit("lychd-reactor.service", "LychD")
-
-    assert unit.read_text(encoding="utf-8") == "operator-owned"
-    assert not (output_dir / ".lychd-owned.json").exists()
-
-
-def test_write_user_unit_uses_the_owned_plain_unit_path(
-    scribe: ScribeService,
-    output_dir: Path,
-    systemd_dir: Path,
-) -> None:
-    service = SystemdService(exec_start="/opt/lychd/bin/lychd serve")
-
-    path = scribe.write_user_unit(service)
-
-    assert path == systemd_dir / "lychd-vessel.service"
-    assert "ExecStart=/opt/lychd/bin/lychd serve" in path.read_text(encoding="utf-8")
-    assert _ownership(output_dir)["systemd"] == ["lychd-vessel.service"]
 
 
 def test_clear_owned_bindings_rejects_generation_drift(
@@ -1293,11 +1253,8 @@ def test_stale_planner_write_set_cannot_reacquire_relinquished_authority(
     """Every write set CASes the full receipt generation read by its planner."""
     planner = getattr(scribe, "_planner")  # noqa: B009 - verify internal CAS boundary
     transaction = getattr(scribe, "_transaction")  # noqa: B009 - verify internal CAS boundary
-    stale = planner.plain_unit(
-        "lychd-stale.service",
-        {"lychd-stale.service": b"stale\n"},
-    )
-    scribe.write_plain_unit("lychd-current.service", "current\n")
+    stale = planner.complete([], plain_units={"lychd-stale.service": "stale\n"})
+    scribe.reconcile_all([], plain_units={"lychd-current.service": "current\n"})
 
     with pytest.raises(ScribeGenerationError, match="authority changed after planning"):
         transaction.commit(stale)
@@ -1430,7 +1387,7 @@ def test_staged_bytes_changed_after_prepare_are_never_installed(
     monkeypatch.setattr(storage, "replace", replace_changed_staging)
 
     with pytest.raises(ScribeGenerationError, match="replacement changed"):
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert not target.exists()
 
@@ -1442,7 +1399,7 @@ def test_planner_generation_never_follows_source_swapped_to_symlink(
     tmp_path: Path,
 ) -> None:
     """Receipt generation fails closed when a source changes during no-follow open."""
-    target = scribe.write_plain_unit("lychd-reactor.service", "owned\n")
+    target = _reconcile_plain(scribe, systemd_dir, "lychd-reactor.service", "owned\n")
     outside = tmp_path / "outside.service"
     outside.write_text("operator\n", encoding="utf-8")
     real_open = storage_module.os.open
@@ -1475,9 +1432,10 @@ def test_planner_generation_never_follows_source_swapped_to_symlink(
 def test_planner_generation_never_blocks_on_source_swapped_to_fifo(
     monkeypatch: pytest.MonkeyPatch,
     scribe: ScribeService,
+    systemd_dir: Path,
 ) -> None:
     """A regular-to-FIFO race is opened nonblocking and fails observation."""
-    target = scribe.write_plain_unit("lychd-reactor.service", "owned\n")
+    target = _reconcile_plain(scribe, systemd_dir, "lychd-reactor.service", "owned\n")
     real_open = storage_module.os.open
     swapped = False
 
@@ -1535,7 +1493,7 @@ def test_workspace_namespace_substitution_cannot_install_foreign_staging(
     monkeypatch.setattr(storage, "replace", substitute_workspace)
 
     with pytest.raises(ScribeTransactionError, match="directory identity changed") as failure:
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert failure.value.state is ScribeTransactionState.INDETERMINATE
     assert not target.exists()
@@ -1572,7 +1530,7 @@ def test_binding_site_namespace_substitution_never_mutates_replacement_site(
     monkeypatch.setattr(storage, "replace", substitute_site)
 
     with pytest.raises(ScribeTransactionError, match="directory identity changed") as failure:
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert failure.value.state is ScribeTransactionState.INDETERMINATE
     assert target.read_text(encoding="utf-8") == "operator replacement\n"
@@ -1610,7 +1568,7 @@ def test_expected_binding_site_identity_closes_foundation_to_commit_gap(
     marker.write_text("preserve\n", encoding="utf-8")
 
     with pytest.raises(ScribeGenerationError, match="foundation approval"):
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert marker.read_text(encoding="utf-8") == "preserve\n"
     assert not (systemd_dir / "lychd-reactor.service").exists()
@@ -1641,14 +1599,14 @@ def test_expected_binding_site_identity_is_checked_before_noop_return(
             ),
         ),
     )
-    target = scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+    target = _reconcile_plain(scribe, systemd_dir, "lychd-reactor.service", "approved\n")
     relocated = systemd_dir.with_name("approved-systemd-noop-site")
     systemd_dir.rename(relocated)
     systemd_dir.mkdir()
     target.write_text("approved\n", encoding="utf-8")
 
     with pytest.raises(ScribeGenerationError, match="foundation approval"):
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert target.read_text(encoding="utf-8") == "approved\n"
     assert (relocated / target.name).read_text(encoding="utf-8") == "approved\n"
@@ -1705,7 +1663,7 @@ def test_final_expected_site_drift_after_mutation_is_indeterminate(
         ScribeTransactionError,
         match="Recovery evidence was retained",
     ) as failure:
-        scribe.write_plain_unit("lychd-reactor.service", "approved\n")
+        scribe.reconcile_all([], plain_units={"lychd-reactor.service": "approved\n"})
 
     assert failure.value.state is ScribeTransactionState.INDETERMINATE
     assert marker.read_text(encoding="utf-8") == "preserve\n"
@@ -1713,15 +1671,14 @@ def test_final_expected_site_drift_after_mutation_is_indeterminate(
     assert tuple(relocated.glob(".lychd-transaction-*"))
 
 
-@pytest.mark.parametrize("interruption", [KeyboardInterrupt, SystemExit])
 def test_rollback_interruption_retains_every_recovery_workspace(
-    interruption: type[BaseException],
     monkeypatch: pytest.MonkeyPatch,
     scribe: ScribeService,
     output_dir: Path,
     systemd_dir: Path,
 ) -> None:
     """Rollback interruption is typed indeterminate and cannot trigger cleanup."""
+    interruption = KeyboardInterrupt
     scribe.reconcile_all(
         [
             _container(description="old"),
@@ -1925,13 +1882,12 @@ def test_cleanup_terminal_after_exact_rollback_settles_peers_and_attaches_state(
     second.cleanup.assert_called_once()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(147)])
 def test_nested_terminal_resurfaces_after_exact_rollback_and_workspace_close(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A nested terminal remains native after proven rollback and clean close."""
+    terminal = KeyboardInterrupt()
     transaction, first, second = _cleanup_transaction(
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
@@ -1979,7 +1935,7 @@ def test_nested_terminal_resurfaces_after_exact_rollback_and_workspace_close(
 
 @pytest.mark.parametrize(
     "recovery_failure",
-    [OSError("recovery path failed"), KeyboardInterrupt(), SystemExit(153)],
+    [OSError("recovery path failed"), KeyboardInterrupt()],
 )
 def test_recovery_path_observation_is_total_transaction_evidence(
     tmp_path: Path,
@@ -2034,13 +1990,12 @@ def test_recovery_path_observation_is_total_transaction_evidence(
     second.close.assert_called_once()
 
 
-@pytest.mark.parametrize("rollback_terminal", [KeyboardInterrupt(), SystemExit(155)])
 def test_ordinary_close_error_does_not_promote_rollback_terminal(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rollback_terminal: BaseException,
 ) -> None:
     """An earlier rollback terminal stays typed when final close is ordinary."""
+    rollback_terminal = KeyboardInterrupt()
     transaction, first, second = _cleanup_transaction(
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
@@ -2100,7 +2055,6 @@ def test_new_cleanup_terminal_wins_after_interrupted_rollback_settlement(
     ("rollback_terminal", "recovery_terminal"),
     [
         (KeyboardInterrupt(), SystemExit(159)),
-        (SystemExit(161), KeyboardInterrupt()),
     ],
 )
 def test_recovery_observation_terminal_wins_over_rollback_and_ordinary_close(

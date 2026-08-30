@@ -189,10 +189,6 @@ class TransactionWorkspace(
             return self.path
 
 
-# Stable exception provenance for callers importing the historical facade.
-WorkspaceParentIdentityError.__module__ = __name__
-WorkspaceSettlementError.__module__ = __name__
-
 __all__ = (
     "TransactionWorkspace",
     "WorkspaceParentIdentityError",

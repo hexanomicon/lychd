@@ -343,8 +343,7 @@ class DelegatedAgentCoordinator:
         explicitly effect-free seam. Ordinary adapters are polled directly;
         their submission is never replayed during recovery.
         """
-        async with self._locked(f"job:{job_id}"):
-            job = await self._require(job_id)
+        async with self._locked_job(job_id) as job:
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES:
                 return job
             runtime = self._runtime(job.ref.runtime)
@@ -372,8 +371,7 @@ class DelegatedAgentCoordinator:
 
     async def adopt(self, job_id: str, result: DelegatedAgentResult) -> bool:
         """Adopt one externally delivered terminal result exactly once."""
-        async with self._locked(f"job:{job_id}"):
-            job = await self._require(job_id)
+        async with self._locked_job(job_id) as job:
             runtime = self._runtimes.get(job.ref.runtime)
             if not isinstance(runtime, _EffectFreeRuntimeRetirement):
                 _job, adopted = await self._store.adopt(job_id, result)
@@ -394,8 +392,7 @@ class DelegatedAgentCoordinator:
 
     async def cancel(self, job_id: str) -> bool:
         """Contain a live job, then durably settle it before propagating cancellation."""
-        async with self._locked(f"job:{job_id}"):
-            job = await self._require(job_id)
+        async with self._locked_job(job_id) as job:
             if job.status in TERMINAL_DELEGATED_AGENT_STATUSES and job.status is not DelegatedAgentJobStatus.LOST:
                 return False
             runtime = self._runtime(job.ref.runtime)
@@ -425,6 +422,18 @@ class DelegatedAgentCoordinator:
             msg = f"Unknown delegated-agent job: {job_id}"
             raise UnknownDelegatedAgentJobError(msg)
         return job
+
+    @asynccontextmanager
+    async def _locked_job(self, job_id: str) -> AsyncIterator[DelegatedAgentJob]:
+        """Serialize a job operation with submission under its request identity.
+
+        A submitted row becomes visible before the runtime has acknowledged start.
+        Resolve that row once to find its stable request identity, acquire the same
+        lock as ``submit()``, then re-read authoritative job truth inside the lock.
+        """
+        observed = await self._require(job_id)
+        async with self._locked(f"request:{observed.request.request_id}"):
+            yield await self._require(job_id)
 
     def _runtime(self, name: str) -> DelegatedAgentRuntime:
         try:

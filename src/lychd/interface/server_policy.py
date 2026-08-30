@@ -24,6 +24,11 @@ _RELOAD_ENVIRONMENT_KEYS = (
 )
 _RELOAD_FLAG_ENVIRONMENT_KEYS = ("LITESTAR_RELOAD", "GRANIAN_RELOAD")
 _LISTENER_PORT_ENVIRONMENT_KEYS = ("LITESTAR_PORT", "GRANIAN_PORT")
+_LISTENER_HOST_ENVIRONMENT_KEYS = ("LITESTAR_HOST", "GRANIAN_HOST")
+_ALTERNATE_LISTENER_ENVIRONMENT_KEYS = (
+    "LITESTAR_FILE_DESCRIPTOR",
+    "LITESTAR_UNIX_DOMAIN_SOCKET",
+)
 _DISABLED_ENVIRONMENT_VALUES = {"", "0", "false", "no", "off"}
 _SERVER_CLI_NAMES = frozenset({"granian", "litestar"})
 _WORKER_OPTIONS = frozenset({"--workers", "-W", "--wc", "--web-concurrency"})
@@ -47,6 +52,26 @@ _LONG_RELOAD_VALUE_OPTIONS = (
 )
 _SHORT_RELOAD_VALUE_OPTIONS = ("-R", "-I", "-E")
 _PORT_OPTIONS = frozenset({"-p", "--port"})
+_HOST_OPTIONS = frozenset({"-H", "--host"})
+_ALTERNATE_LISTENER_OPTIONS = frozenset(
+    {
+        "-F",
+        "--fd",
+        "--file-descriptor",
+        "-U",
+        "--uds",
+        "--unix-domain-socket",
+    }
+)
+_LONG_ALTERNATE_LISTENER_OPTIONS = (
+    "--fd",
+    "--file-descriptor",
+    "--uds",
+    "--unix-domain-socket",
+)
+_SHORT_ALTERNATE_LISTENER_OPTIONS = ("-F", "-U")
+_LOOPBACK_LISTENER_HOSTS = frozenset({"127.0.0.1", "::1"})
+_DEFAULT_NATIVE_LISTENER_HOST = "127.0.0.1"
 _MAX_TCP_PORT = 65535
 
 
@@ -59,6 +84,7 @@ class ServerRuntimePolicy:
     """Validated server facts needed by application assembly."""
 
     listener_port: int | None
+    listener_host: str | None
 
 
 def evaluate_server_runtime_policy(
@@ -82,13 +108,18 @@ def evaluate_server_runtime_policy(
         if server_arguments is not None
         else _detected_server_arguments(argv=argv, original_argv=original_argv)
     )
+    native_serve = server_arguments is not None
     _validate_environment(environment)
-    listener_port = _validate_arguments(arguments)
+    listener_port, listener_host = _validate_arguments(arguments, require_loopback=native_serve)
     if listener_port is None:
         listener_port = _environment_port(environment)
     if listener_port is None and default_listener_port is not None:
         listener_port = _parse_port(str(default_listener_port), source="settings.server.port")
-    return ServerRuntimePolicy(listener_port=listener_port)
+    if native_serve:
+        _validate_native_listener_environment(environment)
+        environment_host = _native_environment_host(environment)
+        listener_host = listener_host or environment_host or _DEFAULT_NATIVE_LISTENER_HOST
+    return ServerRuntimePolicy(listener_port=listener_port, listener_host=listener_host)
 
 
 def _detected_server_arguments(
@@ -128,9 +159,17 @@ def _validate_environment(environment: Mapping[str, str]) -> None:
             raise ServerRuntimePolicyError(message)
 
 
-def _validate_arguments(arguments: Sequence[str]) -> int | None:
+def _validate_arguments(
+    arguments: Sequence[str],
+    *,
+    require_loopback: bool,
+) -> tuple[int | None, str | None]:
     listener_port: int | None = None
+    listener_host: str | None = None
     for index, argument in enumerate(arguments):
+        if require_loopback and _is_alternate_listener_argument(argument):
+            message = f"LychD native serve does not support {argument}; use its loopback TCP listener."
+            raise ServerRuntimePolicyError(message)
         worker_value = _worker_value(arguments, index)
         if worker_value is not None and not _is_one_worker(worker_value):
             message = "LychD v1 requires exactly one ASGI worker; cross-process RunEventBus is not implemented."
@@ -140,7 +179,9 @@ def _validate_arguments(arguments: Sequence[str]) -> int | None:
             raise ServerRuntimePolicyError(message)
         if (port_value := _port_value(arguments, index)) is not None:
             listener_port = _parse_port(port_value, source=argument)
-    return listener_port
+        if require_loopback and (host_value := _host_value(arguments, index)) is not None:
+            listener_host = _parse_native_host(host_value, source=argument)
+    return listener_port, listener_host
 
 
 def _worker_value(arguments: Sequence[str], index: int) -> str | None:
@@ -173,12 +214,58 @@ def _port_value(arguments: Sequence[str], index: int) -> str | None:
     return None
 
 
+def _host_value(arguments: Sequence[str], index: int) -> str | None:
+    argument = arguments[index]
+    if argument in _HOST_OPTIONS and index + 1 < len(arguments):
+        return arguments[index + 1]
+    if argument.startswith("--host="):
+        return argument.partition("=")[2]
+    if argument.startswith("-H") and argument != "-H":
+        return argument[2:].removeprefix("=")
+    return None
+
+
+def _is_alternate_listener_argument(argument: str) -> bool:
+    return (
+        argument in _ALTERNATE_LISTENER_OPTIONS
+        or any(argument.startswith(f"{option}=") for option in _LONG_ALTERNATE_LISTENER_OPTIONS)
+        or any(
+            argument.startswith(option) and len(argument) > len(option) for option in _SHORT_ALTERNATE_LISTENER_OPTIONS
+        )
+    )
+
+
 def _environment_port(environment: Mapping[str, str]) -> int | None:
     for variable in _LISTENER_PORT_ENVIRONMENT_KEYS:
         value = environment.get(variable)
         if value is not None and value != "":
             return _parse_port(value, source=variable)
     return None
+
+
+def _native_environment_host(environment: Mapping[str, str]) -> str | None:
+    listener_host: str | None = None
+    for variable in _LISTENER_HOST_ENVIRONMENT_KEYS:
+        value = environment.get(variable)
+        if value is not None and value != "":
+            validated = _parse_native_host(value, source=variable)
+            if listener_host is None:
+                listener_host = validated
+    return listener_host
+
+
+def _validate_native_listener_environment(environment: Mapping[str, str]) -> None:
+    for variable in _ALTERNATE_LISTENER_ENVIRONMENT_KEYS:
+        if environment.get(variable) not in {None, ""}:
+            message = f"LychD native serve does not support {variable}; use its loopback TCP listener."
+            raise ServerRuntimePolicyError(message)
+
+
+def _parse_native_host(value: str, *, source: str) -> str:
+    if value not in _LOOPBACK_LISTENER_HOSTS:
+        message = f"LychD native serve requires {source} to be 127.0.0.1 or ::1."
+        raise ServerRuntimePolicyError(message)
+    return value
 
 
 def _parse_port(value: str, *, source: str) -> int:

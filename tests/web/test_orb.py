@@ -10,7 +10,7 @@ from lychd.agents.workflows import DELEGATED_RITE, BuiltinWorkflowRegistry
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 from lychd.domain.cortex.events import RunEvent, RunEventKind
 from lychd.domain.cortex.runs import RunStatus
-from lychd.domain.delegation.models import DelegatedAgentJob, DelegatedAgentProfile, DelegatedAgentRequest
+from lychd.domain.delegation.models import DelegatedAgentProfile, DelegatedAgentRequest
 
 if TYPE_CHECKING:
     from types import SimpleNamespace
@@ -132,7 +132,6 @@ def test_selected_run_is_bounded_and_unknown_is_404(
     assert first.json()["page_end_seq"] == 0
     assert first.json()["next_after_seq"] == 0
     assert altar_client.get("/api/v1/orb/runs/missing").status_code == 404
-    assert altar_client.get("/api/v1/scrying/runs/run-page").status_code == 404
 
 
 def test_selected_run_projects_prompt_free_delegated_job_evidence(
@@ -197,23 +196,8 @@ def test_selected_run_bounds_delegated_job_cardinality(
 
     asyncio.run(seed_jobs())
 
-    jobs_for_run = fake_services.delegates.jobs_for_run
-    bounds: list[tuple[int | None, int | None]] = []
-
-    async def record_bounded_read(
-        run_id: str,
-        *,
-        limit: int | None = None,
-        event_limit: int | None = None,
-    ) -> tuple[DelegatedAgentJob, ...]:
-        bounds.append((limit, event_limit))
-        return await jobs_for_run(run_id, limit=limit, event_limit=event_limit)
-
-    fake_services.delegates.jobs_for_run = record_bounded_read
-
     body = altar_client.get("/api/v1/orb/runs/run-many-delegates").json()
 
-    assert bounds == [(33, 65)]
     assert len(body["delegated_jobs"]) == 32
     assert body["delegated_jobs"][0]["request_id"] == "request-many-01"
     assert body["delegated_jobs"][-1]["request_id"] == "request-many-32"

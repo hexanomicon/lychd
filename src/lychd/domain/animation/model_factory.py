@@ -1,8 +1,4 @@
-"""The ONE OpenAI-compatible model constructor.
-
-Both the agents-layer reference (`agents.factory.build_local_model`) and the production
-hydration path (`OpenAICompatibleConnector.get_model` via `AnimatorBinder`) build their
-pydantic-ai `Model` here.
+"""The OpenAI-compatible model constructor used by runtime hydration.
 
 Local generic runtimes explicitly select `LOCAL_COMPAT_PROFILE`: its inlined `$defs`
 and non-strict tools fit llama.cpp/vLLM/SGLang-style endpoints. Provider portals route

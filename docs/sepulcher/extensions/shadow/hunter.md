@@ -11,9 +11,9 @@ An attractive candidate promises a clean result, yet one claimed predicate rests
 unsupported assumption. **Hunter** holds that candidate still, points to the exact gap, and names
 the observation that could settle it.
 
-Hunter is **Designed**. The built-in `simulation` Rune is its only present substrate; no Hunter
-path runs. [State of Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while
-[ADR 31](../../../adr/31-simulation.md) owns the design.
+Hunter is **Designed**. No simulation Rune or schema ships, and no Hunter path runs. [State of
+Work](../../../state-of-the-work.md#shadow-simulation) records delivery, while [ADR
+31](../../../adr/31-simulation.md) owns the design.
 
 ## Hold one candidate still
 

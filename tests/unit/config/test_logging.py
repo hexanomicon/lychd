@@ -15,30 +15,6 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-def test_build_log_config_creates_valid_structlog_config() -> None:
-    """Verifies build_log_config returns a valid Litestar structlog config with expected setup."""
-    config = build_log_config(render_as_json=True)
-
-    assert config.structlog_logging_config is not None
-    assert config.structlog_logging_config.standard_lib_logging_config is not None
-
-    stdlib_config = config.structlog_logging_config.standard_lib_logging_config
-
-    # Verify our specific loggers are configured and have expected properties
-    assert "granian.access" in stdlib_config.loggers
-    assert stdlib_config.loggers["granian.access"]["propagate"] is False
-    assert "_granian" in stdlib_config.loggers
-
-    assert "sqlalchemy.engine" in stdlib_config.loggers
-    assert "sqlalchemy.pool" in stdlib_config.loggers
-    assert "pydantic_ai" in stdlib_config.loggers
-
-    # Verify the root logger uses console handler
-    assert stdlib_config.root["handlers"] == ["console"]
-    assert stdlib_config.loggers["litestar"]["handlers"] == ["console"]
-    assert "queue_listener" not in stdlib_config.handlers
-
-
 def test_repeated_logging_bootstrap_does_not_leak_queue_listener_threads() -> None:
     """Repeated process-local configuration does not retain unused listeners."""
     before = {thread.ident for thread in threading.enumerate() if thread.name.endswith(" (_monitor)")}

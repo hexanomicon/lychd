@@ -17,8 +17,7 @@ from litestar.response import ServerSentEvent, ServerSentEventMessage
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 from lychd.agents.router import Intent
-from lychd.agents.workflows import WorkflowRegistry
-from lychd.agents.workflows.base import pattern_snapshot_is_valid
+from lychd.agents.workflows import WorkflowRegistry, resolve_pinned_workflow
 from lychd.domain.codex.guards import requires_scopes
 from lychd.domain.codex.ledger import ConsentLedger
 from lychd.domain.cortex.engine import RunEngine
@@ -332,12 +331,13 @@ class BridgeController(Controller):
         manifest = run.pattern_manifest
         pattern_id = str(manifest.get("key") or run.workflow_name)
         revision = str(manifest.get("revision") or "legacy-unversioned")
-        registered = workflows.get_revision(pattern_id, revision)
         loom_available = (
-            pattern_snapshot_is_valid(manifest)
-            and manifest.get("key") == run.workflow_name
-            and registered is not None
-            and manifest == registered.manifest.snapshot()
+            resolve_pinned_workflow(
+                workflows,
+                workflow_name=run.workflow_name,
+                snapshot=manifest,
+            )
+            is not None
         )
         loom_path = f"/loom/{pattern_id}/{revision}" if loom_available else None
         orb_path = f"/orb/{run.run_id}"
@@ -386,59 +386,89 @@ class BridgeController(Controller):
         live = run_bus.snapshot(run.run_id)
         if live is not None:
             fragments = [(await projector.project(fragment)).payload for fragment in live.fragments]
-            return RunProjectionSnapshot(
-                session_id=run.session_id,
-                run_id=run.run_id,
-                cursor=live.cursor,
-                content=live.content,
-                run_status=run.status.value,
-                activity=run.status.value if run.status in TERMINAL_STATUSES else live.activity,
-                pattern_id=pattern_id,
-                pattern_revision=revision,
-                loom_path=loom_path,
-                orb_path=orb_path,
-                evidence_capture=evidence_capture,
-                fragments=fragments,
-                occurrence_id=live.occurrence_id or retained_occurrence_id,
-                dispatch_occurrence_id=live.dispatch_occurrence_id or retained_dispatch_occurrence_id,
-                grant_id=live.grant_id or retained_grant_id,
-                capability_key=live.capability_key or retained_capability_key,
-                transition_occurrence_id=live.transition_occurrence_id or retained_transition_occurrence_id,
-                transition_request_id=live.transition_request_id or retained_transition_request_id,
-                transition_phase=live.transition_phase or retained_transition_phase,
-                delegated_job_id=live.delegated_job_id or retained_delegated_job_id,
-                delegated_runtime=live.delegated_runtime or retained_delegated_runtime,
-                delegated_profile=delegated_profile,
-                delegated_status=delegated_status,
-                terminal=live.terminal or run.status in TERMINAL_STATUSES,
+            cursor, content, activity = (
+                live.cursor,
+                live.content,
+                run.status.value if run.status in TERMINAL_STATUSES else live.activity,
             )
+            (
+                occurrence_id,
+                dispatch_occurrence_id,
+                grant_id,
+                capability_key,
+                transition_occurrence_id,
+                transition_request_id,
+                transition_phase,
+                delegated_job_id,
+                delegated_runtime,
+            ) = (
+                live.occurrence_id or retained_occurrence_id,
+                live.dispatch_occurrence_id or retained_dispatch_occurrence_id,
+                live.grant_id or retained_grant_id,
+                live.capability_key or retained_capability_key,
+                live.transition_occurrence_id or retained_transition_occurrence_id,
+                live.transition_request_id or retained_transition_request_id,
+                live.transition_phase or retained_transition_phase,
+                live.delegated_job_id or retained_delegated_job_id,
+                live.delegated_runtime or retained_delegated_runtime,
+            )
+            terminal = live.terminal or run.status in TERMINAL_STATUSES
+        else:
+            turn = await bridge_sessions.settled_turn_for_run(run.run_id)
+            cursor, content, activity = (
+                (await state.services.ledger.next_seq(run.run_id)) - 1,
+                turn.content if turn is not None else "",
+                run.status.value,
+            )
+            fragments = [dict(fragment) for fragment in turn.fragments] if turn is not None else []
+            (
+                occurrence_id,
+                dispatch_occurrence_id,
+                grant_id,
+                capability_key,
+                transition_occurrence_id,
+                transition_request_id,
+                transition_phase,
+                delegated_job_id,
+                delegated_runtime,
+            ) = (
+                retained_occurrence_id,
+                retained_dispatch_occurrence_id,
+                retained_grant_id,
+                retained_capability_key,
+                retained_transition_occurrence_id,
+                retained_transition_request_id,
+                retained_transition_phase,
+                retained_delegated_job_id,
+                retained_delegated_runtime,
+            )
+            terminal = run.status in TERMINAL_STATUSES
 
-        turn = await bridge_sessions.settled_turn_for_run(run.run_id)
         return RunProjectionSnapshot(
             session_id=run.session_id,
             run_id=run.run_id,
-            cursor=(await state.services.ledger.next_seq(run.run_id)) - 1,
-            content=turn.content if turn is not None else "",
+            cursor=cursor,
+            content=content,
             run_status=run.status.value,
-            activity=run.status.value,
+            activity=activity,
             pattern_id=pattern_id,
             pattern_revision=revision,
             loom_path=loom_path,
             orb_path=orb_path,
             evidence_capture=evidence_capture,
-            fragments=[dict(fragment) for fragment in turn.fragments] if turn is not None else [],
-            occurrence_id=retained_occurrence_id,
-            dispatch_occurrence_id=retained_dispatch_occurrence_id,
-            grant_id=retained_grant_id,
-            capability_key=retained_capability_key,
-            transition_occurrence_id=retained_transition_occurrence_id,
-            transition_request_id=retained_transition_request_id,
-            transition_phase=retained_transition_phase,
-            delegated_job_id=retained_delegated_job_id,
-            delegated_runtime=retained_delegated_runtime,
+            fragments=fragments,
+            occurrence_id=occurrence_id,
+            dispatch_occurrence_id=dispatch_occurrence_id,
+            grant_id=grant_id,
+            capability_key=capability_key,
+            transition_occurrence_id=transition_occurrence_id,
+            transition_request_id=transition_request_id,
+            transition_phase=transition_phase,
+            delegated_job_id=delegated_job_id,
+            delegated_runtime=delegated_runtime,
             delegated_profile=delegated_profile,
             delegated_status=delegated_status,
-            terminal=run.status in TERMINAL_STATUSES,
+            terminal=terminal,
         )
 
     @get(
@@ -542,7 +572,7 @@ class BridgeController(Controller):
             # authority row; retries must repair admission using that settled truth.
             view = await consents.get(consent_id) or view
         if view.status != "pending":
-            await run_engine.approve(consent_id, approved=(view.status == "granted"))
+            await run_engine.resume_consent(consent_id)
         return ConsentDecisionResult(
             consent=projector.consent_card_view(view),
             pending_count=await consents.pending_count(),

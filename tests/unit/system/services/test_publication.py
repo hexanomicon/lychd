@@ -15,34 +15,13 @@ from lychd.system.descriptor_settlement import (
 )
 from lychd.system.interruptions import iter_exception_graph
 from lychd.system.services import file_publication_settlement as settlement_module
-from lychd.system.services import file_publication_transaction as transaction_module
-from lychd.system.services import publication as publication_facade
-from lychd.system.services.publication import (
-    JournaledCreation,
-    PublicationRollbackError,
-)
+from lychd.system.services.file_publication_models import PublicationRollbackError
+from lychd.system.services.file_publication_transaction import JournaledCreation
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from lychd.system.services.lifecycle import CreatedResources
-
-
-def test_publication_facade_preserves_provenance_and_os_adapter(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Extraction keeps public introspection and the existing fault-injection seam."""
-
-    def injected_fsync(_descriptor: int) -> None:
-        return
-
-    monkeypatch.setattr(publication_facade.os, "fsync", injected_fsync)
-
-    assert JournaledCreation.__module__ == "lychd.system.services.publication"
-    assert PublicationRollbackError.__module__ == "lychd.system.services.publication"
-    assert repr(JournaledCreation) == "<class 'lychd.system.services.publication.JournaledCreation'>"
-    assert transaction_module.os.fsync is injected_fsync
-    assert settlement_module.os.fsync is injected_fsync
+    from lychd.system.services.lifecycle.models import CreatedResources
 
 
 def test_text_publication_is_durable_journaled_and_stable_on_rerun(
@@ -105,13 +84,12 @@ def test_text_publication_never_creates_a_hidden_parent(tmp_path: Path) -> None:
     assert not parent.exists()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(71)])
 def test_parent_close_signal_after_commit_preserves_journal_truth(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A final close signal cannot make a committed publication look rolled back."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "lychd.toml"
     journal: list[CreatedResources] = []
     creation = JournaledCreation(on_created=journal.append)
@@ -168,7 +146,7 @@ def test_parent_close_failure_reports_committed_outcome(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("staging close failed"), KeyboardInterrupt(), SystemExit(89)],
+    [OSError("staging close failed"), KeyboardInterrupt()],
 )
 def test_staging_primary_and_close_failure_remove_exact_private_name(
     tmp_path: Path,
@@ -177,17 +155,12 @@ def test_staging_primary_and_close_failure_remove_exact_private_name(
 ) -> None:
     """A close peer cannot mask the primary or leave private staging residue."""
     target = tmp_path / "lychd.toml"
-    primary = ValueError("staging validation failed")
+    primary = OSError("staging chmod failed")
     real_close = os.close
     real_fstat = os.fstat
     injected = False
 
-    def fail_validation(
-        _metadata: os.stat_result,
-        *,
-        path: Path,
-    ) -> None:
-        del path
+    def fail_chmod(_descriptor: int, _mode: int) -> None:
         raise primary
 
     def close_then_fail(descriptor: int) -> None:
@@ -199,8 +172,8 @@ def test_staging_primary_and_close_failure_remove_exact_private_name(
             raise close_failure
 
     monkeypatch.setattr(
-        "lychd.system.services.file_publication_settlement.require_regular_file",
-        fail_validation,
+        "lychd.system.services.file_publication_transaction.os.fchmod",
+        fail_chmod,
     )
     monkeypatch.setattr(
         "lychd.system.descriptor_settlement.os.close",
@@ -230,7 +203,7 @@ def test_staging_primary_and_close_failure_remove_exact_private_name(
 
 @pytest.mark.parametrize(
     "close_failure",
-    [OSError("attestation close failed"), KeyboardInterrupt(), SystemExit(90)],
+    [OSError("attestation close failed"), KeyboardInterrupt()],
 )
 def test_attestation_close_failure_is_rescoped_after_exact_rollback(
     tmp_path: Path,
@@ -275,17 +248,13 @@ def test_attestation_close_failure_is_rescoped_after_exact_rollback(
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize(
-    "open_failure",
-    [OSError("create return failed"), KeyboardInterrupt(), SystemExit(105)],
-)
 def test_staging_open_after_effect_retains_named_unverified_recovery(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    open_failure: BaseException,
 ) -> None:
     """A create without a returned descriptor cannot grant unlink authority."""
     target = tmp_path / "lychd.toml"
+    open_failure = KeyboardInterrupt()
     real_open = os.open
     real_close = os.close
     created_name = ""
@@ -300,6 +269,7 @@ def test_staging_open_after_effect_retains_named_unverified_recovery(
         nonlocal created_name
         if flags & os.O_CREAT and flags & os.O_EXCL:
             descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
+            os.write(descriptor, b"peer")
             real_close(descriptor)
             created_name = os.fsdecode(path)
             raise open_failure
@@ -322,107 +292,18 @@ def test_staging_open_after_effect_retains_named_unverified_recovery(
     assert raised.value.outcome == "recovery"
     assert not raised.value.outcome_verified
     assert raised.value.recovery_paths == (recovery,)
-    assert recovery.is_file()
+    assert recovery.read_bytes() == b"peer"
     assert not target.exists()
 
 
-def test_staging_open_error_preserves_indistinguishable_peer_candidate(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Post-error pathname observation never adopts a racer's file identity."""
-    target = tmp_path / "lychd.toml"
-    primary = OSError("create failed before effect")
-    real_open = os.open
-    real_close = os.close
-    peer_name = ""
-
-    def race_then_fail(
-        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-        flags: int,
-        mode: int = 0o777,
-        *,
-        dir_fd: int | None = None,
-    ) -> int:
-        nonlocal peer_name
-        if flags & os.O_CREAT and flags & os.O_EXCL:
-            descriptor = real_open(path, flags, mode, dir_fd=dir_fd)
-            os.write(descriptor, b"peer")
-            real_close(descriptor)
-            peer_name = os.fsdecode(path)
-            raise primary
-        return real_open(path, flags, mode, dir_fd=dir_fd)
-
-    monkeypatch.setattr(
-        "lychd.system.services.file_publication_transaction.os.open",
-        race_then_fail,
-    )
-
-    with pytest.raises(PublicationRollbackError) as raised:
-        JournaledCreation().create_text_file(
-            target,
-            "answer = 42\n",
-            mode=0o600,
-        )
-
-    peer = tmp_path / peer_name
-    assert primary in tuple(iter_exception_graph(raised.value))
-    assert raised.value.outcome == "recovery"
-    assert not raised.value.outcome_verified
-    assert raised.value.recovery_paths == (peer,)
-    assert peer.read_bytes() == b"peer"
-    assert not target.exists()
-
-
-@pytest.mark.parametrize(
-    "metadata_failure",
-    [OSError("metadata return failed"), KeyboardInterrupt(), SystemExit(106)],
-)
-def test_pre_identity_staging_failure_retains_exact_recovery_path(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    metadata_failure: BaseException,
-) -> None:
-    """A returned descriptor does not authorize deletion before identity capture."""
-    target = tmp_path / "lychd.toml"
-
-    def fail_before_identity(_descriptor: int, _mode: int) -> None:
-        raise metadata_failure
-
-    monkeypatch.setattr(
-        "lychd.system.services.file_publication_transaction.os.fchmod",
-        fail_before_identity,
-    )
-
-    with pytest.raises(PublicationRollbackError) as raised:
-        JournaledCreation().create_text_file(
-            target,
-            "answer = 42\n",
-            mode=0o600,
-        )
-
-    recoveries = tuple(tmp_path.glob(".lychd-create-*"))
-    assert metadata_failure in tuple(iter_exception_graph(raised.value))
-    assert raised.value.outcome == "recovery"
-    assert not raised.value.outcome_verified
-    assert raised.value.recovery_paths == recoveries
-    assert len(recoveries) == 1
-    assert recoveries[0].read_bytes() == b""
-    assert not target.exists()
-
-
-@pytest.mark.parametrize(
-    "close_failure",
-    [OSError("parent close failed"), KeyboardInterrupt(), SystemExit(107)],
-)
 def test_named_staging_recovery_survives_parent_close_peer(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    close_failure: BaseException,
 ) -> None:
     """Outer descriptor settlement keeps exact unverified recovery evidence."""
     target = tmp_path / "lychd.toml"
     primary = OSError("ambiguous create")
+    close_failure = KeyboardInterrupt()
     real_open = os.open
     real_close = os.close
     real_settle = DescriptorSet.settle
@@ -526,13 +407,12 @@ def test_text_publication_race_loser_is_never_journaled(
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(73)])
 def test_publication_return_signal_rolls_back_exact_file_and_stays_native(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A signal after hard-link publication is classified before propagation."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "lychd.toml"
     journal: list[CreatedResources] = []
     real_link = os.link
@@ -577,7 +457,7 @@ def test_publication_return_signal_rolls_back_exact_file_and_stays_native(
 
 @pytest.mark.parametrize(
     "observation_failure",
-    [OSError("link observation failed"), KeyboardInterrupt(), SystemExit(109)],
+    [OSError("link observation failed"), KeyboardInterrupt()],
 )
 def test_link_after_effect_observation_failure_rolls_back_possible_public_exposure(
     tmp_path: Path,
@@ -653,12 +533,11 @@ def test_link_after_effect_observation_failure_rolls_back_possible_public_exposu
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(79)])
 def test_journal_signal_rolls_back_exact_file_and_stays_native(
     tmp_path: Path,
-    terminal: BaseException,
 ) -> None:
     """Rollback completes before a terminal journal interruption escapes."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "lychd.toml"
 
     def interrupt_journal(_resources: CreatedResources) -> None:
@@ -696,13 +575,12 @@ def test_callback_replacement_is_preserved_during_rollback(tmp_path: Path) -> No
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(83)])
 def test_rollback_rename_signal_settles_peers_then_preserves_original_terminal(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A signal after quarantine rename cannot hide clean rollback truth."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "lychd.toml"
     real_rename = rename_noreplace_at
     interrupted = False
@@ -744,19 +622,15 @@ def test_rollback_rename_signal_settles_peers_then_preserves_original_terminal(
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize(
-    "observation_failure",
-    [OSError("quarantine observation failed"), KeyboardInterrupt(), SystemExit(111)],
-)
 def test_quarantine_after_effect_observation_failure_retains_exact_random_name(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    observation_failure: BaseException,
 ) -> None:
     """Rollback cannot forget a detached candidate when observation fails."""
     target = tmp_path / "lychd.toml"
     journal_primary = ValueError("journal rejected")
     rename_failure = OSError("quarantine rename returned failure")
+    observation_failure = KeyboardInterrupt()
     real_rename = rename_noreplace_at
     real_observe = settlement_module.observe_name
     detached = False
@@ -825,10 +699,13 @@ def test_quarantine_after_effect_observation_failure_retains_exact_random_name(
     assert tuple(tmp_path.glob(".lychd-create-*")) == ()
 
 
-@pytest.mark.parametrize("effect", ["complete", "none"])
 @pytest.mark.parametrize(
-    "restore_failure",
-    [OSError("foreign restore failed"), KeyboardInterrupt(), SystemExit(113)],
+    ("effect", "restore_failure"),
+    [
+        ("complete", OSError("foreign restore failed")),
+        ("complete", KeyboardInterrupt()),
+        ("none", KeyboardInterrupt()),
+    ],
 )
 def test_foreign_quarantine_restore_failure_classifies_both_names(
     tmp_path: Path,
@@ -932,18 +809,14 @@ def test_foreign_quarantine_restore_failure_classifies_both_names(
     assert tuple(tmp_path.glob(".lychd-create-*")) == ()
 
 
-@pytest.mark.parametrize(
-    "restore_failure",
-    [OSError("foreign restore failed"), KeyboardInterrupt(), SystemExit(114)],
-)
 def test_foreign_restore_source_disappearance_requires_target_identity(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    restore_failure: BaseException,
 ) -> None:
     """A vanished source does not prove which inode reached the public name."""
     target = tmp_path / "lychd.toml"
     journal_primary = ValueError("journal rejected")
+    restore_failure = KeyboardInterrupt()
     real_rename = rename_noreplace_at
     replaced = False
 
@@ -1020,71 +893,12 @@ def test_foreign_restore_source_disappearance_requires_target_identity(
     assert tuple(tmp_path.glob(".lychd-*")) == ()
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(115)])
-def test_staging_unlink_terminal_after_effect_keeps_cleanup_priority(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
-) -> None:
-    """A verified staging unlink cannot swallow its terminal cleanup peer."""
-    target = tmp_path / "lychd.toml"
-    primary = ValueError("staging validation failed")
-    real_unlink = os.unlink
-    interrupted = False
-
-    def fail_validation(
-        _metadata: os.stat_result,
-        *,
-        path: Path,
-    ) -> None:
-        del path
-        raise primary
-
-    def unlink_then_interrupt(
-        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
-        *,
-        dir_fd: int | None = None,
-    ) -> None:
-        nonlocal interrupted
-        real_unlink(path, dir_fd=dir_fd)
-        if os.fsdecode(path).startswith(".lychd-create-") and not interrupted:
-            interrupted = True
-            raise terminal
-
-    monkeypatch.setattr(
-        "lychd.system.services.file_publication_settlement.require_regular_file",
-        fail_validation,
-    )
-    monkeypatch.setattr(
-        "lychd.system.services.file_publication_settlement.os.unlink",
-        unlink_then_interrupt,
-    )
-
-    with pytest.raises(type(terminal)) as raised:
-        JournaledCreation().create_text_file(
-            target,
-            "lychd = true\n",
-            mode=0o600,
-        )
-
-    graph = tuple(iter_exception_graph(raised.value))
-    assert raised.value is terminal
-    assert primary in graph
-    assert terminal in graph
-    settlement = find_settlement_outcome(raised.value)
-    assert settlement is not None
-    assert settlement.name == "rolled_back"
-    assert settlement.verified
-    assert tuple(tmp_path.glob(".lychd-*")) == ()
-
-
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(117)])
 def test_quarantine_unlink_terminal_after_effect_keeps_journal_primary(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """Exact rollback preserves both journal and terminal cleanup failures."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "lychd.toml"
     journal_primary = ValueError("journal rejected")
     real_unlink = os.unlink

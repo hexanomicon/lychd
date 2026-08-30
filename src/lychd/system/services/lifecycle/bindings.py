@@ -5,12 +5,10 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.process import (
     ProcessInvocationError,
     ProcessResult,
     ProcessRunner,
-    SubprocessRunner,
 )
 from lychd.system.services.lifecycle.models import (
     LifecycleAction,
@@ -35,13 +33,13 @@ class BindingLifecycleService:
         self,
         scribe: ScribeService,
         *,
-        runner: ProcessRunner | None = None,
-        systemctl_bin: str | None = None,
+        runner: ProcessRunner,
+        systemctl_bin: str | None,
     ) -> None:
         """Bind lifecycle inspection to one Scribe and bounded process port."""
         self._scribe = scribe
-        self._runner = runner or SubprocessRunner()
-        self._systemctl = systemctl_bin if systemctl_bin is not None else trusted_host_tool("systemctl")
+        self._runner = runner
+        self._systemctl = systemctl_bin
         self._planned = False
         self._planned_generation: str | None = None
         self._planned_receipt_present = False

@@ -1,22 +1,21 @@
-"""Workflow registry (A5-U7): route by `Trigger`, look up by persisted name.
+"""Workflow registry: route by `Trigger`, look up by persisted name.
 
 The engine routes an `Intent` to a `Workflow` ONCE via `WorkflowRegistry.route`
 (explicit-precedence `Trigger` semantics, absorbing the former `agents.router.route`),
 persists the choice, and thereafter `perform_run` looks the workflow up by name
 and exact persisted revision — it never re-routes an in-flight run.
 
-The full workflow packs are a later wave; here the registry wraps the built-in
-`bridge_chat` and offline reference `delegated_rite` workflows. Production consumers
-receive one registry from the application assembly root. ``WORKFLOW_REGISTRY`` remains
-only as a compatibility value for direct library callers and tests.
+The current registry wraps the built-in `bridge_chat` and offline reference
+`delegated_rite` workflows. Production consumers receive one registry from the
+application assembly root.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
-from lychd.agents.workflows.base import Trigger, Workflow
+from lychd.agents.workflows.base import Trigger, Workflow, pattern_snapshot_is_valid
 from lychd.agents.workflows.bridge_chat import BRIDGE_CHAT
 from lychd.agents.workflows.delegated_rite import DELEGATED_RITE
 
@@ -26,12 +25,12 @@ if TYPE_CHECKING:
 __all__ = [
     "BRIDGE_CHAT",
     "DELEGATED_RITE",
-    "WORKFLOW_REGISTRY",
     "BuiltinWorkflowRegistry",
     "Trigger",
     "Workflow",
     "WorkflowRegistry",
     "builtin_workflow_registry",
+    "resolve_pinned_workflow",
 ]
 
 
@@ -73,6 +72,25 @@ class WorkflowRegistry(Protocol):
         ...
 
 
+def resolve_pinned_workflow(
+    registry: WorkflowRegistry,
+    *,
+    workflow_name: str,
+    snapshot: dict[str, Any],
+) -> Workflow | None:
+    """Resolve only an exact valid snapshot owned by its persisted workflow name."""
+    if not pattern_snapshot_is_valid(snapshot):
+        return None
+    pattern_id = cast("str", snapshot["key"])
+    revision = cast("str", snapshot["revision"])
+    if pattern_id != workflow_name:
+        return None
+    workflow = registry.get_revision(pattern_id, revision)
+    if workflow is None or snapshot != workflow.manifest.snapshot():
+        return None
+    return workflow
+
+
 @dataclass(frozen=True)
 class BuiltinWorkflowRegistry:
     """Immutable revision catalogue with explicit active routing policy."""
@@ -92,7 +110,6 @@ class BuiltinWorkflowRegistry:
         if len(identities) != len(set(identities)):
             msg = "WorkflowRegistry contains duplicate Pattern revisions."
             raise ValueError(msg)
-
         registered_names = tuple(dict.fromkeys(names))
         active_revisions = self._normalize_active_revisions(registered_names, identities)
         default_name = self._normalize_default_name(active_revisions)
@@ -189,7 +206,8 @@ class BuiltinWorkflowRegistry:
     def get_revision(self, pattern_id: str, revision: str, /) -> Workflow | None:
         """Return one exact registered Pattern revision, or ``None``."""
         for workflow in self.workflows:
-            if workflow.manifest.key == pattern_id and workflow.manifest.revision == revision:
+            manifest = workflow.manifest
+            if manifest.key == pattern_id and manifest.revision == revision:
                 return workflow
         return None
 
@@ -230,7 +248,3 @@ def builtin_workflow_registry() -> BuiltinWorkflowRegistry:
         route_precedence=(DELEGATED_RITE.name,),
         default_name=BRIDGE_CHAT.name,
     )
-
-
-# Built once from frozen workflow config data (not mutable module state).
-WORKFLOW_REGISTRY: Final[BuiltinWorkflowRegistry] = builtin_workflow_registry()

@@ -22,17 +22,14 @@ if TYPE_CHECKING:
 _state: dict[str, Any] = {"engine": None, "session_factory": None}
 
 
-def get_engine(settings: DatabaseSettings | None = None, *, fresh: bool = False) -> AsyncEngine:
+def get_engine(settings: DatabaseSettings | None = None) -> AsyncEngine:
     """Return the process-memoized engine, creating it on first call.
 
     Args:
         settings: Database settings. Defaults to ``get_settings().server.database``.
-        fresh: When True, discard any memoized engine/session factory and build a
-            new engine. REQUIRED in forked SAQ worker processes because asyncpg
-            connections do not survive ``fork``.
 
     """
-    if fresh or _state["engine"] is None:
+    if _state["engine"] is None:
         db_settings = settings or get_settings().server.database
         _state["engine"] = create_db_engine(db_settings)
         _state["session_factory"] = None

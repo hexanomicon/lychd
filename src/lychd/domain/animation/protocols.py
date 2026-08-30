@@ -1,4 +1,4 @@
-"""The one merged capability-registry protocol (A4-U1, spec-00-FINAL C1).
+"""The one merged capability-registry protocol.
 
 `CapabilityRegistry` is the single structural surface required by BOTH dispatch
 resolution (`Dispatcher`) and transition planning (`OrchestratorManager`). It is
@@ -8,11 +8,11 @@ from here.
 
 `require_capability_record` is the one copy of the `refresh… or get…` fallback +
 canonical error strings that `Dispatcher` and
-`OrchestratorManager._get_capability_record` used to duplicate. It is async now
-because `refresh_capability_state` is async (Wave 3).
+`OrchestratorManager._get_capability_record` used to duplicate. It is async
+because a fresh capability observation is part of the contract.
 
-Wave-3 surface (spec-00-FINAL C1): reads (`list_capabilities`/`get_capability`/
-`get_capability_state`/`get_runtime`/`get_soulstone_rune`) stay sync;
+Reads (`list_capabilities`/`get_capability`/
+`get_capability_state`/`get_soulstone_rune`) stay sync;
 the probe/activate/grant surface (`refresh_*`/`activate_capability`/`await_warm`/
 `issue_grant`) is async. Sole implementation: `AnimatorRegistry`.
 """
@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from lychd.domain.animation.animators import RuntimeAnimator
     from lychd.domain.animation.capabilities import (
         ActivationResult,
         CapabilityGrant,
@@ -43,14 +42,12 @@ class CapabilityRegistry(Protocol):
     ``AnimatorRegistry``.
     """
 
-    # -- sync reads (unchanged) ------------------------------------------
+    # -- sync reads ------------------------------------------------------
     def list_capabilities(self) -> list[CapabilitySpec]: ...
 
     def get_capability(self, key: str, /) -> CapabilitySpec | None: ...
 
     def get_capability_state(self, key: str, /) -> CapabilityState | None: ...
-
-    def get_runtime(self, name: str, /) -> RuntimeAnimator | None: ...
 
     def list_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...
 
@@ -58,7 +55,7 @@ class CapabilityRegistry(Protocol):
 
     def list_soulstone_runes(self) -> list[SoulstoneConfig]: ...
 
-    # -- async probe/activate/grant surface (Wave 3 truth) ---------------
+    # -- async probe/activate/grant surface ------------------------------
     async def refresh_capability_state(self, key: str, /) -> CapabilityState | None: ...
 
     async def refresh_capability_states_for_animator(self, name: str, /) -> list[CapabilityState]: ...

@@ -7,7 +7,7 @@ from typing import ClassVar, Literal
 from pydantic import Field, model_validator
 
 from lychd.config import QuadletConfig
-from lychd.domain.animation.schemas import ModelFormat, SoulstoneConfig
+from lychd.domain.animation.schemas import SoulstoneConfig
 
 
 class LlamaCppMode(StrEnum):
@@ -29,11 +29,10 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
     """
 
     path_fragment: ClassVar[Path] = Path("llamacpp")
-    runtime: str = "llamacpp"
+    runtime: Literal["llamacpp"] = "llamacpp"  # pyright: ignore[reportIncompatibleVariableOverride]
     quadlet: QuadletConfig = Field(
         default_factory=lambda: QuadletConfig(image="ghcr.io/ggml-org/llama.cpp:server-cuda")
     )
-    model_format: ModelFormat | None = ModelFormat.GGUF
 
     startup_mode: LlamaCppMode = LlamaCppMode.AUTO
     models_dir: str | None = None
@@ -55,8 +54,8 @@ class LlamaCppSoulstoneConfig(SoulstoneConfig):
     jinja: bool = True
     chat_template: str | None = None
 
-    lora_adapters: list[str] = Field(default_factory=list)
-    extra_args: list[str] = Field(default_factory=list)
+    lora_adapters: tuple[str, ...] = Field(default_factory=tuple)
+    extra_args: tuple[str, ...] = Field(default_factory=tuple)
     _PASSTHROUGH_CONFLICT_FIELDS: ClassVar[frozenset[str]] = frozenset(
         {
             "startup_mode",

@@ -44,7 +44,8 @@ resolved Python closure and hashes for frozen repository and image builds; a whe
 compatible constraints, neither that lock nor vendored dependencies.
 
 The wheel contains `src/lychd`, including compiled Altar material under `src/lychd/public/`. The
-sdist keeps the Containerfile, frontend source and lock, scripts, source, tests, and legal files.
+sdist keeps the Containerfile, strict `.containerignore`, Python and frontend locks, frontend
+source, scripts, source, tests, and legal files.
 The auditor requires one wheel and one sdist for the declared version; checks MPL-2.0 metadata,
 byte-identical notices, exact-source Altar payloads, required sdist members, any `v<version>`
 release tag; and writes SHA-256 checksums.
@@ -71,6 +72,7 @@ exists.
 ### Vessel image and Rebirth boundary
 
 The checked-in multi-stage `Containerfile` uses frozen, non-development, non-editable `uv` sync;
+its `.containerignore` admits only declared build inputs from a checkout or source archive;
 passes its built virtual environment to the runner; uses `psycopg` with Debian `libpq5` and rejects
 `psycopg-binary`; carries project notices and a fail-closed installed-distribution inventory; and
 defaults to an unprivileged user with non-writable `/app`.
@@ -97,8 +99,9 @@ receipts. [Evolution](18-evolution.md), [Privilege](10-privilege.md), and
 Security's profiles need their own dependency closure, entrypoint, policy, legal inventory, and
 digest; a shared base layer does not merge authority. The Vessel has a checked-in definition but
 no maintained published-image receipt. Tomb has no image, queue, executor, or `nono` integration.
-Coffin has Partial policy objects and a no-effect adapter, but no lower-trust image or effectful
-supervisor. The [public release chain](../state-of-the-work.md#public-release-artifact-chain),
+Delegated execution retains typed containment-profile intent and a no-effect reference adapter, but
+Coffin and Provider Gate policy remain Designed with no lower-trust image or effectful supervisor.
+The [public release chain](../state-of-the-work.md#public-release-artifact-chain),
 [Tomb](../state-of-the-work.md#tomb-untrusted-execution),
 [delegated execution](../state-of-the-work.md#delegated-agent-execution), and
 [Smith/Forge promotion](../state-of-the-work.md#smith-forge-promotion) own their actual state.

@@ -28,6 +28,11 @@ not create Codex files, repair input, generate credentials, or mutate the enviro
 `SettingsSnapshot` captures a validated serialized generation; each preview/apply phase
 materializes and revalidates its own copy rather than retaining mutable nested models.
 
+Every accepted field must have one real consumer. Current Settings exposes `server.port`, but the
+native listener host is fixed by runtime policy rather than TOML. Obsolete `server.host`,
+`server.reload`, `server.keep_alive`, and `server.web.url` inputs are rejected and do not appear in
+generated configuration; launcher flags or environment cannot smuggle them back as Codex intent.
+
 `[extensions]` selects permitted built-in and Crypt packages; it neither selects an application nor
 creates a runtime. A future application selector requires its own accepted Spellweaver schema and
 may resolve only one registered exact profile revision, such as one of the mutually exclusive
@@ -64,6 +69,14 @@ extension side channel. Frontend owns the finite semantic colour roles and acces
 while Configuration owns loading, validation, attribution, and immutable generation. Current
 Settings contains no palette field and changing the accepted root shape requires an implementation
 and State update.
+
+A future [Spellweaver configuration-to-casting selector](28-workflow.md#configuration-to-casting-spine-designed)
+follows the same root-shape law. Local TOML may select exact already-registered Scroll, Spell
+implementation, `AgentSpec`/Posture, and Context projection revisions plus bounded policy, with the
+Agent references resolved only through an exact placement; the portable Scroll remains canonical
+JSON. Configuration never names Python imports, BaseNodes, graph edges, callables, prompts, source
+bytes, credentials, or live handles, and it cannot turn schema registration into executable
+activation. No such Settings section or Rune branch is delivered.
 
 ## Runes: location, provenance, semantics
 

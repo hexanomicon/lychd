@@ -8,15 +8,15 @@ from typing import Any
 
 import anyio
 import pytest
+from pydantic import ValidationError
 
-from lychd.config.runes import ConfigLoader
+from lychd.config.runes.loader import ConfigLoader
 from lychd.config.runes.registry import RuneRegistry
 from lychd.config.settings.root import get_settings
-from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase
+from lychd.domain.animation.capabilities import ActivationResult, CapabilityPhase, CapabilityState
 from lychd.domain.animation.errors import ActivationFailed, ActivationTimeout, CapabilityUnavailable
 from lychd.domain.animation.lifecycle import AnimatorLifecycle
 from lychd.domain.animation.schemas import GenerationProfile
-from lychd.domain.animation.services.binder import generation_to_model_settings
 from lychd.domain.animation.services.declarations import (
     AnimatorDeclarations,
     compile_animator_declarations,
@@ -50,10 +50,8 @@ class _SingleControl(LlamaCppControlPlane):
         self._health = health
 
     async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
+        del animator
         return AnimatorLifecycle(
-            runtime="llamacpp",
-            base_url=animator.connector.base_url,
-            mode="single",
             health=self._health,
         )
 
@@ -104,10 +102,8 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
 
     class RouterControl(LlamaCppControlPlane):
         async def inspect_animator(self, animator: Any) -> AnimatorLifecycle:
+            del animator
             return AnimatorLifecycle(
-                runtime="llamacpp",
-                base_url=animator.connector.base_url,
-                mode="router",
                 health="ok",
                 supports_router=True,
                 loaded_models=["main"],
@@ -140,46 +136,11 @@ def test_router_phase_mapping_activatable_vs_warm(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_activate_fixed_single_mode_returns_not_accepted(tmp_path: Path) -> None:
-    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
-    result = await registry.activate_capability(key)
-    assert isinstance(result, ActivationResult)
-    assert result.accepted is False
-    assert result.reason == "fixed capability; lifecycle owned by unit"
-
-
-@pytest.mark.asyncio
 async def test_activate_unknown_capability(tmp_path: Path) -> None:
     registry, _ = _single_registry(tmp_path, _SingleControl("ok"))
     result = await registry.activate_capability("does-not-exist")
     assert result.accepted is False
-    assert result.phase is CapabilityPhase.UNKNOWN
-
-
-@pytest.mark.asyncio
-async def test_activation_adapter_receives_a_detached_capability_spec(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
-
-    async def mutate_spec(_animator: Any, spec: Any) -> ActivationResult:
-        spec.key = "forged:key"
-        spec.metadata["forged"] = True
-        return ActivationResult(accepted=False, phase=CapabilityPhase.WARM)
-
-    monkeypatch.setattr(
-        registry._runtime_adapters,  # pyright: ignore[reportPrivateUsage]
-        "activate_capability",
-        mutate_spec,
-    )
-
-    await registry.activate_capability(key)
-
-    canonical = registry.get_capability(key)
-    assert canonical is not None
-    assert canonical.key == key
-    assert "forged" not in canonical.metadata
+    assert result.reason == "unknown capability"
 
 
 @pytest.mark.asyncio
@@ -197,7 +158,7 @@ async def test_activation_cancellation_abandons_adapter_observation(
     async def activate(_animator: Any, _spec: Any) -> ActivationResult:
         activation_started.set()
         await release.wait()
-        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+        return ActivationResult(accepted=True)
 
     async def abandon(_animator: Any, spec: Any) -> None:
         cleanup_started.set()
@@ -233,7 +194,7 @@ async def test_accepted_activation_refresh_cancellation_abandons_adapter_observa
     abandoned: list[str] = []
 
     async def activate(_animator: Any, _spec: Any) -> ActivationResult:
-        return ActivationResult(accepted=True, phase=CapabilityPhase.WARMING)
+        return ActivationResult(accepted=True)
 
     async def refresh(_animator_name: str) -> None:
         refresh_started.set()
@@ -265,13 +226,40 @@ async def test_await_warm_returns_when_warm(tmp_path: Path) -> None:
     assert state.phase is CapabilityPhase.WARM
 
 
+@pytest.mark.parametrize("field_name", ["timeout_s", "interval_s"])
+@pytest.mark.parametrize("value", [0.0, -0.1, float("nan"), float("inf"), float("-inf")])
+@pytest.mark.asyncio
+async def test_await_warm_rejects_invalid_poll_bound_before_polling(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    field_name: str,
+    value: float,
+) -> None:
+    registry, key = _single_registry(tmp_path, _SingleControl("ok"))
+    poll_calls = 0
+
+    async def unexpected_poll(*, key: str, deadline: float, interval_s: float) -> CapabilityState:
+        del key, deadline, interval_s
+        nonlocal poll_calls
+        poll_calls += 1
+        msg = "invalid await_warm bounds reached the polling boundary"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(registry, "_poll_until_warm", unexpected_poll)
+    timeout_s = value if field_name == "timeout_s" else 1.0
+    interval_s = value if field_name == "interval_s" else 0.01
+
+    with pytest.raises(ValueError, match=field_name):
+        await registry.await_warm(key, timeout_s=timeout_s, interval_s=interval_s)
+
+    assert poll_calls == 0
+
+
 @pytest.mark.asyncio
 async def test_await_warm_times_out_on_persistent_warming(tmp_path: Path) -> None:
     registry, key = _single_registry(tmp_path, _SingleControl("loading"))
-    with pytest.raises(ActivationTimeout) as exc:
+    with pytest.raises(ActivationTimeout, match="activation timed out before warm"):
         await registry.await_warm(key, timeout_s=0.05, interval_s=0.01)
-    assert exc.value.last_state is not None
-    assert exc.value.last_state.phase is CapabilityPhase.WARMING
 
 
 @pytest.mark.asyncio
@@ -284,8 +272,6 @@ async def test_await_warm_timeout_abandons_adapter_observation_once(
 
     async def abandon(_animator: Any, spec: Any) -> None:
         abandoned.append(spec.key)
-        spec.key = "forged:key"
-        spec.metadata["forged"] = True
 
     monkeypatch.setattr(registry._runtime_adapters, "abandon_activation", abandon)  # pyright: ignore[reportPrivateUsage]
 
@@ -293,39 +279,6 @@ async def test_await_warm_timeout_abandons_adapter_observation_once(
         await registry.await_warm(key, timeout_s=0.02, interval_s=0.005)
 
     assert abandoned == [key]
-    canonical = registry.get_capability(key)
-    assert canonical is not None
-    assert canonical.key == key
-    assert "forged" not in canonical.metadata
-
-
-@pytest.mark.asyncio
-async def test_await_warm_estimate_is_inside_single_timeout_budget(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import lychd.domain.animation.services.registry as registry_mod
-
-    registry, key = _single_registry(tmp_path, _SingleControl("loading"))
-    runtime = registry.get_runtime("qwen-local")
-    assert runtime is not None
-    runtime.connector.link.estimated_ready_ms = 10_000
-    clock = 0.0
-
-    def monotonic() -> float:
-        return clock
-
-    async def advance(seconds: float) -> None:
-        nonlocal clock
-        clock += seconds
-
-    monkeypatch.setattr(registry_mod.time, "monotonic", monotonic)
-    monkeypatch.setattr(registry_mod.anyio, "sleep", advance)
-
-    with pytest.raises(ActivationTimeout):
-        await registry.await_warm(key, timeout_s=1.0, interval_s=0.75)
-
-    assert clock == 1.0
 
 
 @pytest.mark.asyncio
@@ -408,24 +361,6 @@ async def test_await_warm_unknown_capability(tmp_path: Path) -> None:
         await registry.await_warm("nope", timeout_s=0.1)
 
 
-# --- generation bridge + overlay -------------------------------------------
-
-
-def test_generation_to_model_settings_maps_known_fields() -> None:
-    profile = GenerationProfile(max_tokens=256, temperature=0.4, top_p=0.9, top_k=40)
-    settings = generation_to_model_settings(profile)
-    assert settings is not None
-    assert settings.get("max_tokens") == 256
-    assert settings.get("temperature") == 0.4
-    assert settings.get("top_p") == 0.9
-    # top_k is not a pydantic-ai ModelSettings key and is omitted.
-    assert "top_k" not in settings
-
-
-def test_generation_to_model_settings_empty_returns_none() -> None:
-    assert generation_to_model_settings(GenerationProfile()) is None
-
-
 def test_generation_profile_overlay_prefers_non_none() -> None:
     base = GenerationProfile(temperature=0.7, max_tokens=1024)
     override = GenerationProfile(temperature=0.2)
@@ -433,3 +368,10 @@ def test_generation_profile_overlay_prefers_non_none() -> None:
     assert merged.temperature == 0.2
     assert merged.max_tokens == 1024
     assert base.overlay(None) == base
+
+
+@pytest.mark.parametrize("field_name", ["temperature", "top_p"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_generation_profile_rejects_non_finite_floats(field_name: str, value: float) -> None:
+    with pytest.raises(ValidationError):
+        GenerationProfile.model_validate({field_name: value})

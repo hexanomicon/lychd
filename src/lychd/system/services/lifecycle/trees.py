@@ -285,15 +285,13 @@ class ManagedTreeService:
     def __init__(
         self,
         allowed_roots: tuple[Path, ...],
-        *,
-        retirement: AtomicRetirementService | None = None,
     ) -> None:
         """Bind the exact roots; every possible subvolume root remains a barrier."""
         if len(set(allowed_roots)) != len(allowed_roots):
             msg = "Dedicated deletion roots must be unique."
             raise LifecycleError(msg)
         self._allowed_roots = frozenset(allowed_roots)
-        self._retirement = retirement or AtomicRetirementService()
+        self._retirement = AtomicRetirementService()
         self._protected_retirement = ProtectedRootRetirementService(
             entries=self._retirement,
         )

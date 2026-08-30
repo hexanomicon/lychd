@@ -3,38 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from lychd.config.components import resolve_web_secret_key
 from lychd.config.settings import Settings, SettingsSnapshot
 from lychd.config.settings.extensions import ExtensionSettings
 from lychd.config.settings.orchestration import SwitchingSettings
 from lychd.config.settings.server import DatabaseSettings, ServerSettings, WebSettings
-from lychd.config.utils import codex_permission_issues
 from lychd.db.factory import database_saq_dsn, database_url, resolve_database_password
-
-
-def test_codex_permission_issues_returns_empty_for_missing_file(tmp_path: Path) -> None:
-    missing = tmp_path / "missing.toml"
-    assert codex_permission_issues(missing) == {}
-
-
-def test_codex_permission_issues_flags_broad_mode(tmp_path: Path) -> None:
-    target = tmp_path / "lychd.toml"
-    target.write_text('name = "lychd"\n', encoding="utf-8")
-    target.chmod(0o644)
-
-    issues = codex_permission_issues(target)
-    assert issues.get("mode") == "0o644"
-    assert issues.get("expected_max_mode") == "0o600"
-
-
-def test_codex_permission_issues_accepts_restricted_mode(tmp_path: Path) -> None:
-    target = tmp_path / "lychd.toml"
-    target.write_text('name = "lychd"\n', encoding="utf-8")
-    target.chmod(0o600)
-
-    issues = codex_permission_issues(target)
-    assert "mode" not in issues
 
 
 def test_web_secret_key_resolves_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -112,12 +88,6 @@ def test_optional_extensions_are_inert_until_explicitly_selected() -> None:
     assert settings.crypt == ()
 
 
-def test_settings_attribute_docstrings_export_schema_descriptions() -> None:
-    assert ServerSettings.model_fields["reload"].description
-    assert DatabaseSettings.model_fields["profile"].description
-    assert ExtensionSettings.model_fields["builtins"].description
-
-
 def test_extension_activation_rejects_duplicate_ids() -> None:
     with pytest.raises(ValueError, match="animator/llamacpp"):
         ExtensionSettings(builtins=("animator/llamacpp", "animator/llamacpp"))
@@ -135,11 +105,6 @@ def test_extension_activation_rejects_unknown_builtin_ids() -> None:
 def test_crypt_activation_requires_canonical_safe_ids(extension_id: str) -> None:
     with pytest.raises(ValueError, match="Invalid extension id"):
         ExtensionSettings(crypt=(extension_id,))
-
-
-def test_bootstrap_server_rejects_public_bind_addresses() -> None:
-    with pytest.raises(ValueError, match="127.0.0.1"):
-        ServerSettings(host="0.0.0.0")  # noqa: S104  # type: ignore[arg-type]
 
 
 def test_cors_is_same_origin_by_default() -> None:
@@ -175,15 +140,52 @@ def test_server_rejects_port_claim_conflicts() -> None:
         ServerSettings(port=5432)
 
 
-def test_vite_development_port_is_not_backend_configuration() -> None:
-    settings = ServerSettings(port=5173)
+@pytest.mark.parametrize("port", [0, 65536])
+def test_server_and_database_ports_stay_within_tcp_range(port: int) -> None:
+    with pytest.raises(ValidationError):
+        ServerSettings(port=port)
+    with pytest.raises(ValidationError):
+        DatabaseSettings(port=port)
 
-    assert settings.reserved_ports_map == {
-        "LychD Server": 5173,
-        "Phylactery (Postgres)": 5432,
-    }
-    with pytest.raises(ValueError, match="vite"):
-        WebSettings.model_validate({"vite": {"port": 5173}})
+
+@pytest.mark.parametrize("port", [1, 65535])
+def test_server_and_database_ports_accept_tcp_boundaries(port: int) -> None:
+    assert ServerSettings(port=port).port == port
+    assert DatabaseSettings(port=port).port == port
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        ("pool_size", -1),
+        ("max_overflow", -2),
+        ("pool_timeout", -0.1),
+        ("pool_timeout", float("nan")),
+        ("pool_timeout", float("inf")),
+        ("pool_timeout", float("-inf")),
+        ("pool_recycle", -2),
+        ("pool_recycle", float("nan")),
+        ("pool_recycle", float("inf")),
+        ("pool_recycle", float("-inf")),
+    ],
+)
+def test_database_pool_settings_reject_invalid_numeric_boundaries(field_name: str, value: float) -> None:
+    with pytest.raises(ValidationError):
+        DatabaseSettings.model_validate({field_name: value})
+
+
+def test_database_pool_settings_accept_sqlalchemy_boundaries() -> None:
+    settings = DatabaseSettings(
+        pool_size=0,
+        max_overflow=-1,
+        pool_timeout=0.5,
+        pool_recycle=-1,
+    )
+
+    assert settings.pool_size == 0
+    assert settings.max_overflow == -1
+    assert settings.pool_timeout == 0.5
+    assert settings.pool_recycle == -1
 
 
 @pytest.mark.parametrize(

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import re
 from abc import ABC
+from collections.abc import Sequence
 from enum import StrEnum
 from pathlib import Path
-from typing import ClassVar, Final
+from typing import ClassVar, Final, Never, Self
 
 from pydantic import AnyHttpUrl, Field, field_validator, model_validator
 
@@ -13,10 +14,59 @@ from lychd.config.runes import RuneConfig
 from lychd.domain.animation.schemas.concurrency import ConcurrencyIntent
 from lychd.domain.animation.schemas.generation import GenerationProfile
 from lychd.domain.animation.schemas.runes.models import LocalModelConfig, PortalModelConfig
-from lychd.domain.animation.schemas.shared import ModelFormat
 from lychd.system.secret_names import is_valid_podman_secret_name
 
 _ENV_NAME: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_MAX_PORT: Final = 65535
+
+
+class _FrozenStringMap(dict[str, str]):
+    """JSON-serializable mapping that cannot mutate after Rune validation."""
+
+    @staticmethod
+    def _immutable() -> Never:
+        msg = "Validated Rune mappings are immutable."
+        raise TypeError(msg)
+
+    def __setitem__(self, _key: str, _value: str, /) -> Never:
+        self._immutable()
+
+    def __delitem__(self, _key: str, /) -> Never:
+        self._immutable()
+
+    def clear(self) -> Never:
+        self._immutable()
+
+    def pop(self, *_args: object, **_kwargs: object) -> Never:
+        self._immutable()
+
+    def popitem(self) -> Never:
+        self._immutable()
+
+    def setdefault(self, *_args: object, **_kwargs: object) -> Never:
+        self._immutable()
+
+    def update(self, *_args: object, **_kwargs: object) -> Never:
+        self._immutable()
+
+    def __ior__(self, _value: object, /) -> Self:
+        self._immutable()
+
+    def __deepcopy__(self, _memo: dict[int, object]) -> _FrozenStringMap:
+        return type(self)(self)
+
+
+def _require_unique_model_ids(models: Sequence[LocalModelConfig | PortalModelConfig]) -> None:
+    """Reject exact duplicate identities before a catalogue can collapse them."""
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for model in models:
+        if model.id in seen and model.id not in duplicates:
+            duplicates.append(model.id)
+        seen.add(model.id)
+    if duplicates:
+        msg = f"models contains duplicate ids: {', '.join(repr(model_id) for model_id in duplicates)}"
+        raise ValueError(msg)
 
 
 class OpenAICompatibleProvider(StrEnum):
@@ -46,11 +96,27 @@ class AnimatorConfig(RuneConfig, ABC):
     path_fragment: ClassVar[Path] = Path("animator")
 
     name: str
-    description: str = ""
     base_url: AnyHttpUrl | None = Field(
         default=None,
         description="HTTP(S) endpoint root for URL-backed animator connectors.",
     )
+
+    @field_validator("base_url")
+    @classmethod
+    def _validate_endpoint_root(cls, value: AnyHttpUrl | None) -> AnyHttpUrl | None:
+        """Require a composable endpoint prefix without credentials or URL suffix state."""
+        if value is None:
+            return None
+        if value.username is not None or value.password is not None:
+            msg = "base_url must not contain embedded credentials"
+            raise ValueError(msg)
+        if value.query is not None or value.fragment is not None:
+            msg = "base_url must not contain a query or fragment"
+            raise ValueError(msg)
+        if value.port is not None and not 1 <= value.port <= _MAX_PORT:
+            msg = "base_url port must be between 1 and 65535"
+            raise ValueError(msg)
+        return value
 
 
 class SoulstoneConfig(AnimatorConfig, ABC):
@@ -64,6 +130,7 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     path_fragment: ClassVar[Path] = Path("soulstones")
 
+    description: str = ""
     quadlet: QuadletConfig = Field(
         description="Typed deployment body compiled into the Soulstone's Quadlet container.",
     )
@@ -83,10 +150,6 @@ class SoulstoneConfig(AnimatorConfig, ABC):
             "Set this when it differs from the model_path basename or Soulstone name."
         ),
     )
-    model_format: ModelFormat | None = Field(
-        default=None,
-        description="Optional model weight format for connector metadata and runtime planning.",
-    )
     base_url: AnyHttpUrl | None = Field(
         default=None,
         description="Local API base URL. Omit to let the loader derive one.",
@@ -97,9 +160,9 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         le=65535,
         description="Host port for the local API. Omit to let the loader allocate one.",
     )
-    groups: list[str] = Field(default_factory=list, description="Coven membership labels.")
-    devices: list[str] = Field(
-        default_factory=list,
+    groups: tuple[str, ...] = Field(default_factory=tuple, description="Coven membership labels.")
+    devices: tuple[str, ...] = Field(
+        default_factory=tuple,
         description=(
             "Host devices passed through to the container (Quadlet AddDevice= lines). "
             "Use 'nvidia.com/gpu=all' for all NVIDIA GPUs via the CDI device specifier."
@@ -109,7 +172,7 @@ class SoulstoneConfig(AnimatorConfig, ABC):
         default=False,
         description="Emit SecurityLabelDisable=true (SELinux label off) on the Quadlet.",
     )
-    volumes: list[str] = Field(default_factory=list, description="Extra bind mounts for this soulstone.")
+    volumes: tuple[str, ...] = Field(default_factory=tuple, description="Extra bind mounts for this soulstone.")
     env_vars: dict[str, str] = Field(default_factory=dict)
     secret_env_files: dict[str, str] = Field(
         default_factory=dict,
@@ -118,7 +181,7 @@ class SoulstoneConfig(AnimatorConfig, ABC):
             "Transmutation hydrates entries as ENV=/run/secrets/<secret> and mounts Secret=<secret>."
         ),
     )
-    exec: list[str] = Field(default_factory=list, description="Explicit container command arguments.")
+    exec: tuple[str, ...] = Field(default_factory=tuple, description="Explicit container command arguments.")
     concurrency: ConcurrencyIntent = Field(
         default_factory=ConcurrencyIntent,
         description=(
@@ -127,12 +190,11 @@ class SoulstoneConfig(AnimatorConfig, ABC):
             "default.target. Threaded into Quadlet WantedBy= at transmute time."
         ),
     )
-    models: list[LocalModelConfig] = Field(
-        default_factory=list,
+    models: tuple[LocalModelConfig, ...] = Field(
+        default_factory=tuple,
         description=(
-            "Operator-declared local models this Soulstone serves. Entries provide capability "
-            "hints (families/modalities/tool support) and per-model generation overlays; they "
-            "match discovered models by id (llama.cpp router: file stem)."
+            "Operator-declared local model identity allowlist. Entries provide capability hints "
+            "and generation overlays; discovery may enrich or downgrade only matching ids."
         ),
     )
     generation: GenerationProfile | None = Field(
@@ -145,24 +207,17 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     @field_validator("exec")
     @classmethod
-    def _validate_exec_command_separators(cls, values: list[str]) -> list[str]:
+    def _validate_exec_command_separators(cls, values: tuple[str, ...]) -> tuple[str, ...]:
         """Reject tokens that Quadlet/systemd can reinterpret as another command."""
         if any(token.strip("'\"") == ";" for value in values for token in value.split()):
             msg = "exec cannot contain a standalone systemd command separator"
             raise ValueError(msg)
         return values
 
-    @property
-    def service_name(self) -> str:
-        """Systemd service stem used by conflict generation."""
-        from lychd.system.unit_names import animator_service_stem
-
-        return animator_service_stem(self.name)
-
-    @property
-    def runtime_name(self) -> str:
-        """Normalized runtime id for adapter dispatch."""
-        return str(getattr(self, "runtime", "generic"))
+    @field_validator("env_vars", "secret_env_files")
+    @classmethod
+    def _freeze_string_maps(cls, values: dict[str, str]) -> dict[str, str]:
+        return _FrozenStringMap(values)
 
     @property
     def control_plane_secret_names(self) -> tuple[str, ...]:
@@ -171,6 +226,7 @@ class SoulstoneConfig(AnimatorConfig, ABC):
 
     @model_validator(mode="after")
     def _hydrate_local_defaults(self) -> SoulstoneConfig:
+        _require_unique_model_ids(self.models)
         for env_name, secret_name in self.secret_env_files.items():
             if _ENV_NAME.fullmatch(env_name) is None:
                 msg = "secret_env_files keys must be valid environment variable names."
@@ -206,8 +262,8 @@ class PortalConfig(AnimatorConfig, ABC):
         default=None,
         description="Podman secret name for provider API key injection inside the Vessel runtime.",
     )
-    models: list[PortalModelConfig] = Field(
-        default_factory=list,
+    models: tuple[PortalModelConfig, ...] = Field(
+        default_factory=tuple,
         description=(
             "Operator-declared remote models this Portal is allowed to route to. Zero models "
             "means the Portal advertises no capabilities (reachable but unadvertised)."
@@ -229,6 +285,11 @@ class PortalConfig(AnimatorConfig, ABC):
             msg = "api_key_secret_name must be one option-free Podman secret name."
             raise ValueError(msg)
         return value
+
+    @model_validator(mode="after")
+    def _validate_model_ids(self) -> PortalConfig:
+        _require_unique_model_ids(self.models)
+        return self
 
 
 class OpenAIPortalConfig(PortalConfig):

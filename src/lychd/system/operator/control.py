@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from typing import Protocol
 
 import structlog
 
@@ -26,20 +25,10 @@ _SYSTEMCTL_TIMEOUT_SECONDS = 30.0
 logger = structlog.get_logger(__name__)
 
 
-class VesselControlPort(Protocol):
-    """Future authenticated Vessel actuation seam."""
-
-    def actuate(self, action: OperatorAction, target: OperatorTarget) -> str:
-        """Request one typed lifecycle operation through the living Vessel."""
-        ...
-
-
 @dataclass(frozen=True)
 class ControlResult:
     """One completed actuation with its authority visible."""
 
-    action: OperatorAction
-    target: OperatorTarget
     authority: VesselAuthority
     units: tuple[str, ...] = ()
     detail: str = ""
@@ -56,14 +45,12 @@ class OperatorControlService:
         runner: ProcessRunner,
         systemctl_bin: str | None,
         lock_factory: Callable[[], AbstractContextManager[object]],
-        vessel: VesselControlPort | None = None,
     ) -> None:
-        """Bind typed discovery, process, and optional Vessel control ports."""
+        """Bind typed discovery and process ports."""
         self._inventory = inventory
         self._targets = targets
         self._runner = runner
         self._systemctl = systemctl_bin
-        self._vessel = vessel
         self._lock_factory = lock_factory
 
     def execute(self, action: OperatorAction, target: OperatorTarget = OperatorTarget.SYSTEM) -> ControlResult:
@@ -96,49 +83,15 @@ class OperatorControlService:
             raise OperatorAuthorityError(message)
 
         if authority is VesselAuthority.VESSEL:
-            if self._vessel is None:
-                message = (
-                    "The Vessel is active, but an authenticated lifecycle API is not available; no action was taken."
-                )
-                logger.warning(
-                    "operator_actuation_refused",
-                    action=action.value,
-                    target=target.value,
-                    authority=authority.value,
-                    reason=message,
-                )
-                raise OperatorAuthorityError(message)
-            logger.info(
-                "operator_actuation_started",
+            message = "The Vessel is active, but an authenticated lifecycle API is not available; no action was taken."
+            logger.warning(
+                "operator_actuation_refused",
                 action=action.value,
                 target=target.value,
                 authority=authority.value,
-                units=(),
+                reason=message,
             )
-            try:
-                detail = self._vessel.actuate(action, target)
-            except Exception:
-                logger.exception(
-                    "operator_actuation_failed",
-                    action=action.value,
-                    target=target.value,
-                    authority=authority.value,
-                    units=(),
-                )
-                raise
-            logger.info(
-                "operator_actuation_completed",
-                action=action.value,
-                target=target.value,
-                authority=authority.value,
-                units=(),
-            )
-            return ControlResult(
-                action=action,
-                target=target,
-                authority=authority,
-                detail=detail,
-            )
+            raise OperatorAuthorityError(message)
 
         units = self._targets.direct_actuation_units(action.value, target, catalog=planned)
         current = self._inventory.owned_units()
@@ -210,8 +163,6 @@ class OperatorControlService:
             units=units,
         )
         return ControlResult(
-            action=action,
-            target=target,
             authority=authority,
             units=units,
             detail=result.stdout.strip(),

@@ -1,10 +1,9 @@
-"""`TicketStore` — the loop-confined registry of in-flight coven swaps (§TD-5).
+"""`TicketStore` — the loop-confined registry of in-flight Coven swaps.
 
 Replaces the `nexus._TICKETS` module-global dict. Loop-confined like
 `BridgeSessionStore`: every mutation is synchronous and only ever touched from a
-single event loop, so no locks are needed. Agent 4 may later subsume swap
-transitions into real runs — then `TicketStore` becomes a projection over run
-records behind the same controller-facing interface.
+single event loop, so no locks are needed. It remains a process-local Nexus
+projection rather than durable Run truth.
 """
 
 from __future__ import annotations

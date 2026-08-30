@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from lychd.system.host_tools import trusted_host_tool
-from lychd.system.operator.control import OperatorControlService, VesselControlPort
+from lychd.system.operator.control import OperatorControlService
 from lychd.system.operator.inventory import (
     ConfiguredAnimatorDeclarations,
     OperatorInventoryService,
@@ -28,14 +28,12 @@ class OperatorServices:
     journal: JournalService
     retirement: OwnedUnitRetirementService
     storage: StorageInventoryService
-    targets: OperatorTargetResolver
 
 
 def build_operator_services(
     *,
     runner: ProcessRunner | None = None,
     paths: OperatorPaths | None = None,
-    vessel: VesselControlPort | None = None,
 ) -> OperatorServices:
     """Compose local operator services without importing or constructing ASGI."""
     from lychd.system.services.lifecycle.lock import LifecycleLock
@@ -69,7 +67,6 @@ def build_operator_services(
         runner=process,
         systemctl_bin=systemctl,
         lock_factory=LifecycleLock,
-        vessel=vessel,
     )
     journal = JournalService(
         targets=targets,
@@ -87,5 +84,4 @@ def build_operator_services(
         journal=journal,
         retirement=retirement,
         storage=storage,
-        targets=targets,
     )

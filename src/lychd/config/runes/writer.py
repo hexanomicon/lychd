@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
 from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
@@ -10,10 +9,10 @@ import structlog
 from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 
-from lychd.config.runes.base import RuneConfig
+from lychd.config.runes.base import RuneConfig, admitted_branch_schemas
 from lychd.config.runes.markers import SAMPLE_MARKER
 from lychd.system.constants import PATH_RUNES_DIR
-from lychd.system.services.publication import JournaledCreation
+from lychd.system.services.file_publication_transaction import JournaledCreation
 
 logger = structlog.get_logger()
 
@@ -45,13 +44,10 @@ class ConfigWriter:
         """
         self._runes_dir = runes_dir or PATH_RUNES_DIR
         self._creation = creation or JournaledCreation()
-        self._creation_is_injected = creation is not None
 
     def initialize_anchors(
         self,
         schemas: list[type[RuneConfig]],
-        *,
-        on_created: Callable[[tuple[Path, ...]], None] | None = None,
     ) -> list[Path]:
         """Ensure every provided rune class has an anchor directory.
 
@@ -60,25 +56,29 @@ class ConfigWriter:
 
         Args:
             schemas: Rune classes whose anchors should exist.
-            on_created: Optional compatibility callback for each exact directory batch.
 
         """
-        creation = self._directory_creation(on_created)
         created: list[Path] = []
         for schema in schemas:
             anchor = schema.anchor_dir(self._runes_dir)
-            resources = creation.create_directory(anchor)
+            resources = self._creation.create_directory(anchor)
             created.extend(resources.directories)
             logger.debug("anchor_initialized", schema=schema.__name__, anchor=str(anchor))
         return sorted(set(created))
 
     def planned_sample_paths(self, schemas: list[type[RuneConfig]]) -> list[Path]:
         """Return sample paths a mutation-free inscription would create."""
-        return [target for schema in schemas if (target := self._target_sample_file(schema)) is not None]
+        branch_schemas = admitted_branch_schemas(schemas)
+        return [
+            target
+            for schema in schemas
+            if (target := self._target_sample_file(schema, branch_schemas=branch_schemas)) is not None
+        ]
 
     def planned_path_descriptions(self, schemas: list[type[RuneConfig]]) -> dict[Path, str]:
         """Project Rune class docstrings onto their planned anchors and samples."""
         descriptions: dict[Path, str] = {}
+        branch_schemas = admitted_branch_schemas(schemas)
         for schema in schemas:
             lineage = tuple(
                 ancestor
@@ -89,7 +89,7 @@ class ConfigWriter:
                 summary = self._schema_summary(ancestor)
                 if summary is not None:
                     descriptions[ancestor.anchor_dir(self._runes_dir)] = summary
-            target = self._target_sample_file(schema)
+            target = self._target_sample_file(schema, branch_schemas=branch_schemas)
             if target is not None:
                 descriptions[target] = "Generated inactive example; remove its marker before use."
         return descriptions
@@ -105,8 +105,6 @@ class ConfigWriter:
     def inscribe_samples(
         self,
         schemas: list[type[RuneConfig]],
-        *,
-        on_created: Callable[[Path], None] | None = None,
     ) -> list[Path]:
         """Write first-run sample TOMLs for empty leaf anchors.
 
@@ -115,21 +113,20 @@ class ConfigWriter:
 
         Args:
             schemas: Rune classes considered for sample generation.
-            on_created: Optional compatibility callback for each exact sample winner.
 
         Returns:
             Paths of sample TOMLs created during this call.
 
         """
-        creation = self._file_creation(on_created)
         created: list[Path] = []
+        branch_schemas = admitted_branch_schemas(schemas)
 
         for schema in schemas:
-            target = self._target_sample_file(schema)
+            target = self._target_sample_file(schema, branch_schemas=branch_schemas)
             if target is None:
                 continue
 
-            resources = creation.create_text_file(
+            resources = self._creation.create_text_file(
                 target,
                 self._render_sample(schema),
                 mode=0o600,
@@ -141,37 +138,12 @@ class ConfigWriter:
 
         return created
 
-    def _directory_creation(
+    def _target_sample_file(
         self,
-        on_created: Callable[[tuple[Path, ...]], None] | None,
-    ) -> JournaledCreation:
-        """Adapt the legacy path callback without weakening transaction ownership."""
-        if on_created is None:
-            return self._creation
-        self._require_no_injected_callback()
-        return JournaledCreation(
-            on_created=lambda resources: on_created(resources.directories),
-        )
-
-    def _file_creation(
-        self,
-        on_created: Callable[[Path], None] | None,
-    ) -> JournaledCreation:
-        """Adapt the legacy sample callback at the journal commit boundary."""
-        if on_created is None:
-            return self._creation
-        self._require_no_injected_callback()
-        return JournaledCreation(
-            on_created=lambda resources: on_created(resources.files[0]),
-        )
-
-    def _require_no_injected_callback(self) -> None:
-        """Reject two competing journal owners for one writer operation."""
-        if self._creation_is_injected:
-            message = "ConfigWriter cannot combine an injected creation session with a method callback."
-            raise ValueError(message)
-
-    def _target_sample_file(self, schema: type[RuneConfig]) -> Path | None:
+        schema: type[RuneConfig],
+        *,
+        branch_schemas: frozenset[type[RuneConfig]],
+    ) -> Path | None:
         """Return the sample path for an empty leaf anchor.
 
         Branch schemas return ``None`` because their anchors are namespaces.
@@ -181,12 +153,14 @@ class ConfigWriter:
 
         Args:
             schema: Rune class considered for sample generation.
+            branch_schemas: Schemas with descendants in this exact admitted
+                generation.
 
         Returns:
             Target sample path, or ``None`` when no sample should be written.
 
         """
-        if schema.__subclasses__():
+        if schema in branch_schemas:
             return None
 
         file_name = self._default_file_name(schema)

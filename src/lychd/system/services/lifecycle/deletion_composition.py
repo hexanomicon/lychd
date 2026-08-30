@@ -10,7 +10,7 @@ from typing import Any, cast
 from lychd.system.host_tools import trusted_host_tool
 from lychd.system.operator.composition import build_operator_services
 from lychd.system.operator.inventory import OperatorPaths
-from lychd.system.operator.process import ProcessRunner, SubprocessRunner
+from lychd.system.operator.process import SubprocessRunner
 from lychd.system.services.lifecycle.bindings import BindingLifecycleService
 from lychd.system.services.lifecycle.deletion_checkpoint import (
     DeletionCheckpointStore,
@@ -21,7 +21,7 @@ from lychd.system.services.lifecycle.deletion_planning import DeletionPlanner
 from lychd.system.services.lifecycle.deletion_storage import (
     CommandBtrfsSubvolumeProbe,
 )
-from lychd.system.services.lifecycle.paths import is_within, lexically_normal
+from lychd.system.services.lifecycle.paths import is_within
 from lychd.system.services.lifecycle.receipt import LifecycleReceiptStore
 from lychd.system.services.lifecycle.trees import ManagedTreeService
 from lychd.system.services.scribe.facade import ScribeService
@@ -31,34 +31,23 @@ from lychd.system.services.scribe.facade import ScribeService
 class DeletionServices:
     """One shared planner/executor graph for a CLI invocation."""
 
-    paths: DeletionPaths
     planner: DeletionPlanner
     executor: DeletionExecutor
 
 
-def build_deletion_services(
-    *,
-    source_checkout: Path | None = None,
-    runner: ProcessRunner | None = None,
-    paths: DeletionPaths | None = None,
-    operator_paths: OperatorPaths | None = None,
-) -> DeletionServices:
+def build_deletion_services() -> DeletionServices:
     """Compose deletion without constructing ASGI, Postgres, or an extension host.
 
-    Explicit ``source_checkout`` wins. Otherwise the factory attests an
-    editable checkout only from the imported package's real path, a matching
+    The factory attests an editable checkout only from the imported package's
+    real path, a matching
     ``project.name``, the canonical ``src/lychd`` layout, and a VCS marker. It
     never trusts the current working directory or the spelling of ``uv run``.
     """
-    process = runner or SubprocessRunner()
-    base_paths = paths or DeletionPaths.current()
-    protected_source = _protected_source(
-        explicit=source_checkout,
-        configured=base_paths.source_checkout,
-        roots=base_paths.dedicated_roots,
-    )
+    process = SubprocessRunner()
+    base_paths = DeletionPaths.current()
+    protected_source = _protected_source(roots=base_paths.dedicated_roots)
     deletion_paths = replace(base_paths, source_checkout=protected_source)
-    locations = operator_paths or OperatorPaths.current()
+    locations = OperatorPaths.current()
     _require_matching_authority(deletion_paths, locations)
 
     operator = build_operator_services(runner=process, paths=locations)
@@ -67,10 +56,7 @@ def build_deletion_services(
         output_dir=locations.bindings,
         systemd_dir=locations.systemd_bindings,
     )
-    checkpoint = DeletionCheckpointStore(
-        deletion_paths.codex_root / ".lychd-del-state.json",
-        codex_root=deletion_paths.codex_root,
-    )
+    checkpoint = DeletionCheckpointStore(deletion_paths.codex_root)
     trees = ManagedTreeService(deletion_paths.dedicated_roots)
     root_authority = LifecycleReceiptStore(deletion_paths.lifecycle_receipt)
     btrfs = trusted_host_tool("btrfs")
@@ -101,7 +87,6 @@ def build_deletion_services(
         trees=trees,
     )
     return DeletionServices(
-        paths=deletion_paths,
         planner=planner,
         executor=executor,
     )
@@ -109,17 +94,9 @@ def build_deletion_services(
 
 def _protected_source(
     *,
-    explicit: Path | None,
-    configured: Path | None,
     roots: tuple[Path, ...],
 ) -> Path | None:
     """Return positively attested source provenance or protect the live package."""
-    if explicit is not None and configured is not None and explicit != configured:
-        msg = "Explicit and configured source-checkout provenance disagree."
-        raise ValueError(msg)
-    selected = explicit or configured
-    if selected is not None:
-        return _validate_explicit_source(selected)
     if checkout := _attest_imported_checkout():
         return checkout
 
@@ -129,18 +106,6 @@ def _protected_source(
         # dedicated root would violate the source/self-preservation boundary.
         return imported
     return None
-
-
-def _validate_explicit_source(path: Path) -> Path:
-    """Require explicit provenance to identify one real canonical directory."""
-    if not lexically_normal(path):
-        msg = "Explicit source-checkout provenance must be an absolute canonical path."
-        raise ValueError(msg)
-    resolved = path.resolve(strict=True)
-    if path.is_symlink() or not resolved.is_dir():
-        msg = f"Explicit source-checkout provenance is not a real directory: {path}"
-        raise ValueError(msg)
-    return resolved
 
 
 def _attest_imported_checkout() -> Path | None:

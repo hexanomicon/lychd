@@ -1,24 +1,10 @@
-"""The keyed-block Context Orchestrator (CAG, ADR 21 / ADR 28 §2).
-
-Assembles a six-layer Stable Floor as an ordered set of frozen `Block`s. The
-assembly is a pure function of the block key set: an identical key set yields a
-byte-identical prefix, witnessed by `prefix_digest` (sha256 over the layer 1-4
-hashes). Volatile data may enter only layers 5-6.
-"""
+"""The keyed-block Context Orchestrator (CAG, ADR 21 / ADR 28 §2)."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, cast
-
-from lychd.domain.cortex.privacy import (
-    INTERNAL_PRIVATIZATION_LABEL,
-    PUBLIC_PRIVATIZATION_LABEL,
-    RESTRICTED_UNKNOWN_PRIVATIZATION_LABEL,
-    PrivatizationLabel,
-)
 
 if TYPE_CHECKING:
     from lychd.domain.animation.capabilities import CapabilityGrant
@@ -34,36 +20,26 @@ class ContextBudgetExceededError(RuntimeError):
     """The non-negotiable floor and current query exceed the context budget."""
 
 
-def _sha256(text: str) -> str:
-    """Return the hex sha256 digest of `text`."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 @dataclass(frozen=True, kw_only=True)
 class Block:
-    """One keyed context block with privacy influence metadata."""
+    """One ordered context block."""
 
     layer: int
     key: str
-    content_hash: str
     text: str
-    label: PrivatizationLabel
 
 
 @dataclass(frozen=True, kw_only=True)
 class AssembledContext:
     """The assembled Stable Floor for one run.
 
-    `prefix_digest` is the cache receipt over layers 1-4; `state_window` is
-    layer 5 as message history; `query` is layer 6.
+    `state_window` is layer 5 as message history; `query` is layer 6.
     """
 
     blocks: tuple[Block, ...]
-    prefix_digest: str
     state_window: list[Any]
     continuation: list[Any]
     query: str
-    aggregate_label: PrivatizationLabel
     context_window: int | None = None
 
     def floor_text(self) -> str:
@@ -100,7 +76,7 @@ IDENTITY_BLOCK_TEXT = (
 class ContextOrchestrator:
     """Assemble the keyed-block Stable Floor and cache per-run floor text.
 
-    Layer population (v1): 1/3/5/6 populated; 2/4 stubbed with reserved keys.
+    Layers 1/3/5/6 carry the identity, environment, state, and current query.
     The per-run cache lets `floor_text(run_id)` return exactly the text assembled
     in the `WeaveContext` node. Environment snapshots remain shared and frozen
     only while at least one active run references their key.
@@ -111,7 +87,7 @@ class ContextOrchestrator:
     char_cap: int = _DEFAULT_CHAR_CAP
     _cache: dict[str, AssembledContext] = field(default_factory=dict)
     _env_snapshots: dict[str, _EnvironmentSnapshot] = field(default_factory=dict)
-    _env_snapshot_keys_by_run: dict[str, set[str]] = field(default_factory=dict)
+    _env_snapshot_key_by_run: dict[str, str] = field(default_factory=dict)
 
     def assemble(
         self,
@@ -123,11 +99,8 @@ class ContextOrchestrator:
         continuation: list[Any] | None = None,
         grant: CapabilityGrant | None = None,
         grant_epoch: str | int = 0,
-        query_label: PrivatizationLabel | None = None,
-        history_label: PrivatizationLabel | None = None,
-        continuation_label: PrivatizationLabel | None = None,
     ) -> AssembledContext:
-        """Assemble the six-layer floor, carrying unknown influences as restricted."""
+        """Assemble the six-layer floor."""
         environment_key, environment_block = self._environment_block(
             session_id=session_id,
             grant=grant,
@@ -135,13 +108,9 @@ class ContextOrchestrator:
         )
         stable_blocks: list[Block] = [
             self._identity_block(),
-            self._codex_block(),
             environment_block,
-            self._karma_block(session_id=session_id),
         ]
         stable_blocks.sort(key=lambda block: (block.layer, block.key))
-
-        prefix_digest = _sha256("|".join(block.content_hash for block in stable_blocks))
 
         context_window = self._context_window(grant)
         effective_char_cap = self.char_cap
@@ -162,24 +131,15 @@ class ContextOrchestrator:
             list(history or []),
             budget=effective_char_cap - fixed_chars,
         )
-        state_label = PrivatizationLabel.join(
-            history_label or self._default_material_label(window),
-            continuation_label or self._default_material_label(current_chain),
-        )
-        state_block = self._state_block([*window, *current_chain], label=state_label)
-        query_block = self._query_block(
-            query,
-            label=query_label or self._default_material_label(query),
-        )
+        state_block = self._state_block([*window, *current_chain])
+        query_block = self._query_block(query)
         blocks = (*stable_blocks, state_block, query_block)
 
         assembled = AssembledContext(
             blocks=blocks,
-            prefix_digest=prefix_digest,
             state_window=window,
             continuation=current_chain,
             query=query,
-            aggregate_label=PrivatizationLabel.join(*(block.label for block in blocks)),
             context_window=context_window,
         )
         self._retain_environment_snapshot(
@@ -202,31 +162,21 @@ class ContextOrchestrator:
     def release(self, run_id: str) -> None:
         """Drop one settled run's assembly and its environment-snapshot leases."""
         self._cache.pop(run_id, None)
-        for key in self._env_snapshot_keys_by_run.pop(run_id, ()):
-            snapshot = self._env_snapshots.get(key)
-            if snapshot is None:
-                continue
-            snapshot.run_ids.discard(run_id)
-            if not snapshot.run_ids:
-                self._env_snapshots.pop(key, None)
+        key = self._env_snapshot_key_by_run.pop(run_id, None)
+        if key is None:
+            return
+        snapshot = self._env_snapshots.get(key)
+        if snapshot is None:
+            return
+        snapshot.run_ids.discard(run_id)
+        if not snapshot.run_ids:
+            self._env_snapshots.pop(key, None)
 
     def _identity_block(self) -> Block:
         return Block(
             layer=1,
             key=IDENTITY_BLOCK_KEY,
-            content_hash=_sha256(IDENTITY_BLOCK_TEXT),
             text=IDENTITY_BLOCK_TEXT,
-            label=INTERNAL_PRIVATIZATION_LABEL,
-        )
-
-    def _codex_block(self) -> Block:
-        # Stubbed: key reserved for future path-aware Codex hydration.
-        return Block(
-            layer=2,
-            key="codex:none:v0",
-            content_hash=_sha256(""),
-            text="",
-            label=PUBLIC_PRIVATIZATION_LABEL,
         )
 
     def _environment_block(
@@ -257,17 +207,22 @@ class ContextOrchestrator:
         block = Block(
             layer=3,
             key=key,
-            content_hash=_sha256(text),
             text=text,
-            label=INTERNAL_PRIVATIZATION_LABEL,
         )
         return key, block
 
     def _retain_environment_snapshot(self, *, run_id: str, key: str, block: Block) -> None:
-        """Lease a canonical snapshot to one run without double-counting reassembly."""
+        """Lease one current canonical snapshot to a run."""
+        previous_key = self._env_snapshot_key_by_run.get(run_id)
+        if previous_key is not None and previous_key != key:
+            previous = self._env_snapshots.get(previous_key)
+            if previous is not None:
+                previous.run_ids.discard(run_id)
+                if not previous.run_ids:
+                    self._env_snapshots.pop(previous_key, None)
         snapshot = self._env_snapshots.setdefault(key, _EnvironmentSnapshot(block=block))
         snapshot.run_ids.add(run_id)
-        self._env_snapshot_keys_by_run.setdefault(run_id, set()).add(key)
+        self._env_snapshot_key_by_run[run_id] = key
 
     def _bounded_history(self, history: list[Any], *, budget: int) -> list[Any]:
         """Keep newest complete Pydantic message groups within both governors."""
@@ -313,27 +268,12 @@ class ContextOrchestrator:
         """Return the conservative serialized-character cost used by both governors."""
         return len(json.dumps(history, sort_keys=True, separators=(",", ":"), default=str))
 
-    def _karma_block(self, *, session_id: str) -> Block:
-        # Stubbed: Archive/mem0 unbuilt; key session-pinned (Cache Meridian after layer 4).
-        return Block(
-            layer=4,
-            key=f"karma:{session_id}:pinned",
-            content_hash=_sha256(""),
-            text="",
-            label=PUBLIC_PRIVATIZATION_LABEL,
-        )
-
-    def _state_block(self, window: list[Any], *, label: PrivatizationLabel) -> Block:
+    def _state_block(self, window: list[Any]) -> Block:
         text = json.dumps(window, sort_keys=True, separators=(",", ":"), default=str)
-        return Block(layer=5, key="state:window", content_hash=_sha256(text), text=text, label=label)
+        return Block(layer=5, key="state:window", text=text)
 
-    def _query_block(self, query: str, *, label: PrivatizationLabel) -> Block:
-        return Block(layer=6, key="query", content_hash=_sha256(query), text=query, label=label)
-
-    @staticmethod
-    def _default_material_label(material: str | list[Any]) -> PrivatizationLabel:
-        """Treat absent lineage as restricted only when material is present."""
-        return RESTRICTED_UNKNOWN_PRIVATIZATION_LABEL if material else PUBLIC_PRIVATIZATION_LABEL
+    def _query_block(self, query: str) -> Block:
+        return Block(layer=6, key="query", text=query)
 
     def _warm_capability_keys(self) -> list[str]:
         return sorted(
@@ -349,4 +289,4 @@ class ContextOrchestrator:
         """
         if grant is None:
             return None
-        return grant.generation.max_context or grant.spec.max_context
+        return grant.spec.generation_profile.max_context or grant.spec.max_context

@@ -9,14 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validat
 from lychd.system.secret_names import validate_podman_secret_name
 from lychd.system.unit_names import animator_target_unit, coven_target_unit
 
-# Minimum number of parts in a volume string (host:container)
-MIN_VOLUME_PARTS = 2
-
-# Indices for parsing volume parts from a colon-separated string
-INDEX_HOST = 0
-INDEX_CONTAINER = 1
-INDEX_OPTIONS = 2
-
 _MOUNT_OPTIONS: Final[frozenset[str]] = frozenset(
     {"O", "U", "Z", "copy", "nocopy", "nodev", "noexec", "nosuid", "ro", "rw", "z"}
 )
@@ -25,7 +17,26 @@ _SECRET_MODE = re.compile(r"^0[0-7]{3}$")
 _PUBLISH_PORT = re.compile(r"^127\.0\.0\.1:(\d{1,5}):(\d{1,5})$")
 _UNIT_COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@-]*$")
 _MEMORY_SIZE = re.compile(r"^[1-9][0-9]*[kmgt]?$")
-_MAX_PORT = 65535
+_MAX_PORT: Final[int] = 65535
+
+
+def validate_unit_name_component(value: str, *, field_name: str) -> str:
+    """Return one safe component for a generated unit name or filename."""
+    if _UNIT_COMPONENT.fullmatch(value) is None or ".." in value:
+        msg = f"{field_name} must be one safe unit-name component"
+        raise ValueError(msg)
+    return value
+
+
+def _validate_unit_name_list(values: list[str], *, field_name: str) -> list[str]:
+    """Validate a duplicate-free list of exact unit-name components."""
+    for value in values:
+        _validate_unit_text(value, field_name=field_name)
+        validate_unit_name_component(value, field_name=f"{field_name} entry")
+    if len(values) != len(set(values)):
+        msg = f"{field_name} must not contain duplicate units"
+        raise ValueError(msg)
+    return values
 
 
 def _validate_unit_text(
@@ -141,13 +152,14 @@ class MountData(BaseModel):
         if isinstance(data, str):
             val = data
             parts = val.split(":")
-            if not MIN_VOLUME_PARTS <= len(parts) <= INDEX_OPTIONS + 1:
+            if len(parts) not in {2, 3}:
                 msg = f"Invalid volume format: {val}. Expected host:container[:opts]"
                 raise ValueError(msg)
 
-            host = Path(parts[INDEX_HOST])
-            container = Path(parts[INDEX_CONTAINER])
-            opts = parts[INDEX_OPTIONS].split(",") if len(parts) > INDEX_OPTIONS else []
+            host_text, container_text, *option_parts = parts
+            host = Path(host_text)
+            container = Path(container_text)
+            opts = option_parts[0].split(",") if option_parts else []
 
             return {
                 "host_path": host,
@@ -261,6 +273,8 @@ class QuadletContainer(QuadletBase):
     @classmethod
     def validate_scalar_directives(cls, value: str | None, info: ValidationInfo) -> str | None:
         """Keep scalar values confined to their generated unit directive."""
+        if info.field_name in {"container_name", "pod", "pod_service"} and value is not None:
+            validate_unit_name_component(value, field_name=f"QuadletContainer.{info.field_name}")
         if value is not None:
             _validate_unit_text(value, field_name=f"QuadletContainer.{info.field_name}")
         return value
@@ -291,6 +305,15 @@ class QuadletContainer(QuadletBase):
     @classmethod
     def validate_list_directives(cls, values: list[str], info: ValidationInfo) -> list[str]:
         """Reject line and systemd-specifier injection in repeated directives."""
+        if info.field_name in {
+            "wants",
+            "requires",
+            "after",
+            "binds_to",
+            "conflicts",
+            "wanted_by",
+        }:
+            return _validate_unit_name_list(values, field_name=f"QuadletContainer.{info.field_name}")
         for value in values:
             _validate_unit_text(value, field_name=f"QuadletContainer.{info.field_name}")
             if info.field_name == "devices" and any(char.isspace() for char in value):
@@ -338,9 +361,8 @@ class QuadletPod(QuadletBase):
         """Keep pod scalar values confined to one generated directive."""
         if value is not None:
             _validate_unit_text(value, field_name=f"QuadletPod.{info.field_name}")
-        if info.field_name == "pod_name" and value is not None and _UNIT_COMPONENT.fullmatch(value) is None:
-            msg = "QuadletPod.pod_name must be one safe unit-name component"
-            raise ValueError(msg)
+        if info.field_name == "pod_name" and value is not None:
+            validate_unit_name_component(value, field_name="QuadletPod.pod_name")
         if info.field_name == "shm_size" and value is not None and _MEMORY_SIZE.fullmatch(value) is None:
             msg = "QuadletPod.shm_size must be a positive integer with an optional k/m/g/t suffix"
             raise ValueError(msg)
@@ -362,9 +384,7 @@ class QuadletPod(QuadletBase):
     @field_validator("wanted_by")
     @classmethod
     def validate_wanted_by(cls, values: list[str]) -> list[str]:
-        for value in values:
-            _validate_unit_text(value, field_name="QuadletPod.wanted_by")
-        return values
+        return _validate_unit_name_list(values, field_name="QuadletPod.wanted_by")
 
 
 class QuadletTarget(QuadletBase):
@@ -387,24 +407,15 @@ class QuadletTarget(QuadletBase):
     def validate_scalar_directives(cls, value: str, info: ValidationInfo) -> str:
         """Keep target scalar values confined to one generated directive."""
         _validate_unit_text(value, field_name=f"QuadletTarget.{info.field_name}")
-        if info.field_name == "name" and (_UNIT_COMPONENT.fullmatch(value) is None or ".." in value):
-            msg = "QuadletTarget.name must be one safe unit-name component"
-            raise ValueError(msg)
+        if info.field_name == "name":
+            validate_unit_name_component(value, field_name="QuadletTarget.name")
         return value
 
     @field_validator("wants", "requires", "before", "after", "conflicts", "part_of")
     @classmethod
     def validate_unit_lists(cls, values: list[str], info: ValidationInfo) -> list[str]:
         """Keep every dependency inside one validated systemd directive."""
-        for value in values:
-            _validate_unit_text(value, field_name=f"QuadletTarget.{info.field_name}")
-            if _UNIT_COMPONENT.fullmatch(value) is None:
-                msg = f"QuadletTarget.{info.field_name} entries must each be one safe unit name"
-                raise ValueError(msg)
-        if len(values) != len(set(values)):
-            msg = f"QuadletTarget.{info.field_name} must not contain duplicate units"
-            raise ValueError(msg)
-        return values
+        return _validate_unit_name_list(values, field_name=f"QuadletTarget.{info.field_name}")
 
     @property
     def unit_name(self) -> str:
@@ -430,7 +441,7 @@ class SystemdService(BaseModel):
 
     name: str = "lychd-vessel"
     description: str = "LychD Vessel (uncaged)"
-    exec_start: str  # "<sys.prefix>/bin/lychd run --host 127.0.0.1 --port <port>"
+    exec_start: str  # "<sys.prefix>/bin/lychd serve --host 127.0.0.1 --port <port>"
     environment: dict[str, str] = Field(default_factory=lambda: {"LYCHD_MODE": "uncaged"})
     restart: str = "on-failure"
     wanted_by: str = "default.target"
@@ -440,15 +451,14 @@ class SystemdService(BaseModel):
     def validate_name(cls, value: str) -> str:
         """Confine the filename to one safe unit-name component."""
         _validate_unit_text(value, field_name="SystemdService.name")
-        if _UNIT_COMPONENT.fullmatch(value) is None or ".." in value:
-            msg = "SystemdService.name must be one safe unit-name component"
-            raise ValueError(msg)
-        return value
+        return validate_unit_name_component(value, field_name="SystemdService.name")
 
     @field_validator("description", "exec_start", "restart", "wanted_by")
     @classmethod
     def validate_scalar_directives(cls, value: str, info: ValidationInfo) -> str:
         """Keep plain-unit scalar values inside their generated directives."""
+        if info.field_name == "wanted_by":
+            validate_unit_name_component(value, field_name="SystemdService.wanted_by")
         return _validate_unit_text(value, field_name=f"SystemdService.{info.field_name}")
 
     @field_validator("environment")

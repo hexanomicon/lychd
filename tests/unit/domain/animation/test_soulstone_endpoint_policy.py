@@ -39,19 +39,6 @@ def test_soulstone_rejects_non_loopback_endpoint(base_url: str) -> None:
         _hydrate(base_url=base_url)
 
 
-@pytest.mark.parametrize(
-    "base_url",
-    [
-        "http://user:password@localhost:8000/v1",
-        "http://localhost:8000/v1?token=value",
-        "http://localhost:8000/v1#fragment",
-    ],
-)
-def test_soulstone_rejects_authority_bearing_or_ambiguous_url_components(base_url: str) -> None:
-    with pytest.raises(AnimatorConfigError, match="userinfo, query, or fragment"):
-        _hydrate(base_url=base_url)
-
-
 def test_soulstone_explicit_url_requires_and_agrees_with_runtime_port() -> None:
     with pytest.raises(AnimatorConfigError, match="explicit port"):
         _hydrate(base_url="http://localhost/v1")

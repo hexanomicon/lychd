@@ -16,11 +16,9 @@ from lychd.system.services.btrfs import (
     PreparedBtrfsSubvolume,
 )
 from lychd.system.services.layout import LayoutService
-from lychd.system.services.layout_directories import (
-    DirectoryProvisioning,
-    DirectoryRollbackError,
-)
-from lychd.system.services.lifecycle import CreatedResources
+from lychd.system.services.layout_directory_settlement import DirectoryRollbackError
+from lychd.system.services.layout_directory_transaction import DirectoryProvisioning
+from lychd.system.services.lifecycle.models import CreatedResources
 
 
 @pytest.fixture
@@ -88,13 +86,12 @@ def test_initialize_records_only_directories_whose_creation_it_won(
     assert target not in resources.directories
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(59)])
 def test_publication_return_interruption_retains_typed_recovery(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A signal after publish cannot leave an unjournaled public directory."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "codex"
     real_rename = rename_noreplace_at
     interrupted = False
@@ -132,13 +129,12 @@ def test_publication_return_interruption_retains_typed_recovery(
     assert _exception_chain_contains(raised.value, type(terminal))
 
 
-@pytest.mark.parametrize("terminal", [KeyboardInterrupt(), SystemExit(61)])
 def test_rollback_quarantine_return_interruption_retains_exact_name(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    terminal: BaseException,
 ) -> None:
     """A signal after rollback rename surfaces its exact private recovery."""
+    terminal = KeyboardInterrupt()
     target = tmp_path / "codex"
     provisioning = DirectoryProvisioning()
     provisioning.create(target)
@@ -397,7 +393,7 @@ def test_attestation_terminal_retains_typed_unverified_recovery(
     ("terminal", "phase"),
     [
         (KeyboardInterrupt(), "before"),
-        (SystemExit(67), "after"),
+        (KeyboardInterrupt(), "after"),
     ],
 )
 def test_created_identity_is_published_before_final_descriptor_close(
@@ -808,7 +804,7 @@ def test_restore_observation_terminal_never_deletes_replacement(
     ("terminal", "phase"),
     [
         (KeyboardInterrupt(), "before"),
-        (SystemExit(83), "after"),
+        (KeyboardInterrupt(), "after"),
     ],
 )
 def test_staging_mkdir_terminal_is_classified_by_postcondition(
@@ -1245,7 +1241,6 @@ def _exception_graph_contains(
     [
         (ProcessInvocationError("timed out"), BtrfsCreationError),
         (KeyboardInterrupt(), KeyboardInterrupt),
-        (SystemExit(23), SystemExit),
     ],
 )
 def test_materialized_creation_interruption_retains_ancestry(

@@ -93,9 +93,6 @@ PATH_REACTOR_JOURNAL_DIR: Final[Path] = PATH_TRIGGERS_DIR / "journal"
 PATH_POSTGRES_ROOT_DIR: Final[Path] = PATH_CRYPT_ROOT / "postgres"  # ~/.local/share/lychd/postgres
 """PostgreSQL bootstrap and live Phylactery storage."""
 
-PATH_POSTGRES_INIT_SCRIPT: Final[Path] = PATH_POSTGRES_ROOT_DIR / "init_db.sh"
-"""PostgreSQL bootstrap enabling pgvector and the current Phoenix compatibility database."""
-
 PATH_POSTGRESS_DATA_DIR: Final[Path] = PATH_POSTGRES_ROOT_DIR / "data"
 """Live PostgreSQL data within the Phylactery."""
 
@@ -185,27 +182,3 @@ HOST_LAYOUT: Final[tuple[Path,...]] = (
     PATH_ASSEMBLY_DIR,         # └── assembly/
 )
 # fmt: on
-
-# ==============================================================================
-# IV. CONTAINERS CONSTANTS
-# ==============================================================================
-
-# --- The Outlands (Container Mount Target) ---
-
-PATH_CONTAINER_WORK: Final[Path] = Path.home() / "work"
-"""The mount point inside the container for work files."""
-
-
-# --- Volume Parsing Constants ---
-
-MIN_VOLUME_PARTS: Final[int] = 2
-"""Minimum number of parts in a volume string (host:container)."""
-
-INDEX_HOST: Final[int] = 0
-"""Index of the host path in a colon-separated volume string."""
-
-INDEX_CONTAINER: Final[int] = 1
-"""Index of the container path in a colon-separated volume string."""
-
-INDEX_OPTIONS: Final[int] = 2
-"""Index of the options string in a colon-separated volume string."""

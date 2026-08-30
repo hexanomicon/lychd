@@ -7,17 +7,18 @@ icon: material/tools
 
 Workshop keeps one technical service case legible from the first reported symptom to a scoped,
 verified disposition. Its first service profile covers passenger vehicles; **Mechanic** is the
-first Product that packages Workshop for that automotive user. The operator identifies the exact
-vehicle, admits technical evidence, supplies observations or measurements, and receives the next
+proposed first Product if Workshop enters the Portfolio. The operator identifies the exact vehicle,
+admits technical evidence, supplies observations or measurements, and receives the next
 policy-admitted diagnostic-check proposal without mistaking fluent advice for professional authority.
 
 This candidate study was reviewed on **2026-08-09**. It tests an application boundary, not a
 new Extension Domain, accepted Portfolio membership, a registered Pattern, a delivered
 Workshop path, or permission to inspect or repair a live machine.
 
-The inert `src/lychd/compositions/workshop/` package reserves the candidate's canonical source
-home. It exports no schema, service, registry contribution, Pattern or effect path; package
-presence does not change the [Portfolio delivery boundary](../../state-of-the-work.md#composition-portfolio-delivery).
+The inert `src/lychd/compositions/workshop/` package is legacy candidate scaffolding, carries no
+architectural or delivery truth, and is not precedent for future candidate stubs. It exports no
+schema, service, registry contribution, Pattern or effect path; package presence does not change
+the [Portfolio delivery boundary](../../state-of-the-work.md#composition-portfolio-delivery).
 
 ## Candidate contract
 
@@ -25,7 +26,7 @@ presence does not change the [Portfolio delivery boundary](../../state-of-the-wo
 | --- | --- |
 | **Identity** | `workshop.service` revision `1` |
 | **Principal Pattern** | `workshop.service_case@1` |
-| **First Product** | **Mechanic**, backed by the passenger-vehicle service profile rather than a separate Composition contract |
+| **Proposed first Product** | **Mechanic**, backed by the passenger-vehicle service profile rather than a separate Composition contract |
 | **Begins with** | an admitted `WorkshopServiceRequest@1`, case-scoped asset identity and configuration evidence, reported condition, purpose, hazards, operator role, pinned service profile, attributed sources and observations, and authority and privacy ceilings |
 | **Can return** | `WorkshopServiceDisposition@1`: scoped verified restoration, containment advice or attributable containment evidence, professional handoff, exact blocker, unresolved result, refusal, or indeterminate action |
 | **Stops before** | emergency response, professional certification or statutory inspection, unsafe or unqualified work, autonomous machine control, guard or interlock bypass, unsupported part identity, purchase or payment, or declaring an asset generally safe from a conversational result |
@@ -78,12 +79,13 @@ vehicle controls, or guard and interlock defeat. It may organize evidence and pr
 handoff. Human consent does not manufacture competence, and local inference does not remove
 access, retention, deletion or workplace privacy duties.
 
-## Reuse beneath the Product
+## Proposed reuse beneath the Product
 
-Workshop is the canonical reusable Composition; Mechanic is its first Product, not a duplicate
-engine or a renamed Composition. Common workflow, authority, transport and memory boundaries
-follow the Portfolio's [Product boundary](../index.md#products-package-compositions) and
-[reuse law](../index.md#reuse-without-a-universal-helper).
+If accepted, Workshop would be the canonical reusable Composition and Mechanic its first Product,
+not a duplicate engine or a renamed Composition. Until then both remain a candidate boundary and a
+Product study. Common workflow, authority, transport and memory boundaries follow the Portfolio's
+[Product boundary](../index.md#products-package-compositions) and [reuse
+law](../index.md#reuse-without-a-universal-helper).
 
 | Existing office | What Workshop retains |
 | --- | --- |

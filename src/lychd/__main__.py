@@ -26,7 +26,6 @@ class PulseGroup(click.Group):
         "stop",
         "status",
         "logs",
-        "run",
         "del",
     )
 
@@ -87,8 +86,13 @@ def serve(server_args: tuple[str, ...]) -> None:
     if policy.listener_port is None:
         message = "LychD could not resolve one effective listener port."
         raise click.ClickException(message)
+    if policy.listener_host is None:
+        message = "LychD could not resolve one effective loopback listener host."
+        raise click.ClickException(message)
     previous_port = os.environ.get("LITESTAR_PORT")
+    previous_host = os.environ.get("LITESTAR_HOST")
     os.environ["LITESTAR_PORT"] = str(policy.listener_port)
+    os.environ["LITESTAR_HOST"] = policy.listener_host
     try:
         _run_litestar(("run", *server_args), prog_name="lychd serve")
     finally:
@@ -96,6 +100,10 @@ def serve(server_args: tuple[str, ...]) -> None:
             os.environ.pop("LITESTAR_PORT", None)
         else:
             os.environ["LITESTAR_PORT"] = previous_port
+        if previous_host is None:
+            os.environ.pop("LITESTAR_HOST", None)
+        else:
+            os.environ["LITESTAR_HOST"] = previous_host
 
 
 @cli.command(
@@ -145,15 +153,9 @@ def _register_local_commands() -> None:
     from lychd.cli.commands import COMMANDS
     from lychd.cli.deletion import delete_installation
     from lychd.cli.operator import logs, start, status, stop
-    from lychd.cli.run import build_run_command, load_run_operation_catalog
 
     for command in (*COMMANDS, start, stop, status, logs, delete_installation):
         cli.add_command(command)
-    cli.add_command(
-        build_run_command(
-            catalog_factory=load_run_operation_catalog,
-        )
-    )
 
 
 _register_local_commands()

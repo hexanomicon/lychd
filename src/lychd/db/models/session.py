@@ -22,7 +22,7 @@ class Session(UUIDAuditBase):
     sigil_name: Mapped[str] = mapped_column(String(100), index=True)
     message_history: Mapped[list[Any]] = mapped_column(JSONB, default=list)
     #   pydantic-ai messages via to_jsonable_python(result.all_messages()); replayed with
-    #   ModelMessagesTypeAdapter.validate_python(...) -> message_history= (Part 5.A).
+    #   ModelMessagesTypeAdapter.validate_python(...) and passed back as message_history.
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     last_run_id: Mapped[UUID | None] = mapped_column(nullable=True)
     runs: Mapped[list[Run]] = relationship(back_populates="session", lazy="noload")

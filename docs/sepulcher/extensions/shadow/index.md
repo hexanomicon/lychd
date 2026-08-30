@@ -25,10 +25,9 @@ possibility fashioned apart from actuality while it awaits measurement. Its expl
 and honest handling come from project law, not from the source term. **Phantasma** is Shadow's
 isolated expansion mode; evaluation remains elsewhere.
 
-Shadow is **Designed**. The selectable `simulation` package contributes only the
-`ShadowSimulationConfig` Rune schema with `mode` and a positive `max_timelines`. No runnable
-Pattern, branch Graph or store, budgeted search, workspace manager, Shadow–Tomb integration,
-evaluation, verified collapse or promotion, or Branch Reaper ships. [ADR
+Shadow is **Designed**. No simulation Rune or schema, runnable Pattern, branch Graph or store,
+budgeted search, workspace manager, Shadow–Tomb integration, evaluation, verified collapse or
+promotion, or Branch Reaper ships. [ADR
 31](../../../adr/31-simulation.md) owns the design; [State of
 Work](../../../state-of-the-work.md#shadow-simulation) owns delivery.
 

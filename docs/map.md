@@ -10,21 +10,37 @@ _One body, many roads, one return._
 This is an orientation, not architectural law or a release roadmap. [State of
 Work](./state-of-the-work.md) records what has entered matter.
 
+## Choose your road
+
+| Your question | Begin here | Continue through |
+| --- | --- | --- |
+| What can this revision actually do? | [State of Work](./state-of-the-work.md) | cited source, tests, lockfiles, and maintained receipts |
+| Where should a new automation or Product idea live? | [Choosing a Home](./compositions/choosing-a-home.md) | use case, Product, profile, Pattern, projection, Suite, or candidate Composition |
+| How do Products and application owners assemble? | [Products and Suites](./compositions/products-and-suites.md) | Composition owner(s), exact owner-qualified profile refs, Pattern or Suite, Invocation represented by Run, and Deployment context when a Product is installed |
+| Which organ owns a physical mechanism? | [Sepulcher](./sepulcher/index.md) | Vessel, Phylactery, Animators, and Extensions |
+| How do observations become evidence and memory? | [Lich](./sepulcher/lich/index.md) | Riddle/Oculus → Phylactery/Memory → correction or Recall |
+| Which law governs a change? | [Covenants](./adr/index.md) | owning ADR → topic page → State → source evidence |
+| What is the Great Work ultimately trying to cultivate? | [Transcendence](./divination/transcendence/index.md) | Nigredo → Albedo → Citrinitas → Rubedo → Infinity |
+
 ## One body in one breath
 
 ```mermaid
 flowchart LR
     subgraph U["Human purpose"]
         M["Magus<br/>intent and authority"] --> C["Call<br/>addressable intent"]
-        C --> PR["Product + use case<br/>operator promise"]
-        PR --> A["Composition or Suite<br/>domain truth"]
+        C --> T["Composition Pattern or Suite<br/>technical realization"]
+        CO["Composition owner(s)<br/>domain truth"] --> T
+        PR["Product + use case<br/>optional operator package"] -. "selects and presents" .-> CO
+        PR -. "supports" .-> T
     end
     subgraph L["Logical execution"]
-        A --> I["Invocation<br/>Circle opens"]
+        T --> I["Invocation<br/>Circle opens"]
         I --> W["Spellweaver<br/>Scroll admission"]
         W --> G["Casting + Graph<br/>Spell placements in motion"]
     end
     subgraph P["Physical embodiment"]
+        PR -. "instantiated as" .-> DP["Deployment<br/>configured Product context"]
+        DP -. "context when present" .-> I
         G --> D["Dispatcher<br/>interface + profile demand"]
         D --> O["Orchestrator<br/>readiness"]
         O --> N["Animator + Connector<br/>local or external surface"]
@@ -46,10 +62,12 @@ model, Agent, database, workflow, Composition, Product, or interface is the whol
 ## The application road
 
 Extensions contribute mechanisms; Scrolls make work repeatable; Compositions own reusable
-application truth. A Product packages one or more of them for a profession or market and names the
-concrete use cases offered to its operator. Suites connect Compositions without erasing their
-independent data, policy, identity, or authority. Spellweaver registers, pins, schedules, and admits
-logical movement; it does not own every thread it weaves.
+application truth. When present, a Product packages one or more of them for a profession or market
+and names the concrete use cases offered to its operator; current native Patterns do not require a
+Product selector. A settled foreign reference does not create a Suite; live coordination across
+several Composition-owned Invocations does. Suites preserve each member's independent data, policy,
+identity, and authority. Spellweaver registers, pins, schedules, and admits logical movement; it
+does not own every thread it weaves.
 
 The shortest vocabulary is:
 
@@ -60,9 +78,13 @@ Scroll      = one immutable Pattern revision containing Spell placements and the
 Pattern     = the technical executable-score family
 Composition = reusable application capability and domain truth
 Product     = professional or market package of Compositions and use cases
-Suite        = independently owned Compositions related by typed handoffs
+Use case    = one concrete class of operator job supported by a Product
+<kind> profile = owner-qualified specialization preserving the same truth and finish
+Suite       = live lifecycle coordination of independently owned Compositions
+Deployment  = one configured installation of an exact Product revision
 Spellweaver = logical admission and time
 Invocation  = one admitted Circle
+Run         = durable execution and ledger identity representing that Invocation
 Casting     = performance of one exact Scroll inside that Circle
 ```
 
@@ -89,17 +111,6 @@ configurable mobile client and local device session.
 For [Spectre](./compositions/spectre/index.md), VR is the Habitat; when a participant meets the Lich
 through its Avatar there, Spectre owns that bounded Encounter while Avatar retains presentation
 and projection membership.
-
-## Roads through Hexanomicon
-
-| Your question | Begin here | Continue through |
-| --- | --- | --- |
-| What can this revision actually do? | [State of Work](./state-of-the-work.md) | cited source, tests, lockfiles, and maintained receipts |
-| How does Intent become a Product use case and a run? | [Composition Portfolio](./compositions/index.md#products-package-compositions) | Composition or Suite → Invocation/Circle → Spellweaver → Scroll/casting → Graph |
-| Which organ owns a physical mechanism? | [Sepulcher](./sepulcher/index.md) | Vessel, Phylactery, Animators, and Extensions |
-| How do observations become evidence and memory? | [Lich](./sepulcher/lich/index.md) | Riddle/Oculus → Phylactery/Memory → correction or Recall |
-| Which law governs a change? | [Covenants](./adr/index.md) | owning ADR → topic page → State → source evidence |
-| What is the Great Work ultimately trying to cultivate? | [Transcendence](./divination/transcendence/index.md) | Nigredo → Albedo → Citrinitas → Rubedo → Infinity |
 
 ## What the Map does not own
 

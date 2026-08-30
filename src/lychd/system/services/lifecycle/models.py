@@ -84,22 +84,6 @@ class LifecyclePlan:
             for action in self.actions
         )
 
-    @property
-    def removal_paths(self) -> frozenset[Path]:
-        """Return absolute filesystem paths this plan will remove."""
-        filesystem_kinds = {
-            LifecycleResourceKind.DIRECTORY,
-            LifecycleResourceKind.FILE,
-            LifecycleResourceKind.RECEIPT,
-        }
-        return frozenset(
-            Path(action.target)
-            for action in self.actions
-            if action.disposition is LifecycleDisposition.WOULD_REMOVE
-            and action.kind in filesystem_kinds
-            and Path(action.target).is_absolute()
-        )
-
     def require_executable(self) -> None:
         """Fail with a stable summary when any blocker exists."""
         if not self.blockers:

@@ -20,16 +20,12 @@ def _queues(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     return {qc.name: qc for qc in config.queue_configs}
 
 
-def test_topology_a_both_queues_run_in_process(monkeypatch: pytest.MonkeyPatch) -> None:
-    """F1/H1: BOTH queues carry `separate_process=False` — no forked workers remain."""
-    queues = _queues(monkeypatch)
-    assert set(queues) == {"runs", "rites"}
-    assert all(qc.separate_process is False for qc in queues.values())  # type: ignore[attr-defined]
-
-
-def test_no_server_lifespan_forks(monkeypatch: pytest.MonkeyPatch) -> None:
-    """F1/H1: `use_server_lifespan=False` stops the plugin from spawning worker forks."""
+def test_topology_a_keeps_both_workers_on_the_web_loop(monkeypatch: pytest.MonkeyPatch) -> None:
     config = build_saq_config(_settings(monkeypatch))
+    queues = {queue.name: queue for queue in config.queue_configs}
+
+    assert set(queues) == {"runs", "rites"}
+    assert all(qc.separate_process is False for qc in queues.values())
     assert config.use_server_lifespan is False
 
 
@@ -66,8 +62,8 @@ def test_rites_queue_can_claim_perform_run(monkeypatch: pytest.MonkeyPatch) -> N
     from lychd.ghouls.runs import perform_run
 
     queues = _queues(monkeypatch)
-    assert perform_run in list(queues["rites"].tasks)  # type: ignore[attr-defined]
-    assert perform_run in list(queues["runs"].tasks)  # type: ignore[attr-defined]
+    assert list(queues["rites"].tasks) == [perform_run]  # type: ignore[attr-defined]
+    assert list(queues["runs"].tasks) == [perform_run]  # type: ignore[attr-defined]
 
 
 def test_reconciliation_is_not_broker_callable(monkeypatch: pytest.MonkeyPatch) -> None:

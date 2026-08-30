@@ -1,9 +1,9 @@
 ---
-title: Products
+title: Insurance Product Knowledge
 icon: material/file-certificate-outline
 ---
 
-# :material-file-certificate-outline: Products
+# :material-file-certificate-outline: Insurance Product Knowledge
 
 Broker's product catalogue is governed business knowledge, not whatever a provider page or model
 said most recently. A product release names institution, coverage, exclusions, eligibility,

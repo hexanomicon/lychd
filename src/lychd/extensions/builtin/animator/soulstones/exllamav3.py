@@ -13,7 +13,6 @@ from lychd.extensions.builtin.animator.tabby_auth import is_valid_tabby_auth_sec
 _MIN_VOLUME_PARTS = 2
 _TABBY_MODEL_DIR = Path("/app/models")
 _NVIDIA_CDI_DEVICE = re.compile(r"^nvidia\.com/gpu=(?:all|[A-Za-z0-9_.:-]+)$")
-TABBYAPI_CONTRACT_REVISION = "0158fb48d76546a6475d1d63f6cd5b90932d1d11"
 TABBYAPI_IMAGE = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3"
 
 
@@ -54,12 +53,11 @@ format = "EXL3"
 image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c3784d5c213122b2d6365bfa0a88266b3"
 """
 
-    runtime: str = "exllamav3"
+    runtime: Literal["exllamav3"] = "exllamav3"  # pyright: ignore[reportIncompatibleVariableOverride]
     quadlet: QuadletConfig = Field(default_factory=lambda: QuadletConfig(image=TABBYAPI_IMAGE))
     port: int | None = Field(default=5000, ge=1, le=65535)
-    model_format: ModelFormat | None = ModelFormat.EXL3
     model_dir: Path = _TABBY_MODEL_DIR
-    devices: list[str] = Field(default_factory=lambda: ["nvidia.com/gpu=all"])
+    devices: tuple[str, ...] = Field(default_factory=lambda: ("nvidia.com/gpu=all",))
     auth_secret_name: str = Field(
         min_length=1,
         description=(
@@ -67,7 +65,6 @@ image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c378
             "api_tokens.yml and into the Vessel for authenticated data/control requests."
         ),
     )
-    disable_auth: Literal[False] = False
 
     @field_validator("auth_secret_name")
     @classmethod
@@ -126,9 +123,6 @@ image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c378
         if self.base_url.scheme != "http":
             msg = "ExLlamaV3 base_url must use plain HTTP inside the local LychD pod"
             raise ValueError(msg)
-        if self.base_url.username is not None or self.base_url.password is not None:
-            msg = "ExLlamaV3 base_url must not contain embedded credentials"
-            raise ValueError(msg)
         if self.base_url.host not in {"localhost", "127.0.0.1", "::1"}:
             msg = "ExLlamaV3 base_url must address its local LychD pod endpoint"
             raise ValueError(msg)
@@ -138,32 +132,21 @@ image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c378
         if (self.base_url.path or "").rstrip("/") not in {"", "/v1"}:
             msg = "ExLlamaV3 base_url path must be empty or /v1"
             raise ValueError(msg)
-        if self.base_url.query is not None or self.base_url.fragment is not None:
-            msg = "ExLlamaV3 base_url must not contain a query or fragment"
-            raise ValueError(msg)
 
     def _validate_models(self) -> None:
         allowed_formats = {ModelFormat.EXL3, ModelFormat.RAW}
-        if self.model_format not in allowed_formats:
-            msg = "ExLlamaV3 model_format must be EXL3 or RAW (FP16/BF16)"
-            raise ValueError(msg)
         if not self.models:
             msg = "ExLlamaV3 requires at least one [[models]] declaration"
             raise ValueError(msg)
         self._validate_distinct_models(allowed_formats)
 
     def _validate_distinct_models(self, allowed_formats: set[ModelFormat]) -> None:
-        model_ids: set[str] = set()
         runtime_names: set[str] = set()
         for model in self.models:
             runtime_name = self._validate_model_declaration(model, allowed_formats)
-            if model.id in model_ids:
-                msg = f"Duplicate ExLlamaV3 model id '{model.id}'"
-                raise ValueError(msg)
             if runtime_name in runtime_names:
                 msg = f"Duplicate TabbyAPI model directory '{runtime_name}'"
                 raise ValueError(msg)
-            model_ids.add(model.id)
             runtime_names.add(runtime_name)
 
     def _validate_model_declaration(
@@ -216,7 +199,6 @@ image = "ghcr.io/theroyallab/tabbyapi@sha256:a2a4c5b5cd9ae38ea01410c0e495a39c378
 
 
 __all__ = [
-    "TABBYAPI_CONTRACT_REVISION",
     "TABBYAPI_IMAGE",
     "ExLlamaV3SoulstoneConfig",
     "exllamav3_runtime_model_name",

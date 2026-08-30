@@ -15,7 +15,7 @@ from lychd.system.binding_sites import (
     BindingSites,
 )
 from lychd.system.constants import PATH_RUNE_TEMPLATES_DIR
-from lychd.system.schemas import QuadletBase, SystemdService
+from lychd.system.schemas import QuadletBase
 from lychd.system.services.scribe.authority import BindingAuthority
 from lychd.system.services.scribe.errors import ScribeOwnershipError
 from lychd.system.services.scribe.models import (
@@ -23,7 +23,7 @@ from lychd.system.services.scribe.models import (
     OwnedBindings,
     SitePlan,
 )
-from lychd.system.services.scribe.naming import encode_plain_units, runtime_unit_for_source
+from lychd.system.services.scribe.naming import runtime_unit_for_source
 from lychd.system.services.scribe.planning import BindingPlanner, validate_plans
 from lychd.system.services.scribe.rendering import BindingRenderer
 from lychd.system.services.scribe.sites import require_prepared, validate_binding_site
@@ -75,28 +75,9 @@ class ScribeService:
         )
 
     @property
-    def _ownership_path(self) -> Path:
-        return self._authority.path
-
-    @property
     def ownership_path(self) -> Path:
         """Return the exact Scribe authority path for lifecycle reporting."""
-        return self._ownership_path
-
-    def generate_all(self, manifests: Sequence[QuadletBase]) -> None:
-        """Render and replace exactly the previously owned generated file set.
-
-        Quadlet sources land in the Quadlet directory. Coven ``.target`` units
-        land in the systemd user directory. LychD-owned plain ``.service`` and
-        ``.path`` units are preserved because they are managed independently by
-        :meth:`write_plain_unit`.
-        """
-        logger.info("beginning_inscription", count=len(manifests))
-        require_prepared(self._sites)
-        write_set = self._planner.generated(manifests)
-        require_prepared(self._sites)
-        self._transaction.commit(write_set)
-        logger.info("inscription_complete")
+        return self._authority.path
 
     def reconcile_all(
         self,
@@ -138,29 +119,9 @@ class ScribeService:
         require_prepared(self._sites)
         return self._planner.preview(self._planner.complete(manifests, plain_units=plain_units))
 
-    def write_plain_unit(self, filename: str, content: str) -> Path:
-        """Atomically write one LychD-namespaced plain user unit.
-
-        ``filename`` must be a basename ending in ``.service`` or ``.path``.
-        Existing paths are replaceable only when the ownership manifest already
-        grants LychD authority over that exact filename.
-        """
-        plain_file = encode_plain_units({filename: content})
-        require_prepared(self._sites)
-        write_set = self._planner.plain_unit(filename, plain_file)
-        require_prepared(self._sites)
-        self._transaction.commit(write_set)
-        target = self._systemd_dir / filename
-        logger.info("user_unit_inscribed", path=str(target))
-        return target
-
-    def write_user_unit(self, service: SystemdService) -> Path:
-        """Inscribe an uncaged daemon ``.service`` through the ownership gate."""
-        return self.write_plain_unit(service.filename, service.render())
-
     def inspect_owned_bindings(self) -> OwnedBindings:
         """Return validated exact binding ownership without mutating either site."""
-        receipt_present = os.path.lexists(self._ownership_path)
+        receipt_present = os.path.lexists(self.ownership_path)
         if not receipt_present:
             return OwnedBindings(receipt_present=False)
         validate_binding_site(self._output_dir)
@@ -170,7 +131,7 @@ class ScribeService:
         except ScribeOwnershipError:
             raise
         except (OSError, UnicodeError, ValueError, ValidationError, TypeError) as exc:
-            msg = f"Invalid Scribe ownership manifest at {self._ownership_path}: {exc}"
+            msg = f"Invalid Scribe ownership manifest at {self.ownership_path}: {exc}"
             raise ScribeOwnershipError(msg) from exc
         if previous.systemd and os.path.lexists(self._systemd_dir):
             validate_binding_site(self._systemd_dir)

@@ -172,8 +172,8 @@ async def test_executor_exception_releases_section_and_reaches_all_same_key_wait
 
 
 @pytest.mark.asyncio
-async def test_cancelled_parked_waiter_does_not_wedge_a_later_transition() -> None:
-    """Cancel a parked waiter → the section still frees, so a later transition runs."""
+async def test_cancelled_parked_waiter_leaves_no_inflight_or_section_wedge() -> None:
+    """A cancelled waiter permits both its own key and a different key to run."""
     arbiter = TransitionArbiter()
     release_owner = asyncio.Event()
 
@@ -194,34 +194,7 @@ async def test_cancelled_parked_waiter_does_not_wedge_a_later_transition() -> No
     release_owner.set()
     assert (await asyncio.wait_for(owner, timeout=1.0)).reason == "owner"
 
-    # A subsequent, different-key transition must proceed — no ghost-handoff wedge.
-    third = await asyncio.wait_for(arbiter.run("key-c", 50.0, lambda: _await_plan([], "third")), timeout=1.0)
-    assert third.reason == "third"
-
-
-@pytest.mark.asyncio
-async def test_cancelled_parked_waiter_frees_inflight_for_same_key_retry() -> None:
-    """Cancel a parked waiter → a same-key retry executes, not hangs on a leaked future."""
-    arbiter = TransitionArbiter()
-    release_owner = asyncio.Event()
-
-    async def _owner() -> TransitionPlan:
-        await release_owner.wait()
-        return _plan("owner")
-
-    owner = asyncio.create_task(arbiter.run("key-a", 50.0, _owner))
-    await asyncio.sleep(0)
-
-    waiter = asyncio.create_task(arbiter.run("key-b", 50.0, lambda: _await_plan([], "b1")))
-    await asyncio.sleep(0)
-    waiter.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await waiter
-
-    release_owner.set()
-    await asyncio.wait_for(owner, timeout=1.0)
-
-    # Retrying the cancelled waiter's OWN key must execute — the leaked in-flight
-    # future was popped, so `run` does not `return await` a never-resolving future.
     retry = await asyncio.wait_for(arbiter.run("key-b", 50.0, lambda: _await_plan([], "b2")), timeout=1.0)
     assert retry.reason == "b2"
+    third = await asyncio.wait_for(arbiter.run("key-c", 50.0, lambda: _await_plan([], "third")), timeout=1.0)
+    assert third.reason == "third"

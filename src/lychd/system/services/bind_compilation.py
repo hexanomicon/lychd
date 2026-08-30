@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from lychd.system.schemas import SystemdService
 from lychd.system.services.bind import BindRequest
 
 if TYPE_CHECKING:
@@ -134,19 +135,27 @@ def _host_reactor_units(*, settings: Settings) -> dict[str, str]:
     }
 
 
+def _compile_uncaged_vessel_unit(*, settings: Settings) -> SystemdService:
+    """Compile the host-native Vessel unit owned by the binding boundary."""
+    executable = Path(sys.prefix) / "bin" / "lychd"
+    return SystemdService(
+        name="lychd-uncaged-vessel",
+        description="LychD Vessel (uncaged)",
+        exec_start=f"{executable} serve --host 127.0.0.1 --port {settings.server.port}",
+    )
+
+
 def _desired_plain_units(
     *,
     settings: Settings,
     uncaged: bool,
 ) -> dict[str, str]:
     """Compile the complete non-Quadlet unit set for one binding plan."""
-    from lychd.domain.animation.transmute import transmute_uncaged_vessel
-
     plain_units = (
         _host_reactor_units(settings=settings) if settings.orchestration.switching.actuator == "host-reactor" else {}
     )
     if uncaged:
-        service = transmute_uncaged_vessel(settings)
+        service = _compile_uncaged_vessel_unit(settings=settings)
         plain_units[service.filename] = service.render()
     return plain_units
 

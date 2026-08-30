@@ -2,20 +2,20 @@
 
 `ConsentDecision` is what the ledger's `park` returns to the graph (status + id);
 `ConsentView` is the read-model every web surface projects. `censor()` and
-`constraints_admit()` are pure, side-effect-free functions (censor scrubs secrets
-from a payload before it is stored; constraints_admit is the fail-closed preauth
-constraint check).
+`constraints_admit()` are pure, side-effect-free functions: censor creates the
+default-deny audit/UI copy while constraints_admit is the fail-closed preauth
+constraint check.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from fnmatch import fnmatchcase
 from pathlib import PurePosixPath
 from typing import Any, Literal, cast
 
 __all__ = [
+    "CENSORED_VALUE",
     "ConsentDecision",
     "ConsentStatusValue",
     "ConsentView",
@@ -25,10 +25,7 @@ __all__ = [
 
 ConsentStatusValue = Literal["pending", "granted", "denied", "expired", "cancelled"]
 
-# Recursive-key denylist: any dict key matching one of these patterns (case-insensitive)
-# has its value replaced before the payload is ever persisted or rendered.
-_CENSOR_PATTERNS: tuple[str, ...] = ("*key*", "*secret*", "*token*", "*password*", "*credential*")
-_CENSORED = "‹censored›"  # noqa: RUF001 - deliberate guillemet marker (design §3.4a)
+CENSORED_VALUE = "‹censored›"  # noqa: RUF001 - deliberate guillemet marker (design §3.4a)
 
 # The only constraint keys `constraints_admit` understands. ANY other key is fail-closed.
 _KNOWN_CONSTRAINT_KEYS: frozenset[str] = frozenset({"args", "path_prefixes"})
@@ -57,26 +54,14 @@ class ConsentView:
     preauth_slug: str | None = None
 
 
-def _censor_key(key: str) -> bool:
-    lowered = key.lower()
-    return any(fnmatchcase(lowered, pattern) for pattern in _CENSOR_PATTERNS)
+def censor(payload: dict[str, Any]) -> dict[str, str]:
+    """Retain argument names while refusing every value in the consent projection.
 
-
-def censor(payload: Any) -> Any:
-    """Recursively replace secret-shaped values with a censored marker.
-
-    A dict value whose KEY matches the denylist is replaced wholesale; lists and
-    nested dicts are walked. Scalars pass through unchanged.
+    Raw arguments remain available to preauthorization and exact deferred
+    execution. The durable consent audit/UI copy is default-deny because a key
+    name cannot prove that an arbitrary value is safe to disclose.
     """
-    if isinstance(payload, dict):
-        result: dict[str, Any] = {}
-        for key, value in cast("dict[Any, Any]", payload).items():
-            key_str = str(key)
-            result[key_str] = _CENSORED if _censor_key(key_str) else censor(value)
-        return result
-    if isinstance(payload, list):
-        return [censor(item) for item in cast("list[Any]", payload)]
-    return payload
+    return {str(key): CENSORED_VALUE for key in payload}
 
 
 def _args_admit(allow: Any, payload: dict[str, Any]) -> bool:
@@ -84,11 +69,36 @@ def _args_admit(allow: Any, payload: dict[str, Any]) -> bool:
     if not isinstance(allow, dict):
         return False
     for arg_name, allowed in cast("dict[Any, Any]", allow).items():
+        field_name = str(arg_name)
         if not isinstance(allowed, list):
             return False
-        if payload.get(str(arg_name)) not in cast("list[Any]", allowed):
+        if not field_name or field_name not in payload:
+            return False
+        actual = payload[field_name]
+        if not any(_same_json_value(actual, candidate) for candidate in cast("list[Any]", allowed)):
             return False
     return True
+
+
+def _same_json_value(actual: Any, expected: Any) -> bool:
+    """Compare JSON-shaped authority without Python's bool/number coercion."""
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(actual, dict):
+        actual_object = cast("dict[Any, Any]", actual)
+        expected_object = cast("dict[Any, Any]", expected)
+        if any(not isinstance(key, str) for key in actual_object) or actual_object.keys() != expected_object.keys():
+            return False
+        return all(_same_json_value(value, expected_object[key]) for key, value in actual_object.items())
+    if isinstance(actual, list):
+        actual_array = cast("list[Any]", actual)
+        expected_array = cast("list[Any]", expected)
+        return len(actual_array) == len(expected_array) and all(
+            _same_json_value(value, candidate) for value, candidate in zip(actual_array, expected_array, strict=True)
+        )
+    if actual is None or isinstance(actual, (bool, int, float, str)):
+        return bool(actual == expected)
+    return False
 
 
 def _path_prefixes_admit(prefixes: Any, payload: dict[str, Any]) -> bool:

@@ -18,7 +18,7 @@ class DatabaseSettings(SettingsSection):
     """The database service operated by this server."""
 
     host: str = "localhost"
-    port: int = 5432
+    port: int = Field(default=5432, ge=1, le=65535)
     user: str = "lich"
     database: str = "lychd"
     image: str = "docker.io/pgvector/pgvector:pg18-trixie"
@@ -30,13 +30,13 @@ class DatabaseSettings(SettingsSection):
     """Log every SQL statement; useful for diagnosis but noisy and unsuitable for normal operation."""
     echo_pool: bool | str = False
     """Log SQLAlchemy connection-pool activity for database-pool diagnosis."""
-    pool_size: int = 5
+    pool_size: int = Field(default=5, ge=0)
     """Persistent connections retained in the SQLAlchemy pool."""
-    max_overflow: int = 10
+    max_overflow: int = Field(default=10, ge=-1)
     """Temporary connections allowed above ``pool_size`` during demand spikes."""
-    pool_timeout: int = 30
+    pool_timeout: float = Field(default=30.0, ge=0.0, allow_inf_nan=False)
     """Seconds to wait for a pool connection before failing a database operation."""
-    pool_recycle: int = 300
+    pool_recycle: int = Field(default=300, ge=-1, allow_inf_nan=False)
     """Maximum connection age in seconds before pool replacement prevents stale connections."""
     pool_pre_ping: bool = True
     """Test a pooled connection before use and replace it if the database closed it."""
@@ -58,7 +58,6 @@ class WebSettings(SettingsSection):
     debug: bool = False
     name: str = "lychd"
     image: str = "ghcr.io/hexanomicon/lychd:latest"
-    url: str = "http://localhost:8000"
     allowed_cors_origins: list[str] = Field(default_factory=list)
     """Exact loopback browser origins admitted for cross-origin development requests."""
     csrf_cookie_name: str = "csrftoken"
@@ -140,11 +139,7 @@ class ServerJobsSettings(SettingsSection):
 class ServerSettings(SettingsSection):
     """Everything this one LychD server process runs or exposes."""
 
-    host: Literal["127.0.0.1", "::1"] = "127.0.0.1"
-    port: int = 7134
-    reload: bool = False
-    """Restart the development server when Python source files change."""
-    keep_alive: int = 65
+    port: int = Field(default=7134, ge=1, le=65535)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     web: WebSettings = Field(default_factory=WebSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)

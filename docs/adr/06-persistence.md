@@ -49,6 +49,10 @@ metadata on write and every public read. That matches the database adapter's val
 caller cannot mutate canonical truth through an object it was handed. This parity rule does not
 turn the memory profile into durable evidence.
 
+The same value boundary applies to loop-confined consent and Bridge-session stores. Censored
+arguments, turns, fragments, and model-history values are detached both when retained and when
+projected; mutating a submitted object or a read view cannot rewrite the store's canonical value.
+
 Workers select pending work under row locks with `SKIP LOCKED`. Selection, ownership transition,
 and all facts that establish the claim commit atomically: no two workers may own one labor unit.
 The replaceable JSONB `run_checkpoint` is one unique, cascading row per `run`; it is recovery

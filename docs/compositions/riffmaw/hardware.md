@@ -24,7 +24,7 @@ The ownership split is:
 | Echo | bounded speech capture, transcription, synthesis, delivery, interruption, and playback evidence | musical performance, arbitrary ambient recording, or an identity |
 | Riffmaw | human takes, guitar/bass DI, music, voice performance, effects, sessions, and sonic lineage | speech lifecycle, visual generation, or publication |
 | Avatar | an eligible voice reference inside a presentation profile and target projection | microphone authority, cloning permission, or proof that a voice was played |
-| Familiar | the admitted physical body, mission, safety envelope, onboard sensors, and physical speaker | Avatar identity, LychD attention, or a promise that every sensor byte was retained |
+| Familiar | the admitted physical body, mission, safety envelope, onboard sensors, and physical speaker | Persona identity, Avatar presentation, LychD attention, or a promise that every sensor byte was retained |
 | Tether/Portal | private reachability and an admitted remote-service boundary, respectively | caller authentication, recording consent, chronology, or device authority |
 
 ## Host receipt boundary

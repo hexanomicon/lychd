@@ -12,7 +12,6 @@ registry/orchestration layer, not at the connector boundary.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,36 +33,26 @@ class ModelInfo(BaseModel):
     Connectors are free to return Pydantic AI ``Model`` instances directly for
     execution. ``ModelInfo`` exists so orchestration can reason about model
     choice before hydration (capability hints, multimodal support, model ids,
-    and other connector-reported metadata).
+    and connector-reported context limits).
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     id: str = Field(min_length=1)
-    description: str | None = None
     surface: ModelSurface | None = Field(
         default=None,
         description="Preferred Pydantic AI model surface for this model (chat/responses).",
     )
-    modalities_in: list[str] = Field(
-        default_factory=list,
+    modalities_in: tuple[str, ...] = Field(
+        default_factory=tuple,
         description="Connector-reported accepted modalities (e.g. text, image, audio).",
-    )
-    modalities_out: list[str] = Field(
-        default_factory=list,
-        description="Connector-reported output modalities (e.g. text, image, audio).",
     )
     supports_tools: bool | None = Field(
         default=None,
         description="Whether tool calling is supported for this model, if known.",
-    )
-    supports_streaming: bool | None = Field(
-        default=None,
-        description="Whether streaming responses are supported for this model, if known.",
     )
     max_context: int | None = Field(
         default=None,
         ge=1,
         description="Known/advertised context window for this model, if available.",
     )
-    metadata: dict[str, Any] = Field(default_factory=dict)

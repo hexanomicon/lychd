@@ -16,7 +16,7 @@ icon: material/shield-lock-outline
 | Zone | May hold | Must not hold |
 | --- | --- | --- |
 | Vessel | durable control-plane state, trusted provider and database authority | arbitrary shell/Python execution, writable trusted code |
-| Gateway Host | edge certificates and routes, firewall intent, one backend service credential, optional tunnel key, bounded transport evidence | database or application authority, private Context, provider credentials, Sigils, corpus, general LAN route, host administration |
+| Gateway Host | edge certificates and routes, local defense-in-depth firewall intent, one backend service credential, optional tunnel key, bounded transport evidence | database or application authority, private Context, provider credentials, Sigils, corpus, general LAN route, ingress-derived host administration |
 | Platform edge | one platform credential, service credential, bounded transport/effect journal, and typed adapter | provider/database credentials, corpus, private Context, policy, home Sigil, arbitrary home route or host administration |
 | Tomb | a narrow execution-job hand and disposable child workspace | agent/LLM authority, provider or broad database secrets, host capability, Host Reactor access |
 | Coffin | one foreign agent under one `AgentJob` and a revocable Gate bearer | queue/database credentials, promotion, authoritative VCS, host effects |
@@ -25,8 +25,12 @@ A [Gateway Host](../sepulcher/gateway.md) is an optional separate ingress placem
 Extension Domain, Composition, caller, or second authority plane. Veil owns its admitted routes;
 Tether may supply an exact private road; the receiving Ward and application still authenticate
 and authorize every request. The Core host accepts only the named backend flow from the Gateway
-identity, while the Gateway has no arbitrary LAN or Internet route. A same-host proxy is Veil but
-not a Gateway Host.
+identity. Policy outside the Gateway host—a router/firewall, L3-switch ACL, or cloud-network rule,
+together with the receiving Core firewall—enforces the zone's public listener and exact backend
+flow. Rules controlled only by the Gateway itself are defense in depth and cannot prove containment
+after host compromise. A same-host proxy is Veil but not a Gateway Host. Operator administration
+uses a separate infrastructure path whose credential is unavailable to ingress and backend
+workloads.
 
 Gateway compromise closes the route, revokes edge certificates, backend and tunnel credentials,
 fences its deployment generation, quarantines bounded transport evidence, and rebuilds the host.
@@ -190,9 +194,10 @@ not success.
 
 Pure policy tests prove compilation, not containment. Containment needs effectful cross-boundary
 receipts for mounts, environment and `/proc`, endpoints, descendant cancellation, ceilings,
-credential absence, Gate races, quarantine, and recovery. Coffin/Gate policy exists; hostile
-browser safety, effectful provider service, and host containment remain unclaimed according to
-[State of Work](../state-of-the-work.md#delegated-agent-execution).
+credential absence, Gate races, quarantine, and recovery. Coffin/Gate policy is Designed; no
+hostile-runtime containment or Provider Gate implementation ships. Hostile browser safety and
+effectful provider service likewise remain unclaimed according to [State of
+Work](../state-of-the-work.md#delegated-agent-execution).
 
 The general Egress Gate additionally needs allow/deny fixtures for every `RemoteTarget`; canonical
 wire/export digest mismatch; target, model, peer, runtime, path, and custody-route substitution;

@@ -31,7 +31,7 @@ keeps its own runtime, endpoint, resource, secret, and lifecycle policy, and the
 | `runtime` | `"generic"` | Selects the local runtime adapter. |
 | `model_path` | `null` | Single-model artifact path or runtime-specific identity input. |
 | `served_model_id` | `null` | Exact provider-facing id returned by live model inventory; required when it differs from the path basename or Soulstone name. |
-| `base_url` | derived | Connector endpoint override. |
+| `base_url` | derived | Connector endpoint root; credentials, query, fragment, and invalid ports are refused. |
 | `port` | assigned | Unique host port; derives `http://localhost:{port}/v1`. |
 | `groups` | `[]` | Compatible [Coven](../coven.md) target membership. |
 | `devices` | `[]` | Explicit device passthrough. |
@@ -39,12 +39,25 @@ keeps its own runtime, endpoint, resource, secret, and lifecycle policy, and the
 | `env_vars` | `{}` | Non-secret environment values. |
 | `secret_env_files` | `{}` | Environment names mapped to Podman secret names. |
 | `exec` | `[]` | Complete command override; bypasses adapter synthesis. |
-| `models` | `[]` | Declared model catalogue. |
+| `models` | `[]` | Declared model catalogue; a non-empty table is the exact admitted id allowlist. |
 | `generation` | `null` | Service-wide generation overlay. |
 
 Runtime leaves may add typed fields such as `extra_args` or llama.cpp `startup_mode`. Adapter
 defaults are followed by typed overrides; explicit `exec` replaces synthesized arguments rather
 than extending them.
+
+A concrete built-in runtime leaf pins its own `runtime` literal. A llama.cpp, vLLM, SGLang, or
+ExLlamaV3 file cannot claim another adapter merely by changing that field; use the matching Rune
+directory and schema. `base_url` is a composable endpoint root, so a path prefix such as `/v1` is
+preserved, while embedded credentials, query or fragment state, port zero, and out-of-range ports
+fail during Rune validation. Hydration additionally requires a Soulstone URL to use an approved
+loopback host and an explicit port; when `port` is also declared, the two values must agree. A
+non-loopback endpoint belongs at the Portal boundary.
+
+Loaded Rune values are immutable through their nested models, sequences, and string maps. Change
+the TOML and construct a new process generation; do not mutate an admitted object in place. Rune
+writing uses the same exact schema generation admitted by loading, rather than every imported
+Python subclass, so an unregistered branch cannot leak into generated configuration.
 
 ## Capability declarations
 
@@ -62,7 +75,10 @@ service schema.
 
 Each `[[models]]` block names a stable `id`, an explicit container-side `path`, an optional
 description and format, capability hints, and a per-model generation overlay. It yields capability
-identity `{animator}:{family}:{model_id}`.
+identity `{animator}:{family}:{model_id}`. Duplicate ids fail validation. When at least one block is
+present, those ids are the complete admitted catalogue in declaration order: live discovery for an
+undeclared id is ignored, while a declared id absent from discovery keeps its declaration but may
+be downgraded by readiness evidence.
 
 `[models.capabilities]` may declare:
 
@@ -71,15 +87,22 @@ identity `{animator}:{family}:{model_id}`.
 - `supports_tools` and `supports_streaming`.
 
 These hints are authoritative for routing. A live probe may downgrade availability or fill an
-explicitly open runtime fact; it may not invent an undeclared model or family. Image input enriches
-a `chat` capability and does not create the dedicated `vision` family. The full two-axis law lives
-in [Capabilities](../capabilities.md).
+explicitly open runtime fact; it may not invent an undeclared model. An explicit `families` list is
+closed. When that field is omitted, v1 applies only its bounded inference: `chat` from the admitted
+surface/text input and probed `embedding` or `rerank`; it never infers `vision`, `stt`, `tts`, or
+`tool_execution`. Image input enriches a `chat` capability and does not create the dedicated
+`vision` family. The full two-axis law lives in [Capabilities](../capabilities.md).
 
-Every Soulstone must synthesize at least one capability through its adapter. An unrecognised
-generic runtime remains passive. It becomes routable only through a registered adapter or an
-explicit OpenAI-compatible alias with defined binding semantics. In the general-service shape,
-non-model services use `[[capabilities]]`; they do not fake a model declaration. Compatibility is
-claimed separately for each named [Connector dialect](../connectors.md#openai-compatibility-is-per-dialect).
+An empty `models` list is not the Portal zero-capability rule. A Soulstone adapter may instead use
+its runtime/discovery model catalogue or derive one model id from `served_model_id`, `model_path`,
+or the Soulstone name. A non-empty list remains the exact allowlist.
+
+Every admitted Soulstone must synthesize at least one capability through its adapter. An
+unrecognised generic runtime remains passive at the adapter boundary, but registry generation
+refuses that Soulstone until a registered adapter or explicit OpenAI-compatible alias with defined
+binding semantics yields a capability. In the general-service shape, non-model services use
+`[[capabilities]]`; they do not fake a model declaration. Compatibility is claimed separately for
+each named [Connector dialect](../connectors.md#openai-compatibility-is-per-dialect).
 
 ## Generation Overlays
 
@@ -90,8 +113,9 @@ Generation fields are optional: `max_context`, `max_tokens`, `temperature`, `top
 runtime defaults → Soulstone [generation] → [models.generation]
 ```
 
-The accepted ranges are `max_context`/`max_tokens ≥ 1`, `temperature` 0–2, `top_p` 0–1,
-`top_k ≥ 0`, and `repetition_penalty ≥ 0`.
+The accepted ranges are `max_context`/`max_tokens ≥ 1`, finite `temperature` 0–2, finite `top_p`
+0–1, `top_k ≥ 0`, and finite `repetition_penalty ≥ 0`; NaN and infinities are invalid even when a
+comparison alone would appear to admit them.
 
 ## Concurrency Intent
 

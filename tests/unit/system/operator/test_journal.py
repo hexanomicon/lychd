@@ -58,10 +58,9 @@ def test_logs_use_only_exact_receipted_units_and_bounded_argv() -> None:
         journalctl_bin="/usr/bin/journalctl",
     )
 
-    read = service.read(lines=42)
+    content = service.read(lines=42)
 
-    assert read.units == ("lychd-vessel.service", "lychd-qwen.service")
-    assert read.content == "one line\n"
+    assert content == "one line\n"
     assert runner.calls == [
         (
             (

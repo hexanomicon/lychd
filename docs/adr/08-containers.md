@@ -61,9 +61,12 @@ An exact profile may place Veil on a separate
 Extension Domain, second Vessel, or application authority. Its manifest closes the public
 listeners, typed Veil routes, exact authenticated backend, firewall flows, management boundary,
 edge-only secrets, optional Tether attachment, resources, readiness, reconciliation, and removal.
-The Core manifest accepts only that backend identity and flow. The reference placements **Home**
-and **Remote** reuse this role with different physical and custody boundaries; a hostname, RPi,
-VPS, or boolean toggle cannot synthesize either topology.
+It also binds or attests the independently enforced network zone, its router/firewall, L3-switch,
+or cloud-network policy, and the receiving Core-firewall policy. The Gateway workload cannot widen
+those controls; its local firewall rules remain defense in depth. The Core manifest accepts only
+that backend identity and flow. The reference
+placements **Home** and **Remote** reuse this role with different physical and custody boundaries;
+a hostname, RPi, VPS, or boolean toggle cannot synthesize either topology.
 
 The first concrete consumers are the designed, mutually exclusive
 [Reach deployment profiles](../compositions/reach/deployments/index.md). No application selector,
@@ -130,7 +133,10 @@ verify the prior ownership receipt and exact binding sites, make same-filesystem
 the declared files, remove only stale receipt-named files, publish the new receipt, and daemon
 reload. A changed source, generation, site, secret, filename, mode, symlink, or foreign collision
 refuses; a failed transaction restores the previous files and receipt. Ambiguity authorizes no
-deletion. Filename resemblance never proves ownership.
+deletion. Filename resemblance never proves ownership. Before planning, the complete ownership
+manifest also requires a one-to-one mapping from every currently runtime-bearing `.container`,
+`.pod`, and generated/plain systemd source to its resolved runtime unit; different source names
+that systemd would collapse onto one unit refuse together.
 
 The declared compilation/materialization path is available within its State boundary. It is not a
 receipt that a real operator host started Podman, systemd, GPU, or a model:

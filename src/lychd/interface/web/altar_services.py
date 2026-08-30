@@ -1,10 +1,10 @@
-"""`AltarServices` — the one fully constructed web-layer service container.
+"""Application-layer assembly for the fully constructed `AltarServices` container.
 
-Everything the Altar and in-process ghoul need is assembled once per app lifespan
-and placed on ``app.state.services``.  The queue map is a required input: there is
+Everything the Altar and in-process ghoul need is constructed once per app lifespan
+and published on ``app.state.services``. The queue map is a required input: there is
 no pre-wire broker, unbound engine facade, or post-construction dependency mutation.
-``deps.py`` contains only pure readers; ``interface/web/lifespan.py`` is the sole
-assembly and publication site.
+This module owns persistence and system-adapter selection; domain modules supply the
+contracts and services without assembling the application graph.
 """
 
 from __future__ import annotations
@@ -61,13 +61,12 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, kw_only=True)
 class AltarServices:
-    """Everything the web layer needs, built once per app lifespan."""
+    """Everything the application publishes to web handlers and in-process workers."""
 
     registry: AnimatorRegistry
     dispatcher: Dispatcher
     orchestrator: OrchestratorManager
     leases: LeaseLedger
-    context_orchestrator: ContextOrchestrator
     fragments: FragmentRegistry
     bridge_sessions: SessionStorePort
     consents: ConsentLedger
@@ -109,11 +108,11 @@ def _validate_routed_queues(routing: Mapping[str, RouteRule], queues: Mapping[st
 
 
 def _build_run_ledger(profile: str) -> RunLedger:
-    """Select the `RunLedger` implementation from the persistence profile (F4/H5, S3).
+    """Select the `RunLedger` implementation from the shared persistence profile.
 
     ``postgres`` (default) → the durable `DbRunLedger` over the run/step tables;
-    ``memory`` → the loop-confined `InMemoryRunLedger` used by DB-free tests. This is
-    the one profile flag Wave 4 extends to the ConsentLedger + SessionStore.
+    ``memory`` → the loop-confined `InMemoryRunLedger` used by DB-free tests. Run,
+    consent, session, and stasis stores derive from this same profile.
     """
     if profile == "memory":
         return InMemoryRunLedger()
@@ -134,7 +133,7 @@ def _build_session_store(profile: str, *, sigil_name: str) -> SessionStorePort:
     if profile == "memory":
         return BridgeSessionStore()
     from lychd.db.engine import get_session_factory
-    from lychd.domain.web.sessions import DbBridgeSessionStore
+    from lychd.db.sessions import DbBridgeSessionStore
 
     return DbBridgeSessionStore(get_session_factory(), sigil_name=sigil_name)
 
@@ -200,7 +199,7 @@ def build_altar_services(
     settings: Settings | None = None,
     systemctl_bin: str | None = None,
 ) -> AltarServices:
-    """Assemble the `AltarServices` container (the sole construction site).
+    """Assemble `AltarServices` at the application composition boundary.
 
     The run ledger is chosen by the persistence ``profile`` (defaults to
     ``settings.server.database.profile`` — ``postgres`` in production, ``memory`` in DB-free
@@ -228,7 +227,7 @@ def build_altar_services(
     bus = InProcessEventBus(ledger=ledger)
     dispatcher = Dispatcher(registry=registry, leases=leases, events=bus)
     switching = settings.orchestration.switching
-    worker_broker = GhoulBroker(queues=queues, leases=leases)
+    worker_broker = GhoulBroker()
     orchestrator = OrchestratorManager(
         worker_broker,
         registry,
@@ -290,13 +289,13 @@ def build_altar_services(
         stasis_store=stasis_store,
         delegates=delegates,
         consents=consents,
+        release_context=context_orchestrator.release,
     )
     return AltarServices(
         registry=registry,
         dispatcher=dispatcher,
         orchestrator=orchestrator,
         leases=leases,
-        context_orchestrator=context_orchestrator,
         fragments=fragments,
         bridge_sessions=bridge_sessions,
         consents=consents,

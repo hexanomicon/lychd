@@ -70,13 +70,13 @@ class RunSubstrate:
     turns: Any  # SessionStore (settled turns; presented via TurnLedgerPort)
     forge: AgentForge
     sigil_provider: Callable[[], Sigil] = field(default_factory=_default_sigil_provider)
-    # Wave 4: the ConsentLedger the graph parks into + the web reads (one-record rule).
-    # Cortex must NOT import codex (import law), so this is an opaque handle: the
+    # ConsentLedger is both the Graph park target and the web projection source.
+    # Cortex must not import Codex (import law), so this is an opaque handle: the
     # application assembly root and the consent tests thread the real ledger.
     # A run that never parks (a linear/non-Gate workflow) never touches it.
     consents: Any = None
-    # Wave 3: the lease ledger + SAQ queues, shared per process. Defaulted so existing
-    # test construction sites keep compiling; the root threads the real ones.
+    # Lease ledger and queues are shared per process. Defaults keep isolated domain
+    # construction DB-free; application assembly injects the production instances.
     leases: LeaseLedger = field(default_factory=LeaseLedger)
     queues: Mapping[str, RunQueue] = field(default_factory=_empty_queues)
     # Topology A: API cancellation and the in-process worker share this settlement
@@ -96,11 +96,11 @@ class RunSubstrate:
         execution supplies the run's persisted Sigil so a restart cannot silently
         widen authority to the daemon's default identity.
         """
-        from lychd.agents.services import build_workflow_services
+        from lychd.agents.services import WorkflowServices
 
         sigil_provider = self.sigil_provider if sigil is None else lambda: sigil
 
-        return build_workflow_services(
+        return WorkflowServices(
             dispatcher=self.dispatcher,
             orchestrator=self.orchestrator,
             context=self.context,

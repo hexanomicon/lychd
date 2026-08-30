@@ -59,7 +59,6 @@ class AppInit(InitPluginProtocol):
         """
         # Lazy import of settings to keep startup fast
         from advanced_alchemy.extensions.litestar import SQLAlchemyPlugin
-        from advanced_alchemy.extensions.litestar.providers import create_service_provider
         from litestar.config.response_cache import ResponseCacheConfig
         from litestar.di import Provide
         from litestar.plugins.structlog import StructlogPlugin
@@ -79,10 +78,7 @@ class AppInit(InitPluginProtocol):
         )
         from lychd.config.constants import CACHE_EXPIRATION
         from lychd.config.runes.registry import load_rune_registry
-        from lychd.domain.animation.services.store import SoulstoneRecordService
-        from lychd.domain.cortex.services import KarmaService, RunService, StepService
         from lychd.domain.web.contracts import CsrfClientContract
-        from lychd.domain.web.services import SessionService
         from lychd.extensions.host import get_extensions
         from lychd.lib.exceptions import ApplicationError
 
@@ -181,15 +177,10 @@ class AppInit(InitPluginProtocol):
             {
                 "extensions": Provide(provide_extensions, sync_to_thread=False),
                 "runes": Provide(provide_runes, sync_to_thread=False),
-                "runs_service": create_service_provider(RunService),
-                "steps_service": create_service_provider(StepService),
-                "sessions_service": create_service_provider(SessionService),
-                "karma_service": create_service_provider(KarmaService),
-                "soulstone_records_service": create_service_provider(SoulstoneRecordService),
             }
         )
-        # The ONE web-layer assembly site: build AltarServices, warm the registry,
-        # publish on app.state, drain on shutdown.
+        # The web-layer composition path builds AltarServices, warms the registry,
+        # publishes on app.state, and drains on shutdown.
         app_config.lifespan.append(altar_services_lifespan)  # pyright: ignore[reportUnknownMemberType]
 
         return app_config

@@ -79,13 +79,11 @@ class NexusController(Controller):
                     runtime_id=definition.runtime_id,
                     display_name=definition.display_name,
                     provider_id=registration.provider_id,
-                    transport=definition.transport.value,
-                    delivery=definition.delivery.value,
-                    runnable=definition.runtime_adapter is not None,
-                    coffin_profiles=(["read", "candidate", "verify"] if definition.security.requires_nono else []),
-                    provider_gate=(
-                        "required_unavailable" if definition.security.requires_provider_gate else "not_required"
-                    ),
+                    transport="reference",
+                    delivery="available",
+                    runnable=True,
+                    coffin_profiles=[],
+                    provider_gate="not_required",
                     capacity_posture="not_configured",
                     limitations=list(definition.limitations),
                 )

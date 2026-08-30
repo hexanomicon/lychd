@@ -14,7 +14,6 @@ from lychd.domain.animation.schemas.runes.animators import (
     SoulstoneConfig,
 )
 from lychd.domain.animation.schemas.runes.models import (
-    LocalLLMModelConfig,
     LocalModelConfig,
     ModelCapabilityHints,
     PortalModelConfig,
@@ -24,7 +23,6 @@ __all__ = [
     "AnimatorConfig",
     "GenericSoulstoneConfig",
     "GoogleGeminiPortalConfig",
-    "LocalLLMModelConfig",
     "LocalModelConfig",
     "ModelCapabilityHints",
     "OpenAICompatibleProvider",

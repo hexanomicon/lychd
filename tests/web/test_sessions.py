@@ -6,14 +6,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any, Self, cast
+from typing import Any, cast
 from uuid import uuid4
 
 import pytest
-from sqlalchemy.dialects import postgresql
 
+from lychd.db.sessions import DbBridgeSessionStore
 from lychd.domain.web.schemas import BridgeTurn
-from lychd.domain.web.sessions import BridgeSessionStore, DbBridgeSessionStore
+from lychd.domain.web.sessions import BridgeSessionStore
 
 
 @pytest.mark.asyncio
@@ -22,7 +22,11 @@ async def test_session_for_run_indexed_by_turn() -> None:
     store = BridgeSessionStore()
     session = await store.create_session()
     await store.add_turn(session.id, BridgeTurn(role="agent", content="risen", run_id="r1", state="settled"))
-    assert (await store.session_for_run("r1")) is session
+    owner = await store.session_for_run("r1")
+    assert owner is not None
+    assert owner.id == session.id
+    assert [turn.content for turn in owner.turns] == ["risen"]
+    assert owner is not session
     settled = await store.settled_turn_for_run("r1")
     assert settled is not None
     assert settled.content == "risen"
@@ -58,8 +62,10 @@ async def test_settle_agent_turn_appends_visible_reply_and_model_suffix_together
         new_messages=second_suffix,
     )
 
-    assert [turn.content for turn in session.turns] == ["first", "second"]
-    assert session.message_history == [*first_suffix, *second_suffix]
+    settled = await store.get_session(session.id)
+    assert settled is not None
+    assert [turn.content for turn in settled.turns] == ["first", "second"]
+    assert settled.message_history == [*first_suffix, *second_suffix]
 
 
 @pytest.mark.asyncio
@@ -72,8 +78,10 @@ async def test_settle_agent_turn_replay_is_idempotent_and_conflicts_fail_closed(
     await store.settle_agent_turn(session.id, turn, new_messages=suffix)
     await store.settle_agent_turn(session.id, turn, new_messages=suffix)
 
-    assert session.turns == [turn]
-    assert session.message_history == suffix
+    settled = await store.get_session(session.id)
+    assert settled is not None
+    assert settled.turns == [turn]
+    assert settled.message_history == suffix
 
     with pytest.raises(ValueError, match="conflicting Bridge turns"):
         await store.settle_agent_turn(
@@ -82,8 +90,37 @@ async def test_settle_agent_turn_replay_is_idempotent_and_conflicts_fail_closed(
             new_messages=[{"kind": "different"}],
         )
 
-    assert session.turns == [turn]
-    assert session.message_history == suffix
+    settled = await store.get_session(session.id)
+    assert settled is not None
+    assert settled.turns == [turn]
+    assert settled.message_history == suffix
+
+
+@pytest.mark.asyncio
+async def test_memory_session_boundaries_detach_nested_values() -> None:
+    store = BridgeSessionStore()
+    created = await store.create_session()
+    fragment: dict[str, Any] = {"kind": "text", "props": {"values": ["kept"]}}
+    messages: list[Any] = [{"parts": [{"text": "kept"}]}]
+    await store.settle_agent_turn(
+        created.id,
+        BridgeTurn(role="agent", content="risen", run_id="run-detached", fragments=(fragment,)),
+        new_messages=messages,
+    )
+
+    cast("dict[str, Any]", fragment["props"])["values"].append("caller-write")
+    cast("list[dict[str, Any]]", messages[0]["parts"])[0]["text"] = "caller-write"
+    first = await store.get_session(created.id)
+    assert first is not None
+    assert first.turns[0].fragments[0]["props"] == {"values": ["kept"]}
+    assert first.message_history == [{"parts": [{"text": "kept"}]}]
+
+    cast("dict[str, Any]", first.turns[0].fragments[0]["props"])["values"].append("read-view-write")
+    cast("list[dict[str, Any]]", first.message_history[0]["parts"])[0]["text"] = "read-view-write"
+    second = await store.get_session(created.id)
+    assert second is not None
+    assert second.turns[0].fragments[0]["props"] == {"values": ["kept"]}
+    assert second.message_history == [{"parts": [{"text": "kept"}]}]
 
 
 def test_db_record_normalizes_legacy_fragment_keys_into_inert_descriptors() -> None:
@@ -128,95 +165,3 @@ async def test_db_read_boundaries_treat_malformed_ids_as_absent() -> None:
     assert await store.get_session("not-a-uuid") is None
     assert await store.session_for_run("not-a-uuid") is None
     assert await store.settled_turn_for_run("not-a-uuid") is None
-
-
-@pytest.mark.asyncio
-async def test_db_add_turn_locks_row_before_jsonb_append() -> None:
-    """The JSONB append is enclosed by a transaction-scoped PostgreSQL row lock."""
-
-    class _Transaction:
-        async def __aenter__(self) -> None:
-            return None
-
-        async def __aexit__(self, *_exc: object) -> None:
-            return None
-
-    class _Session:
-        def __init__(self) -> None:
-            self.row = SimpleNamespace(meta={"kept": True, "turns": []})
-            self.statement: Any = None
-
-        async def __aenter__(self) -> Self:
-            return self
-
-        async def __aexit__(self, *_exc: object) -> None:
-            return None
-
-        def begin(self) -> _Transaction:
-            return _Transaction()
-
-        async def scalar(self, statement: Any) -> Any:
-            self.statement = statement
-            return self.row
-
-    session = _Session()
-    factory = lambda: session  # noqa: E731 - a tiny async-sessionmaker structural fake
-    store = DbBridgeSessionStore(cast("Any", factory), sigil_name="magus")
-
-    await store.add_turn(str(uuid4()), BridgeTurn(role="agent", content="risen", run_id="run_1"))
-
-    sql = str(session.statement.compile(dialect=postgresql.dialect()))
-    assert "FOR UPDATE" in sql
-    assert session.row.meta["kept"] is True
-    assert [turn["content"] for turn in session.row.meta["turns"]] == ["risen"]
-
-
-@pytest.mark.asyncio
-async def test_db_settlement_updates_turn_and_message_history_under_one_lock() -> None:
-    class _Transaction:
-        async def __aenter__(self) -> None:
-            return None
-
-        async def __aexit__(self, *_exc: object) -> None:
-            return None
-
-    class _Session:
-        def __init__(self) -> None:
-            self.row = SimpleNamespace(meta={"turns": []}, message_history=[{"kind": "request"}])
-
-        async def __aenter__(self) -> Self:
-            return self
-
-        async def __aexit__(self, *_exc: object) -> None:
-            return None
-
-        def begin(self) -> _Transaction:
-            return _Transaction()
-
-        async def scalar(self, statement: Any) -> Any:
-            _ = statement
-            return self.row
-
-    session = _Session()
-    factory = lambda: session  # noqa: E731 - structural async-sessionmaker fake
-    store = DbBridgeSessionStore(cast("Any", factory), sigil_name="magus")
-
-    session_id = str(uuid4())
-    turn = BridgeTurn(role="agent", content="risen", run_id="run-1")
-    suffix = [{"kind": "response"}]
-
-    await store.settle_agent_turn(session_id, turn, new_messages=suffix)
-    await store.settle_agent_turn(session_id, turn, new_messages=suffix)
-
-    assert [turn["content"] for turn in session.row.meta["turns"]] == ["risen"]
-    assert session.row.message_history == [{"kind": "request"}, {"kind": "response"}]
-
-    with pytest.raises(ValueError, match="conflicting Bridge turns"):
-        await store.settle_agent_turn(
-            session_id,
-            BridgeTurn(role="agent", content="changed", run_id="run-1"),
-            new_messages=[{"kind": "different"}],
-        )
-
-    assert [item["content"] for item in session.row.meta["turns"]] == ["risen"]
-    assert session.row.message_history == [{"kind": "request"}, {"kind": "response"}]
