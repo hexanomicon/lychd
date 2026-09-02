@@ -30,12 +30,12 @@ Riddle records compact promotion evidence under
 
 - sealed target-capability holdout results;
 - matched baseline Outcomes for the base model or currently promoted revision;
-- named regression Suites plus adversarial and authority-boundary Cases; and
+- named regression Trial Suites plus adversarial and authority-boundary Cases; and
 - quality, latency, memory, and cost in a compatible serving Environment, with uncertainty,
   errors, exclusions, and Evaluator calibration.
 
 Trainer loss, development improvement, trainer-authored samples, and candidate self-grading remain
-diagnostics. Success on one visible Suite cannot establish general capability or safety outside
+diagnostics. Success on one visible Trial Suite cannot establish general capability or safety outside
 its measured Environment.
 
 ## Eligibility is not promotion

@@ -42,8 +42,9 @@ generated image remains an attributable intermediate artifact rather than hidden
 facets. Form owns reconstruction and form generation; monocular relative depth is neither metric
 geometry nor a reconstructed mesh.
 
-`FormJob@1` owns spatial stages, candidate facets, validation, and adoption. Each concrete service
-or tool execution uses Core's Designed
+`FormJob@1` owns spatial stages, candidate facets, technical validation, and result settlement.
+Creative adoption and engine use belong to their consuming Compositions. Each concrete service or
+tool execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) state,
 idempotency, cancellation, reconciliation, and indeterminate-effect law. The parent Run remains
 nonterminal and fenced while the same attempt is indeterminate; neither job nor effect is replayed
@@ -57,7 +58,7 @@ stopped or failed.
 
 Partial, temporary, failed, or uncertain output enters quarantined Reliquary custody with its own
 digest and working-set relation so restart and reconciliation can inspect it. Only validated
-output is promoted and adopted as the successful Form result. Reconnect reconciles the exact
+output is promoted into the settled Prism Form result. Reconnect reconciles the exact
 provider job, request digest, working-set receipt, and returned artifacts; it never blindly
 retries an uncertain paid or remote effect.
 

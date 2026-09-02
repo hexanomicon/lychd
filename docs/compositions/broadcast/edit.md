@@ -11,23 +11,27 @@ either producing craft.
 
 ## Admit the assets
 
-Each `VisualAssetBundle@1` and `SonicAssetBundle@1` enters by exact digest, semantic role,
-constraints, provenance, use boundary, validators, findings, and approval. Broadcast records its
-own asset-admission receipt. It cannot amend Voidlight or Riffmaw lineage, and a producer cannot
-publish through an asset request.
+Each `VisualAssetBundle@1`, `MusicAssetBundle@1`, `TimedLanguageAssetBundle@1`, and
+`PictureSoundBundle@1` enters by exact digest, semantic role, constraints, provenance, use
+boundary, validators, findings, and approval. Broadcast records its own asset-admission receipt.
+It cannot amend Voidlight, Riffmaw, or Language Edition lineage, and an upstream producer cannot publish
+through an asset request.
 
 `VisualAssetRequest@1` asks [Voidlight](../voidlight/) for a visual role, target profile, timing,
-constraints, source or likeness requirements, and request digest. `SonicAssetRequest@1` asks
-[Riffmaw](../riffmaw/) for music, voice, effects, or ambience under exact words, timing, authority,
-and request digest. Neither handoff shares a Sigil, secret, provider session, approval, or
-downstream authority.
+constraints, source or likeness requirements, and request digest. `MusicAssetRequest@1` asks
+[Riffmaw](../riffmaw/) for an exact musical role and timing. `LanguageVersionRequest@1` asks
+[Language Edition](../language-edition/) for one source-aligned language edition. `PictureSoundBrief@1` opens
+[Broadcast's own picture-sound work](sound.md). No handoff shares a Sigil, secret, provider
+session, approval, or downstream authority.
 
 ## Own the timeline
 
-The edit binds script spans, narration, captions, storyboard decisions, visual revisions, sonic
-revisions, and transitions to one explicit timebase. A `SyncCueMap@1` can expose sonic events;
-Broadcast decides the final placement and cut. Retime, replacement, or changed words create a new
-timeline revision and stale affected approvals.
+The edit binds script spans, narration, captions, storyboard decisions, visual, musical,
+timed-language, and picture-sound revisions, and transitions to one explicit timebase. A
+`MusicCueMap@1` can expose musical events
+and a `PictureSoundCueMap@1` can expose editorial sound events; Broadcast decides the final
+placement and cut. Retime, replacement, or changed words create a new timeline revision and stale
+affected approvals.
 
 Review can return attributed findings against pacing, claim-to-image relation, continuity,
 caption timing, legibility, loudness balance, or the target profile. `broadcast.review_package@1`
@@ -39,6 +43,7 @@ Generative video editing remains an upstream visual effect even when it accepts 
 Broadcast may request a new Voidlight revision, but it does not hide stochastic regeneration
 inside a deterministic trim. FFmpeg and equivalent pinned tools may execute probing, trim,
 concat, retime, overlay, mix, mux, and encode operations under this timeline; the executable does
-not own editorial judgment or silently approve a generated visual or sonic candidate.
+not own editorial judgment or silently approve a generated visual, musical, dialogue, or
+picture-sound candidate.
 
 The accepted timeline passes to [Render](render.md); it contains no permission to publish.

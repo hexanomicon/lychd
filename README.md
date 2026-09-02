@@ -2,7 +2,7 @@
   <img src="docs/assets/lich-phylactery-cliparted.png" alt="The Lich and its Phylactery" width="500">
   <h1>Hexanomicon</h1>
   <p><strong>LychD — The Dark Arts of LLMs</strong></p>
-  <p>The Voidwalker's Guide Across the Infinite Naught</p>
+  <p>Forty-Two Keys Across the Infinite Naught</p>
   <p>
     <a href="https://github.com/hexanomicon/lychd">
       <img src="https://img.shields.io/badge/LychD-Source-1a1a20?style=for-the-badge&labelColor=4a148c" alt="Browse the LychD source on GitHub">
@@ -52,10 +52,11 @@ gate that answers your next question.
 ## 🚩 Local sovereignty — a rebellion against digital feudalism
 
 The cloud is not a service. **It is a prison**—a modern fiefdom where your data is currency and
-your intelligence is leased at the whim of monopolist overlords.
+your intelligence is leased at the whim of monopolist overlords. While they build walls to keep
+you in, LychD is being built as a foundation to set you free.
 
-LychD is being built on the opposite premise: identity, memory, and authority should remain on your
-own iron. Remote services may lend capability; they need not own the history that makes it yours.
+Its premise is that identity, memory, and authority should remain on your own iron. Remote services
+may lend capability; they need not own the history that makes it yours.
 
 The individual is the sovereign unit. A company is not the soul-bearing actor; it is an emergent
 coordination graph of sovereign people and their Liches. In the Hexanomicon's horizon, future
@@ -76,7 +77,9 @@ Phylactery unless explicitly shared.
 
 **No surrender. Viva la résistance!**
 
-> _I would rather reign in a local hell than serve in a cloud heaven._
+> _A rough machine you own is worth more than a polished cage you rent._
+
+> _No chain is sacred because it is convenient. No gate is holy because it is profitable._
 
 ## ⚖️ [The Iron Pact](docs/adr/00-license.md)
 
@@ -103,7 +106,7 @@ manifest code, and return observed consequence to the Word.
 
 ## ⛩️ A Tribute to the Spirits
 
-> _“The Lich only sees far because it stands on the shoulders of Giants.”_
+> _The Lich is stitched from the work of many careful builders._
 
 This Work stands on code freely given and relentlessly maintained. To its makers: thank you.
 
@@ -132,6 +135,6 @@ inventories, adapted-source attribution, and regeneration rules live in
 
 ---
 
-> _“The Flesh is temporary. The Word is eternal.”_
+> _The vessel changes. The work remains._
 
 ### [💀 Join the Cult](https://github.com/hexanomicon/lychd/discussions)

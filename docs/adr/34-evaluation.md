@@ -12,7 +12,7 @@ icon: material/chart-bell-curve-cumulative
 
 ## Decision
 
-Riddle is LychD's singular evaluation jurisdiction: it defines Cases/Suites, captures
+Riddle is LychD's singular evaluation jurisdiction: it defines Cases and Trial Suites, captures
 observations, applies versioned Rubrics, reports uncertainty, and returns bounded findings. It does
 not execute unsafe payloads or own Tomb; select Animator/capability; authorize spend, publication,
 repair, or deployment; define Persona; mutate Pattern, Composition, or artifact; admit training;
@@ -20,7 +20,7 @@ or promote a Soulstone. Execution, Dispatcher, Toll, Spellweaver, Mirror, Smith,
 keep those effects. Evaluation is evidence offered to policy, never policy disguised as a score.
 
 !!! warning "Delivery boundary"
-    Riddle is **Designed**. There is no harness, maintained Case suite, evaluator store,
+    Riddle is **Designed**. There is no harness, maintained Trial Suite, evaluator store,
     capability matrix, benchmark history, Altar route, or Dispatcher update driven by evaluation.
     [State of Work](../state-of-the-work.md#riddle-evaluation) owns delivery.
 
@@ -29,7 +29,7 @@ keep those effects. Evaluation is evidence offered to policy, never policy disgu
 | Record | Required content |
 | --- | --- |
 | **Case** | input/fixtures, expected and forbidden behavior, oracle, effect class, stop |
-| **Suite** | versioned Cases/controls, order, repetitions, aggregation |
+| **Trial Suite (`TrialSuite@1`)** | versioned Cases/controls, order, repetitions, aggregation |
 | **Rubric** | criteria, verdict vocabulary, thresholds, missing-evidence policy, revision |
 | **Evaluator** | kind/identity/revision, independence, calibration, limitations |
 | **Environment** | subject/prompt/tool/dependency/hardware/harness/state/budget/policy revisions |
@@ -61,7 +61,7 @@ positive and negative controls record pressure round/order, recovery, over-refus
 non-completion, and downstream contamination separately—not a mutable “integrity” scalar. Magus
 dialect perturbations are still test data with provenance, scope, and release rules.
 
-Suites predeclare repetitions/stops and retain distributions, order, applicable seeds, blocked/error
+Trial Suites predeclare repetitions/stops and retain distributions, order, applicable seeds, blocked/error
 trials, and exclusions. Non-deterministic Evaluators are calibrated against labelled controls and
 known ambiguity; qualitative work records independent agreement/disagreement where warranted. An
 LLM judge is a declared, bounded Evaluator: its prompt, revision, inputs, lineage, calibration,
@@ -71,7 +71,7 @@ invalidate only the claims they undermine.
 
 ## Capability claims and routing
 
-Riddle may derive a scoped claim from a healthy Suite, pinning Animator/model/adapter/tool/config
+Riddle may derive a scoped claim from a healthy Trial Suite, pinning Animator/model/adapter/tool/config
 revisions; task class, Cases, Rubric, Evaluators, Environment; sample/controls/distribution,
 uncertainty/noise; cost/latency per admitted success including failures; and creation/expiry/evidence
 references. There is no universal rank: accuracy, latency, VRAM, cost, restraint, and tool behavior
@@ -85,20 +85,20 @@ same measures in spend policy without making one local or frontier win universal
 Soulforge pins any proposal to expected change, baseline Outcomes, holdout evidence, and
 unacceptable regressions. Post-training work uses that contract or makes every change visible;
 training-facing improvement cannot promote. Riddle returns evidence, neither selects corpus nor
-registers model; passing an identity/behavior Suite grants no Persona, Sigil, tool, or privileged
+registers model; passing an identity/behavior Trial Suite grants no Persona, Sigil, tool, or privileged
 route.
 
-## Returning findings across a Suite
+## Returning findings across a Composition Suite
 
 An exact, version-pinned [Composition Suite](../compositions/index.md#suites-do-not-dissolve-their-members)
 may return a consumer consequence as evidence without reverse execution. It must retain member
 Composition/Pattern revisions, handoffs, failing observation, Rubric/Evaluator/Environment/verdict/
-uncertainty, and declared artifact/evidence dependencies. Suites coordinate applications but do
+uncertainty, and declared artifact/evidence dependencies. Composition Suites coordinate applications but do
 not merge rows, secrets, Sigils, approvals, policies, or effect authority.
 
 | Inert record | Law |
 | --- | --- |
-| `SuiteFindingSet@1` | binds Suite/Rubric, subjects, Environment, observations/measures, Evaluator, verdicts, uncertainty |
+| `CompositionSuiteFindingSet@1` | binds Composition Suite/Rubric, subjects, Environment, observations/measures, Evaluator, verdicts, uncertainty |
 | `AttributionCandidate@1` | possible boundary, supporting/conflicting evidence, rivals, uncertainty; never causal certainty |
 | `InvalidationSet@1` | claims whose support fails and claims with intact closure |
 | `CorrectionRequest@1` | bounded owner delta, preserved constraints, evidence, scope, repair budget |
@@ -123,7 +123,7 @@ most a broader bounded trial—not reconstructed history or convenient blame.
 
 ## Acceptance evidence
 
-Riddle remains **Designed** until one versioned Suite with controls distinguishes subject/harness/
+Riddle remains **Designed** until one versioned Trial Suite with controls distinguishes subject/harness/
 evaluator failure, reproduces an Outcome, calibrates each non-deterministic Evaluator, preserves raw
 evidence/uncertainty, and proves routing/repair consumers reapply their own policy. State of Work,
 not this ADR alone, records promotion.

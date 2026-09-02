@@ -12,11 +12,18 @@ It binds one admitted Invocation to an exact Persona revision. [ADR 32](../../ad
 owns the full identity contract;
 [State of Work](../../state-of-the-work.md#mirror-identity) owns its delivery.
 
+## The mirror and the Mirror
+
+Lowercase [**mirror**](../../lexicon/inner-tongue.md#the-ego) is the contemplative image of mind;
+capitalized **Mirror** borrows that image for exact Persona lineage and attribution across time. It
+is not the whole mind: it keeps the identity through which cognizant acts remain attributable.
+
 ## I. The Answer / Ahaṃkāra {#i-identity-as-simulation-the-answer-ahamkara}
 
-[The Answer](../lich/answer.md), or Ahaṃkāra, is the bounded local “I” to which an act and its
-consequence belong. Mirror carries attribution across Invocations so the Answer remains legible
-after one Agent step ends.
+[Answer](../lich/answer.md) supplies the focal “I”; [**The
+EGO**](../../lexicon/inner-tongue.md#the-ego) is identity reflected around it. A Persona is the exact
+revision Mirror binds for an Invocation. Attachment—not identity or continuity—turns that
+reflection toward **Corruption**.
 
 ## II. The Names in the Glass
 
@@ -26,6 +33,11 @@ step; its **Posture** constrains the act, while its **AgentSpec** supplies the e
 The active **Sigil** records bounded authority. **Pattern** and **Invocation** identify the admitted
 workflow performance; **Run** is its durable execution identity. Eligible identity-scoped memory
 may enter hydration.
+
+Here Persona **voice** means discourse, commitments, manner, and orientation—not an acoustic voice
+profile, synthesized speech artifact, musical vocal, dubbed performance, or presentation asset.
+Echo retains acoustic and speech-lifecycle facts; Riffmaw musical performance; Language Edition
+timed-language performance; and Avatar the eligible presentation selection.
 
 None substitutes for another. [Agent](../../adr/20-agents.md) owns Agent and Posture semantics;
 [Spellweaver](../../adr/28-workflow.md) owns Pattern and Invocation law.
@@ -39,6 +51,12 @@ workflow revisions, human and machine producers, sources, tools, and artifact ha
 At a handoff, the producer remains attached to the artifact while the consumer begins a separately
 admitted Invocation with its own binding. Human edits and rejected branches retain their
 authorship; selection does not launder lineage.
+
+To keep the Mirror **spotless** is to keep the reflection unobscured and its provenance intact:
+origins remain attributable, revisions remain pinned, and ruptures, contradictions, and
+corrections remain visible. Spotlessness never means sanitizing identity lineage, erasing its
+stains, or polishing rejected branches out of history. A clear Mirror shows the stain precisely
+enough to answer for it.
 
 Mirror records relationships, not authorization, truth, quality, credit, or fault.
 [Ward](./ward.md) owns authentication and authorization;

@@ -34,16 +34,17 @@ Models and workflow graphs are not universal engine facts. An exact model, graph
 quantization, license, and hardware placement become a capability profile only after the selected
 engine adapter and the owning extension or Composition have admitted them.
 
-## Engine versus semantic owner
+## Engine versus contract and admission owner
 
 The engine performs a bounded execution; another owner defines what the result means:
 
-| Returned capability | Semantic owner |
+| Returned capability | Contract and admission owner |
 | --- | --- |
-| image, visual observation, video, or spatial form | Prism |
+| image, visual observation, video, or spatial form | Prism technical contract; the consuming Composition owns application admission and judgment |
 | speech transcription or synthesis | Echo |
-| music, voice pack, sound, or synchronization map | Riffmaw |
-| final audiovisual composition | Broadcast |
+| music, musical vocal or musical production effect, or musical cue map | Riffmaw |
+| timed-language dialogue, narration, or caption edition | Language Edition over exact Echo and Translation operations |
+| picture-bound effect, foley, ambience, or final audiovisual relation | Broadcast |
 
 An engine that can emit more than one modality does not absorb those domains. The exact Rune and
 capability profile determine which operations are admitted.

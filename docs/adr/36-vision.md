@@ -142,6 +142,13 @@ image, video, audio-video, mesh, scene, voxel, or structured-motion material a n
 with effect provenance. Fluent output never becomes source truth, and conversion between spatial
 or motion representations creates a new derivative with declared loss.
 
+A provider that returns synchronized audio and video still creates one technical attempt and one
+compound provenance parent. Prism records the container, stream digests, shared timebase, and
+technical settlement; semantic adoption then follows the declared role. Voidlight owns visual/VFX
+acceptance, Riffmaw music, Language Edition timed-language material, and Broadcast picture-bound sound and
+the final audiovisual relation. Inseparable streams must be accepted or refused for the declared
+compound use. Provider shape and a `generate_sound` flag grant none of those judgments.
+
 ## Consequences and acceptance
 
 Prism keeps vision, multimodal chat, OCR, transforms, and generation composable while preserving

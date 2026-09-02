@@ -53,7 +53,7 @@ has proved:
 | `generate` | text plus optional reference motion, constraints, paths, keyframes, or admitted audio cues | Produce new structured motion under an exact generation profile. |
 | `retarget` | source motion and skeleton plus one exact target Form rig and `RigMap@1` | Create a target-rig derivative without pretending bone-name similarity is compatibility. |
 | `clean` | admitted motion plus exact limits, gap, filter, IK, and contact policies | Repair declared technical defects while retaining before/after metrics and corrected regions. |
-| `synchronize` | motion plus exact anchors, `ClockDomainMap@1`, or `SyncCueMap@1` | Create a retimed derivative; never edit or approve the source sound. |
+| `synchronize` | motion plus exact anchors, `ClockDomainMap@1`, or `MusicCueMap@1` | Create a retimed derivative; never edit or approve the source music. |
 | `convert` | admitted motion facets plus one output profile | Resample, transform coordinates, or create a portable projection with declared loss. |
 | `validate` | motion, skeleton, target rig, or projection | Return attributable technical findings without creative acceptance or engine-playability claims. |
 
@@ -66,8 +66,9 @@ policies; constraints and anchors; purpose, classification, consent, retention, 
 boundary; immutable model or tool preset; seed policy; deadline; compute or Portal budget; and
 idempotency key. Optional material never invents profile support.
 
-`KinesisJob@1` owns motion stages, candidates, validation, and adoption. Each concrete service or
-tool execution uses Core's Designed
+`KinesisJob@1` owns motion stages, candidates, technical validation, and result settlement.
+Creative adoption belongs to the consuming Composition. Each concrete service or tool execution
+uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) state,
 idempotency, cancellation, reconciliation, and indeterminate-effect law. An attempt remains
 contained until the same provider/executor job identity and working set settle; cancellation
@@ -210,14 +211,15 @@ body model, datasets, dependencies, and output-use terms all close independently
 can enter. A wrapper or converted checkpoint repairs none of them.
 
 Until a champion closes that gate, music-conditioned work composes exact Riffmaw
-`SyncCueMap@1` cues, authored or generated clips, Kimodo constraints where eligible, and declared
-Kinesis editing. Riffmaw still owns the sound and Voidlight still decides the visible response.
+`MusicCueMap@1` cues, authored or generated clips, Kimodo constraints where eligible, and declared
+Kinesis editing. Riffmaw still owns the music and Voidlight still decides the visible response;
+picture-bound sound and the final audiovisual relation remain with Broadcast.
 
 ## Live motion comes later
 
 A camera, tracking endpoint, instrument, or microphone is not an infinite `KinesisJob`. The later
 `LiveKinesisSession@1` consumes exact upstream epochs from `LiveSightSession@1`, Riffmaw
-`PerformanceSession@1` and `ClockDomainMap@1`, or a separately armed mocap transport. It inherits
+`MusicalPerformanceSession@1` and `ClockDomainMap@1`, or a separately armed mocap transport. It inherits
 no camera, microphone, MIDI, avatar, robot, or world-effect authority.
 
 The session pins participants; purpose and consent scopes; exact upstream session or admitted

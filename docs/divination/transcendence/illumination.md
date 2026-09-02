@@ -62,8 +62,8 @@ aversive, or worthy of Recall. A [2025 conversation with Dwarkesh
 Patel](https://www.dwarkesh.com/p/ilya-sutskever-2) offers a nearby question: a value estimate
 may guide learning before final consequence, but it is neither terminal reward nor a solution to
 unreliable generalization. The proposal remains incomplete: affect is not one scalar, emotional
-language does not prove felt experience, and a better estimate may only pursue the wrong proxy
-more efficiently.
+language is not the felt quality it describes, and a better estimate may only pursue the wrong
+proxy more efficiently.
 
 Simple inherited affects can travel across unfamiliar situations because they are simple; the
 same simplicity can mislead when the world changes. Call, Blade, Spirit, and Answer relate these

@@ -80,10 +80,11 @@ placement to its exact local or Portal implementation before casting.
 The finish boundary answers “how far this Invocation should go.” Stopping at an admitted still is
 completion, not an indefinite pause. A review, hardware transition, or remote wait may enter
 Stasis while the same casting remains live. Continuing a terminal still into motion starts a new
-Invocation over its immutable artifact. Optional music starts a Riffmaw Invocation; synchronized
-audio returned by a video model is a compound candidate whose sonic facet still needs Riffmaw
-admission. Final audiovisual relation belongs to Broadcast, and cross-Composition coordination is
-a Suite.
+Invocation over its immutable artifact. Optional music starts a Riffmaw Invocation. Synchronized
+audio returned by a video model remains a compound candidate whose declared role routes musical
+material to Riffmaw, timed-language material to Language Edition, and picture-bound effects or ambience to
+Broadcast while retaining the shared Prism attempt and provenance parent. Final audiovisual
+relation belongs to Broadcast, and live cross-Composition coordination is a Suite.
 
 An A2A peer can request the public task while the receiver privately chooses this decomposition,
 or send a portable Scroll as an inert candidate. Neither path imports a Comfy graph, model,

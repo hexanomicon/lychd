@@ -19,15 +19,21 @@ owns the law; this page is the practical routing test.
 | another repeatable score under the same application owner | a **Pattern** and immutable Scroll revisions |
 | another vertical, region, provider, or form factor under the same records, authority, recovery, and finish judgment | an exact owner-qualified **profile** |
 | another UI, report, device view, or public explanation | a **projection**, with its own presentation owner |
-| another engine, API, transport, capture surface, or implementation mechanism | an **Extension**, Animator, Connector, or client integration |
+| another engine, API, transport, capture surface, or implementation mechanism | an exact Provider, Animator/Connector, adapter, or client integration, plus a typed package **Contribution** through the owning **Extension Domain** when registration is required |
 | an already-settled result from another owner | an exact typed record, artifact, observation, or receipt reference |
 | one live result must coordinate the lifecycle and settlement of several application owners | a **Suite** |
-| genuinely new durable records, judgment, effects, outcomes, and recovery reused beyond one package | a candidate **Composition** |
+| genuinely new durable records, judgment, effects, outcomes, and recovery reused beyond one Product, client, or deployment | a candidate **Composition** |
 
 `Profile` is not one global LychD entity. Name its owner and kind—such as a Workshop service
 profile, Reach deployment profile, or Animator capability profile—and pin its exact revision. A
 profile remains valid only while the owning records, authority, recovery, and honest terminal
 judgment remain unchanged.
+
+“Translate this” is normally a versioned Translation Spell or an owner-declared transformation,
+not a Composition by itself. [Language Edition](language-edition/index.md) is a Composition because a timed-language
+edition adds durable source/segment alignment, casting, spoken performance, captions, dialogue
+conform, acceptance, and recovery. Website interface localization remains a Frontend catalogue
+concern. Shared language machinery does not merge those owners.
 
 ### One idea end to end
 
@@ -54,7 +60,8 @@ Before promoting a candidate, answer all of these:
 2. Which judgments and policies belong to that record rather than to a provider or Product?
 3. What can finish, refuse, remain unknown, partially settle, restart, and recover?
 4. Which existing office already owns the truth, if any?
-5. Why is a Pattern, profile, Product, projection, Extension, or typed reference insufficient?
+5. Why is a Pattern, profile, Product, projection, Extension Domain or package Contribution,
+   Provider, or typed reference insufficient?
 6. What is the smallest fixture that can falsify the proposed boundary?
 7. Which independently motivated Products or use cases corroborate reuse?
 

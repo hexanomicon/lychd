@@ -15,13 +15,16 @@ remain elsewhere.
 Work](../../state-of-the-work.md#scout-web-acquisition) records the exact boundary;
 [ADR 30](../../adr/30-webcrawler.md) owns the acquisition law and protocol.
 
-## Nine tracks through the wild
+## Eleven tracks through the wild
 
 Scout separates effects often hidden behind the word “browser.” **Search** discovers locators;
 **Fetch** performs one bounded network read; **Extract** transforms acquired bytes without a
 network; and **Crawl** manages a finite frontier. **Render** executes hostile site code;
 **Interact** clicks, types, submits, or uploads. **Credential Use** presents one scoped secret
-reference; **Session Custody** owns cookies and browser state; **Screenshot** requests pixels.
+reference; **Session Custody** owns cookies and browser state; **Screenshot** requests pixels;
+**Download** transfers a bounded payload into quarantine; and **Artifact Admission** asks the
+custody owner to validate and retain exact bytes. Downloading never implies admission, and an
+admitted artifact never becomes trusted or understood merely because it is durable.
 
 Each track needs its own host-owned `ScoutEffectGrant` and budget. A redirect, JavaScript
 requirement, CAPTCHA, login, payment challenge, quota response, or failure is a result, never

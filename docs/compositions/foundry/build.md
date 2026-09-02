@@ -23,7 +23,7 @@ custody. An exported handoff is recorded but not silently recalled or reported a
 ## Proving the build
 
 Use a synthetic local 2D project with networking disabled. Bootstrap one repository, admit one
-small visual and sonic bundle, import them through test adapters, build one playable scene, run one
+small visual and music bundle, import them through test adapters, build one playable scene, run one
 declared controller scenario, and emit exactly one `PlayableBuildBundle@1` with source, build,
 test, playtest, and checksum receipts. Signing, upload, store accounts, telemetry export, public
 players, and release remain outside the proof.

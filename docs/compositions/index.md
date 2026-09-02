@@ -52,7 +52,11 @@ A page belongs in the Portfolio when all three answers are concrete:
 | **Casting** | the performance of that exact Scroll within the Invocation |
 | **Suite** | versioned live coordination of separate Composition-owned Invocations through typed handoffs |
 | **Deployment** | one configured installation of an exact Product revision for one operator |
-| **Extension** | a governed way for implementation to enter LychD; never an application by itself |
+| **Extension Domain** | one of the fifteen stable jurisdictions that receives mechanisms and keeps their semantic and authority boundary; never an application by itself |
+| **extension package** | one explicitly selected code/distribution unit that may submit separately governed Contributions to several Domains |
+| **Contribution** | one typed addition admitted by its owning Extension Domain; it neither widens its package nor creates application ownership |
+| **Provider** | one concrete engine or service implementing a typed contract; provider identity and readiness do not grant application purpose or effect authority |
+| **Manifestation** | the concrete form an Extension Domain takes in one body/profile, distinct from a Composition consuming its contracts |
 
 When a native first-party Composition enters code, its authoritative records, policies, and finish
 judgment live under `src/lychd/compositions/<identity>/**`. A browser or Android projection lives
@@ -61,6 +65,11 @@ under its `clients/<target>/**` project and cannot silently acquire that authori
 A Composition identity is a URL-safe key plus a separate revision, written here as
 `example.application` revision `1`. Pattern identity remains separately versioned, for example
 `example.perform_work@1`.
+
+Design publication is not delivery evidence, but revision law still applies before source exists:
+a material change to a published Composition, Pattern, or record contract advances its identity or
+revision instead of rewriting the old contract in place. State of Work separately confirms that no
+Portfolio Pattern is registered or executable today.
 
 ## The Portfolio
 
@@ -72,8 +81,9 @@ leaf and may be linked from several views.
 
 | Reader view | Composition | Representative outcomes |
 | --- | --- | --- |
-| **Creative Works** | [Voidlight](voidlight/index.md) | an attributable visual asset package |
-| **Creative Works** | [Riffmaw](riffmaw/index.md) | an attributable sonic package and optional synchronization map |
+| **Creative Works** | [Voidlight](voidlight/index.md) | an attributable visual/VFX asset package |
+| **Creative Works** | [Riffmaw](riffmaw/index.md) | an attributable musical work, production package, and optional musical cue map |
+| **Creative Works** | [Language Edition](language-edition/index.md) | an attributable same- or cross-language timed-media edition with constrained track replacement |
 | **Creative Works** | [Foundry](foundry/index.md) | a reproducible, playtested local build candidate |
 | **Creative Works** | [Broadcast](broadcast/index.md) | a source-grounded local publication candidate |
 | **Stewardship & Acquisition** | [Wellbeing](wellbeing/index.md) | an editable eating-or-fitness plan, honest infeasibility, or confirmed check-in |
@@ -84,7 +94,7 @@ leaf and may be linked from several views.
 | **Presence & Embodiment** | [Avatar](avatar/index.md) | one attributable Lich presentation projected into separately admitted places, with honest partial settlement |
 | **Presence & Embodiment** | [Spectre](spectre/index.md) | one admitted VR Habitat and bounded Encounter that completes, exits safely, or names its interruption |
 | **Presence & Embodiment** | [Familiar](familiar/index.md) | one admitted physical body and bounded real-world task or presence that settles honestly |
-| **Presence & Embodiment** | [Companion](companion/index.md) | one mobile Familiar form with a configurable client, local device session, and bounded LychD interaction |
+| **Presence & Embodiment** | [Companion](companion/index.md) | a configurable mobile client and bounded device session over one exact admitted phone-shaped Familiar body |
 | **Professional Operations** | [Broker](broker/index.md) | a client answer grounded in current offer knowledge, prepared act, human handoff, or exact blocker |
 
 ## Candidate studies
@@ -134,7 +144,7 @@ then link common mechanisms instead of restating them.
 | --- | --- |
 | Scout search, fetch, render, or crawl | source policy, interpretation, ranking, and consequence |
 | mail or platform delivery | recipient purpose, disclosure, approval, reply meaning, and follow-up |
-| audio or vision processing | admitted source, domain interpretation, retention, and creative or operational judgment |
+| Echo speech or Prism visual/spatial work | admitted source, domain interpretation, retention, and creative or operational judgment |
 | Tether or Veil | application identity, object grants, and every consequential effect |
 | Legion node or embedded body | task purpose, while the body keeps fresh safety admission and refusal |
 | model or tool provider | application truth, decision policy, and authority |
@@ -152,6 +162,27 @@ Avatar keeps one Lich presentation profile and bounded multi-projection presence
 admitted places; Reach retains each external social turn, Blockworld each persistent-world mission
 and effect, and Spectre each VR Habitat, Encounter, and safe exit. Avatar coordinates presentation
 and projection settlement but receives no universal world, device, or body authority.
+
+### Media owners do not follow file extensions
+
+One engine, graph, or container may emit several modalities. That technical parent stays shared,
+but the provider does not decide which application owns each result.
+
+| Office | Owns | Does not inherit |
+| --- | --- | --- |
+| **Prism · Extension Domain** | visual/spatial effect contracts, technical result settlement, provenance, and derivative facts | a visual commission or creative acceptance |
+| **Echo · Extension Domain** | speech capture, STT/TTS, speech chronology, delivery, and playback facts | translation, casting, music, or application purpose |
+| **Voidlight · Composition** | visual commission, direction, image, VFX, motion, and accepted visual package | music, timed-language editions, editorial cut, or publication |
+| **Riffmaw · Composition** | musical composition, instrumental and vocal performance, arrangement, mix/master, and musical cue map | ordinary speech, dubbing, standalone foley, or picture sound |
+| **Language Edition · Composition** | source-aligned language versions, translation/adaptation judgment, spoken performance, captions, dialogue conform, and restricted language-version packaging | Persona identity, music, editorial recut, or publication |
+| **Avatar · Composition** | Persona-linked presentation eligibility, Morphe selection, and projection bindings, including exact eligible voice references | Persona lineage, raw media, speech engines, or target-world authority |
+| **Broadcast · Composition** | canonical source words and claims, picture-bound sound, final editorial timeline/render/mux, release, and correction | upstream visual, musical, voice, or provider truth |
+
+A reusable Translation Spell may appear inside several owners' Patterns; Spellweaver validates and
+admits it without becoming the linguistic or application owner. A video model's compound result
+similarly retains one technical attempt and container parent while visual, musical, dialogue, and
+picture-sound facets receive independent semantic admission. Provider shape never redraws these
+boundaries.
 
 ## Relations are not inheritance
 
@@ -176,18 +207,22 @@ grants, consent, or effect authority.
 
 ```mermaid
 flowchart LR
-    B["Creative brief"] --> V["Voidlight · vision"]
-    B --> R["Riffmaw · sound"]
-    R --> S["SonicAssetBundle@1"]
-    R --> C["SyncCueMap@1"]
+    B["Creative brief"] --> V["Voidlight · visual/VFX"]
+    B --> R["Riffmaw · music"]
+    BS["Broadcast script + locked master"] --> D["Language Edition · language edition"]
+    R --> S["MusicAssetBundle@1"]
+    R --> C["MusicCueMap@1"]
     C --> V
     V --> A["VisualAssetBundle@1"]
+    D --> L["TimedLanguageAssetBundle@1"]
     A --> G["Foundry"]
     S --> G
     A --> P["Broadcast"]
     S --> P
+    L --> P
+    P --> PS["Picture sound + editorial timeline"]
     G --> GB["Playable build"]
-    P --> PC["Publication candidate"]
+    PS --> PC["Publication candidate"]
 ```
 
 The diagram is a designed handoff, not an executor. Each arrow may remain an independently settled

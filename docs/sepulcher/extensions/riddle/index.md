@@ -16,7 +16,7 @@ That office carries no authority to execute unsafe work, select or grant an Anim
 spending, repair or mutate a subject, publish, train, or promote. Its findings become input to
 other owners, never their decision.
 
-No runnable harness, maintained Case suite, evaluator or scorer store, capability matrix,
+No runnable harness, maintained Trial Suite, evaluator or scorer store, capability matrix,
 benchmark history, pass-at-k experiment, Altar route, or evaluation-driven Dispatcher update is
 delivered. [State of Work](../../../state-of-the-work.md#riddle-evaluation) owns this maturity
 boundary.
@@ -38,10 +38,10 @@ This separation prevents infrastructure faults, subject errors, evaluator failur
 blocks from masquerading as capability evidence. It also keeps a favorable verdict from becoming
 permission, routing authority, causal proof, or automatic promotion.
 
-A trial **Suite** groups Cases and their evaluation controls. A
+A **Trial Suite** (`TrialSuite@1`) groups Cases and their evaluation controls. A
 [Composition Suite](../../../compositions/index.md#suites-do-not-dissolve-their-members) instead
-forms a versioned graph of separately owned Compositions and typed handoffs. Sharing the word does
-not merge their responsibilities.
+forms a versioned graph of separately owned Compositions and typed handoffs. The qualified names
+are separate contracts, not two meanings of one record.
 
 ## Choose the evidence passage
 

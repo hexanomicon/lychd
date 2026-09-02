@@ -17,7 +17,7 @@ Work](../../../state-of-the-work.md#riddle-evaluation) records maturity;
 
 ## Shape the supported claim
 
-A claim derives only from a healthy, version-pinned trial Suite and its retained Outcomes. This
+A claim derives only from a healthy, version-pinned `TrialSuite@1` and its retained Outcomes. This
 page defines no health algorithm. The evidence must survive its declared controls, harness and
 Evaluator health, leakage checks, drift review, and required receipts.
 

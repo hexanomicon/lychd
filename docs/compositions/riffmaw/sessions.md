@@ -5,21 +5,24 @@ icon: material/record-circle-outline
 
 # :material-record-circle-outline: Sessions
 
-Sessions preserves what a person actually played, sang, spoke, or programmed before editing makes
-the result look inevitable.
+This contract preserves what a person actually played, sang, rapped, performed as musical spoken word,
+or programmed before editing makes the result look inevitable.
 
 ## Arm and capture
 
-`riffmaw.capture_take@1` starts only through an explicitly armed interface. It records the device
+`riffmaw.capture_take@2` starts only through an explicitly armed interface. It records the device
 profile, clocks, sample rate, latency, monitoring route, channel layout, plug-in state, session
 revision, and consent boundary. The immutable raw audio or MIDI is retained before transcription,
 timing correction, comping, cleanup, or transformation.
 
 A `PerformanceTake@1` distinguishes raw performance from observations about it. Tempo, pitch,
-timing, transcription, and performance notes remain attributed interpretations with their source
-regions and uncertainty. They do not replace the recording. Capture authority is visible,
+timing, score or lyric transcription, and performance notes remain attributed interpretations with
+their source regions and uncertainty. They do not replace the recording. Capture authority is visible,
 time-bounded, revocable, and governed by the custody and hostile-audio rules in
 [Audio](../../adr/37-audio.md).
+
+A later jam may reference one or more settled takes inside `MusicalPerformanceSession@1`; capture
+does not create that session merely because both records contain audio or MIDI.
 
 ## Choose without erasing
 
@@ -30,14 +33,15 @@ device, clock, session state, or plug-in chain is explicit rather than smuggled 
 If capture state is uncertain after failure, Riffmaw stops the device and reconciles the artifact
 and session records before retry. It never assumes that silence means nothing was recorded.
 
-Accepted takes may anchor [Music](music.md), [Voice](voice.md), or [Sound](sound.md). The handoff
+Accepted takes anchor [Music](music.md), including its instrumental and vocal work. The handoff
 shares exact artifact references and observations, not microphone authority, credentials, or an
-open DAW session.
+open DAW session. An ordinary spoken take intended for dialogue replacement or localization belongs to
+[Language Edition](../language-edition/) rather than this musical session.
 
 ## Jam in shared time
 
 Live Jam is **Designed** beyond Audio's first record-and-send slice; no current Portfolio runtime
-or candidate stack proves it. `riffmaw.open_jam@1` describes one bounded performance Pattern.
+or candidate stack proves it. `riffmaw.open_jam@2` describes one bounded performance Pattern.
 Spellweaver separately admits its Invocation and exact Scroll; the Pattern cannot admit a Circle or
 nested production by itself.
 
@@ -48,8 +52,8 @@ machine-response scopes. If preservation of a route is required but recording or
 admitted, Riffmaw refuses that route or the jam. Network presence is never recording permission,
 and the Magus cannot alter another performer's monitor or participation scope unilaterally.
 
-`PerformanceSession@1` binds the jam revision, participants and roles, assistance policy, model and
-tool allowlist, and these timing and capture records:
+`MusicalPerformanceSession@1` binds the jam revision, participants and roles, assistance policy,
+model and tool allowlist, and these timing and capture records:
 
 | Record | Binds |
 | --- | --- |
@@ -102,7 +106,7 @@ Generic callback, clock-epoch, output-fence, direct-monitoring, reconnect, and u
 law lives in [Audio](../../adr/37-audio.md#application-owned-live-audio). Riffmaw adds musical beat
 and bar mapping, `JamResponse@1` ready-by and scheduled windows, and a safe omission when a machine
 entrance is late. The human monitor route remains available without model cooperation. A partial
-`PerformanceSession@1` preserves acknowledged takes and events; continuation is a newly armed
+`MusicalPerformanceSession@1` preserves acknowledged takes and events; continuation is a newly armed
 forward Invocation with a new musical clock and route epoch.
 
 ## Proving the jam

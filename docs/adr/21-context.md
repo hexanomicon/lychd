@@ -52,6 +52,14 @@ binds layer 1 as static instructions and its dynamic hook renders non-empty laye
 becomes model history and Query the user prompt, so the six-layer account does not duplicate them
 as instructions.
 
+Context preserves its declared semantic order. Exact append-only transcript groups may extend a
+reusable prefix for a compatible connector while all earlier wire serialization remains
+byte-identical; rewritten summaries and replacement
+[Execution Projection](28-workflow.md#execution-projections-for-procedural-agent-placements-designed)
+values do not preserve that identity. Cache remains a connector/provider optimization, never a
+Context source, authority, or receipt; Context does not reorder or pad admitted input merely to
+obtain cache eligibility.
+
 The run-id assembly cache lasts only for the process and releases after terminal Run settlement,
 not when the session turn is written. Layer 3 snapshots are shared by exact environment key while
 any referencing Run remains active; terminal settlement releases that Run's leases and evicts a
@@ -219,6 +227,25 @@ with its own capability grant, typed result, budget, lineage, and explicit omiss
 `ContextOrchestrator` never hides a recursive model call inside a formatter. A semantic summary
 inherits its sources' privacy and instruction non-authority and cannot replace canonical source or
 history truth.
+
+## Execution Projection input (Designed)
+
+At one explicitly declared procedural Agent placement, a Composition-owned and Pattern-pinned
+[Execution Projection](28-workflow.md#execution-projections-for-procedural-agent-placements-designed)
+may replace settled message history for that model call. Context receives the exact bounded,
+attributed projection and fresh admitted observation projections from their owners; it preserves
+their lineage, classification, revisions, declared omissions, and required/optional status, then
+orders and budgets them with the Stable Floor and exact Query. Context does not infer the
+projection schema from Graph state, decide domain truth, apply Agent operations, or silently
+summarize missing material. Required state or observation input that cannot fit refuses before
+inference.
+
+Exclusion from one model call never deletes or relabels canonical sources, conversation history,
+events, receipts, artifacts, or audit evidence. The Stable Floor, exact Query, and any indivisible
+provider/tool or consent continuation remain governed inputs; the state-centric mode cannot replace
+them. The delivered Layer 5 still carries governed complete Pydantic AI message groups. Execution
+Projection rendering, observation envelopes, and a history-free procedural Agent call remain
+Designed rather than current source behavior.
 
 ## Designed extensions
 

@@ -49,6 +49,7 @@ nav = [
             "sepulcher/animator/index.md",
             "sepulcher/animator/capabilities.md",
             "sepulcher/animator/connectors.md",
+            "sepulcher/animator/audio-routes.md",
             { "Soulstone" = [
                 "sepulcher/animator/soulstone/index.md",
                 "sepulcher/animator/soulstone/rune.md",
@@ -134,7 +135,8 @@ nav = [
             "divination/transcendence/invocation.md",
             "divination/transcendence/illumination.md",
             "divination/transcendence/immortality.md",
-            "divination/transcendence/infinity.md"
+            "divination/transcendence/infinity.md",
+            "divination/transcendence/correspondence.md"
         ]}
     ]},
     { "Compositions" = [
@@ -165,6 +167,9 @@ nav = [
                     "compositions/riffmaw/sync.md",
                     "compositions/riffmaw/package.md"
                 ]},
+                { "Language Edition" = [
+                    "compositions/language-edition/index.md"
+                ]},
                 { "Foundry" = [
                     "compositions/foundry/index.md",
                     "compositions/foundry/project.md",
@@ -177,6 +182,7 @@ nav = [
                     "compositions/broadcast/index.md",
                     "compositions/broadcast/sources.md",
                     "compositions/broadcast/script.md",
+                    "compositions/broadcast/sound.md",
                     "compositions/broadcast/edit.md",
                     "compositions/broadcast/render.md",
                     "compositions/broadcast/release.md"

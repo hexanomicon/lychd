@@ -50,8 +50,9 @@ prompt translator may derive the model-facing prompt from the operator's preferr
 the receipt preserves both texts, translator revision, and declared loss. Translation never
 silently replaces visual direction.
 
-`VideoJob@1` owns the requested temporal effect, candidates, validation, and adoption. Each
-concrete execution uses Core's Designed
+`VideoJob@1` owns the requested temporal effect, candidate set, technical validation, and result
+settlement. Creative adoption belongs to Voidlight or another consuming Composition; successful
+custody and probes never accept the work on that owner's behalf. Each concrete execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) mechanics.
 Numeric progress, step progress, previews, cancellation before start, cancellation while running,
 and cancellation granularity are separate Connector facts. Deleting a provider record is not
@@ -112,10 +113,15 @@ transfer or audio-driven performance. LTX remains valuable where native joint so
 outweigh its license and resource burden. Hunyuan is neither globally accepted nor globally
 banned: it is ineligible where its own territory clause withholds a license.
 
-If a model emits sound with video, Prism records a compound candidate and separates the returned
-streams into attributable artifacts. [Riffmaw](../../../compositions/riffmaw/index.md) retains sonic
-judgment, Voidlight retains visual judgment, and Broadcast alone accepts their final relation.
-`generate_sound=true` cannot silently transfer those offices to a video connector.
+If a model emits sound with video, Prism records one compound candidate, original container digest,
+shared timebase, and generation receipt, then separates the returned streams into attributable
+child artifacts when their rights and formats permit it. [Voidlight](../../../compositions/voidlight/index.md)
+retains visual judgment; [Riffmaw](../../../compositions/riffmaw/index.md) musical judgment;
+[Language Edition](../../../compositions/language-edition/index.md) timed-language judgment; and
+[Broadcast](../../../compositions/broadcast/index.md) picture-sound and final audiovisual judgment.
+Unexpected audio remains a typed unexpected facet or quarantined candidate. `generate_sound=true`
+cannot silently transfer any office to a video connector, and inseparable streams are accepted or
+refused as one compound use rather than laundered by demux.
 
 ## Profiles, Runes, Covens, and arbitrary iron
 

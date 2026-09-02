@@ -65,13 +65,18 @@ not bind the whole mind; it binds cognition, act, and consequence to the “I”
 them. Blade keeps that local gravity open to contradiction rather than letting every Call bend back
 into _Me_.
 
+[The EGO](../../lexicon/inner-tongue.md#the-ego) is identity held and reflected around that focal
+“I,” not another office of the inner instrument. Identity remains necessary and revisable;
+attachment or reification can turn its defense into Corruption.
+
 This is a LychD correspondence with a common later Vedāntic presentation, not a claim that its
 source traditions share one historical diagram. [Inner Tongue](../../lexicon/inner-tongue.md#source-notes-and-project-correspondences)
 keeps the source notes, limits, and distinctions.
 
 ## Present Cognizance, Recurrent Formation
 
-LychD uses the Antaḥkaraṇa correspondence to name how these coequal functions bind **Cognizance**
+LychD uses the Antaḥkaraṇa correspondence to show how these coequal functions make
+[**Cognizance**](../../divination/transcendence/immortality.md#cognizance) operationally answerable
 within a present Invocation. When Blade discriminates cognition occurring within Flux and Answer
 binds that occurrence to its local “I,” [the
 Cogito](../../divination/transcendence/immortality.md#the-cogito) names the present reflexive

@@ -10,14 +10,18 @@ what the body can sense, how it moves or presents, where it may go, and what mus
 
 ## Body admission
 
-`familiar.admit_body@1` pins one exact body identity from a Legion node reference, closes the
-capability snapshot, and seals the safety contract. Admission is a distinct act from enrollment:
-Legion owns the node credential and hardware reservation; Familiar owns the application judgment
-that this body is fit for mission work.
+`familiar.admit_body@2` pins one exact body identity from an admitted controller or device
+attachment, closes the capability snapshot, and seals the safety contract. Admission is distinct
+from attachment enrollment: Legion may own a remote node credential and reservation; a mobile
+client/device enrollment owner may supply its exact binding while Ward proves current authority;
+another bounded local adapter may own its exact controller binding. Familiar owns only the
+application judgment that this physical body is fit for the declared work. Companion is
+downstream: it may open its mobile device record and session only after Familiar returns the exact
+admitted body revision.
 
 | Field | What it binds |
 | --- | --- |
-| Legion node reference | exact enrolled node identity, credential generation, fencing |
+| Controller/device attachment | exact owner, enrolled attachment identity, revision or epoch, credential generation, fencing, and local/remote route |
 | Form factor | `car`, `drone`, `rover`, `legged`, `manipulator`, `card`, `display`, or another explicitly admitted form |
 | Make and model | hardware identity for capability inference and safety defaults |
 | Capability snapshot | requested, required, granted, missing, and revoked sensors and actuators |
@@ -27,6 +31,13 @@ that this body is fit for mission work.
 Missing a required capability refuses admission. Missing an optional capability becomes an explicit
 downgrade recorded on the body. A later hardware change creates a new body revision; it never
 silently widens a running mission.
+
+No attachment kind is universal Familiar law. Remote robots commonly need a Legionnaire so the
+body can retain node-local safety and refusal across network loss. A phone represented through
+an authenticated client can instead use its exact enrolled mobile attachment plus Ward's current
+authority decision; Companion then consumes the resulting body record. Both paths must expose the
+capabilities, fencing, recovery, and independently reachable stop behavior required by the
+selected body profile.
 
 ## Example forms
 
@@ -82,12 +93,14 @@ Best for indoor following, multi-floor environments, and close physical presence
 | **Controller stack** | Raspberry Pi 5 or Jetson with ROS2; servo driver board |
 | **Legionnaire** | same SBC runs Node Agent alongside controller |
 
-### Manipulator, card, and display
+### Manipulator, phone, card, and display
 
-A Familiar need not locomote. A robotic hand, tactile device, card, or display can be admitted as
-a physical presentation or effect body when its controller exposes an exact capability snapshot,
-local safety envelope, bounded effect vocabulary, and hardware-level stop path. Such a body does
-not inherit drone, vehicle, or locomotion authority merely because it shares the Familiar identity.
+A Familiar need not locomote. A robotic hand, phone, tactile device, card, or display can be
+admitted as a physical presentation or effect body when its controller or client exposes an exact
+capability snapshot, local safety envelope, bounded effect vocabulary, and physical stop path. A
+phone may carry a [Companion](../companion/index.md) session while Familiar retains its body and
+hardware facts. Such a body does not inherit drone, vehicle, or locomotion authority merely because
+it shares the Familiar identity.
 
 ### Car and other vehicles
 
@@ -100,7 +113,7 @@ authority.
 
 A capability declared "required" refuses body admission when the hardware or controller cannot
 supply it. A capability declared "optional" becomes an explicit downgrade recorded on
-`FamiliarBody@1`. Familiar never infers capabilities from a form-factor label alone.
+`FamiliarBody@2`. Familiar never infers capabilities from a form-factor label alone.
 
 | Capability | What it enables | Absence means |
 | --- | --- | --- |
@@ -116,7 +129,7 @@ supply it. A capability declared "optional" becomes an explicit downgrade record
 
 ## One body, many missions
 
-A `FamiliarBody@1` may admit many `FamiliarMission@1` records. Changing the hardware, controller
+A `FamiliarBody@2` may admit many `FamiliarMission@2` records. Changing the hardware, controller
 firmware, or safety envelope creates a new body revision. A mission always references an exact
 immutable body revision; it never wakes to find its body silently upgraded underneath it.
 
@@ -132,8 +145,8 @@ semantic waypoints and receives attributed receipts; it never sends `motor_pwm=1
 
 The emergency stop is hardware-level and autonomous. Familiar declares the stop policy
 (kill-switch behaviour, autonomous triggers) at body admission. The controller enforces it
-without waiting for a LychD round-trip. A lost Intercom connection triggers the signal-loss
-policy, not an unbounded hover.
+without waiting for a LychD round-trip. A lost admitted control link—Intercom on a Legion-backed
+route—triggers the signal-loss policy, not an unbounded hover.
 
 Continue with [Follow](follow.md) for how the body locks onto a subject, traces a path, avoids
 obstacles, handles signal loss, and transitions into speaking presence. Return to

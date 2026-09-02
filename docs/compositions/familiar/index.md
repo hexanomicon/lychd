@@ -25,22 +25,32 @@ flowchart LR
     A["Avatar · presentation"] -. "optional projection" .-> S["Spectre · VR"]
     A -. "optional projection" .-> B["Blockworld · game"]
     A -. "optional projection" .-> F["Familiar · real world"]
-    F -->|"embodiment foundation"| C["Companion · mobile Familiar form"]
+    F -->|"exact admitted phone body"| C["Companion · mobile client/session"]
 ```
 
 ## Contract
 
 | Field | Reference contract |
 | --- | --- |
-| **Identity** | `familiar.embodiment` revision `1` |
-| **Patterns** | `familiar.admit_body@1`, `familiar.bounded_mission@1`, and `familiar.follow@1`; additional body-specific Patterns may be admitted without changing the body contract |
-| **Application begins with** | for body admission, one exact Legion node reference, form factor, capability snapshot, safety envelope, geofence, and emergency stop policy; for a mission, one admitted `FamiliarBody@1`, objective kind, subject designation, budgets, stop conditions, and an optional exact Avatar-owned `ProjectionBinding@1` reference |
-| **Application can return** | an immutable `FamiliarBody@1`, settled `FamiliarMission@1`, attributed `FamiliarObservation@1` and `FamiliarEffect@1` records, or explicit partial/non-completion |
+| **Identity** | `familiar.embodiment` revision `2` |
+| **Patterns** | `familiar.admit_body@2`, `familiar.bounded_mission@2`, and `familiar.follow@2`; additional body-specific Patterns may be admitted without changing the body contract |
+| **Application begins with** | for body admission, one exact admitted controller or device attachment, form factor, capability snapshot, safety envelope, geofence where relevant, and emergency stop policy; for a mission, one admitted `FamiliarBody@2`, objective kind, subject designation, budgets, stop conditions, and an optional exact Avatar-owned `ProjectionBinding@1` reference |
+| **Application can return** | an immutable `FamiliarBody@2`, settled `FamiliarMission@2`, attributed `FamiliarObservation@1` and `FamiliarEffect@1` records, or explicit partial/non-completion |
 | **Application stops before** | autonomous weaponization, following non-consenting subjects, entering restricted airspace or private property without admission, operating beyond signal range without pre-authorized return policy, claiming subject identity or consent from proximity, or granting the Lich universal physical authority |
 
-Familiar owns the durable body binding: exact Legion node identity, form factor, make and model,
-requested and required capabilities, safety envelope, geofence, and emergency stop policy. The
-controller firmware, motor drivers, PID loops, and hardware itself remain outside that record.
+Revision `2` supersedes the Designed-only `familiar.embodiment` revision `1` and its `@1` body and
+mission contracts. It replaces the universal Legion precondition with an owner-qualified admitted
+controller or device attachment. No Portfolio registry or Run used revision `1`, so there is no
+executable migration; historical references retain their old meaning.
+
+Familiar owns the durable body binding: exact admitted controller or device attachment, form
+factor, make and model, requested and required capabilities, safety envelope, geofence where
+relevant, and emergency stop policy. The attachment owner retains enrollment and credentials;
+controller firmware, motor drivers, PID loops, client implementation, and hardware itself remain
+outside that record. A remote robot may attach through Legion, while a local phone may attach
+through an exact enrolled client/device binding whose current authority Ward proves. Companion is
+downstream of that body admission: it consumes the resulting exact `FamiliarBody@2`; neither
+attachment route is universal Familiar law.
 
 Each mission owns its objective kind, subject designation, path constraints, budgets, stop
 conditions, observation references, effect receipts, and terminal judgment. A MAVLink connection,
@@ -54,16 +64,16 @@ may use one body without becoming one endless deployment.
 
 | Layer | Familiar-owned truth | Boundary |
 | --- | --- | --- |
-| `FamiliarBody@1` | one immutable body identity and capability epoch: Legion node reference, form factor and make/model, requested, required, granted, missing, and revoked capabilities, safety envelope, geofence, and emergency stop policy | not the Legion enrollment, credential, hardware reservation, controller firmware, or physical chassis |
-| `FamiliarMission@1` | one bounded objective or presence task, subject or target designation where relevant, path or operating constraints, capability-specific safety envelope, signal-loss policy, budgets, stop conditions, optional Avatar projection reference, observation chronology, and terminal judgment | not the provider session, motor or actuator command loop, raw sensor stream, Avatar profile, or claim of continuous attention |
+| `FamiliarBody@2` | one immutable body identity and capability epoch: admitted controller/device attachment, form factor and make/model, requested, required, granted, missing, and revoked capabilities, safety envelope, geofence where relevant, and emergency stop policy | not attachment enrollment or credentials, a Legion node, Companion session, hardware reservation, controller firmware, client implementation, or physical chassis |
+| `FamiliarMission@2` | one bounded objective or presence task, subject or target designation where relevant, path or operating constraints, capability-specific safety envelope, signal-loss policy, budgets, stop conditions, optional Avatar projection reference, observation chronology, and terminal judgment | not the provider session, motor or actuator command loop, raw sensor stream, Avatar profile, or claim of continuous attention |
 | provider link epoch | attributed volatile facts about one control session: protocol version, link quality, controller health, firmware revision, start, stop, and loss | evidence observed by Familiar, not a reusable durable session or substitute for body capability admission |
 | terminal settlement | `completed`, `partial`, `subject_lost`, `emergency_stopped`, `signal_lost`, `battery_depleted`, `refused`, or `unresolved`, plus references to separately owned Avatar bindings, Prism/Echo material, and application or effect receipts | honest judgment about the mission contract, not proof that every frame, utterance, motor pulse, or external effect occurred |
 
 ```mermaid
 flowchart LR
-    L["Legion node reference"] --> B["FamiliarBody@1"]
+    L["Admitted controller/device attachment"] --> B["FamiliarBody@2"]
     C["Capabilities · safety envelope · geofence · emergency stop"] --> B
-    B --> M["FamiliarMission@1"]
+    B --> M["FamiliarMission@2"]
     S["Subject · objective · budgets · stop conditions"] --> M
     A["Avatar ProjectionBinding@1 · optional"] --> M
     R["Volatile control link facts"] --> M
@@ -76,10 +86,10 @@ flowchart LR
 | | Spectre | Blockworld | Familiar |
 |---|---|---|---|
 | **Realm** | virtual reality | persistent game world | real world |
-| **Body record** | `VRHabitat@1` | server + world epoch | `FamiliarBody@1` |
-| **Bounded event** | `SpectreEncounter@1` | `blockworld.bounded_mission@1` | `familiar.bounded_mission@1` |
+| **Admission anchor** | `VRHabitat@1` | server + world epoch | `FamiliarBody@2` |
+| **Bounded event** | `SpectreEncounter@1` | `blockworld.bounded_mission@1` | `familiar.bounded_mission@2` |
 | **Owns** | reference space, comfort, exit | inventory, lease, verified effects | safety envelope, geofence, observations |
-| **Protocol underneath** | OpenXR | Minecraft protocol | MAVLink / ROS2 via Legion |
+| **Protocol underneath** | OpenXR | Minecraft protocol | form-specific authenticated client or controller binding, such as a mobile client, MAVLink, or ROS2 through an admitted local or Legion route |
 | **Optional Avatar role** | `ProjectionBinding@1` into Habitat | `ProjectionBinding@1` into inhabitant | `ProjectionBinding@1` into body |
 
 Avatar never owns the realm. It owns _who appears_. The realm owns _where they appear and what
@@ -88,9 +98,10 @@ geofences, and physical observations are application truth that Avatar has no bu
 
 ## Core capability before packaging
 
-Familiar belongs in the Portfolio without requiring a current packaged application. **Companion**
-is the mobile Familiar form: Familiar supplies the device's embodiment, hardware, capability,
-safety, and stop law; Companion supplies the configurable mobile client and local device experience.
+Familiar belongs in the Portfolio without requiring a current packaged application. A phone is one
+Familiar form. **Companion** is the separate mobile-client/session Composition over that exact
+body: Familiar supplies embodiment, hardware, capability, safety, and stop law; Companion supplies
+the configurable mobile client and local device experience.
 A Suite may combine Familiar, Companion, and Avatar with other Compositions without moving body,
 safety, or mission authority into the client.
 

@@ -165,7 +165,7 @@ quality or price. The Pattern may:
 1. perform retrieval, deterministic redaction, classification, caching eligibility, and cheap
    routing locally;
 2. use one primary worker for ordinary work;
-3. add two to four heterogeneous low-cost Scouts only when diversity can change the decision;
+3. add two to four heterogeneous low-cost reviewers only when diversity can change the decision;
 4. invoke one stronger critic on disagreement, failed validation, or high consequence; and
 5. stop on the admitted request, token, concurrency, time, and spend ceilings.
 

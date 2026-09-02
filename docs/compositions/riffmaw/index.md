@@ -5,17 +5,24 @@ icon: material/music-circle
 
 # :material-music-circle: Riffmaw
 
-Riffmaw turns remembered moments, recordings, words, and sonic intent into attributable music,
-voice, effects, and ambience. AI generation, live performance, editing, and signal processing can
-all contribute; the Magus remains the producer and no model or DAW owns the craft.
+Riffmaw turns remembered moments, recordings, words, and musical intent into attributable music.
+AI generation, instrumental or vocal performance, editing, and signal processing can all
+contribute; the Magus remains the producer and no model or DAW owns the craft.
 
 | Field | Reference contract |
 | --- | --- |
-| **Identity** | `riffmaw.audio` revision `1` |
-| **Principal Pattern** | `riffmaw.forge_sonic_bundle@1` |
-| **Begins with** | a sonic brief plus any explicitly admitted references, words, takes, MIDI, scores, samples, or live inputs |
-| **Can return** | `SonicAssetBundle@1`, `PerformanceSession@1`, `SonicCandidateSet@1`, `RiffmawFindingSet@1`, optional `SyncCueMap@1`, or an exact refusal |
-| **Stops before** | visual generation, final audiovisual assembly, performer impersonation, or publication |
+| **Identity** | `riffmaw.music` revision `1` |
+| **Principal Pattern** | `riffmaw.forge_music_bundle@1` |
+| **Begins with** | a music brief plus any explicitly admitted references, lyrics, takes, MIDI, scores, samples, or live inputs |
+| **Can return** | `PerformanceTake@1`, `MusicalPerformanceSession@1`, `MusicAssetBundle@1`, `MusicCandidateSet@1`, `MusicFindingSet@1`, optional `MusicCueMap@1`, or an exact refusal |
+| **Stops before** | ordinary dialogue, spoken dialogue replacement or spoken-media localization, picture-bound sound design, visual generation, final audiovisual assembly, performer impersonation, or publication |
+
+The earlier Designed-only `riffmaw.audio` revision `1`, its `Sonic*` contract family, and the former
+`riffmaw.forge_track@1`, `riffmaw.capture_take@1`, `riffmaw.open_jam@1`,
+`riffmaw.index_sources@1`, and `riffmaw.mark_moment@1` meanings are retired, not reinterpreted.
+`riffmaw.music` revision `1` is a new, narrower identity and uses those five Pattern names only as
+`@2` revisions. No Portfolio registry, Run, or stored application record uses the retired design, so
+there is no executable migration; historical references retain their old meaning.
 
 Prompt language, lyric language, requested sung language, and interface locale remain separate.
 The exact Riffmaw model profile owns proved musical and language behavior; Soulstone may bind it to
@@ -29,10 +36,10 @@ Riffmaw can complete the same application purpose through different production m
 
 | Mode | Representative Pattern | Human and machine relation | Typed finish |
 | --- | --- | --- | --- |
-| **Forge** | `riffmaw.forge_track@1` | A brief, references, words, or an empty session drive offline composition and generation. | `SonicCandidateSet@1` or `RiffmawFindingSet@1`. |
-| **Perform** | `riffmaw.capture_take@1` | Explicitly armed audio or MIDI preserves what one or more people play, sing, speak, or program. | `PerformanceSession@1` containing attributed takes and observations. |
-| **Jam** | `riffmaw.open_jam@1` | Performers and admitted machine players share mapped clocks and answer one another live or ahead of a declared musical boundary. | Recoverable `PerformanceSession@1` or `RiffmawFindingSet@1`. |
-| **Produce** | `riffmaw.forge_sonic_bundle@1` | Riffmaw iterates arrangement, mix, mastering, deterministic probes, and attributable listening review. | `SonicAssetBundle@1`, `SonicCandidateSet@1`, `RiffmawFindingSet@1`, or refusal. |
+| **Forge** | `riffmaw.forge_track@2` | A brief, references, lyrics, or an empty session drive offline composition and generation. | `MusicCandidateSet@1` or `MusicFindingSet@1`. |
+| **Perform** | `riffmaw.capture_take@2` | Explicitly armed audio or MIDI preserves what one or more people play, sing, rap, perform as musical spoken word, or program. | One attributable `PerformanceTake@1` plus exact observations or findings. |
+| **Jam** | `riffmaw.open_jam@2` | Performers and admitted machine players share mapped clocks and answer one another live or ahead of a declared musical boundary. | Recoverable `MusicalPerformanceSession@1` or `MusicFindingSet@1`. |
+| **Produce** | `riffmaw.forge_music_bundle@1` | Riffmaw iterates arrangement, mix, mastering, deterministic probes, and attributable listening review. | `MusicAssetBundle@1`, `MusicCandidateSet@1`, `MusicFindingSet@1`, or refusal. |
 
 The Patterns connect through typed artifacts and new forward Invocations; one Pattern never nests
 or silently resumes another. A later Scroll may publish exact capture, generation, render, and
@@ -47,15 +54,20 @@ a master does not authorize publication.
 - [Sessions](sessions.md) preserves armed inputs, human recordings, takes, MIDI, live jams, and performance conditions.
 - [Music](music.md) covers composition, AI generation, arrangement, editing, mixing, and mastering.
 - [Studio](studio.md) defines the replaceable production-tool roles and the current candidate stack.
-- [Voice](voice.md) binds spoken or sung performance to approved words and performer authority.
-- [Sound](sound.md) creates and edits effects, foley, textures, and ambience.
-- [Audio hardware and host routes](hardware.md) maps Linux-first microphones, interfaces, mobile
-  receivers, remote bodies, and the operator workstation to the future Echo/Riffmaw adapters.
-- [Sync](sync.md) exposes sonic timing without directing the image.
+- [Voice](voice.md) keeps musical vocals here while routing ordinary dialogue, spoken dialogue replacement, captions,
+  and spoken timed-language editions to [Language Edition](../language-edition/).
+- [Sound](sound.md) distinguishes musical production effects from Broadcast's picture-bound sound
+  and the unresolved reusable-sound office.
+- [Music hardware boundary](hardware.md) admits exact instrument and musical-vocal capture routes
+  while the shared Animator page keeps generic Linux, speech, mobile, and body mechanics.
+- [Sync](sync.md) exposes musical timing without directing the image.
 - [Package](package.md) seals lineage, effects, recovery, and the consumer handoff.
 
-[Voidlight](../voidlight/) owns visual assets. [Broadcast](../broadcast/) owns editorial assembly,
-the final timeline, and publication effects.
+[Voidlight](../voidlight/) owns visual assets. [Broadcast](../broadcast/) owns picture-bound sound,
+editorial assembly, the final timeline, and publication effects. Language Edition owns ordinary dialogue,
+spoken dialogue replacement, captions, and spoken timed-language editions. Reusable standalone
+sound remains an unresolved future standalone-sound Composition boundary rather than hidden
+Riffmaw scope.
 
 Related: [Audio](../../adr/37-audio.md) · [Workflow](../../adr/28-workflow.md) ·
 [Composition portfolio](../index.md)

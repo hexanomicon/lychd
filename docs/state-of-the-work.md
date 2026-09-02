@@ -203,9 +203,11 @@ and versioned JSONB, while memory Run, consent, and Bridge-session stores detach
 the same public boundary as database reads.
 
 **Boundary — Not yet:** PostgreSQL and SAQ are not one transaction; Step events lack an outbox;
-adapter parity is incomplete; persistent same-boot containment failure has no durable watchdog. The
-lifecycle receipt substitutes offline collaborators and is not a checkpoint-plus-consent,
-real-host, inference-engine, or browser receipt.
+memory-profile/PostgreSQL repository parity is incomplete; no general record-retention or
+compaction path, partition policy, tablespace lifecycle, automatic capacity expansion, or sharding
+path is delivered; persistent same-boot containment failure has no durable watchdog. The lifecycle
+receipt substitutes offline collaborators and is not a checkpoint-plus-consent, real-host,
+inference-engine, or browser receipt.
 
 **Evidence**
 
@@ -907,12 +909,18 @@ promotion-request → target-owner-effect chain.
 
 **Do not expect yet:** There is no Creation contract or process-local state-machine implementation,
 workspace, filesystem or command executor, database recovery, safe Forge, autonomous repair,
-target-owner promotion effect, rollback execution, or self-extension runtime.
+target-owner promotion effect, rollback execution, or self-extension runtime. There is likewise no
+instantiated distributed repository identity or maintainer roster, executable key-custody and
+rotation mechanism, governance-epoch ledger, quorum verifier, signed portable promotion envelope,
+independent attestation plane, canonical source on Radicle, Radicle node topology, or
+downstream-mirror cutover.
 
 **Evidence**
 
 - **Topic:** [Smith](./sepulcher/extensions/smith.md)
-- **Law:** [Creation](./adr/16-creation.md)
+- **Law:** [Creation](./adr/16-creation.md),
+  [Packaging](./adr/17-packaging.md#forge-neutral-source-trust), and
+  [Evolution](./adr/18-evolution.md#future-quorum-roster)
 
 ### Remote IAM {#remote-iam}
 

@@ -220,7 +220,7 @@ h1, h2, h3 {
 
 .md-typeset .prophecy-hero__sigil {
   display: block;
-  width: min(15rem, 52vw);
+  width: min(17.5rem, 72vw);
   height: auto;
   margin: 0 auto 0.75rem;
   border: 1px solid #3b0a6e;
@@ -231,6 +231,7 @@ h1, h2, h3 {
 .md-typeset .prophecy-hero__title {
   margin: 0;
   color: #f7f5ff;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.2));
   font-size: clamp(2.25rem, 7vw, 3.5rem);
   font-weight: 800;
   line-height: 1.08;
@@ -288,7 +289,7 @@ h1, h2, h3 {
   }
 
   .md-typeset .prophecy-hero__sigil {
-    width: min(11rem, 52vw);
+    width: min(15rem, 72vw);
   }
 }
 
@@ -301,6 +302,7 @@ h1, h2, h3 {
   .md-typeset .prophecy-hero__title {
     background: none;
     color: CanvasText;
+    filter: none;
     -webkit-text-fill-color: CanvasText;
     text-shadow: none;
   }

@@ -20,13 +20,13 @@ A trial fixes six records before execution:
 | Record | Pinned meaning |
 |---|---|
 | **Case** | Exact input, fixtures, expected and forbidden behavior, oracle, effect class, and stop condition |
-| **Suite** | Versioned Cases, matched controls, ordering, repetition policy, and aggregation rules |
+| **Trial Suite (`TrialSuite@1`)** | Versioned Cases, matched controls, ordering, repetition policy, and aggregation rules |
 | **Rubric** | Criteria, verdict vocabulary, thresholds, missing-evidence policy, and revision |
 | **Evaluator** | Kind, identity, revision, independence, calibration evidence, and declared limitations |
 | **Environment** | Subject revision, prompts, tools, dependencies, hardware, harness, state, budgets, and relevant policy |
 | **Outcome** | Observations, measurements, verdicts, uncertainty, errors, cost, latency, and retained evidence |
 
-A trial Suite groups Cases and evaluation controls. A
+A Trial Suite groups Cases and evaluation controls. A
 [Composition Suite](../../../compositions/index.md#suites-do-not-dissolve-their-members) is a
 versioned graph of separately owned Compositions and typed handoffs. Changing the subject, prompt,
 tool schema, Rubric, Evaluator, or Environment produces a new Outcome rather than revising the old

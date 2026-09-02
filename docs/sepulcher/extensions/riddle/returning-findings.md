@@ -8,13 +8,13 @@ icon: material/source-merge
 An artifact passes its producer's checks and reaches two independent consumers. One succeeds; the
 other fails under a different Environment. That failure neither condemns the artifact nor
 identifies the producer through proximity. Riddle instead performs a bounded dependency walk
-across the exact Suite and its retained evidence, stopping where observations can distinguish one
+across the exact Composition Suite and its retained evidence, stopping where observations can distinguish one
 responsible boundary from its rivals.
 
 Returning findings are **Designed**; no feedback path runs, and reverse execution is forbidden.
 Maturity remains in
 [State of Work](../../../state-of-the-work.md#riddle-evaluation);
-[ADR 34](../../../adr/34-evaluation.md#returning-findings-across-a-suite) owns the evidentiary law,
+[ADR 34](../../../adr/34-evaluation.md#returning-findings-across-a-composition-suite) owns the evidentiary law,
 while [Spellweaver](../../../adr/28-workflow.md#returning-findings) owns any later executable admission.
 
 ## Fix the graph under examination
@@ -25,7 +25,7 @@ each member Composition and Pattern revision; retained artifact and Intent hando
 failing observation; its Rubric, Evaluator, Environment, verdict, and uncertainty; and declared
 dependencies between artifacts and evidence.
 
-The Suite coordinates separately owned applications. It does not merge their domain rows, secrets,
+The Composition Suite coordinates separately owned applications. It does not merge their domain rows, secrets,
 Sigils, approvals, policies, or effect authority. A finding must therefore preserve which owner
 produced each artifact, which consumer observed it, and which contract connected them.
 
@@ -33,7 +33,7 @@ Four inert records carry the result:
 
 | Record | Contents |
 |---|---|
-| **`SuiteFindingSet@1`** | Binds Rubric, Suite, subjects, Environment, observations, measurements, Evaluator, verdicts, and uncertainty |
+| **`CompositionSuiteFindingSet@1`** | Binds Rubric, Composition Suite, subjects, Environment, observations, measurements, Evaluator, verdicts, and uncertainty |
 | **`AttributionCandidate@1`** | Names a possible responsible boundary, supporting and conflicting evidence, rivals, and uncertainty; never causal certainty |
 | **`InvalidationSet@1`** | Names claims whose support no longer survives and claims whose complete evidence closure remains intact |
 | **`CorrectionRequest@1`** | Gives one owner a bounded target delta, preserved constraints, evidence, proposed scope, and repair budget |

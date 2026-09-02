@@ -14,9 +14,12 @@ all dependencies. Formatting for another channel may change length or structure 
 silently change the claim, audience, or source meaning.
 
 Narration and caption text are approved before audiovisual assembly can conceal uncertainty behind
-voice, pacing, or imagery. `SonicAssetRequest@1` may ask [Riffmaw](../riffmaw/voice.md) for exact
-words, pronunciation, timing, performance direction, authority, and request digest. A returned
-performance does not authorize Broadcast to substitute words or extend its use.
+voice, pacing, or imagery. `LanguageVersionRequest@1` may send the exact `ScriptRevision@1`,
+locked source-media digest, target language and timebase, pronunciation and performance direction,
+authority, and request digest to [Language Edition](../language-edition/index.md). A returned
+`TimedLanguageAssetBundle@1` does not authorize Broadcast to substitute canonical words, extend
+their use, or hide an attributed adaptation. Correcting the source script stales every dependent
+Language Edition revision.
 
 Review checks factual support, quotations, attribution, privacy, likeness, disclosures,
 accessibility of language, and the intended audience. A finding points to the exact claim or text

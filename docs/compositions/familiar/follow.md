@@ -5,20 +5,20 @@ icon: material/directions
 
 # :material-directions: Follow
 
-`familiar.follow@1` is the Pattern that wakes the body, locks a subject, traces a path through
+`familiar.follow@2` is the Pattern that wakes the body, locks a subject, traces a path through
 physical space, and settles what happened. It may transition into speaking mode — mic and camera
 open only under separate capture authority, the Lich may speak through an admitted Avatar/Echo
 path — and return to following when the conversation ends.
 
 ## Admission
 
-Admission pins one exact `FamiliarBody@1` revision, subject designation, path constraints, and
+Admission pins one exact `FamiliarBody@2` revision, subject designation, path constraints, and
 stop conditions. A missing required body capability (camera for visual lock, GPS for outdoor
 navigation) refuses the mission before the body moves.
 
 | Field | What it binds |
 | --- | --- |
-| Body reference | exact immutable `FamiliarBody@1` revision with confirmed capability snapshot |
+| Body reference | exact immutable `FamiliarBody@2` revision with confirmed capability snapshot |
 | Subject designation | one explicit lock method with fallback chain |
 | Follow envelope | target distance (min/max), altitude floor/ceiling (drones), speed ceiling, terrain mode |
 | Obstacle avoidance | stop, reroute, climb, or refuse per obstacle class |
@@ -107,20 +107,22 @@ records the event and the controller's response; it does not micro-manage the av
 
 ## Signal loss
 
-The Intercom connection between the Legionnaire and LychD may drop. The body must decide what to
-do without a round-trip to the Master.
+The admitted control connection between the body's attachment and LychD may drop. On a remote
+Legion route this is Intercom between the Legionnaire and LychD; a local or mobile attachment names
+its equivalent bounded link. The body must decide what to do without a round-trip.
 
 | Policy | Behaviour | Recovery |
 | --- | --- | --- |
-| **Hover-and-wait** (drone) | hover at current position for N seconds; if signal returns, resume mission; if timeout, execute land-in-place | Master reconnects, reads body journal, resumes or settles |
+| **Hover-and-wait** (drone) | hover at current position for N seconds; if signal returns, resume mission; if timeout, execute land-in-place | the attachment owner reconnects, reads the body journal, then requests resume or settlement |
 | **Land-in-place** (drone) | descend vertically at current position, disarm motors, record landing receipt | body on ground, safe; manual retrieval |
 | **Return-to-home** (drone) | ascend to safe altitude, navigate to pre-admitted home waypoint, land | body returns to known safe location |
 | **Brake-and-wait** (rover/legged) | stop, hold position for N seconds; if signal returns, resume; if timeout, remain stopped | body stationary, safe; manual retrieval |
 | **Freeze** (any) | immediate motor stop/brake, hold position indefinitely | safest option; requires manual intervention to resume |
 
-The signal-loss policy is pinned at mission admission. The Legionnaire enforces it autonomously.
-A late signal return after policy execution settles the mission with `signal_lost`; it does not
-silently resume as though nothing happened.
+The signal-loss policy is pinned at mission admission and enforced autonomously by the admitted
+body controller. A Legionnaire carries that duty on a Legion-backed route; no Legion requirement
+is implied for another attachment. A late signal return after policy execution settles the
+mission with `signal_lost`; it does not silently resume as though nothing happened.
 
 ## Speaking mode
 
@@ -147,10 +149,11 @@ A trigger begins the speaking session. The trigger is declared at mission admiss
    for Context or Avatar grounding.
 4. A separately admitted Echo capture window opens; any transcript retains its audio source,
    timing, provider, language assumptions, and uncertainty.
-5. An authorized Avatar voice profile may select presentation while Echo owns synthesis and the
-   device-owned playback result.
-6. Familiar records a `FamiliarSpeakingSession` sub-record containing the exact capture epochs,
-   Prism/Echo references, transcript reference, disclosure, and delivery facts.
+5. An authorized Avatar voice profile may select presentation while Echo owns synthesis and speech
+   playback chronology; the device reports the physical playback evidence.
+6. Familiar records a bounded speaking-mode window referencing the exact Companion controls when
+   present and the separately owned Prism/Echo epochs, transcript, disclosure, and delivery facts.
+   It is an aggregate mission reference, not a second `FamiliarSpeakingSession` speech chronology.
 
 ### Deactivation
 
@@ -158,11 +161,11 @@ A trigger begins the speaking session. The trigger is declared at mission admiss
 | --- | --- |
 | **Voice command** | "Goodbye" / "Resume follow" — Lich or subject ends session |
 | **Subject departure** | subject leaves proximity threshold beyond grace period |
-| **Explicit instruction** | Lich ends session through Intercom |
+| **Explicit instruction** | Lich ends speaking mode through the admitted control link |
 | **Budget exhaustion** | mission duration or speaking duration budget reached |
 | **Stop condition** | any mission stop condition also ends speaking mode; session closes before mission settlement |
 
-Deactivation closes the speaking session record, stops camera and mic streams, deactivates
+Deactivation closes that bounded speaking-mode window, stops camera and mic streams, deactivates
 disclosure indicators, and returns the body to the follow loop. If the follow mission itself is
 complete, deactivation settles the mission.
 
@@ -177,19 +180,19 @@ completed and what stopped it.
 | `partial` | some segments completed, some refused or interrupted; policy permits the exact settled subset; every absent or interrupted segment is named |
 | `subject_lost` | subject designation chain exhausted and signal-loss policy executed; last known position, last lock quality, and loss event recorded |
 | `emergency_stopped` | autonomous or manual emergency stop triggered; trigger source, body state at stop, and post-stop telemetry recorded |
-| `signal_lost` | Intercom connection lost and signal-loss policy executed to completion; body journal available for later reconciliation |
+| `signal_lost` | admitted control link lost and signal-loss policy executed to completion; body journal available for later reconciliation |
 | `battery_depleted` | battery reached declared floor; body executed low-battery behaviour (land/stop) before power loss; final position and remaining charge recorded |
 | `refused` | mission admission failed (missing capability, infeasible path, geofence conflict, subject designation invalid) before movement began |
 | `unresolved` | a required outcome remains unknown or cannot be reconciled without guessing; mission evidence is incomplete but honestly recorded |
 
 ## Representative journey
 
-1. Magus admits one `FamiliarBody@1` — a 350 mm quadcopter with GPS, optical flow, forward RGB
+1. Magus admits one `FamiliarBody@2` — a 350 mm quadcopter with GPS, optical flow, forward RGB
    camera, downward rangefinder, mic, speaker. Safety envelope: max altitude 15 m, min altitude
    1.5 m, geofence = property boundary, emergency stop = kill switch + autonomous low-battery land.
 2. Magus designates subject: BLE beacon in pocket, visual fallback to color-blob on bright vest.
    Signal-loss policy: hover 10 s, then land-in-place.
-3. Magus opens `familiar.follow@1` mission: follow at 3 m distance, 3 m altitude, outdoor terrain,
+3. Magus opens `familiar.follow@2` mission: follow at 3 m distance, 3 m altitude, outdoor terrain,
    speaking mode on voice command "Hey Lich."
 4. Drone lifts off, locks BLE beacon, begins path-tracing loop.
 5. Drone follows Magus through garden — records waypoints, avoids tree branch (reroute event),
@@ -199,7 +202,8 @@ completed and what stopped it.
    disclosure indicators, then opens bounded Prism/Sight and Echo capture windows. Their attributed
    observations and transcript make the seedlings and question available to the Invocation.
 8. Lich responds through drone speaker: "The tomatoes are crowded — give them each a bigger pot.
-   The basil is ready to harvest." Speaking session recorded with audio/video/transcript refs.
+   The basil is ready to harvest." The speaking-mode window closes with references to the exact
+   Prism/Echo epochs, transcript, disclosure, and delivery facts.
 9. Magus says "Thanks, resume follow." Speaking mode deactivates. Drone re-acquires beacon,
    resumes follow loop.
 10. Battery reaches 25% floor. Drone records `battery_low` event, descends to land at current

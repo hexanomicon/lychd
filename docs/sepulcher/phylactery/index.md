@@ -7,21 +7,40 @@ icon: fontawesome/solid/flask
 
 > _“The Vessel passes. The Phylactery keeps only what was committed.”_
 
-The Phylactery is LychD's durable-data jurisdiction. It owns committed run and continuity records
-that must survive a [Vessel](../vessel/index.md) process boundary.
+The durable Phylactery is the PostgreSQL database cluster assigned to one application partition.
+It owns committed run and continuity records that must survive a
+[Vessel](../vessel/index.md) process boundary. It is not a generic storage facade or an
+interchangeable save/retrieve backend.
 
-The first-light implementation uses **PostgreSQL** inside the [Crypt](../crypt.md). The Phylactery
-owns engine construction, codecs, transactions, migrations, and schema admission; each domain owns
-the meaning and lifecycle of its records.
+The cluster's `PGDATA` lives inside the [Crypt](../crypt.md), while PostgreSQL runs in its dedicated
+unit. The Phylactery owns engine construction, codecs, transactions, migrations, and schema
+admission; each domain owns the meaning and lifecycle of its records. Process-local and in-memory
+persistence profiles are bounded test or execution substitutes, never deployed Phylacteries.
+
+The default topology scales this one cluster up on one host. Its storage may be enlarged or moved
+beneath the exact admitted `postgres/data` mount without changing application authority. Loose
+application-managed files never form a shadow database. A future named Domain store may own a
+separate custody or projection contract through its own port; it is neither a Phylactery nor an
+interchangeable Phylactery backend. Current law selects no scale-out topology; any such design
+requires a further [Persistence](../../adr/06-persistence.md#default-topology-and-scale-seam)
+amendment and evidence.
+
+Growth first meets explicit lifecycle policy: age or disk pressure alone never permits deletion,
+and Shadow's Reaper is not a database collector. PostgreSQL partitioning and tablespaces may later
+place measured hot or cold relations, indexes, or partitions on different local storage tiers while
+remaining one indivisible Phylactery. The application still queries PostgreSQL rather than choosing
+a disk. LychD currently admits only the `postgres/data` mount; additional tablespace mounts require
+Layout, container, and whole-cluster capture/restore support before use.
 
 [First-light persistence](../../state-of-the-work.md#phylactery-first-light) is **Partial**:
 repository shapes, memory-profile behavior, a transactional Run-delivery outbox, and a disposable
-two-boot PostgreSQL application-factory lifecycle are proved. Full adapter parity, a transactional
-Step-event outbox, and real host/model/browser receipts are not.
+two-boot PostgreSQL application-factory lifecycle are proved. Full memory-profile/PostgreSQL
+repository parity, a transactional Step-event outbox, general retention or compaction, physical
+tiering, and real host/model/browser receipts are not.
 
 ## The Anatomy of Memory
 
-The current Phylactery uses the configured database's default schema and search path:
+The current Phylactery uses its PostgreSQL database's default schema and search path:
 
 1. **`public` (The State):** Migration `0001_phylactery_first_light` raises `session`, `run`,
    `run_checkpoint`, `step`, `consent`, `karma`, `soulstone_record`, and

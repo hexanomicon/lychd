@@ -33,6 +33,7 @@ preserving a content-free receipt; it cannot promise that caches or feeds forgot
 ## Proving package
 
 Build a three-to-five-minute local package from a small frozen source set: source-linked claims, an
-article and script, admitted local narration with back-transcript, admitted visual and sonic
-bundles, captions, an explicit timeline, deterministic render, one bounded repair, and final
+article and script, admitted local narration with back-transcript, admitted visual, music,
+timed-language, and picture-sound bundles, captions, an explicit timeline, deterministic
+render, one bounded repair, and final
 `EditorialPackage@1` plus `PublicationCandidate@1`. The proof makes no platform call.

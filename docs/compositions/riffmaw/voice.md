@@ -1,31 +1,31 @@
 ---
-title: Voice
+title: Voice boundary
 icon: material/microphone-outline
 ---
 
-# :material-microphone-outline: Voice
+# :material-microphone-outline: Voice boundary
 
-Voice creates spoken or sung sonic assets tied to exact words, an authorized performer, and a
-declared use. It can use human recording, approved synthesis, editing, or a combination of them.
+Riffmaw owns voice only when it is musical performance: singing, rap, musical spoken word,
+harmonies, and other vocal parts judged inside a composition, arrangement, or mix. It does not own
+a generic voice pack or ordinary spoken-media production.
 
-`riffmaw.forge_voice_pack@1` pins the canonical text, language and pronunciation assumptions,
-performance direction, target role, timing, and acceptance criteria. Human takes retain their
-[session](sessions.md) lineage. Synthesized voice retains the model, provider, voice identity,
-controls, source influence, cost, and output digest. A transcript or back-transcript is an
-attributed observation, not proof that pronunciation, meaning, or delivery is correct.
+An admitted vocal take enters `riffmaw.capture_take@2` and returns `PerformanceTake@1`. It pins the
+approved lyrics, language and pronunciation assumptions,
+performance direction, musical role, timing, and acceptance criteria. Raw takes, comping, tuning,
+cleanup, musical vocal generation, and tone changes retain their parents, performer or model
+identity, controls, source influence, cost where applicable, and output digests. Accepted vocal
+work enters `MusicAssetBundle@1`; a transcript remains an attributed observation rather than proof
+of lyrical, pronunciation, or performance correctness.
 
-Consent to one recording does not authorize voice cloning. Performer authority is scoped to the
-identity, words, purpose, audience, territory, duration, transformations, and revocation rule.
-Impersonation, unapproved words, concealed synthesis, or ambiguous authority leads to review,
-replacement, or refusal.
+Consent to one take does not authorize cloning or later words. Performer authority remains scoped
+to identity, lyrics, purpose, audience, territory, duration, transformations, disclosure, and
+revocation. Impersonation, concealed synthesis, unapproved lyrics, or ambiguous authority leads to
+review, replacement, or refusal.
 
-Editing may choose takes, remove noise, align timing, or transform tone, but it creates a new
-revision and never erases the original. Voice assets join the mix through [Music](music.md) or a
-declared sound package; they do not grant Broadcast permission to rewrite the words or publish the
-performance.
-
-An [Avatar](../avatar/index.md) profile or Morphe may reference an authorized voice artifact for one
-declared presentation. Riffmaw retains its production and performer-use truth; Echo retains
-cloning, synthesis, playback, and revocation mechanics; Avatar decides only whether that eligible
-voice fits the profile, audience, and target. A fixed voice pack does not silently become
-permission to generate arbitrary later words.
+Ordinary dialogue, narration, spoken dialogue replacement, captions, and spoken timed-language editions belong to
+[Language Edition](../language-edition/).
+[Echo](../../sepulcher/extensions/echo.md) retains admitted speech capture, transcription,
+synthesis, cloning, delivery, and playback facts; those mechanisms do not decide musical
+acceptance. An [Avatar](../avatar/index.md) profile or Morphe may reference an eligible vocal or
+voice artifact for one declared presentation, but neither the artifact nor its Riffmaw acceptance
+grants permission to synthesize new words or publish it.

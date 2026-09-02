@@ -108,6 +108,17 @@ owner-declared transformation; it retains source and derived text, implementatio
 declared loss. A model, engine, browser, peer, or Persona may not infer a host-global language or
 silently translate another station's material.
 
+Translation does not become a freestanding Composition merely because several Patterns can reuse
+it. A versioned Translation Spell has an authority-qualified publisher that owns the contract's
+semantics and revision; Spellweaver owns registration, placement, resolution, and casting law,
+not linguistic truth or application acceptance. The Composition placing it retains the source and
+attributed derivative and owns fit for its domain.
+
+For example, [Language Edition](../compositions/language-edition/index.md) may place Translation inside a timed-media
+language edition while retaining scene, speaker, glossary, timing, and localization judgment.
+Another application may place the same exact contract under different records and finish law
+without inheriting Language Edition's project or becoming part of a global Translation workflow.
+
 ### Progressive finish and forward continuation
 
 A Scroll may declare several typed finish boundaries and an exact admission-time finish policy,
@@ -379,6 +390,59 @@ may ask a local Privacy Agent, independently verifies transformation evidence, c
 specific Privacy Cut, gets an exact tagged-target EgressDecision, transmits once, and quarantines
 the return. Censor/Agent proposes only. Context owns the Cut; Security owns declassification.
 
+### Execution projections for procedural Agent placements (Designed)
+
+For a declared long-horizon procedural region, a Composition may define a bounded, versioned
+**Execution Projection**. The Composition owns its meaning; the exact Scroll revision pins its
+schema and initialization, placement mappings, required unknown and omission fields, admitted
+observation inputs, permitted candidate operations, applicator binding, history policy, and hard
+field, cardinality, and byte limits. A changed meaning, schema, mapping, operation set, applicator,
+or history policy is a new Scroll revision. The projection contains only working material required
+by later placements. It is not the whole Graph continuation, an authoritative domain record, an
+effect receipt, an audit trail, Archive memory, or conversation history.
+
+The placement history policy selects exactly `transcript`, `projection`, or `hybrid`. `transcript`
+means [Context](21-context.md)-governed bounded settled message groups. A hybrid pins the
+deterministic selection profile and bounds for attributed history retained beside the projection;
+the assembled call records the exact groups selected at runtime. It is not an undeclared fallback
+to all settled history. Any required provider, tool, or consent continuation remains orthogonal
+and indivisible; it does not turn `projection` into `hybrid`. Semantic sufficiency and continuity
+select the pinned shape before cache, latency, or price. Cache availability cannot change it.
+
+At an explicitly declared Agent placement, [Context](21-context.md) may assemble immutable
+instructions, the recipient-specific current Execution Projection, the exact station request, and
+fresh admitted observation projections without replaying settled reasoning, actions, or
+observations into that model call. Every observation retains its source, revision or cursor,
+freshness, classification, and lineage. The placement may omit settled history only when its
+contract declares the projection sufficient for continuation; required material that does not fit
+refuses before inference. Declared bounds make this input independent of prior-turn count, not
+independent of the actual size of its projection and observation.
+
+The Agent returns typed, bounded candidate operations and, when allowed, an action intent. It does
+not replace the projection, extend its schema, or mutate workflow control, authority, privacy,
+domain truth, or effect settlement. A deterministic workflow-owned applicator binds the candidate
+to the exact current projection value and revision plus its admitted observations, validates the
+permitted fields and invariants, and alone creates the next committed projection value and revision
+for that Casting. An action intent remains inert until the owning effect boundary authorizes,
+executes, and settles it; confirmed world-facing fields follow owner observations or receipts,
+while indeterminate consequence remains `UNKNOWN`.
+
+Canonical sources, full attributable artifacts, receipts, events, and any retained history remain
+with their existing owners even when excluded from a later model call. Exact conversational
+history and an in-progress provider/tool or consent continuation are not replaced by an Execution
+Projection. When no fixed sufficient schema is known, earlier material may become relevant only
+later, or the historical trajectory is itself the requested evidence, the Scroll must admit the
+necessary attributed history or artifacts—or stop with an explicit unknown or non-completion.
+
+[SKILL.state v2](https://arxiv.org/html/2608.26263v2) reports that its projection-only,
+state-plus-latest-observation variant can preserve or improve benchmark performance while
+materially reducing repeated transcript tokens in long sequential single-agent tasks, including
+budget-matched controls. That evidence motivates the accepted shape; it does not establish LychD
+delivery, universal model performance, shared mutable multi-Agent state, concurrent merge law,
+privacy, effect safety, checkpoint recovery, or LychD-specific token savings, cache-aware billing
+savings, cache-hit rates, time-to-first-token improvements, or latency gains. The current Pattern
+v2 manifests and built-in workflows do not deliver Execution Projections.
+
 ## Execution-road planning
 
 Portal, A2A, and delegated coding are not interchangeable provider names. Spellweaver first closes
@@ -429,6 +493,32 @@ policy and admitted observations. Dispatcher then binds an already eligible capa
 not rank price, privacy, peer trust, or coding runtimes. Orchestrator makes managed local substrate
 ready; it does not change the road. Gateway `auto`, model-written routing, or a foreign runtime's
 provider choice cannot substitute for this decision.
+
+Cache reuse is an execution-road optimization, not Execution Projection, Agent memory, continuity,
+authority, or recovery. After semantic input, road, and exact capability binding are pinned, a
+future execution profile may carry an opaque cache-affinity preference only for connector reuse or
+physical placement of that same admitted call. The preference carries no prompt, history, plain
+prompt-derived digest, or authority and cannot select another model, road, or input policy. No
+current Dispatcher or Orchestrator contract implements it; future declared support remains a
+Dispatcher capability fact and local placement remains inside Orchestrator's physical boundary.
+
+Provider cache eligibility, identity and lifetime scope, retention, and current tariff remain
+dated [Portal Roads](../sepulcher/animator/portal-roads.md) selection-receipt facts; local prefix or
+KV behavior remains an exact Soulstone engine/profile fact. A provider, model, or engine name alone
+proves no cache fact. An exact launch flag or provider declaration is declared capability or
+intent, not observed residency, hit, or savings; `prefix_digest` witnesses LychD content only, and
+a projected discount is not a receipt. When available, provider-reported cached-token usage is
+attributed billing evidence under [Oculus](29-observability.md) law, not proof of physical KV reuse.
+
+Cache availability cannot be required for correctness, input sufficiency, budget admission, or
+recovery. Before first submission—or after the road owner proves no prior effect—an ordinary cache
+miss, eviction, or process restart executes the same admitted call without cache reuse on the same
+pinned binding. The miss alone causes neither refusal, fallback, nor input-policy change. After
+submission, existing reconciliation and idempotent-redelivery law governs; a changed target,
+model, or runtime still requires the existing fresh road decision. Only a separately admitted
+provider live-session road may require its exact session binding and opaque handle; its owner
+defines loss and reconciliation. Tool and consent continuation retain their existing Graph and
+HitL contracts and never become cache affinity.
 
 A semantic retry, fallback, changed payload, target, peer, model, workspace projection, or
 delegated child call creates a new road decision, then its road owner creates the appropriate
@@ -562,20 +652,21 @@ engine, service-class persistence, safe preemption, or periodic workflow schedul
 
 ## Returning findings
 
-Riddle returns SuiteFindingSet@1, AttributionCandidate@1, InvalidationSet@1, CorrectionRequest@1
-as evidence, not reverse edges. Spellweaver admits a Correction Request only as new forward Invocation
-under validation/budget/authority/consent; it cannot resume arbitrary old station, mutate artifact,
-inherit consumer authority, or turn recurrence into training. Repair starts from smallest supported
-cut; reuse requires full input/evaluation closure; unresolved attribution/exhausted budget terminates honestly.
+Riddle returns `CompositionSuiteFindingSet@1`, `AttributionCandidate@1`, `InvalidationSet@1`, and
+`CorrectionRequest@1` as evidence, not reverse edges. Spellweaver admits a Correction Request only
+as a new forward Invocation under validation/budget/authority/consent; it cannot resume an arbitrary
+old station, mutate an artifact, inherit consumer authority, or turn recurrence into training.
+Repair starts from the smallest supported cut; reuse requires full input/evaluation closure;
+unresolved attribution or exhausted budget terminates honestly.
 
 ## Loom projection and drafting
 
 [Loom](../divination/altar/loom.md) reads the fixed immutable Pattern manifest: semantic stations,
-edges, Gate/delegate,
-revision, implementation revision, checkpoint schema, digest. Mermaid/canvas are views. Charcoal remains inert until canonical
-declarative Pattern has typed ports/state/effects/authority/termination/continuity. Drawn grouping
-does not nest Pattern or execute Suite. Publication alone makes new immutable revision; Invocations
-stay pinned. Model prose, browser gesture, renderer state are not authority.
+edges, Gate/delegate, revision, implementation revision, checkpoint schema, and digest.
+Mermaid/canvas are views. Charcoal remains inert until a canonical declarative Pattern has typed
+ports/state/effects/authority/termination/continuity. Drawn grouping does not nest a Pattern or
+execute a Suite. Publication alone makes a new immutable revision; Invocations stay pinned. Model
+prose, browser gesture, and renderer state are not authority.
 
 ## Rejected alternatives
 

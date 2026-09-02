@@ -68,6 +68,20 @@ moving diagnostic judgment or seller authority. A Suite is required only if the 
 one actively coordinated diagnostic-and-acquisition result with shared cancellation, ceilings,
 recovery, and partial settlement.
 
+### Voidlight, Riffmaw, Language Edition, and Broadcast
+
+[Language Edition](language-edition/index.md) can build one language edition from an already-settled Broadcast script
+and locked source master, an accepted Voidlight visual reference, and an immutable Riffmaw music
+master without creating a Suite. Each reference retains its owner and grants no live lifecycle or
+revision authority. Broadcast may later admit the settled Language Edition bundle into a new editorial
+timeline the same way.
+
+A Suite is required only when one Product promise must actively open and coordinate those new
+Invocations—for example, request a visual correction, revise music, rebuild a language version,
+cancel dependants coherently, and settle one aggregate publication result. A video model emitting
+several modalities does not create that Suite; it creates one technical compound result whose
+facets still need independent owner admission.
+
 ## Deployment and projection are different axes
 
 | Term | Boundary |

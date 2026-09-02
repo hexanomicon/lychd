@@ -5,13 +5,13 @@ icon: material/music-note-outline
 
 # :material-music-note-outline: Music
 
-Music owns the route from sonic intent to an accepted musical work. It can begin with a generated
+Music owns the route from musical intent to an accepted musical work. It can begin with a generated
 sketch, a played take, MIDI, a score, a remembered moment, or an empty session. None of those
 methods receives privileged authorship.
 
 ## Compose and arrange
 
-`riffmaw.forge_track@1` pins the sonic brief, admitted sources, `FeelProfile@1`, target form,
+`riffmaw.forge_track@2` pins the music brief, admitted sources, `FeelProfile@1`, target form,
 budget, and acceptance criteria. AI music generation may propose motifs, harmony, rhythm, timbre,
 sections, or complete candidates. Human performance, manual composition, procedural systems,
 sampling, and DAW editing may answer or replace those proposals. Every generated or transformed
@@ -30,17 +30,25 @@ Generated output is a candidate, not a finished track and not evidence that reus
 
 ## Language belongs to the musical request
 
-The sonic brief language, structured music-description language, lyric language, requested sung
+The music-brief language, structured music-description language, lyric language, requested sung
 language, and any phonetic or transliteration aid are separate typed facts. Riffmaw preserves the
-original words. Translation or lyric adaptation creates an attributed derivative with its own
-author, implementation revision, rhyme, metre, pronunciation, and meaning-loss findings; it never
-silently replaces lyrics merely because a generator prefers another prompt language.
+original words. It may place an exact versioned Translation Spell for a lexical derivative, but
+lyric adaptation and musical fit remain Riffmaw judgment. The derivative retains its author,
+implementation revision, rhyme, metre, pronunciation, and meaning-loss findings; it never silently
+replaces lyrics merely because a generator prefers another prompt language.
 
 Each exact music profile declares and separately verifies description understanding, lyric
 rendering, pronunciation, structure tags, mixed-language behavior, and instrumental mode. Altar
 locale and Persona language do not select these values. Model-generated or optimized lyrics are a
 separate authored candidate, not an invisible convenience flag and not permission to change words
 already approved for performance.
+
+Singing, rap, and spoken-word used as musical material remain Riffmaw performance. Ordinary
+dialogue, narration, spoken dialogue replacement, captions, and spoken timed-language editions belong to
+[Language Edition](../language-edition/). When a translated song enters a wider language edition, Riffmaw retains its
+lyric and sung-performance revision while Language Edition retains source alignment, captions, edition fit,
+and packaging. Their handoff carries exact lyrics, performance, timing, and findings rather than
+merging offices.
 
 ## Answer and develop
 
@@ -74,7 +82,7 @@ The production request declares how far Riffmaw may finish on its own:
 
 | Finish policy | Riffmaw may do | Required return |
 | --- | --- | --- |
-| **`assets_only`** | Generate, capture, separate, clean, align, label, and package reusable material. | Dry and processed assets, stems where available, observations, and lineage; no implied mix approval. |
+| **`assets_only`** | Generate, capture, separate, clean, align, label, and package reusable musical material. | Dry and processed assets, stems where available, observations, and lineage; no implied mix approval. |
 | **`assisted_session`** | Also arrange, route, automate, process, and render one or more proposed mixes. | Editable production plan and session state, stems, candidate mixes, findings, and unresolved choices. |
 | **`autonomous_master_candidate`** | Also select bounded candidates, repair failed regions, mix, master, run deterministic gates, and repeat within budget. | A master candidate satisfying its automated gates, stems and receipts, or the exact criteria and budget that prevented completion; Magus acceptance remains separate. |
 
@@ -95,8 +103,8 @@ its Resolution Lock.
 
 Editing preserves its parents: comping, timing changes, tuning, cleanup, resampling, and destructive
 processing each create an attributable revision. The mix owns routing, gain, pan, automation,
-effects, spatial relation, and the balance between music, voice, and sound elements. A stem is an
-export of those relationships, not an independent master.
+production effects, spatial relation, and the balance among instrumental, vocal, sampled, and
+effected musical elements. A stem is an export of those relationships, not an independent master.
 
 Mastering targets declared loudness, peak, dynamic, sample-rate, format, and sequencing profiles.
 The accepted output can include score or MIDI where present, session and edit lineage, stems, mix,

@@ -12,7 +12,7 @@ physics and navigation settings, importers and plug-ins, locale and random strea
 containment policy, and measured resource envelope.
 
 The proposed Spell `game.bootstrap_project@1` creates that custody boundary. The principal Pattern
-`game.build_playable_slice@1` coordinates only the feature named by the Invocation and preserves
+`game.build_playable_slice@2` coordinates only the feature named by the Invocation and preserves
 the source diff produced by its placed Spells. Project truth includes scenes, resources, settings,
 tests, and design decisions; engine-native imports and rebuildable caches remain separate records.
 

@@ -65,13 +65,14 @@ retention. Resolution Lock selects an exact finite ToolProfile, or Dispatcher se
 declared capability; the admitted invocation and terminal receipt pin the exact tool or model,
 runtime, preprocessing, and postprocessing profile. Optional inputs never imply support.
 
-`SightJob@1` owns perception stages, observation validity, and adoption. Each asynchronous or
+`SightJob@1` owns perception stages, observation validity, and technical result settlement. The
+consuming owner decides how an observation affects its domain judgment. Each asynchronous or
 durable service or tool execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) state,
 idempotency, cancellation, reconciliation, and indeterminate-effect law. The parent Run remains
 fenced until the same attempt settles. Partial results enter quarantined custody; only rehashed,
-validated observations are adopted, and an uncertain paid or remote request is never replayed
-under a new identity.
+validated observations enter the settled Prism result, and an uncertain paid or remote request is
+never replayed under a new identity.
 
 ## A typed visual observation set
 

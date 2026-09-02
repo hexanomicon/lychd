@@ -114,6 +114,17 @@ otherwise eligible managed provider that is not warm may cause the requesting Ru
 ordinary Graph Stasis while Orchestrator drains and readies the affected Animators. Echo cannot silently fall back to a remote service, infer permanent
 microphone authority, inflate priority, or revoke another grant or lease.
 
+## Applications may use the voice without owning Echo
+
+Echo owns speech contracts and lifecycle facts, not every work containing a voice.
+[Riffmaw](../../compositions/riffmaw/index.md) owns sung and otherwise musical performance;
+[Language Edition](../../compositions/language-edition/index.md) owns casting, linguistic adaptation, timing, captions,
+and acceptance for one timed-language edition; [Avatar](../../compositions/avatar/index.md) may
+reference an exact eligible acoustic voice inside a presentation profile; and
+[Broadcast](../../compositions/broadcast/index.md) owns canonical source words, editorial relation,
+and publication. Each application references exact Echo attempts and artifacts rather than
+copying its capture, synthesis, delivery, or playback chronology.
+
 ## The Companion device boundary
 
 A future [Companion](../../compositions/companion/index.md) client may own device capture and

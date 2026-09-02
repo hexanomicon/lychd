@@ -13,12 +13,13 @@ icon: material/hammer-wrench
 >
 > _What is worthy becomes organ._
 
-The **Smith** is the candidate author inside Assimilation. Within a bounded Lab coordinate, it
-turns an admitted external pattern, protocol, defect, or need into attributable candidate code,
-schemas, migrations, tests, documentation, and packaging inputs. That work can be examined; it has
-not entered the body. A candidate is not an organ.
+**Smith** is the Assimilation Extension Domain. Its reference actor is a **candidate-author Agent**, a
+candidate author that turns an admitted external pattern, protocol, defect, or need into
+attributable candidate code, schemas, migrations, tests, documentation, and packaging inputs
+within a bounded Lab coordinate. That work can be examined; it has not entered the body. A
+candidate is not an organ.
 
-**Maturity: Designed.** No Smith Agent or end-to-end Assimilation Composition is delivered.
+**Maturity: Designed.** No candidate-author Agent or end-to-end Assimilation path is delivered.
 [ADR 35](../../adr/35-assimilation.md) owns the architecture and full protocol;
 [State of Work](../../state-of-the-work.md#smith-forge-promotion) owns delivery.
 
@@ -30,9 +31,9 @@ license and notice duties, local base, transformations, Smith/model/tool/human a
 unresolved gaps, and maintenance lineage. Material without established identity, provenance, or
 license may inform study but cannot request promotion.
 
-Smith may read admitted source and relevant Core code, then write only to permitted Lab paths. It
-can submit typed requests, but receives no ambient access to the active checkout, dependency
-locks, secrets, migrations, package publication, or host lifecycle.
+The candidate-author Agent may read admitted source and relevant Core code, then write only to permitted Lab
+paths. It can submit typed requests, but receives no ambient access to the active checkout,
+dependency locks, secrets, migrations, package publication, or host lifecycle.
 
 The declared harness records deterministic facts such as lint, type, build, or test results;
 [Riddle](riddle/capability-claims.md) owns calibrated quality and comparative claims. The required
@@ -59,7 +60,7 @@ remain attributable.
 
 ## Repair and evolution
 
-Smith may prepare a pinned update or propose a bounded correction in
+A candidate-author Agent may prepare a pinned update or propose a bounded correction in
 [Shadow](shadow/index.md). Each revision retains parentage and repeats every invalidated check; the
 author cannot certify its repair or widen its budget.
 

@@ -17,11 +17,20 @@ PostgreSQL is the single-node persistence backend. LychD reaches it through asyn
 boundaries, migration order, and schema admission. Domains own record meaning and lifecycle;
 neither they nor extension packages gain ambient migration authority.
 
-Core owns the planned federation seam. Every admitted model derives from Core's `UUIDBase`; an
-extension explicitly calls `register_model(MyModel)` during initialization; Core aggregates those
-references before Alembic derives migration order. Runtime package scanning is not admission, and
-migration generation or application remains an explicit release or operator act. Colliding models,
-table names, or migrations refuse before a schema is changed.
+In durable operation, **Phylactery means PostgreSQL**: the one database cluster assigned to an
+application partition. It is not a generic storage facade, a repository of interchangeable
+save/retrieve backends, or an abstraction that makes committed application truth backend-agnostic.
+Domain repositories isolate SQL mechanics and permit bounded test substitutes; they do not turn a
+process-local or in-memory store into a deployed Phylactery. LychD does not use loose
+application-managed files as a shadow database around PostgreSQL transactions, constraints, and
+migrations.
+
+Core owns the schema-admission seam across native and extension models. Every admitted model
+derives from Core's `UUIDBase`; an extension explicitly calls `register_model(MyModel)` during
+initialization; Core aggregates those references before Alembic derives migration order. Runtime
+package scanning is not admission, and migration generation or application remains an explicit
+release or operator act. Colliding models, table names, or migrations refuse before a schema is
+changed.
 
 The target chambers are deliberately logical rather than a claim of present deployment:
 
@@ -35,6 +44,47 @@ The target chambers are deliberately logical rather than a claim of present depl
 
 `vectors` status can distinguish, for example, speculative material from governed precedent;
 consecration records authority, not universal factual truth.
+
+### Default topology and scale seam
+
+The default topology is one LychD host with one Phylactery—one PostgreSQL cluster—for its
+application partition. Capacity scales up before it scales out: an operator may enlarge or
+relocate the physical storage beneath the admitted `postgres/data` mount without changing
+application authority. Member disks, filesystems, and volume topology remain host substrate rather
+than domain or table-routing facts. The move must preserve [Layout](13-layout.md) identity and use
+a PostgreSQL-consistent [capture or restore](07-snapshots.md); this decision promises no automatic
+or online storage expansion.
+
+Scale-up does not imply indefinite retention. Before automated retirement, every persisted record
+class must declare its owning lifecycle, holds and terminal eligibility, compaction or archival,
+deletion or tombstone and derivative handling, and operational maintenance. Age or disk pressure
+alone grants no deletion authority. The [Reaper](31-simulation.md#the-branch-reaper) remains
+Shadow-owned branch hygiene; it has no ambient authority to trim Phylactery records.
+
+One cluster does not require every PostgreSQL object to occupy the same physical storage tier. A
+measured later schema may use native partitioning and tablespaces to place identified relations,
+indexes, or partitions across local SSD, NVMe, or HDD mounts while callers continue to query one
+logical relation. This is physical placement inside one Phylactery, not an application storage
+adapter, independent backup target, or shard. Before admission, [Layout](13-layout.md) and
+[Containers](08-containers.md) must bind every durable mount, while [Snapshots](07-snapshots.md)
+must capture and restore `PGDATA` and every tablespace at one PostgreSQL-consistent boundary. The
+current topology admits only the `postgres/data` mount; this decision promises neither a partition
+policy nor tablespace delivery.
+
+A future Domain may admit a separate, named store only by amending the smallest existing Covenant
+that owns the responsibility and introducing its typed port. Such a store is not a Phylactery
+backend, inherits no authority over Phylactery relational records or PostgreSQL transactions by
+proximity, and must define its authorization, commit or handoff, retention and deletion, backup,
+restore, and reconciliation contract. A filesystem path alone is storage geography, never
+application authority.
+
+This decision neither delivers nor promises sharding. A later amendment may assign different
+whole application partitions to separate PostgreSQL Phylacteries, with routing completed before a
+unit of work opens and typed handoffs between partitions. It admits no shared `PGDATA`, routing
+implementation, table-level, row-level, or intra-partition sharding, and no cross-Phylactery
+transaction. A [Portal](../sepulcher/animator/portal.md) remains a remote capability road, while
+[Intercom](26-a2a.md) and [Legion](42-legion.md) carry bounded work or references; none forms a
+shared database fabric.
 
 ## Wire and work contracts
 
@@ -60,8 +110,9 @@ state, not the ordered `run`/`step` ledger.
 
 ### Deployment authority and edge journals
 
-One application partition has exactly one active Phylactery and authority epoch. PostgreSQL is
-never exposed, shared, synchronously replicated, dual-written, or failed over across a WAN.
+One application partition has exactly one active Phylactery—one PostgreSQL cluster—and authority
+epoch. PostgreSQL is never exposed, shared, synchronously replicated, dual-written, or failed over
+across a WAN.
 Backups and inactive migration restores are recovery artifacts, not live authorities. Moving
 authority requires a quiesced, typed export/import that preserves schema, labels, dedupe and
 external-effect identities; it never copies an unrelated home partition by implication.
@@ -135,7 +186,7 @@ deployment unable to verify those properties cannot enable reversible Cuts.
 One logical state transition can share a PostgreSQL transaction, while write-heavy queue and trace
 tables need workload-specific retention and autovacuum policy. The delivery outbox is transactional
 with Run truth but not with the external SAQ transaction; its relay and exact keys close that gap.
-This is not a transactional Step/event outbox, complete PostgreSQL adapter parity, or a production
-deployment receipt. A disposable two-boot application-factory lifecycle proves the repository
-composition with an offline model and HTTP test client; real host/model/browser operation remains
-outside that evidence.
+This is not a transactional Step/event outbox, complete behavioral parity between memory profiles
+and PostgreSQL repositories, or a production deployment receipt. A disposable two-boot
+application-factory lifecycle proves the repository composition with an offline model and HTTP
+test client; real host/model/browser operation remains outside that evidence.

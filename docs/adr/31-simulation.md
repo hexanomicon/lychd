@@ -91,7 +91,7 @@ never selects a winner.
 
 Each Observation establishes only its narrow predicate. Unit tests, commits, and model judges do
 not respectively prove architectural fit, shared-state isolation, or an effect. Shadow submits
-exact branches, environments, observations, and artifacts to versioned Riddle Suites; deterministic
+exact branches, environments, observations, and artifacts to versioned Riddle Trial Suites; deterministic
 receipts and verdicts stay distinct. Mirror may supply Persona-congruence criteria, never private
 Persona selection. Any score is a versioned, attributable evaluation signal with declared scope;
 it may prune, deprioritize, or converge inside the experiment but proves and authorizes nothing.

@@ -15,16 +15,20 @@ where work belongs; presence on the map proves neither a package nor delivered b
 | --- | --- |
 | **Extension Domain** | One of the fifteen stable user-facing jurisdictions through which the Lich may grow |
 | **extension package** | Explicitly selected built-in or private Crypt code admitted through `register(context)` and shaped stores |
-| **Manifestation** | The form a Domain takes in one profile: Core office, package, Composition, managed Provider, external attachment, or dormant design |
+| **Manifestation** | The form a Domain takes in one profile: Core office, package-provided contribution, managed Provider, external attachment, or dormant design |
 | **Contribution** | A typed addition admitted through a Domain-owned store while that Domain keeps authority |
 | **Provider** | A concrete engine or service supplying mechanism behind a typed contract |
 | **Composition** | A [reusable native application capability](../../compositions/index.md) with a Pattern catalogue, domain state, judgment, policy, and effects |
 | **Product** | A named professional or market package selecting Compositions, Suites, profiles, projections, and supported use cases without inheriting their authority |
 
 Packages may contribute across several Domains; a Domain may have several packages or Providers.
-Compositions use Domains without becoming one, and Products package Compositions without becoming
-an Extension or authority owner. **Activation** names a concrete package or declared instance,
-never an abstract Domain.
+Compositions use Domain contracts without becoming Domains or Manifestations. Products package
+Compositions without becoming Extension Domains, extension packages, or authority owners.
+**Activation** names a concrete package or declared instance, never an abstract Domain.
+
+Manifestation is only a descriptive profile view, not a shared registry kind, base class,
+identity, lifecycle, or activation target. Operational contracts name the exact office,
+Contribution, Provider, attachment, or dormant profile underneath it.
 
 ## The Federation of Fifteen
 
@@ -51,7 +55,7 @@ never an abstract Domain.
 The coupled pre-v1 **Extension Protocol** admits explicitly selected built-in and private Crypt
 packages through `register(context)`; it neither scans the environment nor discovers arbitrary
 entry points. Built-ins evolve atomically with Core, while private packages accept refactor
-breakage. A versioned independent-product API and conformance suite remain future work, so an
+breakage. A versioned independent extension-package API and conformance suite remain future work, so an
 external protocol is the present boundary where process or lifecycle coupling is unacceptable.
 
 That assembly is one frozen extension generation per Vessel process. There is no hot-load,
@@ -64,7 +68,7 @@ Automated Evolution remains designed rather than delivered; the current implemen
 the frozen-generation side of this boundary at boot.
 
 [ADR 05](../../adr/05-extensions.md) owns admission and compatibility. [State of
-Work](../../state-of-the-work.md#extension-activation-contributions) records the Partial seven-store
+Work](../../state-of-the-work.md#extension-activation-contributions) records the Partial five-store
 surface and its attribution limits. Selection grants shaped registration—not route, secret,
 workflow, migration, workload, effect, or automatic activation authority.
 

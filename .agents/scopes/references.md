@@ -81,7 +81,7 @@ authorization, semantics, and retained evidence.
 | `browserless` | `README.md`, `LICENSE`, then `src/`, `docker/`, or focused tests | Comparing self-hosted browser/CDP/Playwright and REST rendering surfaces; SSPL/commercial terms and browser isolation remain separate gates |
 | `tavily-python` | `README.md`, then `tavily/`, tests, and the current official API docs | Inspecting the client contract for Tavily Search/Extract/Crawl/Map; the closed provider implementation remains opaque |
 
-These are mechanism references only. Scout and Webcrawler law still own effect separation,
+These are mechanism references only. Scout's web-acquisition law still owns effect separation,
 destination authority, budgets, receipts, hostile-content fencing, and custody; Animator law owns
 whether a local Soulstone or remote Portal may expose the typed capability.
 

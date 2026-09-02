@@ -106,6 +106,13 @@ If the requested change crosses those identity boundaries, Avatar refuses it and
 an explicit Persona revision or a distinct Persona. Resemblance never grants performer authority;
 voice and likeness use retain their own consent, licence, provenance, disclosure, and revocation.
 
+The word “voice” crosses several contracts without making them one owner. Persona voice is its
+declared discourse and orientation under Mirror; an acoustic voice profile or synthesized artifact
+keeps Echo capability and lifecycle facts; a sung performance remains Riffmaw material; and a
+spoken timed-language performance remains Language Edition material. Avatar references an exact eligible
+revision and narrows its use for a Morphe or projection. It does not manufacture or silently
+upgrade any of them.
+
 ## Representative journey: one Avatar in VR and Blockworld
 
 1. The Magus composes one immutable `AvatarProfile@1` from an exact Persona revision and admitted
@@ -142,10 +149,12 @@ voice and likeness use retain their own consent, licence, provenance, disclosure
 | vehicle | the selected vehicle controller's occupants, safety envelope, device purpose, local controls, and motion or effect authority |
 | [Familiar](../familiar/index.md) | body identity, form factor, capability snapshot, safety envelope, geofence, emergency stop, mission, observations, and effect receipts |
 
-Prism and Voidlight retain visual artifact truth, Echo and Riffmaw retain audio and voice truth,
-Kinesis retains technical motion, and Mirror retains Persona identity. Avatar assembles exact
-eligible references and decides only whether the resulting projection profile is coherent for the
-declared presence and target capabilities.
+Prism retains technical visual/spatial effect and derivative facts; Voidlight retains accepted
+visual/VFX artifact truth; Echo retains speech and acoustic-voice lifecycle facts; Riffmaw retains
+musical and sung-performance truth; Language Edition retains spoken timed-language performance and
+localization truth; Kinesis retains technical motion; and Mirror retains Persona identity. Avatar
+assembles exact eligible references and decides only whether the resulting projection profile is
+coherent for the declared presence and target capabilities.
 
 ### A VR projection is not embodiment
 

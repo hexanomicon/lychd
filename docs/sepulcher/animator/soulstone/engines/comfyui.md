@@ -5,15 +5,18 @@ icon: material/graph-outline
 
 # :material-graph-outline: ComfyUI
 
-**ComfyUI** is a graph execution engine, not a Prism, Echo, or Riffmaw domain. A local ComfyUI
-service can be a Soulstone when LychD owns its container, queue, readiness, GPU placement, model
-mounts, and lifecycle. The same engine may produce capabilities for several semantic owners.
+**ComfyUI** is a graph execution engine, not a Prism or Echo Domain and not a Riffmaw, Language Edition,
+Voidlight, or Broadcast application owner. A local ComfyUI service can be a Soulstone when LychD
+owns its container, queue, readiness, GPU placement, model mounts, and lifecycle. The same engine
+may implement capabilities used by several semantic owners.
 
 | Engine output | Owning LychD office |
 | --- | --- |
-| image, image edit, video, vision, or spatial graph | Prism |
-| speech or other bounded audio operation | Echo when it satisfies the speech contract |
-| music, voice, sound, or sonic synchronization artifact | Riffmaw |
+| image, image edit, video, vision, or spatial graph | Prism technical contract; Voidlight or another consuming Composition owns creative acceptance |
+| speech transcription, synthesis, cloning, or another speech operation | Echo when it satisfies the exact speech contract |
+| music generation, musical vocal, musical production effect, or musical cue artifact | Riffmaw |
+| timed-language dialogue or caption candidate | Language Edition application admission over exact Echo/translation operations |
+| picture-bound effect, foley, or ambience candidate | Broadcast |
 | final audiovisual assembly | Broadcast |
 
 ## Keep model, engine, and road apart
@@ -22,7 +25,7 @@ The same semantic job may have several independently admitted realizations:
 
 | Layer | Owns |
 | --- | --- |
-| Prism, Echo, or Riffmaw profile | Exact operation, request/result schema, model or voice identity, languages, formats, licence, limits, and bake evidence. |
+| owning semantic profile | Exact Prism/Echo operation or application-specific Riffmaw, Language Edition, or Broadcast request/result schema, model or voice identity, languages, formats, licence, limits, and bake evidence. |
 | ComfyUI preset | One immutable graph, node closure, model-file bindings, open parameters, and output mapping for that profile. |
 | Soulstone Rune | Local container, endpoint, devices, mounts, lifecycle, resources, and the exact admitted profile/preset references exposed by this instance. |
 | Portal profile | A separately admitted remote provider, endpoint, dialect, credential, custody, cost, and reconciliation path. It is never inferred from the existence of a local pack with a similar name. |
@@ -52,15 +55,20 @@ workflow device nodes. LychD must not infer parallelism, shared VRAM, model resi
 batching from ComfyUI visibility alone.
 
 The first candidate profiles are Qwen image generation/editing, LTX-2.5 or Wan video workflows,
-MiniMax Music 3 generation, and later exact speech, sound, and Form graphs. Each profile must
-separately prove input and output modalities, languages, limits, cancellation, VRAM/offload
-behavior, model licences, and artifact validation. If an LTX preset returns synchronized sound and
-video, the adapter emits separately attributable streams: Prism/Voidlight may judge the visual
-candidate, Riffmaw the sonic candidate, and Broadcast their final relation.
+MiniMax Music 3 generation, and later exact speech, role-qualified sound, and Form graphs. Each
+profile must separately prove input and output modalities, languages, limits, cancellation,
+VRAM/offload behavior, model licences, and artifact validation. If an LTX preset returns
+synchronized sound and video, the adapter reports the provider job, container digest, child
+streams, shared timebase, and engine facts to the exact Prism technical job. Prism binds the
+compound candidate to Core's attempt record, while Reliquary retains canonical artifact custody
+and provenance. Voidlight may judge the visual candidate, Riffmaw music, Language Edition timed-language
+material, and Broadcast picture sound and their final relation.
 
 See [ComfyUI](https://github.com/Comfy-Org/ComfyUI), the
 [ComfyUI server routes](https://docs.comfy.org/development/comfyui-server/comms_routes), and the
 owning [Prism Image](../../../extensions/prism/image.md),
 [Prism Video](../../../extensions/prism/video.md),
 [Prism Form](../../../extensions/prism/form.md), and
-[Riffmaw](../../../../compositions/riffmaw/index.md) contracts.
+[Riffmaw](../../../../compositions/riffmaw/index.md),
+[Language Edition](../../../../compositions/language-edition/index.md), and
+[Broadcast](../../../../compositions/broadcast/index.md) contracts.

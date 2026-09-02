@@ -14,8 +14,8 @@ master candidate for the Magus to accept.
 
 | Role | Owes Riffmaw | Does not own |
 | --- | --- | --- |
-| **Planner** | A versioned `SonicProductionPlan@1` containing creative form, track roles, desired source placements, prompts, edits, and acceptance criteria. | Executable topology, implementation choice, budgets, grants, checkpoints, retry, cancellation, or stopping law; the exact Scroll and Resolution Lock own those. |
-| **Generative processor** | Music, continuation, variation, cover, repaint, conversion, effect, or separated-source artifacts from an exact engine and model profile with controls and receipts. | Arrangement acceptance, authorship judgment, native-stem claims, or the production session. Speech synthesis enters through Echo's admitted `tts` contract. |
+| **Planner** | A versioned `MusicProductionPlan@1` containing creative form, track roles, desired source placements, prompts, edits, and acceptance criteria. | Executable topology, implementation choice, budgets, grants, checkpoints, retry, cancellation, or stopping law; the exact Scroll and Resolution Lock own those. |
+| **Generative processor** | Music, continuation, variation, cover, repaint, conversion, production-effect, or separated-source artifacts from an exact engine and model profile with controls and receipts. | Arrangement acceptance, authorship judgment, native-stem claims, or the production session. Speech synthesis enters through Echo's admitted `tts` contract; ordinary dialogue remains [Language Edition](../language-edition/) work. |
 | **Analysis worker** | Attributed tempo, beat, onset, pitch, chord, section, similarity, loudness, clipping, and quality observations with uncertainty. | Creative approval or permission to transform its source. |
 | **Offline studio renderer** | A pinned timeline and processing graph with tracks, clips, MIDI, routing, automation, processors, intermediate renders, node captures, and master buses. | Capture, live monitoring, creative mix decisions, the brief, source rights, performer consent, or publication. |
 | **Live graph and monitor host** | A realtime-safe audio graph, device and route lifecycle, direct monitoring, latency and xrun evidence, output fence, and emergency bypass. | Model planning, recording permission, or a promise that remote peers are sample-locked. |
@@ -28,7 +28,7 @@ master candidate for the Magus to accept.
 | **Media utility** | Bounded decode, encode, resample, trim, join, metadata, waveform, and conformance operations. | Semantic interpretation or application finish. |
 | **Human DAW projection** | Portable assets, tempo and marker maps, automation or mix notes, and enough lineage to continue manually. | The canonical Riffmaw record or authority to mutate it behind the handoff. |
 
-`SonicProductionPlan@1` is a neutral creative Riffmaw record rather than a Python script, Scroll,
+`MusicProductionPlan@1` is a neutral creative Riffmaw record rather than a Python script, Scroll,
 DAW session file, or provider request. A Spell implementation compiles only the creative fields
 admitted for its exact pinned placement into one tool dialect. A failed implementation settles;
 another exact predeclared branch or a new forward Invocation may try different admitted craft, but
@@ -44,7 +44,7 @@ fixtures, restart behavior, and a bake against the Riffmaw contract.
 
 | Candidate | Candidate office | Present reading |
 | --- | --- | --- |
-| [audio.cpp](https://github.com/0xShug0/audio.cpp) `0.5` | Inference engine for generative and separation model profiles | Promising, rapidly moving local route for explicitly supported ACE-Step, Stable Audio, Demucs and RoFormer families. Server API and pipelines remain experimental; loaded sessions live until process exit, and Apache-2.0 runtime terms do not admit a model's weights. Keep exact families in isolated, lifecycle-reclaimable workers. |
+| [audio.cpp](https://github.com/0xShug0/audio.cpp), evaluated at `0.5` | Inference engine for music-generation and separation profiles | Promising, rapidly moving local route for explicitly supported ACE-Step, Stable Audio, Demucs and RoFormer families. A Riffmaw profile admits only proved musical operations; server API and pipelines remain experimental, loaded sessions live until process exit, and Apache-2.0 runtime terms do not admit a model's weights. Keep exact families in isolated, lifecycle-reclaimable workers. |
 | [MiniMax Music 3](https://huggingface.co/MiniMaxAI/MiniMax-Music3) | Offline generative-processor model profile | Direct long-form song candidate conditioned on lyrics plus a detailed music description. The upstream card exposes SGLang-Omni and Diffusers routes; the [Comfy-Org pack](https://huggingface.co/Comfy-Org/MiniMax-Music-3) supplies a ComfyUI-shaped route. Each pack, component, structured-caption transform, language, duration, precision, offload plan, cancellation behavior, and licence closure needs an exact bake; no route becomes Riffmaw truth or speech TTS. |
 | [MiniMax hosted Music Generation](https://platform.minimax.io/docs/api-reference/music-generation) | Portal generative-processor candidate | A separate provider API currently names `music-3.0` and accepts prompt plus lyrics. It is not presumed byte-, model-, output-, or policy-equivalent to the open-weight Music 3 profile. The provider announced August 2026 access changes, so availability and terms must be rechecked before every trial; no local failure may replay here automatically. |
 | [DawDreamer](https://github.com/DBraun/DawDreamer) | Isolated offline renderer and DSP/instrument host | Strong first candidate for processor DAGs, audio and MIDI, timing, automation, VST and FAUST, and simultaneous graph-node captures. It is GPLv3 and Alpha, has no capture or live-jam contract, and emits no persistent human-editable DAW session; its “stems” are selected graph outputs. |
@@ -68,7 +68,7 @@ catalogue. MiniMax Music 3 through one immutable allowlisted ComfyUI preset is t
 product-shaped long-form candidate; an `audio.cpp` profile remains the alternative family route.
 The proof also needs one separated-source profile, an isolated DawDreamer renderer with allowlisted
 processors, a pinned FFmpeg worker, librosa tempo and onset probes, and a LychD-owned
-sample-accurate compiler from `SonicProductionPlan@1` creative placements to one pinned render
+sample-accurate compiler from `MusicProductionPlan@1` creative placements to one pinned render
 graph. It can prove `assets_only` and a bounded `assisted_session`; the human handoff is stems,
 MIDI, tempo, markers, processor receipts, and mix notes rather than a native DawDreamer project.
 
@@ -78,20 +78,20 @@ output deadline fence, and only then a machine player. Symbolic MIDI scheduled a
 synth is a more credible first jam response than claiming ACE-Step audio is realtime before Linux
 hardware measurements exist. Remote Jam and an automatic mix controller remain later bakes.
 
-Additional tools earn admission by closing a missing Riffmaw role, not by offering another UI over
-the same models.
+Additional tools earn admission by closing a missing musical Riffmaw role, not by offering another
+UI over the same models.
 
 ## Closed-loop production
 
 ```text
 brief + admitted sources + takes or jam
-→ SonicProductionPlan@1
+→ MusicProductionPlan@1
 → generate, capture, or separate candidates
 → analyze musical and measurable facts
 → arrange and render a multitrack revision
 → mix and master under declared targets
 → listen, measure, accept, repair, or stop
-→ assets, editable session handoff, or SonicAssetBundle
+→ assets, editable session handoff, or MusicAssetBundle@1
 ```
 
 Every loop iteration names its parents and consumes a bounded attempt. A quality gate can request a

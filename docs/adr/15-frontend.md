@@ -376,6 +376,15 @@ parameters; a translator or model never supplies HTML, Svelte, executable templa
 keys. Catalogues are reviewed static client assets under the same FOSS, notice, CSP, and release
 boundary as the rest of the Altar, not a runtime translation service.
 
+The FOSS reference Altar deliberately targets English as its sole required interface locale. This
+keeps the reference implementation, review surface, release evidence, and contributor obligation
+small; it does not permit English grammar, word order, or left-to-right layout assumptions to enter
+canonical identities or application contracts. A multilingual interface remains permitted future
+work rather than a current Product goal. Another locale may enter later as an optional, reviewed
+static catalogue and formatter contribution with exact compatibility, provenance, licence, and
+accessibility evidence. It is not a skin, arbitrary client-code plug-in, or support claim merely
+because a community translation exists.
+
 Locale resolution is explicit Altar choice, then an admitted Principal preference, then a browser
 language hint, then an admitted operator default, then English. The current loopback `magus:*`
 bootstrap is not an authenticated Principal and may retain only a presentation-local choice.
@@ -389,7 +398,9 @@ an English prompt, original Japanese evidence, or another language selected for 
 video, or music. Changing locale never translates retained content. Translation is an explicit,
 attributed semantic transformation that preserves source text, target language, implementation
 revision, declared loss, and authority. Persona language or a model's detected language never
-silently changes the Magus's interface.
+silently changes the Magus's interface. Speech input and output may support additional languages
+while the Altar chrome remains English; speech capability does not imply an installed or supported
+interface catalogue.
 
 The delivered Altar remains English-only: it has no message catalogue, locale selector,
 Principal-preference binding, or right-to-left receipt. Browser-native formatting that happens to

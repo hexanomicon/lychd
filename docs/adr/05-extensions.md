@@ -20,17 +20,22 @@ extension would buy isolation at latency and deployment cost; sandbox scripting 
 containment option, not a second language or runtime promised today.
 
 The Extension Protocol joins local-package admission and external-provider integration without
-conflating their trust or lifecycle boundaries. Providers expose functional identities separately
-from their concrete implementations. A future Forge lock lifecycle must pin foreign source and
-physical inputs; selected import shims alone are not reproducibility evidence.
+conflating their trust or lifecycle boundaries. Semantic contract and profile identities remain
+separate from their concrete Provider implementations. A future Forge lock lifecycle must pin
+foreign source and physical inputs; selected import shims alone are not reproducibility evidence.
 
 An **Extension Domain** is one of the fifteen stable user-facing jurisdictions. A **package** is
-code; a **Manifestation** is a concrete Core, package, Composition, managed Provider, external, or
-dormant profile form. A **Contribution** is a typed addition accepted by its Domain owner, and a
-**Provider** is a concrete mechanism. Domain presence proves neither a package nor delivery;
-activation is of a concrete package or instance, never an abstract domain. Compositions may use
-Domains without becoming one; packages may cross Domains, and one Domain may receive many packages
-or Providers.
+code; a **Manifestation** is a concrete Core office, package-provided contribution, managed
+Provider, external attachment, or dormant profile form. A **Contribution** is a typed addition
+accepted by its Domain owner, and a **Provider** is a concrete mechanism. Domain presence proves
+neither a package nor delivery; activation is of a concrete package or instance, never an abstract
+domain. Compositions use Domain contracts without becoming their Manifestations or owners;
+packages may cross Domains, and one Domain may receive many packages or Providers.
+
+Manifestation is a descriptive view of the form a Domain takes in one body or profile. It is not
+a common registration kind, runtime base class, stable identity, lifecycle, or activation target.
+Every operational reference resolves to the exact underlying Core office, Contribution, Provider,
+attachment, or dormant profile instead of executing a generic Manifestation.
 
 ### Vocabulary Boundary: Domain Is Not Package
 
@@ -170,7 +175,7 @@ only for the same provider. Rune schema admission also reserves its exact filesy
 different schema cannot claim the same `relative_path`. Soulstone registration identity is the
 runtime name, Rune schema, and adapter type. The same runtime or schema with another owner fails
 closed instead of silently preserving first registration. Portal schemas likewise have one exact
-factory owner. Composition passes the definitions, not an ordered list of anonymous callables;
+factory owner. The Vessel composition root passes the definitions, not an ordered list of anonymous callables;
 runtime dispatch looks up the Portal's exact Rune schema. A broad factory cannot claim another
 package's declaration, and a factory is total for every value its schema admits. Each definition
 also owns its optional typed probe strategy. A Portal that requests a live probe without that exact
@@ -270,6 +275,6 @@ platform validation, and explicit operator consent before runtime import.
 ### Consequences
 
 In-process code shares the daemon and can crash or corrupt it, so only trusted, admitted source
-receives that path. Selection and contracts stay explicit. Process isolation, independent
-lifecycle, and refactor independence require an external protocol or a future public product;
-they are not granted by a package name.
+receives that path. Selection and contracts stay explicit. Process isolation and independent
+lifecycle require an external protocol; refactor independence for in-process packages requires a
+future public extension-package API. Neither is granted by a package name.

@@ -74,9 +74,16 @@ output locale is unavailable. Translation is a separate semantic act.
 
 Altar interface locale is independent of this speech policy: a Slovak interface may capture an
 English utterance and request a Japanese Voice, provided each exact step is admitted. Musical
-lyrics, singing, arrangement, and sonic acceptance belong to Riffmaw rather than Echo; they reuse
+lyrics, singing, arrangement, and musical acceptance belong to Riffmaw rather than Echo; they reuse
 the same no-global-language and no-silent-translation law without turning a song generator into
 TTS.
+
+[Language Edition](../compositions/language-edition/index.md) owns an attributed timed-media language edition: aligned
+source and target words, casting, performance direction, dialogue timing, caption fit, and
+acceptance of a constrained language-track replacement. It may place STT, Translation, and TTS or
+human-performance steps in one Pattern, but that orchestration does not make Echo the application
+or Translation an ambient feature. Language Edition may alter only declared language tracks against a locked
+master; Broadcast retains editorial recutting, final assembly, and publication.
 
 ## Capture and custody
 
@@ -149,14 +156,19 @@ application authority, classification, or consent.
 ## Application-owned live audio
 
 Echo's Resonance Session owns speech chronology; it does not absorb musical performance or every
-application that carries sound. A Composition such as [Riffmaw](../compositions/riffmaw/sessions.md)
-may own a domain session and musical-clock overlay, but every live route still obeys Audio custody,
-transport, interruption, and uncertain-playback law.
+application that carries sound. [Riffmaw](../compositions/riffmaw/sessions.md) may own a musical
+performance session and clock overlay; Language Edition may own a language-edition timeline over exact
+speech attempts. Each remains an application record referencing Echo chronology rather than a
+duplicate capture, synthesis, delivery, or playback ledger, and every live route still obeys Audio
+custody, transport, interruption, and uncertain-playback law.
 
 [Avatar](../compositions/avatar/index.md) may use an authorized exact voice profile or derived
 artifact inside one profile or Morphe. Avatar can narrow purpose, audience, words, disclosure,
 retention, and revocation, but cannot create speaker authority, copy a Persona, widen the cloning
-grant, or claim that synthesized speech was played. Echo retains those lifecycle facts.
+grant, or claim that synthesized speech was played. Echo retains those lifecycle facts. Language Edition may
+cast the same eligible reference for one exact language edition, but owns only role fit,
+pronunciation, timing, disclosure, and performance acceptance; it cannot widen either Avatar's
+presentation envelope or the underlying performer and voice-use authority.
 
 Monitoring, recording, retention, analysis, transformation, remote transmission, and machine
 response are independently admitted scopes. A visible armed input proves none of the others. A

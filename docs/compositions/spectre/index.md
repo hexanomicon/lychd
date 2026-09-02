@@ -97,7 +97,7 @@ Two admission paths keep Avatar optional without weakening the user's intended m
 | [Avatar](../avatar/index.md) | Lich presentation profile, Morphe selection, projection membership into this VR Habitat, and aggregate projection settlement; the Encounter only references the exact binding |
 | [Reach](../reach/index.md) | external social event, Habitat audience, delivery, and bounded social turn |
 | Prism Form and Kinesis | spatial assets, rigs, morph targets, technical motion, retargeting, and provenance |
-| Echo and Riffmaw | capture, speech timeline, cloning/synthesis, playback, and produced sonic assets |
+| Echo / Riffmaw / Language Edition / application sound owner | speech capture, STT/TTS and playback chronology / music / timed-language performance / picture- or world-specific sound; Spectre owns none merely because it renders the Encounter |
 | VR engine and OpenXR runtime | scene graph, rendering, physics, per-frame tracking, input, haptics, compositing, and device lifecycle |
 
 Typed participant, Avatar, world, artifact, interaction, and receipt references may cross these

@@ -42,8 +42,9 @@ Source-grounded masks, regions, pose, depth, and other controls may come from
 transform lineage, uncertainty, and exact artifact digest remain visible rather than becoming
 anonymous workflow tensors.
 
-`ImageJob@1` owns the requested operation, candidate set, validation, and adoption. Each concrete
-execution uses Core's Designed
+`ImageJob@1` owns the requested operation, candidate set, technical validation, and result
+settlement. Creative adoption belongs to Voidlight or another consuming Composition; successful
+custody and probes never accept the image on that owner's behalf. Each concrete execution uses Core's Designed
 [`ServiceJobAttempt@1`](../../../adr/14-workers.md#service-job-attempts-designed) mechanics;
 `INDETERMINATE` remains contained and nonterminal rather than a successful or failed image result.
 Numeric progress, previews, cancellation acceptance and settlement, multiple references, hard

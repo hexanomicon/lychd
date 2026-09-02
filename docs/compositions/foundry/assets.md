@@ -5,14 +5,16 @@ icon: material/treasure-chest-outline
 
 # :material-treasure-chest-outline: Assets
 
-The proposed Spell `game.import_asset_bundle@1` admits exact `VisualAssetBundle@1` and `SonicAssetBundle@1` inputs
-against the project target, semantic roles, formats, rights posture, and spatial or temporal limits.
-Foundry may transform them into engine-native imports, but it cannot rewrite the producer's source
-lineage.
+The proposed Spell `game.import_asset_bundle@2` admits exact `VisualAssetBundle@1`,
+`MusicAssetBundle@1`, and optional `TimedLanguageAssetBundle@1` inputs against the project target,
+semantic roles, formats, rights posture, and spatial or temporal limits. Foundry may transform them
+into engine-native imports, but it cannot rewrite the producer's source lineage. Sound authored
+specifically for game events, spaces, interaction, and runtime behavior remains Foundry application
+truth unless an independently owned reusable sound package is admitted.
 
 | Record | Custody |
 | --- | --- |
-| source bundle manifests | Voidlight or Riffmaw, admitted by exact digest |
+| source bundle manifests | Voidlight, Riffmaw, Language Edition, or another exact producer, admitted by digest |
 | engine-native imports and caches | Foundry |
 | `AssetImportReceipt@1` | exact source, importer, target, transformations, outputs, and checks |
 | `AssetFindingSet@1` | attributable correction evidence returned to the producing Composition |

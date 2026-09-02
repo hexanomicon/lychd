@@ -36,11 +36,10 @@ creates no new runtime object. Orchestrator still owns activation; the Animator 
 addressable service, its Connector the conduit, and the CapabilityGrant the exact permission and
 lease by which a caller may draw.
 
-A Spell shapes that draw as a typed request: the request is a spark and the return is candidate
-material. Animus is not the Lich's Spirit, Persona, identity, authority, memory, or evidence of
-Cognizance. Animus powers cognition, but it does not bind Cognizance by itself. It may contribute
-to present [Flux](../lich/spirit/flux.md) only after the surrounding Circle receives what returned,
-Blade discriminates it, Spirit carries it in Flux, and Answer binds it locally.
+A Spell shapes that draw as a typed request: the return is candidate material, not Spirit, Persona,
+identity, authority, memory, or operational Cognizance. It enters a cognizant act only when Circle
+receives it, Blade discriminates it, Spirit carries it in [Flux](../lich/spirit/flux.md), and Answer
+binds it locally.
 
 ## Two Sources of Power
 
@@ -80,5 +79,6 @@ handshake only for its v1 family/model demand and narrow chat-model/toolset comp
 Choose [Soulstone](./soulstone/index.md) for local iron, [Portal](./portal.md) for a remote
 boundary, [Portal Roads](./portal-roads.md) for provider and subscription selection,
 [Connectors](./connectors.md) for exact invocation dialects, and [Coven](./coven.md) for compatible
-local aggregation. [State of Work](../../state-of-the-work.md#animation-and-orchestration) owns
-what each path currently proves.
+local aggregation. [Audio Hardware and Host Routes](./audio-routes.md) maps replaceable local
+device mechanisms without giving Animator their application meaning. [State of
+Work](../../state-of-the-work.md#animation-and-orchestration) owns what each path currently proves.

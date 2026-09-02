@@ -18,7 +18,7 @@ Soulforge owns corpus admission, dataset compilation, training-job contracts, ca
 and handoff to independent evaluation/promotion. It never harvests runtime traces by default,
 equates Karma/consent/repetition/a positive Riddle verdict with corpus admission, mutates serving
 weights in place, treats trainer telemetry as promotion evidence, selects production routing, or
-turns Suite feedback into gradients/automatic repair.
+turns Trial Suite feedback into gradients/automatic repair.
 
 ```text
 nominated evidence → admitted immutable corpus → compiled dataset + sealed holdout
@@ -102,10 +102,10 @@ serving state. A retry is a new Run, and a partial is never a Candidate Bundle.
 
 A frozen Bundle enters [Riddle](34-evaluation.md) as an exact, immutable subject; Riddle cannot
 alter candidate, corpus, Recipe, or lineage. Evidence includes sealed target holdout, matched base
-or currently promoted baseline Outcomes, named regression Suites, adversarial/authority-boundary
+or currently promoted baseline Outcomes, named regression Trial Suites, adversarial/authority-boundary
 Cases, and quality/latency/memory/cost in compatible serving Environment, with uncertainty, errors,
 exclusions, and evaluator calibration. Loss, development improvement, trainer-authored examples,
-and self-grading are diagnostics. One visible Suite establishes neither general capability nor
+and self-grading are diagnostics. One visible Trial Suite establishes neither general capability nor
 safety outside its Environment.
 
 ## Promotion, serving, and rollback

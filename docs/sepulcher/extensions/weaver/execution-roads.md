@@ -155,6 +155,7 @@ boundaries; it cannot prove that an occurrence crossed them correctly.
 | local model unavailable before work | take only an explicit eligible branch and create its first attempt |
 | Privacy Cut loses task semantics | remain local, request narrower input, or refuse |
 | verifier is uncertain | deny or enter a declared human-review Gate; confidence is not permission |
+| ordinary cache miss before submission | preserve the same road and canonical admitted input; execute without reuse, because the miss alone is neither fallback nor refusal |
 | provider/peer/runtime fails before submission | a declared fallback may create a fresh road decision and road-owned attempt |
 | timeout or crash after submission | reconcile the same road-owned identity; do not activate another road yet |
 | exact same-envelope transport redelivery | retain the road-owned attempt, sealed bytes, target, idempotency identity, road decision, and Cut/namespace only when the adapter proves atomic same-key/same-payload replay or no prior effect; obtain a fresh EgressDecision and consume one bounded disclosure use |

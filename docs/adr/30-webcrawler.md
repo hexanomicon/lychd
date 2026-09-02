@@ -1,9 +1,9 @@
 ---
-title: 30. Webcrawler
+title: 30. Web Acquisition
 icon: material/spider-thread
 ---
 
-# :material-spider-thread: 30. Webcrawler
+# :material-spider-thread: 30. Web Acquisition
 
 !!! abstract "Context and Problem Statement"
     Web acquisition crosses an untrusted network and returns untrusted bytes. Search, fetch,

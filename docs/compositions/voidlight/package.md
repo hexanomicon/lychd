@@ -44,5 +44,6 @@ After that minimum proof, the first progressive worked journey should produce se
 and portrait hero profiles, retain their accepted stills, animate one or two exact boundary frames
 through an admitted Video implementation, probe loop and export behavior, and seal the result as a
 new visual-package revision. It may stop honestly after either the still or motion boundary.
-Optional model-returned ambience crosses only as a Riffmaw candidate; optional generated music is
-a separate Riffmaw Invocation, and Broadcast alone accepts the final audiovisual relation.
+Optional model-returned sound retains the shared Prism compound parent and crosses only as a
+role-qualified candidate: music to Riffmaw, timed-language material to Language Edition, and picture-bound
+effects or ambience to Broadcast. Broadcast alone accepts the final audiovisual relation.

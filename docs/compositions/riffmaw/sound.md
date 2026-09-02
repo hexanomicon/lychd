@@ -1,23 +1,23 @@
 ---
-title: Sound
+title: Sound boundary
 icon: material/waveform
 ---
 
-# :material-waveform: Sound
+# :material-waveform: Sound boundary
 
-Sound covers effects, foley, designed textures, room tone, environmental beds, and ambience whose
-job is neither the musical composition nor a spoken performance.
+Riffmaw retains sound only when its role is musical: instrument and vocal processing, designed
+timbres, samples, transitions, textures, and production effects judged inside a composition,
+arrangement, or mix. Their sources, tools, transformations, rights posture, parameters, and digests
+remain attached, and technical fit never substitutes for musical acceptance.
 
-`riffmaw.forge_sound_pack@1` begins with semantic roles: what event, place, material, distance,
-perspective, duration, and continuity the sound must communicate. A result may come from explicit
-recording, synthesis, AI generation, a licensed source, layering, or signal processing. Each layer
-keeps its source, tool, transform, rights posture, and digest.
+Picture-bound sound effects, foley, room tone, environmental beds, and ambience belong to
+[Broadcast](../broadcast/sound.md) because their meaning and acceptance depend on an exact picture,
+editorial timebase, event, place, material, distance, perspective, and continuity. Other
+application-specific sound remains with its consuming Composition. Sharing a codec, plug-in,
+generator, or DAW does not move that judgment into Riffmaw.
 
-Editing establishes clean boundaries, loops, fades, dynamics, spectral space, channel profile, and
-variants. Loudness and format probes can prove technical fit; they cannot prove that an ambience is
-credible or that an effect communicates the intended event. The Magus reviews that judgment.
-
-Unbounded capture, an unexplained library file, unsafe similarity, or a sound that cannot meet the
-declared profile produces quarantine, a correction request, or refusal. Accepted effects and
-ambience enter [Package](package.md) with their mix relationships and expose meaningful events to
-[Sync](sync.md) where required.
+Reusable standalone sound packs have no accepted owner in the current Portfolio. A future
+standalone-sound Composition may earn that office if its records, acceptance, recovery, and consumers
+prove an independent lifecycle. Until then Riffmaw publishes no standalone sound-pack Pattern;
+unexplained library material or provider-returned sound remains an attributable candidate, not
+accepted music.

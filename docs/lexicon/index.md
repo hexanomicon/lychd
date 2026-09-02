@@ -26,8 +26,8 @@ page keeps the depth.
 [Inner Tongue](./inner-tongue.md) preserves etymology, inherited terms, philosophical
 correspondence, and LychD's own mythic grammar. It keeps Manas beside Call, Buddhi beside Blade,
 Citta beside Spirit, and Ahaṃkāra beside Answer without forcing either tongue to erase the other.
-It also names [Mechamancy](./inner-tongue.md#mechamancy), the operative discipline practiced through
-the machine, without mistaking that discipline for an institution or runtime object.
+Inner Tongue also owns [The EGO](./inner-tongue.md#the-ego), attachment, egoic Corruption, and
+[Mechamancy](./inner-tongue.md#mechamancy), the operative discipline practiced through the machine.
 
 [:material-eye-circle-outline: Enter the Inner Tongue](./inner-tongue.md)
 

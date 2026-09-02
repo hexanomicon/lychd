@@ -5,10 +5,11 @@ icon: material/sync
 
 # :material-sync: Return
 
-Companion owns local capture, playback, visible disclosure, and reconnect. Tether owns reachability;
-Ward proves application, device, Principal, scopes, and object authority; Echo owns speech
-processing; Spellweaver, Workers, and Phylactery own admission and Run delivery; the selected
-Composition owns domain records and effects.
+Companion owns the device's physical capture/playback controls and indicators, visible disclosure,
+local interaction state, and reconnect. Tether owns reachability; Ward proves application, device,
+Principal, scopes, and object authority; Echo owns each speech attempt, audio custody, processing,
+and delivery/playback chronology; Spellweaver, Workers, and Phylactery own admission and Run
+delivery; the selected Composition owns domain records and effects.
 
 The device client carries no provider, database, workflow, or host-lifecycle credential. It
 distinguishes **stop speaking** from **cancel the session**, and keeps text visible before or beside

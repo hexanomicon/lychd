@@ -12,15 +12,16 @@ icon: material/import
 
 ## Status
 
-**Smith** and the Assimilation Composition are **Designed**. LychD ships no Smith Agent, forge,
-autonomous repair loop, compatibility gate, verified package promotion, rollback controller, or
-self-extension runtime. [State of Work](../state-of-the-work.md#smith-forge-promotion) owns this
-boundary.
+The **Smith Extension Domain** and its reference Assimilation protocol are **Designed**. LychD
+ships no candidate-author Agent, end-to-end Assimilation path, forge, autonomous repair loop, compatibility
+gate, verified package promotion, rollback controller, or self-extension runtime. [State of
+Work](../state-of-the-work.md#smith-forge-promotion) owns this boundary.
 
 ## Decision
 
-**Assimilation** is a governed re-expression of admitted foreign pattern as attributable local
-LychD code. Its output is a candidate, never a live organ.
+**Assimilation** is the Smith Domain's governed protocol for re-expressing admitted foreign
+pattern as attributable local LychD code. Its output is a candidate, never a live organ. The
+protocol coordinates separately owned admissions and effects; it is not a Portfolio Composition.
 
 | Act | Meaning |
 | --- | --- |
@@ -41,11 +42,13 @@ source/artifact identities, provenance, license and notice duties, implementatio
 declared authority/effects, and claimed evidence. Every claim remains untrusted until local
 admission and proof; intake never imports or executes its contents.
 
-Smith may re-express the lesson as a local Spell-contract or implementation candidate under an
-Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require new
-code, an adapter, package, tool, or capability; each follows its own owner and verification path.
-Spellweaver validates contract and Scroll candidates, while Extension, Creation, Packaging,
-Security, Evolution, and effect owners retain implementation, promotion, and activation authority.
+A candidate-author Agent operating within Smith may re-express the lesson as a local Spell-contract or implementation candidate
+under an Assimilation Dossier. Existing code may satisfy the contract, or the candidate may require
+new code, an adapter, package, tool, or capability; each follows its own owner and verification
+path. Spellweaver validates contract and Scroll candidates. Where the candidate adds a
+Contribution, its receiving Extension Domain retains its semantics; Extension law governs package
+admission; Creation, Packaging, Security, Evolution, and effect owners retain implementation,
+promotion, and activation authority.
 
 Policy may refuse teaching entirely, request it only from named peers and content classes, or
 accept only an already trusted exact contract with a local implementation binding. No configuration
@@ -63,13 +66,14 @@ not **Reanimation**, which restores an exact whole-body checkpoint. Declarative-
 publication may avoid replacement only after an atomic durable catalogue-generation mechanism and
 already-admitted implementations exist; neither is delivered now.
 
-## Smith and admission
+## Candidate author and admission
 
-Smith is a future specialized [Agent](./20-agents.md) in a reference Extension. It may inspect
-admitted source and write candidate code, schemas, migrations, tests, documentation, and packaging
-inputs inside a bounded Lab coordinate. It has no ambient authority over active checkout/Vessel,
-locks, publication, database migration, lifecycle, secrets, unrestricted network, or promotion;
-it submits typed requests to their owners. Authorship is not authority.
+A **candidate-author Agent** is the future reference Agent manifestation inside the Smith Extension Domain.
+It may inspect admitted source and write candidate code, schemas, migrations, tests,
+documentation, and packaging inputs inside a bounded Lab coordinate. It has no ambient authority
+over active checkout/Vessel, locks, publication, database migration, lifecycle, secrets,
+unrestricted network, or promotion; it submits typed requests to their owners. Authorship is not
+authority.
 
 Every candidate begins with an **Assimilation Dossier**: exact source identity/revision/digest/path,
 license/notice duties, target behavior or defect, chosen local target/base revision,
@@ -78,11 +82,12 @@ unresolved gaps, and maintenance owner. Absent identity, provenance, or license,
 studied but may not request promotion.
 
 Source, manifest, documentation, examples, archive, comments, tests, issue text, and generated
-configuration are hostile data, never instruction authority. Admission acquires only exact material,
+configuration are hostile data, never instruction authority. Admission acquires only exact
+material,
 retains provenance/classification, fences it outside stable instructions, denies ambient
 credentials/home/undeclared egress, bounds size/recursion/decompression/parser/subprocess effects,
-and records every transform. Typed Smith output constrains shape, not truth; prompt injection can
-produce valid-looking schemas.
+and records every transform. Typed candidate-author output constrains shape, not truth; prompt injection
+can produce valid-looking schemas.
 
 ## Candidate law and Lab
 
@@ -108,33 +113,34 @@ solely judge generated code, and heuristic review cannot override failed determi
 bounded correction loop ends verified or explicitly incomplete; traces/failures may inform repair
 only through Memory, Shadow, Riddle, and consent owners.
 
-Smith emits a **Promotion Request**, while owners decide and perform their own effects:
+The candidate-author Agent emits a **Promotion Request**, while owners decide and perform their own effects:
 
 | Concern | Owner |
 | --- | --- |
 | candidate lineage/workspace | [Creation](./16-creation.md) |
 | source/package/image construction | [Packaging](./17-packaging.md) |
-| coupled Extension admission | [Extension law](./05-extensions.md) |
+| coupled extension-package admission | [Extension law](./05-extensions.md) |
 | migration/persistence | [Phylactery](./06-persistence.md) |
 | activation | [Evolution](./18-evolution.md) and lifecycle owners |
 | human authority | [HitL](./25-hitl.md) |
 
 At effect time each revalidates candidate identity, current base, evidence, authority, and its own
 recovery. Merge cannot atomically make migration, restart, remote write, and publication. Failed or
-indeterminate effects remain attributed; Smith cannot erase them by deleting workspace or changing
-its explanation.
+indeterminate effects remain attributed; the candidate-author Agent cannot erase them by deleting its
+workspace or changing its explanation.
 
 ## Heritage and correspondence
 
-Cloud archives/historical conversations belong to a separate Heritage Composition. Smith may
-propose a parser, but output remains provenance-bearing candidate Memory—not Persona, instruction,
-preference, or training truth. Assimilated capability and every learned Spell are private by
-default; A2A advertising,
+Cloud archives and historical conversations expose an unresolved **Heritage** ownership need
+outside Smith. It remains a candidate study until distinct records, judgment, finish, recovery,
+and independent use justify a Composition. The candidate-author Agent may propose a parser, but output remains
+provenance-bearing candidate Memory—not Persona, instruction, preference, or training truth.
+Assimilated capability and every learned Spell are private by default; A2A advertising,
 Legion distribution, or public packaging needs its own authorization.
 
-Assimilation is not consumption: Smith breaks foreign pattern on the anvil of local law and offers
-a new organ. _Purpose is the hammer. Pattern is the anvil. Consent is the seal._ What leaves the
-Forge may ask to live; it does not crown itself.
+Assimilation is not consumption: the candidate-author Agent breaks foreign pattern on the anvil of local law
+and offers a new organ. _Purpose is the hammer. Pattern is the anvil. Consent is the seal._ What
+leaves the Forge may ask to live; it does not crown itself.
 
 ## Consequences
 
